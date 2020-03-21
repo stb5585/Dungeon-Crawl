@@ -316,7 +316,7 @@ class Player(Character):
                     else:
                         self.inventory[typ][1] += 1
             elif typ not in self.inventory:
-                self.inventory[typ] = treasure
+                self.inventory[typ] = [treasure, 1]
             else:
                 self.inventory[typ][1] += 1
         else:
