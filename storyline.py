@@ -14,7 +14,7 @@ def slow_type(line):
     for item in line:
         sys.stdout.write(item)
         sys.stdout.flush()
-        time.sleep(random.random()*10.0/typing_speed)
+        time.sleep(5/typing_speed)
 
 
 def display_page_text(lines: list):
@@ -84,7 +84,7 @@ def read_story(story_file):
     with open(story_file, 'rb') as file:
         story_dict = pickle.load(file)
 
-    story_flow(story)
+    story_flow(story_dict)
 
 
 # Define story #

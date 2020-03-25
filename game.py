@@ -34,7 +34,7 @@ if __name__ == "__main__":
     Commands = character.Commands
     player.status()
     if 'y' not in load:
-        # storyline.read_story('chapters/chapter1.ch')
+        storyline.read_story('chapters/chapter1.ch')
         print("(type help to get a list of actions)\n")
         print("%s enters a dark cave, searching for adventure." % player.name)
 
