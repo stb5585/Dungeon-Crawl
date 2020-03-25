@@ -10,6 +10,7 @@ import random
 import items
 import storyline
 
+
 # import movement
 # import enemy
 
@@ -107,10 +108,8 @@ class Character:
             blk_amt = 1 / int(enemy.equipment['Shield']().block)
             damage *= (1 - blk_amt)
             damage = int(damage)
-        if self.equipment['Weapon'] != items.Unarmed:
-            damage += self.equipment['Weapon']().damage
-        if self.equipment['Armor'] != items.Naked:
-            damage = max(1, damage - enemy.equipment['Armor']().armor)
+        damage += self.equipment['Weapon']().damage
+        damage = max(1, damage - enemy.equipment['Armor']().armor)
 
         # higher speed means slower character
         if not random.randint(0, enemy.speed - 1):
@@ -120,9 +119,12 @@ class Character:
                 print("Critical Hit!")
             if blk:
                 print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
-                    enemy.name, self.name, int(blk_amt*100)))
-            print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
-            enemy.health = enemy.health - damage
+                    enemy.name, self.name, int(blk_amt * 100)))
+            if damage == 0:
+                print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+            else:
+                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                enemy.health = enemy.health - damage
 
         return enemy.health <= 0
 
@@ -207,20 +209,29 @@ class Player(Character):
         self.enemy = random.choice(monsters)
 
     def status(self):
+        print("#" + (10 * "-") + "#")
+        print("Name: %s" % self.name)
+        print("Health: %d/%d" % (self.health, self.health_max))
+        print("Attack: %d" % self.attack)
+        print("Defense: %d" % self.defense)
+        print("Evade Chance: %s%%" % str(int((1 / self.speed) * 100)))
+        print("Max Damage: %d" % (self.attack + int(self.equipment['Weapon']().damage)))
+        print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit) * 100)))
+        print("Armor: %d" % (self.defense + self.equipment['Armor']().armor))
+        print("Block Chance: %s%%" % str(int((1 / self.equipment['Shield']().block) * 100)))
+        print("#" + (10 * "-") + "#")
+        """
         print("%s is level %s with %s experience points" % (self.name, self.level, self.experience))
         print("%s's health: %d/%d" % (self.name, self.health, self.health_max))
-        print("%s has %s attack and has a %d percent chance to crit." % (self.name, self.attack +
-                                                                         int(self.equipment['Weapon']().damage),
-                                                                         int(1 / float(
-                                                                             self.equipment['Weapon']().crit) *
-                                                                             100)))
-        print("%s has %s defense and a %d percent chance to evade attack." % (self.name, (self.defense + self.equipment[
-            "Armor"]().armor), int((1 / self.speed) * 100)))
-        print("%s has a %d percent chance to block %d percent of damage." % (self.name,
-                                                                             int((1 / self.equipment['Shield']().block)
-                                                                                 * 100),
-                                                                             int((1 / self.equipment['Shield']().block)
-                                                                                 * 100)))
+        print("%s has %s attack and has a %d percent chance to do double damage." %
+              (self.name, self.attack + int(self.equipment['Weapon']().damage),
+               int(1 / float(self.equipment['Weapon']().crit) * 100)))
+        print("%s has %s defense and a %d percent chance to evade attack." %
+              (self.name, (self.defense + self.equipment["Armor"]().armor), int((1 / self.speed) * 100)))
+        print("%s has a %d percent chance to block %d percent of damage." %
+              (self.name, int((1 / self.equipment['Shield']().block) * 100),
+               int((1 / self.equipment['Shield']().block) * 100)))
+        """
 
     def tired(self):
         print("%s feels tired." % self.name)
@@ -257,7 +268,7 @@ class Player(Character):
             print("%s explores a twisty passage." % self.name)
             if not random.randint(0, 2):
                 self.random_enemy()
-                print("%s encounters a %s!" % (self.name, self.enemy.name))
+                print("A %s attacks you!" % self.enemy.name)
                 self.state = 'fight'
             elif not random.randint(0, 2):
                 self.tired()
@@ -275,7 +286,7 @@ class Player(Character):
                 print("%s couldn't escape from the %s!" % (self.name, self.enemy.name))
                 self.enemy_attacks()
 
-    def attack(self):
+    def combat(self):
         if self.state != 'fight':
             print("You are not in combat.")
         else:
@@ -336,91 +347,34 @@ class Player(Character):
         self.attack += random.randint(0, self.level // 2)
         self.defense += random.randint(0, self.level // 3)
         self.level += 1
-        print("%s gained a level! %s is now level %s." % (self.name, self.name, self.level))
+        print("You gained a level! You are now level %s." % self.level)
 
     def chest(self):
         print("You stumble upon a chest and open it.")
         if not random.randint(0, 1):
             treasure = items.random_item()
-            typ = str(treasure().typ)
             print("You have found a %s." % treasure().name)
-            if 'Weapon' in typ:
-                if self.equipment['Weapon'] == items.Unarmed:
-                    self.equipment['Weapon'] = treasure
-                    print("You have equipped the %s." % treasure().name)
-                else:
-                    if typ not in self.inventory:
-                        self.inventory[treasure().name] = [treasure, 1]
-                    else:
-                        self.inventory[treasure().name][1] += 1
-            elif 'Armor' in typ:
-                if self.equipment['Armor'] == items.Naked:
-                    self.equipment['Armor'] = treasure
-                    print("You have equipped the %s." % treasure().name)
-                else:
-                    if typ not in self.inventory:
-                        self.inventory[treasure().name] = [treasure, 1]
-                    else:
-                        self.inventory[treasure().name][1] += 1
-            elif 'Shield' in typ:
-                if self.equipment['Shield'] == items.NoShield:
-                    self.equipment['Shield'] = treasure
-                    print("You have equipped the %s." % treasure().name)
-                else:
-                    if typ not in self.inventory:
-                        self.inventory[treasure().name] = [treasure, 1]
-                    else:
-                        self.inventory[treasure().name][1] += 1
-            elif typ not in self.inventory:
+            if treasure().name not in self.inventory:
                 self.inventory[treasure().name] = [treasure, 1]
             else:
                 self.inventory[treasure().name][1] += 1
         else:
-            print("You have found 100 gold!")
-            self.gold += 100
+            gld = random.randint(50, 100)
+            print("You have found %s gold!" % gld)
+            self.gold += gld
 
     def loot(self):
         for item in self.enemy.loot:
             if item == "Gold":
                 print("%s dropped %d gold." % (self.enemy.name, self.enemy.loot['Gold']))
                 self.gold += self.enemy.loot['Gold']
-            elif item == "Weapon":
-                if not random.randint(0, int(self.enemy.loot['Weapon']().rarity - 1)):
-                    print("%s dropped a %s." % (self.enemy.name, self.enemy.loot['Weapon']().name))
-                    if self.equipment['Weapon'] == items.Unarmed:
-                        self.equipment['Weapon'] = self.enemy.loot['Weapon']
-                        print("The %s was equipped." % self.equipment['Weapon']().name)
-                    elif self.enemy.loot['Weapon']().name not in self.inventory:
-                        self.inventory[self.enemy.loot['Weapon']().name] = [self.enemy.loot['Weapon'], 1]
+            else:
+                if not random.randint(0, int(self.enemy.loot[item]().rarity - 1)):
+                    print("%s dropped a %s." % (self.enemy.name, self.enemy.loot[item]().name))
+                    if self.enemy.loot[item]().name not in self.inventory:
+                        self.inventory[self.enemy.loot[item]().name] = [self.enemy.loot[item], 1]
                     else:
-                        self.inventory[self.enemy.loot['Weapon']().name][1] += 1
-            elif item == "Armor":
-                if not random.randint(0, int(self.enemy.loot['Armor']().rarity - 1)):
-                    print("%s dropped a %s." % (self.enemy.name, self.enemy.loot['Armor']().name))
-                    if self.equipment['Armor'] == items.Naked:
-                        self.equipment['Armor'] = self.enemy.loot['Armor']
-                        print("The %s was equipped." % self.equipment['Armor']().name)
-                    elif self.enemy.loot['Armor']().name not in self.inventory:
-                        self.inventory[self.enemy.loot['Armor']().name] = [self.enemy.loot['Armor'], 1]
-                    else:
-                        self.inventory[self.enemy.loot['Armor']().name][1] += 1
-            elif item == "Shield":
-                if not random.randint(0, int(self.enemy.loot['Shield']().rarity - 1)):
-                    print("%s dropped a %s." % (self.enemy.name, self.enemy.loot['Shield']().name))
-                    if self.equipment['Shield'] == items.Naked:
-                        self.equipment['Shield'] = self.enemy.loot['Shield']
-                        print("The %s was equipped." % self.equipment['Shield']().name)
-                    elif self.enemy.loot['Shield']().name not in self.inventory:
-                        self.inventory[self.enemy.loot['Shield']().name] = [self.enemy.loot['Shield'], 1]
-                    else:
-                        self.inventory[self.enemy.loot['Shield']().name][1] += 1
-            elif item == "Potion":
-                if not random.randint(0, int(self.enemy.loot['Potion']().rarity - 1)):
-                    print("%s dropped a %s." % (self.enemy.name, self.enemy.loot['Potion']().name))
-                    if self.enemy.loot['Potion']().name not in self.inventory:
-                        self.inventory[self.enemy.loot['Potion']().name] = [self.enemy.loot['Potion'], 1]
-                    else:
-                        self.inventory[self.enemy.loot['Potion']().name][1] += 1
+                        self.inventory[self.enemy.loot[item]().name][1] += 1
 
     def enemy_attacks(self):
         if self.enemy.do_damage(self):
@@ -465,7 +419,7 @@ class Player(Character):
         print("Which piece of equipment would you like to replace? ")
         option_list = [('Weapon', 0), ('Armor', 1), ('Shield', 2)]
         slot = storyline.get_response(option_list)
-        inv_list = []
+        inv_list = []  # add unequip option
         print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
         old = self.equipment[option_list[slot][0]]
         while True:
@@ -478,22 +432,31 @@ class Player(Character):
                 print("You do not have any %ss to equip." % option_list[slot][0].lower())
                 break
             else:
+                inv_list.append(("UNEQUIP", i))
                 print("Which %s would you like to equip? " % option_list[slot][0].lower())
                 replace = storyline.get_response(inv_list)
-                self.equipment[option_list[slot][0]] = self.inventory[inv_list[replace][0]][0]
-                self.inventory[inv_list[replace][0]][1] -= 1
-                if self.inventory[inv_list[replace][0]][1] == 0:
-                    del self.inventory[inv_list[replace][0]]
-                if old().name not in self.inventory:
-                    self.inventory[old().name] = [old, 1]
+                if inv_list[replace][0] == "UNEQUIP":
+                    self.equipment[option_list[slot][0]] = items.remove(option_list[slot][0])
+                    if old().name not in self.inventory:
+                        self.inventory[old().name] = [old, 1]
+                    else:
+                        self.inventory[old().name] += 1
+                    print("Your %s slot is now empty." % option_list[slot][0].lower())
                 else:
-                    self.inventory[old().name][1] += 1
-                print("You are now equipped with %s." % self.equipment[option_list[slot][0]]().name)
+                    self.equipment[option_list[slot][0]] = self.inventory[inv_list[replace][0]][0]
+                    self.inventory[inv_list[replace][0]][1] -= 1
+                    if self.inventory[inv_list[replace][0]][1] == 0:
+                        del self.inventory[inv_list[replace][0]]
+                    elif old().name not in self.inventory:
+                        self.inventory[old().name] = [old, 1]
+                    else:
+                        self.inventory[old().name][1] += 1
+                    print("You are now equipped with %s." % self.equipment[option_list[slot][0]]().name)
                 break
 
 
 # Define Parameters
 Commands = \
     {'quit': game_quit, 'help': game_help, 'status': Player.status, 'rest': Player.rest, 'explore': Player.explore,
-     'flee': Player.flee, 'attack': Player.attack, 'save': Player.save, 'inv': Player.print_inventory,
+     'flee': Player.flee, 'attack': Player.combat, 'save': Player.save, 'inventory': Player.print_inventory,
      'potion': Player.use_potion, 'equip': Player.equip}

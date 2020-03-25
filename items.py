@@ -28,6 +28,11 @@ def random_item():
     return treasure
 
 
+def remove(typ):
+    typ_dict = dict(Weapon=Unarmed, Armor=Naked, Shield=NoShield)
+    return typ_dict[typ]
+
+
 class Item:
     """
     value: price in gold; sale price will be half this amount
@@ -37,11 +42,10 @@ class Item:
     block: higher number means lower chance to block; if block is successful, damage mitigation will be decided randomly
     """
 
-    def __init__(self, name, description, value, rarity):
+    def __init__(self, name, description, value):
         self.name = name
         self.description = description
         self.value = value
-        self.rarity = rarity
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
@@ -49,12 +53,14 @@ class Item:
 
 class Weapon(Item):
 
-    def __init__(self, name, description, value, rarity, damage, crit, handed):
+    def __init__(self, name, description, value, rarity, damage, crit, handed, **unequip):
+        super().__init__(name, description, value)
+        self.rarity = rarity
         self.damage = damage
         self.crit = crit
         self.typ = "Weapon"
         self.handed = handed
-        super().__init__(name, description, value, rarity)
+        self.unequip = unequip
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}\n{}-handed".format(self.name,
@@ -67,7 +73,7 @@ class Unarmed(Weapon):
 
     def __init__(self):
         super().__init__(name="BARE HANDS", description="Nothing but your fists.", value=0, rarity=0, damage=0, crit=10,
-                         handed=1)
+                         handed=1, unequip=True)
 
 
 class BronzeSword(Weapon):
@@ -128,10 +134,12 @@ class Jarnbjorn(Weapon):
 
 class Armor(Item):
 
-    def __init__(self, name, description, value, rarity, armor):
+    def __init__(self, name, description, value, rarity, armor, **unequip):
+        super().__init__(name, description, value)
+        self.rarity = rarity
         self.armor = armor
         self.typ = 'Armor'
-        super().__init__(name, description, value, rarity)
+        self.unequip = unequip
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nArmor: {}".format(self.name, self.description, self.value, self.armor)
@@ -140,7 +148,7 @@ class Armor(Item):
 class Naked(Armor):
 
     def __init__(self):
-        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=0, armor=0)
+        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=0, armor=0, unequip=True)
 
 
 class Tunic(Armor):
@@ -192,10 +200,12 @@ class FullPlate(Armor):
 
 class Shield(Item):
 
-    def __init__(self, name, description, value, rarity, block):
+    def __init__(self, name, description, value, rarity, block, **unequip):
+        super().__init__(name, description, value)
+        self.rarity = rarity
         self.block = block
         self.typ = 'Shield'
-        super().__init__(name, description, value, rarity)
+        self.unequip = unequip
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nBlock: {}".format(self.name, self.description, self.value, self.block)
@@ -204,7 +214,7 @@ class Shield(Item):
 class NoShield(Shield):
 
     def __init__(self):
-        super().__init__(name="NO SHIELD", description="No shield equipped.", value=0, rarity=0, block=25)
+        super().__init__(name="NO SHIELD", description="No shield equipped.", value=0, rarity=0, block=25, unequip=True)
 
 
 class Buckler(Shield):
@@ -247,7 +257,8 @@ class TowerShield(Shield):
 class Potion(Item):
 
     def __init__(self, name, description, value, rarity, percent):
-        super().__init__(name, description, value, rarity)
+        super().__init__(name, description, value)
+        self.rarity = rarity
         self.percent = percent
 
 

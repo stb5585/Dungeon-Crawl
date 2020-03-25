@@ -7,6 +7,7 @@ import glob
 
 import character
 import storyline
+import movement
 
 try:
     if sys.argv[1] == 'story':
@@ -31,25 +32,31 @@ if __name__ == "__main__":
     else:
         player = character.new_char()
 
-    Commands = character.Commands
-    player.status()
+    Commands = movement.Commands
+    # player.status()
     if 'y' not in load:
-        storyline.read_story('chapters/chapter1.ch')
+        # storyline.read_story('chapters/chapter1.ch')
         print("(type help to get a list of actions)\n")
         print("%s enters a dark cave, searching for adventure." % player.name)
 
     while True:
-        line = input("> ")
-        args = line.split()
-        if len(args) > 0:
-            commandFound = False
-            for c in Commands.keys():
-                if args[0] == c[:len(args[0])]:
-                    try:
-                        Commands[c]()
-                    except TypeError:
-                        Commands[c](player)
-                    commandFound = True
-                    break
-            if not commandFound:
-                print("%s doesn't understand the suggestion." % player.name)
+        print("What would you like to do?")
+        # line = input("> ")
+        # args = line.split()
+        # if len(args) > 0:
+        # commandFound = False
+        command_list = list(Commands[player.state].values())
+        choice = storyline.get_response(command_list)
+        # for c in Commands[player.state].keys():
+        #     if args[0] == c[:len(args[0])]:
+        try:
+            choice()
+        except TypeError:
+            try:
+                choice(player)
+            except KeyError:
+                choice(player.state)
+            # commandFound = True
+            # break
+            # if not commandFound:
+            #     print("%s doesn't understand the suggestion." % player.name)

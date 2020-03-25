@@ -31,7 +31,7 @@ def get_input(valid_input: list):
             print("Invalid input. Please use one \
                    of the following inputs:\n")
             print(valid_input)
-            user_entered = None
+            # user_entered = None
 
         else:
             return user_entered
@@ -40,6 +40,7 @@ def get_input(valid_input: list):
 def get_response(options: list):
     for index, option in enumerate(options): 
         print(str(index)+". "+option[0])
+        time.sleep(0.25)
 
     valid_inputs = [str(num) for num in range(len(options))]
     option_index = int(get_input(valid_inputs))
@@ -52,13 +53,13 @@ def story_flow(story_dict: dict):
     while curr_page is not None:
         page = story_dict.get(curr_page, None)
         if page is None:
-            curr_page = None
+            # curr_page = None
             break
 
         display_page_text(page['Text'])
         
         if len(page['Options']) == 0:
-            curr_page = None
+            # curr_page = None
             break
 
         curr_page = get_response(page['Options'])
@@ -79,7 +80,7 @@ def pickle_story(story_dict: dict):
 
 
 def read_story(story_file):
-    story_dict = {}
+    # story_dict = {}
 
     with open(story_file, 'rb') as file:
         story_dict = pickle.load(file)
