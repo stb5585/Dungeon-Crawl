@@ -2,61 +2,53 @@
 """ Basic RPG """
 
 # Imports
-import sys
 import glob
 
+import world
 import character
-import storyline
-import movement
+import town
 
-try:
-    if sys.argv[1] == 'story':
-        while True:
-            chapter = input("Which chapter do you wish to update? ")
-            try:
-                storyline.pickle_story(storyline.story)
-                break
-            except KeyError:
-                print("Input was invalid. Please enter a valid chapter number.")
-except IndexError:
-    pass
 
-if __name__ == "__main__":
-
-    load = input("Do you wish to load a character? ").lower()
-    if 'y' in load and len(glob.glob('save_files/*')) != 0:
-        player = character.load_char()
-    elif 'y' in load and len(glob.glob('save_files/*')) == 0:
-        print("There are no save files to load. You will have to create a new character.")
-        player = character.new_char()
+def play():
+    new_char = True
+    world.load_tiles()
+    if len(glob.glob('save_files/*')) != 0:
+        load = input("Do you wish to load a character? ").lower()
+        if 'y' in load:
+            player = character.load_char()
+            new_char = False
+        else:
+            player = character.new_char()
     else:
         player = character.new_char()
+    if new_char:
+        town.town(player)
+    while player.is_alive():
+        if player.location_z != 0:
+            room = world.tile_exists(player.location_x, player.location_y, player.location_z)
+            room.modify_player(player)
+        # Check again since the room could have changed the player's state
+        if player.is_alive():
+            if player.location_z == 0:
+                print("You feel rested!")
+                player.health = player.health_max
+                player.mana = player.mana_max
+                town.town(player)
+            else:
+                room = world.tile_exists(player.location_x, player.location_y, player.location_z)
+                room.modify_player(player)
+                if room.intro_text() is not None:
+                    print(room.intro_text())
+                print("Choose an action:\n")
+                available_actions = room.available_actions()
+                for action in available_actions:
+                    print(action)
+                action_input = input('Action: ')
+                for action in available_actions:
+                    if action_input == action.hotkey:
+                        player.do_action(action, **action.kwargs)
+                        break
 
-    Commands = movement.Commands
-    # player.status()
-    if 'y' not in load:
-        # storyline.read_story('chapters/chapter1.ch')
-        print("(type help to get a list of actions)\n")
-        print("%s enters a dark cave, searching for adventure." % player.name)
 
-    while True:
-        print("What would you like to do?")
-        # line = input("> ")
-        # args = line.split()
-        # if len(args) > 0:
-        # commandFound = False
-        command_list = list(Commands[player.state].values())
-        choice = storyline.get_response(command_list)
-        # for c in Commands[player.state].keys():
-        #     if args[0] == c[:len(args[0])]:
-        try:
-            choice()
-        except TypeError:
-            try:
-                choice(player)
-            except KeyError:
-                choice(player.state)
-            # commandFound = True
-            # break
-            # if not commandFound:
-            #     print("%s doesn't understand the suggestion." % player.name)
+if __name__ == "__main__":
+    play()

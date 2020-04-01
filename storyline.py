@@ -6,7 +6,6 @@ import pickle
 import os
 import sys
 import time
-import random
 
 
 def slow_type(line):
@@ -37,7 +36,7 @@ def get_input(valid_input: list):
             return user_entered
 
 
-def get_response(options: list):
+def get_response(options: list, **kwargs):
     for index, option in enumerate(options): 
         print(str(index)+". "+option[0])
         time.sleep(0.25)
