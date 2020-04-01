@@ -13,7 +13,7 @@ import town
 def play():
     new_char = True
     world.load_tiles()
-    if os.path.exists('save_files'):
+    if not os.path.exists('save_files'):
         os.mkdir('save_files')
     if len(glob.glob('save_files/*')) != 0:
         load = input("Do you wish to load a character? ").lower()
