@@ -1,2 +1,5 @@
 # Ignore __pycache__
 __pycache__
+
+# Ignore save_files directory and subfiles
+save_files/
