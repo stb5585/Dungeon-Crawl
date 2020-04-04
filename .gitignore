@@ -2,11 +2,11 @@
 __pycache__
 
 # Ignore .idea files
-.idea/
+.idea/*
 
 # Ignore directories and subfiles
-save_files/
-resources/
+save_files/*
+resources/*
 
 # Ignore development files
 display.py
