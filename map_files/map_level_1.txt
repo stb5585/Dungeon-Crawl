@@ -1,6 +1,6 @@
 			StairsDown		EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	
 LootRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	LootRoom
-	EmptyCavePath		EmptyCavePath		EmptyCavePath			EmptyCavePath	
+	EmptyCavePath		MinotaurRoom		EmptyCavePath			EmptyCavePath	
 	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	RandomEnemyRoom	
 	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		LootRoom
 	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom

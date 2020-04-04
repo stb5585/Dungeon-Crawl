@@ -3,11 +3,12 @@
 
 # Imports
 import os
-import glob
 
 import world
 import character
 import town
+import storyline
+import tutorial
 
 
 def play():
@@ -15,15 +16,15 @@ def play():
     world.load_tiles()
     if not os.path.exists('save_files'):
         os.mkdir('save_files')
-    if len(glob.glob('save_files/*')) != 0:
-        load = input("Do you wish to load a character? ").lower()
-        if 'y' in load:
-            player = character.load_char()
-            new_char = False
-        else:
-            player = character.new_char()
-    else:
+    play_options = [('New Game', 0), ('Load Game', 1), ('Tutorial', 2)]
+    play_index = storyline.get_response(play_options)
+    if play_options[play_index][1] == 0:
         player = character.new_char()
+    elif play_options[play_index][1] == 1:
+        player = character.load_char()
+        new_char = False
+    else:
+        player = tutorial.tutorial()
     if new_char:
         town.town(player)
     while player.is_alive():

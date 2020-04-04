@@ -55,7 +55,12 @@ class ViewInventory(Action):
 
 class Attack(Action):
     def __init__(self, enemy):
-        super().__init__(method=character.Player.do_damage, name="Attack", hotkey='a', enemy=enemy)
+        super().__init__(method=character.Player.weapon_damage, name="Attack", hotkey='a', enemy=enemy)
+
+
+class Special(Action):
+    def __init__(self):
+        super().__init__(method=character.Player.special, name="Special", hotkey='x')
 
 
 class Flee(Action):
@@ -78,9 +83,9 @@ class Equip(Action):
         super().__init__(method=character.Player.equip, name="Equip", hotkey='e')
 
 
-class Potion(Action):
+class UseItem(Action):
     def __init__(self):
-        super().__init__(method=character.Player.use_potion, name="Potion", hotkey='p')
+        super().__init__(method=character.Player.use_item, name="Item", hotkey='p')
 
 
 class OpenChest(Action):
@@ -88,9 +93,9 @@ class OpenChest(Action):
         super().__init__(method=character.Player.chest, name="Open", hotkey='o', enemy=enemy)
 
 
-class Spellbook(Action):
+class ListSpecials(Action):
     def __init__(self):
-        super().__init__(method=character.Player.spellbook, name="Spellbook", hotkey='b')
+        super().__init__(method=character.Player.specials, name="Specials", hotkey='b')
 
 
 class Save(Action):

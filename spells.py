@@ -2,12 +2,11 @@
 """ spell manager """
 
 
-class Spell:
+class Ability:
     """
     cost: amount of mana required to cast spell
     crit: chance to double damage; higher number means lower chance to crit
     level attained: the level when you attain the spell
-    class(es): the class(es) that can cast the spells
     """
 
     def __init__(self, name, description, level, cost):
@@ -20,13 +19,44 @@ class Spell:
         return "{}\n=====\n{}\nLevel: {}\nMana cost: {}\n".format(self.name, self.description, self.level, self.cost)
 
 
+class Spell(Ability):
+
+    def __init__(self, name, description, level, cost):
+        super().__init__(name, description, level, cost)
+        self.typ = 'Spell'
+
+
+class Skill(Ability):
+
+    def __init__(self, name, description, level, cost):
+        super().__init__(name, description, level, cost)
+        self.typ = 'Skill'
+
+
+# Warrior skills
+class Offensive(Skill):
+
+    def __init__(self, name, description, level, cost, damage, crit):
+        super().__init__(name, description, level, cost)
+        self.damage = damage
+        self.crit = crit
+
+
+class DoubleStrike(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Double Strike', description='Perform a double attack with the primary weapon.',
+                         level=5, cost=6, damage=1, crit=1)
+
+
+# Mage spells
 class FireSpell(Spell):
 
     def __init__(self, name, description, level, cost, damage, crit):
         super().__init__(name, description, level, cost)
         self.damage = damage
         self.crit = crit
-        self.typ = 'Fire'
+        self.subtyp = 'Fire'
 
 
 class IceSpell(Spell):
@@ -35,7 +65,7 @@ class IceSpell(Spell):
         super().__init__(name, description, level, cost)
         self.damage = damage
         self.crit = crit
-        self.typ = 'Ice'
+        self.subtyp = 'Ice'
 
 
 class ElecSpell(Spell):
@@ -44,7 +74,7 @@ class ElecSpell(Spell):
         super().__init__(name, description, level, cost)
         self.damage = damage
         self.crit = crit
-        self.typ = 'Electrical'
+        self.subtyp = 'Electrical'
 
 
 class Firebolt(FireSpell):
@@ -89,6 +119,30 @@ class Lightning(ElecSpell):
                          damage=35, crit=5)
 
 
+# Footpad skills
+class Stealth(Skill):
+
+    def __init__(self, name, description, level, cost, damage, crit):
+        super().__init__(name, description, level, cost)
+        self.damage = damage
+        self.crit = crit
+
+
+class Backstab(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Backstab', description='Strike the opponent in the back, guaranteeing a hit and ignoring'
+                                                      ' any resistance or armor.',
+                         level=5, cost=6, damage=1, crit=1)
+
+
 # Parameters
-spell_dict = {str(Firebolt().level): Firebolt, str(Fireball().level): Fireball, str(IceLance().level): IceLance,
-              str(Icicle().level): Icicle, str(Shock().level): Shock, str(Lightning().level): Lightning}
+spell_dict = {'WARRIOR': {str(DoubleStrike().level): DoubleStrike},
+              'MAGE': {str(Firebolt().level): Firebolt,
+                       str(Fireball().level): Fireball,
+                       str(IceLance().level): IceLance,
+                       str(Icicle().level): Icicle,
+                       str(Shock().level): Shock,
+                       str(Lightning().level): Lightning},
+              'FOOTPAD': {str(Backstab().level): Backstab}
+              }

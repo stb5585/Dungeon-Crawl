@@ -54,7 +54,7 @@ class EnemyRoom(MapTile):
 
     def available_actions(self):
         if self.enemy.is_alive():
-            return [actions.Attack(enemy=self.enemy), actions.Potion()]
+            return [actions.Attack(enemy=self.enemy), actions.Special(), actions.UseItem()]
         else:
             return self.adjacent_moves([actions.Status()])
 
@@ -78,8 +78,89 @@ class RandomEnemyRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
+        else:
+            return """
+            A dead {} lies on the ground.
             """.format(self.enemy.name)
+
+
+class MinotaurRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Minotaur())
+
+    def intro_text(self):
+        if self.enemy.is_alive():
+            return """
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
+        else:
+            return """
+            A dead {} lies on the ground.
+            """.format(self.enemy.name)
+
+
+class PseudodragonRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Pseudodragon())
+
+    def intro_text(self):
+        if self.enemy.is_alive():
+            return """
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
+        else:
+            return """
+            A dead {} lies on the ground.
+            """.format(self.enemy.name)
+
+
+class CockatriceRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Cockatrice())
+
+    def intro_text(self):
+        if self.enemy.is_alive():
+            return """
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
+        else:
+            return """
+            A dead {} lies on the ground.
+            """.format(self.enemy.name)
+
+
+class GolemRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Golem())
+
+    def intro_text(self):
+        if self.enemy.is_alive():
+            return """
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
+        else:
+            return """
+            A dead {} lies on the ground.
+            """.format(self.enemy.name)
+
+
+class RedDragonRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.RedDragon())
+
+    def intro_text(self):
+        if self.enemy.is_alive():
+            return """
+            An enemy {} attacks you!\n
+            {}
+            """.format(self.enemy.name, self.enemy.health)
         else:
             return """
             A dead {} lies on the ground.

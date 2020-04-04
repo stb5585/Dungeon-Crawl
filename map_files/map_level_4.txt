@@ -1,5 +1,5 @@
-		LootRoom	StairsUp		EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	
-RandomEnemyRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	LootRoom
+StairsDown					EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	StairsUp
+EmptyCavePath	GolemRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
 	LootRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	RandomEnemyRoom	
 	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		LootRoom
@@ -9,7 +9,7 @@ LootRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath
 	EmptyCavePath			RandomEnemyRoom				RandomEnemyRoom	
 LootRoom	RandomEnemyRoom			LootRoom				EmptyCavePath	
 	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		LootRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
-			RandomEnemyRoom		EmptyCavePath			RandomEnemyRoom	
-StairsDown			EmptyCavePath		EmptyCavePath			EmptyCavePath	
-LootRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	PseudodragonRoom	RandomEnemyRoom	LootRoom
-			LootRoom			StairsDown			
+			RandomEnemyRoom		EmptyCavePath				
+			EmptyCavePath		EmptyCavePath			LootRoom	
+LootRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	LootRoom
+			LootRoom					LootRoom	

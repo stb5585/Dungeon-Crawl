@@ -1,5 +1,13 @@
 # Ignore __pycache__
 __pycache__
 
-# Ignore save_files directory and subfiles
+# Ignore .idea files
+.idea/
+
+# Ignore directories and subfiles
 save_files/
+resources/
+
+# Ignore development files
+display.py
+tutorial.py
