@@ -195,6 +195,9 @@ class Character:
         """
         dmg = max(1, (self.strength + self.equipment['Weapon']().damage) - enemy.dex // 2)
         damage = random.randint(dmg // 2, dmg)
+        if self.equipment['OffHand']().typ == 'Weapon':
+            off_dmg = self.equipment['OffHand']().damage
+            damage += random.randint(off_dmg // 4, off_dmg // 2)
         crit = 1
         if not random.randint(0, int(self.equipment['Weapon']().crit) - 1):
             crit = 2
@@ -305,7 +308,11 @@ class Player(Character):
         print("Constitution: %d" % self.con)
         print("Charisma: %d" % self.charisma)
         print("Dexterity: %d" % self.dex)
-        print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
+        if self.equipment['OffHand']().typ == 'Weapon':
+            print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage) +
+                                     int(self.equipment['OffHand']().damage) // 2))
+        else:
+            print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
         print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit) * 100)))
         print("Armor: %d" % (self.dex // 2 + self.equipment['Armor']().armor))
         if self.equipment['OffHand']().subtyp == 'Shield':
@@ -318,7 +325,6 @@ class Player(Character):
                    actions.ListSpecials(),
                    actions.UseItem(),
                    actions.Minimap(world_dict),
-                   actions.Save(),
                    actions.Quit()]
         for action in options:
             print(action)
@@ -535,25 +541,29 @@ class Player(Character):
     def equip(self):
         equip = True
         print("Which piece of equipment would you like to replace? ")
-        option_list = [('Weapon', 0), ('Armor', 1)]
-        if self.equipment['Weapon']().handed == 1:
-            option_list.append(('OffHand', 2))
-            option_list.append(('None', 3))
-        else:
-            option_list.append(('None', 2))
+        option_list = [('Weapon', 0), ('Armor', 1), ('OffHand', 2), ('None', 3)]
         slot = storyline.get_response(option_list)
         if option_list[slot][0] == 'None':
             equip = False
         inv_list = []
         while equip:
-            print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
-            old = self.equipment[option_list[slot][0]]
-            i = 0
-            for item in self.inventory:
-                if str(self.inventory[item][0]().typ) == option_list[slot][0]:
-                    inv_list.append((item, i))
-                    i += 1
-            else:
+            cont = 'y'
+            if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                print("You are currently equipped with a 2-handed weapon. Equipping an off-hand will remove the "
+                      "2-hander.")
+                cont = input("Do you wish to continue? ").lower()
+                if cont != 'y':
+                    break
+            if cont == 'y':
+                print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
+                old = self.equipment[option_list[slot][0]]
+                i = 0
+                for item in self.inventory:
+                    if (str(self.inventory[item][0]().typ) == option_list[slot][0] or
+                            (option_list[slot][0] == 'OffHand' and str(self.inventory[item][0]().typ) == 'Weapon')):
+                        if classes.equip_check(self.inventory[item], self.cls):
+                            inv_list.append((item, i))
+                            i += 1
                 inv_list.append(('UNEQUIP', i))
                 inv_list.append(('KEEP CURRENT', i + 1))
                 print("Which %s would you like to equip? " % option_list[slot][0].lower())
@@ -574,6 +584,9 @@ class Player(Character):
                                 if self.equipment['OffHand'] != items.NoOffHand:
                                     self.modify_inventory(self.equipment['OffHand'], 1)
                                     self.equipment['OffHand'] = items.remove('OffHand')
+                        elif self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                            old = self.equipment['Weapon']
+                            self.equipment['Weapon'] = items.NoWeapon
                         self.inventory[inv_list[replace][0]][1] -= 1
                         if self.inventory[inv_list[replace][0]][1] <= 0:
                             del self.inventory[inv_list[replace][0]]

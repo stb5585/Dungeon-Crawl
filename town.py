@@ -35,8 +35,11 @@ def church(player):
         church_index = storyline.get_response(church_options)
         if church_options[church_index][1] == 0:
             print("You do not have a promotion available.")
+            if player.level // 20 > 0:
+                print("You have qualified for a promotion. Which path would you like to follow?")
+                print("Promotions are not yet implemented.")  # TODO
         elif church_options[church_index][1] == 1:
-            player.save()
+            player.save()  # Can only save at church in town
         elif church_options[church_index][1] == 2:
             player.game_quit()
         elif church_options[church_index][1] == 3:

@@ -3,6 +3,7 @@
 
 # Imports
 import os
+import glob
 
 import world
 import character
@@ -21,8 +22,12 @@ def play():
     if play_options[play_index][1] == 0:
         player = character.new_char()
     elif play_options[play_index][1] == 1:
-        player = character.load_char()
-        new_char = False
+        if len(glob.glob('save_files/*')) > 0:
+            player = character.load_char()
+            new_char = False
+        else:
+            print("There are no save files to load. Proceeding to new character creation.")
+            player = character.new_char()
     else:
         player = tutorial.tutorial()
     if new_char:

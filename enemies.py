@@ -82,7 +82,7 @@ class Chest(Enemy):
 class Slime(Enemy):
 
     def __init__(self):
-        super().__init__(name='Slime', health=random.randint(1, 2), mana=0, strength=5, intel=0, wisdom=0, con=4,
+        super().__init__(name='Slime', health=random.randint(1, 6), mana=0, strength=5, intel=0, wisdom=0, con=4,
                          charisma=0, dex=1, exp=random.randint(1, 2))
         self.loot = dict(Gold=random.randint(1, 3))
 

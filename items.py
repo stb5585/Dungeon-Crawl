@@ -25,15 +25,22 @@ def random_item(z):
                                     [reciprocal(BattleAxe().rarity), reciprocal(GreatAxe().rarity),
                                      reciprocal(AdamantiteAxe().rarity), reciprocal(Jarnbjorn().rarity)],
                                     ['1', '3', '4', '5']],
-                            'Polearm': [[Spear, Lance, Halberd, Gungnir],
+                            'Polearm': [[Spear, Lance, Pike, Halberd, Gungnir],
                                         [reciprocal(Spear().rarity), reciprocal(Lance().rarity),
-                                         reciprocal(Halberd().rarity), reciprocal(Gungnir().rarity)],
+                                         reciprocal(Pike().rarity), reciprocal(Halberd().rarity),
+                                         reciprocal(Gungnir().rarity)],
                                         ['1', '2', '4', '5']],
                             'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, PrincessGuard],
                                       [reciprocal(PineStaff().rarity), reciprocal(OakStaff().rarity),
                                        reciprocal(IronshodStaff().rarity), reciprocal(SerpentStaff().rarity),
                                        reciprocal(PrincessGuard().rarity)],
-                                      ['1', '2', '3', '4', '5']]},
+                                      ['1', '2', '3', '4', '5']],
+                            'Hammer': [[Hammer, OakHammer, IronHammer, EarthHammer, Mjolnir],
+                                       [reciprocal(Hammer().rarity), reciprocal(OakHammer().rarity),
+                                        reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
+                                        reciprocal(Mjolnir().rarity)],
+                                       ['1', '2', '3', '4', '5']]
+                            },
                  'OffHand': {'Shield': [[Buckler, WoodShield, BronzeShield, IronShield, TowerShield, MedusaShield],
                                         [reciprocal(Buckler().rarity), reciprocal(WoodShield().rarity),
                                          reciprocal(BronzeShield().rarity), reciprocal(IronShield().rarity),
@@ -43,11 +50,13 @@ def random_item(z):
                                           [reciprocal(Book().rarity), reciprocal(TomeKnowledge().rarity),
                                            reciprocal(Necronomicon().rarity), reciprocal(Magus().rarity)],
                                           ['1', '3', '4', '5']]},
-                 'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, WizardRobe, CloakEnchantment, MerlinRobe],
+                 'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe,
+                                      MerlinRobe],
                                      [reciprocal(Tunic().rarity), reciprocal(ClothCloak().rarity),
-                                      reciprocal(SilverCloak().rarity), reciprocal(WizardRobe().rarity),
-                                      reciprocal(CloakEnchantment().rarity), reciprocal(MerlinRobe().rarity)],
-                                     ['1', '2', '3', '4', '5']],
+                                      reciprocal(SilverCloak().rarity), reciprocal(GoldCloak().rarity),
+                                      reciprocal(CloakEnchantment().rarity), reciprocal(WizardRobe().rarity),
+                                      reciprocal(MerlinRobe().rarity)],
+                                     ['1', '1', '2', '3', '4', '4', '5']],
                            'Light': [[PaddedArmor, LeatherArmor, Cuirboulli, Studded, DragonHide],
                                      [reciprocal(PaddedArmor().rarity), reciprocal(LeatherArmor().rarity),
                                       reciprocal(Cuirboulli().rarity), reciprocal(Studded().rarity),
@@ -119,7 +128,7 @@ class Item:
 
 class Weapon(Item):
 
-    def __init__(self, name, description, value, rarity, damage, crit, handed, subtyp, unequip, **kwargs):
+    def __init__(self, name, description, value, rarity, damage, crit, handed, subtyp, unequip, off):
         super().__init__(name, description, value)
         self.rarity = rarity
         self.damage = damage
@@ -127,6 +136,7 @@ class Weapon(Item):
         self.handed = handed
         self.subtyp = subtyp
         self.unequip = unequip
+        self.off = off
         self.typ = "Weapon"
 
     def __str__(self):
@@ -140,7 +150,7 @@ class NoWeapon(Weapon):
 
     def __init__(self):
         super().__init__(name="BARE HANDS", description="Nothing but your fists.",
-                         value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True)
+                         value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True, off=True)
 
 
 class BronzeDagger(Weapon):
@@ -149,7 +159,7 @@ class BronzeDagger(Weapon):
         super().__init__(name="BRONZE DAGGER", description="A bronze knife with a very sharp point and usually two "
                                                            "sharp edges, typically designed or capable of being used as"
                                                            " a thrusting or stabbing weapon.",
-                         value=125, rarity=3, damage=1, crit=4, handed=1, subtyp='Dagger', unequip=False)
+                         value=125, rarity=3, damage=1, crit=4, handed=1, subtyp='Dagger', unequip=False, off=True)
 
 
 class IronDagger(Weapon):
@@ -158,7 +168,7 @@ class IronDagger(Weapon):
         super().__init__(name="IRON DAGGER", description="An iron knife with a very sharp point and usually two "
                                                          "sharp edges, typically designed or capable of being used as"
                                                          " a thrusting or stabbing weapon.",
-                         value=800, rarity=7, damage=3, crit=3, handed=1, subtyp='Dagger', unequip=False)
+                         value=800, rarity=7, damage=3, crit=3, handed=1, subtyp='Dagger', unequip=False, off=True)
 
 
 class SteelDagger(Weapon):
@@ -167,7 +177,7 @@ class SteelDagger(Weapon):
         super().__init__(name="STEEL DAGGER", description="A steel knife with a very sharp point and usually two "
                                                           "sharp edges, typically designed or capable of being used as"
                                                           " a thrusting or stabbing weapon.",
-                         value=2000, rarity=15, damage=5, crit=2, handed=1, subtyp='Dagger', unequip=False)
+                         value=2000, rarity=15, damage=5, crit=2, handed=1, subtyp='Dagger', unequip=False, off=True)
 
 
 class AdamantiteDagger(Weapon):
@@ -176,7 +186,7 @@ class AdamantiteDagger(Weapon):
         super().__init__(name="ADAMANTITE DAGGER", description="An adamantite knife with a very sharp point and usually"
                                                                " two sharp edges, typically designed or capable of "
                                                                "being used as a thrusting or stabbing weapon.",
-                         value=3500, rarity=25, damage=8, crit=2, handed=1, subtyp='Dagger', unequip=False)
+                         value=3500, rarity=25, damage=8, crit=2, handed=1, subtyp='Dagger', unequip=False, off=True)
 
 
 class Carnwennan(Weapon):
@@ -184,7 +194,7 @@ class Carnwennan(Weapon):
     def __init__(self):
         super().__init__(name="Carnwennan", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
-                         value=10000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False)
+                         value=10000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False, off=True)
 
 
 class BronzeSword(Weapon):
@@ -193,7 +203,7 @@ class BronzeSword(Weapon):
         super().__init__(name="BRONZE SWORD", description="A weapon with a long bronze blade and a hilt with a hand "
                                                           "guard, used for thrusting or striking and now typically "
                                                           "worn as part of ceremonial dress.",
-                         value=125, rarity=3, damage=2, crit=8, handed=1, subtyp='Sword', unequip=False)
+                         value=125, rarity=3, damage=2, crit=8, handed=1, subtyp='Sword', unequip=False, off=True)
 
 
 class IronSword(Weapon):
@@ -202,7 +212,7 @@ class IronSword(Weapon):
         super().__init__(name="IRON SWORD", description="A weapon with a long iron blade and a hilt with a hand "
                                                         "guard, used for thrusting or striking and now typically worn "
                                                         "as part of ceremonial dress.",
-                         value=1000, rarity=8, damage=5, crit=5, handed=1, subtyp='Sword', unequip=False)
+                         value=1000, rarity=8, damage=5, crit=5, handed=1, subtyp='Sword', unequip=False, off=True)
 
 
 class SteelSword(Weapon):
@@ -211,7 +221,7 @@ class SteelSword(Weapon):
         super().__init__(name="STEEL SWORD", description="A weapon with a long steel blade and a hilt with a hand "
                                                          "guard, used for thrusting or striking and now typically worn "
                                                          "as part of ceremonial dress.",
-                         value=2000, rarity=15, damage=7, crit=4, handed=1, subtyp='Sword', unequip=False)
+                         value=2000, rarity=15, damage=7, crit=4, handed=1, subtyp='Sword', unequip=False, off=True)
 
 
 class AdamantiteSword(Weapon):
@@ -220,7 +230,7 @@ class AdamantiteSword(Weapon):
         super().__init__(name="ADAMANTITE SWORD", description="A weapon with a long adamantite blade and a hilt with "
                                                               "a hand guard, used for thrusting or striking and now "
                                                               "typically worn as part of ceremonial dress.",
-                         value=4000, rarity=25, damage=10, crit=3, handed=1, subtyp='Sword', unequip=False)
+                         value=4000, rarity=25, damage=10, crit=3, handed=1, subtyp='Sword', unequip=False, off=True)
 
 
 class Excalibur(Weapon):
@@ -228,21 +238,21 @@ class Excalibur(Weapon):
     def __init__(self):
         super().__init__(name="EXCALIBUR", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
-                         value=15000, rarity=50, damage=15, crit=2, handed=1, subtyp='Sword', unequip=False)
+                         value=15000, rarity=50, damage=15, crit=2, handed=1, subtyp='Sword', unequip=False, off=True)
 
 
 class BattleAxe(Weapon):
 
     def __init__(self):
         super().__init__(name="BATTLE AXE", description="An axe specifically designed for combat.",
-                         value=500, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False)
+                         value=500, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class GreatAxe(Weapon):
 
     def __init__(self):
         super().__init__(name="GREAT AXE", description="A double-bladed, two-handed melee weapon.",
-                         value=1500, rarity=12, damage=10, crit=5, handed=2, subtyp='Axe', unequip=False)
+                         value=1500, rarity=12, damage=10, crit=5, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class AdamantiteAxe(Weapon):
@@ -250,14 +260,14 @@ class AdamantiteAxe(Weapon):
     def __init__(self):
         super().__init__(name="ADAMANTITE AXE", description="A double-bladed, two-handed melee weapon made from "
                                                             "adamantite.",
-                         value=4000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False)
+                         value=4000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class Jarnbjorn(Weapon):
 
     def __init__(self):
         super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=12000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False)
+                         value=12000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class Spear(Weapon):
@@ -265,28 +275,35 @@ class Spear(Weapon):
     def __init__(self):
         super().__init__(name="SPEAR", description="A pole weapon consisting of a shaft, usually of wood, with a "
                                                    "pointed head.",
-                         value=600, rarity=6, damage=4, crit=8, handed=1, subtyp='Polearm', unequip=False)
+                         value=600, rarity=6, damage=5, crit=6, handed=2, subtyp='Polearm', unequip=False, off=False)
 
 
 class Lance(Weapon):
 
     def __init__(self):
         super().__init__(name="LANCE", description="A pole weapon designed for thrusting.",
-                         value=1500, rarity=12, damage=8, crit=5, handed=1, subtyp='Polearm', unequip=False)
+                         value=1500, rarity=12, damage=9, crit=5, handed=2, subtyp='Polearm', unequip=False, off=False)
+
+
+class Pike(Weapon):
+
+    def __init__(self):
+        super().__init__(name="PIKE", description="A pole weapon designed for thrusting.",
+                         value=3500, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False, off=False)
 
 
 class Halberd(Weapon):
 
     def __init__(self):
         super().__init__(name="HALBERD", description="A combined spear and battle axe.",
-                         value=4500, rarity=30, damage=12, crit=4, handed=1, subtyp='Polearm', unequip=False)
+                         value=4500, rarity=30, damage=13, crit=4, handed=2, subtyp='Polearm', unequip=False, off=False)
 
 
 class Gungnir(Weapon):
 
     def __init__(self):
         super().__init__(name="GUNGNIR", description="Legendary spear of the god Odin. Old Norse for \"swaying one\".",
-                         value=12000, rarity=50, damage=15, crit=3, handed=1, subtyp='Polearm', unequip=False)
+                         value=12000, rarity=50, damage=15, crit=3, handed=2, subtyp='Polearm', unequip=False, off=False)
 
 
 class PineStaff(Weapon):
@@ -294,7 +311,7 @@ class PineStaff(Weapon):
     def __init__(self):
         super().__init__(name="PINE STAFF", description="A pine walking stick wielded in 2 hands and used to strike the"
                                                         "opponent, typically used by magic users.",
-                         value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False)
+                         value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False, off=False)
 
 
 class OakStaff(Weapon):
@@ -302,63 +319,63 @@ class OakStaff(Weapon):
     def __init__(self):
         super().__init__(name="OAK STAFF", description="An oak walking stick wielded in 2 hands and used to strike the"
                                                        "opponent, typically used by magic users.",
-                         value=400, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False)
+                         value=400, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False, off=False)
 
 
 class IronshodStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="IRONSHOD STAFF", description="An iron walking stick, making it ideal for striking.",
-                         value=1000, rarity=8, damage=6, crit=8, handed=2, subtyp='Staff', unequip=False)
+                         value=1000, rarity=8, damage=6, crit=8, handed=2, subtyp='Staff', unequip=False, off=False)
 
 
 class SerpentStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="SERPENT STAFF", description="A magic staff, shaped to appear as a snake.",
-                         value=2000, rarity=15, damage=12, crit=6, handed=2, subtyp='Staff', unequip=False)
+                         value=2000, rarity=15, damage=12, crit=6, handed=2, subtyp='Staff', unequip=False, off=False)
 
 
 class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
-                         value=10000, rarity=50, damage=20, crit=6, handed=2, subtyp='Staff', unequip=False)
+                         value=10000, rarity=50, damage=20, crit=6, handed=2, subtyp='Staff', unequip=False, off=False)
 
 
 class Hammer(Weapon):
 
     def __init__(self):
         super().__init__(name="HAMMER", description="",
-                         value=250, rarity=4, damage=3, crit=12, handed=2, subtyp='Hammer', unequip=False)
+                         value=250, rarity=4, damage=3, crit=12, handed=2, subtyp='Hammer', unequip=False, off=False)
 
 
 class OakHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="OAK HAMMER", description="",
-                         value=400, rarity=6, damage=5, crit=10, handed=2, subtyp='Hammer', unequip=False)
+                         value=400, rarity=6, damage=5, crit=10, handed=2, subtyp='Hammer', unequip=False, off=False)
 
 
 class IronHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="IRON HAMMER", description="",
-                         value=1000, rarity=8, damage=8, crit=8, handed=2, subtyp='Hammer', unequip=False)
+                         value=1000, rarity=8, damage=8, crit=8, handed=2, subtyp='Hammer', unequip=False, off=False)
 
 
 class EarthHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="EARTH HAMMER", description="A magic staff, shaped to appear as a snake.",
-                         value=2000, rarity=15, damage=14, crit=6, handed=2, subtyp='Hammer', unequip=False)
+                         value=2000, rarity=15, damage=14, crit=6, handed=2, subtyp='Hammer', unequip=False, off=False)
 
 
 class Mjolnir(Weapon):
 
     def __init__(self):
         super().__init__(name="Mjolnir", description="The hammer of Thor, the Norse god of thunder",
-                         value=20000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False)
+                         value=20000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False, off=False)
 
 
 class Armor(Item):
@@ -406,11 +423,11 @@ class SilverCloak(Armor):
                          value=500, rarity=8, armor=4, subtyp='Cloth', unequip=False)
 
 
-class WizardRobe(Armor):
+class GoldCloak(Armor):
 
     def __init__(self):
-        super().__init__(name="WIZARD'S ROBE", description="A knee-length, long-sleeved robe with an impressive hood "
-                                                           "designed to add a mysterious feel to magic users.",
+        super().__init__(name="GOLD CLOAK", description="A cloak weaved with strands of gold to improve protective"
+                                                        "power.",
                          value=1500, rarity=12, armor=6, subtyp='Cloth', unequip=False)
 
 
@@ -420,6 +437,14 @@ class CloakEnchantment(Armor):
         super().__init__(name="CLOAK of ENCHANTMENT", description="A magical cloak that shields the wearer from all "
                                                                   "forms of attack.",
                          value=2500, rarity=18, armor=8, subtyp='Cloth', unequip=False)
+
+
+class WizardRobe(Armor):
+
+    def __init__(self):
+        super().__init__(name="WIZARD'S ROBE", description="A knee-length, long-sleeved robe with an impressive hood "
+                                                           "designed to add a mysterious feel to magic users.",
+                         value=5000, rarity=25, armor=10, subtyp='Cloth', unequip=False)
 
 
 class MerlinRobe(Armor):
