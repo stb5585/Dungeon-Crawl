@@ -1,15 +1,15 @@
-		LootRoom	StairsUp		EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	
-RandomEnemyRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	LootRoom
+		RandomEnemyRoom	StairsUp		EmptyCavePath	RandomEnemyRoom		RandomEnemyRoom	
+RandomEnemyRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
-	LootRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	RandomEnemyRoom	
-	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		LootRoom
-LootRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom
+	LootRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	
+	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		RandomEnemyRoom
+RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom
 			RandomEnemyRoom					EmptyCavePath	
-	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	LootRoom		EmptyCavePath	
+	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom				RandomEnemyRoom	
-LootRoom	RandomEnemyRoom			LootRoom				EmptyCavePath	
+RandomEnemyRoom	RandomEnemyRoom			RandomEnemyRoom				EmptyCavePath	
 	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		LootRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
 			RandomEnemyRoom		EmptyCavePath			RandomEnemyRoom	
 StairsDown			EmptyCavePath		EmptyCavePath			EmptyCavePath	
-LootRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	PseudodragonRoom	RandomEnemyRoom	LootRoom
-			LootRoom			StairsDown			
+EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	PseudodragonRoom	RandomEnemyRoom	RandomEnemyRoom
+			RandomEnemyRoom			StairsDown			

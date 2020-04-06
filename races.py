@@ -44,8 +44,8 @@ class Human(Race):
         super().__init__(name="HUMAN", description="Humans are something you, as a player, can relate to. They are \n"
                                                    "the most versatile of all races, making a viable option for all \n"
                                                    "classes.",
-                         str_rng=(5, 18), int_rng=(5, 18), wis_rng=(5, 18), con_rng=(5, 18), cha_rng=(5, 18),
-                         dex_rng=(5, 18))
+                         str_rng=(5, 14), int_rng=(5, 14), wis_rng=(5, 14), con_rng=(5, 14), cha_rng=(5, 14),
+                         dex_rng=(5, 14))
 
 
 class Elf(Race):
@@ -55,8 +55,8 @@ class Elf(Race):
                                                  "casters. They are not, however, very good at fighting with weapons\n"
                                                  " and have a low constitution, although their respectable dexterity\n"
                                                  "make them decent Footpads.",
-                         str_rng=(3, 14), int_rng=(7, 20), wis_rng=(7, 20), con_rng=(3, 14), cha_rng=(5, 18),
-                         dex_rng=(6, 18))
+                         str_rng=(3, 11), int_rng=(7, 17), wis_rng=(7, 16), con_rng=(3, 11), cha_rng=(5, 15),
+                         dex_rng=(6, 15))
 
 
 class Giant(Race):
@@ -67,8 +67,8 @@ class Giant(Race):
                                                    " being over eight feet tall, they make the best Warriors one can\n"
                                                    " find. While they are not restricted from spell casting, their\n"
                                                    " low intelligence limit their effectiveness.",
-                         str_rng=(12, 25), int_rng=(3, 14), wis_rng=(5, 18), con_rng=(9, 19), cha_rng=(3, 14),
-                         dex_rng=(3, 14))
+                         str_rng=(10, 18), int_rng=(3, 11), wis_rng=(5, 14), con_rng=(6, 15), cha_rng=(3, 10),
+                         dex_rng=(3, 11))
 
 
 class Gnome(Race):
@@ -77,8 +77,8 @@ class Gnome(Race):
         super().__init__(name="GNOME", description="Gnomes are very charismatic, giving them a distinct advantage in \n"
                                                    "money making and vendor relation. They are also above average \n"
                                                    "spell caster.",
-                         str_rng=(4, 17), int_rng=(7, 19), wis_rng=(5, 19), con_rng=(3, 17), cha_rng=(9, 22),
-                         dex_rng=(6, 18))
+                         str_rng=(4, 13), int_rng=(7, 15), wis_rng=(5, 15), con_rng=(3, 13), cha_rng=(8, 18),
+                         dex_rng=(6, 15))
 
 
 class Dwarf(Race):
@@ -87,5 +87,5 @@ class Dwarf(Race):
         super().__init__(name="DWARF", description="Dwarves are very curious, always up for an adventure. They are \n"
                                                    "also fairly versatile, although not as much as humans. They are\n"
                                                    " more robust but lack the dexterity to be an elite Footpad.",
-                         str_rng=(5, 18), int_rng=(5, 17), wis_rng=(5, 19), con_rng=(6, 19), cha_rng=(6, 18),
-                         dex_rng=(4, 16))
+                         str_rng=(5, 14), int_rng=(5, 13), wis_rng=(5, 15), con_rng=(6, 14), cha_rng=(6, 14),
+                         dex_rng=(4, 12))

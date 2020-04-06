@@ -6,11 +6,15 @@ import random
 
 
 # Functions
-def reciprocal(x):
+def reciprocal(x: int) -> float:
     return 1.0 / x
 
 
-def random_item(z):
+def equip_compare(old, new: object):
+    pass
+
+
+def random_item(z: int) -> object:
     item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, Carnwennan],
                                        [reciprocal(BronzeDagger().rarity), reciprocal(IronDagger().rarity),
                                         reciprocal(SteelDagger().rarity), reciprocal(AdamantiteDagger().rarity),
@@ -103,7 +107,7 @@ def random_item(z):
     return rand_item
 
 
-def remove(typ):
+def remove(typ: str):
     typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor)
     return typ_dict[typ]
 

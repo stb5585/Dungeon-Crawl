@@ -1,15 +1,15 @@
-	RandomEnemyRoom	LootRoom			EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	StairsDown
-RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom			CockatriceRoom	LootRoom
+	RandomEnemyRoom	RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	StairsDown
+RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom			CockatriceRoom	EmptyCavePath
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
-LootRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath		RandomEnemyRoom	LootRoom	EmptyCavePath	RandomEnemyRoom	
-	RandomEnemyRoom		RandomEnemyRoom	LootRoom	EmptyCavePath		EmptyCavePath		LootRoom
+RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
+	RandomEnemyRoom		RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom
 	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom
 RandomEnemyRoom	RandomEnemyRoom		RandomEnemyRoom					EmptyCavePath	
-	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		LootRoom		EmptyCavePath	
+	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom		EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
-LootRoom	RandomEnemyRoom							EmptyCavePath	
-	RandomEnemyRoom		EmptyCavePath		LootRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
+RandomEnemyRoom	RandomEnemyRoom							EmptyCavePath	
+	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
 			RandomEnemyRoom		EmptyCavePath				
-StairsUp			EmptyCavePath		EmptyCavePath			LootRoom	
-LootRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	LootRoom
-			LootRoom			StairsUp		LootRoom	
+StairsUp			EmptyCavePath		EmptyCavePath			RandomEnemyRoom	
+EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
+			RandomEnemyRoom			StairsUp		RandomEnemyRoom	

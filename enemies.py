@@ -9,11 +9,11 @@ import items
 
 # Functions
 def random_enemy(level):
-    monsters = {'1': [Slime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Zombie(), GiantSpider()],
-                '2': [Gnoll(), Zombie(), Minotaur(), Orc(), Vampire(), Direwolf(), Warrior(), Harpy(), Naga()],
-                '3': [Warrior(), Pseudodragon(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre()],
-                '4': [Cockatrice(), Chimera(), Dragonkin(), Griffon(), DarkKnight()],
-                '5': [Golem(), Beholder(), Behemoth(), Basilisk(), Hydra(), Wyvern()]}
+    monsters = {'1': [Chest(), Slime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Zombie(), GiantSpider()],
+                '2': [Chest(), Gnoll(), Zombie(), Minotaur(), Orc(), Vampire(), Direwolf(), Warrior(), Harpy(), Naga()],
+                '3': [Chest(), Warrior(), Pseudodragon(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre()],
+                '4': [Chest(), Cockatrice(), Chimera(), Dragonkin(), Griffon(), DarkKnight()],
+                '5': [Chest(), Golem(), Beholder(), Behemoth(), Basilisk(), Hydra(), Wyvern()]}
     enemy = random.choice(monsters[level])
 
     return enemy
@@ -55,7 +55,7 @@ class Enemy:
         damage = int(damage)
         damage += self.equipment['Weapon']().damage
         damage = max(0, damage - enemy.equipment['Armor']().armor)
-        if random.randint(0, enemy.dex) > random.randint(self.dex // 2, self.dex):
+        if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
             print("%s evades %s's attack." % (enemy.name, self.name))
         else:
             if crit == 2:
@@ -82,24 +82,24 @@ class Chest(Enemy):
 class Slime(Enemy):
 
     def __init__(self):
-        super().__init__(name='Slime', health=random.randint(1, 6), mana=0, strength=5, intel=0, wisdom=0, con=4,
-                         charisma=0, dex=1, exp=random.randint(1, 2))
+        super().__init__(name='Slime', health=random.randint(1, 6), mana=0, strength=6, intel=0, wisdom=15, con=8,
+                         charisma=0, dex=4, exp=random.randint(1, 4))
         self.loot = dict(Gold=random.randint(1, 3))
 
 
 class GiantRat(Enemy):
 
     def __init__(self):
-        super().__init__(name='Giant Rat', health=random.randint(1, 3), mana=0, strength=3, intel=0, wisdom=0, con=3,
-                         charisma=0, dex=10, exp=random.randint(1, 2))
+        super().__init__(name='Giant Rat', health=random.randint(1, 3), mana=0, strength=4, intel=0, wisdom=3, con=6,
+                         charisma=0, dex=15, exp=random.randint(2, 4))
         self.loot = dict(Gold=random.randint(1, 5))
 
 
 class Goblin(Enemy):
 
     def __init__(self):
-        super().__init__(name='Goblin', health=random.randint(2, 4), mana=0, strength=4, intel=0, wisdom=0, con=4,
-                         charisma=0, dex=8, exp=random.randint(2, 3))
+        super().__init__(name='Goblin', health=random.randint(2, 4), mana=0, strength=6, intel=0, wisdom=2, con=8,
+                         charisma=0, dex=8, exp=random.randint(2, 6))
         self.equipment['Weapon'] = items.BronzeSword
         self.loot = dict(Gold=random.randint(4, 10), Weapon=self.equipment['Weapon'])
 
@@ -107,7 +107,7 @@ class Goblin(Enemy):
 class Bandit(Enemy):
 
     def __init__(self):
-        super().__init__(name='Bandit', health=random.randint(4, 8), mana=0, strength=6, intel=0, wisdom=0, con=6,
+        super().__init__(name='Bandit', health=random.randint(4, 8), mana=0, strength=8, intel=0, wisdom=5, con=8,
                          charisma=0, dex=10, exp=random.randint(3, 8))
         self.equipment['Weapon'] = items.BronzeDagger
         self.equipment['Armor'] = items.PaddedArmor
@@ -117,15 +117,15 @@ class Bandit(Enemy):
 class Skeleton(Enemy):
 
     def __init__(self):
-        super().__init__(name='Skeleton', health=random.randint(5, 7), mana=0, strength=8, intel=0, wisdom=0, con=12,
-                         charisma=0, dex=2, exp=random.randint(6, 10))
+        super().__init__(name='Skeleton', health=random.randint(5, 7), mana=0, strength=12, intel=0, wisdom=8, con=12,
+                         charisma=0, dex=6, exp=random.randint(6, 10))
         self.loot = dict(Gold=random.randint(10, 20), Potion=items.HealthPotion)
 
 
 class Zombie(Enemy):
 
     def __init__(self):
-        super().__init__(name='Zombie', health=random.randint(8, 12), mana=0, strength=10, intel=0, wisdom=0, con=8,
+        super().__init__(name='Zombie', health=random.randint(8, 12), mana=0, strength=10, intel=0, wisdom=5, con=8,
                          charisma=0, dex=4, exp=random.randint(6, 12))
         self.loot = dict(Gold=random.randint(15, 30))
 
@@ -133,7 +133,7 @@ class Zombie(Enemy):
 class GiantSpider(Enemy):
 
     def __init__(self):
-        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=0,
+        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=4,
                          con=10, charisma=0, dex=12, exp=random.randint(10, 14))
         self.loot = dict(Gold=random.randint(15, 30))
 
@@ -142,8 +142,8 @@ class GiantSpider(Enemy):
 class Minotaur(Enemy):
 
     def __init__(self):
-        super().__init__(name='Minotaur', health=random.randint(15, 19), mana=0, strength=14, intel=0, wisdom=0, con=14,
-                         charisma=0, dex=12, exp=random.randint(20, 30))
+        super().__init__(name='Minotaur', health=random.randint(15, 19), mana=0, strength=14, intel=0, wisdom=10,
+                         con=14, charisma=0, dex=12, exp=random.randint(20, 30))
         self.equipment['Weapon'] = items.BattleAxe
         self.loot = dict(Gold=random.randint(30, 75), Weapon=self.equipment['Weapon'])
 
@@ -151,7 +151,7 @@ class Minotaur(Enemy):
 class Gnoll(Enemy):
 
     def __init__(self):
-        super().__init__(name='Gnoll', health=random.randint(10, 14), mana=0, strength=12, intel=0, wisdom=0, con=8,
+        super().__init__(name='Gnoll', health=random.randint(10, 14), mana=0, strength=12, intel=0, wisdom=5, con=8,
                          charisma=0, dex=16, exp=random.randint(14, 25))
         self.equipment['Weapon'] = items.Spear
         self.loot = dict(Gold=random.randint(30, 60), Weapon=self.equipment['Weapon'])
@@ -160,7 +160,7 @@ class Gnoll(Enemy):
 class Orc(Enemy):
 
     def __init__(self):
-        super().__init__(name='Orc', health=random.randint(8, 12), mana=0, strength=10, intel=0, wisdom=0, con=10,
+        super().__init__(name='Orc', health=random.randint(8, 12), mana=0, strength=10, intel=0, wisdom=5, con=10,
                          charisma=0, dex=14, exp=random.randint(12, 25))
         self.equipment['Weapon'] = items.IronSword
         self.loot = dict(Gold=random.randint(20, 65), Weapon=self.equipment['Weapon'])
@@ -169,7 +169,7 @@ class Orc(Enemy):
 class Vampire(Enemy):
 
     def __init__(self):
-        super().__init__(name='Vampire', health=random.randint(10, 15), mana=0, strength=16, intel=0, wisdom=0, con=15,
+        super().__init__(name='Vampire', health=random.randint(10, 15), mana=0, strength=16, intel=0, wisdom=12, con=15,
                          charisma=0, dex=14, exp=random.randint(15, 30))
         self.loot = dict(Gold=random.randint(40, 90), Potion=items.SuperHealthPotion)
 
@@ -177,7 +177,7 @@ class Vampire(Enemy):
 class Direwolf(Enemy):
 
     def __init__(self):
-        super().__init__(name='Direwolf', health=random.randint(13, 16), mana=0, strength=17, intel=0, wisdom=0, con=14,
+        super().__init__(name='Direwolf', health=random.randint(13, 16), mana=0, strength=17, intel=0, wisdom=6, con=14,
                          charisma=0, dex=16, exp=random.randint(17, 33))
         self.loot = dict(Gold=random.randint(35, 75))
 
@@ -185,7 +185,7 @@ class Direwolf(Enemy):
 class Warrior(Enemy):
 
     def __init__(self):
-        super().__init__(name='Warrior', health=random.randint(10, 15), mana=0, strength=14, intel=0, wisdom=0, con=12,
+        super().__init__(name='Warrior', health=random.randint(10, 15), mana=0, strength=14, intel=0, wisdom=8, con=12,
                          charisma=0, dex=8, exp=random.randint(18, 32))
         self.equipment['Weapon'] = items.IronSword
         self.equipment['Armor'] = items.RingMail
@@ -222,7 +222,7 @@ class Pseudodragon(Enemy):
 class Ghoul(Enemy):
 
     def __init__(self):
-        super().__init__(name='Ghoul', health=random.randint(42, 60), mana=0, strength=20, intel=0, wisdom=0, con=24,
+        super().__init__(name='Ghoul', health=random.randint(42, 60), mana=0, strength=20, intel=0, wisdom=8, con=24,
                          charisma=0, dex=12, exp=random.randint(35, 40))
         self.loot = dict(Gold=random.randint(35, 45))
 
@@ -247,7 +247,7 @@ class Ogre(Enemy):
 class Troll(Enemy):
 
     def __init__(self):
-        super().__init__(name='Troll', health=random.randint(50, 65), mana=0, strength=19, intel=0, wisdom=0, con=24,
+        super().__init__(name='Troll', health=random.randint(50, 65), mana=0, strength=19, intel=0, wisdom=8, con=24,
                          charisma=0, dex=15, exp=random.randint(45, 60))
         self.equipment['Weapon'] = items.GreatAxe
         self.loot = dict(Gold=random.randint(35, 45), Weapon=items.GreatAxe)
@@ -256,7 +256,7 @@ class Troll(Enemy):
 class Direbear(Enemy):
 
     def __init__(self):
-        super().__init__(name='Direbear', health=random.randint(55, 70), mana=0, strength=23, intel=0, wisdom=0, con=26,
+        super().__init__(name='Direbear', health=random.randint(55, 70), mana=0, strength=23, intel=0, wisdom=6, con=26,
                          charisma=0, dex=18, exp=random.randint(50, 65))
         self.loot = dict(Gold=random.randint(45, 60))
 
@@ -276,7 +276,7 @@ class EvilCrusader(Enemy):
 class Cockatrice(Enemy):
 
     def __init__(self):
-        super().__init__(name='Cockatrice', health=random.randint(60, 75), mana=0, strength=21, intel=0, wisdom=0,
+        super().__init__(name='Cockatrice', health=random.randint(60, 75), mana=0, strength=21, intel=0, wisdom=15,
                          con=16, charisma=0, dex=20, exp=random.randint(65, 85))
         self.loot = dict(Gold=random.randint(35, 45))
 

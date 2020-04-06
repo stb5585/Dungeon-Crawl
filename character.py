@@ -20,7 +20,7 @@ import races
 import classes
 
 
-def rand_stats(race, cls):
+def rand_stats(race, cls: object) -> tuple:
     """
     Each race has a range of values per stat that the stat will fall in; the class has minimum values for each stat
     that is allowed, and will set it to the minimum required if the random value is lower
@@ -47,7 +47,7 @@ def rand_stats(race, cls):
     return stats
 
 
-def new_char():
+def new_char() -> object:
     """
     Defines a new character and places them in the town to start
     """
@@ -67,7 +67,7 @@ def new_char():
     return player
 
 
-def load(char=None):
+def load(char=None) -> dict:
     """
     Loads a save file and returns 2 dictionaries: one for the character and another for the world setup
     """
@@ -105,7 +105,7 @@ def load(char=None):
             return {}
 
 
-def load_char(char=None):
+def load_char(char=None) -> object:
     """
     Initializes the character based on the load file
     """
@@ -160,7 +160,7 @@ class Character:
         self.inventory = {}
         self.spellbook = {}
 
-    def special(self, enemy, ability):
+    def special(self, enemy, ability: object):
         """
         Function that controls the character's abilities and spells during combat
         """
@@ -171,6 +171,8 @@ class Character:
         if ability().typ == 'Spell':
             self.mana -= ability().cost
             damage = random.randint((ability().damage + self.intel) // 2, (ability().damage + self.intel))
+            if self.equipment['OffHand']().subtyp == 'Grimoire':
+                damage += self.equipment['OffHand']().mod
             damage -= random.randint(0, enemy.wisdom)
             crit = 1
             if not random.randint(0, ability().crit - 1):
@@ -189,7 +191,7 @@ class Character:
                 print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
             enemy.health = enemy.health - damage
 
-    def weapon_damage(self, enemy):
+    def weapon_damage(self, enemy: object):
         """
         Function that controls the character's basic attack during combat
         """
@@ -212,7 +214,7 @@ class Character:
         damage = int(damage)
         damage += self.equipment['Weapon']().damage
         damage = max(0, damage - enemy.equipment['Armor']().armor)
-        if random.randint(0, enemy.dex) > random.randint(self.dex // 2, self.dex):
+        if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
             print("%s evades %s's attack." % (enemy.name, self.name))
         else:
             if crit == 2:
@@ -265,7 +267,7 @@ class Player(Character):
         print("Goodbye, %s!" % self.name)
         sys.exit(0)
 
-    def minimap(self, world_dict):
+    def minimap(self, world_dict: dict):
         """
         Function that allows the player to view the current dungeon level in a window
         Window must be closed to continue playing
@@ -334,8 +336,8 @@ class Player(Character):
                 self.do_action(action, **action.kwargs)
                 break
 
-    def flee(self, enemy):
-        if random.randint(1, self.health + 5) > random.randint(1, enemy.health):
+    def flee(self, enemy: object) -> bool:
+        if random.randint(1, self.health + self.level) > random.randint(1, enemy.health):
             print("%s flees from the %s." % (self.name, enemy.name))
             self.state = 'normal'
             return True
@@ -360,9 +362,12 @@ class Player(Character):
         if len(item_list) == 0:
             print("You do not have any items to use.")
             item = False
-        if item:
+        item_list.append(('None', i))
+        while item:
             print("Which potion would you like to use?")
             use_itm = storyline.get_response(item_list)
+            if item_list[use_itm][0] == 'None':
+                break
             itm = self.inventory[item_list[use_itm][0]][0]
             if 'Health' in itm().subtyp:
                 if self.health == self.health_max:
@@ -370,7 +375,7 @@ class Player(Character):
                 else:
                     self.inventory[item_list[use_itm][0]][1] -= 1
                     if self.state != 'fight':
-                        heal = int(self.health * self.inventory[item_list[use_itm][0]][0]().percent)
+                        heal = int(self.health_max * self.inventory[item_list[use_itm][0]][0]().percent)
                         print("The potion healed you for %d life." % heal)
                         self.health += heal
                         if self.health >= self.health_max:
@@ -390,14 +395,14 @@ class Player(Character):
                 else:
                     self.inventory[item_list[use_itm][0]][1] -= 1
                     if self.state != 'fight':
-                        heal = int(self.mana * self.inventory[item_list[use_itm][0]][0]().percent)
+                        heal = int(self.mana_max * self.inventory[item_list[use_itm][0]][0]().percent)
                         print("The potion restored %d mana points." % heal)
                         self.mana += heal
                         if self.mana >= self.mana_max:
                             self.mana = self.mana_max
                             print("You are at full mana!")
                     else:
-                        rand_res = int(self.mana * self.inventory[item_list[use_itm][0]][0]().percent)
+                        rand_res = int(self.mana_max * self.inventory[item_list[use_itm][0]][0]().percent)
                         heal = random.randint(rand_res // 2, rand_res)
                         self.mana += heal
                         print("The potion restored %d mana points." % heal)
@@ -415,6 +420,7 @@ class Player(Character):
                 print("Your %s has been increased by 1!" % str(itm().name.split(' ')[0]).lower())
             if self.inventory[item_list[use_itm][0]][1] == 0:
                 del self.inventory[item_list[use_itm][0]]
+            break
 
     def level_up(self):
         print("You gained a level!")
@@ -455,9 +461,9 @@ class Player(Character):
             self.spellbook[spell_gain().name] = spell_gain
             print(spell_gain())
             print("You have gained the ability to cast %s!" % spell_gain().name)
-        input()
+        input("Press enter to continue")
 
-    def chest(self, enemy):
+    def chest(self, enemy: object):
         enemy.health -= 1
         if not random.randint(0, 1):
             treasure = items.random_item(self.location_z)
@@ -467,9 +473,9 @@ class Player(Character):
             gld = random.randint(50, 100) * self.location_z
             print("You have found %s gold!" % gld)
             self.gold += gld
-        input()
+        input("Press enter to continue")
 
-    def loot(self, enemy):
+    def loot(self, enemy: object):
         for item in enemy.loot:
             if item == "Gold":
                 print("%s dropped %d gold." % (enemy.name, enemy.loot['Gold']))
@@ -478,7 +484,7 @@ class Player(Character):
                 if not random.randint(0, int(enemy.loot[item]().rarity)):
                     print("%s dropped a %s." % (enemy.name, enemy.loot[item]().name))
                     self.modify_inventory(enemy.loot[item], 1)
-        input()  # Allows time to look at output
+        input("Press enter to continue")  # Allows time to look at output
 
     def print_inventory(self):
         print("Equipment:")
@@ -492,7 +498,7 @@ class Player(Character):
         print("Gold: %d" % self.gold)
         input("Press enter to continue")
 
-    def modify_inventory(self, item, num=0, sell=False):
+    def modify_inventory(self, item, num=0, sell: object = False):
         if not sell:
             if item().name not in self.inventory:
                 self.inventory[item().name] = [item, num]
@@ -513,7 +519,7 @@ class Player(Character):
         while True:
             save_file = "save_files/{0}.save".format(str(self.name))
             if os.path.exists(save_file):
-                print("A save file under this name already exists. Are you sure you want to overwrite it? (Y or N")
+                print("A save file under this name already exists. Are you sure you want to overwrite it? (Y or N)")
                 over = input("> ").lower()
                 if over != 'y':
                     break
@@ -543,64 +549,70 @@ class Player(Character):
             with open(save_file, 'w') as save_game:
                 save_game.write(jsonpickle.encode(save_dict))
             print("Your game is now saved.")
+            break
 
-    def equip(self):
-        equip = True
-        print("Which piece of equipment would you like to replace? ")
-        option_list = [('Weapon', 0), ('Armor', 1), ('OffHand', 2), ('None', 3)]
-        slot = storyline.get_response(option_list)
-        if option_list[slot][0] == 'None':
-            equip = False
-        inv_list = []
-        while equip:
-            cont = 'y'
-            if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
-                print("You are currently equipped with a 2-handed weapon. Equipping an off-hand will remove the "
-                      "2-hander.")
-                cont = input("Do you wish to continue? ").lower()
-                if cont != 'y':
+    def equip(self, unequip=None):
+        if unequip is None:
+            equip = True
+            print("Which piece of equipment would you like to replace? ")
+            option_list = [('Weapon', 0), ('Armor', 1), ('OffHand', 2), ('None', 3)]
+            slot = storyline.get_response(option_list)
+            if option_list[slot][0] == 'None':
+                equip = False
+            inv_list = []
+            while equip:
+                cont = 'y'
+                if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                    print("You are currently equipped with a 2-handed weapon. Equipping an off-hand will remove the "
+                          "2-hander.")
+                    cont = input("Do you wish to continue? ").lower()
+                    if cont != 'y':
+                        break
+                if cont == 'y':
+                    print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
+                    old = self.equipment[option_list[slot][0]]
+                    i = 0
+                    for item in self.inventory:
+                        if (str(self.inventory[item][0]().typ) == option_list[slot][0] or
+                                (option_list[slot][0] == 'OffHand' and str(self.inventory[item][0]().typ) == 'Weapon')):
+                            if classes.equip_check(self.inventory[item], self.cls):
+                                inv_list.append((item, i))
+                                i += 1
+                    inv_list.append(('UNEQUIP', i))
+                    inv_list.append(('KEEP CURRENT', i + 1))
+                    print("Which %s would you like to equip? " % option_list[slot][0].lower())
+                    replace = storyline.get_response(inv_list)
+                    if inv_list[replace][0] == 'UNEQUIP':
+                        self.equipment[option_list[slot][0]] = items.remove(option_list[slot][0])
+                        self.modify_inventory(old, 1)
+                        print("Your %s slot is now empty." % option_list[slot][0].lower())
+                    elif inv_list[replace][0] == 'KEEP CURRENT':
+                        print("No equipment was changed.")
+                    elif old().name == self.inventory[inv_list[replace][0]][0]().name:
+                        print("You are already equipped with a %s" % old().name)
+                    else:
+                        if classes.equip_check(self.inventory[inv_list[replace][0]], self.cls):
+                            self.equipment[option_list[slot][0]] = self.inventory[inv_list[replace][0]][0]
+                            if option_list[slot][0] == 'Weapon':
+                                if self.equipment['Weapon']().handed == 2:
+                                    if self.equipment['OffHand'] != items.NoOffHand:
+                                        self.modify_inventory(self.equipment['OffHand'], 1)
+                                        self.equipment['OffHand'] = items.remove('OffHand')
+                            elif self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                                old = self.equipment['Weapon']
+                                self.equipment['Weapon'] = items.remove('Weapon')
+                            self.inventory[inv_list[replace][0]][1] -= 1
+                            if self.inventory[inv_list[replace][0]][1] <= 0:
+                                del self.inventory[inv_list[replace][0]]
+                            if not old().unequip:
+                                self.modify_inventory(old, 1)
+                            print("You are now equipped with %s." % self.equipment[option_list[slot][0]]().name)
+                    time.sleep(0.5)
                     break
-            if cont == 'y':
-                print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
-                old = self.equipment[option_list[slot][0]]
-                i = 0
-                for item in self.inventory:
-                    if (str(self.inventory[item][0]().typ) == option_list[slot][0] or
-                            (option_list[slot][0] == 'OffHand' and str(self.inventory[item][0]().typ) == 'Weapon')):
-                        if classes.equip_check(self.inventory[item], self.cls):
-                            inv_list.append((item, i))
-                            i += 1
-                inv_list.append(('UNEQUIP', i))
-                inv_list.append(('KEEP CURRENT', i + 1))
-                print("Which %s would you like to equip? " % option_list[slot][0].lower())
-                replace = storyline.get_response(inv_list)
-                if inv_list[replace][0] == 'UNEQUIP':
-                    self.equipment[option_list[slot][0]] = items.remove(option_list[slot][0])
-                    self.modify_inventory(old, 1)
-                    print("Your %s slot is now empty." % option_list[slot][0].lower())
-                elif inv_list[replace][0] == 'KEEP CURRENT':
-                    print("No equipment was changed.")
-                elif old().name == self.inventory[inv_list[replace][0]][0]().name:
-                    print("You are already equipped with a %s" % old().name)
-                else:
-                    if classes.equip_check(self.inventory[inv_list[replace][0]], self.cls):
-                        self.equipment[option_list[slot][0]] = self.inventory[inv_list[replace][0]][0]
-                        if option_list[slot][0] == 'Weapon':
-                            if self.equipment['Weapon']().handed == 2:
-                                if self.equipment['OffHand'] != items.NoOffHand:
-                                    self.modify_inventory(self.equipment['OffHand'], 1)
-                                    self.equipment['OffHand'] = items.remove('OffHand')
-                        elif self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
-                            old = self.equipment['Weapon']
-                            self.equipment['Weapon'] = items.NoWeapon
-                        self.inventory[inv_list[replace][0]][1] -= 1
-                        if self.inventory[inv_list[replace][0]][1] <= 0:
-                            del self.inventory[inv_list[replace][0]]
-                        if not old().unequip:
-                            self.modify_inventory(old, 1)
-                        print("You are now equipped with %s." % self.equipment[option_list[slot][0]]().name)
-                time.sleep(0.5)
-                break
+        elif unequip:
+            for item in self.equipment:
+                self.modify_inventory(self.equipment[item], 1)
+                items.remove(self.equipment[item]().typ)
 
     def move(self, dx, dy):
         self.location_x += dx

@@ -6,38 +6,40 @@ import time
 
 import items
 import storyline
+import classes
 
 
 # Functions
-def blacksmith(player):
+def blacksmith(player: object):
     print("Welcome to Griswold's! What can I do you for?")
     buy_list = [('Weapon', 0), ('OffHand', 1)]
     shop(player, buy_list)
 
 
-def armory(player):
+def armory(player: object):
     print("I have the finest armors for sale. Come in and look around.")
     buy_list = [('Armor', 0)]
     shop(player, buy_list)
 
 
-def alchemist(player):
+def alchemist(player: object):
     print("Welcome to Ye Olde Item Shoppe.")
     buy_list = [('Potion', 0)]
     shop(player, buy_list)
 
 
-def church(player):
+def church(player: object):
     print("Come in my child. You are always welcome in the arms of Elysia.")
     while True:
         print("How can we be of service?")
         church_options = [('Promotion', 0), ('Save', 1), ('Quit', 2), ('Leave', 3)]
         church_index = storyline.get_response(church_options)
         if church_options[church_index][1] == 0:
-            print("You do not have a promotion available.")
             if player.level // 20 > 0:
                 print("You have qualified for a promotion. Which path would you like to follow?")
-                print("Promotions are not yet implemented.")  # TODO
+                classes.promotion(player)
+            else:
+                print("You need to be at least level 20 before you can promote your character.")
         elif church_options[church_index][1] == 1:
             player.save()  # Can only save at church in town
         elif church_options[church_index][1] == 2:
@@ -152,7 +154,7 @@ def shop(player, buy_list):
             print("Please enter a valid option.")
 
 
-def town(player):
+def town(player: object):
     print("Welcome to the town of Silvana!")
     time.sleep(0.25)
     locations = [blacksmith, armory, alchemist, church]

@@ -2,6 +2,8 @@
 """ class manager """
 
 # Imports
+import time
+
 import storyline
 import items
 import character
@@ -33,8 +35,55 @@ def equip_check(item, class_name):
                 return False
 
 
-def promotion(player):
-    pass
+def promotion(player: object):
+    class_dict = {Warrior().name: [WeaponMaster(), Paladin(), Lancer()],
+                  WeaponMaster().name: [Berserker()],
+                  Paladin().name: [Crusader()],
+                  Lancer().name: [Dragoon()],
+                  Mage().name: [Sorcerer(), Warlock()],
+                  Sorcerer().name: [Wizard()],
+                  Warlock().name: [Necromancer()],
+                  Footpad().name: [Thief(), Ranger(), Assassin()],
+                  Thief().name: [Rogue()],
+                  Ranger().name: [Seeker()],
+                  Assassin().name: [Ninja()]
+                  }
+    current_class = player.cls
+    if current_class in class_dict:
+        class_options = []
+        i = 0
+        for cls in class_dict[current_class]:
+            class_options.append((cls.name, i))
+            i += 1
+        print("Choose your path.")
+        class_index = storyline.get_response(class_options)
+        new_class = class_dict[current_class][class_index]
+        print("You have chosen to promote from %s to %s." % (current_class, new_class.name))
+        promote = input("Do you wish to continue? (Y or N) ").lower()
+        if promote == 'y':
+            promoted_player = player
+            promoted_player.level = 1
+            promoted_player.experience = 0
+            promoted_player.cls = new_class.name
+            player.equip(unequip=True)
+            promoted_player.equipment = new_class.equipment
+            if new_class.min_str > promoted_player.strength:
+                promoted_player.strength = new_class.min_str
+            if new_class.min_int > promoted_player.intel:
+                promoted_player.intel = new_class.min_int
+            if new_class.min_wis > promoted_player.wisdom:
+                promoted_player.wisdom = new_class.min_wis
+            if new_class.min_con > promoted_player.con:
+                promoted_player.con = new_class.min_con
+            if new_class.min_cha > promoted_player.charisma:
+                promoted_player.charisma = new_class.min_cha
+            if new_class.min_dex > promoted_player.dex:
+                promoted_player.dex = new_class.min_dex
+            time.sleep(1)
+            print("Congratulations! %s has been promoted from a %s to a %s!" % (player.name, current_class,
+                                                                                new_class.name))
+        else:
+            print("If you change your mind, you know where to find us.")
 
 
 class Job:
@@ -73,7 +122,7 @@ class Job:
 
 class Warrior(Job):
     """
-    Promotion: Warrior -> Knight  -> Lord
+    Promotion: Warrior -> Weapon Master -> Berserker
                        |
                        -> Paladin -> Crusader
                        |
@@ -90,7 +139,7 @@ class Warrior(Job):
                                        'Armor': ['Light', 'Medium', 'Heavy']})
 
 
-class Barbarian(Warrior):
+class WeaponMaster(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
     Pros: Can dual wield and can equip light armor
@@ -106,7 +155,7 @@ class Barbarian(Warrior):
                                        'Armor': ['Light', 'Medium']})
 
 
-class Berserker(Barbarian):
+class Berserker(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
     Pros: Can dual wield, use all weapons, and can equip light armor
@@ -114,7 +163,7 @@ class Berserker(Barbarian):
     """
 
     def __init__(self):
-        super().__init__(name="WEAPON MASTER", description="",
+        super().__init__(name="BERSERKER", description="",
                          min_str=18, min_int=12, min_wis=11, min_con=12, min_cha=8, min_dex=14,
                          equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.NoOffHand, Armor=items.Studded),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
@@ -122,7 +171,7 @@ class Berserker(Barbarian):
                                        'Armor': ['Light', 'Medium']})
 
 
-class Paladin(Warrior):
+class Paladin(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
     Pros: Can use shields and heavy armor; can cast healing spells TODO
@@ -138,7 +187,7 @@ class Paladin(Warrior):
                                        'Armor': ['Medium', 'Heavy']})
 
 
-class Crusader(Paladin):
+class Crusader(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
     Pros: Can use shields and heavy armor; can cast healing spells TODO
@@ -148,13 +197,14 @@ class Crusader(Paladin):
     def __init__(self):
         super().__init__(name="CRUSADER", description="",
                          min_str=15, min_int=14, min_wis=16, min_con=16, min_cha=13, min_dex=9,
-                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield, Armor=items.PlateArmor),
+                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield,
+                                        Armor=items.PlateArmor),
                          restrictions={'Weapon': ['Sword'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']})
 
 
-class Lancer(Warrior):
+class Lancer(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
     Pros: Can use polearms as 1-handed weapons; can equip shields and heavy armor
@@ -170,7 +220,7 @@ class Lancer(Warrior):
                                        'Armor': ['Medium', 'Heavy']})
 
 
-class Dragoon(Warrior):
+class Dragoon(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
     Pros: Can use polearms as 1-handed weapons; can equip shields and heavy armor
@@ -205,7 +255,7 @@ class Mage(Job):
                                        'Armor': ['Cloth']})
 
 
-class Sorcerer(Mage):
+class Sorcerer(Job):
     """
     Promotion: Mage -> Sorcerer -> Wizard
     Pros: Higher intelligence; earlier access to spells and access to higher level spells TODO
@@ -221,7 +271,7 @@ class Sorcerer(Mage):
                                        'Armor': ['Cloth']})
 
 
-class Wizard(Sorcerer):
+class Wizard(Job):
     """
     Promotion: Mage -> Sorcerer -> Wizard
     Pros: Higher intelligence; earlier access to spells and access to higher level spells TODO
@@ -237,7 +287,7 @@ class Wizard(Sorcerer):
                                        'Armor': ['Cloth']})
 
 
-class Warlock(Mage):
+class Warlock(Job):
     """
     Promotion: Mage -> Warlock -> Necromancer
     Pros: Higher strength and constitution; access to additional skills TODO
@@ -253,7 +303,7 @@ class Warlock(Mage):
                                        'Armor': ['Cloth']})
 
 
-class Necromancer(Warlock):
+class Necromancer(Job):
     """
     Promotion: Mage -> Warlock -> Necromancer
     Pros: Higher strength and constitution; access to additional skills TODO
@@ -290,7 +340,7 @@ class Footpad(Job):
                                        'Armor': ['Light']})
 
 
-class Thief(Footpad):
+class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
     Pros: Ability to dual wield and access to certain abilities (including stealing TODO)
@@ -306,7 +356,7 @@ class Thief(Footpad):
                                        'Armor': ['Light']})
 
 
-class Rogue(Thief):
+class Rogue(Job):
     """
     Promotion: Footpad -> Thief -> Rogue
     """
@@ -321,7 +371,7 @@ class Rogue(Thief):
                                        'Armor': ['Light']})
 
 
-class Ranger(Footpad):
+class Ranger(Job):
     """
     Promotion: Footpad -> Ranger -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
@@ -338,7 +388,7 @@ class Ranger(Footpad):
                                        'Armor': ['Light', 'Medium']})
 
 
-class Seeker(Thief):
+class Seeker(Job):
     """
     Promotion: Footpad -> Ranger -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
@@ -355,7 +405,7 @@ class Seeker(Thief):
                                        'Armor': ['Light', 'Medium']})
 
 
-class Assassin(Footpad):
+class Assassin(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
     Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills
@@ -371,7 +421,7 @@ class Assassin(Footpad):
                                        'Armor': ['Light']})
 
 
-class Ninja(Thief):
+class Ninja(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
     """

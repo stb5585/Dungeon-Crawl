@@ -20,7 +20,7 @@ class MapTile:
     def modify_player(self, player):
         raise NotImplementedError()
 
-    def adjacent_moves(self, append_list=None):
+    def adjacent_moves(self, append_list: list = None):
         """Returns all move actions for adjacent tiles."""
         if append_list is None:
             append_list = []
@@ -76,15 +76,38 @@ class RandomEnemyRoom(EnemyRoom):
         super().__init__(x, y, z, enemies.random_enemy(str(z)))
 
     def intro_text(self):
-        if self.enemy.is_alive():
-            return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+        if self.enemy.name == 'Chest':
+            if self.enemy.is_alive():
+                return """
+                You find a chest!!
+                """
+            else:
+                return """
+                This room has an open chest.
+                """
         else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
+            if self.enemy.is_alive():
+                return """
+                An enemy {} attacks you!\n
+                {}
+                """.format(self.enemy.name, self.enemy.health)
+            else:
+                return """
+                A dead {} lies on the ground.
+                """.format(self.enemy.name)
+
+    def available_actions(self):
+        if self.enemy.name == 'Chest':
+            if self.enemy.is_alive():
+                return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+            else:
+                return self.adjacent_moves([actions.Status()])
+        else:
+            if self.enemy.is_alive():
+                return [actions.Attack(enemy=self.enemy), actions.Special(), actions.UseItem()]
+            else:
+                return self.adjacent_moves([actions.Status()])
+
 
 
 class MinotaurRoom(EnemyRoom):

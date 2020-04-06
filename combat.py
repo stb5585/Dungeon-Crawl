@@ -18,6 +18,8 @@ def battle(player, enemy):
     combat = True
     flee = False
     while combat:
+        print("Current health: %d/%d" % (player.health, player.health_max))
+        print("Current mana: %d/%d" % (player.mana, player.mana_max))
         for action in available_actions:
             print(action)
         if enemy.name != 'Chest':

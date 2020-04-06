@@ -23,11 +23,15 @@ FUTURE DEVELOPMENT:
     - Add a tutorial so players can better understand the gameplay
     - Adapt skill functionality for non-mage characters that do not cast spells
     - Add graphical representation for a more complete game experience
+    - Make item comparison easier for both equipping and the shop
+    - Add shop_inventory dictionary; online lowest level items will be available by default and subsequent items will need to be farmed
+    - Have enemies respawn (either when entering town or after an amount of time); reset world tiles
 
 - Possible development
     - Status effects
     - Item identification
     - Add capability to have more than one playable character
+    - Make the dungeon tiles all random (even the map creation)
 
 FILES:
 - actions.py
@@ -43,6 +47,7 @@ FILES:
 - spells.py
 - storyline.py
 - town.py
+- tutorial.py
 - world.py
 
 FILE DESCRIPTIONS:
@@ -72,5 +77,7 @@ FILE DESCRIPTIONS:
     - File that is primarily used for user-input function; will eventually house the storyline
 - town.py
     - Controls the iteractions of the character while in town
+- tutorial.py
+    - File that controls the tutorial; not yet implemented
 - world.py
     - World manager that defines the map tiles and returns the world dictionary for save files

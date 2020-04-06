@@ -1,15 +1,15 @@
 			StairsDown		EmptyCavePath	RandomEnemyRoom	LootRoom	RandomEnemyRoom	
-LootRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	LootRoom
+RandomEnemyRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom
 	EmptyCavePath		MinotaurRoom		EmptyCavePath			EmptyCavePath	
 	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	RandomEnemyRoom	
-	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		LootRoom
+	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		RandomEnemyRoom
 	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom
 			RandomEnemyRoom					EmptyCavePath	
-LootRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	LootRoom		EmptyCavePath	
+RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	LootRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom	
-	EmptyCavePath			LootRoom		RandomEnemyRoom			
+	EmptyCavePath			RandomEnemyRoom		RandomEnemyRoom			
 	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		StairsUp	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	
 			RandomEnemyRoom			RandomEnemyRoom		EmptyCavePath	
-			EmptyCavePath		EmptyCavePath	EmptyCavePath		LootRoom	
-LootRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	LootRoom
-			LootRoom					LootRoom	
+			EmptyCavePath		EmptyCavePath	EmptyCavePath		RandomEnemyRoom	
+RandomEnemyRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
+			RandomEnemyRoom					RandomEnemyRoom	

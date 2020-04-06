@@ -39,6 +39,7 @@ def play():
         # Check again since the room could have changed the player's state
         if player.is_alive():
             if player.location_z == 0:
+                world.load_tiles()  # going back to town respawns dungeon
                 print("You feel rested!")
                 player.health = player.health_max
                 player.mana = player.mana_max
