@@ -510,33 +510,39 @@ class Player(Character):
         input("Press enter to continue")
 
     def save(self):
-        save_file = "save_files/{0}.save".format(str(self.name))
-        player_dict = {"Player": {'Player location': [self.location_x, self.location_y, self.location_z],
-                                  'State': self.state,
-                                  'Race': self.race,
-                                  'Class': self.cls,
-                                  'Player name': self.name,
-                                  'Level': self.level,
-                                  'Current health': self.health,
-                                  'Max health': self.health_max,
-                                  'Current mana': self.mana,
-                                  'Max mana': self.mana_max,
-                                  'Experience': self.experience,
-                                  'Strength': self.strength,
-                                  'Intelligence': self.intel,
-                                  'Wisdom': self.wisdom,
-                                  'Constitution': self.con,
-                                  'Charisma': self.charisma,
-                                  'Dexterity': self.dex,
-                                  'Gold': self.gold,
-                                  'Equipment': self.equipment,
-                                  'Inventory': self.inventory,
-                                  'Spellbook': self.spellbook}}
-        _world = world.world_return()
-        save_dict = dict(list(player_dict.items()) + list(_world.items()))
-        with open(save_file, 'w') as save_game:
-            save_game.write(jsonpickle.encode(save_dict))
-        print("Your game is now saved.")
+        while True:
+            save_file = "save_files/{0}.save".format(str(self.name))
+            if os.path.exists(save_file):
+                print("A save file under this name already exists. Are you sure you want to overwrite it? (Y or N")
+                over = input("> ").lower()
+                if over != 'y':
+                    break
+            player_dict = {"Player": {'Player location': [self.location_x, self.location_y, self.location_z],
+                                      'State': self.state,
+                                      'Race': self.race,
+                                      'Class': self.cls,
+                                      'Player name': self.name,
+                                      'Level': self.level,
+                                      'Current health': self.health,
+                                      'Max health': self.health_max,
+                                      'Current mana': self.mana,
+                                      'Max mana': self.mana_max,
+                                      'Experience': self.experience,
+                                      'Strength': self.strength,
+                                      'Intelligence': self.intel,
+                                      'Wisdom': self.wisdom,
+                                      'Constitution': self.con,
+                                      'Charisma': self.charisma,
+                                      'Dexterity': self.dex,
+                                      'Gold': self.gold,
+                                      'Equipment': self.equipment,
+                                      'Inventory': self.inventory,
+                                      'Spellbook': self.spellbook}}
+            _world = world.world_return()
+            save_dict = dict(list(player_dict.items()) + list(_world.items()))
+            with open(save_file, 'w') as save_game:
+                save_game.write(jsonpickle.encode(save_dict))
+            print("Your game is now saved.")
 
     def equip(self):
         equip = True
