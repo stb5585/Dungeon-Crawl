@@ -8,7 +8,6 @@ import world
 import character
 import town
 import storyline
-import tutorial
 
 
 def play():
