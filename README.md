@@ -17,21 +17,19 @@ DESCRIPTION:
 FUTURE DEVELOPMENT:
 - Planned development
     - Enhance storyline for a more immersive experience
-    - Add promotion to other classes available to characters once they reach a certain level; may require a particular item to complete
     - Deepen the dungeon to allow for additional challenge
-    - Balance the character/dungeon difficulty to improve playability
     - Add a tutorial so players can better understand the gameplay
     - Adapt skill functionality for non-mage characters that do not cast spells
     - Add graphical representation for a more complete game experience
     - Make item comparison easier for both equipping and the shop
-    - Add shop_inventory dictionary; online lowest level items will be available by default and subsequent items will need to be farmed
-    - Have enemies respawn (either when entering town or after an amount of time); reset world tiles
+    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to be farmed
 
 - Possible development
     - Status effects
     - Item identification
     - Add capability to have more than one playable character
-    - Make the dungeon tiles all random (even the map creation)
+    - make map completely random
+    - require rare items for promotion
 
 FILES:
 - actions.py
