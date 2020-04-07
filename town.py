@@ -28,6 +28,13 @@ def alchemist(player: object):
     shop(player, buy_list)
 
 
+def tavern(player: object):
+    """
+    Quests
+    """
+    pass
+
+
 def church(player: object):
     print("Come in my child. You are always welcome in the arms of Elysia.")
     while True:
@@ -70,18 +77,26 @@ def shop(player, buy_list):
             for cat in items.items_dict[buy_list[buy_index][0]]:
                 cat_list.append((cat, i))
                 i += 1
+            cat_list.append(('None', i))
             cat_index = storyline.get_response(cat_list)
+            if cat_list[cat_index][0] == 'None':
+                continue
             item_list = []
             item_options = []
             i = 0
             for item in items.items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]][0]:
+                adj_cost = max(1, int(item().value - player.charisma*2))
                 if item().rarity < 50:
-                    item_options.append((item().name, i))
+                    item_options.append((item().name+'  '+str(adj_cost), i))
                     item_list.append(item)
                     i += 1
+            item_options.append(('None', i))
             item_index = storyline.get_response(item_options)
+            if item_options[item_index][0] == 'None':
+                continue
             buy_item = item_list[item_index]
-            if player.gold < max(1, (buy_item().value-(player.charisma*player.level))):
+            buy_price = max(1, int(buy_item().value-(player.charisma*2)))
+            if player.gold < buy_price:
                 print("You do not have enough gold.")
                 time.sleep(0.25)
             else:
@@ -89,16 +104,16 @@ def shop(player, buy_list):
                 while True:
                     try:
                         num = int(input("How many would you like to buy? "))
-                        if num * buy_item().value > player.gold:
+                        if num * buy_price > player.gold:
                             print("You do not have enough money for that purchase.")
                         elif num == 0:
                             break
                         else:
-                            buy_price = num * buy_item().value
+                            buy_price *= num
                             print("That will cost %s gold coins." % buy_price)
                             confirm = input("Do you still want to buy? ").lower()
                             if confirm == 'y':
-                                player.gold -= num * buy_item().value
+                                player.gold -= buy_price
                                 player.modify_inventory(buy_item, num=num, sell=False)
                                 print("%s %s will be added to your inventory." % (num, buy_item().name))
                             else:
@@ -132,7 +147,7 @@ def shop(player, buy_list):
                     try:
                         num = int(input("How many would you like to sell? "))
                         if num <= sell_amt:
-                            sale_price = int(0.5 * num * sell_item().value+(player.charisma*player.level))
+                            sale_price = int(0.5 * num * sell_item().value+(player.charisma*2))
                             print("I'll give you %s gold coins for that." % sale_price)
                             confirm = input("Do you still want to sell? ").lower()
                             if confirm == 'y':

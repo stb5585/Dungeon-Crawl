@@ -88,9 +88,8 @@ class RandomEnemyRoom(EnemyRoom):
         else:
             if self.enemy.is_alive():
                 return """
-                An enemy {} attacks you!\n
-                {}
-                """.format(self.enemy.name, self.enemy.health)
+                An enemy {} attacks you!
+                """.format(self.enemy.name)
             else:
                 return """
                 A dead {} lies on the ground.
@@ -117,9 +116,9 @@ class MinotaurRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+            Boss fight!
+            An enemy {} attacks you!
+            """.format(self.enemy.name)
         else:
             return """
             A dead {} lies on the ground.
@@ -133,9 +132,9 @@ class PseudodragonRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+            Boss fight!
+            An enemy {} attacks you!
+            """.format(self.enemy.name)
         else:
             return """
             A dead {} lies on the ground.
@@ -149,9 +148,9 @@ class CockatriceRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+            Boss fight!
+            An enemy {} attacks you!
+            """.format(self.enemy.name)
         else:
             return """
             A dead {} lies on the ground.
@@ -165,9 +164,9 @@ class GolemRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+            Boss fight!
+            An enemy {} attacks you!
+            """.format(self.enemy.name)
         else:
             return """
             A dead {} lies on the ground.
@@ -181,9 +180,9 @@ class RedDragonRoom(EnemyRoom):
     def intro_text(self):
         if self.enemy.is_alive():
             return """
-            An enemy {} attacks you!\n
-            {}
-            """.format(self.enemy.name, self.enemy.health)
+            Boss fight!
+            An enemy {} attacks you!
+            """.format(self.enemy.name)
         else:
             return """
             A dead {} lies on the ground.
