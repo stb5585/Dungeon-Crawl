@@ -42,15 +42,15 @@ class Enemy:
         dmg = max(1, (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor))
         damage = random.randint(dmg // 2, dmg)
         crit = 1
-        if not random.randint(0, int(self.equipment['Weapon']().crit) - 1):
+        if not random.randint(0, int(self.equipment['Weapon']().crit)):
             crit = 2
         damage *= crit
         blk = False
         blk_amt = 0
         if enemy.equipment['OffHand']().subtyp == 'Shield':
-            if not random.randint(0, int(enemy.equipment['OffHand']().mod) - 1):
+            if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                 blk = True
-                blk_amt = 1 / int(enemy.equipment['OffHand']().mod)
+                blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
                 damage *= (1 - blk_amt)
         damage = int(damage)
         damage += self.equipment['Weapon']().damage
@@ -125,7 +125,7 @@ class Skeleton(Enemy):
 class Zombie(Enemy):
 
     def __init__(self):
-        super().__init__(name='Zombie', health=random.randint(8, 12), mana=0, strength=10, intel=0, wisdom=5, con=8,
+        super().__init__(name='Zombie', health=random.randint(8, 12), mana=0, strength=13, intel=0, wisdom=5, con=8,
                          charisma=0, dex=4, exp=random.randint(6, 12))
         self.loot = dict(Gold=random.randint(15, 30))
 
@@ -199,15 +199,15 @@ class Harpy(Enemy):
 
     def __init__(self):
         super().__init__(name='Harpy', health=random.randint(18, 25), mana=0, strength=18, intel=13, wisdom=13,
-                         con=16, charisma=0, dex=23, exp=random.randint(40, 65))
+                         con=14, charisma=0, dex=23, exp=random.randint(40, 65))
         self.loot = dict(Gold=random.randint(50, 75), Potion=items.SuperHealthPotion)
 
 
 class Naga(Enemy):
 
     def __init__(self):
-        super().__init__(name='Naga', health=random.randint(22, 28), mana=0, strength=18, intel=13, wisdom=15,
-                         con=18, charisma=0, dex=17, exp=random.randint(42, 68))
+        super().__init__(name='Naga', health=random.randint(22, 28), mana=0, strength=15, intel=13, wisdom=15,
+                         con=15, charisma=0, dex=17, exp=random.randint(42, 68))
         self.equipment['Weapon'] = items.IronshodStaff
         self.loot = dict(Gold=random.randint(55, 75), Weapon=self.equipment['Weapon'])
 
@@ -318,7 +318,7 @@ class DarkKnight(Enemy):
         super().__init__(name='Dark Knight', health=random.randint(60, 80), mana=0, strength=22, intel=15, wisdom=12,
                          con=21, charisma=0, dex=17, exp=random.randint(300, 450))
         self.equipment['Weapon'] = items.AdamantiteSword
-        self.equipment['Armor'] = items.PlateArmor
+        self.equipment['Armor'] = items.PlateMail
         self.equipment['OffHand'] = items.TowerShield
         self.loot = dict(Gold=random.randint(400, 540), Weapon=self.equipment['Weapon'], Armor=self.equipment['Armor'],
                          OffHand=self.equipment['OffHand'])

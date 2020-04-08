@@ -23,6 +23,8 @@ FUTURE DEVELOPMENT:
     - Add graphical representation for a more complete game experience
     - Make item comparison easier for both equipping and the shop
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to be farmed
+    - Add quests to game
+    - Add tavern in town for obtaining quests
 
 - Possible development
     - Status effects

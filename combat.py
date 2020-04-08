@@ -66,7 +66,7 @@ def battle(player, enemy):
             print("You gained %s experience." % enemy.experience)
             player.loot(enemy)
             player.experience += enemy.experience
-            if player.experience >= 25 * player.level:
+            if player.experience >= (25**player.pro_level) * player.level:
                 player.level_up()
             player.state = 'normal'
             combat = False

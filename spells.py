@@ -130,7 +130,7 @@ class Shock(ElecSpell):
 class Lightning(ElecSpell):
 
     def __init__(self):
-        super().__init__(name='Shock', description='Throws a bolt of lightning at the enemy.',
+        super().__init__(name='Lightning', description='Throws a bolt of lightning at the enemy.',
                          level=15, cost=15, damage=28, crit=6)
 
 

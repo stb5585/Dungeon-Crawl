@@ -84,7 +84,7 @@ def shop(player, buy_list):
             item_list = []
             item_options = []
             i = 0
-            for item in items.items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]][0]:
+            for item in items.items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
                 adj_cost = max(1, int(item().value - player.charisma*2))
                 if item().rarity < 50:
                     item_options.append((item().name+'  '+str(adj_cost), i))

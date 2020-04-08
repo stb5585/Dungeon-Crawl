@@ -25,7 +25,16 @@ def equip_check(item, item_typ, class_name):
     """
     Checks if the class allows the item type to be equipped
     """
-    class_list = [('WARRIOR', Warrior), ('MAGE', Mage), ('FOOTPAD', Footpad)]
+    class_list = [('WARRIOR', Warrior), ('MAGE', Mage), ('FOOTPAD', Footpad),
+                  ('WEAPON MASTER', WeaponMaster), ('BERSERKER', Berserker),
+                  ('PALADIN', Paladin), ('CRUSADER', Crusader),
+                  ('LANCER', Lancer), ('DRAGOON', Dragoon),
+                  ('SORCERER', Sorcerer), ('WIZARD', Wizard),
+                  ('WARLOCK', Warlock), ('NECROMANCER', Necromancer),
+                  ('SPELLBLADE', Spellblade), ('KNIGHT ENCHANTER', KnightEnchanter),
+                  ('THIEF', Thief), ('ROGUE', Rogue),
+                  ('RANGER', Ranger), ('SEEKER', Seeker),
+                  ('ASSASSIN', Assassin), ("NINJA", Ninja)]
     for cls in class_list:
         if class_name == cls[0]:
             if item[0]().subtyp in cls[1]().restrictions[item_typ]:
@@ -39,7 +48,7 @@ def promotion(player: object):
                   WeaponMaster().name: [Berserker()],
                   Paladin().name: [Crusader()],
                   Lancer().name: [Dragoon()],
-                  Mage().name: [Sorcerer(), Warlock()],
+                  Mage().name: [Sorcerer(), Warlock(), Spellblade()],
                   Sorcerer().name: [Wizard()],
                   Warlock().name: [Necromancer()],
                   Spellblade().name: [KnightEnchanter()],
@@ -62,6 +71,7 @@ def promotion(player: object):
         promote = input("Do you wish to continue? (Y or N) ").lower()
         if promote == 'y':
             promoted_player = player
+            promoted_player.pro_level = new_class.pro_level
             promoted_player.level = 1
             promoted_player.experience = 0
             promoted_player.cls = new_class.name
@@ -95,7 +105,7 @@ class Job:
     """
 
     def __init__(self, name, description, min_str, min_int, min_wis, min_con, min_cha, min_dex, equipment,
-                 restrictions):
+                 restrictions, pro_level):
         self.name = name
         self.description = description
         self.min_str = min_str
@@ -106,6 +116,7 @@ class Job:
         self.min_dex = min_dex
         self.equipment = equipment
         self.restrictions = restrictions
+        self.pro_level = pro_level
 
     def __str__(self):
         return "Name: {}\n" \
@@ -134,9 +145,10 @@ class Warrior(Job):
                                                      "defense.",
                          min_str=12, min_int=7, min_wis=5, min_con=10, min_cha=6, min_dex=7,
                          equipment=dict(Weapon=items.BronzeSword, OffHand=items.WoodShield, Armor=items.HideArmor),
-                         restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm'],
                                        'OffHand': ['Shield'],
-                                       'Armor': ['Light', 'Medium', 'Heavy']})
+                                       'Armor': ['Light', 'Medium', 'Heavy']},
+                         pro_level=1)
 
 
 class WeaponMaster(Job):
@@ -150,27 +162,30 @@ class WeaponMaster(Job):
         super().__init__(name="WEAPON MASTER", description="Weapon Masters focus on the mastery of weapons and their"
                                                            " skill with them.",
                          min_str=15, min_int=10, min_wis=8, min_con=11, min_cha=7, min_dex=12,
-                         equipment=dict(Weapon=items.GreatAxe, OffHand=items.NoOffHand, Armor=items.Cuirboulli),
-                         restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
-                                       'OffHand': ['Dagger', 'Sword'],
-                                       'Armor': ['Light', 'Medium']})
+                         equipment=dict(Weapon=items.GreatAxe, OffHand=items.NoOffHand, Armor=items.ScaleMail),
+                         restrictions={'Weapon': ['Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm', 'Staff'],
+                                       'OffHand': ['Dagger', 'Sword', 'Mace'],
+                                       'Armor': ['Light', 'Medium']},
+                         pro_level=2)
 
 
 class Berserker(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
-    Pros: Can dual wield, use all weapons, and can equip light armor
-    Cons: Cannot use shields or heavy armor
+    Pros: Can dual wield 2-handed weapons
+    Cons: Cannot use shields and can only equip light armor
     """
 
     def __init__(self):
         super().__init__(name="BERSERKER", description="Berserkers are combat masters, driven by pure rage and "
                                                        "vengeance.",
                          min_str=18, min_int=12, min_wis=11, min_con=12, min_cha=8, min_dex=14,
-                         equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.NoOffHand, Armor=items.Studded),
+                         equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.AdamantiteHammer,
+                                        Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
-                                       'OffHand': ['Dagger', 'Sword'],
-                                       'Armor': ['Light', 'Medium']})
+                                       'OffHand': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
+                                       'Armor': ['Light']},
+                         pro_level=3)
 
 
 class Paladin(Job):
@@ -184,10 +199,11 @@ class Paladin(Job):
         super().__init__(name="PALADIN", description="The Paladin is a holy knight, crusading in the name of good and "
                                                      "order, and is a divine spell caster.",
                          min_str=13, min_int=13, min_wis=14, min_con=14, min_cha=10, min_dex=8,
-                         equipment=dict(Weapon=items.SteelSword, OffHand=items.IronShield, Armor=items.Splint),
-                         restrictions={'Weapon': ['Sword'],
+                         equipment=dict(Weapon=items.SteelMace, OffHand=items.IronShield, Armor=items.Splint),
+                         restrictions={'Weapon': ['Sword', 'Mace'],
                                        'OffHand': ['Shield'],
-                                       'Armor': ['Medium', 'Heavy']})
+                                       'Armor': ['Medium', 'Heavy']},
+                         pro_level=2)
 
 
 class Crusader(Job):
@@ -201,11 +217,12 @@ class Crusader(Job):
         super().__init__(name="CRUSADER", description="The Crusader is a holy warrior, who values order and justice "
                                                       "above all else.",
                          min_str=15, min_int=14, min_wis=16, min_con=16, min_cha=13, min_dex=9,
-                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield,
-                                        Armor=items.PlateArmor),
-                         restrictions={'Weapon': ['Sword'],
+                         equipment=dict(Weapon=items.AdamantiteMace, OffHand=items.TowerShield,
+                                        Armor=items.FullPlate),
+                         restrictions={'Weapon': ['Sword', 'Mace'],
                                        'OffHand': ['Shield'],
-                                       'Armor': ['Medium', 'Heavy']})
+                                       'Armor': ['Medium', 'Heavy']},
+                         pro_level=3)
 
 
 class Lancer(Job):
@@ -219,10 +236,11 @@ class Lancer(Job):
         super().__init__(name="LANCER", description="The Lancer spend their time specializing in the art of wielding "
                                                     "polearms and shields.",
                          min_str=14, min_int=11, min_wis=11, min_con=12, min_cha=8, min_dex=10,
-                         equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Breastplate),
+                         equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Splint),
                          restrictions={'Weapon': ['Polearm'],
                                        'OffHand': ['Shield'],
-                                       'Armor': ['Medium', 'Heavy']})
+                                       'Armor': ['Medium', 'Heavy']},
+                         pro_level=2)
 
 
 class Dragoon(Job):
@@ -240,10 +258,11 @@ class Dragoon(Job):
                                                      " leap unnaturally high into the air and strike their foes with "
                                                      "deadly force from above. ",
                          min_str=16, min_int=13, min_wis=13, min_con=14, min_cha=10, min_dex=12,
-                         equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.PlateArmor),
+                         equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.FullPlate),
                          restrictions={'Weapon': ['Polearm'],
                                        'OffHand': ['Shield'],
-                                       'Armor': ['Medium', 'Heavy']})
+                                       'Armor': ['Medium', 'Heavy']},
+                         pro_level=3)
 
 
 class Mage(Job):
@@ -264,7 +283,8 @@ class Mage(Job):
                          equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth']})
+                                       'Armor': ['Cloth']},
+                         pro_level=1)
 
 
 class Sorcerer(Job):
@@ -278,10 +298,11 @@ class Sorcerer(Job):
         super().__init__(name="SORCERER", description="A Sorcerer is someone who uses or practices magic derived from "
                                                       "supernatural, occult, or arcane sources.",
                          min_str=7, min_int=17, min_wis=14, min_con=7, min_cha=11, min_dex=8,
-                         equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.GoldCloak),
+                         equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth']})
+                                       'Armor': ['Cloth']},
+                         pro_level=2)
 
 
 class Wizard(Job):
@@ -299,7 +320,8 @@ class Wizard(Job):
                          equipment=dict(Weapon=items.SerpentStaff, OffHand=items.NoOffHand, Armor=items.WizardRobe),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth']})
+                                       'Armor': ['Cloth']},
+                         pro_level=3)
 
 
 class Warlock(Job):
@@ -314,10 +336,11 @@ class Warlock(Job):
                                                      "their innate magical gift, and perform spell-like feats and "
                                                      "abilities.",
                          min_str=10, min_int=14, min_wis=14, min_con=9, min_cha=10, min_dex=9,
-                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.GoldCloak),
+                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth']})
+                                       'Armor': ['Cloth']},
+                         pro_level=2)
 
 
 class Necromancer(Job):
@@ -336,7 +359,8 @@ class Necromancer(Job):
                                         Armor=items.CloakEnchantment),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth']})
+                                       'Armor': ['Cloth']},
+                         pro_level=3)
 
 
 class Spellblade(Job):
@@ -351,10 +375,11 @@ class Spellblade(Job):
         super().__init__(name="SPELLBLADE", description="The Spellblade combines a magical affinity with a higher level"
                                                         "of martial prowess from the other magical classes.",
                          min_str=12, min_int=13, min_wis=12, min_con=10, min_cha=10, min_dex=10,
-                         equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic),
+                         equipment=dict(Weapon=items.SteelSword, OffHand=items.TomeKnowledge, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth', 'Light']})
+                                       'Armor': ['Cloth', 'Light']},
+                         pro_level=2)
 
 
 class KnightEnchanter(Job):
@@ -370,10 +395,12 @@ class KnightEnchanter(Job):
                                                               " weapons with magical enchantments that can rival the "
                                                               "most powerful fighter.",
                          min_str=14, min_int=15, min_wis=14, min_con=13, min_cha=12, min_dex=12,
-                         equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic),
+                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.BookShadows,
+                                        Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Grimoire'],
-                                       'Armor': ['Cloth', 'Light']})
+                                       'Armor': ['Cloth', 'Light']},
+                         pro_level=3)
 
 
 class Footpad(Job):
@@ -390,16 +417,17 @@ class Footpad(Job):
                                                      "deftness. While more than capable of holding their own in hand-\n"
                                                      "to-hand combat, they truly excel at subterfuge.",
                          min_str=8, min_int=10, min_wis=8, min_con=7, min_cha=5, min_dex=11,
-                         equipment=dict(Weapon=items.BronzeDagger, OffHand=items.BronzeDagger, Armor=items.PaddedArmor),
+                         equipment=dict(Weapon=items.BronzeSword, OffHand=items.BronzeDagger, Armor=items.PaddedArmor),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Dagger'],
-                                       'Armor': ['Light']})
+                                       'Armor': ['Light']},
+                         pro_level=1)
 
 
 class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
-    Pros: Ability to dual wield and access to certain abilities (including stealing)
+    Pros: Ability to dual wield (only daggers in offhand) and access to certain abilities (including stealing)
     Cons: Lower average stats
     """
 
@@ -409,16 +437,17 @@ class Thief(Job):
                                                    "often lack fighting skill, but make up for it with their "
                                                    "treacherous backstabbing.",
                          min_str=10, min_int=14, min_wis=12, min_con=9, min_cha=6, min_dex=16,
-                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.SteelDagger, Armor=items.Cuirboulli),
+                         equipment=dict(Weapon=items.SteelSword, OffHand=items.SteelDagger, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Dagger'],
-                                       'Armor': ['Light']})
+                                       'Armor': ['Light']},
+                         pro_level=2)
 
 
 class Rogue(Job):
     """
     Promotion: Footpad -> Thief -> Rogue
-    Pros: Ability to dual wield and access to certain abilities (including stealing)
+    Pros: Ability to dual wield (can use swords in offhand) and access to certain abilities (including stealing)
     Cons: Lower average stats
     """
 
@@ -428,11 +457,12 @@ class Rogue(Job):
                                                    "the solution to just about any problem, demonstrating a "
                                                    "resourcefulness and versatility that has no rival.",
                          min_str=12, min_int=16, min_wis=13, min_con=12, min_cha=8, min_dex=18,
-                         equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.AdamantiteDagger,
-                                        Armor=items.Studded),
+                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.AdamantiteDagger,
+                                        Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
-                                       'OffHand': ['Dagger'],
-                                       'Armor': ['Light']})
+                                       'OffHand': ['Dagger', 'Sword'],
+                                       'Armor': ['Light']},
+                         pro_level=3)
 
 
 class Ranger(Job):
@@ -451,7 +481,8 @@ class Ranger(Job):
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.IronShield, Armor=items.ScaleMail),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Shield', 'Dagger', 'Sword'],
-                                       'Armor': ['Light', 'Medium']})
+                                       'Armor': ['Light', 'Medium']},
+                         pro_level=2)
 
 
 class Seeker(Job):
@@ -464,7 +495,7 @@ class Seeker(Job):
 
     def __init__(self):
         super().__init__(name="SEEKER", description="Seekers are very good at moving through the dungeon, being able to"
-                                                    " levitate, locate other characters, and teleport.  They can’t "
+                                                    " levitate, locate other characters, and teleport. They can’t "
                                                     "directly kill monsters with their magical abilities, but a Seeker "
                                                     "does well with a weapon in hand.  They are also the best at "
                                                     "mapping the dungeon and detecting any types of ‘anomalies’ they "
@@ -473,7 +504,8 @@ class Seeker(Job):
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield, Armor=items.HalfPlate),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Shield', 'Dagger', 'Sword'],
-                                       'Armor': ['Light', 'Medium']})
+                                       'Armor': ['Light', 'Medium']},
+                         pro_level=3)
 
 
 class Assassin(Job):
@@ -493,7 +525,8 @@ class Assassin(Job):
                          equipment=dict(Weapon=items.SteelDagger, OffHand=items.SteelDagger, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger'],
                                        'OffHand': ['Dagger'],
-                                       'Armor': ['Light']})
+                                       'Armor': ['Light']},
+                         pro_level=2)
 
 
 class Ninja(Job):
@@ -513,7 +546,8 @@ class Ninja(Job):
                                                    "moderate thieving skills.",
                          min_str=11, min_int=15, min_wis=17, min_con=10, min_cha=7, min_dex=22,
                          equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.AdamantiteDagger,
-                                        Armor=items.Studded),
+                                        Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger'],
                                        'OffHand': ['Dagger'],
-                                       'Armor': ['Light']})
+                                       'Armor': ['Light']},
+                         pro_level=3)

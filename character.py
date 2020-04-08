@@ -59,8 +59,8 @@ def new_char() -> object:
     print(stats)
     player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
                     health=stats[3] * 2, health_max=stats[3] * 2, mana=stats[1], mana_max=stats[1], strength=stats[0],
-                    intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5], gold=stats[4] * 10,
-                    equipment=cls.equipment, inventory={}, spellbook={})
+                    intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5], pro_level=1,
+                    gold=stats[4] * 10, equipment=cls.equipment, inventory={}, spellbook={})
     while player.name == '':
         player.name = input("What is your character's name? ").upper()
     player.race = race.name
@@ -128,6 +128,7 @@ def load_char(char=None) -> object:
                     player_dict['Constitution'],
                     player_dict['Charisma'],
                     player_dict['Dexterity'],
+                    player_dict['Promotion Level'],
                     player_dict['Gold'],
                     player_dict['Equipment'],
                     player_dict['Inventory'],
@@ -157,6 +158,7 @@ class Character:
         self.con = 0
         self.charisma = 0
         self.dex = 0
+        self.pro_level = 0
         self.equipment = {}
         self.inventory = {}
         self.spellbook = {}
@@ -171,19 +173,23 @@ class Character:
             self.weapon_damage(enemy)
         if ability().typ == 'Spell':
             self.mana -= ability().cost
+            spell_mod = 0
             damage = random.randint((ability().damage + self.intel) // 2, (ability().damage + self.intel))
             if self.equipment['OffHand']().subtyp == 'Grimoire':
                 damage += self.equipment['OffHand']().mod
+                spell_mod = self.equipment['OffHand']().mod
+            elif self.equipment['Weapon']().subtyp == 'Staff':
+                spell_mod = self.equipment['Weapon']().damage // 2
             damage -= random.randint(0, enemy.wisdom)
             crit = 1
-            if not random.randint(0, ability().crit - 1):
+            if not random.randint(0, ability().crit):
                 crit = 2
             damage *= crit
             if crit == 2:
                 print("Critical Hit!")
-            if random.randint(0, enemy.dex) > random.randint(self.intel // 2, self.intel):
+            if random.randint(0, enemy.dex) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
                 print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
-            elif random.randint(0, enemy.con) > random.randint(self.intel // 2, self.intel):
+            elif random.randint(0, enemy.con) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
                 damage //= 2
                 print("%s shrugs off the %s and only receives half of the damage." % (enemy.name, ability().name))
                 print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
@@ -205,15 +211,15 @@ class Character:
             off_dmg = self.equipment['OffHand']().damage
             damage += random.randint(off_dmg // 4, off_dmg // 2)
         crit = 1
-        if not random.randint(0, int(self.equipment['Weapon']().crit) - 1):
+        if not random.randint(0, int(self.equipment['Weapon']().crit)):
             crit = 2
         damage *= crit
         blk = False
         blk_amt = 0
         if enemy.equipment['OffHand']().subtyp == 'Shield':
-            if not random.randint(0, int(enemy.equipment['OffHand']().mod) - 1):
+            if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                 blk = True
-                blk_amt = 1 / int(enemy.equipment['OffHand']().mod)
+                blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
                 damage *= (1 - blk_amt)
         damage = int(damage)
         damage += self.equipment['Weapon']().damage
@@ -241,7 +247,7 @@ class Player(Character):
     """
 
     def __init__(self, location, state, level, exp, health, health_max, mana, mana_max, strength, intel, wisdom,
-                 con, charisma, dex, gold, equipment, inventory, spellbook):
+                 con, charisma, dex, pro_level, gold, equipment, inventory, spellbook):
         super().__init__()
         self.location_x = location[0]
         self.location_y = location[1]
@@ -259,6 +265,7 @@ class Player(Character):
         self.con = con
         self.charisma = charisma
         self.dex = dex
+        self.pro_level = pro_level
         self.gold = gold
         self.equipment = equipment
         self.inventory = inventory
@@ -306,7 +313,7 @@ class Player(Character):
         print("Name: %s" % self.name)
         print("Race: %s" % self.race)
         print("Class: %s" % self.cls)
-        print("Level: %s  Experience: %s" % (self.level, self.experience))
+        print("Level: %s  Experience: %s/%s" % (self.level, self.experience, (25 ** self.pro_level) * self.level))
         print("HP: %d/%d  MP: %d/%d" % (self.health, self.health_max, self.mana, self.mana_max))
         print("Strength: %d" % self.strength)
         print("Intelligence: %d" % self.intel)
@@ -319,10 +326,14 @@ class Player(Character):
                                      int(self.equipment['OffHand']().damage) // 2))
         else:
             print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
-        print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit) * 100)))
+        print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
         print("Armor: %d" % self.equipment['Armor']().armor)
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: %s%%" % str(int((1 / self.equipment['OffHand']().mod) * 100)))
+            print("Block Chance: %s%%" % str(int((1 / self.equipment['OffHand']().mod + 1) * 100)))
+        elif self.equipment['OffHand']().subtyp == 'Grimoire':
+            print("Spell Modifier: +%s" % str(self.equipment['OffHand']().mod))
+        elif self.equipment['Weapon']().subtyp == 'Staff':
+            print("Spell Modifier: +%s" % str(self.equipment['OffHand']().damage // 2))
         print("#" + (10 * "-") + "#")
         input("Press enter to continue")
         world_dict = world.world_return()
@@ -417,6 +428,41 @@ class Player(Character):
                         if self.mana >= self.mana_max:
                             self.mana = self.mana_max
                             print("You are at full mana!")
+            elif 'Elixir' in itm().subtyp:
+                if self.health == self.health_max and self.mana == self.mana_max:
+                    print("You are already at full health and mana.")
+                else:
+                    self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] -= 1
+                    if self.state != 'fight':
+                        health_heal = int(self.health_max *
+                                          self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][0]().percent)
+                        mana_heal = int(self.mana_max *
+                                        self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][0]().percent)
+                        print("The potion restored %d health points and %d mana points." % (health_heal, mana_heal))
+                        self.health += health_heal
+                        self.mana += mana_heal
+                        if self.health >= self.health_max:
+                            self.health = self.health_max
+                            print("You are at max health!")
+                        if self.mana >= self.mana_max:
+                            self.mana = self.mana_max
+                            print("You are at full mana!")
+                    else:
+                        rand_heal = int(self.health_max *
+                                        self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][0]().percent)
+                        rand_res = int(self.mana_max *
+                                       self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][0]().percent)
+                        health_heal = random.randint(rand_heal // 2, rand_heal)
+                        mana_heal = random.randint(rand_res // 2, rand_res)
+                        self.health += health_heal
+                        self.mana += mana_heal
+                        print("The potion restored %d health points and %d mana points." % (health_heal, mana_heal))
+                        if self.health >= self.health_max:
+                            self.health = self.health_max
+                            print("You are at max health!")
+                        if self.mana >= self.mana_max:
+                            self.mana = self.mana_max
+                            print("You are at full mana!")
             elif 'Stat' in itm().subtyp:
                 self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] -= 1
                 if itm().stat == 'str': self.strength += 1
@@ -425,7 +471,16 @@ class Player(Character):
                 if itm().stat == 'con': self.con += 1
                 if itm().stat == 'cha': self.charisma += 1
                 if itm().stat == 'dex': self.dex += 1
-                print("Your %s has been increased by 1!" % str(itm().name.split(' ')[0]).lower())
+                if itm().stat == 'all':
+                    self.strength += 1
+                    self.intel += 1
+                    self.wisdom += 1
+                    self.con += 1
+                    self.charisma += 1
+                    self.dex += 1
+                    print("All your stats have increased by 1!")
+                else:
+                    print("Your %s has been increased by 1!" % str(itm().name.split(' ')[0]).lower())
             if self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] == 0:
                 del self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]]
             break
@@ -461,7 +516,7 @@ class Player(Character):
             if stat_option[stat_index][1] == 5:
                 self.dex += 1
                 print("You are now at %s dexterity." % self.dex)
-        self.experience %= 25 * self.level
+        self.experience %= (25 ** self.pro_level) * self.level
         health_gain = random.randint(self.level // 2, self.level) + (self.con // 2)
         self.health_max += health_gain
         mana_gain = random.randint(self.level // 2, self.level) + (self.intel // 2)
@@ -554,6 +609,7 @@ class Player(Character):
                                       'Constitution': self.con,
                                       'Charisma': self.charisma,
                                       'Dexterity': self.dex,
+                                      'Promotion Level': self.pro_level,
                                       'Gold': self.gold,
                                       'Equipment': self.equipment,
                                       'Inventory': self.inventory,
