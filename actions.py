@@ -58,9 +58,14 @@ class Attack(Action):
         super().__init__(method=character.Player.weapon_damage, name="Attack", hotkey='a', enemy=enemy)
 
 
-class Special(Action):
+class CastSpell(Action):
     def __init__(self):
-        super().__init__(method=character.Player.special, name="Special", hotkey='x')
+        super().__init__(method=character.Player.cast_spell, name="Cast Spell", hotkey='x')
+
+
+class UseSkill(Action):
+    def __init__(self):
+        super().__init__(method=character.Player.use_ability, name="Use Skill", hotkey='k')
 
 
 class Flee(Action):

@@ -35,6 +35,9 @@ class Enemy:
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand)
         self.inventory = {}
 
+    def __str__(self):
+        return "{}\n=====\nHealth: {}\n".format(self.name, self.health)
+
     def is_alive(self):
         return self.health > 0
 
@@ -379,4 +382,4 @@ class RedDragon(Enemy):
     def __init__(self):
         super().__init__(name='Red Dragon', health=random.randint(500, 700), mana=0, strength=35, intel=28, wisdom=35,
                          con=30, charisma=0, dex=15, exp=random.randint(800, 1200))
-        self.loot = dict(Gold=random.randint(1500, 3000), Armor=items.Genji)
+        self.loot = dict(Gold=random.randint(1500, 3000), Armor=items.Genji, Potion=items.AardBeing)

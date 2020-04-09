@@ -54,7 +54,7 @@ class EnemyRoom(MapTile):
 
     def available_actions(self):
         if self.enemy.is_alive():
-            return [actions.Attack(enemy=self.enemy), actions.Special(), actions.UseItem()]
+            return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
         else:
             return self.adjacent_moves([actions.Status()])
 
@@ -103,10 +103,9 @@ class RandomEnemyRoom(EnemyRoom):
                 return self.adjacent_moves([actions.Status()])
         else:
             if self.enemy.is_alive():
-                return [actions.Attack(enemy=self.enemy), actions.Special(), actions.UseItem()]
+                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
             else:
                 return self.adjacent_moves([actions.Status()])
-
 
 
 class MinotaurRoom(EnemyRoom):

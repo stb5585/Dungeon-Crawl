@@ -6,7 +6,10 @@ CREATION DATE: March 2020
 
 LANGUAGE: Python 3.6.7, iPython 7.5.0
 
-DEPENDENCIES: pygame 2.0 or greater
+DEPENDENCIES:
+- pygame 2.0.0 (dev4)
+- pyfiglet 0.8 (pos1)
+- jsonpickle 1.3
 
 EXECUTION:
 - ipython game.py

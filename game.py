@@ -3,7 +3,9 @@
 
 # Imports
 import os
+import time
 import glob
+import pyfiglet
 
 import world
 import character
@@ -13,6 +15,10 @@ import tutorial
 
 
 def play():
+    os.system('clear')
+    f = pyfiglet.Figlet(font='slant')
+    print(f.renderText("DUNGEON CRAWL"))
+    time.sleep(2)
     new_char = True
     world.load_tiles()
     if not os.path.exists('save_files'):

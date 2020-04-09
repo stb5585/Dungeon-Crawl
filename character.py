@@ -60,7 +60,7 @@ def new_char() -> object:
     player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
                     health=stats[3] * 2, health_max=stats[3] * 2, mana=stats[1], mana_max=stats[1], strength=stats[0],
                     intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5], pro_level=1,
-                    gold=stats[4] * 10, equipment=cls.equipment, inventory={}, spellbook={})
+                    gold=stats[4] * 10, equipment=cls.equipment, inventory={}, spellbook={'Spells': {}, 'Skills': {}})
     while player.name == '':
         player.name = input("What is your character's name? ").upper()
     player.race = race.name
@@ -161,82 +161,8 @@ class Character:
         self.pro_level = 0
         self.equipment = {}
         self.inventory = {}
-        self.spellbook = {}
-
-    def special(self, enemy, ability: object):
-        """
-        Function that controls the character's abilities and spells during combat
-        """
-        print("%s casts %s." % (self.name, ability().name))
-        if ability().typ == 'Skill':
-            print("Skills don't work yet, so you just attack.")
-            self.weapon_damage(enemy)
-        if ability().typ == 'Spell':
-            self.mana -= ability().cost
-            spell_mod = 0
-            damage = random.randint((ability().damage + self.intel) // 2, (ability().damage + self.intel))
-            if self.equipment['OffHand']().subtyp == 'Grimoire':
-                damage += self.equipment['OffHand']().mod
-                spell_mod = self.equipment['OffHand']().mod
-            elif self.equipment['Weapon']().subtyp == 'Staff':
-                spell_mod = self.equipment['Weapon']().damage // 2
-            damage -= random.randint(0, enemy.wisdom)
-            crit = 1
-            if not random.randint(0, ability().crit):
-                crit = 2
-            damage *= crit
-            if crit == 2:
-                print("Critical Hit!")
-            if random.randint(0, enemy.dex) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
-                print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
-            elif random.randint(0, enemy.con) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
-                damage //= 2
-                print("%s shrugs off the %s and only receives half of the damage." % (enemy.name, ability().name))
-                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
-                enemy.health = enemy.health - damage
-            else:
-                if damage == 0:
-                    print("%s was ineffective and did 0 damage" % ability().name)
-                else:
-                    print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
-                    enemy.health = enemy.health - damage
-
-    def weapon_damage(self, enemy: object):
-        """
-        Function that controls the character's basic attack during combat
-        """
-        dmg = max(1, (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor))
-        damage = random.randint(dmg // 2, dmg)
-        if self.equipment['OffHand']().typ == 'Weapon':
-            off_dmg = self.equipment['OffHand']().damage
-            damage += random.randint(off_dmg // 4, off_dmg // 2)
-        crit = 1
-        if not random.randint(0, int(self.equipment['Weapon']().crit)):
-            crit = 2
-        damage *= crit
-        blk = False
-        blk_amt = 0
-        if enemy.equipment['OffHand']().subtyp == 'Shield':
-            if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
-                blk = True
-                blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
-                damage *= (1 - blk_amt)
-        damage = int(damage)
-        damage += self.equipment['Weapon']().damage
-        damage = max(0, damage - enemy.equipment['Armor']().armor)
-        if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
-            print("%s evades %s's attack." % (enemy.name, self.name))
-        else:
-            if crit == 2:
-                print("Critical Hit!")
-            if blk:
-                print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
-                    enemy.name, self.name, int(blk_amt * 100)))
-            if damage == 0:
-                print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
-            else:
-                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
-            enemy.health = enemy.health - damage
+        self.spellbook = {'Spells': {},
+                          'Skills': {}}
 
 
 class Player(Character):
@@ -270,6 +196,134 @@ class Player(Character):
         self.equipment = equipment
         self.inventory = inventory
         self.spellbook = spellbook
+
+    def cast_spell(self, enemy, ability):
+        """
+        Function that controls the character's abilities and spells during combat
+        """
+        print("%s casts %s." % (self.name, ability().name))
+        spell_mod = 0
+        if ability().cat == 'Attack':
+            damage = random.randint((ability().damage + self.intel) // 2, (ability().damage + self.intel))
+            if self.equipment['OffHand']().subtyp == 'Grimoire':
+                damage += self.equipment['OffHand']().mod
+                spell_mod = self.equipment['OffHand']().mod
+            elif self.equipment['Weapon']().subtyp == 'Staff':
+                spell_mod = self.equipment['Weapon']().damage // 2
+            damage -= random.randint(0, enemy.wisdom)
+            crit = 1
+            if not random.randint(0, ability().crit):
+                crit = 2
+            damage *= crit
+            if crit == 2:
+                print("Critical Hit!")
+            if random.randint(0, enemy.dex // 2) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
+            elif random.randint(0, enemy.con // 2) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                damage //= 2
+                print("%s shrugs off the %s and only receives half of the damage." % (enemy.name, ability().name))
+                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                enemy.health = enemy.health - damage
+            else:
+                if damage == 0:
+                    print("%s was ineffective and did 0 damage" % ability().name)
+                else:
+                    print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                    enemy.health = enemy.health - damage
+        elif ability().cat == 'Enhance':
+            self.weapon_damage(enemy, dmg_mod=ability().mod)
+        elif ability().cat == 'Heal':
+            pass
+        self.mana -= ability().cost
+
+    def use_ability(self, enemy, ability):
+        print("%s uses %s." % (self.name, ability().name))
+        self.mana -= ability().cost
+        if ability().name == 'Multi-Strike':
+            for _ in range(ability().strikes):
+                self.weapon_damage(enemy)
+        if ability().name == 'Jump':
+            for _ in range(ability().strikes):
+                self.weapon_damage(enemy, crit=2)
+        if ability().name == 'Backstab':
+            self.weapon_damage(enemy, ignore=True)
+
+    def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, dmg_mod=0):
+        """
+        Function that controls the character's basic attack during combat
+        """
+        blk = False
+        off_blk = False
+        blk_amt = 0
+        off_blk_amt = 0
+        dodge = False
+        off_dodge = False
+        off_damage = 0
+        if ignore:
+            dmg = max(1, (self.strength + self.equipment['Weapon']().damage + dmg_mod))
+            damage = random.randint(dmg // 2, dmg)
+            if self.equipment['OffHand']().typ == 'Weapon':
+                off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage + dmg_mod // 2))
+                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+        else:
+            dmg = max(1,
+                      (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor + dmg_mod))
+            damage = random.randint(dmg // 2, dmg)
+            if enemy.equipment['OffHand']().subtyp == 'Shield':
+                if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
+                    blk = True
+                    blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
+                    damage *= (1 - blk_amt)
+            if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
+                print("%s evades %s's attack." % (enemy.name, self.name))
+                dodge = True
+            if self.equipment['OffHand']().typ == 'Weapon':
+                off_crit = 1
+                off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage -
+                                  enemy.equipment['Armor']().armor + dmg_mod // 2))
+                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+                if enemy.equipment['OffHand']().subtyp == 'Shield':
+                    if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
+                        off_blk = True
+                        off_blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
+                        off_damage *= (1 - off_blk_amt)
+                if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
+                    off_dodge = True
+        if not dodge:
+            if not random.randint(0, int(self.equipment['Weapon']().crit)):
+                crit = 2
+            damage *= crit
+            damage = int(damage)
+            damage = max(0, damage)
+            if crit == 2:
+                print("Critical Hit!")
+            if blk:
+                print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
+                    enemy.name, self.name, int(blk_amt * 100)))
+            if damage == 0:
+                print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+            else:
+                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+            enemy.health -= damage
+        if self.equipment['OffHand']().typ == 'Weapon':
+            if not off_dodge:
+                if not random.randint(0, int(self.equipment['OffHand']().crit)):
+                    off_crit = 2
+                off_damage *= off_crit
+                off_damage = int(off_damage)
+                off_damage = max(0, off_damage)
+                if off_crit == 2:
+                    print("Critical Hit!")
+                if off_blk:
+                    print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
+                        enemy.name, self.name, int(off_blk_amt * 100)))
+                if off_damage == 0:
+                    print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                else:
+                    print("%s damages %s for %s hit points." % (self.name, enemy.name, off_damage))
+                enemy.health -= off_damage
+            else:
+                print("%s evades %s's off-hand attack." % (enemy.name, self.name))
 
     def game_quit(self):
         """
@@ -329,11 +383,11 @@ class Player(Character):
         print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
         print("Armor: %d" % self.equipment['Armor']().armor)
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: %s%%" % str(int((1 / self.equipment['OffHand']().mod + 1) * 100)))
+            print("Block Chance: %s%%" % str(int(1 / float(self.equipment['OffHand']().mod + 1) * 100)))
         elif self.equipment['OffHand']().subtyp == 'Grimoire':
             print("Spell Modifier: +%s" % str(self.equipment['OffHand']().mod))
         elif self.equipment['Weapon']().subtyp == 'Staff':
-            print("Spell Modifier: +%s" % str(self.equipment['OffHand']().damage // 2))
+            print("Spell Modifier: +%s" % str(self.equipment['Weapon']().damage // 2))
         print("#" + (10 * "-") + "#")
         input("Press enter to continue")
         world_dict = world.world_return()
@@ -351,14 +405,20 @@ class Player(Character):
                 self.do_action(action, **action.kwargs)
                 break
 
-    def flee(self, enemy: object) -> bool:
-        if random.randint(1, self.health + self.level) > random.randint(1, enemy.health):
+    def flee(self, enemy, smoke=False) -> bool:
+        if not smoke:
+            if random.randint(1, self.health + self.level) > random.randint(1, enemy.health):
+                print("%s flees from the %s." % (self.name, enemy.name))
+                self.state = 'normal'
+                return True
+            else:
+                print("%s couldn't escape from the %s!" % (self.name, enemy.name))
+                return False
+        else:
+            print("%s disappears in a cloud of smoke!" % self.name)
             print("%s flees from the %s." % (self.name, enemy.name))
             self.state = 'normal'
             return True
-        else:
-            print("%s couldn't escape from the %s!" % (self.name, enemy.name))
-            return False
 
     def use_item(self):
         item = True
@@ -527,9 +587,14 @@ class Player(Character):
               (health_gain, mana_gain))
         if str(self.level) in spells.spell_dict[self.cls]:
             spell_gain = spells.spell_dict[self.cls][str(self.level)]
-            self.spellbook[spell_gain().name] = spell_gain
+            self.spellbook['Spells'][spell_gain().name] = spell_gain
             print(spell_gain())
             print("You have gained the ability to cast %s!" % spell_gain().name)
+        if str(self.level) in spells.skill_dict[self.cls]:
+            skill_gain = spells.skill_dict[self.cls][str(self.level)]
+            self.spellbook['Skills'][skill_gain().name] = skill_gain
+            print(skill_gain())
+            print("You have gained the ability to use %s!" % skill_gain().name)
         input("Press enter to continue")
 
     def chest(self, enemy: object):
@@ -579,10 +644,20 @@ class Player(Character):
                 del self.inventory[item().name]
 
     def specials(self):
-        print("Spells/Skills:")
-        for spell in self.spellbook:
-            print(spell, self.spellbook[spell]().cost)
-        input("Press enter to continue")
+        if len(self.spellbook['Spells']) == 0 and len(self.spellbook['Skills']) == 0:
+            print("You do not have any abilities.")
+        else:
+            if len(self.spellbook['Spells']) > 0:
+                print("#" + (10 * "-") + "#")
+                print("#- Spells -#")
+                for spell in self.spellbook['Spells']:
+                    print(self.spellbook['Spells'][spell]().name)
+            if len(self.spellbook['Skills']) > 0:
+                print("#" + (10 * "-") + "#")
+                print("#- Skills -#")
+                for skill in self.spellbook['Skills']:
+                    print(self.spellbook['Skills'][skill]().name)
+            input("Press enter to continue")
 
     def save(self):
         while True:

@@ -2,7 +2,9 @@
 """ Town manager """
 
 # Imports
+import os
 import time
+import jsonpickle
 
 import items
 import storyline
@@ -10,6 +12,10 @@ import classes
 
 
 # Functions
+def shop_inventory():
+    pass
+
+
 def blacksmith(player: object):
     print("Welcome to Griswold's! What can I do you for?")
     buy_list = [('Weapon', 0), ('OffHand', 1)]
@@ -50,7 +56,9 @@ def church(player: object):
         elif church_options[church_index][1] == 1:
             player.save()  # Can only save at church in town
         elif church_options[church_index][1] == 2:
-            player.game_quit()
+            quit = input("Are you sure you want to quit? Any unsaved data will be lost. ")
+            if quit == 'y':
+                player.game_quit()
         elif church_options[church_index][1] == 3:
             print("Let the light of Elysia guide you.")
             break
@@ -86,7 +94,7 @@ def shop(player, buy_list):
             i = 0
             for item in items.items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
                 adj_cost = max(1, int(item().value - player.charisma*2))
-                if item().rarity < 50:
+                if item().rarity < 35:
                     item_options.append((item().name+'  '+str(adj_cost), i))
                     item_list.append(item)
                     i += 1
@@ -146,7 +154,7 @@ def shop(player, buy_list):
                 while True:
                     try:
                         num = int(input("How many would you like to sell? "))
-                        if num <= sell_amt:
+                        if num <= sell_amt and num != 0:
                             sale_price = int(0.5 * num * sell_item().value+(player.charisma*2))
                             print("I'll give you %s gold coins for that." % sale_price)
                             confirm = input("Do you still want to sell? ").lower()
@@ -175,8 +183,11 @@ def town(player: object):
     locations = [blacksmith, armory, alchemist, church]
     town_options = [('Blacksmith', 0), ('Armory', 1), ('Alchemist', 2), ('Church', 3), ('Dungeon', 4), ('Status', 5)]
     while True:
+        print("Where would you like to go?")
         town_index = storyline.get_response(town_options)
         if town_options[town_index][1] == 4:
+            print("You descend into the dungeon.")
+            time.sleep(1)
             player.location_x, player.location_y, player.location_z = (5, 10, 1)
             break
         elif town_options[town_index][1] == 5:

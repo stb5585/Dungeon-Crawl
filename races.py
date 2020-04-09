@@ -13,8 +13,25 @@ def define_race():
     print("Choose a race for your character.")
     race_list = [Human, Elf, Giant, Gnome, Dwarf]
     option_list = [('Human', 0), ('Elf', 1), ('Giant', 2), ('Gnome', 3), ('Dwarf', 4)]
-    race_index = storyline.get_response(option_list)
-    print(race_list[race_index]())
+    while True:
+        race_index = storyline.get_response(option_list)
+        race = race_list[race_index]()
+        print(race)
+        print("Stats (min/max):\n"
+              "Strength: %d/%d\n"
+              "Intelligence: %d/%d\n"
+              "Wisdom: %d/%d\n"
+              "Constitution: %d/%d\n"
+              "Charisma: %d/%d\n"
+              "Dexterity: %d/%d" % (race.str_rng[0], race.str_rng[1],
+                                    race.int_rng[0], race.int_rng[1],
+                                    race.wis_rng[0], race.wis_rng[1],
+                                    race.con_rng[0], race.con_rng[1],
+                                    race.cha_rng[0], race.cha_rng[1],
+                                    race.dex_rng[0], race.dex_rng[1]))
+        choose = input("Are you sure you want to play as a %s? " % race_list[race_index]().name).lower()
+        if choose == 'y':
+            break
     return race_list[race_index]()
 
 
