@@ -31,11 +31,11 @@ def random_item(z: int) -> object:
                                       reciprocal(SteelMace().rarity), reciprocal(AdamantiteMace().rarity),
                                       reciprocal(MithrilMace().rarity), reciprocal(Mjolnir().rarity)],
                                      ['1', '1', '2', '3', '4', '5']],
-                            'Axe': [[BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
-                                    [reciprocal(BattleAxe().rarity), reciprocal(GreatAxe().rarity),
-                                     reciprocal(AdamantiteAxe().rarity), reciprocal(MithrilAxe().rarity),
-                                     reciprocal(Jarnbjorn().rarity)],
-                                    ['1', '2', '3', '4', '5']],
+                            'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
+                                    [reciprocal(Axe().rarity), reciprocal(BattleAxe().rarity),
+                                     reciprocal(GreatAxe().rarity), reciprocal(AdamantiteAxe().rarity),
+                                     reciprocal(MithrilAxe().rarity), reciprocal(Jarnbjorn().rarity)],
+                                    ['1', '1', '2', '3', '4', '5']],
                             'Polearm': [[Spear, Lance, Pike, Halberd, Trident, Gungnir],
                                         [reciprocal(Spear().rarity), reciprocal(Lance().rarity),
                                          reciprocal(Pike().rarity), reciprocal(Halberd().rarity),
@@ -53,7 +53,7 @@ def random_item(z: int) -> object:
                                         reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
                                         reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity),
                                         reciprocal(Skullcrusher().rarity)],
-                                       ['1', '1', '2', '3', '3', '4', '5']]
+                                       ['1', '1', '2', '2', '3', '4', '5']]
                             },
                  'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
                                          MedusaShield],
@@ -122,7 +122,7 @@ def random_item(z: int) -> object:
     return rand_item
 
 
-def remove(typ: str):
+def remove(typ):
     typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor)
     return typ_dict[typ]
 
@@ -342,18 +342,25 @@ class Mjolnir(Weapon):
                          value=40000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False, off=True)
 
 
+class Axe(Weapon):
+
+    def __init__(self):
+        super().__init__(name="AXE", description="An axe specifically designed for combat.",
+                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False, off=False)
+
+
 class BattleAxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="BATTLE AXE", description="An axe specifically designed for combat.",
-                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False, off=False)
+        super().__init__(name="BATTLE AXE", description="A double-bladed, two-handed melee weapon.",
+                         value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class GreatAxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="GREAT AXE", description="A double-bladed, two-handed melee weapon.",
-                         value=3500, rarity=12, damage=10, crit=5, handed=2, subtyp='Axe', unequip=False, off=False)
+        super().__init__(name="GREAT AXE", description="An enlarged battle axe, providing additional damaging power.",
+                         value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class AdamantiteAxe(Weapon):
@@ -361,7 +368,7 @@ class AdamantiteAxe(Weapon):
     def __init__(self):
         super().__init__(name="ADAMANTITE AXE", description="A double-bladed, two-handed melee weapon made from "
                                                             "adamantite.",
-                         value=11000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False, off=False)
 
 
 class MithrilAxe(Weapon):
@@ -926,7 +933,7 @@ class SuperHealthPotion(Potion):
 
     def __init__(self):
         super().__init__(name="SUPER HEALTH POTION", description="A potion that restores up to 75% of your health.",
-                         value=1000, rarity=15, subtyp='Health')
+                         value=3000, rarity=15, subtyp='Health')
         self.percent = 0.75
 
 
@@ -934,7 +941,7 @@ class MasterHealthPotion(Potion):
 
     def __init__(self):
         super().__init__(name="MASTER HEALTH POTION", description="A potion that restores up to 100% of your health.",
-                         value=3000, rarity=35, subtyp='Health')
+                         value=10000, rarity=35, subtyp='Health')
         self.percent = 1.0
 
 
@@ -958,7 +965,7 @@ class SuperManaPotion(Potion):
 
     def __init__(self):
         super().__init__(name="SUPER MANA POTION", description="A potion that restores up to 75% of your mana.",
-                         value=5000, rarity=35, subtyp='Mana')
+                         value=8000, rarity=35, subtyp='Mana')
         self.percent = 0.75
 
 
@@ -966,7 +973,7 @@ class MasterManaPotion(Potion):
 
     def __init__(self):
         super().__init__(name="MASTER MANA POTION", description="A potion that restores up to 100% of your mana.",
-                         value=10000, rarity=75, subtyp='Mana')
+                         value=20000, rarity=75, subtyp='Mana')
         self.percent = 1.0
 
 
@@ -974,7 +981,7 @@ class Elixir(Potion):
 
     def __init__(self):
         super().__init__(name="ELIXIR", description="A potion that restores up to 50% of your health and mana.",
-                         value=8000, rarity=35, subtyp='Elixir')
+                         value=10000, rarity=35, subtyp='Elixir')
         self.percent = 0.5
 
 
@@ -982,7 +989,7 @@ class Megalixir(Potion):
 
     def __init__(self):
         super().__init__(name="MEGALIXIR", description="A potion that restores up to 100% of your health and mana.",
-                         value=20000, rarity=100, subtyp='Elixir')
+                         value=30000, rarity=100, subtyp='Elixir')
         self.percent = 1.0
 
 

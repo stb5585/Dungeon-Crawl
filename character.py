@@ -54,17 +54,24 @@ def new_char() -> object:
     """
     location_x, location_y, location_z = world.starting_position
     race = races.define_race()
+    os.system('clear')
     cls = classes.define_class()
-    stats = rand_stats(race, cls)
-    print(stats)
+    while True:
+        stats = rand_stats(race, cls)
+        print(stats)
+        keep = input("Would you like to keep these stats? (type Y to keep or else they will be re-rolled) ").lower()
+        if keep == 'y':
+            break
     player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
                     health=stats[3] * 2, health_max=stats[3] * 2, mana=stats[1], mana_max=stats[1], strength=stats[0],
                     intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5], pro_level=1,
                     gold=stats[4] * 10, equipment=cls.equipment, inventory={}, spellbook={'Spells': {}, 'Skills': {}})
+    # storyline.read_story('new_player.txt')
     while player.name == '':
         player.name = input("What is your character's name? ").upper()
     player.race = race.name
     player.cls = cls.name
+    os.system('clear')
     return player
 
 
@@ -217,27 +224,40 @@ class Player(Character):
             damage *= crit
             if crit == 2:
                 print("Critical Hit!")
-            if random.randint(0, enemy.dex // 2) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                time.sleep(0.25)
+            if random.randint(0, enemy.dex // 2) > \
+                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
                 print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
-            elif random.randint(0, enemy.con // 2) > random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                time.sleep(0.25)
+            elif random.randint(0, enemy.con // 2) > \
+                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
                 damage //= 2
                 print("%s shrugs off the %s and only receives half of the damage." % (enemy.name, ability().name))
                 print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                time.sleep(0.25)
                 enemy.health = enemy.health - damage
             else:
                 if damage == 0:
                     print("%s was ineffective and did 0 damage" % ability().name)
+                    time.sleep(0.25)
                 else:
                     print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                    time.sleep(0.25)
                     enemy.health = enemy.health - damage
         elif ability().cat == 'Enhance':
             self.weapon_damage(enemy, dmg_mod=ability().mod)
         elif ability().cat == 'Heal':
-            pass
+            heal = int(random.randint(self.health_max // 2, self.health_max)*ability().heal)
+            self.health += heal
+            print("You healed yourself for %s hit points." % heal)
+            if self.health >= self.health_max:
+                self.health = self.health_max
+                print("You are at full health!")
         self.mana -= ability().cost
 
     def use_ability(self, enemy, ability):
         print("%s uses %s." % (self.name, ability().name))
+        time.sleep(0.25)
         self.mana -= ability().cost
         if ability().name == 'Multi-Strike':
             for _ in range(ability().strikes):
@@ -276,6 +296,7 @@ class Player(Character):
                     damage *= (1 - blk_amt)
             if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
                 print("%s evades %s's attack." % (enemy.name, self.name))
+                time.sleep(0.25)
                 dodge = True
             if self.equipment['OffHand']().typ == 'Weapon':
                 off_crit = 1
@@ -297,13 +318,16 @@ class Player(Character):
             damage = max(0, damage)
             if crit == 2:
                 print("Critical Hit!")
+                time.sleep(0.25)
             if blk:
                 print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
                     enemy.name, self.name, int(blk_amt * 100)))
             if damage == 0:
                 print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                time.sleep(0.25)
             else:
                 print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                time.sleep(0.25)
             enemy.health -= damage
         if self.equipment['OffHand']().typ == 'Weapon':
             if not off_dodge:
@@ -314,16 +338,20 @@ class Player(Character):
                 off_damage = max(0, off_damage)
                 if off_crit == 2:
                     print("Critical Hit!")
+                    time.sleep(0.25)
                 if off_blk:
                     print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
                         enemy.name, self.name, int(off_blk_amt * 100)))
                 if off_damage == 0:
                     print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                    time.sleep(0.25)
                 else:
                     print("%s damages %s for %s hit points." % (self.name, enemy.name, off_damage))
+                    time.sleep(0.25)
                 enemy.health -= off_damage
             else:
                 print("%s evades %s's off-hand attack." % (enemy.name, self.name))
+                time.sleep(0.25)
 
     def game_quit(self):
         """
@@ -376,11 +404,13 @@ class Player(Character):
         print("Charisma: %d" % self.charisma)
         print("Dexterity: %d" % self.dex)
         if self.equipment['OffHand']().typ == 'Weapon':
-            print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage) +
-                                     int(self.equipment['OffHand']().damage) // 2))
+            print("Attack: %s/%s" % (str(self.strength + int(self.equipment['Weapon']().damage)),
+                                     str(self.strength // 2 + int(self.equipment['OffHand']().damage) // 2)))
+            print("Critical Chance: %s%%/%s%%" % (str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)),
+                                                  str(int(1 / float(self.equipment['OffHand']().crit + 1) * 100))))
         else:
             print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
-        print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
+            print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
         print("Armor: %d" % self.equipment['Armor']().armor)
         if self.equipment['OffHand']().subtyp == 'Shield':
             print("Block Chance: %s%%" % str(int(1 / float(self.equipment['OffHand']().mod + 1) * 100)))
@@ -623,7 +653,8 @@ class Player(Character):
     def print_inventory(self):
         print("Equipment:")
         print("Weapon - " + self.equipment['Weapon']().name)
-        if self.equipment['Weapon']().handed == 1:
+        if self.equipment['Weapon']().handed == 1 or self.cls == 'LANCER' or self.cls == 'DRAGOON' \
+                or self.cls == 'BERSERKER':
             print("OffHand - " + self.equipment['OffHand']().name)
         print("Armor - " + self.equipment['Armor']().name)
         print("Inventory:")
@@ -632,12 +663,19 @@ class Player(Character):
         print("Gold: %d" % self.gold)
         input("Press enter to continue")
 
-    def modify_inventory(self, item, num=0, sell: object = False):
+    def modify_inventory(self, item, num=0, sell=False):
         if not sell:
-            if item().name not in self.inventory:
-                self.inventory[item().name] = [item, num]
+            if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand':
+                if not item().unequip:
+                    if item().name not in self.inventory:
+                        self.inventory[item().name] = [item, num]
+                    else:
+                        self.inventory[item().name][1] += num
             else:
-                self.inventory[item().name][1] += num
+                if item().name not in self.inventory:
+                    self.inventory[item().name] = [item, num]
+                else:
+                    self.inventory[item().name][1] += num
         else:
             self.inventory[item().name][1] -= num
             if self.inventory[item().name][1] == 0:
@@ -648,15 +686,17 @@ class Player(Character):
             print("You do not have any abilities.")
         else:
             if len(self.spellbook['Spells']) > 0:
-                print("#" + (10 * "-") + "#")
-                print("#- Spells -#")
+                print("#" + (14 * "-") + "#")
+                print("#--- Spells ---#")
+                print("Name - Mana Cost")
                 for spell in self.spellbook['Spells']:
-                    print(self.spellbook['Spells'][spell]().name)
+                    print(self.spellbook['Spells'][spell]().name + " - " + self.spellbook['Spells'][spell]().cost)
             if len(self.spellbook['Skills']) > 0:
-                print("#" + (10 * "-") + "#")
-                print("#- Skills -#")
+                print("#" + (14 * "-") + "#")
+                print("#--- Skills ---#")
+                print("Name - Mana Cost")
                 for skill in self.spellbook['Skills']:
-                    print(self.spellbook['Skills'][skill]().name)
+                    print(self.spellbook['Skills'][skill]().name + " - " + self.spellbook['Skills'][skill]().cost)
             input("Press enter to continue")
 
     def save(self):
@@ -707,7 +747,8 @@ class Player(Character):
             inv_list = []
             while equip:
                 cont = 'y'
-                if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand' and \
+                        (self.cls != 'LANCER' or self.cls != 'CRUSADER' or self.cls != 'BERSERKER'):
                     print("You are currently equipped with a 2-handed weapon. Equipping an off-hand will remove the "
                           "2-hander.")
                     cont = input("Do you wish to continue? ").lower()
@@ -728,7 +769,7 @@ class Player(Character):
                                 elif option_list[slot][0] == 'Armor':
                                     diff = self.inventory[item][0]().armor - self.equipment['Armor']().armor
                                 elif option_list[slot][0] == 'OffHand':
-                                    try:
+                                    try:  # TODO change mod for shields
                                         diff = self.inventory[item][0]().mod - self.equipment['OffHand']().mod
                                     except AttributeError:
                                         diff = 0
@@ -773,7 +814,6 @@ class Player(Character):
         elif unequip:
             for item in self.equipment:
                 self.modify_inventory(self.equipment[item], 1)
-                items.remove(self.equipment[item]().typ)
 
     def move(self, dx, dy):
         self.location_x += dx

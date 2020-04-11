@@ -75,12 +75,12 @@ def promotion(player: object):
         print("You have chosen to promote from %s to %s." % (current_class, new_class.name))
         promote = input("Do you wish to continue? (Y or N) ").lower()
         if promote == 'y':
+            player.equip(unequip=True)
             promoted_player = player
             promoted_player.pro_level = new_class.pro_level
             promoted_player.level = 1
             promoted_player.experience = 0
             promoted_player.cls = new_class.name
-            player.equip(unequip=True)
             promoted_player.equipment = new_class.equipment
             if new_class.min_str > promoted_player.strength:
                 promoted_player.strength = new_class.min_str
@@ -186,7 +186,7 @@ class Berserker(Job):
         super().__init__(name="BERSERKER", description="Berserkers are combat masters, driven by pure rage and "
                                                        "vengeance.",
                          min_str=18, min_int=12, min_wis=11, min_con=12, min_cha=8, min_dex=14,
-                         equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.AdamantiteHammer,
+                         equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.WarHammer,
                                         Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
                                        'OffHand': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
@@ -252,7 +252,7 @@ class Lancer(Job):
 class Dragoon(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
-    Pros: Can use polearms as 1-handed weapons; can equip shields and heavy armor
+    Pros: Can use polearms as 1-handed weapons; can equip swords, shields and heavy armor
     Cons: Cannot equip 2-handed weapons or dual wield
     """
 
@@ -265,7 +265,7 @@ class Dragoon(Job):
                                                      "deadly force from above. ",
                          min_str=16, min_int=13, min_wis=13, min_con=14, min_cha=10, min_dex=12,
                          equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.FullPlate),
-                         restrictions={'Weapon': ['Polearm'],
+                         restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=3)

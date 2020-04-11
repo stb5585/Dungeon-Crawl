@@ -25,6 +25,7 @@ def play():
         os.mkdir('save_files')
     play_options = [('New Game', 0), ('Load Game', 1), ('Tutorial', 2)]
     play_index = storyline.get_response(play_options)
+    os.system('clear')
     if play_options[play_index][1] == 0:
         player = character.new_char()
     elif play_options[play_index][1] == 1:
@@ -36,6 +37,7 @@ def play():
             player = character.new_char()
     else:
         player = tutorial.tutorial()
+    os.system('clear')
     if new_char:
         town.town(player)
     while player.is_alive():
@@ -56,7 +58,7 @@ def play():
                 if room.intro_text() is not None:
                     print(room.intro_text())
                 print("Choose an action:\n")
-                available_actions = room.available_actions()
+                available_actions = room.available_actions(player)
                 for action in available_actions:
                     print(action)
                 action_input = input('Action: ')

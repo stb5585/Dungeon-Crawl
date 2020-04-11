@@ -10,6 +10,7 @@ DEPENDENCIES:
 - pygame 2.0.0 (dev4)
 - pyfiglet 0.8 (pos1)
 - jsonpickle 1.3
+- numpy
 
 EXECUTION:
 - ipython game.py

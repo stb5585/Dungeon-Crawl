@@ -3,6 +3,7 @@
 
 # Imports
 import random
+import time
 
 import items
 
@@ -60,16 +61,20 @@ class Enemy:
         damage = max(0, damage - enemy.equipment['Armor']().armor)
         if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
             print("%s evades %s's attack." % (enemy.name, self.name))
+            time.sleep(0.25)
         else:
             if crit == 2:
                 print("Critical Hit!")
+                time.sleep(0.25)
             if blk:
                 print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
                     enemy.name, self.name, int(blk_amt * 100)))
             if damage == 0:
                 print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                time.sleep(0.25)
             else:
                 print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                time.sleep(0.25)
             enemy.health -= damage
 
         return enemy.health <= 0
@@ -87,7 +92,7 @@ class Slime(Enemy):
     def __init__(self):
         super().__init__(name='Slime', health=random.randint(1, 6), mana=0, strength=6, intel=0, wisdom=15, con=8,
                          charisma=0, dex=4, exp=random.randint(1, 4))
-        self.loot = dict(Gold=random.randint(1, 3))
+        self.loot = dict(Gold=random.randint(1, 8))
 
 
 class GiantRat(Enemy):
@@ -138,7 +143,7 @@ class GiantSpider(Enemy):
     def __init__(self):
         super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=4,
                          con=10, charisma=0, dex=12, exp=random.randint(10, 14))
-        self.loot = dict(Gold=random.randint(15, 30))
+        self.loot = dict(Gold=random.randint(15, 30), Potion=items.ManaPotion)
 
 
 # Level 1 Boss
@@ -177,7 +182,7 @@ class Vampire(Enemy):
     def __init__(self):
         super().__init__(name='Vampire', health=random.randint(10, 15), mana=0, strength=16, intel=0, wisdom=12, con=15,
                          charisma=0, dex=14, exp=random.randint(25, 40))
-        self.loot = dict(Gold=random.randint(40, 90), Potion=items.SuperHealthPotion)
+        self.loot = dict(Gold=random.randint(40, 90), Potion=items.GreatHealthPotion)
 
 
 class Direwolf(Enemy):
@@ -219,7 +224,7 @@ class Naga(Enemy):
 class Pseudodragon(Enemy):
 
     def __init__(self):
-        super().__init__(name='Pseudodragon', health=random.randint(25, 35), mana=0, strength=20, intel=12, wisdom=16,
+        super().__init__(name='Pseudodragon', health=random.randint(38, 50), mana=0, strength=20, intel=12, wisdom=16,
                          con=18, charisma=0, dex=8, exp=random.randint(75, 125))
         self.loot = dict(Gold=random.randint(100, 250), Potion=items.SuperManaPotion)
 
@@ -229,7 +234,7 @@ class Ghoul(Enemy):
     def __init__(self):
         super().__init__(name='Ghoul', health=random.randint(42, 60), mana=0, strength=20, intel=0, wisdom=8, con=24,
                          charisma=0, dex=12, exp=random.randint(60, 90))
-        self.loot = dict(Gold=random.randint(35, 45))
+        self.loot = dict(Gold=random.randint(35, 45), Potion=items.SuperHealthPotion)
 
 
 class Werewolf(Enemy):
@@ -286,7 +291,7 @@ class Cockatrice(Enemy):
     def __init__(self):
         super().__init__(name='Cockatrice', health=random.randint(60, 75), mana=0, strength=21, intel=0, wisdom=15,
                          con=16, charisma=0, dex=20, exp=random.randint(150, 175))
-        self.loot = dict(Gold=random.randint(35, 45))
+        self.loot = dict(Gold=random.randint(35, 45), Potion=items.MasterHealthPotion)
 
 
 class Chimera(Enemy):
@@ -294,7 +299,7 @@ class Chimera(Enemy):
     def __init__(self):
         super().__init__(name='Chimera', health=random.randint(40, 75), mana=0, strength=23, intel=14, wisdom=16,
                          con=20, charisma=0, dex=14, exp=random.randint(130, 180))
-        self.loot = dict(Gold=random.randint(100, 250), Potion=items.MasterManaPotion)
+        self.loot = dict(Gold=random.randint(100, 250), Potion=items.SuperManaPotion)
 
 
 class Dragonkin(Enemy):
@@ -357,7 +362,7 @@ class Basilisk(Enemy):
     def __init__(self):
         super().__init__(name='Basilisk', health=random.randint(180, 275), mana=0, strength=29, intel=33, wisdom=30,
                          con=27, charisma=0, dex=20, exp=random.randint(430, 600))
-        self.loot = dict(Gold=random.randint(380, 520))
+        self.loot = dict(Gold=random.randint(380, 520), Potion=items.MasterManaPotion)
 
 
 class Hydra(Enemy):

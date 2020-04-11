@@ -42,21 +42,66 @@ class Offensive(Skill):
 
     def __init__(self, name, description, cost):
         super().__init__(name, description, cost)
+        self.subtyp = 'Offensive'
 
 
 class Stealth(Skill):
 
     def __init__(self, name, description, cost):
         super().__init__(name, description, cost)
+        self.subtyp = 'Stealth'
+
+
+class Drain(Skill):
+
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Drain'
 
 
 # Skills
+class ShieldSlam(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
+                                                         'stun for 1 turn.',
+                         cost=3)
+        self.stun = 1  # defines for how many rounds the enemy is stunned
+
+
+class ShieldSlam2(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
+                                                         'stun for 2 turn.',
+                         cost=10)
+        self.stun = 2  # defines for how many rounds the enemy is stunned
+
+
+class ShieldSlam3(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
+                                                         'stun for 3 turn.',
+                         cost=20)
+        self.stun = 3  # defines for how many rounds the enemy is stunned
+
+
+class ShieldSlam4(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
+                                                         'stun for 4 turn.',
+                         cost=30)
+        self.stun = 4  # defines for how many rounds the enemy is stunned
+
+
 class DoubleStrike(Offensive):
 
     def __init__(self):
         super().__init__(name='Multi-Strike', description='Perform a double attack with the primary weapon.',
                          cost=10)
-        self.strikes = 2
+        self.strikes = 2  # number of strikes performed
 
 
 class TripleStrike(Offensive):
@@ -77,7 +122,7 @@ class QuadStrike(Offensive):
 
     def __init__(self):
         super().__init__(name='Multi-Strike', description='Perform a quadruple attack with the primary weapon.',
-                         cost=40)
+                         cost=30)
         self.strikes = 4
 
 
@@ -88,7 +133,7 @@ class FlurryBlades(Offensive):
 
     def __init__(self):
         super().__init__(name='Multi-Strike', description='Slices the enemy in a flurry.',
-                         cost=50)
+                         cost=40)
         self.strikes = 5
 
 
@@ -128,6 +173,15 @@ class Backstab(Stealth):
                          cost=6)
 
 
+class KidneyPunch(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
+                                                          ' turn.',
+                         cost=12)
+        self.stun = 2
+
+
 class SmokeScreen(Stealth):
 
     def __init__(self):
@@ -135,6 +189,35 @@ class SmokeScreen(Stealth):
                                                           'player to flee without fail.',
                          cost=5)
         self.escape = True
+
+
+class Steal(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Steal', description='Relieve the enemy of their items.',
+                         cost=4)
+
+
+class HealthDrain(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Health Drain', description='Drain the enemy, absorbing their health.',
+                         cost=10)
+
+
+class ManaDrain(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Mana Drain', description='Drain the enemy, absorbing their mana.',
+                         cost=0)
+
+
+class HealthManaDrain(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Health/Mana Drain', description='Drain the enemy, absorbing the health and mana in '
+                                                               'return.',
+                         cost=10)
 
 
 """
@@ -170,6 +253,15 @@ class ElecSpell(Spell):
         self.subtyp = 'Electrical'
 
 
+class ShadowSpell(Spell):
+
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost)
+        self.damage = damage
+        self.crit = crit
+        self.subtyp = 'Shadow'
+
+
 class HealSpell(Spell):
 
     def __init__(self, name, description, cost, heal, crit):
@@ -184,6 +276,12 @@ class EnhanceSpell(Spell):
     def __init__(self, name, description, cost, mod):
         super().__init__(name, description, cost)
         self.mod = mod
+
+
+class MovementSpell(Spell):
+
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
 
 
 # Spells
@@ -255,9 +353,48 @@ class Lightning(ElecSpell):
 class Electrocution(ElecSpell):
 
     def __init__(self):
-        super().__init__(name='Electrocution', description='A million volts of electricity passes through the enemy',
+        super().__init__(name='Electrocution', description='A million volts of electricity passes through the enemy.',
                          cost=25, damage=50, crit=5)
         self.cat = 'Attack'
+
+
+class ShadowBolt(ElecSpell):
+
+    def __init__(self):
+        super().__init__(name='Shadow Bolt', description='Launch a bolt of magic infused with dark energy, damaging the'
+                                                         ' enemy.',
+                         cost=12, damage=20, crit=5)
+        self.cat = 'Attack'
+
+
+class Terrify(ElecSpell):
+
+    def __init__(self):
+        super().__init__(name='Terrify', description='Get in the mind of the enemy, terrifying them into inaction for a'
+                                                     ' turn and doing damage in the process.',
+                         cost=15, damage=10, crit=4)
+        self.cat = 'Attack'
+        self.stun = 1
+
+
+class Terrify2(ElecSpell):
+
+    def __init__(self):
+        super().__init__(name='Terrify', description='Get in the mind of the enemy, terrifying them into inaction for 2'
+                                                     ' turns and doing damage in the process.',
+                         cost=20, damage=15, crit=3)
+        self.cat = 'Attack'
+        self.stun = 2
+
+
+class Terrify3(ElecSpell):
+
+    def __init__(self):
+        super().__init__(name='Terrify', description='Get in the mind of the enemy, terrifying them into inaction for 3'
+                                                     ' turns and doing damage in the process.',
+                         cost=25, damage=20, crit=2)
+        self.cat = 'Attack'
+        self.stun = 3
 
 
 class Heal(HealSpell):
@@ -314,6 +451,13 @@ class EnhanceBlade3(EnhanceSpell):
         self.cat = 'Enhance'
 
 
+class Sanctuary(MovementSpell):
+
+    def __init__(self):
+        super().__init__(name='Sanctuary', description='Return to town from anywhere in the dungeon.',
+                         cost=100)
+
+
 # Parameters
 spell_dict = {'WARRIOR': {},
               'WEAPON MASTER': {},
@@ -332,8 +476,10 @@ spell_dict = {'WARRIOR': {},
               'WIZARD': {'4': Firestorm,
                          '10': IceBlizzard,
                          '15': Electrocution},
-              'WARLOCK': {},
-              'NECROMANCER': {},
+              'WARLOCK': {'5': ShadowBolt,
+                          '10': Terrify},
+              'NECROMANCER': {'2': Terrify2,
+                              '16': Terrify3},
               'SPELLBLADE': {'2': EnhanceBlade,
                              '14': EnhanceBlade2},
               'KNIGHT ENCHANTER': {'4': EnhanceBlade3},
@@ -346,29 +492,34 @@ spell_dict = {'WARRIOR': {},
               'NINJA': {}
               }
 
-skill_dict = {'WARRIOR': {'10': DoubleStrike},
+skill_dict = {'WARRIOR': {'3': ShieldSlam,
+                          '10': DoubleStrike},
               'WEAPON MASTER': {'10': TripleStrike},
               'BERSERKER': {'10': QuadStrike},
-              'PALADIN': {},
-              'CRUSADER': {},
+              'PALADIN': {'4': ShieldSlam2,
+                          '20': ShieldSlam3},
+              'CRUSADER': {'10': ShieldSlam4},
               'LANCER': {'5': Jump,
                          '15': DoubleJump},
               'DRAGOON': {'20': TripleJump},
               'MAGE': {},
               'SORCERER': {},
               'WIZARD': {},
-              'WARLOCK': {},
-              'NECROMANCER': {},
+              'WARLOCK': {'5': HealthDrain,
+                          '15': ManaDrain},
+              'NECROMANCER': {'10': HealthManaDrain},
               'SPELLBLADE': {},
               'KNIGHT ENCHANTER': {'10': DoubleStrike},
-              'FOOTPAD': {'5': SmokeScreen,
+              'FOOTPAD': {'3': Steal,
+                          '5': SmokeScreen,
                           '8': Backstab,
                           '15': DoubleStrike},
-              'THIEF': {},
+              'THIEF': {'12': KidneyPunch},
               'ROGUE': {'10': TripleStrike},
               'RANGER': {},
-              'SEEKER': {},
+              'SEEKER': {'20': Sanctuary},
               'ASSASSIN': {'5': TripleStrike,
                            '20': QuadStrike},
-              'NINJA': {'25': FlurryBlades}
+              'NINJA': {'3': KidneyPunch,
+                        '25': FlurryBlades}
               }

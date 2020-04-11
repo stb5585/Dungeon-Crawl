@@ -2,6 +2,7 @@
 """ map manager """
 
 # Imports
+import character
 import enemies
 import actions
 import world
@@ -37,7 +38,7 @@ class MapTile:
             moves.append(item)
         return moves
 
-    def available_actions(self):
+    def available_actions(self, player):
         """Returns all of the available actions in this room."""
         pass
 
@@ -52,9 +53,16 @@ class EnemyRoom(MapTile):
             player.state = 'fight'
             combat.battle(player, self.enemy)
 
-    def available_actions(self):
+    def available_actions(self, player):
         if self.enemy.is_alive():
-            return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
+            if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
+                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
+            elif len(player.spellbook['Spells']) > 0:
+                return [actions.Attack(enemy=self.enemy), actions.CastSpell(), actions.UseItem()]
+            elif len(player.spellbook['Skills']) > 0:
+                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.UseItem()]
+            else:
+                return [actions.Attack(enemy=self.enemy), actions.UseItem()]
         else:
             return self.adjacent_moves([actions.Status()])
 
@@ -67,7 +75,7 @@ class EmptyCavePath(MapTile):
         # Room has no action on player
         pass
 
-    def available_actions(self):
+    def available_actions(self, player):
         return self.adjacent_moves([actions.Status()])
 
 
@@ -95,7 +103,7 @@ class RandomEnemyRoom(EnemyRoom):
                 A dead {} lies on the ground.
                 """.format(self.enemy.name)
 
-    def available_actions(self):
+    def available_actions(self, player):
         if self.enemy.name == 'Chest':
             if self.enemy.is_alive():
                 return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
@@ -103,7 +111,15 @@ class RandomEnemyRoom(EnemyRoom):
                 return self.adjacent_moves([actions.Status()])
         else:
             if self.enemy.is_alive():
-                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
+                if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
+                    return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(),
+                            actions.UseItem()]
+                elif len(player.spellbook['Spells']) > 0:
+                    return [actions.Attack(enemy=self.enemy), actions.CastSpell(), actions.UseItem()]
+                elif len(player.spellbook['Skills']) > 0:
+                    return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.UseItem()]
+                else:
+                    return [actions.Attack(enemy=self.enemy), actions.UseItem()]
             else:
                 return self.adjacent_moves([actions.Status()])
 
@@ -202,7 +218,7 @@ class LootRoom(EnemyRoom):
             This room has an open chest.
             """
 
-    def available_actions(self):
+    def available_actions(self, player):
         if self.enemy.is_alive():
             return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
         else:
@@ -218,7 +234,7 @@ class StairsUp(MapTile):
     def modify_player(self, player):
         pass
 
-    def available_actions(self):
+    def available_actions(self, player):
         return self.adjacent_moves([actions.StairsUp(), actions.Status()])
 
 
@@ -231,5 +247,5 @@ class StairsDown(MapTile):
     def modify_player(self, player):
         pass
 
-    def available_actions(self):
+    def available_actions(self, player):
         return self.adjacent_moves([actions.StairsDown(), actions.Status()])
