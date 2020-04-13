@@ -141,7 +141,7 @@ class Zombie(Enemy):
 class GiantSpider(Enemy):
 
     def __init__(self):
-        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=4,
+        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=10,
                          con=10, charisma=0, dex=12, exp=random.randint(10, 14))
         self.loot = dict(Gold=random.randint(15, 30), Potion=items.ManaPotion)
 

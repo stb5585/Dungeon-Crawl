@@ -15,7 +15,7 @@ import tutorial
 
 
 def play():
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     f = pyfiglet.Figlet(font='slant')
     print(f.renderText("DUNGEON CRAWL"))
     time.sleep(2)
@@ -25,7 +25,7 @@ def play():
         os.mkdir('save_files')
     play_options = [('New Game', 0), ('Load Game', 1), ('Tutorial', 2)]
     play_index = storyline.get_response(play_options)
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     if play_options[play_index][1] == 0:
         player = character.new_char()
     elif play_options[play_index][1] == 1:
@@ -37,7 +37,7 @@ def play():
             player = character.new_char()
     else:
         player = tutorial.tutorial()
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     if new_char:
         town.town(player)
     while player.is_alive():

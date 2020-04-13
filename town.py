@@ -4,7 +4,7 @@
 # Imports
 import os
 import time
-import jsonpickle
+import pickle
 
 import items
 import storyline
@@ -56,8 +56,8 @@ def church(player: object):
         elif church_options[church_index][1] == 1:
             player.save()  # Can only save at church in town
         elif church_options[church_index][1] == 2:
-            quit = input("Are you sure you want to quit? Any unsaved data will be lost. ")
-            if quit == 'y':
+            quitting = input("Are you sure you want to quit? Any unsaved data will be lost. ")
+            if quitting == 'y':
                 player.game_quit()
         elif church_options[church_index][1] == 3:
             print("Let the light of Elysia guide you.")
@@ -67,6 +67,7 @@ def church(player: object):
 def shop(player, buy_list):
     print("You have %s gold." % player.gold)
     time.sleep(0.25)
+    items_dict = items.items_dict
     while True:
         print("Did you want to buy or sell?")
         option_list = [('Buy', 0), ('Sell', 1), ('Leave', 2)]
@@ -82,25 +83,25 @@ def shop(player, buy_list):
                 buy_index = 0
             cat_list = []
             i = 0
-            for cat in items.items_dict[buy_list[buy_index][0]]:
+            for cat in items_dict[buy_list[buy_index][0]]:
                 cat_list.append((cat, i))
                 i += 1
-            cat_list.append(('None', i))
+            cat_list.append(('Go back', i))
             cat_index = storyline.get_response(cat_list)
-            if cat_list[cat_index][0] == 'None':
+            if cat_list[cat_index][0] == 'Go back':
                 continue
             item_list = []
             item_options = []
             i = 0
-            for item in items.items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
+            for item in items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
                 adj_cost = max(1, int(item().value - player.charisma*2))
                 if item().rarity < 35:
                     item_options.append((item().name+'  '+str(adj_cost), i))
                     item_list.append(item)
                     i += 1
-            item_options.append(('None', i))
+            item_options.append(('Go back', i))
             item_index = storyline.get_response(item_options)
-            if item_options[item_index][0] == 'None':
+            if item_options[item_index][0] == 'Go back':
                 continue
             buy_item = item_list[item_index]
             buy_price = max(1, int(buy_item().value-(player.charisma*2)))
@@ -155,7 +156,7 @@ def shop(player, buy_list):
                     try:
                         num = int(input("How many would you like to sell? "))
                         if num <= sell_amt and num != 0:
-                            sale_price = int(0.5 * num * sell_item().value+(player.charisma*2))
+                            sale_price = int(0.5 * num * sell_item().value + (player.charisma * 2))
                             print("I'll give you %s gold coins for that." % sale_price)
                             confirm = input("Do you still want to sell? ").lower()
                             if confirm == 'y':

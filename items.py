@@ -169,7 +169,8 @@ class NoWeapon(Weapon):
 
     def __init__(self):
         super().__init__(name="BARE HANDS", description="Nothing but your fists.",
-                         value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True, off=True)
+                         value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True,
+                         off=True)
 
 
 class BronzeDagger(Weapon):
@@ -178,7 +179,8 @@ class BronzeDagger(Weapon):
         super().__init__(name="BRONZE DAGGER", description="A bronze knife with a very sharp point and usually two "
                                                            "sharp edges, typically designed or capable of being used as"
                                                            " a thrusting or stabbing weapon.",
-                         value=125, rarity=3, damage=1, crit=5, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=125, rarity=3, damage=1, crit=5, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class IronDagger(Weapon):
@@ -187,7 +189,8 @@ class IronDagger(Weapon):
         super().__init__(name="IRON DAGGER", description="An iron knife with a very sharp point and usually two "
                                                          "sharp edges, typically designed or capable of being used as"
                                                          " a thrusting or stabbing weapon.",
-                         value=1500, rarity=7, damage=3, crit=4, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=1500, rarity=7, damage=3, crit=4, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class SteelDagger(Weapon):
@@ -196,7 +199,8 @@ class SteelDagger(Weapon):
         super().__init__(name="STEEL DAGGER", description="A steel knife with a very sharp point and usually two "
                                                           "sharp edges, typically designed or capable of being used as"
                                                           " a thrusting or stabbing weapon.",
-                         value=5000, rarity=15, damage=5, crit=3, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=5000, rarity=15, damage=5, crit=3, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class AdamantiteDagger(Weapon):
@@ -205,7 +209,8 @@ class AdamantiteDagger(Weapon):
         super().__init__(name="ADAMANTITE DAGGER", description="An adamantite knife with a very sharp point and usually"
                                                                " two sharp edges, typically designed or capable of "
                                                                "being used as a thrusting or stabbing weapon.",
-                         value=8000, rarity=25, damage=8, crit=2, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=8000, rarity=25, damage=8, crit=2, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class MithrilDagger(Weapon):
@@ -214,15 +219,17 @@ class MithrilDagger(Weapon):
         super().__init__(name="MITHRIL DAGGER", description="An mithril knife with a very sharp point and usually"
                                                             " two sharp edges, typically designed or capable of "
                                                             "being used as a thrusting or stabbing weapon.",
-                         value=15000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=15000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class Carnwennan(Weapon):
 
     def __init__(self):
-        super().__init__(name="Carnwennan", description="King Arthur's dagger, sometimes described to shroud the user "
+        super().__init__(name="CARNWENNAN", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
-                         value=25000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False, off=True)
+                         value=25000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False,
+                         off=True)
 
 
 class BronzeSword(Weapon):
@@ -231,7 +238,8 @@ class BronzeSword(Weapon):
         super().__init__(name="BRONZE SWORD", description="A weapon with a long bronze blade and a hilt with a hand "
                                                           "guard, used for thrusting or striking and now typically "
                                                           "worn as part of ceremonial dress.",
-                         value=125, rarity=3, damage=2, crit=8, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=125, rarity=3, damage=2, crit=8, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class IronSword(Weapon):
@@ -240,7 +248,8 @@ class IronSword(Weapon):
         super().__init__(name="IRON SWORD", description="A weapon with a long iron blade and a hilt with a hand "
                                                         "guard, used for thrusting or striking and now typically worn "
                                                         "as part of ceremonial dress.",
-                         value=2000, rarity=8, damage=5, crit=6, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=2000, rarity=8, damage=5, crit=6, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class SteelSword(Weapon):
@@ -249,7 +258,8 @@ class SteelSword(Weapon):
         super().__init__(name="STEEL SWORD", description="A weapon with a long steel blade and a hilt with a hand "
                                                          "guard, used for thrusting or striking and now typically worn "
                                                          "as part of ceremonial dress.",
-                         value=5500, rarity=15, damage=7, crit=5, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=5500, rarity=15, damage=7, crit=5, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class AdamantiteSword(Weapon):
@@ -258,7 +268,8 @@ class AdamantiteSword(Weapon):
         super().__init__(name="ADAMANTITE SWORD", description="A weapon with a long adamantite blade and a hilt with "
                                                               "a hand guard, used for thrusting or striking and now "
                                                               "typically worn as part of ceremonial dress.",
-                         value=10000, rarity=25, damage=10, crit=4, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=10000, rarity=25, damage=10, crit=4, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class MithrilSword(Weapon):
@@ -267,7 +278,8 @@ class MithrilSword(Weapon):
         super().__init__(name="MITHRIL SWORD", description="A weapon with a long mithril blade and a hilt with "
                                                            "a hand guard, used for thrusting or striking and now "
                                                            "typically worn as part of ceremonial dress.",
-                         value=22000, rarity=40, damage=12, crit=4, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=22000, rarity=40, damage=12, crit=4, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class Excalibur(Weapon):
@@ -275,7 +287,8 @@ class Excalibur(Weapon):
     def __init__(self):
         super().__init__(name="EXCALIBUR", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
-                         value=40000, rarity=50, damage=15, crit=3, handed=1, subtyp='Sword', unequip=False, off=True)
+                         value=40000, rarity=50, damage=15, crit=3, handed=1, subtyp='Sword', unequip=False,
+                         off=True)
 
 
 class BronzeMace(Weapon):
@@ -286,7 +299,8 @@ class BronzeMace(Weapon):
                                                          "strikes. A mace typically consists of a strong, heavy, wooden"
                                                          " or metal shaft, often reinforced with metal, featuring a "
                                                          "head made of bronze.",
-                         value=125, rarity=3, damage=3, crit=10, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=125, rarity=3, damage=3, crit=10, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class IronMace(Weapon):
@@ -297,7 +311,8 @@ class IronMace(Weapon):
                                                        "strikes. A mace typically consists of a strong, heavy, wooden"
                                                        " or metal shaft, often reinforced with metal, featuring a "
                                                        "head made of iron.",
-                         value=2000, rarity=7, damage=6, crit=9, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=2000, rarity=7, damage=6, crit=9, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class SteelMace(Weapon):
@@ -308,7 +323,8 @@ class SteelMace(Weapon):
                                                         "strikes. A mace typically consists of a strong, heavy, wooden"
                                                         " or metal shaft, often reinforced with metal, featuring a "
                                                         "head made of steel.",
-                         value=4500, rarity=15, damage=8, crit=8, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=4500, rarity=15, damage=8, crit=8, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class AdamantiteMace(Weapon):
@@ -319,7 +335,8 @@ class AdamantiteMace(Weapon):
                                                              "powerful strikes. A mace typically consists of a strong, "
                                                              "heavy, wooden or metal shaft, often reinforced with "
                                                              "metal, featuring a head made of adamantite.",
-                         value=10000, rarity=25, damage=12, crit=7, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=10000, rarity=25, damage=12, crit=7, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class MithrilMace(Weapon):
@@ -330,7 +347,8 @@ class MithrilMace(Weapon):
                                                           "powerful strikes. A mace typically consists of a strong, "
                                                           "heavy, wooden or metal shaft, often reinforced with "
                                                           "metal, featuring a head made of mithril.",
-                         value=18000, rarity=40, damage=14, crit=7, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=18000, rarity=40, damage=14, crit=7, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class Mjolnir(Weapon):
@@ -339,28 +357,32 @@ class Mjolnir(Weapon):
         super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
                                                      "mythology as one of the most fearsome and powerful weapons in "
                                                      "existence, capable of leveling mountains.",
-                         value=40000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False, off=True)
+                         value=40000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False,
+                         off=True)
 
 
 class Axe(Weapon):
 
     def __init__(self):
         super().__init__(name="AXE", description="An axe specifically designed for combat.",
-                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class BattleAxe(Weapon):
 
     def __init__(self):
         super().__init__(name="BATTLE AXE", description="A double-bladed, two-handed melee weapon.",
-                         value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class GreatAxe(Weapon):
 
     def __init__(self):
         super().__init__(name="GREAT AXE", description="An enlarged battle axe, providing additional damaging power.",
-                         value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class AdamantiteAxe(Weapon):
@@ -368,22 +390,25 @@ class AdamantiteAxe(Weapon):
     def __init__(self):
         super().__init__(name="ADAMANTITE AXE", description="A double-bladed, two-handed melee weapon made from "
                                                             "adamantite.",
-                         value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class MithrilAxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="Mithril AXE", description="A double-bladed, two-handed melee weapon made from "
+        super().__init__(name="MITHRIL AXE", description="A double-bladed, two-handed melee weapon made from "
                                                          "mithril.",
-                         value=23000, rarity=40, damage=16, crit=4, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=23000, rarity=40, damage=16, crit=4, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class Jarnbjorn(Weapon):
 
     def __init__(self):
         super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=37000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False, off=False)
+                         value=37000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False,
+                         off=False)
 
 
 class Spear(Weapon):
@@ -391,21 +416,24 @@ class Spear(Weapon):
     def __init__(self):
         super().__init__(name="SPEAR", description="A pole weapon consisting of a shaft, usually of wood, with a "
                                                    "pointed head.",
-                         value=800, rarity=6, damage=5, crit=6, handed=2, subtyp='Polearm', unequip=False, off=False)
+                         value=800, rarity=6, damage=5, crit=6, handed=2, subtyp='Polearm', unequip=False,
+                         off=False)
 
 
 class Lance(Weapon):
 
     def __init__(self):
         super().__init__(name="LANCE", description="A pole weapon designed for thrusting.",
-                         value=3500, rarity=12, damage=9, crit=5, handed=2, subtyp='Polearm', unequip=False, off=False)
+                         value=3500, rarity=12, damage=9, crit=5, handed=2, subtyp='Polearm', unequip=False,
+                         off=False)
 
 
 class Pike(Weapon):
 
     def __init__(self):
         super().__init__(name="PIKE", description="A very long pole weapon designed for thrusting.",
-                         value=9000, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False, off=False)
+                         value=9000, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False,
+                         off=False)
 
 
 class Halberd(Weapon):
@@ -438,7 +466,8 @@ class PineStaff(Weapon):
     def __init__(self):
         super().__init__(name="PINE STAFF", description="A pine walking stick wielded in 2 hands and used to strike the"
                                                         "opponent, typically used by magic users.",
-                         value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class OakStaff(Weapon):
@@ -446,49 +475,56 @@ class OakStaff(Weapon):
     def __init__(self):
         super().__init__(name="OAK STAFF", description="An oak walking stick wielded in 2 hands and used to strike the"
                                                        "opponent, typically used by magic users.",
-                         value=800, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=800, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class IronshodStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="IRONSHOD STAFF", description="An iron walking stick, making it ideal for striking.",
-                         value=2500, rarity=8, damage=6, crit=9, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=2500, rarity=8, damage=6, crit=9, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class SerpentStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="SERPENT STAFF", description="A magic staff, shaped to appear as a snake.",
-                         value=5000, rarity=15, damage=10, crit=8, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=5000, rarity=15, damage=10, crit=8, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class DragonStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="DRAGON STAFF", description="A magic staff, shaped to appear as a dragon.",
-                         value=10000, rarity=25, damage=12, crit=7, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=10000, rarity=25, damage=12, crit=7, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class MithrilshodStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="MITHRILSHOD STAFF", description="A mithril walking stick, making it ideal for striking.",
-                         value=20000, rarity=40, damage=14, crit=7, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=20000, rarity=40, damage=14, crit=7, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
-                         value=32000, rarity=50, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False, off=False)
+                         value=32000, rarity=50, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
 
 
 class OakHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="OAK HAMMER", description="A large, 2-handed hammer made entirely of oak.",
-                         value=250, rarity=5, damage=3, crit=11, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=250, rarity=5, damage=3, crit=11, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class Maul(Weapon):
@@ -496,21 +532,24 @@ class Maul(Weapon):
     def __init__(self):
         super().__init__(name="MAUL", description="A maul is a tool with a large, flat, often metal head, attached to a"
                                                   " long handle.",
-                         value=800, rarity=7, damage=6, crit=9, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=800, rarity=7, damage=6, crit=9, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class IronHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="IRON HAMMER", description="A large, 2-handed hammer made entirely of iron.",
-                         value=2500, rarity=10, damage=8, crit=8, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=2500, rarity=10, damage=8, crit=8, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class EarthHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="EARTH HAMMER", description="A large, 2-handed hammer infused with the power of Gaia.",
-                         value=5000, rarity=14, damage=14, crit=7, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=5000, rarity=14, damage=14, crit=7, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class WarHammer(Weapon):
@@ -518,7 +557,8 @@ class WarHammer(Weapon):
     def __init__(self):
         super().__init__(name="WAR HAMMER", description="A war hammer is a late medieval weapon of war primarily used "
                                                         "for close combat action, whose design resembles the hammer. ",
-                         value=12000, rarity=32, damage=18, crit=6, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=12000, rarity=32, damage=18, crit=6, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class GreatMaul(Weapon):
@@ -526,7 +566,8 @@ class GreatMaul(Weapon):
     def __init__(self):
         super().__init__(name="GREAT MAUL", description="A great maul is a tool with a massive, flat, often metal "
                                                         "head, attached to a long handle.",
-                         value=27000, rarity=40, damage=20, crit=6, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=27000, rarity=40, damage=20, crit=6, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class Skullcrusher(Weapon):
@@ -534,7 +575,8 @@ class Skullcrusher(Weapon):
     def __init__(self):
         super().__init__(name="SKULLCRUSHER", description="A massive hammer with the power to pulverize an enemy's "
                                                           "skull to powder.",
-                         value=40000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False, off=False)
+                         value=40000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False,
+                         off=False)
 
 
 class Armor(Item):
@@ -554,8 +596,8 @@ class Armor(Item):
 class NoArmor(Armor):
 
     def __init__(self):
-        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=0, armor=0, subtyp='None',
-                         unequip=True)
+        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=0, armor=0,
+                         subtyp='None', unequip=True)
 
 
 class Tunic(Armor):

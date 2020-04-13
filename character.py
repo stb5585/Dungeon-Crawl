@@ -19,6 +19,9 @@ import actions
 import spells
 import races
 import classes
+import town
+import combat
+import enemies
 
 
 def rand_stats(race, cls: object) -> tuple:
@@ -54,7 +57,7 @@ def new_char() -> object:
     """
     location_x, location_y, location_z = world.starting_position
     race = races.define_race()
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     cls = classes.define_class()
     while True:
         stats = rand_stats(race, cls)
@@ -71,7 +74,6 @@ def new_char() -> object:
         player.name = input("What is your character's name? ").upper()
     player.race = race.name
     player.cls = cls.name
-    os.system('clear')
     return player
 
 
@@ -211,13 +213,14 @@ class Player(Character):
         print("%s casts %s." % (self.name, ability().name))
         spell_mod = 0
         if ability().cat == 'Attack':
-            damage = random.randint((ability().damage + self.intel) // 2, (ability().damage + self.intel))
+            damage = random.randint((ability().damage * self.pro_level + self.intel) // 2,
+                                    (ability().damage * self.pro_level + self.intel))
             if self.equipment['OffHand']().subtyp == 'Grimoire':
                 damage += self.equipment['OffHand']().mod
                 spell_mod = self.equipment['OffHand']().mod
             elif self.equipment['Weapon']().subtyp == 'Staff':
                 spell_mod = self.equipment['Weapon']().damage // 2
-            damage -= random.randint(0, enemy.wisdom)
+            damage -= random.randint(enemy.wisdom // 2, enemy.wisdom)
             crit = 1
             if not random.randint(0, ability().crit):
                 crit = 2
@@ -245,9 +248,9 @@ class Player(Character):
                     time.sleep(0.25)
                     enemy.health = enemy.health - damage
         elif ability().cat == 'Enhance':
-            self.weapon_damage(enemy, dmg_mod=ability().mod)
+            self.weapon_damage(enemy, dmg_mod=ability().mod * self.pro_level)
         elif ability().cat == 'Heal':
-            heal = int(random.randint(self.health_max // 2, self.health_max)*ability().heal)
+            heal = int(random.randint(self.health_max // 2, self.health_max) * ability().heal)
             self.health += heal
             print("You healed yourself for %s hit points." % heal)
             if self.health >= self.health_max:
@@ -265,8 +268,26 @@ class Player(Character):
         if ability().name == 'Jump':
             for _ in range(ability().strikes):
                 self.weapon_damage(enemy, crit=2)
-        if ability().name == 'Backstab':
+        if ability().name == 'Backstab' or ability().name == 'Piercing Strike':
             self.weapon_damage(enemy, ignore=True)
+        if ability().name == 'Multi-Cast':
+            j = 0
+            while j < ability().cast:
+                spell_list = []
+                i = 0
+                for entry in self.spellbook['Spells']:
+                    if self.spellbook['Spells'][entry]().cost <= self.mana:
+                        spell_list.append((str(entry) + '  ' + str(self.spellbook['Spells'][entry]().cost), i))
+                        i += 1
+                if len(spell_list) == 0:
+                    print("You do not have enough mana to cast any spells.")
+                    break
+                spell_index = storyline.get_response(spell_list)
+                spell = self.spellbook['Spells'][spell_list[spell_index][0].split('  ')[0]]
+                self.cast_spell(enemy, spell)
+                j += 1
+                if enemy.health < 1:
+                    break
 
     def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, dmg_mod=0):
         """
@@ -378,6 +399,7 @@ class Player(Character):
         screen = pygame.display.set_mode((400, 400))
         surf = pygame.surfarray.make_surface(map_array)
         surf = pygame.transform.scale(surf, (300, 300))  # Scaled a bit.
+        pygame.display.set_caption('Dungeon Level %s' % self.location_z)
         done = False
         while not done:
             for event in pygame.event.get():
@@ -467,12 +489,12 @@ class Player(Character):
         if len(item_list) == 0:
             print("You do not have any items to use.")
             item = False
-        item_list.append(('None', i))
+        item_list.append(('Go back', i))
         while item:
             print("Which potion would you like to use?")
             use_itm = storyline.get_response(item_list)
-            if item_list[use_itm][0] == 'None':
-                break
+            if item_list[use_itm][0] == 'Go back':
+                return False
             itm = self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][0]
             if 'Health' in itm().subtyp:
                 if self.health == self.health_max:
@@ -574,6 +596,7 @@ class Player(Character):
             if self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] == 0:
                 del self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]]
             break
+        return True
 
     def level_up(self):
         print("You gained a level!")
@@ -633,8 +656,10 @@ class Player(Character):
             treasure = items.random_item(self.location_z)
             print("The chest contained a %s." % treasure().name)
             self.modify_inventory(treasure, 1)
+        # elif random.randint(0, 2):
+        #     combat.battle(self, enemies.random_enemy(str(self.location_z)))
         else:
-            gld = random.randint(50, 100) * self.location_z
+            gld = random.randint(50, 200) * self.location_z
             print("You have found %s gold!" % gld)
             self.gold += gld
         input("Press enter to continue")
@@ -690,13 +715,13 @@ class Player(Character):
                 print("#--- Spells ---#")
                 print("Name - Mana Cost")
                 for spell in self.spellbook['Spells']:
-                    print(self.spellbook['Spells'][spell]().name + " - " + self.spellbook['Spells'][spell]().cost)
+                    print(self.spellbook['Spells'][spell]().name + " - " + str(self.spellbook['Spells'][spell]().cost))
             if len(self.spellbook['Skills']) > 0:
                 print("#" + (14 * "-") + "#")
                 print("#--- Skills ---#")
                 print("Name - Mana Cost")
                 for skill in self.spellbook['Skills']:
-                    print(self.spellbook['Skills'][skill]().name + " - " + self.spellbook['Skills'][skill]().cost)
+                    print(self.spellbook['Skills'][skill]().name + " - " + str(self.spellbook['Skills'][skill]().cost))
             input("Press enter to continue")
 
     def save(self):
@@ -748,7 +773,7 @@ class Player(Character):
             while equip:
                 cont = 'y'
                 if self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand' and \
-                        (self.cls != 'LANCER' or self.cls != 'CRUSADER' or self.cls != 'BERSERKER'):
+                        (self.cls != 'LANCER' and self.cls != 'CRUSADER' and self.cls != 'BERSERKER'):
                     print("You are currently equipped with a 2-handed weapon. Equipping an off-hand will remove the "
                           "2-hander.")
                     cont = input("Do you wish to continue? ").lower()
@@ -758,6 +783,7 @@ class Player(Character):
                     print("You are currently equipped with %s." % self.equipment[option_list[slot][0]]().name)
                     old = self.equipment[option_list[slot][0]]
                     i = 0
+                    shield = False
                     for item in self.inventory:
                         if (str(self.inventory[item][0]().typ) == option_list[slot][0] or
                                 (option_list[slot][0] == 'OffHand' and str(self.inventory[item][0]().typ) == 'Weapon'
@@ -769,14 +795,23 @@ class Player(Character):
                                 elif option_list[slot][0] == 'Armor':
                                     diff = self.inventory[item][0]().armor - self.equipment['Armor']().armor
                                 elif option_list[slot][0] == 'OffHand':
-                                    try:  # TODO change mod for shields
-                                        diff = self.inventory[item][0]().mod - self.equipment['OffHand']().mod
-                                    except AttributeError:
-                                        diff = 0
-                                if diff < 0:
-                                    inv_list.append((item + '   ' + str(diff), i))
+                                    if self.inventory[item][0]().subtyp == self.equipment['OffHand']().subtyp:
+                                        if self.inventory[item][0]().subtyp == 'Shield':
+                                            diff = int(((1 / self.inventory[item][0]().mod) -
+                                                        (1 / self.equipment['OffHand']().mod)) * 100)
+                                            shield = True
+                                        elif self.inventory[item][0]().subtyp == 'Grimoire':
+                                            diff = self.inventory[item][0]().mod - self.equipment['OffHand']().mod
+                                        else:
+                                            diff = self.inventory[item][0]().damage - self.equipment['OffHand']().damage
+                                if shield:
+                                    inv_list.append((item + '   ' + str(diff) + '%', i))
+                                elif diff == '':
+                                    inv_list.append((item, i))
+                                elif diff < 0:
+                                    inv_list.append((item + '  ' + str(diff), i))
                                 else:
-                                    inv_list.append((item + '   +' + str(diff), i))
+                                    inv_list.append((item + '  +' + str(diff), i))
                                 i += 1
                     inv_list.append(('UNEQUIP', i))
                     inv_list.append(('KEEP CURRENT', i + 1))
@@ -795,14 +830,15 @@ class Player(Character):
                                                option_list[slot][0], self.cls):
                             self.equipment[option_list[slot][0]] = \
                                 self.inventory[re.split(r"\s{2,}", inv_list[replace][0])[0]][0]
-                            if option_list[slot][0] == 'Weapon':
-                                if self.equipment['Weapon']().handed == 2:
-                                    if self.equipment['OffHand'] != items.NoOffHand:
-                                        self.modify_inventory(self.equipment['OffHand'], 1)
-                                        self.equipment['OffHand'] = items.remove('OffHand')
-                            elif self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
-                                old = self.equipment['Weapon']
-                                self.equipment['Weapon'] = items.remove('Weapon')
+                            if self.cls != 'LANCER' and self.cls != 'DRAGOON' and self.cls != 'BERSERKER':
+                                if option_list[slot][0] == 'Weapon':
+                                    if self.equipment['Weapon']().handed == 2:
+                                        if self.equipment['OffHand'] != items.NoOffHand:
+                                            self.modify_inventory(self.equipment['OffHand'], 1)
+                                            self.equipment['OffHand'] = items.remove('OffHand')
+                                elif self.equipment['Weapon']().handed == 2 and option_list[slot][0] == 'OffHand':
+                                    old = self.equipment['Weapon']
+                                    self.equipment['Weapon'] = items.remove('Weapon')
                             self.inventory[re.split(r"\s{2,}", inv_list[replace][0])[0]][1] -= 1
                             if self.inventory[re.split(r"\s{2,}", inv_list[replace][0])[0]][1] <= 0:
                                 del self.inventory[re.split(r"\s{2,}", inv_list[replace][0])[0]]

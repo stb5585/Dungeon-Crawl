@@ -7,6 +7,7 @@ import time
 import storyline
 import items
 import character
+import spells
 
 
 # Functions
@@ -82,6 +83,8 @@ def promotion(player: object):
             promoted_player.experience = 0
             promoted_player.cls = new_class.name
             promoted_player.equipment = new_class.equipment
+            if new_class.name == 'WARLOCK':
+                promoted_player.spellbook['Spells'] = {'Shadow Bolt': spells.ShadowBolt}
             if new_class.min_str > promoted_player.strength:
                 promoted_player.strength = new_class.min_str
             if new_class.min_int > promoted_player.intel:
