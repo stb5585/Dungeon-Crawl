@@ -189,6 +189,22 @@ class TripleCast(Offensive):
         self.cast = 3
 
 
+class MortalStrike(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Mortal Strike', description='Assault the enemy, striking them with a critical hit.',
+                         cost=10)
+        self.crit = 2
+
+
+class MortalStrike2(Offensive):
+
+    def __init__(self):
+        super().__init__(name='Mortal Strike', description='Assault the enemy, striking them with a critical hit.',
+                         cost=20)
+        self.crit = 3
+
+
 # Stealth skills
 class Backstab(Stealth):
 
@@ -203,7 +219,7 @@ class KidneyPunch(Stealth):
     def __init__(self):
         super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
                                                           ' turn.',
-                         cost=12)
+                         cost=10)
         self.stun = 2
 
 
@@ -238,7 +254,14 @@ class Steal(Stealth):
 
     def __init__(self):
         super().__init__(name='Steal', description='Relieve the enemy of their items.',
-                         cost=4)
+                         cost=6)
+
+
+class Lockpick(Stealth):
+
+    def __init__(self):
+        super().__init__(name='Lockpick', description='Unlock a locked chest.',
+                         cost=12)
 
 
 class PoisonStrike(Stealth):
@@ -616,7 +639,7 @@ spell_dict = {'WARRIOR': {},
               'FOOTPAD': {},
               'THIEF': {},
               'ROGUE': {},
-              'RANGER': {},
+              'INQUISITIVE': {},
               'SEEKER': {},
               'ASSASSIN': {},
               'NINJA': {'20': Desoul}
@@ -626,7 +649,8 @@ skill_dict = {'WARRIOR': {'3': ShieldSlam,
                           '10': DoubleStrike},
               'WEAPON MASTER': {'10': TripleStrike,
                                 '15': PiercingStrike},
-              'BERSERKER': {'10': QuadStrike},
+              'BERSERKER': {'5': MortalStrike2,
+                            '10': QuadStrike},
               'PALADIN': {'4': ShieldSlam2,
                           '20': ShieldSlam3},
               'CRUSADER': {'5': PiercingStrike,
@@ -634,7 +658,9 @@ skill_dict = {'WARRIOR': {'3': ShieldSlam,
               'LANCER': {'2': PiercingStrike,
                          '5': Jump,
                          '15': DoubleJump},
-              'DRAGOON': {'20': TripleJump},
+              'DRAGOON': {'5': ShieldSlam2,
+                          '20': TripleJump,
+                          '25': ShieldSlam3},
               'MAGE': {},
               'SORCERER': {'10': DoubleCast},
               'WIZARD': {'15': TripleCast},
@@ -643,18 +669,21 @@ skill_dict = {'WARRIOR': {'3': ShieldSlam,
               'NECROMANCER': {'10': HealthManaDrain},
               'SPELLBLADE': {},
               'KNIGHT ENCHANTER': {'10': DoubleStrike},
-              'FOOTPAD': {'3': Steal,
-                          '5': SmokeScreen,
+              'FOOTPAD': {'5': SmokeScreen,
                           '8': Backstab,
+                          '10': Steal,
                           '12': KidneyPunch,
                           '15': DoubleStrike},
-              'THIEF': {'12': KidneyPunch},
+              'THIEF': {'5': Lockpick,
+                        '12': KidneyPunch},
               'ROGUE': {'10': TripleStrike},
-              'RANGER': {},
-              'SEEKER': {'10': Sanctuary},
+              'INQUISITIVE': {'20': ShieldSlam},
+              'SEEKER': {'10': Sanctuary,
+                         '25': ShieldSlam2},
               'ASSASSIN': {'5': TripleStrike,
                            '8': PoisonStrike,
                            '10': KidneyPunch2,
+                           '15': Lockpick,
                            '20': QuadStrike},
               'NINJA': {'4': PoisonStrike2,
                         '20': KidneyPunch3,

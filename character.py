@@ -66,9 +66,10 @@ def new_char() -> object:
         if keep == 'y':
             break
     player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
-                    health=stats[3] * 2, health_max=stats[3] * 2, mana=stats[1], mana_max=stats[1], strength=stats[0],
-                    intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5], pro_level=1,
-                    gold=stats[4] * 10, equipment=cls.equipment, inventory={}, spellbook={'Spells': {}, 'Skills': {}})
+                    health=stats[3] * 3, health_max=stats[3] * 3, mana=stats[1] * 2, mana_max=stats[1] * 2,
+                    strength=stats[0], intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5],
+                    pro_level=1, gold=stats[4] * 25, equipment=cls.equipment, inventory={},
+                    spellbook={'Spells': {}, 'Skills': {}})
     # storyline.read_story('new_player.txt')
     while player.name == '':
         player.name = input("What is your character's name? ").upper()
@@ -206,7 +207,7 @@ class Player(Character):
         self.inventory = inventory
         self.spellbook = spellbook
 
-    def cast_spell(self, enemy, ability):
+    def cast_spell(self, enemy, ability, stun=False):
         """
         Function that controls the character's abilities and spells during combat
         """
@@ -219,7 +220,7 @@ class Player(Character):
                 damage += self.equipment['OffHand']().mod
                 spell_mod = self.equipment['OffHand']().mod
             elif self.equipment['Weapon']().subtyp == 'Staff':
-                spell_mod = self.equipment['Weapon']().damage // 2
+                spell_mod = self.equipment['Weapon']().damage * 2
             damage -= random.randint(enemy.wisdom // 2, enemy.wisdom)
             crit = 1
             if not random.randint(0, ability().crit):
@@ -229,7 +230,7 @@ class Player(Character):
                 print("Critical Hit!")
                 time.sleep(0.25)
             if random.randint(0, enemy.dex // 2) > \
-                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod) and not stun:
                 print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
                 time.sleep(0.25)
             elif random.randint(0, enemy.con // 2) > \
@@ -256,40 +257,52 @@ class Player(Character):
             if self.health >= self.health_max:
                 self.health = self.health_max
                 print("You are at full health!")
+        if ability().name == 'Terrify':
+            is_stun = False
+            stun_rounds = 0
+            if random.randint(self.intel // 2, self.intel) \
+                    > random.randint(enemy.wisdom // 2, enemy.wisdom):
+                is_stun = True
+                stun_rounds = ability().stun
+            return is_stun, stun_rounds
+        if ability().name == 'Corruption':
+            dot = False
+            dot_rounds = 0
+            dot_damage = 0
+            if random.randint(self.intel // 2, self.intel) \
+                    > random.randint(enemy.wisdom // 2, enemy.wisdom):
+                dot = True
+                dot_rounds = ability().dot_turns
+                dot_damage = ability().damage
+            return dot, dot_rounds, dot_damage
+        if ability().name == 'Doom':
+            doom = False
+            doom_rounds = 0
+            if random.randint(self.intel // 4, self.intel) \
+                    > random.randint(enemy.wisdom // 2, enemy.wisdom):
+                doom = True
+                doom_rounds = ability().timer
+            return doom, doom_rounds
         self.mana -= ability().cost
 
-    def use_ability(self, enemy, ability):
+    def use_ability(self, enemy, ability, stun=False):
         print("%s uses %s." % (self.name, ability().name))
         time.sleep(0.25)
         self.mana -= ability().cost
+        if ability().name == 'Lockpick':
+            enemy.lock = False
         if ability().name == 'Multi-Strike':
             for _ in range(ability().strikes):
-                self.weapon_damage(enemy)
+                self.weapon_damage(enemy, stun=stun)
         if ability().name == 'Jump':
             for _ in range(ability().strikes):
-                self.weapon_damage(enemy, crit=2)
+                self.weapon_damage(enemy, crit=2, stun=stun)
         if ability().name == 'Backstab' or ability().name == 'Piercing Strike':
-            self.weapon_damage(enemy, ignore=True)
-        if ability().name == 'Multi-Cast':
-            j = 0
-            while j < ability().cast:
-                spell_list = []
-                i = 0
-                for entry in self.spellbook['Spells']:
-                    if self.spellbook['Spells'][entry]().cost <= self.mana:
-                        spell_list.append((str(entry) + '  ' + str(self.spellbook['Spells'][entry]().cost), i))
-                        i += 1
-                if len(spell_list) == 0:
-                    print("You do not have enough mana to cast any spells.")
-                    break
-                spell_index = storyline.get_response(spell_list)
-                spell = self.spellbook['Spells'][spell_list[spell_index][0].split('  ')[0]]
-                self.cast_spell(enemy, spell)
-                j += 1
-                if enemy.health < 1:
-                    break
+            self.weapon_damage(enemy, ignore=True, stun=stun)
+        if ability().name == 'Mortal Strike':
+            self.weapon_damage(enemy, crit=ability().crit, stun=stun)
 
-    def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, dmg_mod=0):
+    def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, stun=False, dmg_mod=0):
         """
         Function that controls the character's basic attack during combat
         """
@@ -306,6 +319,14 @@ class Player(Character):
             if self.equipment['OffHand']().typ == 'Weapon':
                 off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage + dmg_mod // 2))
                 off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+        elif stun:
+            dmg = max(1, (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor
+                          + dmg_mod))
+            damage = random.randint(dmg // 2, dmg)
+            if self.equipment['OffHand']().typ == 'Weapon':
+                off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage
+                                  - enemy.equipment['Armor']().armor + dmg_mod // 2))
+                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
         else:
             dmg = max(1,
                       (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor + dmg_mod))
@@ -313,7 +334,9 @@ class Player(Character):
             if enemy.equipment['OffHand']().subtyp == 'Shield':
                 if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                     blk = True
-                    blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
+                    blk_amt = (100 / enemy.equipment['OffHand']().mod +
+                               random.randint(enemy.strength // 2, enemy.strength) -
+                               random.randint(self.strength // 2, self.strength)) / 100
                     damage *= (1 - blk_amt)
             if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
                 print("%s evades %s's attack." % (enemy.name, self.name))
@@ -327,7 +350,9 @@ class Player(Character):
                 if enemy.equipment['OffHand']().subtyp == 'Shield':
                     if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                         off_blk = True
-                        off_blk_amt = 1 / (int(enemy.equipment['OffHand']().mod) + 1)
+                        off_blk_amt = (100 / enemy.equipment['OffHand']().mod +
+                                       random.randint(enemy.strength // 2, enemy.strength) -
+                                       random.randint(self.strength // 2, self.strength)) / 100
                         off_damage *= (1 - off_blk_amt)
                 if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
                     off_dodge = True
@@ -435,11 +460,11 @@ class Player(Character):
             print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
         print("Armor: %d" % self.equipment['Armor']().armor)
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: %s%%" % str(int(1 / float(self.equipment['OffHand']().mod + 1) * 100)))
+            print("Block Chance: %s%%" % str(int(100 / float(self.equipment['OffHand']().mod)) + self.strength))
         elif self.equipment['OffHand']().subtyp == 'Grimoire':
             print("Spell Modifier: +%s" % str(self.equipment['OffHand']().mod))
         elif self.equipment['Weapon']().subtyp == 'Staff':
-            print("Spell Modifier: +%s" % str(self.equipment['Weapon']().damage // 2))
+            print("Spell Modifier: +%s" % str(self.equipment['Weapon']().damage * 2))
         print("#" + (10 * "-") + "#")
         input("Press enter to continue")
         world_dict = world.world_return()
@@ -457,7 +482,7 @@ class Player(Character):
                 self.do_action(action, **action.kwargs)
                 break
 
-    def flee(self, enemy, smoke=False) -> bool:
+    def flee(self, enemy, smoke=False, stun=False) -> bool:
         if not smoke:
             if random.randint(1, self.health + self.level) > random.randint(1, enemy.health):
                 print("%s flees from the %s." % (self.name, enemy.name))
@@ -466,21 +491,32 @@ class Player(Character):
             else:
                 print("%s couldn't escape from the %s!" % (self.name, enemy.name))
                 return False
-        else:
+        elif smoke:
             print("%s disappears in a cloud of smoke!" % self.name)
             print("%s flees from the %s." % (self.name, enemy.name))
             self.state = 'normal'
             return True
+        elif stun:
+            print("%s flees from the %s." % (self.name, enemy.name))
+            self.state = 'normal'
+            return True
 
-    def use_item(self):
+    def use_item(self, enemy=None):
         item = True
         item_list = []
         i = 0
         if self.state == 'fight':
-            for itm in self.inventory:
-                if str(self.inventory[itm][0]().subtyp) == 'Health' or str(self.inventory[itm][0]().subtyp) == 'Mana':
-                    item_list.append((str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]), i))
-                    i += 1
+            if enemy.name == 'Locked Chest':
+                for itm in self.inventory:
+                    if str(self.inventory[itm][0]().subtyp) == 'Key':
+                        item_list.append((str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]), i))
+                        i += 1
+            else:
+                for itm in self.inventory:
+                    if str(self.inventory[itm][0]().subtyp) == 'Health' \
+                            or str(self.inventory[itm][0]().subtyp) == 'Mana':
+                        item_list.append((str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]), i))
+                        i += 1
         else:
             for itm in self.inventory:
                 if str(self.inventory[itm][0]().typ) == 'Potion':
@@ -593,6 +629,10 @@ class Player(Character):
                     print("All your stats have increased by 1!")
                 else:
                     print("Your %s has been increased by 1!" % str(itm().name.split(' ')[0]).lower())
+            elif 'Key' in itm().subtyp:
+                self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] -= 1
+                enemy.lock = False
+                print("You unlock the chest!")
             if self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] == 0:
                 del self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]]
             break
@@ -630,9 +670,9 @@ class Player(Character):
                 self.dex += 1
                 print("You are now at %s dexterity." % self.dex)
         self.experience %= (25 ** self.pro_level) * self.level
-        health_gain = random.randint(self.level // 2, self.level) + (self.con // 2)
+        health_gain = random.randint(self.level // 2, self.level) * self.pro_level + (self.con // 2)
         self.health_max += health_gain
-        mana_gain = random.randint(self.level // 2, self.level) + (self.intel // 2)
+        mana_gain = random.randint(self.level // 2, self.level) * self.pro_level + (self.intel // 2)
         self.mana_max += mana_gain
         self.level += 1
         print("You are now level %s." % self.level)
@@ -650,18 +690,32 @@ class Player(Character):
             print("You have gained the ability to use %s!" % skill_gain().name)
         input("Press enter to continue")
 
-    def chest(self, enemy: object):
-        enemy.health -= 1
-        if random.randint(0, 2):
-            treasure = items.random_item(self.location_z)
-            print("The chest contained a %s." % treasure().name)
-            self.modify_inventory(treasure, 1)
-        # elif random.randint(0, 2):
-        #     combat.battle(self, enemies.random_enemy(str(self.location_z)))
+    def chest(self, enemy, unlock=False):
+        if enemy.lock:
+            if unlock:
+                enemy.health -= 1
+                if random.randint(0, 2):
+                    treasure = items.random_item(self.location_z + 1)
+                    print("The chest contained a %s." % treasure().name)
+                    self.modify_inventory(treasure, 1)
+                # elif random.randint(0, 2):
+                #     combat.battle(self, enemies.random_enemy(str(self.location_z + 1)))
+                else:
+                    gld = random.randint(50, 200) * (self.location_z + 1)
+                    print("You have found %s gold!" % gld)
+                    self.gold += gld
         else:
-            gld = random.randint(50, 200) * self.location_z
-            print("You have found %s gold!" % gld)
-            self.gold += gld
+            enemy.health -= 1
+            if random.randint(0, 2):
+                treasure = items.random_item(self.location_z)
+                print("The chest contained a %s." % treasure().name)
+                self.modify_inventory(treasure, 1)
+            # elif random.randint(0, 2):
+            #     combat.battle(self, enemies.random_enemy(str(self.location_z)))
+            else:
+                gld = random.randint(50, 200) * self.location_z
+                print("You have found %s gold!" % gld)
+                self.gold += gld
         input("Press enter to continue")
 
     def loot(self, enemy: object):
@@ -710,12 +764,17 @@ class Player(Character):
         if len(self.spellbook['Spells']) == 0 and len(self.spellbook['Skills']) == 0:
             print("You do not have any abilities.")
         else:
+            cast_list = []
+            i = 0
             if len(self.spellbook['Spells']) > 0:
                 print("#" + (14 * "-") + "#")
                 print("#--- Spells ---#")
                 print("Name - Mana Cost")
                 for spell in self.spellbook['Spells']:
                     print(self.spellbook['Spells'][spell]().name + " - " + str(self.spellbook['Spells'][spell]().cost))
+                    if self.spellbook['Spells'][spell]().cat == 'Heal':
+                        cast_list.append((self.spellbook['Spells'][spell]().name, i))
+                        i += 1
             if len(self.spellbook['Skills']) > 0:
                 print("#" + (14 * "-") + "#")
                 print("#--- Skills ---#")
@@ -723,6 +782,25 @@ class Player(Character):
                 for skill in self.spellbook['Skills']:
                     print(self.spellbook['Skills'][skill]().name + " - " + str(self.spellbook['Skills'][skill]().cost))
             input("Press enter to continue")
+            if len(cast_list) > 0:
+                cast_list.append(('Go back', i))
+                while True:
+                    if self.health == self.health_max:
+                        print("You are already at full health.")
+                        break
+                    print("Pick the spell you'd like to cast.")
+                    cast_index = storyline.get_response(cast_list)
+                    print(cast_index)
+                    if cast_list[cast_index][0] == 'Go back':
+                        break
+                    else:
+                        heal = int(self.health_max * self.spellbook['Spells'][cast_list[cast_index][0]]().heal)
+                        self.health += heal
+                        print("You have been healed for %s hit points." % heal)
+                        if self.health >= self.health_max:
+                            self.health = self.health_max
+                            print("You are at full health!")
+                        break
 
     def save(self):
         while True:

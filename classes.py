@@ -39,7 +39,7 @@ def equip_check(item, item_typ, class_name):
                   ('WARLOCK', Warlock), ('NECROMANCER', Necromancer),
                   ('SPELLBLADE', Spellblade), ('KNIGHT ENCHANTER', KnightEnchanter),
                   ('THIEF', Thief), ('ROGUE', Rogue),
-                  ('RANGER', Ranger), ('SEEKER', Seeker),
+                  ('INQUISITIVE', Inquisitive), ('SEEKER', Seeker),
                   ('ASSASSIN', Assassin), ("NINJA", Ninja)]
     for cls in class_list:
         if class_name == cls[0]:
@@ -58,9 +58,9 @@ def promotion(player: object):
                   Sorcerer().name: [Wizard()],
                   Warlock().name: [Necromancer()],
                   Spellblade().name: [KnightEnchanter()],
-                  Footpad().name: [Thief(), Ranger(), Assassin()],
+                  Footpad().name: [Thief(), Inquisitive(), Assassin()],
                   Thief().name: [Rogue()],
-                  Ranger().name: [Seeker()],
+                  Inquisitive().name: [Seeker()],
                   Assassin().name: [Ninja()]
                   }
     current_class = player.cls
@@ -85,6 +85,9 @@ def promotion(player: object):
             promoted_player.equipment = new_class.equipment
             if new_class.name == 'WARLOCK':
                 promoted_player.spellbook['Spells'] = {'Shadow Bolt': spells.ShadowBolt}
+            elif new_class.name == 'WEAPON MASTER':
+                del promoted_player.spellbook['Skills']['Shield Slam']
+                promoted_player.spellbook['Skills']['Mortal Strike'] = spells.MortalStrike
             if new_class.min_str > promoted_player.strength:
                 promoted_player.strength = new_class.min_str
             if new_class.min_int > promoted_player.intel:
@@ -416,7 +419,7 @@ class Footpad(Job):
     """
     Promotion: Footpad ->  Thief   -> Rogue
                        |
-                       ->  Ranger  -> Seeker
+                       ->  Inquisitive  -> Seeker
                        |
                        -> Assassin -> Ninja
     """
@@ -475,18 +478,22 @@ class Rogue(Job):
                          pro_level=3)
 
 
-class Ranger(Job):
+class Inquisitive(Job):
     """
-    Promotion: Footpad -> Ranger -> Seeker
+    Promotion: Footpad -> Inquisitive -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
           shields, and some spells as well as dual wielding
     Cons: Much lower dexterity
     """
 
     def __init__(self):
-        super().__init__(name="RANGER", description="Rangers are usually associated with the wisdom of nature. Rangers "
-                                                    "tend to be wise, hardy, cunning, and perceptive in addition to "
-                                                    "being skilled woodsmen.",
+        super().__init__(name="INQUISITIVE", description="Inquisitives excel at rooting out hidden secrets and "
+                                                         "unraveling mysteries. They rely on a sharp eye for detail, "
+                                                         "but also on a finely honed ability to read the words and "
+                                                         "deeds of other creatures to determine their true intent. "
+                                                         "They excel at defeating creatures that hide among and prey "
+                                                         "upon ordinary folk, and their mastery of lore and sharp eye "
+                                                         "make them well-equipped to expose and end hidden evils.",
                          min_str=11, min_int=14, min_wis=14, min_con=11, min_cha=8, min_dex=11,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.IronShield, Armor=items.ScaleMail),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
@@ -497,7 +504,7 @@ class Ranger(Job):
 
 class Seeker(Job):
     """
-    Promotion: Footpad -> Ranger -> Seeker
+    Promotion: Footpad -> Inquisitive -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
           shields, and some spells as well as dual wielding
     Cons: Much lower dexterity

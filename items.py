@@ -116,14 +116,19 @@ def random_item(z: int) -> object:
         rand_type = random.choice(list(item_dict[rand_group]))
         treasure = random.choices(item_dict[rand_group][rand_type][0], item_dict[rand_group][rand_type][1])[0]
         item_index = item_dict[rand_group][rand_type][0].index(treasure)
-        if int(item_dict[rand_group][rand_type][2][item_index]) <= z:
+        item_loc = int(item_dict[rand_group][rand_type][2][item_index])
+        if rand_type == 'Stat':
+            if z >= item_loc:
+                rand_item = treasure
+                break
+        elif item_loc + 1 >= z >= item_loc - 1:
             rand_item = treasure
             break
     return rand_item
 
 
 def remove(typ):
-    typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor)
+    typ_dict = dict(Weapon=NoWeapon(), OffHand=NoOffHand(), Armor=NoArmor())
     return typ_dict[typ]
 
 
@@ -1093,6 +1098,22 @@ class AardBeing(Potion):
         self.stat = 'all'
 
 
+class Misc(Item):
+
+    def __init__(self, name, description, value, rarity, subtyp):
+        super().__init__(name, description, value)
+        self.rarity = rarity
+        self.subtyp = subtyp
+        self.typ = "Misc"
+
+
+class Key(Misc):
+
+    def __init__(self):
+        super().__init__(name="KEY", description="Unlocks a locked chest but is consumed.", value=500, rarity=20,
+                         subtyp='Key')
+
+
 # Parameters
 items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger, Carnwennan],
                          'Sword': [BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword, Excalibur],
@@ -1113,4 +1134,5 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                          'Mana': [ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                          'Elixir': [Elixir, Megalixir],
                          'Stat': [StrengthPotion, IntelPotion, WisdomPotion, ConPotion, CharismaPotion,
-                                  DexterityPotion, AardBeing]}}
+                                  DexterityPotion, AardBeing]},
+              'Misc': {'Key': [Key]}}

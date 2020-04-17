@@ -90,7 +90,7 @@ class Equip(Action):
 
 class UseItem(Action):
     def __init__(self):
-        super().__init__(method=character.Player.use_item, name="Item", hotkey='p')
+        super().__init__(method=character.Player.use_item, name="Item", hotkey='p', enemy=None)
 
 
 class OpenChest(Action):

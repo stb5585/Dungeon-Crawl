@@ -84,11 +84,16 @@ class RandomEnemyRoom(EnemyRoom):
         super().__init__(x, y, z, enemies.random_enemy(str(z)))
 
     def intro_text(self):
-        if self.enemy.name == 'Chest':
+        if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
-                return """
-                You find a chest!!
-                """
+                if self.enemy.lock:
+                    return """
+                    You find a chest!!... but it is locked.
+                    """
+                else:
+                    return """
+                    You find a chest!!
+                    """
             else:
                 return """
                 This room has an open chest.
@@ -104,9 +109,12 @@ class RandomEnemyRoom(EnemyRoom):
                 """.format(self.enemy.name)
 
     def available_actions(self, player):
-        if self.enemy.name == 'Chest':
+        if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
-                return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+                if self.enemy.lock:
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem()])
+                else:
+                    return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
             else:
                 return self.adjacent_moves([actions.Status()])
         else:

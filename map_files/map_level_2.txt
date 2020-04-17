@@ -1,15 +1,15 @@
 		RandomEnemyRoom	StairsUp		EmptyCavePath	RandomEnemyRoom		RandomEnemyRoom	
 RandomEnemyRoom	RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
-	LootRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	
+	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	
 	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		RandomEnemyRoom
 RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom
 			RandomEnemyRoom					EmptyCavePath	
 	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom				RandomEnemyRoom	
 RandomEnemyRoom	RandomEnemyRoom			RandomEnemyRoom				EmptyCavePath	
-	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		LootRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
+	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
 			RandomEnemyRoom		EmptyCavePath			RandomEnemyRoom	
 StairsDown			EmptyCavePath		EmptyCavePath			EmptyCavePath	
-EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	PseudodragonRoom	RandomEnemyRoom	RandomEnemyRoom
+EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	PseudodragonRoom	RandomEnemyRoom	LootRoom
 			RandomEnemyRoom			StairsDown			

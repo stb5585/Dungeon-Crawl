@@ -30,7 +30,7 @@ def armory(player: object):
 
 def alchemist(player: object):
     print("Welcome to Ye Olde Item Shoppe.")
-    buy_list = [('Potion', 0)]
+    buy_list = [('Potion', 0), ('Misc', 1)]
     shop(player, buy_list)
 
 

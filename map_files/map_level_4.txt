@@ -1,5 +1,5 @@
 StairsDown					EmptyCavePath	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	StairsUp
-EmptyCavePath	GolemRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	
+LootRoom	GolemRoom		EmptyCavePath		RandomEnemyRoom			EmptyCavePath	
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
 	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	
 	RandomEnemyRoom		RandomEnemyRoom		EmptyCavePath		EmptyCavePath		RandomEnemyRoom
@@ -8,8 +8,8 @@ RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyC
 	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom				RandomEnemyRoom	
 RandomEnemyRoom	RandomEnemyRoom			RandomEnemyRoom				EmptyCavePath	
-	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
+	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
 			RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
 			EmptyCavePath		EmptyCavePath			EmptyCavePath	
-RandomEnemyRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
+LootRoom	RandomEnemyRoom	RandomEnemyRoom	RandomEnemyRoom		RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
 			RandomEnemyRoom					RandomEnemyRoom	

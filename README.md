@@ -23,12 +23,14 @@ FUTURE DEVELOPMENT:
     - Enhance storyline for a more immersive experience
     - Deepen the dungeon to allow for additional challenge
     - Add a tutorial so players can better understand the gameplay
-    - Adapt skill functionality for non-mage characters that do not cast spells
     - Add graphical representation for a more complete game experience
-    - Make item comparison easier for both equipping and the shop
+    - Make item comparison easier for the shop
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to be farmed
     - Add quests to game
     - Add tavern in town for obtaining quests
+    - Enhance enemies to make them more dynamic (spells, dual-wield, resistance/weakness, etc)
+    - Remove death-quit and replace with random chance to lose stats (upon death, you will return to town)
+    - Add accessories to equipment (rings, necklaces, etc)
 
 - Possible development
     - Status effects

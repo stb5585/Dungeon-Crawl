@@ -1,5 +1,5 @@
-	RandomEnemyRoom	RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom	LootRoom	EmptyCavePath	StairsDown
-RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom			CockatriceRoom	EmptyCavePath
+	RandomEnemyRoom	RandomEnemyRoom			EmptyCavePath	RandomEnemyRoom		LootRoom	StairsDown
+RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom			CockatriceRoom	LootRoom
 	EmptyCavePath		RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
 RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
 	RandomEnemyRoom		RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath		EmptyCavePath		RandomEnemyRoom
