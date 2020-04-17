@@ -7,6 +7,7 @@ import enemies
 import actions
 import world
 import combat
+import town
 
 
 class MapTile:
@@ -41,6 +42,20 @@ class MapTile:
     def available_actions(self, player):
         """Returns all of the available actions in this room."""
         pass
+
+
+class Town(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self):
+        pass
+
+    def modify_player(self, player):
+        player.state = 'normal'
+        player.health = player.health_max
+        player.mana = player.mana_max
+        town.town(player)
 
 
 class EnemyRoom(MapTile):

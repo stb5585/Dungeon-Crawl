@@ -56,9 +56,7 @@ def church(player: object):
         elif church_options[church_index][1] == 1:
             player.save()  # Can only save at church in town
         elif church_options[church_index][1] == 2:
-            quitting = input("Are you sure you want to quit? Any unsaved data will be lost. ")
-            if quitting == 'y':
-                player.game_quit()
+            player.game_quit()
         elif church_options[church_index][1] == 3:
             print("Let the light of Elysia guide you.")
             break

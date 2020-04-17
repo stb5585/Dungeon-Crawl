@@ -29,14 +29,13 @@ FUTURE DEVELOPMENT:
     - Add quests to game
     - Add tavern in town for obtaining quests
     - Enhance enemies to make them more dynamic (spells, dual-wield, resistance/weakness, etc)
-    - Remove death-quit and replace with random chance to lose stats (upon death, you will return to town)
     - Add accessories to equipment (rings, necklaces, etc)
+    - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
 
 - Possible development
     - Status effects
     - Item identification
     - Add capability to have more than one playable character
-    - make map completely random
     - require rare items for promotion
 
 FILES:

@@ -128,7 +128,7 @@ def random_item(z: int) -> object:
 
 
 def remove(typ):
-    typ_dict = dict(Weapon=NoWeapon(), OffHand=NoOffHand(), Armor=NoArmor())
+    typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor)
     return typ_dict[typ]
 
 

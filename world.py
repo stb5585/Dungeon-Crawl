@@ -7,7 +7,7 @@ import glob
 
 # Parameters
 _world = {'World': {}}
-starting_position = (0, 0, 0)
+starting_position = (5, 10, 0)
 
 
 def world_return():
@@ -16,6 +16,7 @@ def world_return():
 
 def load_tiles():
     """Parses a file that describes the world space into the _world object"""
+    _world['World'][(5, 10, 0)] = getattr(__import__('map'), 'Town')(5, 10, 0)
     map_files = glob.glob('map_files/map_level_*')
     for map_file in map_files:
         z = map_file.split('_')[-1]

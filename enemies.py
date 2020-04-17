@@ -279,27 +279,7 @@ class DragonScale(NaturalArmor):
         super().__init__(name='Dragon Scales', armor=6, subtyp='Natural')
 
 
-# Enemy types
-class Misc(Enemy):
-
-    def __init__(self):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
-        self.name = name
-        self.health = health + con
-        self.mana = mana + intel
-        self.strength = strength
-        self.intel = intel
-        self.wisdom = wisdom
-        self.con = con
-        self.charisma = charisma
-        self.dex = dex
-        self.experience = exp
-        self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand)
-        self.inventory = {}
-        self.spellbook = {'Spells': {},
-                          'Skills': {}}
-
-
+# Enemies
 class Chest(Enemy):
 
     def __init__(self):

@@ -19,9 +19,6 @@ import actions
 import spells
 import races
 import classes
-import town
-import combat
-import enemies
 
 
 def rand_stats(race, cls: object) -> tuple:
@@ -403,8 +400,10 @@ class Player(Character):
         """
         Function that allows for exiting the game
         """
-        print("Goodbye, %s!" % self.name)
-        sys.exit(0)
+        q = input("Are you sure you want to quit? (Y or N) Any unsaved data will be lost. ").lower()
+        if q == 'y':
+            print("Goodbye, %s!" % self.name)
+            sys.exit(0)
 
     def minimap(self, world_dict: dict):
         """
@@ -956,6 +955,23 @@ class Player(Character):
 
     def is_alive(self):
         return self.health > 0
+
+    def death(self):
+        """
+        Controls what happens when you die; no negative affect will occur for players under level 10
+        """
+        stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
+        if self.level > 9 or self.pro_level > 1:
+            if not random.randint(0, 9):  # 10% chance to lose a stats
+                stat_index = random.randint(0, 5)
+                stat_name = stat_list[stat_index]
+                if stat_name == 'strength': self.strength -= 1
+                if stat_name == 'intelligence': self.intel -= 1
+                if stat_name == 'wisdom': self.wisdom -= 1
+                if stat_name == 'constitution': self.con -= 1
+                if stat_name == 'charisma': self.charisma -= 1
+                if stat_name == 'dexterity': self.dex -= 1
+                print("You have lost 1 %s." % stat_name)
 
     def do_action(self, action, **kwargs):
         action_method = getattr(self, action.method.__name__)

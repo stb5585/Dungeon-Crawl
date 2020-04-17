@@ -140,6 +140,7 @@ def battle(player, enemy):
                                         print("You couldn't steal anything.")
                                 else:
                                     print("The enemy doesn't have anything to steal.")
+                                break
                             elif skill().name == 'Shield Slam':
                                 if player.equipment['OffHand']().subtyp == 'Shield':
                                     player.mana -= skill().cost
@@ -302,5 +303,5 @@ def battle(player, enemy):
                 combat = False
         if player.health <= 0:
             print("You were slain by the {0.name}.".format(enemy))
-            combat = False
+            break
     player.state = 'normal'
