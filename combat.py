@@ -303,5 +303,5 @@ def battle(player, enemy):
                 combat = False
         if player.health <= 0:
             print("You were slain by the {0.name}.".format(enemy))
-            break
+            combat = False
     player.state = 'normal'

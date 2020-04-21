@@ -1,0 +1,15 @@
+# ignore __pycache__
+__pycache__/*
+
+# ignore .idea
+.idea/*
+
+# skip currently unneeded files/directories
+resources/*
+display.py
+commit_notes.txt
+shop_inventory.txt
+new_player.txt
+
+# ignore save_files
+save_files/*
