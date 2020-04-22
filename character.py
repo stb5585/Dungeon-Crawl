@@ -91,7 +91,7 @@ def load(char=None) -> dict:
                 i += 1
             while True:
                 print("Type in the name of the character you want to load.")
-                choice = input("> ").upper()
+                choice = input("> ").lower()
                 if 'save_files/' + choice + '.save' in save_files:
                     save_file = 'save_files/' + choice + '.save'
                     break
@@ -803,7 +803,7 @@ class Player(Character):
 
     def save(self):
         while True:
-            save_file = "save_files/{0}.save".format(str(self.name))
+            save_file = "save_files/{0}.save".format(str(self.name).lower())
             if os.path.exists(save_file):
                 print("A save file under this name already exists. Are you sure you want to overwrite it? (Y or N)")
                 over = input("> ").lower()
