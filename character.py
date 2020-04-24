@@ -11,14 +11,15 @@ import random
 import time
 import numpy
 import pygame
+from pygame.locals import *
 
 import items
 import storyline
 import world
-import actions
 import spells
 import races
 import classes
+import display
 
 
 def rand_stats(race, cls: object) -> tuple:
@@ -54,22 +55,22 @@ def new_char() -> object:
     """
     location_x, location_y, location_z = world.starting_position
     race = races.define_race()
-    os.system('cls' if os.name == 'nt' else 'clear')
     cls = classes.define_class()
     while True:
         stats = rand_stats(race, cls)
-        print(stats)
-        keep = input("Would you like to keep these stats? (type Y to keep or else they will be re-rolled) ").lower()
-        if keep == 'y':
+        stats_text = 'Strength-{} Intelligence-{} Wisdom-{} Constitution-{} Charisma-{} Dexterity-{}'.format(
+            stats[0], stats[1], stats[2], stats[3], stats[4], stats[5]
+        )
+        confirm = display.confirm_menu(additional_text=stats_text, text_len=1, y_loc=6)
+        if confirm == 'YES':
             break
-    player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
-                    health=stats[3] * 3, health_max=stats[3] * 3, mana=stats[1] * 2, mana_max=stats[1] * 2,
-                    strength=stats[0], intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5],
-                    pro_level=1, gold=stats[4] * 25, equipment=cls.equipment, inventory={},
-                    spellbook={'Spells': {}, 'Skills': {}})
-    # storyline.read_story('new_player.txt')
+    player = Player(location=[location_x, location_y, location_z], state='normal', cls=cls.name,
+                    level=1, exp=0, health=stats[3] * 3, health_max=stats[3] * 3, mana=stats[1] * 2,
+                    mana_max=stats[1] * 2, strength=stats[0], intel=stats[1], wisdom=stats[2], con=stats[3],
+                    charisma=stats[4], dex=stats[5], pro_level=1, gold=stats[4] * 25, equipment=cls.equipment,
+                    inventory={}, spellbook={'Spells': {}, 'Skills': {}})
     while player.name == '':
-        player.name = input("What is your character's name? ").upper()
+        player.name = display.name_input()
     player.race = race.name
     player.cls = cls.name
     return player
@@ -81,22 +82,13 @@ def load(char=None) -> dict:
     """
     if char is None:
         save_files = glob.glob("save_files/*.save")
-        if len(save_files) == 0:
-            return {}
-        else:
-            i = 1
-            for save_file in save_files:
-                save_file = save_file.split('/')[1]
-                print(str(i) + ': ' + save_file.split('.save')[0])
-                i += 1
-            while True:
-                print("Type in the name of the character you want to load.")
-                choice = input("> ").upper()
-                if 'save_files/' + choice + '.save' in save_files:
-                    save_file = 'save_files/' + choice + '.save'
-                    break
-                else:
-                    print("Character file does not exist. Please choose a valid save file.")
+        load_list = []
+        for s in save_files:
+            save_file = s.split('/')[1]
+            save_file = save_file.split('.')[0]
+            load_list.append(save_file.upper())
+        choice = display.load_menu(load_list)
+        save_file = 'save_files/' + choice.lower() + '.save'
         with open(save_file, 'rb') as save_file:
             save_dict = jsonpickle.decode(save_file.read())
             player_dict = save_dict['Player']
@@ -109,8 +101,6 @@ def load(char=None) -> dict:
                 player_dict = save_dict['Player']
                 _world = save_dict['World']
             return player_dict, _world
-        else:
-            return {}
 
 
 def load_char(char=None) -> object:
@@ -123,6 +113,7 @@ def load_char(char=None) -> object:
         player_dict, world_dict = load(char)
     player = Player(player_dict['Player location'],
                     player_dict['State'],
+                    player_dict['Class'],
                     player_dict['Level'],
                     player_dict['Experience'],
                     player_dict['Current health'],
@@ -140,9 +131,9 @@ def load_char(char=None) -> object:
                     player_dict['Equipment'],
                     player_dict['Inventory'],
                     player_dict['Spellbook'])
+    player.screen_rect = display.game_display.get_rect()
     player.name = player_dict['Player name']
     player.race = player_dict['Race']
-    player.cls = player_dict['Class']
     return player
 
 
@@ -152,6 +143,7 @@ class Character:
     """
 
     def __init__(self):
+        self.screen_rect = None
         self.name = ""
         self.health = 0
         self.health_max = 0
@@ -179,13 +171,16 @@ class Player(Character):
     Mana is defined based on the initial value and is modified by the intelligence and half the wisdom parameters
     """
 
-    def __init__(self, location, state, level, exp, health, health_max, mana, mana_max, strength, intel, wisdom,
-                 con, charisma, dex, pro_level, gold, equipment, inventory, spellbook):
+    def __init__(self, location, state, cls, level, exp, health, health_max, mana, mana_max, strength, intel,
+                 wisdom, con, charisma, dex, pro_level, gold, equipment, inventory, spellbook):
         super().__init__()
+        self.image = pygame.image.load('resources/player/'+cls.lower()+'.png')
+        self.rect = self.image.get_rect(center=display.game_display.get_rect().center)
         self.location_x = location[0]
         self.location_y = location[1]
         self.location_z = location[2]
         self.state = state
+        self.cls = cls
         self.level = level
         self.experience = exp
         self.health = health
@@ -203,6 +198,24 @@ class Player(Character):
         self.equipment = equipment
         self.inventory = inventory
         self.spellbook = spellbook
+
+    def get_event(self, event):
+        if event.type == KEYDOWN:
+            if event.key == K_LEFT:
+                self.rect.x -= 65
+                self.location_x -= 1
+            elif event.key == K_RIGHT:
+                self.rect.x += 65
+                self.location_x += 1
+            elif event.key == K_UP:
+                self.rect.y -= 40
+                self.location_y -= 1
+            elif event.key == K_DOWN:
+                self.rect.y += 40
+                self.location_y += 1
+
+    def draw(self, surf):
+        surf.blit(self.image, self.rect)
 
     def cast_spell(self, enemy, ability, stun=False):
         """
@@ -437,49 +450,39 @@ class Player(Character):
         """
         Prints the status of the character
         """
-        print("#" + (10 * "-") + "#")
-        print("Name: %s" % self.name)
-        print("Race: %s" % self.race)
-        print("Class: %s" % self.cls)
-        print("Level: %s  Experience: %s/%s" % (self.level, self.experience, (25 ** self.pro_level) * self.level))
-        print("HP: %d/%d  MP: %d/%d" % (self.health, self.health_max, self.mana, self.mana_max))
-        print("Strength: %d" % self.strength)
-        print("Intelligence: %d" % self.intel)
-        print("Wisdom: %d" % self.wisdom)
-        print("Constitution: %d" % self.con)
-        print("Charisma: %d" % self.charisma)
-        print("Dexterity: %d" % self.dex)
+        status_list = ["Name: %s" % self.name,
+                       "Race: %s" % self.race,
+                       "Class: %s" % self.cls,
+                       "Level: %s  Experience: %s/%s" % (self.level, self.experience, (25 ** self.pro_level) *
+                                                         self.level),
+                       "HP: %d/%d  MP: %d/%d" % (self.health, self.health_max, self.mana, self.mana_max),
+                       "Strength: %d" % self.strength,
+                       "Intelligence: %d" % self.intel,
+                       "Wisdom: %d" % self.wisdom,
+                       "Constitution: %d" % self.con,
+                       "Charisma: %d" % self.charisma,
+                       "Dexterity: %d" % self.dex]
+        equip_list = []
         if self.equipment['OffHand']().typ == 'Weapon':
-            print("Attack: %s/%s" % (str(self.strength + int(self.equipment['Weapon']().damage)),
-                                     str(self.strength // 2 + int(self.equipment['OffHand']().damage) // 2)))
-            print("Critical Chance: %s%%/%s%%" % (str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)),
-                                                  str(int(1 / float(self.equipment['OffHand']().crit + 1) * 100))))
+            equip_list.append("Attack: %s/%s" % (str(self.strength + int(self.equipment['Weapon']().damage)),
+                                                 str(self.strength // 2 + int(
+                                                     self.equipment['OffHand']().damage) // 2)))
+            equip_list.append(
+                "Critical Chance: %s%%/%s%%" % (str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)),
+                                                str(int(1 / float(self.equipment['OffHand']().crit + 1) * 100))))
         else:
-            print("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
-            print("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
-        print("Armor: %d" % self.equipment['Armor']().armor)
+            equip_list.append("Attack: %s" % str(self.strength + int(self.equipment['Weapon']().damage)))
+            equip_list.append("Critical Chance: %s%%" % str(int(1 / float(self.equipment['Weapon']().crit + 1) * 100)))
+        equip_list.append("Armor: %d" % self.equipment['Armor']().armor)
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: %s%%" % str(int(100 / float(self.equipment['OffHand']().mod)) + self.strength))
+            equip_list.append("Block Chance: %s%%" % str(int(100 / float(self.equipment['OffHand']().mod)) +
+                                                         self.strength))
         elif self.equipment['OffHand']().subtyp == 'Grimoire':
-            print("Spell Modifier: +%s" % str(self.equipment['OffHand']().mod))
+            equip_list.append("Spell Modifier: +%s" % str(self.equipment['OffHand']().mod))
         elif self.equipment['Weapon']().subtyp == 'Staff':
-            print("Spell Modifier: +%s" % str(self.equipment['Weapon']().damage * 2))
-        print("#" + (10 * "-") + "#")
-        input("Press enter to continue")
-        world_dict = world.world_return()
-        options = [actions.ViewInventory(),
-                   actions.Equip(),
-                   actions.ListSpecials(),
-                   actions.UseItem(),
-                   actions.Minimap(world_dict),
-                   actions.Quit()]
-        for action in options:
-            print(action)
-        action_input = input('Action: ')
-        for action in options:
-            if action_input == action.hotkey:
-                self.do_action(action, **action.kwargs)
-                break
+            equip_list.append("Spell Modifier: +%s" % str(self.equipment['Weapon']().damage * 2))
+
+        display.status_menu(status_list, equip_list)
 
     def flee(self, enemy, smoke=False, stun=False) -> bool:
         if not smoke:
@@ -803,7 +806,7 @@ class Player(Character):
 
     def save(self):
         while True:
-            save_file = "save_files/{0}.save".format(str(self.name))
+            save_file = "save_files/{0}.save".format(str(self.name).lower())
             if os.path.exists(save_file):
                 print("A save file under this name already exists. Are you sure you want to overwrite it? (Y or N)")
                 over = input("> ").lower()

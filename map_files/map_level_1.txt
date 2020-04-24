@@ -7,9 +7,9 @@ RandomEnemyRoom	RandomEnemyRoom		LootRoom		RandomEnemyRoom			EmptyCavePath	Rando
 			RandomEnemyRoom					EmptyCavePath	
 RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom		EmptyCavePath	
 	EmptyCavePath			RandomEnemyRoom		EmptyCavePath		RandomEnemyRoom	
-	EmptyCavePath			RandomEnemyRoom		RandomEnemyRoom			
-	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		StairsUp	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	
-			RandomEnemyRoom			RandomEnemyRoom		EmptyCavePath	
+	EmptyCavePath			EmptyCavePath		EmptyCavePath			
+	RandomEnemyRoom	EmptyCavePath	EmptyCavePath		StairsUp	EmptyCavePath	EmptyCavePath	EmptyCavePath	
+			RandomEnemyRoom			EmptyCavePath		EmptyCavePath	
 			EmptyCavePath		EmptyCavePath	EmptyCavePath		RandomEnemyRoom	
 RandomEnemyRoom	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
 			RandomEnemyRoom					RandomEnemyRoom	

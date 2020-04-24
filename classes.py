@@ -6,7 +6,7 @@ import time
 
 import storyline
 import items
-import character
+import display
 import spells
 
 
@@ -15,16 +15,13 @@ def define_class():
     """
     Allows user to select desired class and returns the object
     """
-    class_list = [Warrior, Mage, Footpad]
-    print("Now, choose your class.")
-    option_list = [('Warrior', 0), ('Mage', 1), ('Footpad', 2)]
+    class_dict = {'WARRIOR': Warrior, 'MAGE': Mage, 'FOOTPAD': Footpad}
     while True:
-        class_index = storyline.get_response(option_list)
-        print(class_list[class_index]())
-        choose = input("Are you sure you want to play as a %s? " % class_list[class_index]().name).lower()
-        if choose == 'y':
+        class_name = display.class_menu(class_dict)
+        confirm = display.confirm_menu(additional_text=class_dict[class_name]().description)
+        if confirm == 'YES':
             break
-    return class_list[class_index]()
+    return class_dict[class_name]()
 
 
 def equip_check(item, item_typ, class_name):

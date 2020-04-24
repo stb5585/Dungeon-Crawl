@@ -4,6 +4,7 @@
 # Imports
 import random
 import time
+import pygame
 
 import items
 
@@ -184,6 +185,7 @@ class Stinger(NaturalWeapon):
     """
     Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="stings", damage=3, crit=4, subtyp='Natural')
 
@@ -198,6 +200,7 @@ class SnakeFang(NaturalWeapon):
     """
     Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="strikes", damage=3, crit=4, subtyp='Natural')
 
@@ -224,6 +227,7 @@ class Gaze(NaturalWeapon):
     """
     Attempts to turn the player to stone
     """
+
     def __init__(self):
         super().__init__(name="leers", damage=0, crit=5, subtyp='Natural')
 
@@ -284,6 +288,7 @@ class Chest(Enemy):
 
     def __init__(self):
         super().__init__(name='Chest', health=1, mana=0, strength=0, intel=0, wisdom=0, con=0, charisma=0, dex=0, exp=0)
+        # self.image = pygame.image.load()
         self.loot = dict()
         self.lock = False
 

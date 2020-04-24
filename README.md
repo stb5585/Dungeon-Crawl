@@ -31,6 +31,7 @@ FUTURE DEVELOPMENT:
     - Enhance enemies to make them more dynamic (spells, dual-wield, resistance/weakness, etc)
     - Add accessories to equipment (rings, necklaces, etc)
     - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
+    - Convert save_files to pickle instead of jsonpickle (harder to modify)
 
 - Possible development
     - Status effects

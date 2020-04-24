@@ -9,6 +9,7 @@ import pickle
 import items
 import storyline
 import classes
+import display
 
 
 # Functions
@@ -92,9 +93,9 @@ def shop(player, buy_list):
             item_options = []
             i = 0
             for item in items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
-                adj_cost = max(1, int(item().value - player.charisma*2))
+                adj_cost = max(1, int(item().value - player.charisma * 2))
                 if item().rarity < 35:
-                    item_options.append((item().name+'  '+str(adj_cost), i))
+                    item_options.append((item().name + '  ' + str(adj_cost), i))
                     item_list.append(item)
                     i += 1
             item_options.append(('Go back', i))
@@ -102,7 +103,7 @@ def shop(player, buy_list):
             if item_options[item_index][0] == 'Go back':
                 continue
             buy_item = item_list[item_index]
-            buy_price = max(1, int(buy_item().value-(player.charisma*2)))
+            buy_price = max(1, int(buy_item().value - (player.charisma * 2)))
             if player.gold < buy_price:
                 print("You do not have enough gold.")
                 time.sleep(0.25)
@@ -177,19 +178,16 @@ def shop(player, buy_list):
 
 
 def town(player: object):
-    print("Welcome to the town of Silvana!")
-    time.sleep(0.25)
-    locations = [blacksmith, armory, alchemist, church]
-    town_options = [('Blacksmith', 0), ('Armory', 1), ('Alchemist', 2), ('Church', 3), ('Dungeon', 4), ('Status', 5)]
+    store = display.town_menu()
+    location_dict = {'BLACKSMITH': blacksmith, 'ARMORY': armory, 'ALCHEMIST': alchemist, 'CHURCH': church}
     while True:
-        print("Where would you like to go?")
-        town_index = storyline.get_response(town_options)
-        if town_options[town_index][1] == 4:
-            print("You descend into the dungeon.")
-            time.sleep(1)
+        if store == 'DUNGEON':
             player.location_x, player.location_y, player.location_z = (5, 10, 1)
-            break
-        elif town_options[town_index][1] == 5:
-            player.status()
+            player.rect.x, player.rect.y = (365, 410)
+        elif store == 'STATUS':
+            choice = player.status()
+            if choice == 'EXIT':
+                break
         else:
-            locations[town_index](player)
+            location_dict[store](player)
+        break

@@ -2,12 +2,12 @@
 """ map manager """
 
 # Imports
-import character
 import enemies
 import actions
 import world
 import combat
 import town
+from pygame.locals import *
 
 
 class MapTile:
@@ -28,13 +28,13 @@ class MapTile:
             append_list = []
         moves = []
         if world.tile_exists(self.x + 1, self.y, self.z):
-            moves.append(actions.MoveEast())
+            moves.append(K_RIGHT)
         if world.tile_exists(self.x - 1, self.y, self.z):
-            moves.append(actions.MoveWest())
+            moves.append(K_LEFT)
         if world.tile_exists(self.x, self.y - 1, self.z):
-            moves.append(actions.MoveNorth())
+            moves.append(K_UP)
         if world.tile_exists(self.x, self.y + 1, self.z):
-            moves.append(actions.MoveSouth())
+            moves.append(K_DOWN)
         for item in append_list:
             moves.append(item)
         return moves
@@ -62,6 +62,9 @@ class EnemyRoom(MapTile):
     def __init__(self, x, y, z, enemy):
         self.enemy = enemy
         super().__init__(x, y, z)
+
+    def intro_text(self):
+        pass
 
     def modify_player(self, player):
         if self.enemy.is_alive():
@@ -249,19 +252,27 @@ class LootRoom(EnemyRoom):
 
 
 class StairsUp(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.take = False
+
     def intro_text(self):
         return """
         You see a flight of stairs going up.
         """
 
     def modify_player(self, player):
-        pass
+        if self.take:
+            player.stairs_up()
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsUp(), actions.Status()])
 
 
 class StairsDown(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
     def intro_text(self):
         return """
         You see a flight of stairs going down.

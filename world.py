@@ -2,7 +2,6 @@
 """ world manager """
 
 # Imports
-import os
 import glob
 
 # Parameters

@@ -8,6 +8,7 @@ import world
 import actions
 import character
 import storyline
+import display
 
 
 # Functions
@@ -33,7 +34,7 @@ def battle(player, enemy):
     dot_damage = 0
     doom_turn = 0
     doom_rounds = 0
-    while combat:
+    while not combat:
         valid_entry = False
         print("Health: %d/%d  Mana: %d/%d" % (player.health, player.health_max, player.mana, player.mana_max))
         while True:
@@ -303,5 +304,5 @@ def battle(player, enemy):
                 combat = False
         if player.health <= 0:
             print("You were slain by the {0.name}.".format(enemy))
-            break
+            combat = False
     player.state = 'normal'

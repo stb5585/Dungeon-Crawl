@@ -13,27 +13,27 @@ class Action:
         self.kwargs = kwargs
 
     def __str__(self):
-        return "{}: {}".format(self.hotkey, self.name)
+        return "{}".format(self.name)
 
 
 class MoveNorth(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_north, name='Move north', hotkey='3')
+        super().__init__(method=character.Player.move_north, name='K_UP', hotkey='3')
 
 
 class MoveSouth(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_south, name='Move south', hotkey='4')
+        super().__init__(method=character.Player.move_south, name='K_DOWN', hotkey='4')
 
 
 class MoveEast(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_east, name='Move east', hotkey='1')
+        super().__init__(method=character.Player.move_east, name='K_RIGHT', hotkey='1')
 
 
 class MoveWest(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_west, name='Move west', hotkey='2')
+        super().__init__(method=character.Player.move_west, name='K_LEFT', hotkey='2')
 
 
 class StairsUp(Action):
