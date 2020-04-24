@@ -14,7 +14,7 @@ import storyline
 import tutorial
 
 
-def play():
+def play(timer):
     os.system('cls' if os.name == 'nt' else 'clear')
     f = pyfiglet.Figlet(font='slant')
     print(f.renderText("DUNGEON CRAWL"))
@@ -37,6 +37,9 @@ def play():
         player = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
+        if ((time.time() - timer) // 900*player.pro_level) > 0:
+            world.load_tiles()
+            timer = time.time()
         room = world.tile_exists(player.location_x, player.location_y, player.location_z)
         room.modify_player(player)
         if player.is_alive():
@@ -63,4 +66,5 @@ def play():
 
 
 if __name__ == "__main__":
-    play()
+    start_time = time.time()
+    play(start_time)

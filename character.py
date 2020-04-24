@@ -612,6 +612,12 @@ class Player(Character):
                             print("You are at full mana!")
             elif 'Stat' in itm().subtyp:
                 self.inventory[re.split(r"\s{2,}", item_list[use_itm][0])[0]][1] -= 1
+                if itm().stat == 'hp':
+                    self.health += 5
+                    self.health_max += 5
+                if itm().stat == 'mp':
+                    self.mana += 5
+                    self.mana_max += 5
                 if itm().stat == 'str': self.strength += 1
                 if itm().stat == 'int': self.intel += 1
                 if itm().stat == 'wis': self.wisdom += 1

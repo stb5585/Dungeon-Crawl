@@ -101,13 +101,14 @@ def random_item(z: int) -> object:
                             'Elixir': [[Elixir, Megalixir],
                                        [reciprocal(Elixir().rarity), reciprocal(Megalixir().rarity)],
                                        ['3', '4']],
-                            'Stat': [[StrengthPotion, IntelPotion, WisdomPotion, ConPotion, CharismaPotion,
-                                      DexterityPotion, AardBeing],
-                                     [reciprocal(StrengthPotion().rarity), reciprocal(IntelPotion().rarity),
+                            'Stat': [[HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
+                                      CharismaPotion, DexterityPotion, AardBeing],
+                                     [reciprocal(HPPotion().rarity), reciprocal(MPPotion().rarity),
+                                      reciprocal(StrengthPotion().rarity), reciprocal(IntelPotion().rarity),
                                       reciprocal(WisdomPotion().rarity), reciprocal(ConPotion().rarity),
                                       reciprocal(CharismaPotion().rarity), reciprocal(DexterityPotion().rarity),
                                       reciprocal(AardBeing().rarity)],
-                                     ['1', '1', '1', '1', '1', '1', '3']]
+                                     ['1', '1', '2', '2', '2', '2', '2', '2', '4']]
                             }
                  }
 
@@ -750,7 +751,7 @@ class HalfPlate(Armor):
         super().__init__(name="HALF PLATE", description="Armor consisting of shaped metal plates that cover most of the"
                                                         " wearer’s body. It does not include leg Protection beyond "
                                                         "simple greaves that are attached with leather straps.",
-                         value=13000, rarity=50, armor=13, subtyp='Medium', unequip=False)
+                         value=13000, rarity=40, armor=13, subtyp='Medium', unequip=False)
 
 
 class Aegis(Armor):
@@ -758,7 +759,7 @@ class Aegis(Armor):
     def __init__(self):
         super().__init__(name="AEGIS BREASTPLATE", description="The breastplate of Zeus, emboldened with a bolt of "
                                                                "lightning.",
-                         value=50000, rarity=75, armor=18, subtyp='Medium', unequip=False)
+                         value=50000, rarity=50, armor=18, subtyp='Medium', unequip=False)
 
 
 class RingMail(Armor):
@@ -803,7 +804,7 @@ class FullPlate(Armor):
                                                         "heavy leather boots, a visored helmet, and thick layers of "
                                                         "padding underneath the armor. Buckles and straps distribute "
                                                         "the weight over the body.",
-                         value=15000, rarity=60, armor=15, subtyp='Heavy', unequip=False)
+                         value=15000, rarity=40, armor=15, subtyp='Heavy', unequip=False)
 
 
 class Genji(Armor):
@@ -812,7 +813,7 @@ class Genji(Armor):
         super().__init__(name="GENJI ARMOR", description="Mythical armor crafted by an unknown master blacksmith and "
                                                          "embued with protective enchantments that allow the user to "
                                                          "shrug off damage.",
-                         value=100000, rarity=100, armor=25, subtyp='Heavy', unequip=False)
+                         value=100000, rarity=50, armor=25, subtyp='Heavy', unequip=False)
 
 
 class OffHand(Item):
@@ -893,7 +894,7 @@ class TowerShield(OffHand):
 
     def __init__(self):
         super().__init__(name="TOWER SHIELD", description="A defensive bulwark, an impenetrable wall.",
-                         value=11000, rarity=50, mod=3, subtyp='Shield', unequip=False)
+                         value=11000, rarity=40, mod=3, subtyp='Shield', unequip=False)
 
 
 class MedusaShield(OffHand):
@@ -902,7 +903,7 @@ class MedusaShield(OffHand):
         super().__init__(name="MEDUSA SHIELD", description="A shield that has been polished to resemble a mirror. Said"
                                                            " to be used to defeat the Gorgon Medusa. Reflects back some"
                                                            " magic.",
-                         value=25000, rarity=75, mod=2, subtyp='Shield', unequip=False)
+                         value=25000, rarity=50, mod=2, subtyp='Shield', unequip=False)
 
 
 class Book(OffHand):
@@ -928,27 +929,27 @@ class BookShadows(OffHand):
                          value=10000, rarity=35, mod=10, subtyp='Grimoire', unequip=False)
 
 
+class DragonRouge(OffHand):
+
+    def __init__(self):
+        super().__init__(name="DRAGON ROUGE", description="French for \"Red Dragon\", this mythical tome contains "
+                                                          "ancient knowledge passed down through the ages.",
+                         value=12000, rarity=40, mod=12, subtyp='Grimoire', unequip=False)
+
+
 class Necronomicon(OffHand):
 
     def __init__(self):
         super().__init__(name="NECRONOMICON", description="The Book of the Dead, a mystical grimoire written by an "
                                                           "unknown author.",
-                         value=12000, rarity=40, mod=12, subtyp='Grimoire', unequip=False)
-
-
-class DragonRouge(OffHand):
-
-    def __init__(self):
-        super().__init__(name="DRAGON ROGUE", description="French for \"Red Dragon\", this mythical tome contains "
-                                                          "ancient knowledge passed down through the ages.",
-                         value=26000, rarity=60, mod=20, subtyp='Grimoire', unequip=False)
+                         value=26000, rarity=50, mod=20, subtyp='Grimoire', unequip=False)
 
 
 class Magus(OffHand):
 
     def __init__(self):
         super().__init__(name="MAGUS", description="A book of magical art written by a powerful wizard.",
-                         value=40000, rarity=75, mod=30, subtyp='Grimoire', unequip=False)
+                         value=40000, rarity=60, mod=30, subtyp='Grimoire', unequip=False)
 
 
 class Potion(Item):
@@ -1020,7 +1021,7 @@ class MasterManaPotion(Potion):
 
     def __init__(self):
         super().__init__(name="MASTER MANA POTION", description="A potion that restores up to 100% of your mana.",
-                         value=20000, rarity=75, subtyp='Mana')
+                         value=20000, rarity=50, subtyp='Mana')
         self.percent = 1.0
 
 
@@ -1036,8 +1037,24 @@ class Megalixir(Potion):
 
     def __init__(self):
         super().__init__(name="MEGALIXIR", description="A potion that restores up to 100% of your health and mana.",
-                         value=30000, rarity=100, subtyp='Elixir')
+                         value=30000, rarity=75, subtyp='Elixir')
         self.percent = 1.0
+
+
+class HPPotion(Potion):
+
+    def __init__(self):
+        super().__init__(name="HP POTION", description="A potion that permanently increases your strength by 1",
+                         value=10000, rarity=20, subtyp='Stat')
+        self.stat = 'hp'
+
+
+class MPPotion(Potion):
+
+    def __init__(self):
+        super().__init__(name="MP POTION", description="A potion that permanently increases your strength by 1",
+                         value=10000, rarity=20, subtyp='Stat')
+        self.stat = 'mp'
 
 
 class StrengthPotion(Potion):
@@ -1094,7 +1111,7 @@ class AardBeing(Potion):
 
     def __init__(self):
         super().__init__(name="AARD of BEING", description="A potion that permanently increases all stats by 1",
-                         value=200000, rarity=200, subtyp='Stat')
+                         value=200000, rarity=100, subtyp='Stat')
         self.stat = 'all'
 
 
@@ -1133,6 +1150,6 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
               'Potion': {'Health': [HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                          'Mana': [ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                          'Elixir': [Elixir, Megalixir],
-                         'Stat': [StrengthPotion, IntelPotion, WisdomPotion, ConPotion, CharismaPotion,
-                                  DexterityPotion, AardBeing]},
+                         'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
+                                  CharismaPotion, DexterityPotion, AardBeing]},
               'Misc': {'Key': [Key]}}

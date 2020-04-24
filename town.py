@@ -2,9 +2,7 @@
 """ Town manager """
 
 # Imports
-import os
 import time
-import pickle
 
 import items
 import storyline
@@ -16,32 +14,32 @@ def shop_inventory():
     pass
 
 
-def blacksmith(player: object):
+def blacksmith(player):
     print("Welcome to Griswold's! What can I do you for?")
     buy_list = [('Weapon', 0), ('OffHand', 1)]
     shop(player, buy_list)
 
 
-def armory(player: object):
+def armory(player):
     print("I have the finest armors for sale. Come in and look around.")
     buy_list = [('Armor', 0)]
     shop(player, buy_list)
 
 
-def alchemist(player: object):
+def alchemist(player):
     print("Welcome to Ye Olde Item Shoppe.")
     buy_list = [('Potion', 0), ('Misc', 1)]
     shop(player, buy_list)
 
 
-def tavern(player: object):
+def tavern(player):
     """
     Quests
     """
     pass
 
 
-def church(player: object):
+def church(player):
     print("Come in my child. You are always welcome in the arms of Elysia.")
     while True:
         print("How can we be of service?")
@@ -62,7 +60,14 @@ def church(player: object):
             break
 
 
-def shop(player, buy_list):
+def secret_shop(player):
+    print("You have found me in the god forsaken place. Since you're here, you might as well buy some supplies.")
+    buy_list = [('Weapon', 0), ('OffHand', 1), ('Armor', 2), ('Potion', 3)]
+    shop(player, buy_list, in_town=False)
+    player.location_y += 1
+
+
+def shop(player, buy_list, in_town=True):
     print("You have %s gold." % player.gold)
     time.sleep(0.25)
     items_dict = items.items_dict
@@ -93,10 +98,16 @@ def shop(player, buy_list):
             i = 0
             for item in items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
                 adj_cost = max(1, int(item().value - player.charisma*2))
-                if item().rarity < 35:
-                    item_options.append((item().name+'  '+str(adj_cost), i))
-                    item_list.append(item)
-                    i += 1
+                if in_town:
+                    if item().rarity < 35:
+                        item_options.append((item().name+'  '+str(adj_cost), i))
+                        item_list.append(item)
+                        i += 1
+                else:
+                    if 35 <= item().rarity <= 40:
+                        item_options.append((item().name+'  '+str(adj_cost), i))
+                        item_list.append(item)
+                        i += 1
             item_options.append(('Go back', i))
             item_index = storyline.get_response(item_options)
             if item_options[item_index][0] == 'Go back':
@@ -176,7 +187,7 @@ def shop(player, buy_list):
             print("Please enter a valid option.")
 
 
-def town(player: object):
+def town(player):
     print("Welcome to the town of Silvana!")
     time.sleep(0.25)
     locations = [blacksmith, armory, alchemist, church]

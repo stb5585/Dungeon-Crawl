@@ -2,7 +2,6 @@
 """ map manager """
 
 # Imports
-import character
 import enemies
 import actions
 import world
@@ -272,3 +271,17 @@ class StairsDown(MapTile):
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsDown(), actions.Status()])
+
+
+class SecretShop(MapTile):
+    def intro_text(self):
+        return """
+        You find a secret shop in the depths of the dungeon.
+        """
+
+    def modify_player(self, player):
+        player.state = 'normal'
+        town.secret_shop(player)
+
+    def available_actions(self, player):
+        pass
