@@ -42,6 +42,13 @@ def tavern(player: object):
     pass
 
 
+def secret_shop(player):
+    print("You have found me in the god forsaken place. Since you're here, you might as well buy some supplies.")
+    buy_list = [('Weapon', 0), ('OffHand', 1), ('Armor', 2), ('Potion', 3)]
+    shop(player, buy_list, in_town=False)
+    player.location_y += 1
+
+
 def church(player: object):
     print("Come in my child. You are always welcome in the arms of Elysia.")
     while True:
@@ -63,7 +70,7 @@ def church(player: object):
             break
 
 
-def shop(player, buy_list):
+def shop(player, buy_list, in_town=True):
     print("You have %s gold." % player.gold)
     time.sleep(0.25)
     items_dict = items.items_dict
@@ -94,10 +101,16 @@ def shop(player, buy_list):
             i = 0
             for item in items_dict[buy_list[buy_index][0]][cat_list[cat_index][0]]:
                 adj_cost = max(1, int(item().value - player.charisma * 2))
-                if item().rarity < 35:
-                    item_options.append((item().name + '  ' + str(adj_cost), i))
-                    item_list.append(item)
-                    i += 1
+                if in_town:
+                    if item().rarity < 35:
+                        item_options.append((item().name + '  ' + str(adj_cost), i))
+                        item_list.append(item)
+                        i += 1
+                else:
+                    if 35 <= item().rarity <= 40:
+                        item_options.append((item().name+'  '+str(adj_cost), i))
+                        item_list.append(item)
+                        i += 1
             item_options.append(('Go back', i))
             item_index = storyline.get_response(item_options)
             if item_options[item_index][0] == 'Go back':
