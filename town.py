@@ -49,6 +49,7 @@ def church(player):
             if player.level // 20 > 0:
                 print("You have qualified for a promotion. Which path would you like to follow?")
                 classes.promotion(player)
+                print("Let the light of Elysia guide you on your new path.")
             else:
                 print("You need to be at least level 20 before you can promote your character.")
         elif church_options[church_index][1] == 1:

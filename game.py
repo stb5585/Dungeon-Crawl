@@ -37,7 +37,7 @@ def play(timer):
         player = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
-        if ((time.time() - timer) // 900*player.pro_level) > 0:
+        if ((time.time() - timer) // 900 * player.pro_level) > 0:
             world.load_tiles()
             timer = time.time()
         room = world.tile_exists(player.location_x, player.location_y, player.location_z)

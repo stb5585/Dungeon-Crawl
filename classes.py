@@ -76,6 +76,8 @@ def promotion(player: object):
         print("You have chosen to promote from %s to %s." % (current_class, new_class.name))
         promote = input("Do you wish to continue? (Y or N) ").lower()
         if promote == 'y':
+            print("Congratulations! %s has been promoted from a %s to a %s!" % (player.name, current_class,
+                                                                                new_class.name))
             player.equip(unequip=True)
             promoted_player = player
             promoted_player.pro_level = new_class.pro_level
@@ -85,24 +87,40 @@ def promotion(player: object):
             promoted_player.equipment = new_class.equipment
             if new_class.name == 'WARLOCK':
                 promoted_player.spellbook['Spells'] = {'Shadow Bolt': spells.ShadowBolt}
+                print("You unlearn all of your spells but gain Shadow Bolt!")
+                time.sleep(0.5)
+                print(spells.ShadowBolt())
             elif new_class.name == 'WEAPON MASTER':
                 del promoted_player.spellbook['Skills']['Shield Slam']
                 promoted_player.spellbook['Skills']['Mortal Strike'] = spells.MortalStrike
-            if new_class.min_str > promoted_player.strength:
-                promoted_player.strength = new_class.min_str
-            if new_class.min_int > promoted_player.intel:
-                promoted_player.intel = new_class.min_int
-            if new_class.min_wis > promoted_player.wisdom:
-                promoted_player.wisdom = new_class.min_wis
-            if new_class.min_con > promoted_player.con:
-                promoted_player.con = new_class.min_con
-            if new_class.min_cha > promoted_player.charisma:
-                promoted_player.charisma = new_class.min_cha
-            if new_class.min_dex > promoted_player.dex:
-                promoted_player.dex = new_class.min_dex
-            time.sleep(1)
-            print("Congratulations! %s has been promoted from a %s to a %s!" % (player.name, current_class,
-                                                                                new_class.name))
+                print("You unlearn Shield Slam but gain Mortal Strike!")
+                time.sleep(0.5)
+                print(spells.MortalStrike())
+            print("Stat Gains")
+            if new_class.str_plus > 0:
+                print("Strength: %s -> %s" % (promoted_player.strength, promoted_player.strength + new_class.str_plus))
+                promoted_player.strength += new_class.str_plus
+                time.sleep(0.5)
+            if new_class.int_plus > 0:
+                print("Intelligence: %s -> %s" % (promoted_player.intel, promoted_player.intel + new_class.int_plus))
+                promoted_player.intel += new_class.int_plus
+                time.sleep(0.5)
+            if new_class.wis_plus > 0:
+                print("Wisdom: %s -> %s" % (promoted_player.wisdom, promoted_player.wisdom + new_class.wis_plus))
+                promoted_player.wisdom += new_class.wis_plus
+                time.sleep(0.5)
+            if new_class.con_plus > 0:
+                print("Constitution: %s -> %s" % (promoted_player.con, promoted_player.con + new_class.con_plus))
+                promoted_player.con += new_class.con_plus
+                time.sleep(0.5)
+            if new_class.cha_plus > 0:
+                print("Charisma: %s -> %s" % (promoted_player.charisma, promoted_player.charisma + new_class.cha_plus))
+                promoted_player.charisma += new_class.cha_plus
+                time.sleep(0.5)
+            if new_class.dex_plus > 0:
+                print("Dexterity: %s -> %s" % (promoted_player.dex, promoted_player.dex + new_class.dex_plus))
+                promoted_player.dex += new_class.dex_plus
+            time.sleep(2)
         else:
             print("If you change your mind, you know where to find us.")
 
@@ -115,16 +133,16 @@ class Job:
     restrictions list the allowable item types the class can equip
     """
 
-    def __init__(self, name, description, min_str, min_int, min_wis, min_con, min_cha, min_dex, equipment,
+    def __init__(self, name, description, str_plus, int_plus, wis_plus, con_plus, cha_plus, dex_plus, equipment,
                  restrictions, pro_level):
         self.name = name
         self.description = description
-        self.min_str = min_str
-        self.min_int = min_int
-        self.min_wis = min_wis
-        self.min_con = min_con
-        self.min_cha = min_cha
-        self.min_dex = min_dex
+        self.str_plus = str_plus
+        self.int_plus = int_plus
+        self.wis_plus = wis_plus
+        self.con_plus = con_plus
+        self.cha_plus = cha_plus
+        self.dex_plus = dex_plus
         self.equipment = equipment
         self.restrictions = restrictions
         self.pro_level = pro_level
@@ -133,14 +151,14 @@ class Job:
         return "Name: {}\n" \
                "Description: {}\n" \
                "\n" \
-               "Minimum Stats\n" \
+               "Stats Boosts\n" \
                "Strength: {}\n" \
                "Intelligence: {}\n" \
                "Wisdom: {}\n" \
                "Constitution: {}\n" \
                "Charisma: {}\n" \
-               "Dexterity: {}".format(self.name, self.description, self.min_str, self.min_int, self.min_wis,
-                                      self.min_con, self.min_cha, self.min_dex)
+               "Dexterity: {}".format(self.name, self.description, self.str_plus, self.int_plus, self.wis_plus,
+                                      self.con_plus, self.cha_plus, self.dex_plus)
 
 
 class Warrior(Job):
@@ -155,7 +173,7 @@ class Warrior(Job):
     def __init__(self):
         super().__init__(name="WARRIOR", description="A Warrior is a weapon specialist that relies on strength and \n"
                                                      "defense.",
-                         min_str=12, min_int=7, min_wis=5, min_con=10, min_cha=6, min_dex=7,
+                         str_plus=3, int_plus=0, wis_plus=1, con_plus=3, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.BronzeSword, OffHand=items.WoodShield, Armor=items.HideArmor),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm'],
                                        'OffHand': ['Shield'],
@@ -173,7 +191,7 @@ class WeaponMaster(Job):
     def __init__(self):
         super().__init__(name="WEAPON MASTER", description="Weapon Masters focus on the mastery of weapons and their"
                                                            " skill with them.",
-                         min_str=15, min_int=10, min_wis=8, min_con=11, min_cha=7, min_dex=12,
+                         str_plus=3, int_plus=1, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=2,
                          equipment=dict(Weapon=items.GreatAxe, OffHand=items.NoOffHand, Armor=items.ScaleMail),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm', 'Staff'],
                                        'OffHand': ['Dagger', 'Sword', 'Mace'],
@@ -191,7 +209,7 @@ class Berserker(Job):
     def __init__(self):
         super().__init__(name="BERSERKER", description="Berserkers are combat masters, driven by pure rage and "
                                                        "vengeance.",
-                         min_str=18, min_int=12, min_wis=11, min_con=12, min_cha=8, min_dex=14,
+                         str_plus=4, int_plus=1, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=3,
                          equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.WarHammer,
                                         Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
@@ -210,7 +228,7 @@ class Paladin(Job):
     def __init__(self):
         super().__init__(name="PALADIN", description="The Paladin is a holy knight, crusading in the name of good and "
                                                      "order, and is a divine spell caster.",
-                         min_str=13, min_int=13, min_wis=14, min_con=14, min_cha=10, min_dex=8,
+                         str_plus=1, int_plus=2, wis_plus=2, con_plus=3, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.SteelMace, OffHand=items.IronShield, Armor=items.Splint),
                          restrictions={'Weapon': ['Sword', 'Mace'],
                                        'OffHand': ['Shield'],
@@ -228,7 +246,7 @@ class Crusader(Job):
     def __init__(self):
         super().__init__(name="CRUSADER", description="The Crusader is a holy warrior, who values order and justice "
                                                       "above all else.",
-                         min_str=15, min_int=14, min_wis=16, min_con=16, min_cha=13, min_dex=9,
+                         str_plus=2, int_plus=2, wis_plus=2, con_plus=3, cha_plus=2, dex_plus=1,
                          equipment=dict(Weapon=items.AdamantiteMace, OffHand=items.TowerShield,
                                         Armor=items.FullPlate),
                          restrictions={'Weapon': ['Sword', 'Mace'],
@@ -247,7 +265,7 @@ class Lancer(Job):
     def __init__(self):
         super().__init__(name="LANCER", description="The Lancer spend their time specializing in the art of wielding "
                                                     "polearms and shields.",
-                         min_str=14, min_int=11, min_wis=11, min_con=12, min_cha=8, min_dex=10,
+                         str_plus=3, int_plus=1, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Splint),
                          restrictions={'Weapon': ['Polearm'],
                                        'OffHand': ['Shield'],
@@ -269,7 +287,7 @@ class Dragoon(Job):
                                                      "passed down by the dragon riders of old, allows these warriors to"
                                                      " leap unnaturally high into the air and strike their foes with "
                                                      "deadly force from above. ",
-                         min_str=16, min_int=13, min_wis=13, min_con=14, min_cha=10, min_dex=12,
+                         str_plus=3, int_plus=1, wis_plus=2, con_plus=3, cha_plus=1, dex_plus=2,
                          equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.FullPlate),
                          restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
@@ -291,7 +309,7 @@ class Mage(Job):
                                                   "destroy an enemy with the wave of a finger. Weaker and more \n"
                                                   "vulnerable than any other class, they more than make up for it \n"
                                                   "with powerful magics.",
-                         min_str=5, min_int=13, min_wis=11, min_con=5, min_cha=10, min_dex=6,
+                         str_plus=0, int_plus=4, wis_plus=3, con_plus=0, cha_plus=2, dex_plus=1,
                          equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
@@ -309,7 +327,7 @@ class Sorcerer(Job):
     def __init__(self):
         super().__init__(name="SORCERER", description="A Sorcerer is someone who uses or practices magic derived from "
                                                       "supernatural, occult, or arcane sources.",
-                         min_str=7, min_int=17, min_wis=14, min_con=7, min_cha=11, min_dex=8,
+                         str_plus=0, int_plus=4, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=2,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
@@ -328,7 +346,7 @@ class Wizard(Job):
         super().__init__(name="WIZARD", description="The Wizard is a master of arcane magic, who has studied the "
                                                     "subject for years. He practices until he is able to command magic "
                                                     "with ease.",
-                         min_str=9, min_int=20, min_wis=16, min_con=10, min_cha=13, min_dex=10,
+                         str_plus=0, int_plus=5, wis_plus=3, con_plus=1, cha_plus=1, dex_plus=2,
                          equipment=dict(Weapon=items.SerpentStaff, OffHand=items.NoOffHand, Armor=items.WizardRobe),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
@@ -347,7 +365,7 @@ class Warlock(Job):
         super().__init__(name="WARLOCK", description="The Warlock is a arcanist, who conjures the dark arts to harness "
                                                      "their innate magical gift, and perform spell-like feats and "
                                                      "abilities.",
-                         min_str=10, min_int=14, min_wis=14, min_con=9, min_cha=10, min_dex=9,
+                         str_plus=1, int_plus=3, wis_plus=3, con_plus=2, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Grimoire'],
@@ -366,7 +384,7 @@ class Necromancer(Job):
         super().__init__(name="NECROMANCER", description="The Necromancer is highly attune to the dark arts and can "
                                                          "conjure the most demonic of powers, including the practicing"
                                                          " of forbidden blood magic.",
-                         min_str=12, min_int=16, min_wis=16, min_con=12, min_cha=11, min_dex=12,
+                         str_plus=2, int_plus=3, wis_plus=3, con_plus=3, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.Necronomicon,
                                         Armor=items.CloakEnchantment),
                          restrictions={'Weapon': ['Dagger', 'Staff'],
@@ -386,7 +404,7 @@ class Spellblade(Job):
     def __init__(self):
         super().__init__(name="SPELLBLADE", description="The Spellblade combines a magical affinity with a higher level"
                                                         "of martial prowess from the other magical classes.",
-                         min_str=12, min_int=13, min_wis=12, min_con=10, min_cha=10, min_dex=10,
+                         str_plus=2, int_plus=2, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.TomeKnowledge, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
                                        'OffHand': ['Grimoire'],
@@ -406,7 +424,7 @@ class KnightEnchanter(Job):
         super().__init__(name="KNIGHT ENCHANTER", description="The Knight Enchanter uses their arcane powers to imbue"
                                                               " weapons with magical enchantments that can rival the "
                                                               "most powerful fighter.",
-                         min_str=14, min_int=15, min_wis=14, min_con=13, min_cha=12, min_dex=12,
+                         str_plus=3, int_plus=2, wis_plus=2, con_plus=3, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.BookShadows,
                                         Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword'],
@@ -428,7 +446,7 @@ class Footpad(Job):
         super().__init__(name="FOOTPAD", description="Footpads are agile and perceptive, with an natural ability of \n"
                                                      "deftness. While more than capable of holding their own in hand-\n"
                                                      "to-hand combat, they truly excel at subterfuge.",
-                         min_str=8, min_int=10, min_wis=8, min_con=7, min_cha=5, min_dex=11,
+                         str_plus=0, int_plus=1, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=3,
                          equipment=dict(Weapon=items.BronzeSword, OffHand=items.BronzeDagger, Armor=items.PaddedArmor),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
                                        'OffHand': ['Dagger'],
@@ -440,7 +458,7 @@ class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
     Pros: Ability to dual wield (only daggers in offhand) and access to certain abilities (including stealing)
-    Cons: Lower average stats
+    Cons: Average stats
     """
 
     def __init__(self):
@@ -448,7 +466,7 @@ class Thief(Job):
                                                    "makes sure to get a fair share. Very devoted to stealing, Thieves "
                                                    "often lack fighting skill, but make up for it with their "
                                                    "treacherous backstabbing.",
-                         min_str=10, min_int=14, min_wis=12, min_con=9, min_cha=6, min_dex=16,
+                         str_plus=1, int_plus=1, wis_plus=2, con_plus=2, cha_plus=2, dex_plus=2,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.SteelDagger, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
                                        'OffHand': ['Dagger'],
@@ -469,7 +487,7 @@ class Rogue(Job):
                                                    "get the upper hand in any situation. They have a knack for finding "
                                                    "the solution to just about any problem, demonstrating a "
                                                    "resourcefulness and versatility that has no rival.",
-                         min_str=12, min_int=16, min_wis=13, min_con=12, min_cha=8, min_dex=18,
+                         str_plus=1, int_plus=2, wis_plus=2, con_plus=2, cha_plus=2, dex_plus=3,
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.AdamantiteDagger,
                                         Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
@@ -494,7 +512,7 @@ class Inquisitive(Job):
                                                          "They excel at defeating creatures that hide among and prey "
                                                          "upon ordinary folk, and their mastery of lore and sharp eye "
                                                          "make them well-equipped to expose and end hidden evils.",
-                         min_str=11, min_int=14, min_wis=14, min_con=11, min_cha=8, min_dex=11,
+                         str_plus=2, int_plus=1, wis_plus=2, con_plus=3, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.IronShield, Armor=items.ScaleMail),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
                                        'OffHand': ['Shield', 'Dagger', 'Sword', 'Mace'],
@@ -517,7 +535,7 @@ class Seeker(Job):
                                                     "does well with a weapon in hand.  They are also the best at "
                                                     "mapping the dungeon and detecting any types of ‘anomalies’ they "
                                                     "may encounter in the depths.",
-                         min_str=14, min_int=16, min_wis=16, min_con=14, min_cha=10, min_dex=13,
+                         str_plus=3, int_plus=1, wis_plus=2, con_plus=3, cha_plus=1, dex_plus=2,
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield, Armor=items.HalfPlate),
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Mace'],
                                        'OffHand': ['Shield', 'Dagger', 'Sword', 'Mace'],
@@ -538,7 +556,7 @@ class Assassin(Job):
                                                       "bounty hunters, and even specially anointed priests trained to "
                                                       "exterminate  the enemies of their deity. Stealth, poison, and "
                                                       "disguise help you eliminate your foes with deadly efficiency.",
-                         min_str=9, min_int=13, min_wis=15, min_con=8, min_cha=6, min_dex=18,
+                         str_plus=0, int_plus=1, wis_plus=3, con_plus=1, cha_plus=1, dex_plus=4,
                          equipment=dict(Weapon=items.SteelDagger, OffHand=items.SteelDagger, Armor=items.Cuirboulli),
                          restrictions={'Weapon': ['Dagger'],
                                        'OffHand': ['Dagger'],
@@ -561,7 +579,7 @@ class Ninja(Job):
                                                    "special weapons that only they can use, Ninjas possess the skills "
                                                    "of Critically hitting and Backstabbing their opponents, along with "
                                                    "moderate thieving skills.",
-                         min_str=11, min_int=15, min_wis=17, min_con=10, min_cha=7, min_dex=22,
+                         str_plus=0, int_plus=2, wis_plus=3, con_plus=1, cha_plus=2, dex_plus=4,
                          equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.AdamantiteDagger,
                                         Armor=items.StuddedCuirboulli),
                          restrictions={'Weapon': ['Dagger'],

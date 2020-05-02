@@ -15,80 +15,72 @@ def equip_compare(old, new: object):
 
 
 def random_item(z: int) -> object:
-    item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger,
-                                        Carnwennan],
+    item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger],
                                        [reciprocal(BronzeDagger().rarity), reciprocal(IronDagger().rarity),
                                         reciprocal(SteelDagger().rarity), reciprocal(AdamantiteDagger().rarity),
-                                        reciprocal(MithrilDagger().rarity), reciprocal(Carnwennan().rarity)],
-                                       ['1', '1', '2', '3', '4', '5']],
-                            'Sword': [[BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword, Excalibur],
+                                        reciprocal(MithrilDagger().rarity)],
+                                       ['1', '1', '2', '3', '4']],
+                            'Sword': [[BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword],
                                       [reciprocal(BronzeSword().rarity), reciprocal(IronSword().rarity),
                                        reciprocal(SteelSword().rarity), reciprocal(AdamantiteSword().rarity),
-                                       reciprocal(MithrilSword().rarity), reciprocal(Excalibur().rarity)],
-                                      ['1', '1', '2', '3', '4', '5']],
-                            'Mace': [[BronzeMace, IronMace, SteelMace, AdamantiteMace, MithrilMace, Mjolnir],
+                                       reciprocal(MithrilSword().rarity)],
+                                      ['1', '1', '2', '3', '4']],
+                            'Mace': [[BronzeMace, IronMace, SteelMace, AdamantiteMace, MithrilMace],
                                      [reciprocal(BronzeMace().rarity), reciprocal(IronMace().rarity),
                                       reciprocal(SteelMace().rarity), reciprocal(AdamantiteMace().rarity),
-                                      reciprocal(MithrilMace().rarity), reciprocal(Mjolnir().rarity)],
-                                     ['1', '1', '2', '3', '4', '5']],
-                            'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
+                                      reciprocal(MithrilMace().rarity)],
+                                     ['1', '1', '2', '3', '4']],
+                            'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe],
                                     [reciprocal(Axe().rarity), reciprocal(BattleAxe().rarity),
                                      reciprocal(GreatAxe().rarity), reciprocal(AdamantiteAxe().rarity),
-                                     reciprocal(MithrilAxe().rarity), reciprocal(Jarnbjorn().rarity)],
-                                    ['1', '1', '2', '3', '4', '5']],
-                            'Polearm': [[Spear, Lance, Pike, Halberd, Trident, Gungnir],
+                                     reciprocal(MithrilAxe().rarity)],
+                                    ['1', '1', '2', '3', '4']],
+                            'Polearm': [[Spear, Lance, Pike, Halberd, Trident],
                                         [reciprocal(Spear().rarity), reciprocal(Lance().rarity),
                                          reciprocal(Pike().rarity), reciprocal(Halberd().rarity),
-                                         reciprocal(Trident().rarity), reciprocal(Gungnir().rarity)],
-                                        ['1', '1', '2', '3', '4', '5']],
-                            'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, DragonStaff, MithrilshodStaff,
-                                       PrincessGuard],
+                                         reciprocal(Trident().rarity)],
+                                        ['1', '1', '2', '3', '4']],
+                            'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, DragonStaff, MithrilshodStaff],
                                       [reciprocal(PineStaff().rarity), reciprocal(OakStaff().rarity),
                                        reciprocal(IronshodStaff().rarity), reciprocal(SerpentStaff().rarity),
-                                       reciprocal(DragonStaff().rarity), reciprocal(MithrilshodStaff().rarity),
-                                       reciprocal(PrincessGuard().rarity)],
-                                      ['1', '1', '2', '3', '3', '4', '5']],
-                            'Hammer': [[OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher],
+                                       reciprocal(DragonStaff().rarity), reciprocal(MithrilshodStaff().rarity)],
+                                      ['1', '1', '2', '3', '3', '4']],
+                            'Hammer': [[OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul],
                                        [reciprocal(OakHammer().rarity), reciprocal(Maul().rarity),
                                         reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
-                                        reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity),
-                                        reciprocal(Skullcrusher().rarity)],
-                                       ['1', '1', '2', '2', '3', '4', '5']]
+                                        reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity)],
+                                       ['1', '1', '2', '2', '3', '4']]
                             },
-                 'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
-                                         MedusaShield],
+                 'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield],
                                         [reciprocal(WoodShield().rarity), reciprocal(BronzeShield().rarity),
                                          reciprocal(IronShield().rarity), reciprocal(SteelShield().rarity),
-                                         reciprocal(KiteShield().rarity), reciprocal(TowerShield().rarity),
-                                         reciprocal(MedusaShield().rarity)],
-                                        ['1', '1', '2', '3', '4', '4', '5']],
-                             'Grimoire': [[Book, TomeKnowledge, BookShadows, Necronomicon, DragonRouge, Magus],
+                                         reciprocal(KiteShield().rarity), reciprocal(TowerShield().rarity)],
+                                        ['1', '1', '2', '3', '4', '4']],
+                             'Grimoire': [[Book, TomeKnowledge, BookShadows, Necronomicon, DragonRouge],
                                           [reciprocal(Book().rarity), reciprocal(TomeKnowledge().rarity),
                                            reciprocal(BookShadows().rarity), reciprocal(Necronomicon().rarity),
-                                           reciprocal(DragonRouge().rarity), reciprocal(Magus().rarity)],
-                                          ['1', '2', '4', '4', '5', '5']]},
-                 'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe,
-                                      MerlinRobe],
+                                           reciprocal(DragonRouge().rarity)],
+                                          ['1', '2', '3', '4', '5']]},
+                 'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe],
                                      [reciprocal(Tunic().rarity), reciprocal(ClothCloak().rarity),
                                       reciprocal(SilverCloak().rarity), reciprocal(GoldCloak().rarity),
-                                      reciprocal(CloakEnchantment().rarity), reciprocal(WizardRobe().rarity),
-                                      reciprocal(MerlinRobe().rarity)],
-                                     ['1', '1', '2', '3', '4', '4', '5']],
-                           'Light': [[PaddedArmor, LeatherArmor, Cuirboulli, Studded, StuddedCuirboulli, DragonHide],
+                                      reciprocal(CloakEnchantment().rarity), reciprocal(WizardRobe().rarity)],
+                                     ['1', '1', '2', '3', '4', '5']],
+                           'Light': [[PaddedArmor, LeatherArmor, Cuirboulli, Studded, StuddedCuirboulli],
                                      [reciprocal(PaddedArmor().rarity), reciprocal(LeatherArmor().rarity),
                                       reciprocal(Cuirboulli().rarity), reciprocal(Studded().rarity),
-                                      reciprocal(StuddedCuirboulli().rarity), reciprocal(DragonHide().rarity)],
-                                     ['1', '1', '2', '3', '4', '5']],
-                           'Medium': [[HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Aegis],
+                                      reciprocal(StuddedCuirboulli().rarity)],
+                                     ['1', '1', '2', '3', '4']],
+                           'Medium': [[HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate],
                                       [reciprocal(HideArmor().rarity), reciprocal(ChainShirt().rarity),
                                        reciprocal(ScaleMail().rarity), reciprocal(Breastplate().rarity),
-                                       reciprocal(HalfPlate().rarity), reciprocal(Aegis().rarity)],
-                                      ['1', '1', '2', '3', '4', '5']],
-                           'Heavy': [[RingMail, ChainMail, Splint, PlateMail, FullPlate, Genji],
+                                       reciprocal(HalfPlate().rarity)],
+                                      ['1', '1', '2', '3', '4']],
+                           'Heavy': [[RingMail, ChainMail, Splint, PlateMail, FullPlate],
                                      [reciprocal(RingMail().rarity), reciprocal(ChainMail().rarity),
                                       reciprocal(Splint().rarity), reciprocal(PlateMail().rarity),
-                                      reciprocal(FullPlate().rarity), reciprocal(Genji().rarity)],
-                                     ['1', '1', '2', '3', '4', '5']]},
+                                      reciprocal(FullPlate().rarity)],
+                                     ['1', '1', '2', '3', '4']]},
                  'Potion': {'Health': [[HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                                        [reciprocal(HealthPotion().rarity), reciprocal(GreatHealthPotion().rarity),
                                         reciprocal(SuperHealthPotion().rarity),
@@ -97,10 +89,10 @@ def random_item(z: int) -> object:
                             'Mana': [[ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                                      [reciprocal(ManaPotion().rarity), reciprocal(GreatManaPotion().rarity),
                                       reciprocal(SuperManaPotion().rarity), reciprocal(MasterManaPotion().rarity)],
-                                     ['1', '2', '3']],
+                                     ['1', '2', '3', '4']],
                             'Elixir': [[Elixir, Megalixir],
                                        [reciprocal(Elixir().rarity), reciprocal(Megalixir().rarity)],
-                                       ['3', '4']],
+                                       ['3', '5']],
                             'Stat': [[HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
                                       CharismaPotion, DexterityPotion, AardBeing],
                                      [reciprocal(HPPotion().rarity), reciprocal(MPPotion().rarity),
@@ -108,7 +100,7 @@ def random_item(z: int) -> object:
                                       reciprocal(WisdomPotion().rarity), reciprocal(ConPotion().rarity),
                                       reciprocal(CharismaPotion().rarity), reciprocal(DexterityPotion().rarity),
                                       reciprocal(AardBeing().rarity)],
-                                     ['1', '1', '2', '2', '2', '2', '2', '2', '4']]
+                                     ['1', '1', '2', '2', '2', '2', '2', '2', '5']]
                             }
                  }
 
@@ -225,7 +217,7 @@ class MithrilDagger(Weapon):
         super().__init__(name="MITHRIL DAGGER", description="An mithril knife with a very sharp point and usually"
                                                             " two sharp edges, typically designed or capable of "
                                                             "being used as a thrusting or stabbing weapon.",
-                         value=15000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False,
+                         value=20000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
@@ -234,7 +226,7 @@ class Carnwennan(Weapon):
     def __init__(self):
         super().__init__(name="CARNWENNAN", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
-                         value=25000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False,
+                         value=50000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
@@ -293,7 +285,7 @@ class Excalibur(Weapon):
     def __init__(self):
         super().__init__(name="EXCALIBUR", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
-                         value=40000, rarity=50, damage=15, crit=3, handed=1, subtyp='Sword', unequip=False,
+                         value=50000, rarity=50, damage=15, crit=3, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
@@ -353,7 +345,7 @@ class MithrilMace(Weapon):
                                                           "powerful strikes. A mace typically consists of a strong, "
                                                           "heavy, wooden or metal shaft, often reinforced with "
                                                           "metal, featuring a head made of mithril.",
-                         value=18000, rarity=40, damage=14, crit=7, handed=1, subtyp='Mace', unequip=False,
+                         value=21000, rarity=40, damage=14, crit=7, handed=1, subtyp='Mace', unequip=False,
                          off=True)
 
 
@@ -363,7 +355,7 @@ class Mjolnir(Weapon):
         super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
                                                      "mythology as one of the most fearsome and powerful weapons in "
                                                      "existence, capable of leveling mountains.",
-                         value=40000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False,
+                         value=50000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False,
                          off=True)
 
 
@@ -405,7 +397,7 @@ class MithrilAxe(Weapon):
     def __init__(self):
         super().__init__(name="MITHRIL AXE", description="A double-bladed, two-handed melee weapon made from "
                                                          "mithril.",
-                         value=23000, rarity=40, damage=16, crit=4, handed=2, subtyp='Axe', unequip=False,
+                         value=30000, rarity=40, damage=16, crit=4, handed=2, subtyp='Axe', unequip=False,
                          off=False)
 
 
@@ -413,7 +405,7 @@ class Jarnbjorn(Weapon):
 
     def __init__(self):
         super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=37000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False,
+                         value=60000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False,
                          off=False)
 
 
@@ -455,7 +447,7 @@ class Trident(Weapon):
     def __init__(self):
         super().__init__(name="TRIDENT", description="A trident is a 3-pronged spear, the preferred weapon of the Sea"
                                                      " god Poseidon.",
-                         value=25000, rarity=40, damage=15, crit=3, handed=2, subtyp='Polearm', unequip=False,
+                         value=26000, rarity=40, damage=15, crit=3, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
 
@@ -463,7 +455,7 @@ class Gungnir(Weapon):
 
     def __init__(self):
         super().__init__(name="GUNGNIR", description="Legendary spear of the god Odin. Old Norse for \"swaying one\".",
-                         value=36000, rarity=50, damage=18, crit=2, handed=2, subtyp='Polearm', unequip=False,
+                         value=60000, rarity=50, damage=18, crit=2, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
 
@@ -521,7 +513,7 @@ class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
-                         value=32000, rarity=50, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         value=60000, rarity=50, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
 
@@ -581,7 +573,7 @@ class Skullcrusher(Weapon):
     def __init__(self):
         super().__init__(name="SKULLCRUSHER", description="A massive hammer with the power to pulverize an enemy's "
                                                           "skull to powder.",
-                         value=40000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False,
+                         value=60000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
 
@@ -643,7 +635,7 @@ class CloakEnchantment(Armor):
     def __init__(self):
         super().__init__(name="CLOAK of ENCHANTMENT", description="A magical cloak that shields the wearer from all "
                                                                   "forms of attack.",
-                         value=6000, rarity=35, armor=7, subtyp='Cloth', unequip=False)
+                         value=10000, rarity=35, armor=7, subtyp='Cloth', unequip=False)
 
 
 class WizardRobe(Armor):
@@ -651,14 +643,14 @@ class WizardRobe(Armor):
     def __init__(self):
         super().__init__(name="WIZARD'S ROBE", description="A knee-length, long-sleeved robe with an impressive hood "
                                                            "designed to add a mysterious feel to magic users.",
-                         value=15000, rarity=40, armor=10, subtyp='Cloth', unequip=False)
+                         value=25000, rarity=40, armor=10, subtyp='Cloth', unequip=False)
 
 
 class MerlinRobe(Armor):
 
     def __init__(self):
         super().__init__(name="ROBES of MERLIN", description="The enchanted robes of Merlin the enchanter.",
-                         value=34000, rarity=50, armor=12, subtyp='Cloth', unequip=False)
+                         value=75000, rarity=50, armor=12, subtyp='Cloth', unequip=False)
 
 
 class PaddedArmor(Armor):
@@ -691,7 +683,7 @@ class Studded(Armor):
     def __init__(self):
         super().__init__(name="STUDDED LEATHER", description="Leather armor embedded with iron studs to improve "
                                                              "defensive capabilities.",
-                         value=5000, rarity=35, armor=8, subtyp='Light', unequip=False)
+                         value=12000, rarity=35, armor=8, subtyp='Light', unequip=False)
 
 
 class StuddedCuirboulli(Armor):
@@ -699,7 +691,7 @@ class StuddedCuirboulli(Armor):
     def __init__(self):
         super().__init__(name="STUDDED CUIRBOULLI", description="Boiled leather armor embedded with iron studs to "
                                                                 "improve defensive capabilities.",
-                         value=12000, rarity=40, armor=12, subtyp='Light', unequip=False)
+                         value=28000, rarity=40, armor=12, subtyp='Light', unequip=False)
 
 
 class DragonHide(Armor):
@@ -707,7 +699,7 @@ class DragonHide(Armor):
     def __init__(self):
         super().__init__(name="DRAGON HIDE", description="Hide armor made from the scales of a red dragon, "
                                                          "inconceivably light for this type of armor.",
-                         value=35000, rarity=50, armor=16, subtyp='Light', unequip=False)
+                         value=80000, rarity=50, armor=16, subtyp='Light', unequip=False)
 
 
 class HideArmor(Armor):
@@ -742,7 +734,7 @@ class Breastplate(Armor):
                                                          "relatively unprotected, this armor provides good protection "
                                                          "for the wearer’s vital organs while leaving the wearer "
                                                          "relatively unencumbered.",
-                         value=5500, rarity=35, armor=9, subtyp='Medium', unequip=False)
+                         value=14000, rarity=35, armor=9, subtyp='Medium', unequip=False)
 
 
 class HalfPlate(Armor):
@@ -751,7 +743,7 @@ class HalfPlate(Armor):
         super().__init__(name="HALF PLATE", description="Armor consisting of shaped metal plates that cover most of the"
                                                         " wearer’s body. It does not include leg Protection beyond "
                                                         "simple greaves that are attached with leather straps.",
-                         value=13000, rarity=40, armor=13, subtyp='Medium', unequip=False)
+                         value=30000, rarity=40, armor=13, subtyp='Medium', unequip=False)
 
 
 class Aegis(Armor):
@@ -759,7 +751,7 @@ class Aegis(Armor):
     def __init__(self):
         super().__init__(name="AEGIS BREASTPLATE", description="The breastplate of Zeus, emboldened with a bolt of "
                                                                "lightning.",
-                         value=50000, rarity=50, armor=18, subtyp='Medium', unequip=False)
+                         value=90000, rarity=50, armor=18, subtyp='Medium', unequip=False)
 
 
 class RingMail(Armor):
@@ -793,7 +785,7 @@ class PlateMail(Armor):
     def __init__(self):
         super().__init__(name="PLATE MAIL", description="Armor consisting of shaped, interlocking metal plates to "
                                                         "cover most of the body.",
-                         value=6500, rarity=35, armor=10, subtyp='Heavy', unequip=False)
+                         value=20000, rarity=35, armor=10, subtyp='Heavy', unequip=False)
 
 
 class FullPlate(Armor):
@@ -804,7 +796,7 @@ class FullPlate(Armor):
                                                         "heavy leather boots, a visored helmet, and thick layers of "
                                                         "padding underneath the armor. Buckles and straps distribute "
                                                         "the weight over the body.",
-                         value=15000, rarity=40, armor=15, subtyp='Heavy', unequip=False)
+                         value=40000, rarity=40, armor=15, subtyp='Heavy', unequip=False)
 
 
 class Genji(Armor):
@@ -887,14 +879,14 @@ class KiteShield(OffHand):
                                                          "bottom. The term \"kite shield\" is a reference to the "
                                                          "shield's unique shape, and is derived from its supposed "
                                                          "similarity to a flying kite.",
-                         value=5000, rarity=35, mod=4, subtyp='Shield', unequip=False)
+                         value=10000, rarity=35, mod=4, subtyp='Shield', unequip=False)
 
 
 class TowerShield(OffHand):
 
     def __init__(self):
         super().__init__(name="TOWER SHIELD", description="A defensive bulwark, an impenetrable wall.",
-                         value=11000, rarity=40, mod=3, subtyp='Shield', unequip=False)
+                         value=25000, rarity=40, mod=3, subtyp='Shield', unequip=False)
 
 
 class MedusaShield(OffHand):
@@ -903,7 +895,7 @@ class MedusaShield(OffHand):
         super().__init__(name="MEDUSA SHIELD", description="A shield that has been polished to resemble a mirror. Said"
                                                            " to be used to defeat the Gorgon Medusa. Reflects back some"
                                                            " magic.",
-                         value=25000, rarity=50, mod=2, subtyp='Shield', unequip=False)
+                         value=50000, rarity=50, mod=2, subtyp='Shield', unequip=False)
 
 
 class Book(OffHand):
@@ -934,7 +926,7 @@ class DragonRouge(OffHand):
     def __init__(self):
         super().__init__(name="DRAGON ROUGE", description="French for \"Red Dragon\", this mythical tome contains "
                                                           "ancient knowledge passed down through the ages.",
-                         value=12000, rarity=40, mod=12, subtyp='Grimoire', unequip=False)
+                         value=15000, rarity=40, mod=12, subtyp='Grimoire', unequip=False)
 
 
 class Necronomicon(OffHand):
@@ -942,14 +934,14 @@ class Necronomicon(OffHand):
     def __init__(self):
         super().__init__(name="NECRONOMICON", description="The Book of the Dead, a mystical grimoire written by an "
                                                           "unknown author.",
-                         value=26000, rarity=50, mod=20, subtyp='Grimoire', unequip=False)
+                         value=40000, rarity=50, mod=20, subtyp='Grimoire', unequip=False)
 
 
 class Magus(OffHand):
 
     def __init__(self):
         super().__init__(name="MAGUS", description="A book of magical art written by a powerful wizard.",
-                         value=40000, rarity=60, mod=30, subtyp='Grimoire', unequip=False)
+                         value=75000, rarity=60, mod=30, subtyp='Grimoire', unequip=False)
 
 
 class Potion(Item):

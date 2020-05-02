@@ -26,24 +26,12 @@ def rand_stats(race, cls: object) -> tuple:
     Each race has a range of values per stat that the stat will fall in; the class has minimum values for each stat
     that is allowed, and will set it to the minimum required if the random value is lower
     """
-    strength = random.randint(race.str_rng[0], race.str_rng[1])
-    if cls.min_str > strength:
-        strength = cls.min_str
-    intel = random.randint(race.int_rng[0], race.int_rng[1])
-    if cls.min_int > intel:
-        intel = cls.min_int
-    wisdom = random.randint(race.wis_rng[0], race.wis_rng[1])
-    if cls.min_wis > wisdom:
-        wisdom = cls.min_wis
-    con = random.randint(race.con_rng[0], race.con_rng[1])
-    if cls.min_con > con:
-        con = cls.min_con
-    charisma = random.randint(race.cha_rng[0], race.cha_rng[1])
-    if cls.min_cha > charisma:
-        charisma = cls.min_cha
-    dex = random.randint(race.dex_rng[0], race.dex_rng[1])
-    if cls.min_dex > dex:
-        dex = cls.min_dex
+    strength = random.randint(race.str_rng[0], race.str_rng[1]) + cls.str_plus
+    intel = random.randint(race.int_rng[0], race.int_rng[1]) + cls.int_plus
+    wisdom = random.randint(race.wis_rng[0], race.wis_rng[1]) + cls.wis_plus
+    con = random.randint(race.con_rng[0], race.con_rng[1]) + cls.con_plus
+    charisma = random.randint(race.cha_rng[0], race.cha_rng[1]) + cls.cha_plus
+    dex = random.randint(race.dex_rng[0], race.dex_rng[1]) + cls.dex_plus
     stats = (strength, intel, wisdom, con, charisma, dex)
     return stats
 
@@ -65,8 +53,9 @@ def new_char() -> object:
     player = Player(location=[location_x, location_y, location_z], state='normal', level=1, exp=0,
                     health=stats[3] * 3, health_max=stats[3] * 3, mana=stats[1] * 2, mana_max=stats[1] * 2,
                     strength=stats[0], intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4], dex=stats[5],
-                    pro_level=1, gold=stats[4] * 25, equipment=cls.equipment, inventory={},
-                    spellbook={'Spells': {}, 'Skills': {}})
+                    pro_level=1, gold=stats[4] * 25, status_effects={"Stun": [False, 0], "Poison": [False, 0, 0],
+                                                                     "DOT": [False, 0, 0], "Doom": [False, 0]},
+                    equipment=cls.equipment, inventory={}, spellbook={'Spells': {}, 'Skills': {}})
     # storyline.read_story('new_player.txt')
     while player.name == '':
         player.name = input("What is your character's name? ").upper()
@@ -137,6 +126,7 @@ def load_char(char=None) -> object:
                     player_dict['Dexterity'],
                     player_dict['Promotion Level'],
                     player_dict['Gold'],
+                    player_dict['Status Effects'],
                     player_dict['Equipment'],
                     player_dict['Inventory'],
                     player_dict['Spellbook'])
@@ -166,6 +156,7 @@ class Character:
         self.charisma = 0
         self.dex = 0
         self.pro_level = 0
+        self.status_effects = {"Stun": [False, 0], "Poison": [False, 0, 0], "DOT": [False, 0, 0], "Doom": [False, 0]}
         self.equipment = {}
         self.inventory = {}
         self.spellbook = {'Spells': {},
@@ -180,7 +171,7 @@ class Player(Character):
     """
 
     def __init__(self, location, state, level, exp, health, health_max, mana, mana_max, strength, intel, wisdom,
-                 con, charisma, dex, pro_level, gold, equipment, inventory, spellbook):
+                 con, charisma, dex, pro_level, gold, status_effects, equipment, inventory, spellbook):
         super().__init__()
         self.location_x = location[0]
         self.location_y = location[1]
@@ -200,14 +191,16 @@ class Player(Character):
         self.dex = dex
         self.pro_level = pro_level
         self.gold = gold
+        self.status_effects = status_effects
         self.equipment = equipment
         self.inventory = inventory
         self.spellbook = spellbook
 
-    def cast_spell(self, enemy, ability, stun=False):
+    def cast_spell(self, enemy, ability):
         """
         Function that controls the character's abilities and spells during combat
         """
+        stun = enemy.status_effects['Stun'][0]
         print("%s casts %s." % (self.name, ability().name))
         spell_mod = 0
         if ability().cat == 'Attack':
@@ -218,7 +211,7 @@ class Player(Character):
                 spell_mod = self.equipment['OffHand']().mod
             elif self.equipment['Weapon']().subtyp == 'Staff':
                 spell_mod = self.equipment['Weapon']().damage * 2
-            damage -= random.randint(enemy.wisdom // 2, enemy.wisdom)
+            damage -= random.randint(0, enemy.wisdom // 2)
             crit = 1
             if not random.randint(0, ability().crit):
                 crit = 2
@@ -254,55 +247,95 @@ class Player(Character):
             if self.health >= self.health_max:
                 self.health = self.health_max
                 print("You are at full health!")
+        elif ability().cat == 'Kill':
+            if ability().name == 'Desoul':
+                if random.randint(0, self.intel) \
+                        > random.randint(enemy.con // 2, enemy.con):
+                    enemy.health = 0
+                    print("You rip the soul right out of the %s and it falls to the ground dead!" % enemy.name)
+                else:
+                    print("The spell has no effect.")
+            else:
+                pass
         if ability().name == 'Terrify':
-            is_stun = False
-            stun_rounds = 0
             if random.randint(self.intel // 2, self.intel) \
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
-                is_stun = True
-                stun_rounds = ability().stun
-            return is_stun, stun_rounds
+                enemy.status_effects["Stun"][0] = True
+                enemy.status_effects["Stun"][1] = ability().stun
+                print("You stun the enemy for %s turns." % ability().stun)
         if ability().name == 'Corruption':
-            dot = False
-            dot_rounds = 0
-            dot_damage = 0
             if random.randint(self.intel // 2, self.intel) \
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
-                dot = True
-                dot_rounds = ability().dot_turns
-                dot_damage = ability().damage
-            return dot, dot_rounds, dot_damage
+                enemy.status_effects["DOT"][0] = True
+                enemy.status_effects["DOT"][1] = ability().dot_turns
+                enemy.status_effects["DOT"][2] = ability().damage
+                print("%s's magic penetrates %s's defenses." % (self.name, enemy.name))
+            else:
+                print("The magic has no effect.")
         if ability().name == 'Doom':
-            doom = False
-            doom_rounds = 0
             if random.randint(self.intel // 4, self.intel) \
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
-                doom = True
-                doom_rounds = ability().timer
-            return doom, doom_rounds
+                enemy.status_effects["Doom"][0] = True
+                enemy.status_effects["Doom"][1] = ability().timer
+                print("%s's magic places a timer on %s's life!" % (self.name, enemy.name))
+            else:
+                print("The magic has no effect.")
         self.mana -= ability().cost
 
-    def use_ability(self, enemy, ability, stun=False):
+    def use_ability(self, enemy, ability):
+        stun = enemy.status_effects['Stun'][0]
         print("%s uses %s." % (self.name, ability().name))
         time.sleep(0.25)
         self.mana -= ability().cost
+        if ability().name == "Shield Slam":
+            if random.randint(self.dex // 2, self.dex) > random.randint(0, enemy.dex // 2):
+                damage = max(1, int(self.strength * (2 / self.equipment['OffHand']().mod)))
+                enemy.health -= damage
+                print("You damage the enemy with your shield for %s hit points.")
+                if random.randint(self.strength // 2, self.strength) \
+                        > random.randint(enemy.strength // 2, enemy.strength):
+                    print("You stun the enemy for %s turns." % ability().stun)
+                    enemy.status_effects['Stun'][0] = True
+                    enemy.status_effects['Stun'][1] = ability().stun
+                else:
+                    print("You failed to stun the enemy.")
+            else:
+                print("You swing your shield at the enemy but miss entirely!")
+        if ability().name == 'Poison Strike':
+            self.weapon_damage(enemy)
+            if random.randint(self.dex // 2, self.dex) \
+                    > random.randint(enemy.con // 2, enemy.con):
+                enemy.status_effects['Poison'][0] = True
+                enemy.status_effects['Poison'][1] = ability().poison_rounds
+                enemy.status_effects['Poison'][2] = ability().poison_damage
+            else:
+                print("The enemy resisted the poison.")
+        if ability().name == 'Kidney Punch':
+            self.weapon_damage(enemy)
+            if random.randint(self.dex // 2, self.dex) \
+                    > random.randint(enemy.con // 2, enemy.con):
+                enemy.status_effects['Stun'][0] = True
+                enemy.status_effects['Stun'][1] = ability().stun
+            else:
+                print("The enemy resisted the poison.")
         if ability().name == 'Lockpick':
             enemy.lock = False
         if ability().name == 'Multi-Strike':
             for _ in range(ability().strikes):
-                self.weapon_damage(enemy, stun=stun)
+                self.weapon_damage(enemy)
         if ability().name == 'Jump':
             for _ in range(ability().strikes):
-                self.weapon_damage(enemy, crit=2, stun=stun)
+                self.weapon_damage(enemy, crit=2)
         if ability().name == 'Backstab' or ability().name == 'Piercing Strike':
-            self.weapon_damage(enemy, ignore=True, stun=stun)
+            self.weapon_damage(enemy, ignore=True)
         if ability().name == 'Mortal Strike':
-            self.weapon_damage(enemy, crit=ability().crit, stun=stun)
+            self.weapon_damage(enemy, crit=ability().crit)
 
-    def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, stun=False, dmg_mod=0):
+    def weapon_damage(self, enemy, crit=1, off_crit=1, ignore=False, dmg_mod=0):
         """
         Function that controls the character's basic attack during combat
         """
+        stun = enemy.status_effects['Stun'][0]
         blk = False
         off_blk = False
         blk_amt = 0
@@ -415,9 +448,13 @@ class Player(Character):
         map_array = numpy.zeros((10, 15))
         for tile in world_dict['World']:
             if level == tile[2]:
-                x, y = tile[0], tile[1]
-                if world_dict['World'][tile] is not None:
-                    map_array[x][y] = 255
+                tile_x, tile_y = tile[0], tile[1]
+                if world_dict['World'][tile] is None:
+                    continue
+                elif 'stairs' in world_dict['World'][tile].intro_text():
+                    map_array[tile_x][tile_y] = 75
+                elif world_dict['World'][tile] is not None:
+                    map_array[tile_x][tile_y] = 255
         map_array[self.location_x][self.location_y] = 125
         pygame.init()
         screen = pygame.display.set_mode((400, 400))
@@ -481,7 +518,8 @@ class Player(Character):
                 self.do_action(action, **action.kwargs)
                 break
 
-    def flee(self, enemy, smoke=False, stun=False) -> bool:
+    def flee(self, enemy, smoke=False) -> bool:
+        stun = enemy.status_effects['Stun'][0]
         if not smoke:
             if random.randint(1, self.health + self.level) > random.randint(1, enemy.health):
                 print("%s flees from the %s." % (self.name, enemy.name))
@@ -523,7 +561,7 @@ class Player(Character):
                     i += 1
         if len(item_list) == 0:
             print("You do not have any items to use.")
-            item = False
+            return False
         item_list.append(('Go back', i))
         while item:
             print("Which potion would you like to use?")
@@ -632,6 +670,8 @@ class Player(Character):
                     self.charisma += 1
                     self.dex += 1
                     print("All your stats have increased by 1!")
+                elif itm().stat == 'hp' or itm().stat == 'mp':
+                    print("Your %s has been increased by 5!" % str(itm().stat.upper()))
                 else:
                     print("Your %s has been increased by 1!" % str(itm().name.split(' ')[0]).lower())
             elif 'Key' in itm().subtyp:
@@ -706,7 +746,7 @@ class Player(Character):
                 # elif random.randint(0, 2):
                 #     combat.battle(self, enemies.random_enemy(str(self.location_z + 1)))
                 else:
-                    gld = random.randint(50, 200) * (self.location_z + 1)
+                    gld = random.randint(100, 300) * (self.location_z + 1)
                     print("You have found %s gold!" % gld)
                     self.gold += gld
         else:
@@ -718,7 +758,7 @@ class Player(Character):
             # elif random.randint(0, 2):
             #     combat.battle(self, enemies.random_enemy(str(self.location_z)))
             else:
-                gld = random.randint(50, 200) * self.location_z
+                gld = random.randint(100, 300) * self.location_z
                 print("You have found %s gold!" % gld)
                 self.gold += gld
         input("Press enter to continue")
@@ -834,6 +874,7 @@ class Player(Character):
                                       'Dexterity': self.dex,
                                       'Promotion Level': self.pro_level,
                                       'Gold': self.gold,
+                                      'Status Effects': self.status_effects,
                                       'Equipment': self.equipment,
                                       'Inventory': self.inventory,
                                       'Spellbook': self.spellbook}}
@@ -878,7 +919,7 @@ class Player(Character):
                                 elif option_list[slot][0] == 'Armor':
                                     diff = self.inventory[item][0]().armor - self.equipment['Armor']().armor
                                 elif option_list[slot][0] == 'OffHand':
-                                    if self.inventory[item][0]().subtyp == self.equipment['OffHand']().subtyp:
+                                    if self.inventory[item][0]().typ == self.equipment['OffHand']().typ:
                                         if self.inventory[item][0]().subtyp == 'Shield':
                                             diff = int(((1 / self.inventory[item][0]().mod) -
                                                         (1 / self.equipment['OffHand']().mod)) * 100)

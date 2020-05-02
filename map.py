@@ -48,7 +48,7 @@ class Town(MapTile):
         super().__init__(x, y, z)
 
     def intro_text(self):
-        pass
+        return ""
 
     def modify_player(self, player):
         player.state = 'normal'
@@ -83,7 +83,7 @@ class EnemyRoom(MapTile):
 
 class EmptyCavePath(MapTile):
     def intro_text(self):
-        pass
+        return ""
 
     def modify_player(self, player):
         # Room has no action on player
