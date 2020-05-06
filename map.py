@@ -112,19 +112,19 @@ class RandomEnemyRoom(EnemyRoom):
                     return """
                     You find a chest!!
                     """
-            else:
-                return """
-                This room has an open chest.
-                """
+            # else:
+            #     return """
+            #     This room has an open chest.
+            #     """
         else:
             if self.enemy.is_alive():
                 return """
                 An enemy {} attacks you!
                 """.format(self.enemy.name)
-            else:
-                return """
-                A dead {} lies on the ground.
-                """.format(self.enemy.name)
+            # else:
+            #     return """
+            #     A dead {} lies on the ground.
+            #     """.format(self.enemy.name)
 
     def available_actions(self, player):
         if 'Chest' in self.enemy.name:
@@ -254,7 +254,6 @@ class LootRoom(EnemyRoom):
 class StairsUp(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        self.take = False
 
     def intro_text(self):
         return """
@@ -262,8 +261,9 @@ class StairsUp(MapTile):
         """
 
     def modify_player(self, player):
-        if self.take:
+        if player.take_stairs:
             player.stairs_up()
+            player.take_stairs = False
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsUp(), actions.Status()])
@@ -279,7 +279,9 @@ class StairsDown(MapTile):
         """
 
     def modify_player(self, player):
-        pass
+        if player.take_stairs:
+            player.stairs_down()
+            player.take_stairs = False
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsDown(), actions.Status()])

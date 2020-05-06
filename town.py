@@ -2,9 +2,7 @@
 """ Town manager """
 
 # Imports
-import os
 import time
-import pickle
 
 import items
 import storyline

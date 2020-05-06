@@ -2,7 +2,6 @@
 """ race manager """
 
 # Imports
-import storyline
 import display
 
 
@@ -14,6 +13,8 @@ def define_race():
     race_dict = {'HUMAN': Human, 'ELF': Elf, 'GIANT': Giant, 'GNOME': Gnome, 'DWARF': Dwarf}
     while True:
         race_name = display.race_menu(race_dict=race_dict)
+        if not race_name:
+            return False
         confirm = display.confirm_menu(additional_text=race_dict[race_name]().description)
         if confirm == 'YES':
             break

@@ -13,33 +13,35 @@ import display
 
 
 def play(timer):
-    # os.system('cls' if os.name == 'nt' else 'clear')
     # f = pyfiglet.Figlet(font='slant')
     # print(f.renderText("DUNGEON CRAWL"))
-    # time.sleep(2)
     player = None
     world.load_tiles()
     if not os.path.exists('save_files'):
         os.mkdir('save_files')
-    play_option = display.intro_menu()
-    if play_option == 'NEW GAME':
-        player = character.new_char()
-    elif play_option == 'LOAD GAME':
-        if len(glob.glob('save_files/*')) > 0:
-            player = character.load_char()
-        else:
-            print("There are no save files to load. Proceeding to new character creation.")
-            player = character.new_char()
-    elif play_option == 'TUTORIAL':
-        player = tutorial.tutorial()
     while True:
-        if ((time.time() - timer) // 900*player.pro_level) > 0:
+        play_option = display.intro_menu()
+        if play_option == 'NEW GAME':
+            player = character.new_char()
+        elif play_option == 'LOAD GAME':
+            if len(glob.glob('save_files/*')) > 0:
+                player = character.load_char()
+            else:
+                player = False
+        elif play_option == 'TUTORIAL':
+            player = tutorial.tutorial()
+        if player:
+            break
+    while True:
+        if ((time.time() - timer) // (900 * player.pro_level)) > 0:
             world.load_tiles()
             timer = time.time()
         room = world.tile_exists(player.location_x, player.location_y, player.location_z)
         room.modify_player(player)
         display.dungeon(player)
         if player.is_alive():
+            if player.state == 'fight':
+                pass
             room = world.tile_exists(player.location_x, player.location_y, player.location_z)
             room.modify_player(player)
             available_actions = room.available_actions(player)
@@ -60,7 +62,6 @@ def play(timer):
             player.health = player.health_max
             player.mana = player.mana_max
             player.location_x, player.location_y, player.location_z = world.starting_position
-            # print("You wake up in town.")
 
 
 if __name__ == "__main__":
