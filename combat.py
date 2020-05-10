@@ -101,49 +101,6 @@ def battle(player, enemy):
                                 if skill().name == 'Smoke Screen':
                                     player.mana -= skill().cost
                                     flee = character.Player.flee(player, enemy, smoke=True)
-                                elif skill().name == 'Steal':
-                                    player.mana -= skill().cost
-                                    if len(enemy.loot) != 0:
-                                        if random.randint(0, player.dex) > random.randint(0, enemy.dex):
-                                            i = random.randint(0, len(enemy.loot) - 1)
-                                            item_key = list(enemy.loot.keys())[i]
-                                            item = enemy.loot[item_key]
-                                            del enemy.loot[item_key]
-                                            if item_key == 'Gold':
-                                                print("You steal %s gold from the enemy!" % item)
-                                                player.gold += item
-                                            else:
-                                                player.modify_inventory(item, num=1)
-                                                print("You steal %s from the enemy!" % item().name)
-                                        else:
-                                            print("You couldn't steal anything.")
-                                    else:
-                                        print("The enemy doesn't have anything to steal.")
-                                    break
-                                elif skill().subtyp == 'Drain':
-                                    player.mana -= skill().cost
-                                    if 'Health' in skill().name:
-                                        drain = random.randint((enemy.health + player.intel) // 5,
-                                                               (enemy.health + player.intel) // 1.5)
-                                        if not random.randint(player.wisdom // 2, player.wisdom) \
-                                                > random.randint(0, enemy.wisdom // 2):
-                                            drain = drain // 2
-                                        if drain > enemy.health:
-                                            drain = enemy.health
-                                        enemy.health -= drain
-                                        player.health += drain
-                                        print("You drain %s health from the enemy." % drain)
-                                    if 'Mana' in skill().name:
-                                        drain = random.randint((enemy.mana + player.intel) // 5,
-                                                               (enemy.mana + player.intel) // 1.5)
-                                        if not random.randint(player.wisdom // 2, player.wisdom) \
-                                                > random.randint(0, enemy.wisdom // 2):
-                                            drain = drain // 2
-                                        if drain > enemy.mana:
-                                            drain = enemy.mana
-                                        enemy.mana -= drain
-                                        player.mana += drain
-                                        print("You drain %s mana from the enemy." % drain)
                                 elif skill().name == 'Multi-Cast':
                                     j = 0
                                     while j < skill().cast:
@@ -223,15 +180,37 @@ def battle(player, enemy):
                 print("The enemy is no longer stunned.")
         else:
             enemy_spell_list = []
+            enemy_skill_list = []
             for entry in enemy.spellbook['Spells']:
                 enemy_spell_index = enemy.spellbook['Spells'].index(entry)
                 if enemy.spellbook['Spells'][enemy_spell_index]().cost <= enemy.mana:
                     enemy_spell_list.append(entry)
-            if len(enemy_spell_list) > 0:
+            for entry in enemy.spellbook['Skills']:
+                enemy_skill_index = enemy.spellbook['Skills'].index(entry)
+                if enemy.spellbook['Skills'][enemy_skill_index]().cost <= enemy.mana:
+                    enemy_skill_list.append(entry)
+            if len(enemy_spell_list) > 0 and len(enemy_skill_list) > 0:
+                cast = random.randint(0, 2)
+                if cast == 0:
+                    enemy_spell = enemy_spell_list[random.randint(0, len(enemy_spell_list) - 1)]
+                    enemy.cast_spell(player, enemy_spell)
+                elif cast == 1:
+                    enemy_skill = enemy_skill_list[random.randint(0, len(enemy_skill_list) - 1)]
+                    enemy.use_ability(player, enemy_skill)
+                else:
+                    enemy.weapon_damage(player)
+            elif len(enemy_spell_list) > 0:
                 cast = random.randint(0, 1)
                 if cast:
                     enemy_spell = enemy_spell_list[random.randint(0, len(enemy_spell_list) - 1)]
                     enemy.cast_spell(player, enemy_spell)
+                else:
+                    enemy.weapon_damage(player)
+            elif len(enemy_skill_list) > 0:
+                cast = random.randint(0, 1)
+                if cast:
+                    enemy_skill = enemy_skill_list[random.randint(0, len(enemy_skill_list) - 1)]
+                    enemy.use_ability(player, enemy_skill)
                 else:
                     enemy.weapon_damage(player)
             else:

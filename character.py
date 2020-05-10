@@ -287,11 +287,49 @@ class Player(Character):
         print("%s uses %s." % (self.name, ability().name))
         time.sleep(0.25)
         self.mana -= ability().cost
+        if ability().name == 'Steal':
+            if len(enemy.loot) != 0:
+                if random.randint(0, self.dex) > random.randint(0, enemy.dex):
+                    i = random.randint(0, len(enemy.loot) - 1)
+                    item_key = list(enemy.loot.keys())[i]
+                    item = enemy.loot[item_key]
+                    del enemy.loot[item_key]
+                    if item_key == 'Gold':
+                        print("You steal %s gold from the enemy!" % item)
+                        self.gold += item
+                    else:
+                        self.modify_inventory(item, num=1)
+                        print("You steal %s from the enemy!" % item().name)
+                else:
+                    print("You couldn't steal anything.")
+            else:
+                print("The enemy doesn't have anything to steal.")
+        if ability().subtyp == 'Drain':
+            if 'Health' in ability().name:
+                drain = random.randint((enemy.health + self.intel) // 5,
+                                       (enemy.health + self.intel) // 1.5)
+                if not random.randint(self.wisdom // 2, self.wisdom) > random.randint(0, enemy.wisdom // 2):
+                    drain = drain // 2
+                if drain > enemy.health:
+                    drain = enemy.health
+                enemy.health -= drain
+                self.health += drain
+                print("You drain %s health from the enemy." % drain)
+            if 'Mana' in ability().name:
+                drain = random.randint((enemy.mana + self.intel) // 5,
+                                       (enemy.mana + self.intel) // 1.5)
+                if not random.randint(self.wisdom // 2, self.wisdom) > random.randint(0, enemy.wisdom // 2):
+                    drain = drain // 2
+                if drain > enemy.mana:
+                    drain = enemy.mana
+                enemy.mana -= drain
+                self.mana += drain
+                print("You drain %s mana from the enemy." % drain)
         if ability().name == "Shield Slam":
             if random.randint(self.dex // 2, self.dex) > random.randint(0, enemy.dex // 2):
                 damage = max(1, int(self.strength * (2 / self.equipment['OffHand']().mod)))
                 enemy.health -= damage
-                print("You damage the enemy with your shield for %s hit points.")
+                print("You damage the enemy with your shield for %s hit points." % damage)
                 if random.randint(self.strength // 2, self.strength) \
                         > random.randint(enemy.strength // 2, enemy.strength):
                     print("You stun the enemy for %s turns." % ability().stun)
@@ -787,8 +825,8 @@ class Player(Character):
         print("Gold: %d" % self.gold)
         input("Press enter to continue")
 
-    def modify_inventory(self, item, num=0, sell=False):
-        if not sell:
+    def modify_inventory(self, item, num=0, sell=False, steal=False):
+        if not sell and not steal:
             if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand':
                 if not item().unequip:
                     if item().name not in self.inventory:
