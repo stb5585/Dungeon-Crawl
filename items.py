@@ -10,10 +10,6 @@ def reciprocal(x: int) -> float:
     return 1.0 / x
 
 
-def equip_compare(old, new: object):
-    pass
-
-
 def random_item(z: int) -> object:
     item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger],
                                        [reciprocal(BronzeDagger().rarity), reciprocal(IronDagger().rarity),
@@ -30,6 +26,11 @@ def random_item(z: int) -> object:
                                       reciprocal(SteelMace().rarity), reciprocal(AdamantiteMace().rarity),
                                       reciprocal(MithrilMace().rarity)],
                                      ['1', '1', '2', '3', '4']],
+                            'Fist': [[BronzeFist, IronFist, SteelFist, AdamantiteFist, MithrilFist],
+                                     [reciprocal(BronzeFist().rarity), reciprocal(IronFist().rarity),
+                                      reciprocal(SteelFist().rarity), reciprocal(AdamantiteFist().rarity),
+                                      reciprocal(MithrilFist().rarity)],
+                                     ['1', '2', '3', '4', '5']],
                             'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe],
                                     [reciprocal(Axe().rarity), reciprocal(BattleAxe().rarity),
                                      reciprocal(GreatAxe().rarity), reciprocal(AdamantiteAxe().rarity),
@@ -56,11 +57,12 @@ def random_item(z: int) -> object:
                                          reciprocal(IronShield().rarity), reciprocal(SteelShield().rarity),
                                          reciprocal(KiteShield().rarity), reciprocal(TowerShield().rarity)],
                                         ['1', '1', '2', '3', '4', '4']],
-                             'Grimoire': [[Book, TomeKnowledge, BookShadows, Necronomicon, DragonRouge],
-                                          [reciprocal(Book().rarity), reciprocal(TomeKnowledge().rarity),
-                                           reciprocal(BookShadows().rarity), reciprocal(Necronomicon().rarity),
-                                           reciprocal(DragonRouge().rarity)],
-                                          ['1', '2', '3', '4', '5']]},
+                             'Tome': [[Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon],
+                                      [reciprocal(Book().rarity), reciprocal(TomeKnowledge().rarity),
+                                       reciprocal(Grimoire().rarity), reciprocal(BookShadows().rarity),
+                                       reciprocal(DragonRouge().rarity), reciprocal(Vedas().rarity),
+                                       reciprocal(Necronomicon().rarity)],
+                                      ['1', '2', '3', '3', '4', '5']]},
                  'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe],
                                      [reciprocal(Tunic().rarity), reciprocal(ClothCloak().rarity),
                                       reciprocal(SilverCloak().rarity), reciprocal(GoldCloak().rarity),
@@ -81,6 +83,15 @@ def random_item(z: int) -> object:
                                       reciprocal(Splint().rarity), reciprocal(PlateMail().rarity),
                                       reciprocal(FullPlate().rarity)],
                                      ['1', '1', '2', '3', '4']]},
+                 'Accessory': {'Ring': [[IronRing, PowerRing],
+                                        [reciprocal(IronRing().rarity), reciprocal(PowerRing().rarity)],
+                                        ['1', '2']],
+                               'Pendant': [[SilverPendant, RubyPendant, VisionPendant],
+                                           [reciprocal(SilverPendant().rarity), reciprocal(RubyPendant().rarity),
+                                            reciprocal(VisionPendant().rarity)],
+                                           ['2', '2', '1']],
+
+                               },
                  'Potion': {'Health': [[HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                                        [reciprocal(HealthPotion().rarity), reciprocal(GreatHealthPotion().rarity),
                                         reciprocal(SuperHealthPotion().rarity),
@@ -138,6 +149,7 @@ class Item:
         self.name = name
         self.description = description
         self.value = value
+        self.restriction = False
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
@@ -168,6 +180,60 @@ class NoWeapon(Weapon):
     def __init__(self):
         super().__init__(name="BARE HANDS", description="Nothing but your fists.",
                          value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True,
+                         off=True)
+
+
+class BronzeFist(Weapon):
+
+    def __init__(self):
+        super().__init__(name="BRONZE FIST", description="Bronze knuckles designed to focus a punch's force toward a "
+                                                         "harder and smaller contact area, increasing the chance of "
+                                                         "cuts and fractures.",
+                         value=150, rarity=5, damage=1, crit=7, handed=1, subtyp='Fist', unequip=False,
+                         off=True)
+
+
+class IronFist(Weapon):
+
+    def __init__(self):
+        super().__init__(name="IRON FIST", description="An iron studded leather glove with the finger tips removed.",
+                         value=2000, rarity=10, damage=3, crit=6, handed=1, subtyp='Fist', unequip=False,
+                         off=True)
+
+
+class SteelFist(Weapon):
+
+    def __init__(self):
+        super().__init__(name="STEEL FIST", description="Steel knuckles designed similar to bronze knuckles with"
+                                                        " added spikes that protrude out for increased damage.",
+                         value=7500, rarity=25, damage=4, crit=5, handed=1, subtyp='Fist', unequip=False,
+                         off=True)
+
+
+class AdamantiteFist(Weapon):
+
+    def __init__(self):
+        super().__init__(name="ADAMANTITE FIST", description="A punching dagger made from hard adamantite meant for "
+                                                             "close quarter combat.",
+                         value=10000, rarity=40, damage=6, crit=3, handed=1, subtyp='Fist', unequip=False,
+                         off=True)
+
+
+class MithrilFist(Weapon):
+
+    def __init__(self):
+        super().__init__(name="MITHRIL FIST", description="A lightweight mesh glove made from mithril, providing added"
+                                                          "non-elemental magic damage.",
+                         value=30000, rarity=50, damage=8, crit=2, handed=1, subtyp='Fist', unequip=False,
+                         off=True)
+
+
+class GodsHand(Weapon):
+
+    def __init__(self):
+        super().__init__(name="GOD'S HAND", description="With the appearance of an ordinary white glove, this weapon is"
+                                                        " said to be imbued with the power of God.",
+                         value=75000, rarity=60, damage=10, crit=1, handed=1, subtyp='Fist', unequip=False,
                          off=True)
 
 
@@ -214,9 +280,8 @@ class AdamantiteDagger(Weapon):
 class MithrilDagger(Weapon):
 
     def __init__(self):
-        super().__init__(name="MITHRIL DAGGER", description="An mithril knife with a very sharp point and usually"
-                                                            " two sharp edges, typically designed or capable of "
-                                                            "being used as a thrusting or stabbing weapon.",
+        super().__init__(name="MITHRIL DAGGER", description="An ultra-light blade made from the most prized of all "
+                                                            "metals, mithril.",
                          value=20000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
@@ -493,10 +558,20 @@ class SerpentStaff(Weapon):
                          off=False)
 
 
-class DragonStaff(Weapon):
+class HolyStaff(Weapon):
 
     def __init__(self):
-        super().__init__(name="DRAGON STAFF", description="A magic staff, shaped to appear as a dragon.",
+        super().__init__(name="HOLY STAFF", description="A staff that emits a holy light. Only equipable by priests"
+                                                        " and archbishops.",
+                         value=7500, rarity=20, damage=11, crit=8, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
+        self.restricted = ['Priest', 'Archbishop']
+
+
+class RuneStaff(Weapon):
+
+    def __init__(self):
+        super().__init__(name="RUNE STAFF", description="A wooden staff with a magical rune embedded in the handle.",
                          value=10000, rarity=25, damage=12, crit=7, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
@@ -509,12 +584,21 @@ class MithrilshodStaff(Weapon):
                          off=False)
 
 
+class DragonStaff(Weapon):
+
+    def __init__(self):
+        super().__init__(name="DRAGON STAFF", description="A magic staff, shaped to appear as a dragon.",
+                         value=50000, rarity=50, damage=16, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         off=False)
+
+
 class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
-                         value=60000, rarity=50, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         value=60000, rarity=55, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
                          off=False)
+        self.restriction = ['Priest', 'Archbishop']
 
 
 class OakHammer(Weapon):
@@ -619,7 +703,7 @@ class SilverCloak(Armor):
     def __init__(self):
         super().__init__(name="SILVER CLOAK", description="A cloak weaved with strands of silver to improve protective"
                                                           "power.",
-                         value=1000, rarity=8, armor=3, subtyp='Cloth', unequip=False)
+                         value=2500, rarity=8, armor=3, subtyp='Cloth', unequip=False)
 
 
 class GoldCloak(Armor):
@@ -627,7 +711,7 @@ class GoldCloak(Armor):
     def __init__(self):
         super().__init__(name="GOLD CLOAK", description="A cloak weaved with strands of gold to improve protective"
                                                         "power.",
-                         value=3500, rarity=12, armor=5, subtyp='Cloth', unequip=False)
+                         value=7000, rarity=12, armor=5, subtyp='Cloth', unequip=False)
 
 
 class CloakEnchantment(Armor):
@@ -635,7 +719,7 @@ class CloakEnchantment(Armor):
     def __init__(self):
         super().__init__(name="CLOAK of ENCHANTMENT", description="A magical cloak that shields the wearer from all "
                                                                   "forms of attack.",
-                         value=10000, rarity=35, armor=7, subtyp='Cloth', unequip=False)
+                         value=15000, rarity=35, armor=7, subtyp='Cloth', unequip=False)
 
 
 class WizardRobe(Armor):
@@ -675,7 +759,7 @@ class Cuirboulli(Armor):
     def __init__(self):
         super().__init__(name="CUIRBOULLI", description="French for \"boiled leather\", this armor has increased "
                                                         "rigidity for add protection",
-                         value=1600, rarity=15, armor=4, subtyp='Light', unequip=False)
+                         value=3000, rarity=15, armor=4, subtyp='Light', unequip=False)
 
 
 class Studded(Armor):
@@ -723,7 +807,7 @@ class ScaleMail(Armor):
         super().__init__(name="SCALE MAIL", description="Armor consisting of a coat and leggings of leather covered"
                                                         " with overlapping pieces of metal, mimicking the scales of a "
                                                         "fish.",
-                         value=2000, rarity=15, armor=5, subtyp='Medium', unequip=False)
+                         value=4000, rarity=15, armor=5, subtyp='Medium', unequip=False)
 
 
 class Breastplate(Armor):
@@ -777,7 +861,7 @@ class Splint(Armor):
         super().__init__(name="SPLINT MAIL", description="Armor made of narrow vertical strips of metal riveted to a "
                                                          "backing of leather that is worn over cloth padding. Flexible "
                                                          "chain mail protects the joints.",
-                         value=2800, rarity=20, armor=7, subtyp='Heavy', unequip=False)
+                         value=6000, rarity=20, armor=7, subtyp='Heavy', unequip=False)
 
 
 class PlateMail(Armor):
@@ -810,7 +894,7 @@ class Genji(Armor):
 
 class OffHand(Item):
     """
-    mod stat depends on the off-hand item; mod for shields is block and spell damage modifier for grimoires
+    mod stat depends on the off-hand item; mod for shields is block and spell damage modifier for tomes
     """
 
     def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
@@ -901,7 +985,7 @@ class MedusaShield(OffHand):
 class Book(OffHand):
 
     def __init__(self):
-        super().__init__(name="BOOK", description="A random book.", value=25, rarity=2, mod=2, subtyp='Grimoire',
+        super().__init__(name="BOOK", description="A random book.", value=25, rarity=2, mod=2, subtyp='Tome',
                          unequip=False)
 
 
@@ -909,7 +993,14 @@ class TomeKnowledge(OffHand):
 
     def __init__(self):
         super().__init__(name="TOME of KNOWLEDGE", description="A tome containing secrets to enhancing spells.",
-                         value=500, rarity=5, mod=5, subtyp='Grimoire', unequip=False)
+                         value=500, rarity=5, mod=5, subtyp='Tome', unequip=False)
+
+
+class Grimoire(OffHand):
+
+    def __init__(self):
+        super().__init__(name="GRIMOIRE", description="A book of magic and invocations.",
+                         value=2500, rarity=20, mod=7, subtyp='Tome', unequip=False)
 
 
 class BookShadows(OffHand):
@@ -918,7 +1009,7 @@ class BookShadows(OffHand):
         super().__init__(name="BOOK of SHADOWS", description="The Book of Shadows is a book containing religious text "
                                                              "and instructions for magical rituals found within the "
                                                              "Neopagan religion of Wicca, and in many pagan practices.",
-                         value=10000, rarity=35, mod=10, subtyp='Grimoire', unequip=False)
+                         value=10000, rarity=35, mod=10, subtyp='Tome', unequip=False)
 
 
 class DragonRouge(OffHand):
@@ -926,7 +1017,15 @@ class DragonRouge(OffHand):
     def __init__(self):
         super().__init__(name="DRAGON ROUGE", description="French for \"Red Dragon\", this mythical tome contains "
                                                           "ancient knowledge passed down through the ages.",
-                         value=15000, rarity=40, mod=12, subtyp='Grimoire', unequip=False)
+                         value=15000, rarity=40, mod=12, subtyp='Tome', unequip=False)
+
+
+class Vedas(OffHand):
+
+    def __init__(self):
+        super().__init__(name="VEDAS", description="A large body of religious texts, consisting of some of the oldest "
+                                                   "holy teachings.",
+                         value=35000, rarity=45, mod=18, subtyp='Tome', unequip=False)
 
 
 class Necronomicon(OffHand):
@@ -934,14 +1033,84 @@ class Necronomicon(OffHand):
     def __init__(self):
         super().__init__(name="NECRONOMICON", description="The Book of the Dead, a mystical grimoire written by an "
                                                           "unknown author.",
-                         value=40000, rarity=50, mod=20, subtyp='Grimoire', unequip=False)
+                         value=40000, rarity=50, mod=20, subtyp='Tome', unequip=False)
+        self.restriction = ['Warlock', 'Necromancer']
 
 
 class Magus(OffHand):
 
     def __init__(self):
         super().__init__(name="MAGUS", description="A book of magical art written by a powerful wizard.",
-                         value=75000, rarity=60, mod=30, subtyp='Grimoire', unequip=False)
+                         value=75000, rarity=60, mod=30, subtyp='Tome', unequip=False)
+
+
+class Accessory(Item):
+    """
+    Each character can equip 1 ring and 1 pendant
+    Rings improve physical capabilities (either attack or defense)
+    Pendants improve magical capabilities (either magic damage or defense)
+    All modifications are considered magical and can't be ignored
+    """
+
+    def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
+        super().__init__(name, description, value)
+        self.rarity = rarity
+        self.mod = mod
+        self.subtyp = subtyp
+        self.unequip = unequip
+        self.typ = "Accessory"
+
+    def __str__(self):
+        return "{}\n=====\n{}\nValue: {}\nMod: {}".format(self.name, self.description, self.value, self.mod)
+
+
+class NoPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=0, mod="No Mod",
+                         subtyp='Pendant', unequip=True)
+
+
+class NoRing(Accessory):
+
+    def __init__(self):
+        super().__init__(name="NO RING", description="No ring equipped.", value=0, rarity=0, mod="No Mod",
+                         subtyp='Ring', unequip=True)
+
+
+class IronRing(Accessory):
+
+    def __init__(self):
+        super().__init__(name="IRON RING", description="A ring that improves the wearer's defense.",
+                         value=2000, rarity=12, mod="+5 Defense", subtyp='Ring', unequip=False)
+
+
+class PowerRing(Accessory):
+
+    def __init__(self):
+        super().__init__(name="POWER RING", description="A ring that improves the wearer's attack damage.",
+                         value=5000, rarity=18, mod="+5 Attack", subtyp='Ring', unequip=False)
+
+
+class SilverPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="SILVER PENDANT", description="A necklace that improves the wearer's magic damage.",
+                         value=8000, rarity=22, mod="+5 Magic Damage", subtyp='Pendant', unequip=False)
+
+
+class RubyPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="RUBY PENDANT", description="A ruby necklace that improves the wearer's magic damage.",
+                         value=1800, rarity=10, mod="+5 Magic Defense", subtyp='Pendant', unequip=False)
+
+
+class VisionPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="PENDANT OF VISION", description="A pendant that that gives information about the enemy.",
+                         value=1200, rarity=7, mod="Vision", subtyp='Pendant', unequip=False)
 
 
 class Potion(Item):
@@ -1134,11 +1303,13 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                          'Hammer': [OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher]},
               'OffHand': {'Shield': [WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
                                      MedusaShield],
-                          'Grimoire': [Book, TomeKnowledge, BookShadows, Necronomicon, DragonRouge, Magus]},
+                          'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon, Magus]},
               'Armor': {'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, WizardRobe, CloakEnchantment, MerlinRobe],
                         'Light': [PaddedArmor, LeatherArmor, Cuirboulli, Studded, StuddedCuirboulli, DragonHide],
                         'Medium': [HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Aegis],
                         'Heavy': [RingMail, ChainMail, Splint, PlateMail, FullPlate, Genji]},
+              'Accessory': {'Ring': [IronRing, PowerRing],
+                            'Pendant': [VisionPendant, SilverPendant, RubyPendant]},
               'Potion': {'Health': [HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                          'Mana': [ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                          'Elixir': [Elixir, Megalixir],

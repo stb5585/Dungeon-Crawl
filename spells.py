@@ -241,28 +241,28 @@ class Backstab(Stealth):
 class KidneyPunch(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 1'
                                                           ' turn.',
                          cost=10)
-        self.stun = 2
+        self.stun = 1
 
 
 class KidneyPunch2(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 3'
-                                                          ' turn.',
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
+                                                          ' turns.',
                          cost=22)
-        self.stun = 3
+        self.stun = 2
 
 
 class KidneyPunch3(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 4'
-                                                          ' turn.',
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 3'
+                                                          ' turns.',
                          cost=32)
-        self.stun = 4
+        self.stun = 3
 
 
 class SmokeScreen(Stealth):
@@ -517,7 +517,7 @@ class Corruption(ShadowSpell):
     def __init__(self):
         super().__init__(name='Corruption', description='Damage the enemy and add a debuff that does damage for 2 '
                                                         'turns',
-                         cost=10, damage=10, crit=5)
+                         cost=10, damage=8, crit=5)
         self.cat = 'Attack'
         self.dot_turns = 2
 
@@ -696,15 +696,15 @@ spell_dict = {'WARRIOR': {},
               'FOOTPAD': {},
               'THIEF': {},
               'ROGUE': {},
-              'INQUISITIVE': {},
-              'SEEKER': {},
+              'INQUISITOR': {},
+              'SEEKER': {'10': Sanctuary},
               'ASSASSIN': {},
               'NINJA': {'20': Desoul}
               }
 
 skill_dict = {'WARRIOR': {'3': ShieldSlam,
                           '8': PiercingStrike,
-                          '10': DoubleStrike},
+                          '17': DoubleStrike},  # was level 10; made Warrior OP
               'WEAPON MASTER': {'10': TripleStrike},
               'BERSERKER': {'5': MortalStrike2,
                             '10': QuadStrike},
@@ -734,9 +734,8 @@ skill_dict = {'WARRIOR': {'3': ShieldSlam,
               'THIEF': {'5': Lockpick,
                         '12': KidneyPunch},
               'ROGUE': {'10': TripleStrike},
-              'INQUISITIVE': {'20': ShieldSlam},
-              'SEEKER': {'10': Sanctuary,
-                         '25': ShieldSlam2},
+              'INQUISITOR': {'20': ShieldSlam},
+              'SEEKER': {'25': ShieldSlam2},
               'ASSASSIN': {'5': TripleStrike,
                            '8': PoisonStrike,
                            '10': KidneyPunch2,

@@ -48,7 +48,8 @@ class Enemy:
                           'Skills': {}}
 
     def __str__(self):
-        return "#== {} ==#\n\nHealth: {}\n".format(self.name, self.health)
+        return "Enemy: {}  Health: {}/{}  Mana: {}/{}".format(self.name, self.health, self.health_max, self.mana,
+                                                              self.mana_max)
 
     def is_alive(self):
         return self.health > 0
@@ -58,17 +59,25 @@ class Enemy:
         Function that controls the character's abilities and spells during combat
         """
         stun = enemy.status_effects['Stun'][0]
-        print("%s casts %s." % (self.name, ability().name))
+        print("{} casts {}.".format(self.name.capitalize(), ability().name))
+        enemy_dam_red = 0
+        if 'Defense' in enemy.equipment['Pendant']().mod:
+            enemy_dam_red += int(enemy.equipment['Pendant']().mod.split(' ')[0])
         spell_mod = 0
+        try:
+            if 'Damage' in self.equipment['Pendant']().mod:
+                spell_mod += int(self.equipment['Pendant']().mod.split(' ')[0])
+        except KeyError:
+            pass
         if ability().cat == 'Attack':
-            damage = random.randint((ability().damage + self.intel) // 2,
-                                    (ability().damage + self.intel))
-            if self.equipment['OffHand']().subtyp == 'Grimoire':
+            damage = random.randint(((ability().damage + self.intel) // 2) + spell_mod,
+                                    (ability().damage + self.intel) + spell_mod)
+            if self.equipment['OffHand']().subtyp == 'Tome':
                 damage += self.equipment['OffHand']().mod
                 spell_mod = self.equipment['OffHand']().mod
             elif self.equipment['Weapon']().subtyp == 'Staff':
                 spell_mod = self.equipment['Weapon']().damage * 2
-            damage -= random.randint(enemy.wisdom // 2, enemy.wisdom)
+            damage -= random.randint((enemy.wisdom // 4) + enemy_dam_red, (enemy.wisdom // 2) + enemy_dam_red)
             crit = 1
             if not random.randint(0, ability().crit):
                 crit = 2
@@ -77,39 +86,43 @@ class Enemy:
                 print("Critical Hit!")
                 time.sleep(0.25)
             if random.randint(0, enemy.dex // 2) > \
-                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod) and not stun:
-                print("%s dodged the %s and was unhurt." % (enemy.name, ability().name))
+                    random.randint(self.intel // 2, self.intel) and not stun:
+                print("{} dodged the {} and was unhurt.".format(enemy.name.capitalize(), ability().name))
                 time.sleep(0.25)
             elif random.randint(0, enemy.con // 2) > \
-                    random.randint((self.intel + spell_mod) // 2, self.intel + spell_mod):
+                    random.randint(self.intel // 2, self.intel):
                 damage //= 2
-                print("%s shrugs off the %s and only receives half of the damage." % (enemy.name, ability().name))
-                print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                print("{} shrugs off the {} and only receives half of the damage.".format(enemy.name.capitalize(),
+                                                                                          ability().name))
+                print("{} damages {} for {} hit points.".format(self.name, enemy.name.capitalize(), damage))
                 time.sleep(0.25)
                 enemy.health = enemy.health - damage
             else:
                 if damage == 0:
-                    print("%s was ineffective and did 0 damage" % ability().name)
+                    print("{} was ineffective and did 0 damage".format(ability().name))
                     time.sleep(0.25)
                 else:
-                    print("%s damages %s for %s hit points." % (self.name, enemy.name, damage))
+                    print("{} damages {} for {} hit points.".format(self.name, enemy.name.capitalize(), damage))
                     time.sleep(0.25)
                     enemy.health = enemy.health - damage
         elif ability().cat == 'Enhance':
-            self.weapon_damage(enemy, dmg_mod=ability().mod)
+            self.weapon_damage(enemy, dmg_mod=ability().mod + spell_mod)
         elif ability().cat == 'Heal':
-            heal = int(random.randint(self.health_max // 2, self.health_max) * ability().heal)
+            heal = int(random.randint((self.health_max + self.wisdom) // 2,
+                                      (self.health_max + self.wisdom)) * ability().heal)
+            if (heal + self.health) > self.health_max:
+                heal = self.health_max - self.health
             self.health += heal
-            print("You healed yourself for %s hit points." % heal)
-            if self.health >= self.health_max:
-                self.health = self.health_max
-                print("You are at full health!")
+            print("{} healed yourself for {} hit points.".format(self.name, heal))
+            if enemy.cls == 'INQUISITOR' or enemy.cls == 'SEEKER' or 'Vision' in enemy.equipment['Pendant']().mod:
+                print("{} fully healed itself!".format(self.name))
         elif ability().cat == 'Kill':
             if ability().name == 'Desoul':
                 if random.randint(0, self.intel) \
-                            > random.randint(enemy.con // 2, enemy.con):
+                        > random.randint(enemy.con // 2, enemy.con):
                     enemy.health = 0
-                    print("You rip the soul right out of the %s and it falls to the ground dead." % enemy.name)
+                    print("{} rips the soul right out of the {} and it falls to the ground dead.".format(
+                        self.name, enemy.name.capitalize()))
                 else:
                     print("The spell has no effect.")
             else:
@@ -119,14 +132,14 @@ class Enemy:
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
                 enemy.status_effects["Stun"][0] = True
                 enemy.status_effects["Stun"][1] = ability().stun
-                print("You stun the enemy for %s turns." % ability().stun)
+                print("{} stuns {} for {} turns.".format(self.name, enemy.name.capitalize(), ability().stun))
         if ability().name == 'Corruption':
             if random.randint(self.intel // 2, self.intel) \
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
                 enemy.status_effects["DOT"][0] = True
                 enemy.status_effects["DOT"][1] = ability().dot_turns
-                enemy.status_effects["DOT"][2] = ability().damage
-                print("%s's magic penetrates %s's defenses." % (self.name, enemy.name))
+                enemy.status_effects["DOT"][2] = ability().damage + spell_mod
+                print("{}'s magic penetrates {}'s defenses.".format(self.name, enemy.name.capitalize()))
             else:
                 print("The magic has no effect.")
         if ability().name == 'Doom':
@@ -134,32 +147,42 @@ class Enemy:
                     > random.randint(enemy.wisdom // 2, enemy.wisdom):
                 enemy.status_effects["Doom"][0] = True
                 enemy.status_effects["Doom"][1] = ability().timer
-                print("%s's magic places a timer on %s's life!" % (self.name, enemy.name))
+                print("{}'s magic places a timer on {}'s life!".format(self.name, enemy.name.capitalize()))
             else:
                 print("The magic has no effect.")
         self.mana -= ability().cost
 
     def use_ability(self, enemy, ability):
-        stun = enemy.status_effects['Stun'][0]
-        print("%s uses %s." % (self.name, ability().name))
+        print("{} uses {}.".format(self.name, ability().name))
         time.sleep(0.25)
         self.mana -= ability().cost
+        enemy_dam_red = 0
+        if 'Defense' in enemy.equipment['Ring']().mod:
+            enemy_dam_red += int(enemy.equipment['Ring']().mod.split(' ')[0])
+        dmg_mod = 0
+        try:
+            if 'Attack' in self.equipment['Ring']().mod:
+                dmg_mod += int(self.equipment['Ring']().mod.split(' ')[0])
+        except KeyError:
+            pass
         if ability().name == "Shield Slam":
             if random.randint(self.dex // 2, self.dex) > random.randint(0, enemy.dex // 2):
-                damage = max(1, int(self.strength * (2 / self.equipment['OffHand']().mod)))
+                damage = max(1, int(self.strength * (2 / self.equipment['OffHand']().mod)) + dmg_mod)
+                damage = max(0, damage - enemy_dam_red)
                 enemy.health -= damage
-                print("%s damages %s with %s for %s hit points." % (self.name, enemy.name, ability().name, damage))
+                print("{} damages {} with {} for {} hit points.".format(self.name, enemy.name.capitalize(),
+                                                                        ability().name,
+                                                                        damage))
                 if random.randint(self.strength // 2, self.strength) \
                         > random.randint(enemy.strength // 2, enemy.strength):
-                    print("%s stuns %s for %s turns." % (self.name, enemy.name, ability().stun))
+                    print("{} stuns {} for {} turns.".format(self.name, enemy.name.capitalize(), ability().stun))
                     enemy.status_effects['Stun'][0] = True
                     enemy.status_effects['Stun'][1] = ability().stun
                 else:
-                    print("%s failed to stun %s." % (self.name, enemy.name))
+                    print("{} failed to stun {}.".format(self.name, enemy.name.capitalize()))
             else:
-                print("%s swings its shield at %s but misses entirely!" % (self.name, enemy.name))
+                print("{} swings its shield at {} but misses entirely!".format(self.name, enemy.name.capitalize()))
         if ability().name == 'Steal':
-            self.mana -= ability().cost
             if len(enemy.inventory) != 0:
                 if random.randint(0, self.dex) > random.randint(0, enemy.dex):
                     i = random.randint(0, len(enemy.inventory))
@@ -167,22 +190,22 @@ class Enemy:
                         item_key = list(enemy.inventory.keys())[i - 1]
                         item = enemy.loot[item_key]
                         enemy.modify_inventory(item, num=1, steal=True)
-                        print("%s steals %s from %s!" % (self.name, item().name, enemy.name))
+                        print("{} steals {} from {}!".format(self.name, item().name, enemy.name.capitalize()))
                     else:
                         enemy_gold = enemy.gold
                         gold_steal = random.randint(self.dex // 2, self.dex) * enemy.location_z
                         if enemy_gold >= gold_steal:
                             enemy.gold -= gold_steal
-                            print("%s steals %s gold from %s!" % (self.name, gold_steal, enemy.name))
+                            print("{} steals {} gold from {}!".format(self.name, gold_steal, enemy.name.capitalize()))
                             self.loot['Gold'] += gold_steal
                         else:
                             enemy_gold = 0
-                            print("%s steals %s gold from %s!" % (self.name, enemy_gold, enemy.name))
+                            print("{} steals {} gold from {}!".format(self.name, enemy_gold, enemy.name.capitalize()))
                             self.loot['Gold'] += enemy_gold
                 else:
-                    print("%s couldn't steal anything." % self.name)
+                    print("{} couldn't steal anything.".format(self.name))
             else:
-                print("%s doesn't have anything to steal." % enemy.name)
+                print("{} doesn't have anything to steal.".format(enemy.name.capitalize()))
         if ability().subtyp == 'Drain':
             if 'Health' in ability().name:
                 drain = random.randint((self.health + self.intel) // 5,
@@ -193,7 +216,7 @@ class Enemy:
                     drain = enemy.health
                 enemy.health -= drain
                 self.health += drain
-                print("%s drains %s health from %s." % (self.name, drain, enemy.name))
+                print("{} drains {} health from {}.".format(self.name, drain, enemy.name.capitalize()))
             if 'Mana' in ability().name:
                 drain = random.randint((self.mana + self.intel) // 5,
                                        (self.mana + self.intel) // 1.5)
@@ -203,7 +226,7 @@ class Enemy:
                     drain = enemy.mana
                 enemy.mana -= drain
                 self.mana += drain
-                print("%s drains %s mana from %s." % (self.name, drain, enemy.name))
+                print("{} drains {} mana from {}.".format(self.name, drain, enemy.name.capitalize()))
         if ability().name == 'Poison Strike':
             self.weapon_damage(enemy)
             if random.randint(self.dex // 2, self.dex) \
@@ -212,7 +235,7 @@ class Enemy:
                 enemy.status_effects['Poison'][1] = ability().poison_rounds
                 enemy.status_effects['Poison'][2] = ability().poison_damage
             else:
-                print("%s resisted the poison." % enemy.name)
+                print("{} resisted the poison.".format(enemy.name.capitalize()))
         if ability().name == 'Kidney Punch':
             self.weapon_damage(enemy)
             if random.randint(self.dex // 2, self.dex) \
@@ -220,7 +243,7 @@ class Enemy:
                 enemy.status_effects['Stun'][0] = True
                 enemy.status_effects['Stun'][1] = ability().stun
             else:
-                print("%s resisted the poison." % enemy.name)
+                print("{} resisted the poison.".format(enemy.name.capitalize()))
         if ability().name == 'Lockpick':
             enemy.lock = False
         if ability().name == 'Multi-Strike':
@@ -238,6 +261,14 @@ class Enemy:
         """
         Function that controls the character's basic attack during combat
         """
+        try:
+            if 'Attack' in self.equipment['Ring']().mod:
+                dmg_mod += int(self.equipment['Ring']().mod.split(' ')[0])
+        except KeyError:
+            pass
+        enemy_dam_red = 0
+        if 'Defense' in enemy.equipment['Ring']().mod:
+            enemy_dam_red += int(enemy.equipment['Ring']().mod.split(' ')[0])
         stun = enemy.status_effects['Stun'][0]
         blk = False
         off_blk = False
@@ -257,22 +288,22 @@ class Enemy:
             off_att_typ = 'damages'
         if ignore:
             dmg = max(1, (self.strength + self.equipment['Weapon']().damage + dmg_mod))
-            damage = random.randint(dmg // 2, dmg)
+            damage = random.randint((dmg // 2) - enemy_dam_red, dmg - enemy_dam_red)
             if self.equipment['OffHand']().typ == 'Weapon' or self.equipment['OffHand']().typ == 'Natural':
                 off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage + dmg_mod // 2))
-                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+                off_damage = random.randint((off_dmg // 4) - enemy_dam_red, (off_dmg // 2) - enemy_dam_red)
         elif stun:
             dmg = max(1, (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor
                           + dmg_mod))
-            damage = random.randint(dmg // 2, dmg)
+            damage = random.randint((dmg // 2) - enemy_dam_red, dmg - enemy_dam_red)
             if self.equipment['OffHand']().typ == 'Weapon' or self.equipment['OffHand']().typ == 'Natural':
                 off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage
                                   - enemy.equipment['Armor']().armor + dmg_mod // 2))
-                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+                off_damage = random.randint((off_dmg // 4) - enemy_dam_red, (off_dmg // 2) - enemy_dam_red)
         else:
             dmg = max(1,
                       (self.strength + self.equipment['Weapon']().damage - enemy.equipment['Armor']().armor + dmg_mod))
-            damage = random.randint(dmg // 2, dmg)
+            damage = random.randint((dmg // 2) - enemy_dam_red, dmg - enemy_dam_red)
             if enemy.equipment['OffHand']().subtyp == 'Shield':
                 if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                     blk = True
@@ -281,14 +312,14 @@ class Enemy:
                                random.randint(self.strength // 2, self.strength)) / 100
                     damage *= (1 - blk_amt)
             if random.randint(0, enemy.dex // 2) > random.randint(self.dex // 2, self.dex):
-                print("%s evades %s's attack." % (enemy.name, self.name))
+                print("{} evades {}'s attack.".format(enemy.name.capitalize(), self.name))
                 time.sleep(0.25)
                 dodge = True
             if self.equipment['OffHand']().typ == 'Weapon' or self.equipment['OffHand']().typ == 'Natural':
                 off_crit = 1
                 off_dmg = max(1, (self.strength // 2 + self.equipment['OffHand']().damage -
                                   enemy.equipment['Armor']().armor + dmg_mod // 2))
-                off_damage = random.randint(off_dmg // 4, off_dmg // 2)
+                off_damage = random.randint((off_dmg // 4) - enemy_dam_red, (off_dmg // 2) - enemy_dam_red)
                 if enemy.equipment['OffHand']().subtyp == 'Shield':
                     if not random.randint(0, int(enemy.equipment['OffHand']().mod)):
                         off_blk = True
@@ -308,13 +339,13 @@ class Enemy:
                 print("Critical Hit!")
                 time.sleep(0.25)
             if blk:
-                print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
-                    enemy.name, self.name, int(blk_amt * 100)))
+                print("{} blocked {}'s attack and mitigated {} percent of the damage.".format(
+                    enemy.name.capitalize(), self.name, int(blk_amt * 100)))
             if damage == 0:
-                print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                print("{} attacked {} but did 0 damage".format(self.name, enemy.name.capitalize()))
                 time.sleep(0.25)
             else:
-                print("%s %s %s for %s hit points." % (self.name, att_typ, enemy.name, damage))
+                print("{} {} {} for {} hit points.".format(self.name, att_typ, enemy.name.capitalize(), damage))
                 time.sleep(0.25)
             enemy.health -= damage
         if self.equipment['OffHand']().typ == 'Weapon' or self.equipment['OffHand']().typ == 'Natural':
@@ -328,23 +359,24 @@ class Enemy:
                     print("Critical Hit!")
                     time.sleep(0.25)
                 if off_blk:
-                    print("%s blocked %s\'s attack and mitigated %d percent of the damage." % (
-                        enemy.name, self.name, int(off_blk_amt * 100)))
+                    print("{} blocked {}'s attack and mitigated {} percent of the damage.".format(
+                        enemy.name.capitalize(), self.name, int(off_blk_amt * 100)))
                 if off_damage == 0:
-                    print("%s attacked %s but did 0 damage" % (self.name, enemy.name))
+                    print("{} attacked {} but did 0 damage".format(self.name, enemy.name.capitalize()))
                     time.sleep(0.25)
                 else:
-                    print("%s %s %s for %s hit points." % (self.name, off_att_typ, enemy.name, off_damage))
+                    print("{} {} {} for {} hit points.".format(self.name, off_att_typ, enemy.name.capitalize(),
+                                                               off_damage))
                     time.sleep(0.25)
                 enemy.health -= off_damage
             else:
-                print("%s evades %s's off-hand attack." % (enemy.name, self.name))
+                print("{} evades {}'s off-hand attack.".format(enemy.name.capitalize(), self.name))
                 time.sleep(0.25)
         if att_typ == 'leers':
             if random.randint(0, self.intel) \
                     > random.randint(enemy.con // 2, enemy.con):
                 enemy.health = 0
-                print("%s turns %s to stone!" % (self.name, enemy.name))
+                print("{} turns {} to stone!".format(self.name, enemy.name.capitalize()))
 
 
 # Natural weapons
@@ -382,6 +414,7 @@ class Stinger(NaturalWeapon):
     """
     Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="stings", damage=3, crit=4, subtyp='Natural')
         self.poison = True
@@ -397,6 +430,7 @@ class SnakeFang(NaturalWeapon):
     """
     Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="strikes", damage=3, crit=4, subtyp='Natural')
         self.poison = True
@@ -425,6 +459,7 @@ class Gaze(NaturalWeapon):
     """
     Attempts to turn the player to stone
     """
+
     def __init__(self):
         super().__init__(name="leers", damage=0, crit=5, subtyp='Natural')
 
@@ -539,7 +574,7 @@ class Goblin(Enemy):
 class Bandit(Enemy):
 
     def __init__(self):
-        super().__init__(name='Bandit', health=random.randint(4, 8), mana=0, strength=8, intel=0, wisdom=5, con=8,
+        super().__init__(name='Bandit', health=random.randint(4, 8), mana=6, strength=8, intel=0, wisdom=5, con=8,
                          charisma=0, dex=10, exp=random.randint(8, 18))
         self.equipment['Weapon'] = items.BronzeDagger
         self.equipment['Armor'] = items.PaddedArmor
@@ -583,8 +618,8 @@ class Zombie(Enemy):
 class GiantSpider(Enemy):
 
     def __init__(self):
-        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=12, intel=0, wisdom=10,
-                         con=10, charisma=0, dex=12, exp=random.randint(15, 24))
+        super().__init__(name='Giant Spider', health=random.randint(12, 15), mana=0, strength=9, intel=0, wisdom=10,
+                         con=8, charisma=0, dex=12, exp=random.randint(15, 24))
         self.equipment['Weapon'] = Stinger
         self.equipment['Armor'] = Carapace
         self.loot = dict(Gold=random.randint(15, 30), Potion=items.ManaPotion)
@@ -595,8 +630,8 @@ class GiantSpider(Enemy):
 class TwistedDwarf(Enemy):
 
     def __init__(self):
-        super().__init__(name='Twisted Dwarf', health=random.randint(15, 19), mana=10, strength=14, intel=0, wisdom=10,
-                         con=14, charisma=0, dex=12, exp=random.randint(25, 44))
+        super().__init__(name='Twisted Dwarf', health=random.randint(15, 19), mana=10, strength=12, intel=0, wisdom=10,
+                         con=12, charisma=0, dex=12, exp=random.randint(25, 44))
         self.equipment['Weapon'] = items.Axe
         self.equipment['Armor'] = items.HideArmor
         self.loot = dict(Gold=random.randint(25, 40), Weapon=self.equipment['Weapon'], Armor=self.equipment['Armor'])
@@ -974,7 +1009,7 @@ class Griffin(Enemy):
 class DrowAssassin(Enemy):
 
     def __init__(self):
-        super().__init__(name='Drow Assassin', health=random.randint(45, 65), mana=0, strength=15, intel=16, wisdom=15,
+        super().__init__(name='Drow Assassin', health=random.randint(45, 65), mana=40, strength=15, intel=16, wisdom=15,
                          con=14, charisma=0, dex=22, exp=random.randint(280, 480))
         self.equipment['Weapon'] = items.Carnwennan
         self.equipment['Armor'] = items.Studded
@@ -982,7 +1017,7 @@ class DrowAssassin(Enemy):
         self.loot = dict(Gold=random.randint(160, 250), Weapon=self.equipment['Weapon'], Armor=self.equipment['Armor'],
                          OffHand=self.equipment['OffHand'])
         self.spellbook = {"Spells": [],
-                          "Skills": [spells.PoisonStrike, spells.Backstab, spells.KidneyPunch]}
+                          "Skills": [spells.PoisonStrike, spells.Backstab, spells.KidneyPunch, spells.Steal]}
 
 
 class Cyborg(Enemy):

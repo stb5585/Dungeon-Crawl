@@ -3,13 +3,11 @@
 
 # Imports
 import pickle
-import os
 import sys
 import time
 
 
-def slow_type(line):
-    typing_speed = 100  # wpm
+def slow_type(line, typing_speed=100):
     for item in line:
         sys.stdout.write(item)
         sys.stdout.flush()
@@ -18,19 +16,16 @@ def slow_type(line):
 
 def display_page_text(lines: list):
     for line in lines:
-        slow_type(line)  # Make the user press enter to see the next line
-        get_input([''])
+        slow_type(line)
+        time.sleep(1)
 
 
 def get_input(valid_input: list):
     while True:
         user_entered = input()
-
         if user_entered not in valid_input:
             print("Invalid input. Please use one of the following inputs:\n")
             print(valid_input)
-            # user_entered = None
-
         else:
             return user_entered
 
@@ -39,53 +34,33 @@ def get_response(options: list, **kwargs):
     for index, option in enumerate(options):
         print(str(index) + ". " + option[0])
         time.sleep(0.25)
-
     valid_inputs = [str(num) for num in range(len(options))]
-    option_index = int(get_input(valid_inputs))
-
+    try:
+        option_index = int(get_input(valid_inputs))
+    except ValueError:
+        print("Sorry to hear that, goodbye then...")
+        sys.exit(0)
     return options[option_index][1]
 
 
-def story_flow(story_dict: dict):
+def story_flow(story_dict: dict, response=False):
     curr_page = 1
     while curr_page is not None:
         page = story_dict.get(curr_page, None)
         if page is None:
-            # curr_page = None
             break
-
         display_page_text(page['Text'])
-
         if len(page['Options']) == 0:
-            # curr_page = None
             break
-
         curr_page = get_response(page['Options'])
+        if response:
+            return curr_page
 
 
-def read_story(story_file):
-
+def read_story(story_file, response=False):
     with open(story_file, 'rb') as file:
         story_dict = pickle.load(file)
-
-    story_flow(story_dict)
-
-
-def pickle_story(story_dict: dict):
-    # if not os.path.exists('new_player.txt'):
-    with open('new_player.txt', 'wb') as chapter:
-        pickle.dump(story_dict, chapter)
-    # else:
-    #     confirm = input("This chapter already exists. Are you sure you want to overwrite? (Yes or No) ").lower()
-    #     if confirm == 'yes':
-    #         os.remove('chapters/chapter' + str(list(story_dict.keys())[0]) + '.ch')
-    #         with open('chapters/chapter' + str(list(story_dict.keys())[0]) + '.ch', 'wb') as chapter:
-    #             pickle.dump(story_dict, chapter)
-    #     else:
-    #         print("The file will not be overridden.")
-
-
-# Define story #
-story = {1: {'Options': [("Yeah of course!", 2), ("I'm sorry I don't...", 3)],
-             'Text': ["Hello there..", "I bet you weren't expecting to hear from me so soon...",
-                      "...you seem a little confused do you know who I am?"]}}
+    if not response:
+        story_flow(story_dict)
+    else:
+        return story_flow(story_dict, response=response)

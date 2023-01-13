@@ -22,21 +22,24 @@ FUTURE DEVELOPMENT:
 - Planned development
     - Enhance storyline for a more immersive experience
     - Deepen the dungeon to allow for additional challenge
-    - Add a tutorial so players can better understand the gameplay
-    - Add graphical representation for a more complete game experience
+    - Add graphical representation (in terminal) for a more complete game experience; already improved minimap
     - Make item comparison easier for the shop
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to be farmed
-    - Add quests to game
-    - Add tavern in town for obtaining quests
-    - Enhance enemies to make them more dynamic (spells, dual-wield, resistance/weakness, etc)
-    - Add accessories to equipment (rings, necklaces, etc)
+    - Add quests to game; add tavern in town for obtaining quests
+    - Enhance enemies to make them more dynamic (resistance/weakness, etc)
+    - Add more accessories with various effects; special items for each final class
     - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
+    - Allow player to switch characters in-game (instead of exiting and re-loading)
 
 - Possible development
-    - Status effects
     - Item identification
     - Add capability to have more than one playable character
-    - require rare items for promotion
+    - Require rare items for promotion
+    - Allow a character to change class
+    - Give players alignments (G/N/E) with item restrictions
+    - Add a tutorial so players can better understand the gameplay
+    - Implement map editor 
+
 
 FILES:
 - actions.py
