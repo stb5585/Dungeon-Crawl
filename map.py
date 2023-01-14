@@ -2,7 +2,8 @@
 """ map manager """
 
 # Imports
-import character
+import numpy
+
 import enemies
 import actions
 import world
@@ -15,11 +16,13 @@ class MapTile:
         self.x = x
         self.y = y
         self.z = z
+        self.visited = False  # tells whether the tile has been visited by player
+        self.enter = True  # keeps player from entering walls
 
-    def intro_text(self):
+    def intro_text(self, player):
         raise NotImplementedError()
 
-    def modify_player(self, player):
+    def modify_player(self, player, wmap):
         raise NotImplementedError()
 
     def adjacent_moves(self, append_list: list = None):
@@ -40,22 +43,75 @@ class MapTile:
         return moves
 
     def available_actions(self, player):
-        """Returns all of the available actions in this room."""
+        """Returns all the available actions in this room."""
         pass
+
+    def adjacent_visited(self, wmap):
+        """Changes visited parameter for 8 adjacent tiles"""
+        # reveals 4 spaces in cardinal directions
+        if world.tile_exists(self.x + 1, self.y, self.z):
+            wmap['World'][(self.x + 1, self.y, self.z)].visited = True
+        if world.tile_exists(self.x - 1, self.y, self.z):
+            wmap['World'][(self.x - 1, self.y, self.z)].visited = True
+        if world.tile_exists(self.x, self.y - 1, self.z):
+            wmap['World'][(self.x, self.y - 1, self.z)].visited = True
+        if world.tile_exists(self.x, self.y + 1, self.z):
+            wmap['World'][(self.x, self.y + 1, self.z)].visited = True
+        # reveals diagonal (ordinal) spaces; not sure if this should be enabled
+        # if world.tile_exists(self.x + 1, self.y + 1, self.z):
+        #     wmap['World'][(self.x + 1, self.y + 1, self.z)].visited = True
+        # if world.tile_exists(self.x - 1, self.y - 1, self.z):
+        #     wmap['World'][(self.x - 1, self.y - 1, self.z)].visited = True
+        # if world.tile_exists(self.x + 1, self.y - 1, self.z):
+        #     wmap['World'][(self.x + 1, self.y - 1, self.z)].visited = True
+        # if world.tile_exists(self.x - 1, self.y + 1, self.z):
+        #     wmap['World'][(self.x - 1, self.y + 1, self.z)].visited = True
+
+    def minimap(self, player, world_dict):
+        """
+        Function that allows the player to view the current dungeon level in terminal
+        15 x 10 grid
+        """
+        level = player.location_z
+        map_array = numpy.zeros((15, 10)).astype(str)
+        for tile in world_dict['World']:
+            if level == tile[2]:
+                tile_x, tile_y = tile[1], tile[0]
+                if world_dict['World'][tile] is None:
+                    continue
+                elif 'stairs' in world_dict['World'][tile].intro_text(player) and world_dict['World'][tile].visited:
+                    map_array[tile_x][tile_y] = "x"  # 75
+                elif world_dict['World'][tile].enter:
+                    map_array[tile_x][tile_y] = " "  # 255
+                else:
+                    if world_dict['World'][tile].visited:
+                        map_array[tile_x][tile_y] = "#"
+        map_array[player.location_y][player.location_x] = "+"  # 125
+        map_array[map_array == "0.0"] = " "
+        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
+        map_array[map_array == "0.0"] = "\u203E"  # overline character
+        map_array = numpy.vstack([map_array, numpy.zeros(map_array.shape[1])])
+        map_array[map_array == "0.0"] = "_"
+        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[0]), 1)
+        map_array[map_array == "0.0"] = "|"
+        map_array = numpy.append(map_array, numpy.zeros(map_array.shape[0]).reshape(-1, 1), 1)
+        map_array[map_array == "0.0"] = "|"
+        for i, l in enumerate(map_array):
+            print(" ".join(l))
 
 
 class Town(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self):
-        pass
+    def intro_text(self, player):
+        return ""
 
-    def modify_player(self, player):
+    def modify_player(self, player, wmap):
         player.state = 'normal'
         player.health = player.health_max
         player.mana = player.mana_max
-        town.town(player)
+        town.town(player, wmap)
 
 
 class EnemyRoom(MapTile):
@@ -63,10 +119,12 @@ class EnemyRoom(MapTile):
         self.enemy = enemy
         super().__init__(x, y, z)
 
-    def modify_player(self, player):
+    def modify_player(self, player, wmap):
+        self.visited = True
+        self.adjacent_visited(wmap)
         if self.enemy.is_alive():
             player.state = 'fight'
-            combat.battle(player, self.enemy)
+            combat.battle(player, self.enemy, wmap)
 
     def available_actions(self, player):
         if self.enemy.is_alive():
@@ -82,13 +140,27 @@ class EnemyRoom(MapTile):
             return self.adjacent_moves([actions.Status()])
 
 
-class EmptyCavePath(MapTile):
-    def intro_text(self):
-        pass
+class Wall(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = False
 
-    def modify_player(self, player):
-        # Room has no action on player
-        pass
+    def intro_text(self, player):
+        return ""
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
+
+
+class EmptyCavePath(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        return ""
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.Status()])
@@ -98,17 +170,17 @@ class RandomEnemyRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.random_enemy(str(z)))
 
-    def intro_text(self):
+    def intro_text(self, player):
         if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
                 if self.enemy.lock:
                     return """
-                    You find a chest!!... but it is locked.
-                    """
+                    {} finds a chest!!... but it is locked.
+                    """.format(player.name.capitalize())
                 else:
                     return """
-                    You find a chest!!
-                    """
+                    {} finds a chest!!
+                    """.format(player.name.capitalize())
             else:
                 return """
                 This room has an open chest.
@@ -116,8 +188,8 @@ class RandomEnemyRoom(EnemyRoom):
         else:
             if self.enemy.is_alive():
                 return """
-                An enemy {} attacks you!
-                """.format(self.enemy.name)
+                An enemy {} attacks {}!
+                """.format(self.enemy.name, player.name.capitalize())
             else:
                 return """
                 A dead {} lies on the ground.
@@ -151,12 +223,12 @@ class MinotaurRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.Minotaur())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
             Boss fight!
-            An enemy {} attacks you!
-            """.format(self.enemy.name)
+            An enemy {} attacks {}!
+            """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
             A dead {} lies on the ground.
@@ -167,12 +239,12 @@ class PseudodragonRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.Pseudodragon())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
             Boss fight!
-            An enemy {} attacks you!
-            """.format(self.enemy.name)
+            An enemy {} attacks {}!
+            """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
             A dead {} lies on the ground.
@@ -183,12 +255,12 @@ class CockatriceRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.Cockatrice())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
             Boss fight!
-            An enemy {} attacks you!
-            """.format(self.enemy.name)
+            An enemy {} attacks {}!
+            """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
             A dead {} lies on the ground.
@@ -199,12 +271,12 @@ class GolemRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.Golem())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
             Boss fight!
-            An enemy {} attacks you!
-            """.format(self.enemy.name)
+            An enemy {} attacks {}!
+            """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
             A dead {} lies on the ground.
@@ -215,12 +287,12 @@ class RedDragonRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.RedDragon())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
             Boss fight!
-            An enemy {} attacks you!
-            """.format(self.enemy.name)
+            An enemy {} attacks {}!
+            """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
             A dead {} lies on the ground.
@@ -231,11 +303,11 @@ class LootRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.Chest())
 
-    def intro_text(self):
+    def intro_text(self, player):
         if self.enemy.is_alive():
             return """
-            You find a chest!!
-            """
+            {} finds a chest!!
+            """.format(player.name.capitalize())
         else:
             return """
             This room has an open chest.
@@ -249,26 +321,50 @@ class LootRoom(EnemyRoom):
 
 
 class StairsUp(MapTile):
-    def intro_text(self):
-        return """
-        You see a flight of stairs going up.
-        """
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
 
-    def modify_player(self, player):
-        pass
+    def intro_text(self, player):
+        return """
+        {} sees a flight of stairs going up.
+        """.format(player.name.capitalize())
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsUp(), actions.Status()])
 
 
 class StairsDown(MapTile):
-    def intro_text(self):
-        return """
-        You see a flight of stairs going down.
-        """
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
 
-    def modify_player(self, player):
-        pass
+    def intro_text(self, player):
+        return """
+        {} sees a flight of stairs going down.
+        """.format(player.name.capitalize())
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.StairsDown(), actions.Status()])
+
+
+class SecretShop(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        return """
+        {} finds a secret shop in the depths of the dungeon.
+        """.format(player.name.capitalize())
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
+        player.state = 'normal'
+        town.secret_shop(player)
+
+    def available_actions(self, player):
+        pass

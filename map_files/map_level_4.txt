@@ -9,7 +9,7 @@ RandomEnemyRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomEnemyRoom	EmptyC
 	EmptyCavePath			RandomEnemyRoom				RandomEnemyRoom	
 RandomEnemyRoom	RandomEnemyRoom			RandomEnemyRoom				EmptyCavePath	
 	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom		RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom	
-			RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
-			EmptyCavePath		EmptyCavePath			EmptyCavePath	
+SecretShop			RandomEnemyRoom		EmptyCavePath			EmptyCavePath	
+EmptyCavePath			EmptyCavePath		EmptyCavePath			EmptyCavePath	
 LootRoom	RandomEnemyRoom	RandomEnemyRoom	RandomEnemyRoom		RandomEnemyRoom	RandomEnemyRoom	EmptyCavePath	RandomEnemyRoom	RandomEnemyRoom
 			RandomEnemyRoom					RandomEnemyRoom	

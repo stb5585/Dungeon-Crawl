@@ -45,6 +45,13 @@ class Offensive(Skill):
         self.subtyp = 'Offensive'
 
 
+class Defensive(Skill):
+
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Defensive'
+
+
 class Stealth(Skill):
 
     def __init__(self, name, description, cost):
@@ -141,7 +148,7 @@ class PiercingStrike(Offensive):
 
     def __init__(self):
         super().__init__(name='Piercing Strike', description='Pierces the enemy\'s defenses, ignoring armor.',
-                         cost=8)
+                         cost=5)
 
 
 class Jump(Offensive):
@@ -205,6 +212,23 @@ class MortalStrike2(Offensive):
         self.crit = 3
 
 
+# Defensive skills
+class ShieldBlock(Defensive):
+
+    def __init__(self):
+        super().__init__(name='Shield Block', description='Ready your shield after attacking in anticipation for a '
+                                                          'melee attack. If the enemy attacks, it is blocked and '
+                                                          'reduces the damage received.',
+                         cost=5)
+
+
+class Parry(Defensive):
+
+    def __init__(self):
+        super().__init__(name='Parry', description='Ward off a melee attack and if successful, counterattack.',
+                         cost=8)
+
+
 # Stealth skills
 class Backstab(Stealth):
 
@@ -217,28 +241,28 @@ class Backstab(Stealth):
 class KidneyPunch(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 1'
                                                           ' turn.',
                          cost=10)
-        self.stun = 2
+        self.stun = 1
 
 
 class KidneyPunch2(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 3'
-                                                          ' turn.',
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 2'
+                                                          ' turns.',
                          cost=22)
-        self.stun = 3
+        self.stun = 2
 
 
 class KidneyPunch3(Stealth):
 
     def __init__(self):
-        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 4'
-                                                          ' turn.',
+        super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned for 3'
+                                                          ' turns.',
                          cost=32)
-        self.stun = 4
+        self.stun = 3
 
 
 class SmokeScreen(Stealth):
@@ -349,6 +373,15 @@ class ShadowSpell(Spell):
         self.subtyp = 'Shadow'
 
 
+class HolySpell(Spell):
+
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost)
+        self.damage = damage
+        self.crit = crit
+        self.subtyp = 'Holy'
+
+
 class DeathSpell(Spell):
 
     def __init__(self, name, description, cost):
@@ -362,7 +395,7 @@ class HealSpell(Spell):
         super().__init__(name, description, cost)
         self.heal = heal
         self.crit = crit
-        self.subtyp = 'Holy'
+        self.subtyp = 'Heal'
 
 
 class EnhanceSpell(Spell):
@@ -383,7 +416,7 @@ class Firebolt(FireSpell):
 
     def __init__(self):
         super().__init__(name='Firebolt', description='A mote of fire propelled at the foe.',
-                         cost=2, damage=6, crit=10)
+                         cost=2, damage=8, crit=10)
         self.cat = 'Attack'
 
 
@@ -457,7 +490,7 @@ class ShadowBolt(ShadowSpell):
     def __init__(self):
         super().__init__(name='Shadow Bolt', description='Launch a bolt of magic infused with dark energy, damaging the'
                                                          ' enemy.',
-                         cost=12, damage=20, crit=5)
+                         cost=8, damage=15, crit=5)
         self.cat = 'Attack'
 
 
@@ -484,7 +517,7 @@ class Corruption(ShadowSpell):
     def __init__(self):
         super().__init__(name='Corruption', description='Damage the enemy and add a debuff that does damage for 2 '
                                                         'turns',
-                         cost=10, damage=10, crit=5)
+                         cost=10, damage=8, crit=5)
         self.cat = 'Attack'
         self.dot_turns = 2
 
@@ -535,6 +568,7 @@ class Doom(DeathSpell):
         super().__init__(name='Doom', description='Places a timer on the enemy\'s life, ending it when the timer '
                                                   'expires.',
                          cost=15)
+        self.cat = 'Kill'
         self.timer = 3
 
 
@@ -543,6 +577,26 @@ class Desoul(DeathSpell):
     def __init__(self):
         super().__init__(name='Desoul', description='Removes the soul from the enemy, instantly killing it.',
                          cost=50)
+        self.cat = 'Kill'
+
+
+class Smite(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Smite', description='The power of light rebukes the enemy.', cost=10, damage=20, crit=4)
+        self.cat = 'Attack'
+
+
+class Smite2(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Smite', description='The power of light rebukes the enemy.', cost=20, damage=35, crit=3)
+
+
+class Smite3(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Smite', description='The power of light rebukes the enemy.', cost=32, damage=50, crit=2)
 
 
 class Heal(HealSpell):
@@ -611,8 +665,11 @@ spell_dict = {'WARRIOR': {},
               'WEAPON MASTER': {},
               'BERSERKER': {},
               'PALADIN': {'2': Heal,
+                          '4': Smite,
                           '16': Restore},
-              'CRUSADER': {'8': Renew},
+              'CRUSADER': {'3': Smite2,
+                           '8': Renew,
+                           '18': Smite3},
               'LANCER': {},
               'DRAGOON': {},
               'MAGE': {'3': Firebolt,
@@ -639,16 +696,16 @@ spell_dict = {'WARRIOR': {},
               'FOOTPAD': {},
               'THIEF': {},
               'ROGUE': {},
-              'INQUISITIVE': {},
-              'SEEKER': {},
+              'INQUISITOR': {},
+              'SEEKER': {'10': Sanctuary},
               'ASSASSIN': {},
               'NINJA': {'20': Desoul}
               }
 
 skill_dict = {'WARRIOR': {'3': ShieldSlam,
-                          '10': DoubleStrike},
-              'WEAPON MASTER': {'10': TripleStrike,
-                                '15': PiercingStrike},
+                          '8': PiercingStrike,
+                          '17': DoubleStrike},  # was level 10; made Warrior OP
+              'WEAPON MASTER': {'10': TripleStrike},
               'BERSERKER': {'5': MortalStrike2,
                             '10': QuadStrike},
               'PALADIN': {'4': ShieldSlam2,
@@ -677,9 +734,8 @@ skill_dict = {'WARRIOR': {'3': ShieldSlam,
               'THIEF': {'5': Lockpick,
                         '12': KidneyPunch},
               'ROGUE': {'10': TripleStrike},
-              'INQUISITIVE': {'20': ShieldSlam},
-              'SEEKER': {'10': Sanctuary,
-                         '25': ShieldSlam2},
+              'INQUISITOR': {'20': ShieldSlam},
+              'SEEKER': {'25': ShieldSlam2},
               'ASSASSIN': {'5': TripleStrike,
                            '8': PoisonStrike,
                            '10': KidneyPunch2,
