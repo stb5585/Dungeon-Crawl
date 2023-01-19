@@ -139,7 +139,7 @@ def shop(player, buy_list, shop_text, in_town=True):
                 print("You have {} gold coins.".format(player.gold))
                 while True:
                     try:
-                        num = int(input("How many would you like to buy? "))
+                        num = int(input("How many {}s would you like to buy? ".format(buy_item().name)))
                         if num * buy_price > player.gold:
                             print("You do not have enough money for that purchase.")
                         elif num == 0:
@@ -147,7 +147,7 @@ def shop(player, buy_list, shop_text, in_town=True):
                         else:
                             buy_price *= num
                             print("That will cost {} gold coins.".format(buy_price))
-                            confirm = input("Do you still want to buy? ").lower()
+                            confirm = input("Do you still want to buy {} {}s? ".format(num, buy_item().name)).lower()
                             if confirm == 'y':
                                 player.gold -= buy_price
                                 player.modify_inventory(buy_item, num=num, sell=False)

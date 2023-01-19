@@ -22,8 +22,8 @@ def define_race():
         print(race)
         choose = input("Are you sure you want to play as a {}? ".format(race_list[race_index]().name.lower()))
         if choose in ['y', 'yes']:
-            os.system('cls' if os.name == 'nt' else 'clear')
             break
+    os.system('cls' if os.name == 'nt' else 'clear')
     return race_list[race_index]()
 
 

@@ -31,8 +31,8 @@ def define_class(race):
         choose = input("Are you sure you want to play as a {}? ".format(
             class_dict[char_class[class_index][0]]().name.lower()))
         if choose in ['y', 'yes']:
-            os.system('cls' if os.name == 'nt' else 'clear')
             break
+    os.system('cls' if os.name == 'nt' else 'clear')
     return class_dict[char_class[class_index][0]]()
 
 
@@ -59,6 +59,11 @@ def equip_check(item, item_typ, class_name):
                   ('SHAMAN', Shaman), ('SOULCATCHER', Soulcatcher)]
     for cls in class_list:
         if class_name == cls[0]:
+            try:
+                if cls[0] in item[0]().restriction:
+                    return True
+            except AttributeError:
+                pass
             if item_typ == 'Accessory':
                 return True
             elif item[0]().subtyp in cls[1]().restrictions[item_typ]:
@@ -203,7 +208,10 @@ class Warrior(Job):
 
     def __init__(self):
         super().__init__(name="WARRIOR", description="A Warrior is a weapon specialist that relies on strength and "
-                                                     "defense.",
+                                                     "defense. While unable to cast spells, they have access to a wide"
+                                                     " variety of combat skills that make them deadly in combat. The "
+                                                     "most stout of the bass classes, this character is best for "
+                                                     "someone who wants to hack and slash their way through the game.",
                          str_plus=1, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.BronzeSword, OffHand=items.WoodShield, Armor=items.HideArmor,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -222,11 +230,15 @@ class WeaponMaster(Job):
 
     def __init__(self):
         super().__init__(name="WEAPON MASTER", description="Weapon Masters focus on the mastery of weapons and their"
-                                                           " skill with them.",
+                                                           " skill with them. They can equip all weapons and learn the"
+                                                           " ability to dual wield one-handed weapons. Since Weapon "
+                                                           "Masters really on dexterity, they lose the ability to wear"
+                                                           " heavy armor and shields.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.GreatAxe, OffHand=items.NoOffHand, Armor=items.ScaleMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm', 'Staff'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm',
+                                                  'Staff'],
                                        'OffHand': ['Fist', 'Dagger', 'Sword', 'Mace'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
@@ -242,7 +254,10 @@ class Berserker(Job):
 
     def __init__(self):
         super().__init__(name="BERSERKER", description="Berserkers are combat masters, driven by pure rage and "
-                                                       "vengeance.",
+                                                       "vengeance. They are so adept at using weapons, they gain the "
+                                                       "ability to dual wield two-handed weapons. Their further "
+                                                       "reliance on maneuverability limits the type of armor to light "
+                                                       "armor.",
                          str_plus=3, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=2,
                          equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.WarHammer,
                                         Armor=items.StuddedCuirboulli, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -261,7 +276,12 @@ class Paladin(Job):
 
     def __init__(self):
         super().__init__(name="PALADIN", description="The Paladin is a holy knight, crusading in the name of good and "
-                                                     "order, and is a divine spell caster.",
+                                                     "order, and is a divine spell caster. Gaining some healing and "
+                                                     "damage spells, paladins become a more balanced class and are "
+                                                     "ideal for players who always forget to restock health potions. "
+                                                     "Paladins hold to the adage that \"the best offense is a good "
+                                                     "defense\", and thus lose the ability to equip two-handed "
+                                                     "weapons.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=2, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.SteelMace, OffHand=items.IronShield, Armor=items.Splint,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -280,7 +300,8 @@ class Crusader(Job):
 
     def __init__(self):
         super().__init__(name="CRUSADER", description="The Crusader is a holy warrior, who values order and justice "
-                                                      "above all else.",
+                                                      "above all else. Crusaders continue the path of the paladin, "
+                                                      "fully embracing all aspects that carry over.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
                          equipment=dict(Weapon=items.AdamantiteMace, OffHand=items.TowerShield,
                                         Armor=items.FullPlate, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -298,8 +319,10 @@ class Lancer(Job):
     """
 
     def __init__(self):
-        super().__init__(name="LANCER", description="The Lancer spend their time specializing in the art of wielding "
-                                                    "polearms and shields.",
+        super().__init__(name="LANCER", description="Lancers are typically more at home on the back of a horse but one "
+                                                    "benefit this affords is the skill to wield a two-handed polearm "
+                                                    "while also using a shield. They are also adept at leaping high "
+                                                    "into the air and driving that polearm into their enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Splint,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -317,12 +340,12 @@ class Dragoon(Job):
     """
 
     def __init__(self):
-        super().__init__(name="DRAGOON", description="Masters of spears, lances and polearms and gifted with "
+        super().__init__(name="DRAGOON", description="Masters of spears, lances, and polearms and gifted with "
                                                      "supernatural abilities, Dragoons have become legendary for their"
                                                      " grace and power. Their intense training, said to have been "
                                                      "passed down by the dragon riders of old, allows these warriors to"
                                                      " leap unnaturally high into the air and strike their foes with "
-                                                     "deadly force from above. ",
+                                                     "deadly force from above.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=2,
                          equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.FullPlate,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -363,8 +386,11 @@ class Sorcerer(Job):
     """
 
     def __init__(self):
-        super().__init__(name="SORCERER", description="A Sorcerer is someone who uses or practices magic derived from "
-                                                      "supernatural, occult, or arcane sources.",
+        super().__init__(name="SORCERER", description="A Sorcerer is someone who practices magic derived from "
+                                                      "supernatural, occult, or arcane sources. They spend most of "
+                                                      "their life reading massive tomes to expand their "
+                                                      "knowledge and the rest of the time applying that knowledge at "
+                                                      "the expense of anything in their path.",
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=0, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -382,9 +408,10 @@ class Wizard(Job):
     """
 
     def __init__(self):
-        super().__init__(name="WIZARD", description="The Wizard is a master of arcane magic, who has studied the "
-                                                    "subject for years. He practices until he is able to command magic "
-                                                    "with ease.",
+        super().__init__(name="WIZARD", description="The Wizard is a master of arcane magic, unparalled in their "
+                                                    "magical ability. Being able to cast the most powerful spells makes"
+                                                    " the wizard an ideal class for anyone who prefers to live fast "
+                                                    "and die hard if not properly prepared.",
                          str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=1, dex_plus=0,
                          equipment=dict(Weapon=items.SerpentStaff, OffHand=items.NoOffHand, Armor=items.WizardRobe,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -402,8 +429,8 @@ class Warlock(Job):
     """
 
     def __init__(self):
-        super().__init__(name="WARLOCK", description="The Warlock is a arcanist, who conjures the dark arts to harness "
-                                                     "their innate magical gift, and perform spell-like feats and "
+        super().__init__(name="WARLOCK", description="The Warlock is an arcanist, who conjures the dark arts to harness"
+                                                     " their innate magical gift, and perform spell-like feats and "
                                                      "abilities.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
@@ -422,7 +449,7 @@ class Necromancer(Job):  # reduced damage from undead
     """
 
     def __init__(self):
-        super().__init__(name="NECROMANCER", description="The Necromancer is highly attune to the dark arts and can "
+        super().__init__(name="NECROMANCER", description="The Necromancer is highly attuned to the dark arts and can "
                                                          "conjure the most demonic of powers, including the practicing"
                                                          " of forbidden blood magic.",
                          str_plus=1, int_plus=1, wis_plus=2, con_plus=2, cha_plus=0, dex_plus=0,
@@ -444,7 +471,10 @@ class Spellblade(Job):
 
     def __init__(self):
         super().__init__(name="SPELLBLADE", description="The Spellblade combines a magical affinity with a higher level"
-                                                        " of martial prowess from the other magical classes.",
+                                                        " of martial prowess from the other magical classes. While they"
+                                                        " no longer gain many of the same arcane spells, the spellblade"
+                                                        " has unlocked the ability to channel the learned magical power"
+                                                        " through their blade to devastate enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.TomeKnowledge, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -487,7 +517,9 @@ class Footpad(Job):
     def __init__(self):
         super().__init__(name="FOOTPAD", description="Footpads are agile and perceptive, with an natural ability of "
                                                      "deftness. While more than capable of holding their own in hand-"
-                                                     "to-hand combat, they truly excel at subterfuge.",
+                                                     "to-hand combat, they truly excel at subterfuge. Footpads are the"
+                                                     " only base class that can dual wield, albeit the offhand weapon "
+                                                     "must be a dagger.",
                          str_plus=0, int_plus=0, wis_plus=0, con_plus=0, cha_plus=0, dex_plus=2,
                          equipment=dict(Weapon=items.BronzeSword, OffHand=items.BronzeDagger, Armor=items.PaddedArmor,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -577,7 +609,7 @@ class Seeker(Job):
         super().__init__(name="SEEKER", description="Seekers are very good at moving through the dungeon, being able to"
                                                     " levitate, locate other characters, and teleport. They can’t "
                                                     "directly kill monsters with their magical abilities, but a Seeker "
-                                                    "does well with a weapon in hand.  They are also the best at "
+                                                    "does well with a weapon in hand. They are also the best at "
                                                     "mapping the dungeon and detecting any types of ‘anomalies’ they "
                                                     "may encounter in the depths.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=0,
@@ -616,18 +648,18 @@ class Assassin(Job):
 class Ninja(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
-    Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills
+    Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; the only class
+      that can equip Ninja swords
     Cons: Lower strength and constitution; can only equip daggers
     """
 
     def __init__(self):
-        super().__init__(name="NINJA", description="Ninjas are weapons masters and can use almost all weapons including"
-                                                   " their hands. Since a Ninja desires quickness, they are very "
-                                                   "specific about the items they use. Ninjas are not allowed to wear"
-                                                   " most types of armor and other items. However, having access to "
-                                                   "special weapons that only they can use, Ninjas possess the skills "
-                                                   "of Critically hitting and Backstabbing their opponents, along with "
-                                                   "moderate thieving skills.",
+        super().__init__(name="NINJA", description="Since a Ninja desires quickness, they are very specific about the "
+                                                   "items they use. Ninjas are not allowed to wear most types of armor "
+                                                   "and other items. However, having access to special weapons that "
+                                                   "only they can use, Ninjas possess the skills of Critically hitting "
+                                                   "and Backstabbing their opponents, along with moderate thieving "
+                                                   "skills.",
                          str_plus=0, int_plus=1, wis_plus=2, con_plus=0, cha_plus=0, dex_plus=3,
                          equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.AdamantiteDagger,
                                         Armor=items.StuddedCuirboulli, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -655,7 +687,7 @@ class Healer(Job):
                          equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
                          restrictions={'Weapon': ['Fist', 'Mace', 'Staff'],
-                                       'OffHand': ['Shield'],
+                                       'OffHand': ['Shield', 'Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=1)
 
@@ -665,7 +697,7 @@ class Cleric(Job):
     Promotion: Healer -> Cleric -> Templar
     Pros: Can equip medium armor; gains additional protective abilities including turn undead; increased strength and
     constitution
-    Cons: gains fewer healing spells compared to Priest class; no longer gains holy damage spells
+    Cons: gains fewer healing spells compared to Priest class; no longer gains holy damage spells; lose access to tomes
     """
 
     def __init__(self):
@@ -687,7 +719,8 @@ class Templar(Job):
     Promotion: Healer -> Cleric -> Templar
     Pros: Can equip heavy armor and hammers; gains additional protective abilities including turn undead; increased
     strength and constitution
-    Cons: gains fewer healing spells compared to Archbishop class; no longer gains holy damage spells
+    Cons: gains fewer healing spells compared to Archbishop class; no longer gains holy damage spells; lose access to
+    tomes
     """
 
     def __init__(self):
@@ -709,7 +742,7 @@ class Priest(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
     Pros: Access to the best healing and holy spells; only class that can equip the holy staff and Princess Guard
-    Cons: Can only equip cloth armor
+    Cons: Can only equip cloth armor; lose access to shields
     """
 
     def __init__(self):
@@ -728,7 +761,7 @@ class Archbishop(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
     Pros: Access to the best healing and holy spells; only class that can equip the holy staff and Princess Guard
-    Cons: Can only equip cloth armor
+    Cons: Can only equip cloth armor; lose access to shields
     """
 
     def __init__(self):
@@ -747,7 +780,8 @@ class Monk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
     Pros: Adds strength AND dexterity to hit and damage rolls when equipped with fist(s)
-    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains
+    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains; can only equip fist weapons in
+    offhand
     """
 
     def __init__(self):
@@ -767,7 +801,8 @@ class MasterMonk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
     Pros: Adds strength AND dexterity to hit and damage rolls when equipped with fist(s)
-    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains
+    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains; can only equip fist weapons in
+    offhand
     """
 
     def __init__(self):

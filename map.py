@@ -25,19 +25,31 @@ class MapTile:
     def modify_player(self, player, wmap):
         raise NotImplementedError()
 
-    def adjacent_moves(self, append_list: list = None):
+    def adjacent_moves(self, append_list: list = None, blocked=None):
         """Returns all move actions for adjacent tiles."""
         if append_list is None:
             append_list = []
         moves = []
-        if world.tile_exists(self.x + 1, self.y, self.z):
-            moves.append(actions.MoveEast())
-        if world.tile_exists(self.x - 1, self.y, self.z):
-            moves.append(actions.MoveWest())
-        if world.tile_exists(self.x, self.y - 1, self.z):
-            moves.append(actions.MoveNorth())
-        if world.tile_exists(self.x, self.y + 1, self.z):
-            moves.append(actions.MoveSouth())
+        try:
+            if world.tile_exists(self.x + 1, self.y, self.z).enter and blocked != "East":
+                moves.append(actions.MoveEast())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x - 1, self.y, self.z).enter and blocked != "West":
+                moves.append(actions.MoveWest())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x, self.y - 1, self.z).enter and blocked != "North":
+                moves.append(actions.MoveNorth())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x, self.y + 1, self.z).enter and blocked != "South":
+                moves.append(actions.MoveSouth())
+        except AttributeError:
+            pass
         for item in append_list:
             moves.append(item)
         return moves
@@ -57,15 +69,6 @@ class MapTile:
             wmap['World'][(self.x, self.y - 1, self.z)].visited = True
         if world.tile_exists(self.x, self.y + 1, self.z):
             wmap['World'][(self.x, self.y + 1, self.z)].visited = True
-        # reveals diagonal (ordinal) spaces; not sure if this should be enabled
-        # if world.tile_exists(self.x + 1, self.y + 1, self.z):
-        #     wmap['World'][(self.x + 1, self.y + 1, self.z)].visited = True
-        # if world.tile_exists(self.x - 1, self.y - 1, self.z):
-        #     wmap['World'][(self.x - 1, self.y - 1, self.z)].visited = True
-        # if world.tile_exists(self.x + 1, self.y - 1, self.z):
-        #     wmap['World'][(self.x + 1, self.y - 1, self.z)].visited = True
-        # if world.tile_exists(self.x - 1, self.y + 1, self.z):
-        #     wmap['World'][(self.x - 1, self.y + 1, self.z)].visited = True
 
     def minimap(self, player, world_dict):
         """
@@ -73,7 +76,8 @@ class MapTile:
         15 x 10 grid
         """
         level = player.location_z
-        map_array = numpy.zeros((15, 10)).astype(str)
+        map_size = (20, 20)
+        map_array = numpy.zeros(map_size).astype(str)
         for tile in world_dict['World']:
             if level == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
@@ -116,8 +120,11 @@ class Town(MapTile):
 
 class EnemyRoom(MapTile):
     def __init__(self, x, y, z, enemy):
-        self.enemy = enemy
         super().__init__(x, y, z)
+        self.enemy = enemy
+
+    def intro_text(self, player):
+        return ""
 
     def modify_player(self, player, wmap):
         self.visited = True
@@ -152,6 +159,20 @@ class Wall(MapTile):
         self.adjacent_visited(wmap)
 
 
+class RandomTile(MapTile):
+    """
+    Dummy tile; world.py will see this and randomly pick between empty or random enemy
+    """
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        raise NotImplementedError()
+
+    def modify_player(self, player, wmap):
+        raise NotImplementedError()
+
+
 class EmptyCavePath(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -164,6 +185,86 @@ class EmptyCavePath(MapTile):
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoor(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.LockedDoor())
+
+    def intro_text(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return """
+                {} finds a locked door. If only you could find the key...
+                """.format(player.name.capitalize())
+            else:
+                return """
+                There is an unlocked door.
+                """
+        else:
+            return """
+            There is an open door.
+            """
+
+
+class LockedDoorEast(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorEast, self).__init__(x, y, z)
+        self.blocked = "East"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorWest(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorWest, self).__init__(x, y, z)
+        self.blocked = "West"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorNorth(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorNorth, self).__init__(x, y, z)
+        self.blocked = "North"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorSouth(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorSouth, self).__init__(x, y, z)
+        self.blocked = "South"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
 
 
 class RandomEnemyRoom(EnemyRoom):
@@ -199,9 +300,9 @@ class RandomEnemyRoom(EnemyRoom):
         if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
                 if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem()])
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
                 else:
-                    return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
             else:
                 return self.adjacent_moves([actions.Status()])
         else:
@@ -315,7 +416,7 @@ class LootRoom(EnemyRoom):
 
     def available_actions(self, player):
         if self.enemy.is_alive():
-            return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
         else:
             return self.adjacent_moves([actions.Status()])
 

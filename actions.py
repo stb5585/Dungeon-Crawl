@@ -93,9 +93,9 @@ class UseItem(Action):
         super().__init__(method=character.Player.use_item, name="Item", hotkey='p', enemy=None)
 
 
-class OpenChest(Action):
+class Open(Action):
     def __init__(self, enemy):
-        super().__init__(method=character.Player.chest, name="Open", hotkey='o', enemy=enemy)
+        super().__init__(method=character.Player.open_up, name="Open", hotkey='o', enemy=enemy)
 
 
 class ListSpecials(Action):

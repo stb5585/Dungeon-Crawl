@@ -33,7 +33,7 @@ class Skill(Ability):
 
 
 """
-Spell section
+Skill section
 """
 
 
@@ -190,6 +190,7 @@ class TripleCast(Offensive):
     """
     Replaces DoubleCast
     """
+
     def __init__(self):
         super().__init__(name='Multi-Cast', description='Cast three spells at once.',
                          cost=20)
@@ -591,12 +592,38 @@ class Smite2(HolySpell):
 
     def __init__(self):
         super().__init__(name='Smite', description='The power of light rebukes the enemy.', cost=20, damage=35, crit=3)
+        self.cat = 'Attack'
 
 
 class Smite3(HolySpell):
 
     def __init__(self):
         super().__init__(name='Smite', description='The power of light rebukes the enemy.', cost=32, damage=50, crit=2)
+        self.cat = 'Attack'
+
+
+class Holy(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Holy', description='The enemy is bathed in a holy light, cleansing it of evil.',
+                         cost=4, damage=10, crit=10)
+        self.cat = 'Attack'
+
+
+class Holy2(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Holy', description='The enemy is bathed in a holy light, cleansing it of evil.',
+                         cost=12, damage=24, crit=8)
+        self.cat = 'Attack'
+
+
+class Holy3(HolySpell):
+
+    def __init__(self):
+        super().__init__(name='Holy', description='The enemy is bathed in a holy light, cleansing it of evil.',
+                         cost=28, damage=45, crit=6)
+        self.cat = 'Attack'
 
 
 class Heal(HealSpell):
@@ -622,7 +649,7 @@ class Renew(HealSpell):
     def __init__(self):
         super().__init__(name='Renew', description='A glowing light envelopes your body and heals you for up to 75% '
                                                    'of your health (33% chance to double).',
-                         cost=25, heal=0.50, crit=2)
+                         cost=35, heal=0.75, crit=2)
         self.cat = 'Heal'
 
 
@@ -661,6 +688,73 @@ class Sanctuary(MovementSpell):
 
 
 # Parameters
+skill_dict = {'WARRIOR': {'3': ShieldSlam,
+                          '8': PiercingStrike,
+                          '13': Parry,
+                          '17': DoubleStrike},  # was level 10; made Warrior OP
+              'WEAPON MASTER': {'3': MortalStrike,
+                                '10': TripleStrike},
+              'BERSERKER': {'5': MortalStrike2,
+                            '10': QuadStrike},
+              'PALADIN': {'4': ShieldSlam2,
+                          '6': ShieldBlock,
+                          '20': ShieldSlam3},
+              'CRUSADER': {'5': MortalStrike,
+                           '10': ShieldSlam4},
+              'LANCER': {'2': MortalStrike,
+                         '5': Jump,
+                         '15': DoubleJump},
+              'DRAGOON': {'5': ShieldSlam2,
+                          '10': ShieldBlock,
+                          '12': MortalStrike2,
+                          '20': TripleJump,
+                          '25': ShieldSlam3},
+              'MAGE': {},
+              'SORCERER': {'10': DoubleCast},
+              'WIZARD': {'15': TripleCast},
+              'WARLOCK': {'5': HealthDrain,
+                          '15': ManaDrain},
+              'NECROMANCER': {'10': HealthManaDrain},
+              'SPELLBLADE': {'15': Parry},
+              'KNIGHT ENCHANTER': {'10': DoubleStrike},
+              'FOOTPAD': {'5': SmokeScreen,
+                          '8': Backstab,
+                          '10': Steal,
+                          '12': KidneyPunch,
+                          '20': Parry},
+              'THIEF': {'5': Lockpick,
+                        '8': DoubleStrike,
+                        '12': KidneyPunch2},
+              'ROGUE': {'10': TripleStrike},
+              'INQUISITOR': {'2': ShieldSlam},
+              'SEEKER': {'5': ShieldSlam2,
+                         '25': ShieldSlam3},
+              'ASSASSIN': {'5': TripleStrike,
+                           '8': PoisonStrike,
+                           '10': KidneyPunch2,
+                           '15': Lockpick,
+                           '20': QuadStrike},
+              'NINJA': {'4': PoisonStrike2,
+                        '20': KidneyPunch3,
+                        '25': FlurryBlades},
+              'HEALER': {},
+              'CLERIC': {},
+              'TEMPLAR': {'2': Parry},
+              'PRIEST': {},
+              'ARCHBISHOP': {'5': DoubleCast},
+              'MONK': {'3': DoubleStrike,
+                       '19': TripleStrike},
+              'MASTER MONK': {'10': QuadStrike},
+              'NATURALIST': {},
+              'DRUID': {},
+              'LYCAN': {},
+              'DIVINER': {'18': DoubleCast},
+              'GEOMANCER': {'25': TripleCast},
+              'SHAMAN': {'14': DoubleStrike},
+              'SOULCATCHER': {'2': Parry,
+                              '9': TripleStrike},
+              }
+
 spell_dict = {'WARRIOR': {},
               'WEAPON MASTER': {},
               'BERSERKER': {},
@@ -699,49 +793,24 @@ spell_dict = {'WARRIOR': {},
               'INQUISITOR': {},
               'SEEKER': {'10': Sanctuary},
               'ASSASSIN': {},
-              'NINJA': {'20': Desoul}
+              'NINJA': {'20': Desoul},
+              'HEALER': {'4': Heal,
+                         '10': Holy,
+                         '18': Restore},
+              'CLERIC': {'2': Smite,
+                         '16': Smite2},
+              'TEMPLAR': {'10': Smite3},
+              'PRIEST': {'3': Holy2,
+                         '8': Renew},
+              'ARCHBISHOP': {'4': Holy3},
+              'MONK': {},
+              'MASTER MONK': {},
+              'NATURALIST': {},
+              'DRUID': {},
+              'LYCAN': {},
+              'DIVINER': {},
+              'GEOMANCER': {},
+              'SHAMAN': {},
+              'SOULCATCHER': {'12': Desoul},
               }
 
-skill_dict = {'WARRIOR': {'3': ShieldSlam,
-                          '8': PiercingStrike,
-                          '17': DoubleStrike},  # was level 10; made Warrior OP
-              'WEAPON MASTER': {'10': TripleStrike},
-              'BERSERKER': {'5': MortalStrike2,
-                            '10': QuadStrike},
-              'PALADIN': {'4': ShieldSlam2,
-                          '20': ShieldSlam3},
-              'CRUSADER': {'5': PiercingStrike,
-                           '10': ShieldSlam4},
-              'LANCER': {'2': PiercingStrike,
-                         '5': Jump,
-                         '15': DoubleJump},
-              'DRAGOON': {'5': ShieldSlam2,
-                          '20': TripleJump,
-                          '25': ShieldSlam3},
-              'MAGE': {},
-              'SORCERER': {'10': DoubleCast},
-              'WIZARD': {'15': TripleCast},
-              'WARLOCK': {'5': HealthDrain,
-                          '15': ManaDrain},
-              'NECROMANCER': {'10': HealthManaDrain},
-              'SPELLBLADE': {},
-              'KNIGHT ENCHANTER': {'10': DoubleStrike},
-              'FOOTPAD': {'5': SmokeScreen,
-                          '8': Backstab,
-                          '10': Steal,
-                          '12': KidneyPunch,
-                          '15': DoubleStrike},
-              'THIEF': {'5': Lockpick,
-                        '12': KidneyPunch},
-              'ROGUE': {'10': TripleStrike},
-              'INQUISITOR': {'20': ShieldSlam},
-              'SEEKER': {'25': ShieldSlam2},
-              'ASSASSIN': {'5': TripleStrike,
-                           '8': PoisonStrike,
-                           '10': KidneyPunch2,
-                           '15': Lockpick,
-                           '20': QuadStrike},
-              'NINJA': {'4': PoisonStrike2,
-                        '20': KidneyPunch3,
-                        '25': FlurryBlades}
-              }

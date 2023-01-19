@@ -50,7 +50,11 @@ def random_item(z: int) -> object:
                                        [reciprocal(OakHammer().rarity), reciprocal(Maul().rarity),
                                         reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
                                         reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity)],
-                                       ['1', '1', '2', '2', '3', '4']]
+                                       ['1', '1', '2', '2', '3', '4']],
+                            'Ninja Blades': [[Tanto, Wakizashi, Ninjato],
+                                             [reciprocal(Tanto().rarity), reciprocal(Wakizashi().rarity),
+                                              reciprocal(Ninjato().rarity)],
+                                             ['4', '5', '5']]
                             },
                  'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield],
                                         [reciprocal(WoodShield().rarity), reciprocal(BronzeShield().rarity),
@@ -112,7 +116,10 @@ def random_item(z: int) -> object:
                                       reciprocal(CharismaPotion().rarity), reciprocal(DexterityPotion().rarity),
                                       reciprocal(AardBeing().rarity)],
                                      ['1', '1', '2', '2', '2', '2', '2', '2', '5']]
-                            }
+                            },
+                 'Misc': {'Key': [[Key, OldKey],
+                                  [reciprocal(Key().rarity), reciprocal(OldKey().rarity)],
+                                  ['1', '2']]}
                  }
 
     while True:
@@ -121,18 +128,14 @@ def random_item(z: int) -> object:
         treasure = random.choices(item_dict[rand_group][rand_type][0], item_dict[rand_group][rand_type][1])[0]
         item_index = item_dict[rand_group][rand_type][0].index(treasure)
         item_loc = int(item_dict[rand_group][rand_type][2][item_index])
-        if rand_type == 'Stat':
-            if z >= item_loc:
-                rand_item = treasure
-                break
-        elif item_loc + 1 >= z >= item_loc - 1:
+        if z >= item_loc >= (z - 1):
             rand_item = treasure
             break
     return rand_item
 
 
 def remove(typ):
-    typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor)
+    typ_dict = dict(Weapon=NoWeapon, OffHand=NoOffHand, Armor=NoArmor, Pendant=NoPendant, Ring=NoRing)
     return typ_dict[typ]
 
 
@@ -149,7 +152,7 @@ class Item:
         self.name = name
         self.description = description
         self.value = value
-        self.restriction = False
+        self.restriction = list()
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
@@ -661,6 +664,33 @@ class Skullcrusher(Weapon):
                          off=False)
 
 
+class Tanto(Weapon):
+
+    def __init__(self):
+        super().__init__(name="TANTO", description="",
+                         value=15000, rarity=40, damage=10, crit=3, handed=1, subtyp='Ninja', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+
+
+class Wakizashi(Weapon):
+
+    def __init__(self):
+        super().__init__(name="WAKIZASHI", description="",
+                         value=65000, rarity=60, damage=14, crit=2, handed=1, subtyp='Ninja', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+
+
+class Ninjato(Weapon):
+
+    def __init__(self):
+        super().__init__(name="NINJATO", description="",
+                         value=100000, rarity=75, damage=20, crit=1, handed=1, subtyp='Ninja', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+
+
 class Armor(Item):
 
     def __init__(self, name, description, value, rarity, armor, subtyp, unequip):
@@ -717,7 +747,7 @@ class GoldCloak(Armor):
 class CloakEnchantment(Armor):
 
     def __init__(self):
-        super().__init__(name="CLOAK of ENCHANTMENT", description="A magical cloak that shields the wearer from all "
+        super().__init__(name="CLOAK OF ENCHANTMENT", description="A magical cloak that shields the wearer from all "
                                                                   "forms of attack.",
                          value=15000, rarity=35, armor=7, subtyp='Cloth', unequip=False)
 
@@ -733,7 +763,7 @@ class WizardRobe(Armor):
 class MerlinRobe(Armor):
 
     def __init__(self):
-        super().__init__(name="ROBES of MERLIN", description="The enchanted robes of Merlin the enchanter.",
+        super().__init__(name="ROBES OF MERLIN", description="The enchanted robes of Merlin the enchanter.",
                          value=75000, rarity=50, armor=12, subtyp='Cloth', unequip=False)
 
 
@@ -992,7 +1022,7 @@ class Book(OffHand):
 class TomeKnowledge(OffHand):
 
     def __init__(self):
-        super().__init__(name="TOME of KNOWLEDGE", description="A tome containing secrets to enhancing spells.",
+        super().__init__(name="TOME OF KNOWLEDGE", description="A tome containing secrets to enhancing spells.",
                          value=500, rarity=5, mod=5, subtyp='Tome', unequip=False)
 
 
@@ -1006,7 +1036,7 @@ class Grimoire(OffHand):
 class BookShadows(OffHand):
 
     def __init__(self):
-        super().__init__(name="BOOK of SHADOWS", description="The Book of Shadows is a book containing religious text "
+        super().__init__(name="BOOK OF SHADOWS", description="The Book of Shadows is a book containing religious text "
                                                              "and instructions for magical rituals found within the "
                                                              "Neopagan religion of Wicca, and in many pagan practices.",
                          value=10000, rarity=35, mod=10, subtyp='Tome', unequip=False)
@@ -1292,6 +1322,14 @@ class Key(Misc):
                          subtyp='Key')
 
 
+class OldKey(Misc):
+
+    def __init__(self):
+        super().__init__(name="OLDKEY", description="Unlocks doors that may lead to either valuable treasure or to "
+                                                    "powerful enemies.",
+                         value=5000, rarity=40, subtyp='Key')
+
+
 # Parameters
 items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger, Carnwennan],
                          'Sword': [BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword, Excalibur],
@@ -1300,7 +1338,8 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                          'Polearm': [Spear, Lance, Pike, Halberd, Trident, Gungnir],
                          'Staff': [PineStaff, OakStaff, IronshodStaff, SerpentStaff, DragonStaff, MithrilshodStaff,
                                    PrincessGuard],
-                         'Hammer': [OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher]},
+                         'Hammer': [OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher],
+                         'Ninja Blades': [Tanto, Wakizashi, Ninjato]},
               'OffHand': {'Shield': [WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
                                      MedusaShield],
                           'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon, Magus]},
@@ -1315,4 +1354,4 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                          'Elixir': [Elixir, Megalixir],
                          'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
                                   CharismaPotion, DexterityPotion, AardBeing]},
-              'Misc': {'Key': [Key]}}
+              'Misc': {'Key': [Key, OldKey]}}
