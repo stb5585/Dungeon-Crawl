@@ -12,10 +12,40 @@ import character
 import storyline
 import tutorial
 
-
 # Parameters
 home = os.getcwd()
 save_dir = "save_files"
+
+
+def unobtainium_room():
+    texts = [
+        "A brilliant column of light highlights the small piece of ore on a pedestal at the center of the room.",
+        "You approach it with caution but find no traps or tricks.",
+        "This must be the legendary ore you have heard so much about...",
+        "You reach for it, half expecting to be obliterated...but all you feel is warmth throughout your body.",
+        "You have obtained the Unobtainium!"
+        ]
+    for text in texts:
+        time.sleep(0.1)
+        storyline.slow_type(text)
+    time.sleep(2)
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def final_boss(player):
+    texts = [
+        "You enter a massive room. A great beast greets you.",
+        "\"Hello {}, I've heard stories of an adventurer making easy work of the creatures scattered throughout the "
+        "labyrinth.".format(player.name),
+        "It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel, knowing that one of us"
+        " will not leave here alive.",
+        "Let us settle this!\""
+        ]
+    for text in texts:
+        time.sleep(0.1)
+        storyline.slow_type(text)
+    time.sleep(2)
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def play(timer):
@@ -41,24 +71,30 @@ def play(timer):
         else:
             print("There are no save files to load. Proceeding to new character creation.")
             player = character.new_char()
-        world.load_tiles(world_dict=world_dict)
+        world.save_world(world_dict=world_dict)
     else:
         player = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
-        if (time.time() - timer) // (900 * player.pro_level):
-            world.load_tiles(world_dict=world_dict)
-            timer = time.time()
         room = world.tile_exists(player.location_x, player.location_y, player.location_z)
         room.modify_player(player, world_dict)
         if player.is_alive():
+            if (time.time() - timer) // (900 * player.pro_level):
+                world.load_tiles(world_dict=world_dict, reload=True)
+                timer = time.time()
             room = world.tile_exists(player.location_x, player.location_y, player.location_z)
+            try:
+                if room.special:
+                    room.special_text(player)
+            except AttributeError:
+                pass
             room.modify_player(player, world_dict)
             os.system('cls' if os.name == 'nt' else 'clear')
             room.minimap(player, world_dict)
             if room.intro_text(player) is not None:
                 print(room.intro_text(player))
-            print("Health: {}/{}  Mana: {}/{}".format(player.health, player.health_max, player.mana, player.mana_max))
+            print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player.name, player.health, player.health_max,
+                                                                    player.mana, player.mana_max))
             print("Choose an action:")
             available_actions = room.available_actions(player)
             for action in available_actions:
@@ -69,13 +105,7 @@ def play(timer):
                     player.do_action(action, **action.kwargs)
                     break
         else:
-            time.sleep(2)
             player.death()
-            player.health = player.health_max
-            player.mana = player.mana_max
-            player.location_x, player.location_y, player.location_z = world.starting_position
-            print("You wake up in town.")
-            time.sleep(2)
 
 
 if __name__ == "__main__":

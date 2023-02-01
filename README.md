@@ -40,7 +40,8 @@ FUTURE DEVELOPMENT:
     - Allow a character to change class
     - Give players alignments (G/N/E) with item restrictions
     - Add a tutorial so players can better understand the gameplay
-    - Implement map editor 
+    - Implement map editor
+    - Create battle arena
 
 
 FILES:

@@ -31,6 +31,9 @@ def random_item(z: int) -> object:
                                       reciprocal(SteelFist().rarity), reciprocal(AdamantiteFist().rarity),
                                       reciprocal(MithrilFist().rarity)],
                                      ['1', '2', '3', '4', '5']],
+                            'Ninja Blades': [[Tanto, Wakizashi],
+                                             [reciprocal(Tanto().rarity), reciprocal(Wakizashi().rarity)],
+                                             ['4', '5']],
                             'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe],
                                     [reciprocal(Axe().rarity), reciprocal(BattleAxe().rarity),
                                      reciprocal(GreatAxe().rarity), reciprocal(AdamantiteAxe().rarity),
@@ -41,20 +44,16 @@ def random_item(z: int) -> object:
                                          reciprocal(Pike().rarity), reciprocal(Halberd().rarity),
                                          reciprocal(Trident().rarity)],
                                         ['1', '1', '2', '3', '4']],
-                            'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, DragonStaff, MithrilshodStaff],
+                            'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, RuneStaff, MithrilshodStaff],
                                       [reciprocal(PineStaff().rarity), reciprocal(OakStaff().rarity),
                                        reciprocal(IronshodStaff().rarity), reciprocal(SerpentStaff().rarity),
-                                       reciprocal(DragonStaff().rarity), reciprocal(MithrilshodStaff().rarity)],
+                                       reciprocal(RuneStaff().rarity), reciprocal(MithrilshodStaff().rarity)],
                                       ['1', '1', '2', '3', '3', '4']],
                             'Hammer': [[OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul],
                                        [reciprocal(OakHammer().rarity), reciprocal(Maul().rarity),
                                         reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
                                         reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity)],
                                        ['1', '1', '2', '2', '3', '4']],
-                            'Ninja Blades': [[Tanto, Wakizashi, Ninjato],
-                                             [reciprocal(Tanto().rarity), reciprocal(Wakizashi().rarity),
-                                              reciprocal(Ninjato().rarity)],
-                                             ['4', '5', '5']]
                             },
                  'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield],
                                         [reciprocal(WoodShield().rarity), reciprocal(BronzeShield().rarity),
@@ -66,15 +65,15 @@ def random_item(z: int) -> object:
                                        reciprocal(Grimoire().rarity), reciprocal(BookShadows().rarity),
                                        reciprocal(DragonRouge().rarity), reciprocal(Vedas().rarity),
                                        reciprocal(Necronomicon().rarity)],
-                                      ['1', '2', '3', '3', '4', '5']]},
+                                      ['1', '2', '3', '3', '4', '4', '5']]},
                  'Armor': {'Cloth': [[Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe],
                                      [reciprocal(Tunic().rarity), reciprocal(ClothCloak().rarity),
                                       reciprocal(SilverCloak().rarity), reciprocal(GoldCloak().rarity),
                                       reciprocal(CloakEnchantment().rarity), reciprocal(WizardRobe().rarity)],
                                      ['1', '1', '2', '3', '4', '5']],
-                           'Light': [[PaddedArmor, LeatherArmor, Cuirboulli, Studded, StuddedCuirboulli],
+                           'Light': [[PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli],
                                      [reciprocal(PaddedArmor().rarity), reciprocal(LeatherArmor().rarity),
-                                      reciprocal(Cuirboulli().rarity), reciprocal(Studded().rarity),
+                                      reciprocal(Cuirboulli().rarity), reciprocal(StuddedLeather().rarity),
                                       reciprocal(StuddedCuirboulli().rarity)],
                                      ['1', '1', '2', '3', '4']],
                            'Medium': [[HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate],
@@ -128,7 +127,7 @@ def random_item(z: int) -> object:
         treasure = random.choices(item_dict[rand_group][rand_type][0], item_dict[rand_group][rand_type][1])[0]
         item_index = item_dict[rand_group][rand_type][0].index(treasure)
         item_loc = int(item_dict[rand_group][rand_type][2][item_index])
-        if z >= item_loc >= (z - 1):
+        if int(z) >= item_loc >= (int(z) - 2):
             rand_item = treasure
             break
     return rand_item
@@ -170,6 +169,8 @@ class Weapon(Item):
         self.unequip = unequip
         self.off = off
         self.typ = "Weapon"
+        self.ignore = False
+        self.disarm = True
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}\n{}-handed".format(self.name,
@@ -182,7 +183,7 @@ class NoWeapon(Weapon):
 
     def __init__(self):
         super().__init__(name="BARE HANDS", description="Nothing but your fists.",
-                         value=0, rarity=0, damage=0, crit=10, handed=1, subtyp='None', unequip=True,
+                         value=0, rarity=99, damage=0, crit=10, handed=1, subtyp='None', unequip=True,
                          off=True)
 
 
@@ -294,7 +295,7 @@ class Carnwennan(Weapon):
     def __init__(self):
         super().__init__(name="CARNWENNAN", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
-                         value=50000, rarity=50, damage=12, crit=1, handed=1, subtyp='Dagger', unequip=False,
+                         value=0, rarity=99, damage=15, crit=1, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
@@ -353,7 +354,7 @@ class Excalibur(Weapon):
     def __init__(self):
         super().__init__(name="EXCALIBUR", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
-                         value=50000, rarity=50, damage=15, crit=3, handed=1, subtyp='Sword', unequip=False,
+                         value=0, rarity=99, damage=18, crit=3, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
@@ -423,7 +424,7 @@ class Mjolnir(Weapon):
         super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
                                                      "mythology as one of the most fearsome and powerful weapons in "
                                                      "existence, capable of leveling mountains.",
-                         value=50000, rarity=50, damage=18, crit=6, handed=1, subtyp='Mace', unequip=False,
+                         value=0, rarity=99, damage=20, crit=6, handed=1, subtyp='Mace', unequip=False,
                          off=True)
 
 
@@ -473,7 +474,7 @@ class Jarnbjorn(Weapon):
 
     def __init__(self):
         super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=60000, rarity=50, damage=20, crit=3, handed=2, subtyp='Axe', unequip=False,
+                         value=0, rarity=99, damage=23, crit=3, handed=2, subtyp='Axe', unequip=False,
                          off=False)
 
 
@@ -523,7 +524,7 @@ class Gungnir(Weapon):
 
     def __init__(self):
         super().__init__(name="GUNGNIR", description="Legendary spear of the god Odin. Old Norse for \"swaying one\".",
-                         value=60000, rarity=50, damage=18, crit=2, handed=2, subtyp='Polearm', unequip=False,
+                         value=0, rarity=99, damage=22, crit=2, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
 
@@ -591,17 +592,18 @@ class DragonStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="DRAGON STAFF", description="A magic staff, shaped to appear as a dragon.",
-                         value=50000, rarity=50, damage=16, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         value=0, rarity=99, damage=20, crit=5, handed=2, subtyp='Staff', unequip=False,
                          off=False)
+        self.restriction = ['Berserker', 'Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
 
 
 class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
-                         value=60000, rarity=55, damage=17, crit=6, handed=2, subtyp='Staff', unequip=False,
+                         value=0, rarity=99, damage=21, crit=6, handed=2, subtyp='Staff', unequip=False,
                          off=False)
-        self.restriction = ['Priest', 'Archbishop']
+        self.restriction = ['Archbishop']
 
 
 class OakHammer(Weapon):
@@ -660,7 +662,7 @@ class Skullcrusher(Weapon):
     def __init__(self):
         super().__init__(name="SKULLCRUSHER", description="A massive hammer with the power to pulverize an enemy's "
                                                           "skull to powder.",
-                         value=60000, rarity=50, damage=24, crit=5, handed=2, subtyp='Hammer', unequip=False,
+                         value=0, rarity=99, damage=26, crit=5, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
 
@@ -668,7 +670,7 @@ class Tanto(Weapon):
 
     def __init__(self):
         super().__init__(name="TANTO", description="",
-                         value=15000, rarity=40, damage=10, crit=3, handed=1, subtyp='Ninja', unequip=False,
+                         value=15000, rarity=40, damage=8, crit=3, handed=1, subtyp='Ninja', unequip=False,
                          off=True)
         self.restriction = ['Ninja']
 
@@ -677,7 +679,7 @@ class Wakizashi(Weapon):
 
     def __init__(self):
         super().__init__(name="WAKIZASHI", description="",
-                         value=65000, rarity=60, damage=14, crit=2, handed=1, subtyp='Ninja', unequip=False,
+                         value=65000, rarity=60, damage=12, crit=2, handed=1, subtyp='Ninja', unequip=False,
                          off=True)
         self.restriction = ['Ninja']
 
@@ -686,7 +688,7 @@ class Ninjato(Weapon):
 
     def __init__(self):
         super().__init__(name="NINJATO", description="",
-                         value=100000, rarity=75, damage=20, crit=1, handed=1, subtyp='Ninja', unequip=False,
+                         value=0, rarity=99, damage=18, crit=1, handed=1, subtyp='Ninja', unequip=False,
                          off=True)
         self.restriction = ['Ninja']
 
@@ -708,7 +710,7 @@ class Armor(Item):
 class NoArmor(Armor):
 
     def __init__(self):
-        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=0, armor=0,
+        super().__init__(name="NO ARMOR", description="No armor equipped.", value=0, rarity=99, armor=0,
                          subtyp='None', unequip=True)
 
 
@@ -792,7 +794,7 @@ class Cuirboulli(Armor):
                          value=3000, rarity=15, armor=4, subtyp='Light', unequip=False)
 
 
-class Studded(Armor):
+class StuddedLeather(Armor):
 
     def __init__(self):
         super().__init__(name="STUDDED LEATHER", description="Leather armor embedded with iron studs to improve "
@@ -942,7 +944,7 @@ class OffHand(Item):
 class NoOffHand(OffHand):
 
     def __init__(self):
-        super().__init__(name="NO OFFHAND", description="No off-hand equipped.", value=0, rarity=0, mod=0,
+        super().__init__(name="NO OFFHAND", description="No off-hand equipped.", value=0, rarity=99, mod=0,
                          subtyp='None', unequip=True)
 
 
@@ -1097,14 +1099,14 @@ class Accessory(Item):
 class NoPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=0, mod="No Mod",
+        super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=99, mod="No Mod",
                          subtyp='Pendant', unequip=True)
 
 
 class NoRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="NO RING", description="No ring equipped.", value=0, rarity=0, mod="No Mod",
+        super().__init__(name="NO RING", description="No ring equipped.", value=0, rarity=99, mod="No Mod",
                          subtyp='Ring', unequip=True)
 
 
@@ -1112,14 +1114,14 @@ class IronRing(Accessory):
 
     def __init__(self):
         super().__init__(name="IRON RING", description="A ring that improves the wearer's defense.",
-                         value=2000, rarity=12, mod="+5 Defense", subtyp='Ring', unequip=False)
+                         value=2000, rarity=12, mod="+5 Physical Defense", subtyp='Ring', unequip=False)
 
 
 class PowerRing(Accessory):
 
     def __init__(self):
         super().__init__(name="POWER RING", description="A ring that improves the wearer's attack damage.",
-                         value=5000, rarity=18, mod="+5 Attack", subtyp='Ring', unequip=False)
+                         value=5000, rarity=18, mod="+5 Physical Damage", subtyp='Ring', unequip=False)
 
 
 class SilverPendant(Accessory):
@@ -1316,35 +1318,51 @@ class Misc(Item):
 
 
 class Key(Misc):
-
+    """
+    Opens locked chests
+    """
     def __init__(self):
         super().__init__(name="KEY", description="Unlocks a locked chest but is consumed.", value=500, rarity=20,
                          subtyp='Key')
 
 
 class OldKey(Misc):
-
+    """
+    Opens locked doors
+    """
     def __init__(self):
         super().__init__(name="OLDKEY", description="Unlocks doors that may lead to either valuable treasure or to "
                                                     "powerful enemies.",
                          value=5000, rarity=40, subtyp='Key')
 
 
+class Unobtainium(Misc):
+    """
+    Magical ore that can be used to forge ultimate weapons at the blacksmith; only one in the game
+    """
+    def __init__(self):
+        super().__init__(name="UNOBTAINIUM", description="The legendary ore that has only been theorized. Can be used "
+                                                         "to create ultimate weapons.",
+                         value=0, rarity=99, subtyp='Special')
+
+
 # Parameters
 items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger, Carnwennan],
                          'Sword': [BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword, Excalibur],
                          'Mace': [BronzeMace, IronMace, SteelMace, AdamantiteMace, MithrilMace, Mjolnir],
-                         'Axe': [BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
+                         'Fist': [BronzeFist, IronFist, SteelFist, AdamantiteFist, MithrilFist, GodsHand],
+                         'Axe': [Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
                          'Polearm': [Spear, Lance, Pike, Halberd, Trident, Gungnir],
-                         'Staff': [PineStaff, OakStaff, IronshodStaff, SerpentStaff, DragonStaff, MithrilshodStaff,
-                                   PrincessGuard],
+                         'Staff': [PineStaff, OakStaff, IronshodStaff, SerpentStaff, RuneStaff, MithrilshodStaff,
+                                   DragonStaff, PrincessGuard],
                          'Hammer': [OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher],
                          'Ninja Blades': [Tanto, Wakizashi, Ninjato]},
               'OffHand': {'Shield': [WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
                                      MedusaShield],
-                          'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon, Magus]},
+                          'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon,
+                                   Magus]},
               'Armor': {'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, WizardRobe, CloakEnchantment, MerlinRobe],
-                        'Light': [PaddedArmor, LeatherArmor, Cuirboulli, Studded, StuddedCuirboulli, DragonHide],
+                        'Light': [PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli, DragonHide],
                         'Medium': [HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Aegis],
                         'Heavy': [RingMail, ChainMail, Splint, PlateMail, FullPlate, Genji]},
               'Accessory': {'Ring': [IronRing, PowerRing],
@@ -1354,4 +1372,4 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                          'Elixir': [Elixir, Megalixir],
                          'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
                                   CharismaPotion, DexterityPotion, AardBeing]},
-              'Misc': {'Key': [Key, OldKey]}}
+              'Misc': {'Key': [Key, OldKey, Unobtainium]}}

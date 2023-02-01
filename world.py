@@ -18,11 +18,10 @@ def world_return():
     return _world
 
 
-def load_tiles(world_dict=None):
+def load_tiles(world_dict=None, reload=False):
     """Parses a file that describes the world space into the _world object"""
     global _world
     _world['World'][(5, 10, 0)] = getattr(__import__('map'), 'Town')(5, 10, 0)
-    # map_files = glob.glob('map_files/map_level_*')
     map_files = glob.glob('map_files/new_map_level_*')
     for map_file in map_files:
         z = map_file.split('_')[-1]
@@ -36,13 +35,25 @@ def load_tiles(world_dict=None):
                 tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
                 # _world['World'][(x, y, z)] = getattr(__import__('map'), 'Wall')(x, y, z) if tile_name == '' \
                 #     else getattr(__import__('map'), tile_name)(x, y, z)
-                if tile_name == '':
-                    tile = getattr(__import__('map'), 'Wall')(x, y, z)
-                elif tile_name == 'RandomTile':
-                    if random.random() > 0.6:  # 40% chance for random enemy
+                # if tile_name == '':
+                #     print(x, y, z)
+                #     tile = getattr(__import__('map'), 'Wall')(x, y, z)
+                if tile_name == 'RandomTile':
+                    if random.random() > 0.60:  # 40% chance for random enemy TODO
                         tile = getattr(__import__('map'), 'RandomEnemyRoom')(x, y, z)
                     else:
                         tile = getattr(__import__('map'), 'EmptyCavePath')(x, y, z)
+                elif tile_name == 'RandomTile2':
+                    if random.random() > 0.60:  # 40% chance for random enemy TODO
+                        tile = getattr(__import__('map'), 'RandomEnemyRoom2')(x, y, z)
+                    else:
+                        tile = getattr(__import__('map'), 'EmptyCavePath')(x, y, z)
+                elif 'Door' in tile_name and reload:
+                    continue
+                elif 'Stairs' in tile_name and reload:
+                    continue
+                elif 'Wall' in tile_name and reload:
+                    continue
                 else:
                     tile = getattr(__import__('map'), tile_name)(x, y, z)
                 _world['World'][(x, y, z)] = tile
@@ -54,6 +65,11 @@ def load_tiles(world_dict=None):
                     try:
                         if "Door" in tile_name:
                             _world['World'][(x, y, z)].lock = world_dict[(x, y, z)].lock
+                    except KeyError:
+                        pass
+                    try:
+                        if tile_name == "UnobtainiumRoom":
+                            _world['World'][(x, y, z)].looted = world_dict[(x, y, z)].looted
                     except KeyError:
                         pass
 

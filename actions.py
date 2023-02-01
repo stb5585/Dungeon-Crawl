@@ -47,25 +47,26 @@ class StairsDown(Action):
 
 
 class ViewInventory(Action):
-    """Prints the player's inventory"""
-
+    """
+    Prints the player's inventory
+    """
     def __init__(self):
         super().__init__(method=character.Player.print_inventory, name='Inventory', hotkey='i')
 
 
 class Attack(Action):
-    def __init__(self, enemy):
-        super().__init__(method=character.Player.weapon_damage, name="Attack", hotkey='a', enemy=enemy)
+    def __init__(self):
+        super().__init__(method=None, name="Attack", hotkey='a')
 
 
 class CastSpell(Action):
     def __init__(self):
-        super().__init__(method=character.Player.cast_spell, name="Cast Spell", hotkey='x')
+        super().__init__(method=None, name="Cast Spell", hotkey='x')
 
 
 class UseSkill(Action):
     def __init__(self):
-        super().__init__(method=character.Player.use_ability, name="Use Skill", hotkey='k')
+        super().__init__(method=None, name="Use Skill", hotkey='k')
 
 
 class Flee(Action):
