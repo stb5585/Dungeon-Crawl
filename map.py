@@ -6,6 +6,8 @@ import numpy
 
 import enemies
 import actions
+import game
+import items
 import world
 import combat
 import town
@@ -18,6 +20,7 @@ class MapTile:
         self.z = z
         self.visited = False  # tells whether the tile has been visited by player
         self.enter = True  # keeps player from entering walls
+        self.special = False
 
     def intro_text(self, player):
         raise NotImplementedError()
@@ -25,19 +28,31 @@ class MapTile:
     def modify_player(self, player, wmap):
         raise NotImplementedError()
 
-    def adjacent_moves(self, append_list: list = None):
+    def adjacent_moves(self, append_list: list = None, blocked=None):
         """Returns all move actions for adjacent tiles."""
         if append_list is None:
             append_list = []
         moves = []
-        if world.tile_exists(self.x + 1, self.y, self.z):
-            moves.append(actions.MoveEast())
-        if world.tile_exists(self.x - 1, self.y, self.z):
-            moves.append(actions.MoveWest())
-        if world.tile_exists(self.x, self.y - 1, self.z):
-            moves.append(actions.MoveNorth())
-        if world.tile_exists(self.x, self.y + 1, self.z):
-            moves.append(actions.MoveSouth())
+        try:
+            if world.tile_exists(self.x + 1, self.y, self.z).enter and blocked != "East":
+                moves.append(actions.MoveEast())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x - 1, self.y, self.z).enter and blocked != "West":
+                moves.append(actions.MoveWest())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x, self.y - 1, self.z).enter and blocked != "North":
+                moves.append(actions.MoveNorth())
+        except AttributeError:
+            pass
+        try:
+            if world.tile_exists(self.x, self.y + 1, self.z).enter and blocked != "South":
+                moves.append(actions.MoveSouth())
+        except AttributeError:
+            pass
         for item in append_list:
             moves.append(item)
         return moves
@@ -57,15 +72,6 @@ class MapTile:
             wmap['World'][(self.x, self.y - 1, self.z)].visited = True
         if world.tile_exists(self.x, self.y + 1, self.z):
             wmap['World'][(self.x, self.y + 1, self.z)].visited = True
-        # reveals diagonal (ordinal) spaces; not sure if this should be enabled
-        # if world.tile_exists(self.x + 1, self.y + 1, self.z):
-        #     wmap['World'][(self.x + 1, self.y + 1, self.z)].visited = True
-        # if world.tile_exists(self.x - 1, self.y - 1, self.z):
-        #     wmap['World'][(self.x - 1, self.y - 1, self.z)].visited = True
-        # if world.tile_exists(self.x + 1, self.y - 1, self.z):
-        #     wmap['World'][(self.x + 1, self.y - 1, self.z)].visited = True
-        # if world.tile_exists(self.x - 1, self.y + 1, self.z):
-        #     wmap['World'][(self.x - 1, self.y + 1, self.z)].visited = True
 
     def minimap(self, player, world_dict):
         """
@@ -73,7 +79,8 @@ class MapTile:
         15 x 10 grid
         """
         level = player.location_z
-        map_array = numpy.zeros((15, 10)).astype(str)
+        map_size = (20, 20)
+        map_array = numpy.zeros(map_size).astype(str)
         for tile in world_dict['World']:
             if level == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
@@ -116,8 +123,11 @@ class Town(MapTile):
 
 class EnemyRoom(MapTile):
     def __init__(self, x, y, z, enemy):
-        self.enemy = enemy
         super().__init__(x, y, z)
+        self.enemy = enemy
+
+    def intro_text(self, player):
+        return ""
 
     def modify_player(self, player, wmap):
         self.visited = True
@@ -129,15 +139,30 @@ class EnemyRoom(MapTile):
     def available_actions(self, player):
         if self.enemy.is_alive():
             if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
-                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
+                return [actions.Attack(), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
             elif len(player.spellbook['Spells']) > 0:
-                return [actions.Attack(enemy=self.enemy), actions.CastSpell(), actions.UseItem()]
+                return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
             elif len(player.spellbook['Skills']) > 0:
-                return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.UseItem()]
+                return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
             else:
-                return [actions.Attack(enemy=self.enemy), actions.UseItem()]
+                return [actions.Attack(), actions.UseItem()]
         else:
             return self.adjacent_moves([actions.Status()])
+
+
+class SpecialTile(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.special = True
+
+    def intro_text(self, player):
+        raise NotImplementedError
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
+
+    def special_text(self, player):
+        raise NotImplementedError
 
 
 class Wall(MapTile):
@@ -152,6 +177,34 @@ class Wall(MapTile):
         self.adjacent_visited(wmap)
 
 
+class RandomTile(MapTile):
+    """
+    Dummy tile; world.py will see this and randomly pick between empty or random enemy
+    """
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        raise NotImplementedError()
+
+    def modify_player(self, player, wmap):
+        raise NotImplementedError()
+
+
+class RandomTile2(MapTile):
+    """
+    Dummy tile; world.py will see this and randomly pick between empty or random enemy from 1 level lower
+    """
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        raise NotImplementedError()
+
+    def modify_player(self, player, wmap):
+        raise NotImplementedError()
+
+
 class EmptyCavePath(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -164,6 +217,86 @@ class EmptyCavePath(MapTile):
 
     def available_actions(self, player):
         return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoor(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.LockedDoor())
+
+    def intro_text(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return """
+                {} finds a locked door. If only you could find the key...
+                """.format(player.name.capitalize())
+            else:
+                return """
+                There is an unlocked door.
+                """
+        else:
+            return """
+            There is an open door.
+            """
+
+
+class LockedDoorEast(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorEast, self).__init__(x, y, z)
+        self.blocked = "East"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorWest(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorWest, self).__init__(x, y, z)
+        self.blocked = "West"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorNorth(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorNorth, self).__init__(x, y, z)
+        self.blocked = "North"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class LockedDoorSouth(LockedDoor):
+    def __init__(self, x, y, z):
+        super(LockedDoorSouth, self).__init__(x, y, z)
+        self.blocked = "South"
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            if self.enemy.lock:
+                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+            else:
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+        else:
+            return self.adjacent_moves([actions.Status()])
 
 
 class RandomEnemyRoom(EnemyRoom):
@@ -199,22 +332,75 @@ class RandomEnemyRoom(EnemyRoom):
         if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
                 if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem()])
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
                 else:
-                    return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
             else:
                 return self.adjacent_moves([actions.Status()])
         else:
             if self.enemy.is_alive():
                 if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.CastSpell(),
+                    return [actions.Attack(), actions.UseSkill(), actions.CastSpell(),
                             actions.UseItem()]
                 elif len(player.spellbook['Spells']) > 0:
-                    return [actions.Attack(enemy=self.enemy), actions.CastSpell(), actions.UseItem()]
+                    return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
                 elif len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(enemy=self.enemy), actions.UseSkill(), actions.UseItem()]
+                    return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
                 else:
-                    return [actions.Attack(enemy=self.enemy), actions.UseItem()]
+                    return [actions.Attack(), actions.UseItem()]
+            else:
+                return self.adjacent_moves([actions.Status()])
+
+
+class RandomEnemyRoom2(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.random_enemy(str(z + 1)))
+
+    def intro_text(self, player):
+        if 'Chest' in self.enemy.name:
+            if self.enemy.is_alive():
+                if self.enemy.lock:
+                    return """
+                    {} finds a chest!!... but it is locked.
+                    """.format(player.name.capitalize())
+                else:
+                    return """
+                    {} finds a chest!!
+                    """.format(player.name.capitalize())
+            else:
+                return """
+                This room has an open chest.
+                """
+        else:
+            if self.enemy.is_alive():
+                return """
+                An enemy {} attacks {}!
+                """.format(self.enemy.name, player.name.capitalize())
+            else:
+                return """
+                A dead {} lies on the ground.
+                """.format(self.enemy.name)
+
+    def available_actions(self, player):
+        if 'Chest' in self.enemy.name:
+            if self.enemy.is_alive():
+                if self.enemy.lock:
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
+                else:
+                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+            else:
+                return self.adjacent_moves([actions.Status()])
+        else:
+            if self.enemy.is_alive():
+                if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
+                    return [actions.Attack(), actions.UseSkill(), actions.CastSpell(),
+                            actions.UseItem()]
+                elif len(player.spellbook['Spells']) > 0:
+                    return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
+                elif len(player.spellbook['Skills']) > 0:
+                    return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
+                else:
+                    return [actions.Attack(), actions.UseItem()]
             else:
                 return self.adjacent_moves([actions.Status()])
 
@@ -283,6 +469,21 @@ class GolemRoom(EnemyRoom):
             """.format(self.enemy.name)
 
 
+class DomingoRoom(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Domingo())
+
+    def intro_text(self, player):
+        if self.enemy.is_alive():
+            return """
+            {} stumbles across a floating, tentacled creature wearing a white hat. 
+            """.format(player.name)
+        else:
+            return """
+            A dead {} lies on the ground.
+            """.format(self.enemy.name)
+
+
 class RedDragonRoom(EnemyRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z, enemies.RedDragon())
@@ -295,13 +496,13 @@ class RedDragonRoom(EnemyRoom):
             """.format(self.enemy.name, player.name.capitalize())
         else:
             return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
+            The smoking ruins of the once great beast lie in a heap.
+            """
 
 
 class LootRoom(EnemyRoom):
     def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Chest())
+        super().__init__(x, y, z, enemies.Chest(z))
 
     def intro_text(self, player):
         if self.enemy.is_alive():
@@ -315,9 +516,75 @@ class LootRoom(EnemyRoom):
 
     def available_actions(self, player):
         if self.enemy.is_alive():
-            return self.adjacent_moves([actions.OpenChest(enemy=self.enemy)])
+            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
         else:
             return self.adjacent_moves([actions.Status()])
+
+
+class LootRoom2(EnemyRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, enemies.Chest(z + 1))
+
+    def intro_text(self, player):
+        if self.enemy.is_alive():
+            return """
+            {} finds a chest!!
+            """.format(player.name.capitalize())
+        else:
+            return """
+            This room has an open chest.
+            """
+
+    def available_actions(self, player):
+        if self.enemy.is_alive():
+            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+        else:
+            return self.adjacent_moves([actions.Status()])
+
+
+class UnobtainiumRoom(SpecialTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.visited = False
+
+    def intro_text(self, player):
+        return """
+        An empty pedestal stands in the center of the room.
+        """
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
+        if not self.visited:
+            player.modify_inventory(items.Unobtainium, num=1)
+            self.visited = True
+
+    def available_actions(self, player):
+        return self.adjacent_moves([actions.Status()])
+
+    def special_text(self, player):
+        game.unobtainium_room()
+
+
+class FinalBossRoom(SpecialTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.visited = False
+
+    def intro_text(self, player):
+        return """
+        Step forward to face your destiny.
+        """
+
+    def modify_player(self, player, wmap):
+        self.adjacent_visited(wmap)
+        self.visited = True
+
+    def available_actions(self, player):
+        return self.adjacent_moves([actions.Status()])
+
+    def special_text(self, player):
+        if not self.visited:
+            game.final_boss(player)
 
 
 class StairsUp(MapTile):
@@ -368,3 +635,18 @@ class SecretShop(MapTile):
 
     def available_actions(self, player):
         pass
+
+
+class EndTile(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player):
+        return """"""
+
+    def modify_player(self, player, wmap):
+        raise NotImplementedError  # TODO create function for ending the game
+
+    def available_actions(self, player):
+        pass
+

@@ -7,16 +7,17 @@ CREATION DATE: March 2020
 LANGUAGE: Python 3.6.7, iPython 7.5.0
 
 DEPENDENCIES:
-- pygame 2.0.0 (dev4)
 - pyfiglet 0.8 (pos1)
-- jsonpickle 1.3
 - numpy
+- pickle
 
 EXECUTION:
 - ipython game.py
  
 DESCRIPTION:
-- A dungeon crawl, text-based RPG that takes inspiration from many different games. The current iteration allows for character creation options from race and class selection, random statistical rolls, interactive town format, and 5-level dungeon crawl.  
+- A dungeon crawl, text-based RPG that takes inspiration from many games. The current iteration allows for character 
+  creation options from race and class selection, random statistical rolls, interactive town format, and 5-level dungeon
+  crawl.  
 
 FUTURE DEVELOPMENT:
 - Planned development
@@ -24,7 +25,8 @@ FUTURE DEVELOPMENT:
     - Deepen the dungeon to allow for additional challenge
     - Add graphical representation (in terminal) for a more complete game experience; already improved minimap
     - Make item comparison easier for the shop
-    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to be farmed
+    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
+      be farmed
     - Add quests to game; add tavern in town for obtaining quests
     - Enhance enemies to make them more dynamic (resistance/weakness, etc)
     - Add more accessories with various effects; special items for each final class
@@ -38,7 +40,8 @@ FUTURE DEVELOPMENT:
     - Allow a character to change class
     - Give players alignments (G/N/E) with item restrictions
     - Add a tutorial so players can better understand the gameplay
-    - Implement map editor 
+    - Implement map editor
+    - Create battle arena
 
 
 FILES:
@@ -64,7 +67,8 @@ FILE DESCRIPTIONS:
 - character.py
     - Main file for controlling the playable character, including all actions/interactions with the world
 - classes.py
-    - File that controls the classes available for new characters to choose from; includes function that checks whether an item can be equipped by a player's class
+    - File that controls the classes available for new characters to choose from; includes function that checks whether 
+      an item can be equipped by a player's class
 - combat.py
     - Controls the combat system between the player and enemy
 - enemies.py
