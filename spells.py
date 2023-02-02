@@ -547,7 +547,7 @@ class ElementalStrike(Class):
 
 class AbsorbEssence(Class):
     """
-    Chance based on
+    Currently 5% chance
     Different monster types improve differents stats
     Reptile: increase strength
     Aberration: increase intelligence
@@ -1388,20 +1388,22 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
                           '8': Backstab,
                           '10': Steal,
                           '12': KidneyPunch,
+                          '16': DoubleStrike,
                           '20': Parry},
               'Thief': {'5': Lockpick,
-                        '8': DoubleStrike,
+                        '8': TripleStrike,
                         '12': KidneyPunch2,
                         '14': Disarm2,
                         '15': Mug},
-              'Rogue': {'10': TripleStrike,
-                        '15': Disarm3},
+              'Rogue': {'10': KidneyPunch3,
+                        '15': Disarm3,
+                        '20': QuadStrike},
               'Inquisitor': {'1': ShieldSlam,
-                             '12': DoubleStrike,
+                             '12': TripleStrike,
                              '15': ShieldBlock,
                              '18': MortalStrike},
               'Seeker': {'5': ShieldSlam2,
-                         '12': TripleStrike,
+                         '13': Parry,
                          '25': ShieldSlam3},
               'Assassin': {'2': Disarm2,
                            '5': TripleStrike,

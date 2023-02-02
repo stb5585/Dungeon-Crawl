@@ -79,6 +79,7 @@ def new_char() -> object:
         if keep in ['y', 'yes']:
             os.system('cls' if os.name == 'nt' else 'clear')
             break
+    # stats = (18, 18, 18, 18, 18, 18)
     hp = stats[3] * 2  # starting HP equal to constitution x 2
     mp = stats[1] + int(stats[2] * 0.5)  # starting MP equal to intel and wis x 0.5
     gil = stats[4] * 25  # starting gold equal to charisma x 25
@@ -591,6 +592,8 @@ class Player(Character):
         if str(self.level) in spells.skill_dict[self.cls]:
             skill_gain = spells.skill_dict[self.cls][str(self.level)]
             self.spellbook['Skills'][skill_gain().name] = skill_gain
+            if skill_gain().name == 'Health/Mana Drain':
+                del self.spellbook['Skills']['Health Drain']
             print(skill_gain())
             print("You have gained the ability to use {}.".format(skill_gain().name))
         self.experience -= self.exp_to_gain
@@ -697,10 +700,13 @@ class Player(Character):
                 print("Name - Mana Cost")
                 for skill in self.spellbook['Skills']:
                     print(self.spellbook['Skills'][skill]().name + " - " + str(self.spellbook['Skills'][skill]().cost))
-                    if self.spellbook['Skills'][skill]().cat == 'Heal' and \
-                            self.mana >= self.spellbook['Spells'][skill]().cost:
-                        cast_list.append((self.spellbook['Spells'][skill]().name, i))
-                        i += 1
+                    try:
+                        if self.spellbook['Skills'][skill]().cat == 'Heal' and \
+                                self.mana >= self.spellbook['Spells'][skill]().cost:
+                            cast_list.append((self.spellbook['Spells'][skill]().name, i))
+                            i += 1
+                    except AttributeError:
+                        pass
             input("Press enter to continue")
             if len(cast_list) > 0:
                 cast_list.append(('Go back', i))
@@ -728,9 +734,11 @@ class Player(Character):
                             print("You are at full health.")
                         break
                     elif self.spellbook['Spells'][cast_list[cast_index][0]]().name == 'Sanctuary':
+                        print("You cast Sanctuary and are transported back to town.")
                         self.health = self.health_max
                         self.mana = self.mana_max
                         self.location_x, self.location_y, self.location_z = world.starting_position
+                        break
 
     def save(self, wmap):
         while True:
@@ -889,16 +897,26 @@ class Player(Character):
                 self.modify_inventory(self.equipment[item], 1)
 
     def check_mod(self, mod, typ=None):
+        class_mod = 0
         if mod == 'weapon':
-            weapon_mod = self.strength
+            if 'Monk' in self.cls and self.equipment['Weapon']().subtyp == 'Fist':
+                class_mod += self.dex
+            if self.cls == 'Spellblade' or self.cls == 'Knight Enchanter':
+                class_mod = (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
+            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:
+                weapon_mod = self.dex + class_mod
+            else:
+                weapon_mod = self.strength + class_mod
             if not self.status_effects['Disarm']:
                 weapon_mod += self.equipment['Weapon']().damage
             if 'Physical Damage' in self.equipment['Ring']().mod:
                 weapon_mod += int(self.equipment['Ring']().mod.split(' ')[0])
             return weapon_mod
         elif mod == 'off':
+            if 'Monk' in self.cls and self.equipment['OffHand']().subtyp == 'Fist':
+                class_mod += int(self.dex * 0.5)
             try:
-                off_mod = (self.strength + self.equipment['OffHand']().damage) // 2
+                off_mod = (self.strength + class_mod + self.equipment['OffHand']().damage) // 2
                 if 'Physical Damage' in self.equipment['Ring']().mod:
                     off_mod += (int(self.equipment['Ring']().mod.split(' ')[0]) // 2)
                 return off_mod
@@ -931,7 +949,7 @@ class Player(Character):
                 heal_mod += int(self.equipment['Weapon']().damage * 1.5)
             return heal_mod
         elif mod == 'resist':  # TODO add resistances here and in enemies.py
-            pass
+            return self.resistance[typ]
 
     def move(self, dx, dy):
         world_dict = world.world_return()

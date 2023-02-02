@@ -119,6 +119,7 @@ def promotion(player):
         new_class = pro1_dict[current_class][class_index]
     else:
         new_class = pro2_dict[current_class][class_index]
+    print(new_class)
     print("You have chosen to promote from {} to {}.".format(current_class, new_class.name))
     promote = input("Do you wish to continue? (Y or N) ").lower()
     if promote == 'y':
@@ -334,7 +335,7 @@ class Lancer(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
     Pros: Can use polearms as 1-handed weapons; can equip shields and heavy armor
-    Cons: Cannot equip 2-handed weapons or dual wield
+    Cons: Cannot equip other 2-handed weapons or dual wield
     """
 
     def __init__(self):
@@ -345,7 +346,7 @@ class Lancer(Job):
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Splint,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Polearm'],
+                         restrictions={'Weapon': ['Fist', 'Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=2)
@@ -355,7 +356,7 @@ class Dragoon(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
     Pros: Can use polearms as 1-handed weapons; can equip swords, shields and heavy armor
-    Cons: Cannot equip 2-handed weapons or dual wield
+    Cons: Cannot equip other 2-handed weapons or dual wield
     """
 
     def __init__(self):
@@ -443,14 +444,15 @@ class Wizard(Job):
 class Warlock(Job):
     """
     Promotion: Mage -> Warlock -> Necromancer
-    Pros: Higher strength and constitution gain; access to additional skills; gains access to shadow spells
+    Pros: Higher strength and constitution gain; access to additional skills; gains access to shadow spells and familiar
     Cons: Lower intelligence gain and limited access to higher level spells; lose access to learned arcane Mage spells
     """
 
     def __init__(self):
-        super().__init__(name="Warlock", description="The Warlock is an arcanist, who conjures the dark arts to harness"
-                                                     " their innate magical gift, and perform spell-like feats and "
-                                                     "abilities.",
+        super().__init__(name="Warlock", description="The Warlock specializes in the dark arts, forsaking the arcane "
+                                                     "training learned as a Mage. However this focus unlocks powerful "
+                                                     "abilities, including the ability to summon a familiar to aid "
+                                                     "them.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -460,10 +462,10 @@ class Warlock(Job):
                          pro_level=2)
 
 
-class Necromancer(Job):  # reduced damage from undead
+class Necromancer(Job):
     """
     Promotion: Mage -> Warlock -> Necromancer
-    Pros: Higher strength and constitution gain; access to additional skills
+    Pros: Higher strength and constitution gain; access to additional skills; more powerful familiars
     Cons: Lower intelligence gain and limited access to higher level spells
     """
 
@@ -483,8 +485,8 @@ class Necromancer(Job):  # reduced damage from undead
 class Spellblade(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
-    Pros: Adds a percentage of MP to melee damage; higher strength and constitution gain; can equip swords and light
-    armor
+    Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords
+    and light armor
     Cons: Lower intelligence and wisdom gain; cannot equip staves; gains spells at a much slower pace
     """
 
@@ -506,8 +508,8 @@ class Spellblade(Job):
 class KnightEnchanter(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
-    Pros: Adds a percentage of MP to melee damage; higher strength and constitution gain; can equip swords and light
-    armor
+    Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords
+    and light armor
     Cons: Lower intelligence and wisdom; cannot equip staves; gains spells at a much slower pace
     """
 
@@ -551,15 +553,16 @@ class Footpad(Job):
 class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
-    Pros: Ability to dual wield (only daggers in offhand) and access to certain abilities (including stealing)
-    Cons: Average stats
+    Pros: Access to stealth abilities earlier than other classes; uses dex instead of strength for damage; more balanced
+     stat gain
+    Cons: Lower dex gain
     """
 
     def __init__(self):
-        super().__init__(name="Thief", description="Thieves are the best at collecting treasure, although the guild "
-                                                   "makes sure to get a fair share. Very devoted to stealing, Thieves "
-                                                   "often lack fighting skill, but make up for it with their "
-                                                   "treacherous backstabbing.",
+        super().__init__(name="Thief", description="Thieves prefer stealth over brute force, although a well-placed "
+                                                   "backstab is still highly effective. They gain stealth abilities "
+                                                   "more quickly than other classes and are typically more well-"
+                                                   "balanced.",
                          str_plus=1, int_plus=1, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.SteelSword, OffHand=items.SteelDagger, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -572,16 +575,17 @@ class Thief(Job):
 class Rogue(Job):
     """
     Promotion: Footpad -> Thief -> Rogue
-    Pros: Ability to dual wield (can use swords, maces, and fists in offhand) and access to certain abilities (including
-    stealing)
-    Cons: Lower average stats
+    Pros: Ability to dual wield (can use swords, maces, and fists in offhand); Access to stealth abilities earlier than
+     other classes; uses dex instead of strength for damage; more balanced stat gain
+    Cons: Lower dex gain
     """
 
     def __init__(self):
         super().__init__(name="Rogue", description="Rogues rely on skill, stealth, and their foes' vulnerabilities to "
                                                    "get the upper hand in any situation. They have a knack for finding "
                                                    "the solution to just about any problem, demonstrating a "
-                                                   "resourcefulness and versatility that has no rival.",
+                                                   "resourcefulness and versatility that has no rival. They gain the "
+                                                   "ability to dual wield swords, maces, and fist weapons.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=1,
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.AdamantiteDagger,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -595,7 +599,7 @@ class Inquisitor(Job):
     """
     Promotion: Footpad -> Inquisitor -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
-          shields, and some spells as well as dual wielding
+          shields, and some spells
     Cons: Lower dexterity; lose ability to dual wield
     """
 
@@ -620,7 +624,7 @@ class Seeker(Job):
     """
     Promotion: Footpad -> Inquisitor -> Seeker
     Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
-          shields, and some spells as well as dual wielding
+          shields, and some spells
     Cons: Lower dexterity; lose ability to dual wield
     """
 
@@ -644,7 +648,7 @@ class Assassin(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
     Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; can use fist
-      weapons in the offhand slot
+      weapons in the offhand slot; uses dex instead of strength for damage
     Cons: Lower strength and constitution; can only equip daggers or fist weapons; do not gain DEX bonus with fist
       weapons
     """
@@ -668,7 +672,7 @@ class Ninja(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
     Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; the only class
-      that can equip Ninja swords
+      that can equip Ninja swords; uses dex instead of strength for damage
     Cons: Lower strength and constitution; can only equip daggers
     """
 
@@ -766,7 +770,9 @@ class Priest(Job):
 
     def __init__(self):
         super().__init__(name="Priest", description="A priest channels the holy light through prayer, accessing "
-                                                    "powerful regenerative and cleansing spells.",
+                                                    "powerful regenerative and cleansing spells. While they can only "
+                                                    "equip cloth armor, they gain the ability to increase their "
+                                                    "defense at the expense of mana.",
                          str_plus=0, int_plus=1, wis_plus=3, con_plus=0, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -806,7 +812,8 @@ class Monk(Job):
     def __init__(self):
         super().__init__(name="Monk", description="Monks abandon the cloth to focus the mind into the body, harnessing "
                                                   "the inner power of the chi. While an adept fighter with a staff, "
-                                                  "monks specialize in hand-to-hand combat.",
+                                                  "monks specialize in hand-to-hand combat, adding both strength and "
+                                                  "dexterity to their damage when equipped with Fist weapons.",
                          str_plus=1, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=2,
                          equipment=dict(Weapon=items.SteelFist, OffHand=items.SteelFist, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
@@ -870,8 +877,10 @@ class Druid(Job):
     def __init__(self):
         super().__init__(name="Druid", description="Druids act as an extension of nature to call upon the elemental"
                                                    " forces, embodying nature's wrath and mystique. This attunement "
-                                                   "with nature allows druids to emulate creatures of the animal world"
-                                                   ".",
+                                                   "with nature allows druids to emulate creatures of the animal world,"
+                                                   " transforming into them and gaining there specs and abilities. They"
+                                                   " lose the ability to wear medium armor and shields but gain "
+                                                   "natural weapons and armor when transformed.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
