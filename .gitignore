@@ -9,7 +9,6 @@ resources/*
 display.py
 commit_notes.txt
 shop_inventory.txt
-new_player.txt
 pickle_story.py
 
 # ignore save_files

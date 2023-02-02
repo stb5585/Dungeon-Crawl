@@ -104,7 +104,7 @@ class Enemy(character.Character):
                 heal_mod += self.equipment['Weapon']().damage * 1.5
             return heal_mod
         elif mod == 'resist':  # TODO add resistances here and in enemies.py
-            pass
+            return self.resistance[typ]
 
 
 class Misc(Enemy):
@@ -117,6 +117,16 @@ class Slime(Enemy):
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Slime'
+        self.resistance = {'Fire': 0.75,
+                           'Ice': 0.75,
+                           'Electric': 0.75,
+                           'Water': 0.75,
+                           'Earth': 0.75,
+                           'Wind': 0.75,
+                           'Shadow': 0.75,
+                           'Death': 0,
+                           'Holy': 0.75,
+                           'Poison': 0}
 
 
 class Animal(Enemy):
@@ -147,12 +157,32 @@ class Undead(Enemy):
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Undead'
+        self.resistance = {'Fire': -0.25,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0.5,
+                           'Death': 1,
+                           'Holy': -0.75,
+                           'Poison': 0.5}
 
 
 class Dragon(Enemy):
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Dragon'
+        self.resistance = {'Fire': 0.25,
+                           'Ice': 0.25,
+                           'Electric': 0.25,
+                           'Water': 0.25,
+                           'Earth': 0.25,
+                           'Wind': 0.25,
+                           'Shadow': 0,
+                           'Death': 0.25,
+                           'Holy': 0,
+                           'Poison': 0}
 
 
 class Monster(Enemy):
@@ -171,6 +201,16 @@ class Construct(Enemy):
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Construct'
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': -0.75,
+                           'Water': 0,
+                           'Earth': 0.5,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0,
+                           'Holy': 0,
+                           'Poison': 1}
 
 
 # Natural weapons
@@ -192,6 +232,7 @@ class RatBite(NaturalWeapon):
     """
     TODO Add disease chance
     """
+
     def __init__(self):
         super().__init__(name="bites", damage=2, crit=9, subtyp='Natural')
         self.disease = True
@@ -207,6 +248,7 @@ class BearClaw(NaturalWeapon):
     """
     TODO add bleed effect
     """
+
     def __init__(self):
         super().__init__(name="mauls", damage=5, crit=7, subtyp='Natural')
 
@@ -215,6 +257,7 @@ class Stinger(NaturalWeapon):
     """
     TODO Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="stings", damage=3, crit=4, subtyp='Natural')
         self.poison = True
@@ -230,6 +273,7 @@ class SnakeFang(NaturalWeapon):
     """
     TODO Add a poison chance
     """
+
     def __init__(self):
         super().__init__(name="strikes", damage=3, crit=4, subtyp='Natural')
         self.poison = True
@@ -239,6 +283,7 @@ class AlligatorTail(NaturalWeapon):
     """
     TODO add stun
     """
+
     def __init__(self):
         super().__init__(name="swipes", damage=8, crit=8, subtyp='Natural')
         self.stun = True
@@ -254,6 +299,7 @@ class Laser(NaturalWeapon):
     """
     TODO add ignore
     """
+
     def __init__(self):
         super().__init__(name="zaps", damage=5, crit=3, subtyp='Natural')
         self.ignore = True
@@ -263,6 +309,7 @@ class Gaze(NaturalWeapon):
     """
     Attempts to turn the player to stone
     """
+
     def __init__(self):
         super().__init__(name="leers", damage=0, crit=5, subtyp='Natural')
 
@@ -271,6 +318,7 @@ class DragonBite(NaturalWeapon):
     """
     TODO add disease
     """
+
     def __init__(self):
         super().__init__(name="bites", damage=8, crit=4, subtyp='Natural')
         self.disease = True
@@ -280,6 +328,7 @@ class DragonClaw(NaturalWeapon):
     """
     TODO add ignore
     """
+
     def __init__(self):
         super().__init__(name="rakes", damage=10, crit=5, subtyp='Natural')
         self.ignore = False
@@ -289,6 +338,7 @@ class DragonTail(NaturalWeapon):
     """
     TODO add stun
     """
+
     def __init__(self):
         super().__init__(name="swipes", damage=18, crit=6, subtyp='Natural')
         self.stun = True
@@ -458,6 +508,16 @@ class GiantSpider(Insect):
         self.inventory = dict(Gold=random.randint(15, 30), Potion=items.ManaPotion)
         self.spellbook = {"Spells": {},
                           "Skills": {}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0,
+                           'Holy': 0,
+                           'Poison': 0.25}
 
 
 class Panther(Animal):
@@ -520,6 +580,16 @@ class GiantSnake(Reptile):
         self.inventory = dict(Gold=random.randint(35, 75))
         self.spellbook = {"Spells": {},
                           "Skills": {}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0,
+                           'Holy': 0,
+                           'Poison': 0.25}
 
 
 class Orc(Humanoid):
@@ -644,6 +714,16 @@ class Naga(Monster):
         self.inventory = dict(Gold=random.randint(55, 75), Weapon=items.Spear, Potion=items.GreatManaPotion)
         self.spellbook = {"Spells": {},
                           "Skills": {}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': -0.5,
+                           'Water': 0.75,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0,
+                           'Holy': 0,
+                           'Poison': 0}
 
 
 # Level 2 Boss
@@ -682,6 +762,16 @@ class PitViper(Reptile):
         self.inventory = dict(Gold=random.randint(50, 85))
         self.spellbook = {"Spells": {},
                           "Skills": {spells.DoubleStrike}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0,
+                           'Holy': 0,
+                           'Poison': 0.25}
 
 
 class Disciple(Humanoid):
@@ -799,6 +889,16 @@ class EvilCrusader(Humanoid):
                           "Skills": {'Shield Slam': spells.ShieldSlam,
                                      'Disarm': spells.Disarm2,
                                      'Shield Block': spells.ShieldBlock}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0.5,
+                           'Death': 0,
+                           'Holy': -0.5,
+                           'Poison': 0}
 
 
 # Level 3 Boss
@@ -962,6 +1062,16 @@ class ShadowSerpent(Reptile):
         self.inventory = dict(Gold=random.randint(280, 485), Potion=items.Megalixir)
         self.spellbook = {"Spells": {'Corruption': spells.Corruption2},
                           "Skills": {}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0.9,
+                           'Death': 0,
+                           'Holy': -0.75,
+                           'Poison': 0.25}
 
 
 class Aboleth(Slime):
@@ -988,6 +1098,16 @@ class Beholder(Aberration):
         self.spellbook = {"Spells": {'Magic Missile': spells.MagicMissile2},
                           "Skills": {'Mana Drain': spells.ManaDrain}}
         self.flying = True
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 1,
+                           'Holy': 0,
+                           'Poison': 0}
 
 
 class Behemoth(Aberration):
@@ -1000,6 +1120,16 @@ class Behemoth(Aberration):
         self.inventory = dict(Gold=random.randint(400, 550))
         self.spellbook = {"Spells": {'Holy': spells.Holy3},
                           "Skills": {}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 0.9,
+                           'Holy': 0.75,
+                           'Poison': 0}
 
 
 class Lich(Undead):
@@ -1013,6 +1143,16 @@ class Lich(Undead):
         self.spellbook = {"Spells": {'Ice Blizzard': spells.IceBlizzard,
                                      'Desoul': spells.Desoul},
                           "Skills": {'Health/Mana Drain': spells.HealthManaDrain}}
+        self.resistance = {'Fire': -0.5,
+                           'Ice': 0.9,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0.5,
+                           'Death': 1,
+                           'Holy': -0.5,
+                           'Poison': 0.5}
 
 
 class Basilisk(Reptile):
@@ -1025,6 +1165,16 @@ class Basilisk(Reptile):
         self.inventory = dict(Gold=random.randint(380, 520))
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 1,
+                           'Holy': 0,
+                           'Poison': 0.75}
 
 
 class MindFlayer(Aberration):
@@ -1039,6 +1189,16 @@ class MindFlayer(Aberration):
                                      'Terrify': spells.Terrify2,
                                      'Corruption': spells.Corruption},
                           "Skills": {'Mana Drain': spells.ManaDrain}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': 0,
+                           'Water': 0,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0.5,
+                           'Death': 1,
+                           'Holy': -0.25,
+                           'Poison': 0}
 
 
 class Warforged(Construct):
@@ -1076,6 +1236,16 @@ class Hydra(Monster):
         self.inventory = dict(Gold=random.randint(400, 550), Armor=items.Genji)
         self.spellbook = {'Spells': {'Tsunami': spells.Tsunami},
                           'Skills': {'Multi-Strike': spells.TripleStrike}}
+        self.resistance = {'Fire': 0,
+                           'Ice': 0,
+                           'Electric': -1,
+                           'Water': 1.5,
+                           'Earth': 0,
+                           'Wind': 0,
+                           'Shadow': 0,
+                           'Death': 1,
+                           'Holy': 0,
+                           'Poison': 0.75}
 
 
 class Wyvern(Dragon):
@@ -1102,14 +1272,25 @@ class Domingo(Aberration):
         self.spellbook = {"Spells": {'Ultima': spells.Ultima},
                           "Skills": {'Multi-Cast': spells.DoubleCast}}
         self.flying = True
+        self.resistance = {'Fire': 0.25,
+                           'Ice': 0.25,
+                           'Electric': 0.25,
+                           'Water': 0.25,
+                           'Earth': 0.25,
+                           'Wind': 0.25,
+                           'Shadow': 0.25,
+                           'Death': 1,
+                           'Holy': 0.25,
+                           'Poison': 0.25}
 
 
 # Level 5 Boss
 class RedDragon(Dragon):
     """
-    Final Boss; immune to elemental spells and will heal from fire spells; immune to weapon damage except ultimate
-      weapons
+    Final Boss; highly resistant to spells and will heal from fire spells; immune to weapon damage except
+     ultimate weapons
     """
+
     def __init__(self):
         super().__init__(name='Red Dragon', health=random.randint(750, 1000), mana=500, strength=50, intel=28,
                          wisdom=35, con=30, charisma=0, dex=22, exp=0)
@@ -1122,3 +1303,13 @@ class RedDragon(Dragon):
                           "Skills": {'Mortal Strike': spells.MortalStrike2,
                                      'Multi-Cast': spells.TripleCast}}
         self.flying = True
+        self.resistance = {'Fire': 1.5,
+                           'Ice': 0.5,
+                           'Electric': 0.5,
+                           'Water': 0.5,
+                           'Earth': 0.5,
+                           'Wind': 0.5,
+                           'Shadow': 0.5,
+                           'Death': 1,
+                           'Holy': 0.5,
+                           'Poison': 0.75}

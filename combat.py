@@ -20,8 +20,8 @@ def statuses():  # TODO implement function to handle status effects
 
 def absorb_essence(player, enemy):
     """
-    Chance based on
-    Different monster types improve differents stats
+    Currently 5% chance
+    Different monster types improve different stats
     Reptile: increase strength
     Aberration: increase intelligence
     Slime: increase wisdom
@@ -33,7 +33,7 @@ def absorb_essence(player, enemy):
     Undead: increase level
     Dragon: increase gold
     """
-    if not random.randint(0, 100):
+    if not random.randint(0, 19):  # 5% chance on kill
         print("You absorb part of the {}'s soul.".format(enemy.name))
         time.sleep(1)
         if enemy.enemy_typ == 'Reptile':
@@ -56,10 +56,10 @@ def absorb_essence(player, enemy):
             player.dex += 1
         if enemy.enemy_typ == 'Animal':
             print("Gain 5 hit points.")
-            player.max_health += 5
+            player.health_max += 5
         if enemy.enemy_typ == 'Monster':
             print("Gain 5 mana points.")
-            player.max_mana += 5
+            player.mana_max += 5
         if enemy.enemy_typ == 'Undead':
             print("Gain enough experience to level.")
             player.experience = player.exp_to_gain
