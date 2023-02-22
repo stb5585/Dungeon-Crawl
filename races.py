@@ -14,15 +14,18 @@ def define_race():
     """
     race_list = [Human, Elf, HalfElf, Giant, Gnome, Dwarf, HalfOrc]
     while True:
-        create_race = {1: {"Options": [('Human', 0), ('Elf', 1), ('Half Elf', 2), ('Giant', 3), ('Gnome', 4),
-                                       ('Dwarf', 5), ('Half Orc', 6)],
-                           "Text": ["Choose a race for your character.\n"]}}
-        race_index = storyline.story_flow(create_race, response=True)
+        print("Choose a race for your character.")
+        create_race = ['Human', 'Elf', 'Half Elf', 'Giant', 'Gnome', 'Dwarf', 'Half Orc']
+        race_index = storyline.get_response(create_race)
         race = race_list[race_index]()
         print(race)
-        choose = input("Are you sure you want to play as a {}? ".format(race_list[race_index]().name.lower()))
-        if choose in ['y', 'yes']:
+        print("Are you sure you want to play as a {}? ".format(race_list[race_index]().name.lower()))
+        yes_no = ["Yes", "No"]
+        choose = storyline.get_response(yes_no)
+        if yes_no[choose] == "Yes":
             break
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')
     os.system('cls' if os.name == 'nt' else 'clear')
     return race_list[race_index]()
 
@@ -65,23 +68,25 @@ class Race:
                "Shadow: {}\n" \
                "Death: {}\n" \
                "Holy: {}\n" \
-               "Poison: {}\n".format(self.name, self.description,
-                                     self.str_rng[0], self.str_rng[1],
-                                     self.int_rng[0], self.int_rng[1],
-                                     self.wis_rng[0], self.wis_rng[1],
-                                     self.con_rng[0], self.con_rng[1],
-                                     self.cha_rng[0], self.cha_rng[1],
-                                     self.dex_rng[0], self.dex_rng[1],
-                                     self.resistance['Fire'],
-                                     self.resistance['Ice'],
-                                     self.resistance['Electric'],
-                                     self.resistance['Water'],
-                                     self.resistance['Earth'],
-                                     self.resistance['Wind'],
-                                     self.resistance['Shadow'],
-                                     self.resistance['Death'],
-                                     self.resistance['Holy'],
-                                     self.resistance['Poison'])
+               "Poison: {}\n" \
+               "Physical: {}\n".format(self.name, self.description,
+                                       self.str_rng[0], self.str_rng[1],
+                                       self.int_rng[0], self.int_rng[1],
+                                       self.wis_rng[0], self.wis_rng[1],
+                                       self.con_rng[0], self.con_rng[1],
+                                       self.cha_rng[0], self.cha_rng[1],
+                                       self.dex_rng[0], self.dex_rng[1],
+                                       self.resistance['Fire'],
+                                       self.resistance['Ice'],
+                                       self.resistance['Electric'],
+                                       self.resistance['Water'],
+                                       self.resistance['Earth'],
+                                       self.resistance['Wind'],
+                                       self.resistance['Shadow'],
+                                       self.resistance['Death'],
+                                       self.resistance['Holy'],
+                                       self.resistance['Poison'],
+                                       self.resistance['Physical'])
 
 
 class Human(Race):
@@ -104,16 +109,17 @@ class Human(Race):
                                              'Rogue', 'Seeker', 'Ninja',
                                              'Templar', 'Archbishop', 'Master Monk',
                                              'Lycan', 'Geomancer', 'Soulcatcher']},
-                         resistance={'Fire': 0,
-                                     'Ice': 0,
-                                     'Electric': 0,
-                                     'Water': 0,
-                                     'Earth': 0,
-                                     'Wind': 0,
-                                     'Shadow': 0,
-                                     'Death': 0,
-                                     'Holy': 0,
-                                     'Poison': 0}
+                         resistance={'Fire': 0.,
+                                     'Ice': 0.,
+                                     'Electric': 0.,
+                                     'Water': 0.,
+                                     'Earth': 0.,
+                                     'Wind': 0.,
+                                     'Shadow': 0.,
+                                     'Death': 0.,
+                                     'Holy': 0.,
+                                     'Poison': 0.,
+                                     'Physical': 0.}
                          )
 
 
@@ -143,8 +149,9 @@ class Elf(Race):
                                      'Wind': 0.25,
                                      'Shadow': 0,
                                      'Death': -0.2,
-                                     'Holy': 0,
-                                     'Poison': 0}
+                                     'Holy': 0.,
+                                     'Poison': 0.,
+                                     'Physical': -0.1}
                          )
 
 
@@ -177,8 +184,9 @@ class HalfElf(Race):
                                      'Wind': 0.1,
                                      'Shadow': 0,
                                      'Death': -0.1,
-                                     'Holy': 0,
-                                     'Poison': 0}
+                                     'Holy': 0.,
+                                     'Poison': 0.,
+                                     'Physical': -0.1}
                          )
 
 
@@ -189,11 +197,11 @@ class Giant(Race):
                                                    " blow. Known for their brutal ways and having the advantage of"
                                                    " being over eight feet tall, they make the best Warriors one can"
                                                    " find. Giants are a sturdy race and have great resistance against "
-                                                   "death spells, as well as a mild resistance to poisons. However, "
-                                                   "they are not the most pious beings and are weak against holy "
-                                                   "spells.",
+                                                   "death spells, as well as a mild resistance to poisons and physical "
+                                                   "damage. However, they are not the most pious beings and are weak "
+                                                   "against holy spells and have the lowest charisma of any class.",
                          str_rng=(10, 18), int_rng=(3, 11), wis_rng=(5, 14),
-                         con_rng=(6, 15), cha_rng=(3, 10), dex_rng=(3, 11),
+                         con_rng=(6, 15), cha_rng=(2, 8), dex_rng=(3, 11),
                          cls_res={'Base': ['Warrior'],
                                   'First': ['Weapon Master'],
                                   'Second': ['Berserker']},
@@ -204,9 +212,10 @@ class Giant(Race):
                                      'Earth': 0,
                                      'Wind': 0,
                                      'Shadow': 0,
-                                     'Death': 0.75,
+                                     'Death': 0.5,
                                      'Holy': -0.3,
-                                     'Poison': 0.33}
+                                     'Poison': 0.33,
+                                     'Physical': 0.2}
                          )
 
 
@@ -214,11 +223,11 @@ class Gnome(Race):
 
     def __init__(self):
         super().__init__(name="Gnome", description="Gnomes are very charismatic, giving them a distinct advantage in "
-                                                   "money making and vendor relation. They are also above average "
-                                                   "spell caster with a slight affinity toward the divine, giving them "
-                                                   "a slight resistance against holy spells but are weak against "
-                                                   "shadow. Gnomes prefer the civilized world and thus are not found "
-                                                   "among the ranks of Pathfinders.",
+                                                   "money making, vendor relations, and are especially lucky. They are "
+                                                   "also above average spell caster with a slight affinity toward the "
+                                                   "divine, giving them a slight resistance against holy spells but are"
+                                                   " weak against shadow. Gnomes prefer the civilized world and thus "
+                                                   "are not found among the ranks of Pathfinders.",
                          str_rng=(4, 13), int_rng=(7, 15), wis_rng=(5, 15),
                          con_rng=(3, 13), cha_rng=(8, 18), dex_rng=(6, 15),
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer'],
@@ -230,16 +239,17 @@ class Gnome(Race):
                                              'Wizard', 'Knight Enchanter',
                                              'Rogue', 'Seeker', 'Ninja',
                                              'Templar', 'Archbishop', 'Master Monk']},
-                         resistance={'Fire': 0,
-                                     'Ice': 0,
-                                     'Electric': 0,
-                                     'Water': 0,
-                                     'Earth': 0,
-                                     'Wind': 0,
+                         resistance={'Fire': 0.,
+                                     'Ice': 0.,
+                                     'Electric': 0.,
+                                     'Water': 0.,
+                                     'Earth': 0.,
+                                     'Wind': 0.,
                                      'Shadow': -0.2,
-                                     'Death': 0,
+                                     'Death': 0.,
                                      'Holy': 0.2,
-                                     'Poison': 0}
+                                     'Poison': 0.,
+                                     'Physical': 0.}
                          )
 
 
@@ -250,8 +260,8 @@ class Dwarf(Race):
                                                    "also fairly versatile, although not as much as humans. They are"
                                                    " more robust but lack the dexterity to be an elite Footpad and "
                                                    "also have a healthy mistrust of the arcane. As beings of the Earth,"
-                                                   " dwarves have high resistance against earth and poison spells but"
-                                                   " are weak against shadow magic.",
+                                                   " dwarves have resistance against earth, poison, and physical damage"
+                                                   " but are weak against shadow magic.",
                          str_rng=(5, 14), int_rng=(5, 13), wis_rng=(5, 15),
                          con_rng=(6, 14), cha_rng=(6, 14), dex_rng=(4, 12),
                          cls_res={'Base': ['Warrior', 'Healer', 'Pathfinder'],
@@ -261,16 +271,17 @@ class Dwarf(Race):
                                   'Second': ['Berserker', 'Crusader', 'Dragoon',
                                              'Templar', 'Archbishop', 'Master Monk',
                                              'Geomancer', 'Soulcatcher']},
-                         resistance={'Fire': 0,
-                                     'Ice': 0,
-                                     'Electric': 0,
-                                     'Water': 0,
-                                     'Earth': 0.75,
-                                     'Wind': 0,
+                         resistance={'Fire': 0.,
+                                     'Ice': 0.,
+                                     'Electric': 0.,
+                                     'Water': 0.,
+                                     'Earth': 0.25,
+                                     'Wind': 0.,
                                      'Shadow': -0.3,
-                                     'Death': 0,
-                                     'Holy': 0,
-                                     'Poison': 0.5}
+                                     'Death': 0.,
+                                     'Holy': 0.,
+                                     'Poison': 0.25,
+                                     'Physical': 0.1}
                          )
 
 
@@ -296,16 +307,17 @@ class HalfOrc(Race):
                                              'Wizard', 'Necromancer', 'Knight Enchanter',
                                              'Rogue', 'Seeker', 'Ninja',
                                              'Lycan', 'Geomancer', 'Soulcatcher']},
-                         resistance={'Fire': 0,
-                                     'Ice': 0,
-                                     'Electric': 0,
-                                     'Water': 0,
-                                     'Earth': 0,
-                                     'Wind': 0,
+                         resistance={'Fire': 0.,
+                                     'Ice': 0.,
+                                     'Electric': 0.,
+                                     'Water': 0.,
+                                     'Earth': 0.,
+                                     'Wind': 0.,
                                      'Shadow': 0.2,
                                      'Death': 0.1,
                                      'Holy': -0.2,
-                                     'Poison': 0.1}
+                                     'Poison': 0.1,
+                                     'Physical': 0.}
                          )
 
 

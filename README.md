@@ -9,40 +9,40 @@ LANGUAGE: Python 3.6.7, iPython 7.5.0
 DEPENDENCIES:
 - pyfiglet 0.8 (pos1)
 - numpy
-- pickle
+- simple_term_menu
 
 EXECUTION:
-- ipython game.py
+- python game.py
  
 DESCRIPTION:
 - A dungeon crawl, text-based RPG that takes inspiration from many games. The current iteration allows for character 
   creation options from race and class selection, random statistical rolls, interactive town format, and 5-level dungeon
   crawl.  
+  - Charisma is essentially a luck statistic, lowering cost and improving chance of success
 
 FUTURE DEVELOPMENT:
 - Planned development
     - Enhance storyline for a more immersive experience
     - Deepen the dungeon to allow for additional challenge
-    - Add graphical representation (in terminal) for a more complete game experience; already improved minimap
     - Make item comparison easier for the shop
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
       be farmed
     - Add quests to game; add tavern in town for obtaining quests
-    - Enhance enemies to make them more dynamic (resistance/weakness, etc)
     - Add more accessories with various effects; special items for each final class
     - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
     - Allow player to switch characters in-game (instead of exiting and re-loading)
+    - multiple players and enemies in battle
 
 - Possible development
+    - create new ranged class (archer -> hunter (tracking, pet)/ranger (sword and arrow)/arcane trickster (magical arrows)
+    - create 3rd promotion classes (likely crossover class)
     - Item identification
     - Add capability to have more than one playable character
     - Require rare items for promotion
-    - Allow a character to change class
     - Give players alignments (G/N/E) with item restrictions
     - Add a tutorial so players can better understand the gameplay
     - Implement map editor
     - Create battle arena
-
 
 FILES:
 - actions.py
@@ -82,13 +82,13 @@ FILE DESCRIPTIONS:
 - races.py
     - File that outlines the various racial options when creating a new character
 - README.md
-    - General desciption of program
+    - General description of program
 - spells.py
     - Main file for controlling spells and skills of the character classes
 - storyline.py
     - File that is primarily used for user-input function; will eventually house the storyline
 - town.py
-    - Controls the iteractions of the character while in town
+    - Controls the interactions of the character while in town
 - tutorial.py
     - File that controls the tutorial; not yet implemented
 - world.py

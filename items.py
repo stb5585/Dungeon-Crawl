@@ -10,7 +10,7 @@ def reciprocal(x: int) -> float:
     return 1.0 / x
 
 
-def random_item(z: int) -> object:
+def random_item(z: int):
     item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger],
                                        [reciprocal(BronzeDagger().rarity), reciprocal(IronDagger().rarity),
                                         reciprocal(SteelDagger().rarity), reciprocal(AdamantiteDagger().rarity),

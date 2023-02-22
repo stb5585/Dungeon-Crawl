@@ -5,6 +5,7 @@
 import pickle
 import sys
 import time
+from simple_term_menu import TerminalMenu
 
 
 def slow_type(line, typing_speed=100):
@@ -30,17 +31,9 @@ def get_input(valid_input: list):
             return user_entered
 
 
-def get_response(options: list, **kwargs):
-    for index, option in enumerate(options):
-        print(str(index) + ". " + option[0])
-        time.sleep(0.25)
-    valid_inputs = [str(num) for num in range(len(options))]
-    try:
-        option_index = int(get_input(valid_inputs))
-    except ValueError:
-        print("Sorry to hear that, goodbye then...")
-        sys.exit(0)
-    return options[option_index][1]
+def get_response(options: list):
+    terminal_menu = TerminalMenu(options, menu_cursor_style=("fg_black", "bold"))
+    return terminal_menu.show()
 
 
 def story_flow(story_dict: dict, response=False):

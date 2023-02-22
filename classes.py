@@ -5,6 +5,7 @@
 import os
 import time
 
+import enemies
 import storyline
 import items
 import spells
@@ -22,19 +23,21 @@ def define_class(race):
                   'Healer': Healer,
                   'Pathfinder': Pathfinder}
     while True:
+        print("Choose your character's class.")
         char_class = list()
-        for i, cls in enumerate(race.cls_res['Base']):
-            char_class.append((cls, i))
-        create_class = {1: {"Options": char_class,
-                            "Text": ["Choose your character's class.\n"]}}
-        class_index = storyline.story_flow(create_class, response=True)
-        print(class_dict[char_class[class_index][0]]().__str__() + "\n")
-        choose = input("Are you sure you want to play as a {}? ".format(
-            class_dict[char_class[class_index][0]]().name.lower()))
-        if choose in ['y', 'yes']:
+        for cls in race.cls_res['Base']:
+            char_class.append(cls)
+        class_index = storyline.get_response(char_class)
+        print(class_dict[char_class[class_index]]().__str__() + "\n")
+        print("Are you sure you want to play as a {}? ".format(class_dict[char_class[class_index]]().name.lower()))
+        yes_no = ["Yes", "No"]
+        choose = storyline.get_response(yes_no)
+        if yes_no[choose] == 'Yes':
             break
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')
     os.system('cls' if os.name == 'nt' else 'clear')
-    return class_dict[char_class[class_index][0]]()
+    return class_dict[char_class[class_index]]()
 
 
 def equip_check(item, item_typ, class_name):
@@ -47,7 +50,7 @@ def equip_check(item, item_typ, class_name):
                   ('Paladin', Paladin), ('Crusader', Crusader),
                   ('Lancer', Lancer), ('Dragoon', Dragoon),
                   ('Sorcerer', Sorcerer), ('Wizard', Wizard),
-                  ('Warlock', Warlock), ('Necromancer', Necromancer),
+                  ('Warlock', Warlock), ('Shadowcaster', Shadowcaster),
                   ('Spellblade', Spellblade), ('Knight Enchanter', KnightEnchanter),
                   ('Thief', Thief), ('Rogue', Rogue),
                   ('Inquisitor', Inquisitor), ('Seeker', Seeker),
@@ -75,8 +78,52 @@ def equip_check(item, item_typ, class_name):
                 return False
 
 
+def choose_familiar():
+    yes_no = ['Yes', 'No']
+    fam_name = ''
+    choose_dict = {"Homunculus": [enemies.Homunculus(), "Defense"],
+                   "Fairy": [enemies.Fairy(), "Support"],
+                   "Mephit": [enemies.Mephit(), "Arcane"],
+                   "Jinkin": [enemies.Jinkin(), "Luck"]}
+    choose_list = list(choose_dict.keys())
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("Choose your familiar.")
+        choice = storyline.get_response(choose_list)
+        fam_typ = choose_list[choice]
+        storyline.slow_type(fam_typ + "\n")
+        storyline.slow_type("Type: " + choose_dict[fam_typ][0].enemy_typ + "\n")
+        storyline.slow_type("Specialty: " + choose_dict[fam_typ][1] + "\n")
+        time.sleep(0.5)
+        print(choose_dict[fam_typ][0].__str__(inspect=True))
+        time.sleep(0.5)
+        if len(choose_dict[fam_typ][0].spellbook['Spells'].keys()) > 0:
+            print("Spells: " + ", ".join(choose_dict[fam_typ][0].spellbook['Spells'].keys()) + "\n")
+            time.sleep(0.5)
+        if len(choose_dict[fam_typ][0].spellbook['Skills'].keys()) > 0:
+            print("Skills: " + ", ".join(choose_dict[fam_typ][0].spellbook['Skills'].keys()) + "\n")
+            time.sleep(0.5)
+        print("You have chosen a {} as your familiar. Are you sure?".format(fam_typ))
+        keep = storyline.get_response(yes_no)
+        if keep == 0:
+            break
+    while fam_name == '':
+        os.system('cls' if os.name == 'nt' else 'clear')
+        storyline.slow_type("What is your familiar's name?\n")
+        fam_name = input("").capitalize()
+        print("You have chosen to name your familiar {}. Is this correct? ".format(fam_name))
+        keep = storyline.get_response(yes_no)
+        if keep == 1:
+            fam_name = ''
+    familiar = choose_dict[fam_typ][0]
+    familiar.name = fam_name
+    familiar.typ = fam_typ
+    familiar.spec = choose_dict[fam_typ][1]
+    return familiar
+
+
 def promotion(player):
-    exp_scale = 50  # TODO
+    exp_scale = 1  # TODO
     pro1_dict = {Warrior().name: [WeaponMaster(), Paladin(), Lancer()],
                  Mage().name: [Sorcerer(), Warlock(), Spellblade()],
                  Footpad().name: [Thief(), Inquisitor(), Assassin()],
@@ -86,7 +133,7 @@ def promotion(player):
                  Paladin().name: [Crusader()],
                  Lancer().name: [Dragoon()],
                  Sorcerer().name: [Wizard()],
-                 Warlock().name: [Necromancer()],
+                 Warlock().name: [Shadowcaster()],
                  Spellblade().name: [KnightEnchanter()],
                  Thief().name: [Rogue()],
                  Inquisitor().name: [Seeker()],
@@ -99,17 +146,14 @@ def promotion(player):
                  Shaman().name: [Soulcatcher()]}
     current_class = player.cls
     class_options = []
-    i = 0
     if player.pro_level == 1:
         for cls in pro1_dict[current_class]:
             if cls.name in races_dict[player.race]().cls_res['First']:
-                class_options.append((cls.name, i))
-                i += 1
+                class_options.append(cls.name)
     else:
         for cls in pro2_dict[current_class]:
             if cls.name in races_dict[player.race]().cls_res['Second']:
-                class_options.append((cls.name, i))
-                i += 1
+                class_options.append(cls.name)
     if len(class_options) > 1:
         print("Choose your path.")
         class_index = storyline.get_response(class_options)
@@ -121,8 +165,10 @@ def promotion(player):
         new_class = pro2_dict[current_class][class_index]
     print(new_class)
     print("You have chosen to promote from {} to {}.".format(current_class, new_class.name))
-    promote = input("Do you wish to continue? (Y or N) ").lower()
-    if promote == 'y':
+    print("Do you wish to continue?")
+    yes_no = ["Yes", "No"]
+    promote = storyline.get_response(yes_no)
+    if yes_no[promote] == 'Yes':
         print("Congratulations! {} has been promoted from a {} to a {}!".format(player.name, current_class,
                                                                                 new_class.name))
         player.equip(unequip=True)
@@ -132,32 +178,9 @@ def promotion(player):
         promoted_player.experience = 0
         promoted_player.exp_to_gain = (exp_scale ** player.pro_level) * player.level
         promoted_player.cls = new_class.name
-        promoted_player.equipment = new_class.equipment
-        if new_class.name == 'Warlock':
-            promoted_player.spellbook['Spells'] = dict()
-            print("You unlearn all of your arcane spells.")
-            time.sleep(0.5)
-        elif new_class.name == 'Weapon Master':
-            del promoted_player.spellbook['Skills']['Shield Slam']
-            print("You unlearn Shield Slam.")
-            time.sleep(0.5)
-        elif new_class.name == 'Inquisitor':
-            del promoted_player.spellbook['Skills']['Kidney Punch']
-            print("You unlearn Kidney Punch.")
-            time.sleep(0.5)
-        if str(promoted_player.level) in spells.spell_dict[promoted_player.cls]:
-            spell_gain = spells.spell_dict[promoted_player.cls][str(promoted_player.level)]
-            promoted_player.spellbook['Spells'][spell_gain().name] = spell_gain
-            print(spell_gain())
-            print("You have gained the ability to cast {}.".format(spell_gain().name))
-            time.sleep(0.5)
-        if str(promoted_player.level) in spells.skill_dict[promoted_player.cls]:
-            skill_gain = spells.skill_dict[promoted_player.cls][str(promoted_player.level)]
-            promoted_player.spellbook['Skills'][skill_gain().name] = skill_gain
-            print(skill_gain())
-            print("You have gained the ability to use {}.".format(skill_gain().name))
-            time.sleep(0.5)
-        time.sleep(0.5)
+        promoted_player.equipment['Weapon'] = new_class.equipment['Weapon']
+        promoted_player.equipment['Armor'] = new_class.equipment['Armor']
+        promoted_player.equipment['OffHand'] = new_class.equipment['OffHand']
         print("Stat Gains")
         print("Strength: {} -> {}".format(promoted_player.strength, promoted_player.strength + new_class.str_plus))
         promoted_player.strength += new_class.str_plus
@@ -175,7 +198,37 @@ def promotion(player):
         print("Weapon: {}".format(player.equipment['Weapon']().name))
         print("OffHand: {}".format(player.equipment['OffHand']().name))
         print("Armor: {}".format(player.equipment['Armor']().name))
+        if new_class.name == 'Warlock':
+            promoted_player.spellbook['Spells'] = dict()
+            print("You unlearn all of your arcane spells.")
+            time.sleep(1)
+        elif new_class.name == 'Weapon Master':
+            del promoted_player.spellbook['Skills']['Shield Slam']
+            print("You unlearn Shield Slam.")
+            time.sleep(1)
+        elif new_class.name == 'Inquisitor':
+            del promoted_player.spellbook['Skills']['Kidney Punch']
+            print("You unlearn Kidney Punch.")
+            time.sleep(1)
+        if str(promoted_player.level) in spells.spell_dict[promoted_player.cls]:
+            spell_gain = spells.spell_dict[promoted_player.cls][str(promoted_player.level)]
+            promoted_player.spellbook['Spells'][spell_gain().name] = spell_gain
+            print(spell_gain())
+            print("You have gained the ability to cast {}.".format(spell_gain().name))
+            time.sleep(1)
+        if str(promoted_player.level) in spells.skill_dict[promoted_player.cls]:
+            skill_gain = spells.skill_dict[promoted_player.cls][str(promoted_player.level)]
+            promoted_player.spellbook['Skills'][skill_gain().name] = skill_gain
+            print(skill_gain())
+            print("You have gained the ability to use {}.".format(skill_gain().name))
+            time.sleep(1)
         input("Press enter to continue")
+        if new_class.name == 'Warlock':
+            promoted_player.familiar = choose_familiar()
+            print("{} the {} familiar has joined your team!".format(promoted_player.familiar.name,
+                                                                    promoted_player.familiar.typ))
+            input("Press enter to continue")
+        time.sleep(0.5)
     else:
         print("If you change your mind, you know where to find us.")
         time.sleep(1)
@@ -379,7 +432,7 @@ class Mage(Job):
     """
     Promotion: Mage -> Sorcerer   -> Wizard
                     |
-                    -> Warlock    -> Necromancer
+                    -> Warlock    -> Shadowcaster
                     |
                     -> Spellblade -> Knight Enchanter
     """
@@ -443,7 +496,7 @@ class Wizard(Job):
 
 class Warlock(Job):
     """
-    Promotion: Mage -> Warlock -> Necromancer
+    Promotion: Mage -> Warlock -> Shadowcaster
     Pros: Higher strength and constitution gain; access to additional skills; gains access to shadow spells and familiar
     Cons: Lower intelligence gain and limited access to higher level spells; lose access to learned arcane Mage spells
     """
@@ -462,17 +515,17 @@ class Warlock(Job):
                          pro_level=2)
 
 
-class Necromancer(Job):
+class Shadowcaster(Job):
     """
-    Promotion: Mage -> Warlock -> Necromancer
+    Promotion: Mage -> Warlock -> Shadowcaster
     Pros: Higher strength and constitution gain; access to additional skills; more powerful familiars
     Cons: Lower intelligence gain and limited access to higher level spells
     """
 
     def __init__(self):
-        super().__init__(name="Necromancer", description="The Necromancer is highly attuned to the dark arts and can "
-                                                         "conjure the most demonic of powers, including the practicing"
-                                                         " of forbidden blood magic.",
+        super().__init__(name="Shadowcaster", description="The Shadowcaster is highly attuned to the dark arts and can "
+                                                          "conjure the most demonic of powers, including the practicing"
+                                                          " of forbidden blood magic.",
                          str_plus=1, int_plus=1, wis_plus=2, con_plus=2, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.Necronomicon,
                                         Armor=items.CloakEnchantment, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -509,14 +562,14 @@ class KnightEnchanter(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
     Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords
-    and light armor
+    and light armor; adds armor based on intel and mana percentage
     Cons: Lower intelligence and wisdom; cannot equip staves; gains spells at a much slower pace
     """
 
     def __init__(self):
         super().__init__(name="Knight Enchanter", description="The Knight Enchanter uses their arcane powers to imbue"
-                                                              " weapons with magical enchantments that can rival the "
-                                                              "most powerful fighter.",
+                                                              " weapons and armor with magical enchantments that can "
+                                                              "rival the most powerful fighter.",
                          str_plus=2, int_plus=1, wis_plus=1, con_plus=2, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.BookShadows,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
@@ -994,3 +1047,21 @@ class Soulcatcher(Job):
                                        'OffHand': ['Fist', 'Shields'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=3)
+
+
+classes_dict = {'Warrior': Warrior, 'Mage': Mage, 'Footpad': Footpad, 'Healer': Healer, 'Pathfinder': Pathfinder,
+                'Weapon Master': WeaponMaster, 'Berserker': Berserker,
+                'Paladin': Paladin, 'Crusader': Crusader,
+                'Lancer': Lancer, 'Dragoon': Dragoon,
+                'Sorcerer': Sorcerer, 'Wizard': Wizard,
+                'Warlock': Warlock, 'Shadowcaster': Shadowcaster,
+                'Spellblade': Spellblade, 'Knight Enchanter': KnightEnchanter,
+                'Thief': Thief, 'Rogue': Rogue,
+                'Inquisitor': Inquisitor, 'Seeker': Seeker,
+                'Assassin': Assassin, "Ninja": Ninja,
+                'Cleric': Cleric, 'Templar': Templar,
+                'Monk': Monk, 'Master Monk': MasterMonk,
+                'Priest': Priest, 'Archbishop': Archbishop,
+                'Druid': Druid, 'Lycan': Lycan,
+                'Diviner': Diviner, 'Geomancer': Geomancer,
+                'Shaman': Shaman, 'Soulcatcher': Soulcatcher}

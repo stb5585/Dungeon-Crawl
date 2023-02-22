@@ -84,15 +84,16 @@ class MapTile:
         for tile in world_dict['World']:
             if level == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
-                if world_dict['World'][tile] is None:
-                    continue
-                elif 'stairs' in world_dict['World'][tile].intro_text(player) and world_dict['World'][tile].visited:
-                    map_array[tile_x][tile_y] = "x"  # 75
-                elif world_dict['World'][tile].enter:
-                    map_array[tile_x][tile_y] = " "  # 255
-                else:
-                    if world_dict['World'][tile].visited:
-                        map_array[tile_x][tile_y] = "#"
+                if world_dict['World'][tile].visited:
+                    if world_dict['World'][tile] is None:
+                        continue
+                    elif 'stairs' in world_dict['World'][tile].intro_text(player):
+                        map_array[tile_x][tile_y] = "x"  # 75
+                    elif world_dict['World'][tile].enter:
+                        map_array[tile_x][tile_y] = "."  # 255
+                    else:
+                        if world_dict['World'][tile].visited:
+                            map_array[tile_x][tile_y] = "#"
         map_array[player.location_y][player.location_x] = "+"  # 125
         map_array[map_array == "0.0"] = " "
         map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
@@ -147,7 +148,7 @@ class EnemyRoom(MapTile):
             else:
                 return [actions.Attack(), actions.UseItem()]
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class SpecialTile(MapTile):
@@ -216,7 +217,7 @@ class EmptyCavePath(MapTile):
         self.adjacent_visited(wmap)
 
     def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
+        return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class LockedDoor(EnemyRoom):
@@ -247,11 +248,11 @@ class LockedDoorEast(LockedDoor):
     def available_actions(self, player):
         if self.enemy.is_alive():
             if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.UseItem(), actions.CharacterMenu()], blocked=self.blocked)
             else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()], blocked=self.blocked)
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class LockedDoorWest(LockedDoor):
@@ -262,11 +263,11 @@ class LockedDoorWest(LockedDoor):
     def available_actions(self, player):
         if self.enemy.is_alive():
             if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.UseItem(), actions.CharacterMenu()], blocked=self.blocked)
             else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()], blocked=self.blocked)
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class LockedDoorNorth(LockedDoor):
@@ -277,11 +278,11 @@ class LockedDoorNorth(LockedDoor):
     def available_actions(self, player):
         if self.enemy.is_alive():
             if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.UseItem(), actions.CharacterMenu()], blocked=self.blocked)
             else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()], blocked=self.blocked)
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class LockedDoorSouth(LockedDoor):
@@ -292,11 +293,11 @@ class LockedDoorSouth(LockedDoor):
     def available_actions(self, player):
         if self.enemy.is_alive():
             if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.UseItem(), actions.CharacterMenu()], blocked=self.blocked)
             else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
+                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()], blocked=self.blocked)
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class RandomEnemyRoom(EnemyRoom):
@@ -332,11 +333,11 @@ class RandomEnemyRoom(EnemyRoom):
         if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
                 if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.CharacterMenu()])
                 else:
-                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()])
             else:
-                return self.adjacent_moves([actions.Status()])
+                return self.adjacent_moves([actions.CharacterMenu()])
         else:
             if self.enemy.is_alive():
                 if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
@@ -349,7 +350,7 @@ class RandomEnemyRoom(EnemyRoom):
                 else:
                     return [actions.Attack(), actions.UseItem()]
             else:
-                return self.adjacent_moves([actions.Status()])
+                return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class RandomEnemyRoom2(EnemyRoom):
@@ -385,11 +386,11 @@ class RandomEnemyRoom2(EnemyRoom):
         if 'Chest' in self.enemy.name:
             if self.enemy.is_alive():
                 if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
+                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.CharacterMenu()])
                 else:
-                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()])
             else:
-                return self.adjacent_moves([actions.Status()])
+                return self.adjacent_moves([actions.CharacterMenu()])
         else:
             if self.enemy.is_alive():
                 if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
@@ -402,7 +403,7 @@ class RandomEnemyRoom2(EnemyRoom):
                 else:
                     return [actions.Attack(), actions.UseItem()]
             else:
-                return self.adjacent_moves([actions.Status()])
+                return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class MinotaurRoom(EnemyRoom):
@@ -516,9 +517,9 @@ class LootRoom(EnemyRoom):
 
     def available_actions(self, player):
         if self.enemy.is_alive():
-            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()])
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class LootRoom2(EnemyRoom):
@@ -537,9 +538,9 @@ class LootRoom2(EnemyRoom):
 
     def available_actions(self, player):
         if self.enemy.is_alive():
-            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
+            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.CharacterMenu()])
         else:
-            return self.adjacent_moves([actions.Status()])
+            return self.adjacent_moves([actions.CharacterMenu()])
 
 
 class UnobtainiumRoom(SpecialTile):
@@ -559,7 +560,7 @@ class UnobtainiumRoom(SpecialTile):
             self.visited = True
 
     def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
+        return self.adjacent_moves([actions.CharacterMenu()])
 
     def special_text(self, player):
         game.unobtainium_room()
@@ -580,7 +581,7 @@ class FinalBossRoom(SpecialTile):
         self.visited = True
 
     def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
+        return self.adjacent_moves([actions.CharacterMenu()])
 
     def special_text(self, player):
         if not self.visited:
@@ -600,7 +601,7 @@ class StairsUp(MapTile):
         self.adjacent_visited(wmap)
 
     def available_actions(self, player):
-        return self.adjacent_moves([actions.StairsUp(), actions.Status()])
+        return self.adjacent_moves([actions.StairsUp(), actions.CharacterMenu()])
 
 
 class StairsDown(MapTile):
@@ -616,7 +617,7 @@ class StairsDown(MapTile):
         self.adjacent_visited(wmap)
 
     def available_actions(self, player):
-        return self.adjacent_moves([actions.StairsDown(), actions.Status()])
+        return self.adjacent_moves([actions.StairsDown(), actions.CharacterMenu()])
 
 
 class SecretShop(MapTile):

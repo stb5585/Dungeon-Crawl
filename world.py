@@ -33,11 +33,6 @@ def load_tiles(world_dict=None, reload=False):
             cols = rows[y].split('\t')
             for x in range(x_max):
                 tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
-                # _world['World'][(x, y, z)] = getattr(__import__('map'), 'Wall')(x, y, z) if tile_name == '' \
-                #     else getattr(__import__('map'), tile_name)(x, y, z)
-                # if tile_name == '':
-                #     print(x, y, z)
-                #     tile = getattr(__import__('map'), 'Wall')(x, y, z)
                 if tile_name == 'RandomTile':
                     if random.random() > 0.60:  # 40% chance for random enemy TODO
                         tile = getattr(__import__('map'), 'RandomEnemyRoom')(x, y, z)
