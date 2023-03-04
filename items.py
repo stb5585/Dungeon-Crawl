@@ -171,14 +171,18 @@ class Weapon(Item):
         self.unequip = unequip
         self.off = off
         self.typ = "Weapon"
-        self.ignore = False
         self.disarm = True
+        self.special = False
+        self.ignore = False
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}\n{}-handed".format(self.name,
                                                                                              self.description,
                                                                                              self.value, self.damage,
                                                                                              self.crit, self.handed)
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        pass
 
 
 class NoWeapon(Weapon):
@@ -235,12 +239,23 @@ class MithrilFist(Weapon):
 
 
 class GodsHand(Weapon):
+    """
+    Ultimate weapon; deals additional holy damage that won't heal even if the enemy would normally heal with holy damage
+    """
 
     def __init__(self):
         super().__init__(name="GOD'S HAND", description="With the appearance of an ordinary white glove, this weapon is"
                                                         " said to be imbued with the power of God.",
-                         value=75000, rarity=60, damage=10, crit=1, handed=1, subtyp='Fist', unequip=False,
+                         value=0, rarity=99, damage=10, crit=1, handed=1, subtyp='Fist', unequip=False,
                          off=True)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        resist = target.check_mod('resist', 'Holy')
+        damage = int(random.randint(damage // 2, damage) * (1 - resist))
+        if damage > 0:
+            print("Holy light burns {}, dealing {} additional holy damage.".format(target.name, damage))
+            target.health -= damage
 
 
 class BronzeDagger(Weapon):
@@ -293,12 +308,25 @@ class MithrilDagger(Weapon):
 
 
 class Carnwennan(Weapon):
+    """
+    Ultimate weapon; chance to stun target on critical
+    """
 
     def __init__(self):
         super().__init__(name="CARNWENNAN", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
                          value=0, rarity=99, damage=15, crit=1, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint(0, wielder.dex) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.dex // 10)
+                target.status_effects['Stun'][0] = True
+                target.status_effects['Stun'][1] = duration
+                print("{} is stunned for {} turns.".format(target.name, duration))
 
 
 class BronzeSword(Weapon):
@@ -352,12 +380,27 @@ class MithrilSword(Weapon):
 
 
 class Excalibur(Weapon):
+    """
+    Ultimate weapon; chance on crit to add a bleed on target
+    """
 
     def __init__(self):
         super().__init__(name="EXCALIBUR", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
                          value=0, rarity=99, damage=18, crit=3, handed=1, subtyp='Sword', unequip=False,
                          off=True)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint((wielder.strength // 2), wielder.strength)\
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                bleed_dmg = max(wielder.strength // 2, damage)
+                target.status_effects['Bleed'][0] = True
+                target.status_effects['Bleed'][1] = duration
+                target.status_effects['Bleed'][2] = bleed_dmg
+                print("{} is bleeding for {} turns.".format(target.name, duration))
 
 
 class BronzeMace(Weapon):
@@ -416,18 +459,31 @@ class MithrilMace(Weapon):
                                                           "powerful strikes. A mace typically consists of a strong, "
                                                           "heavy, wooden or metal shaft, often reinforced with "
                                                           "metal, featuring a head made of mithril.",
-                         value=21000, rarity=40, damage=14, crit=7, handed=1, subtyp='Mace', unequip=False,
+                         value=21000, rarity=40, damage=14, crit=6, handed=1, subtyp='Mace', unequip=False,
                          off=True)
 
 
 class Mjolnir(Weapon):
+    """
+    Ultimate weapon; chance to stun on a critical hit based on strength
+    """
 
     def __init__(self):
         super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
                                                      "mythology as one of the most fearsome and powerful weapons in "
                                                      "existence, capable of leveling mountains.",
-                         value=0, rarity=99, damage=20, crit=6, handed=1, subtyp='Mace', unequip=False,
+                         value=0, rarity=99, damage=20, crit=5, handed=1, subtyp='Mace', unequip=False,
                          off=True)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint(0, wielder.strength) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                target.status_effects['Stun'][0] = True
+                target.status_effects['Stun'][1] = duration
+                print("{} is stunned for {} turns.".format(target.name, duration))
 
 
 class Axe(Weapon):
@@ -473,11 +529,26 @@ class MithrilAxe(Weapon):
 
 
 class Jarnbjorn(Weapon):
+    """
+    Ultimate weapon; chance on critical hit to cause bleed
+    """
 
     def __init__(self):
         super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
                          value=0, rarity=99, damage=23, crit=3, handed=2, subtyp='Axe', unequip=False,
                          off=False)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint((wielder.strength // 2), wielder.strength) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                bleed_dmg = max(wielder.strength // 2, damage)
+                target.status_effects['Bleed'][0] = True
+                target.status_effects['Bleed'][1] = duration
+                target.status_effects['Bleed'][2] = bleed_dmg
+                print("{} is bleeding for {} turns.".format(target.name, duration))
 
 
 class Spear(Weapon):
@@ -523,11 +594,15 @@ class Trident(Weapon):
 
 
 class Gungnir(Weapon):
+    """
+    Ultimate weapon; ignores armor
+    """
 
     def __init__(self):
         super().__init__(name="GUNGNIR", description="Legendary spear of the god Odin. Old Norse for \"swaying one\".",
                          value=0, rarity=99, damage=22, crit=2, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
+        self.ignore = True
 
 
 class PineStaff(Weapon):
@@ -591,21 +666,45 @@ class MithrilshodStaff(Weapon):
 
 
 class DragonStaff(Weapon):
+    """
+    Ultimate weapon; regen mana based on damage
+    """
 
     def __init__(self):
         super().__init__(name="DRAGON STAFF", description="A magic staff, shaped to appear as a dragon.",
                          value=0, rarity=99, damage=20, crit=5, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.restriction = ['Berserker', 'Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        mana_heal = random.randint(damage // 2, damage)
+        if wielder.mana + mana_heal > wielder.mana_max:
+            mana_heal = wielder.mana_max - wielder.mana
+        if mana_heal > 0:
+            wielder.mana += mana_heal
+            print("{}'s mana is regenerated by {}.".format(wielder.name, mana_heal))
 
 
 class PrincessGuard(Weapon):
+    """
+    Ultimate weapon; regen health based on damage
+    """
 
     def __init__(self):
         super().__init__(name="PRINCESS GUARD", description="A mythical staff from another world.",
                          value=0, rarity=99, damage=21, crit=6, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.restriction = ['Archbishop']
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        heal = random.randint(damage // 2, damage)
+        if wielder.health + heal > wielder.health_max:
+            heal = wielder.health_max - wielder.health
+        if heal > 0:
+            wielder.mana += heal
+            print("{}'s heal is regenerated by {}.".format(wielder.name, heal))
 
 
 class OakHammer(Weapon):
@@ -660,12 +759,25 @@ class GreatMaul(Weapon):
 
 
 class Skullcrusher(Weapon):
+    """
+    Ultimate weapon; chance to stun on critical based on strength
+    """
 
     def __init__(self):
         super().__init__(name="SKULLCRUSHER", description="A massive hammer with the power to pulverize an enemy's "
                                                           "skull to powder.",
                          value=0, rarity=99, damage=26, crit=5, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint(0, wielder.strength) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                target.status_effects['Stun'][0] = True
+                target.status_effects['Stun'][1] = duration
+                print("{} is stunned for {} turns.".format(target.name, duration))
 
 
 class Tanto(Weapon):
@@ -687,12 +799,27 @@ class Wakizashi(Weapon):
 
 
 class Ninjato(Weapon):
+    """
+    Ultimate weapon; chance on crit to kill target
+    """
 
     def __init__(self):
         super().__init__(name="NINJATO", description="",
                          value=0, rarity=99, damage=18, crit=1, handed=1, subtyp='Ninja', unequip=False,
                          off=True)
         self.restriction = ['Ninja']
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            resist = target.check_mod('resist', 'Death')
+            if resist < 1:
+                w_chance = wielder.check_mod('luck', luck_factor=10)
+                t_chance = target.check_mod('luck', luck_factor=10)
+                if random.randint(0, wielder.dex) + w_chance > \
+                        random.randint(target.con // 2, target.con) + t_chance:
+                    print("The {} blade rips the soul from {} and they drop dead to the ground!".format(
+                        self.name.capitalize(), target.name))
 
 
 class Armor(Item):
@@ -1323,6 +1450,7 @@ class Key(Misc):
     """
     Opens locked chests
     """
+
     def __init__(self):
         super().__init__(name="KEY", description="Unlocks a locked chest but is consumed.", value=500, rarity=20,
                          subtyp='Key')
@@ -1332,19 +1460,88 @@ class OldKey(Misc):
     """
     Opens locked doors
     """
+
     def __init__(self):
         super().__init__(name="OLDKEY", description="Unlocks doors that may lead to either valuable treasure or to "
                                                     "powerful enemies.",
-                         value=5000, rarity=40, subtyp='Key')
+                         value=50000, rarity=40, subtyp='Key')
 
 
 class Unobtainium(Misc):
     """
     Magical ore that can be used to forge ultimate weapons at the blacksmith; only one in the game
     """
+
     def __init__(self):
         super().__init__(name="UNOBTAINIUM", description="The legendary ore that has only been theorized. Can be used "
                                                          "to create ultimate weapons.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic1(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Triangulus", description="The holy trinity of mind, body, and spirit are represented by "
+                                                        "the Triangulus relic.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic2(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Quadrata", description="The Quadrata relic symbolizes order, trust, stability, and "
+                                                      "logic, the hallmarks of a well-balanced person.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic3(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Hexagonum", description="The Hexagonum relic represents the natural world, since the "
+                                                       "hexagon is the considered the strongest shape and regularly "
+                                                       "found in nature.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic4(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Luna", description="The Moon, our celestial partner, is the inspiration for the Luna "
+                                                  "relic and represents love for others.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic5(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Polaris", description="The Polaris relic resembles the shape of a star and represents "
+                                                     "the guiding light of the North Star.",
+                         value=0, rarity=99, subtyp='Special')
+
+
+class Relic6(Misc):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="Infinitas", description="Shaped like a circle, the Infinitas relic represents the never-"
+                                                       "ending struggle between good and evil.",
                          value=0, rarity=99, subtyp='Special')
 
 

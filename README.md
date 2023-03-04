@@ -25,6 +25,7 @@ FUTURE DEVELOPMENT:
     - Enhance storyline for a more immersive experience
     - Deepen the dungeon to allow for additional challenge
     - Make item comparison easier for the shop
+    - add inspection of item in inventory (print item information)
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
       be farmed
     - Add quests to game; add tavern in town for obtaining quests

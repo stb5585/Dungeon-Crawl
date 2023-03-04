@@ -8,7 +8,6 @@ import sys
 import glob
 import random
 import time
-import numpy
 import _pickle as pickle
 
 import items
@@ -20,21 +19,6 @@ import races
 import classes
 
 
-def rand_stats(race, cls) -> tuple:
-    """
-    Each race has a range of values per stat that the stat will fall in; the class has minimum values for each stat
-    that is allowed, and will set it to the minimum required if the random value is lower
-    """
-    strength = random.randint(race.str_rng[0], race.str_rng[1]) + cls.str_plus
-    intel = random.randint(race.int_rng[0], race.int_rng[1]) + cls.int_plus
-    wisdom = random.randint(race.wis_rng[0], race.wis_rng[1]) + cls.wis_plus
-    con = random.randint(race.con_rng[0], race.con_rng[1]) + cls.con_plus
-    charisma = random.randint(race.cha_rng[0], race.cha_rng[1]) + cls.cha_plus
-    dex = random.randint(race.dex_rng[0], race.dex_rng[1]) + cls.dex_plus
-    stats = (strength, intel, wisdom, con, charisma, dex)
-    return stats
-
-
 def new_char() -> object:
     """
     Defines a new character and places them in the town to start
@@ -44,7 +28,6 @@ def new_char() -> object:
     Level MP: (0.75 * level * promotion level) + (intel // 2) (Average)
     """
     exp_scale = 1  # TODO
-    world.load_tiles()
     location_x, location_y, location_z = world.starting_position
     name = ''
     # storyline.read_story("story_files/new_player.txt")
@@ -57,29 +40,16 @@ def new_char() -> object:
         if keep == 1:
             name = ''
     os.system('cls' if os.name == 'nt' else 'clear')
-    race = races.define_race()
-    cls = classes.define_class(race)
-    created = {1: {"Options": [],
-                   "Text": ["Welcome to {}, the {} {}.\nNow let's determine your statistics.".format(name,
-                                                                                                     race.name,
-                                                                                                     cls.name)]}}
-    storyline.story_flow(created)
-    time.sleep(1)
     while True:
-        os.system('cls' if os.name == 'nt' else 'clear')
-        stats = rand_stats(race, cls)
-        stats = stats + (sum(stats),)
-        specs = ("Strength", "Intelligence", "Wisdom", "Constitution", "Charisma", "Dexterity", "Total")
-        spec_stat = list(zip(specs, stats))
-        for i, l in enumerate(spec_stat):
-            n = len(spec_stat[i][0]) + len(str(spec_stat[i][1]))
-            print(l[0] + ":".ljust(16 - n) + str(l[1]))
-        options = ["Reroll", "Keep"]
-        keep = storyline.get_response(options)
-        if options[keep] == "Keep":
-            os.system('cls' if os.name == 'nt' else 'clear')
+        race = races.define_race()
+        cls = classes.define_class(race)
+        if cls:
             break
-    # stats = (18, 18, 18, 18, 18, 18)  # TODO delete
+        time.sleep(0.5)
+    created = "Welcome to {}, the {} {}.\n".format(name, race.name, cls.name)
+    storyline.slow_type(created)
+    time.sleep(1)
+    stats = tuple(map(lambda x, y: x + y, race.stats, cls.stat_plus))
     hp = stats[3] * 2  # starting HP equal to constitution x 2
     mp = stats[1] + int(stats[2] * 0.5)  # starting MP equal to intel and wis x 0.5
     gil = stats[4] * 25  # starting gold equal to charisma x 25
@@ -112,15 +82,15 @@ def load(char=None) -> tuple:
             with open(save_file, 'rb') as save_file:
                 save_dict = pickle.load(save_file)
                 player_dict = save_dict['Player']
-                _world = save_dict['World']
-            return player_dict, _world
+                world_dict = save_dict['World']
+            return player_dict, world_dict
     else:
         if os.path.exists(char + ".save"):
             with open(char + ".save", "rb") as save_file:
                 save_dict = pickle.load(save_file)
                 player_dict = save_dict['Player']
-                _world = save_dict['World']
-            return player_dict, _world
+                world_dict = save_dict['World']
+            return player_dict, world_dict
         else:
             return {}, {}
 
@@ -153,6 +123,7 @@ def load_char(char=None, tmp=False):
         player.equipment = player_dict['equipment']
         player.inventory = player_dict['inventory']
         player.spellbook = player_dict['spellbook']
+        player.world_dict['World'] = world_dict
         return player, world_dict
 
 
@@ -184,7 +155,7 @@ class Character:
                                "Sleep": [False, 0],  # whether asleep, turns
                                "Reflect": [False, 0],  # whether reflecting spells, turns
                                "Poison": [False, 0, 0],  # whether poisoned, turns, damage per turn
-                               "DOT": [False, 0, 0],  # whether corrupted, turns, damage per turn
+                               "DOT": [False, 0, 0],  # whether corrupted or burning, turns, damage per turn
                                "Bleed": [False, 0, 0],  # whether bleeding, turns, damage per turn
                                "Regen": [False, 0, 0],  # whether HP is regenerating, turns, heal per turn
                                "Attack": [False, 0, 0],  # increased melee damage, turns, amount
@@ -194,10 +165,12 @@ class Character:
                                }
         self.equipment = {}
         self.inventory = {}
+        self.special_inventory = {}
         self.spellbook = {'Spells': {},
                           'Skills': {}}
         self.resistance = {}
         self.flying = False
+        self.familiar = None
 
 
 class Player(Character):
@@ -230,6 +203,7 @@ class Player(Character):
         self.pro_level = pro_level
         self.gold = gold
         self.resistance = resistance
+        self.world_dict = {'World': {}}
 
     def game_quit(self):
         """
@@ -242,54 +216,22 @@ class Player(Character):
             print("Goodbye, {}!".format(self.name))
             sys.exit(0)
 
-    def minimap(self, world_dict: dict):
+    def character_menu(self, tile=None):
         """
-        Function that allows the player to view the current dungeon level in terminal
-        15 x 10 grid
-        """
-        level = self.location_z
-        map_size = (20, 20)
-        map_array = numpy.zeros(map_size).astype(str)
-        for tile in world_dict['World']:
-            if level == tile[2]:
-                tile_x, tile_y = tile[1], tile[0]
-                if world_dict['World'][tile] is None:
-                    continue
-                elif 'stairs' in world_dict['World'][tile].intro_text(self) and world_dict['World'][tile].visited:
-                    map_array[tile_x][tile_y] = "x"  # 75
-                elif world_dict['World'][tile].enter:
-                    map_array[tile_x][tile_y] = " "  # 255
-                else:
-                    if world_dict['World'][tile].visited:
-                        map_array[tile_x][tile_y] = "#"
-        map_array[self.location_y][self.location_x] = "+"  # 125
-        map_array[map_array == "0.0"] = " "
-        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
-        map_array[map_array == "0.0"] = "\u203E"  # overline character
-        map_array = numpy.vstack([map_array, numpy.zeros(map_array.shape[1])])
-        map_array[map_array == "0.0"] = "_"
-        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[0]), 1)
-        map_array[map_array == "0.0"] = "|"
-        map_array = numpy.append(map_array, numpy.zeros(map_array.shape[0]).reshape(-1, 1), 1)
-        map_array[map_array == "0.0"] = "|"
-        for i, l in enumerate(map_array):
-            print(" ".join(l))
-
-    def character_menu(self, town=False):
-        """
-        Lists character options in town
+        Lists character options
         """
         while True:
             os.system('cls' if os.name == 'nt' else 'clear')
-            if not town:
-                pass  # TODO
             option_list = [actions.Status(), actions.ViewInventory(), actions.Equip(), actions.ListSpecials(),
                            actions.UseItem(), actions.Quit()]
             options = ["Status", "Inventory", "Equip", "Specials", "Use Item", "Quit Game", "Leave"]
             action_input = storyline.get_response(options)
             try:
                 action = option_list[action_input]
-                self.do_action(action, **action.kwargs)
+                if options[action_input] == "Use Item":
+                    self.use_item(tile=tile)
+                else:
+                    self.do_action(action, **action.kwargs)
             except IndexError:
                 break
             time.sleep(0.5)
@@ -370,26 +312,26 @@ class Player(Character):
             self.state = 'normal'
             return True
 
-    def use_item(self, enemy=None):
+    def use_item(self, tile=None):
         item = True
         item_list = []
         if self.state == 'fight':
-            if enemy.name == 'Locked Chest':
+            for itm in self.inventory:
+                if str(self.inventory[itm][0]().subtyp) == 'Health' \
+                        or str(self.inventory[itm][0]().subtyp) == 'Mana':
+                    item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
+        elif tile is not None:
+            if 'LockedChest' in tile.__str__():
                 for itm in self.inventory:
                     if str(self.inventory[itm][0]().name) == 'KEY':
                         item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
                     elif str(self.inventory[itm][0]().typ) == 'Potion':
                         item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-            elif enemy.name == 'Locked Door':
+            elif 'LockedDoor' in tile.__str__():
                 for itm in self.inventory:
                     if str(self.inventory[itm][0]().name) == 'OLDKEY':
                         item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
                     elif str(self.inventory[itm][0]().typ) == 'Potion':
-                        item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-            else:
-                for itm in self.inventory:
-                    if str(self.inventory[itm][0]().subtyp) == 'Health' \
-                            or str(self.inventory[itm][0]().subtyp) == 'Mana':
                         item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
         else:
             for itm in self.inventory:
@@ -522,8 +464,11 @@ class Player(Character):
                     print("Your {} has been increased by 1.".format(str(itm().name.split(' ')[0]).lower()))
             elif 'Key' in itm().subtyp:
                 self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                enemy.lock = False
-                print("You unlock the {}.".format(enemy.name))
+                tile.locked = False
+                if 'Chest' in tile.__str__():
+                    print("{} unlocks the chest.".format(self.name))
+                elif 'Door' in tile.__str__():
+                    print("{} unlocks the door.".format(self.name))
             if self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] == 0:
                 del self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]]
             break
@@ -561,10 +506,9 @@ class Player(Character):
             if stat_option[stat_index] == 'Dexterity':
                 self.dex += 1
                 print("You are now at {} dexterity.".format(self.dex))
-        health_gain = int(self.pro_level * self.con)
-        health_gain = random.randint(health_gain // 4, health_gain) * max(1, self.check_mod('luck', luck_factor=12))
+        health_gain = random.randint(self.con // 4, self.con) * max(1, self.check_mod('luck', luck_factor=12))
         self.health_max += health_gain
-        mana_gain = int(self.pro_level * (self.intel // 2 + self.wisdom // 3))
+        mana_gain = int((self.intel // 2 + self.wisdom // 3))
         mana_gain = random.randint(mana_gain // 4, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
         self.mana_max += mana_gain
         self.level += 1
@@ -589,35 +533,18 @@ class Player(Character):
         self.exp_to_gain = (exp_scale ** self.pro_level) * self.level
         input("Press enter to continue")
 
-    def open_up(self, enemy):
-        # TODO add possible monsters to the chests
-        if 'Chest' in enemy.name:
-            if 'Locked' in enemy.name:
-                enemy.health -= 1
-                if random.randint(0, 2):
-                    treasure = items.random_item(int(enemy.level) + max(1, self.check_mod('luck', luck_factor=10)))
-                    print("The chest contained a {}.".format(treasure().name))
-                    self.modify_inventory(treasure, 1)
-                # elif random.randint(0, 2):
-                #     combat.battle(self, enemies.random_enemy(str(self.location_z + 1)))
-                else:
-                    gld = random.randint(10, 50) * (int(enemy.level) + 1) * self.check_mod('luck', luck_factor=2)
-                    print("You have found {} gold.".format(gld))
-                    self.gold += gld
-            else:
-                enemy.health -= 1
-                if random.randint(0, 2):
-                    treasure = items.random_item(int(enemy.level) + max(0, self.check_mod('luck', luck_factor=16)))
-                    print("The chest contained a {}.".format(treasure().name))
-                    self.modify_inventory(treasure, 1)
-                else:
-                    gld = random.randint(10, 50) * int(enemy.level) * self.check_mod('luck', luck_factor=2)
-                    print("You have found {} gold.".format(gld))
-                    self.gold += gld
+    def open_up(self, tile):
+        if 'Chest' in tile.__str__():
+            tile.open = True
+            print("{} opens the chest, containing a {}.".format(self.name, tile.loot().name))
+            self.modify_inventory(tile.loot, 1)
             input("Press enter to continue")
-        elif 'Door' in enemy.name:
-            enemy.health -= 1
-            print("You open the door.")
+        elif 'Door' in tile.__str__():
+            tile.open = True
+            print("{} opens the door.".format(self.name))
+            input("Press enter to continue")
+        else:
+            raise BaseException
 
     def loot(self, enemy):
         for item in enemy.inventory:
@@ -647,72 +574,85 @@ class Player(Character):
         print("Gold: {}".format(self.gold))
         input("Press enter to continue")
 
-    def modify_inventory(self, item, num=0, sell=False, steal=False):
-        if not sell and not steal:
-            if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand' or item().typ == 'Accessory':
-                if not item().unequip:
+    def modify_inventory(self, item, num=0, sell=False, steal=False, rare=False):
+        if not rare:
+            if not sell and not steal:
+                if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand' or \
+                        item().typ == 'Accessory':
+                    if not item().unequip:
+                        if item().name not in self.inventory:
+                            self.inventory[item().name] = [item, num]
+                        else:
+                            self.inventory[item().name][1] += num
+                else:
                     if item().name not in self.inventory:
                         self.inventory[item().name] = [item, num]
                     else:
                         self.inventory[item().name][1] += num
             else:
-                if item().name not in self.inventory:
-                    self.inventory[item().name] = [item, num]
-                else:
-                    self.inventory[item().name][1] += num
+                self.inventory[item().name][1] -= num
+                if self.inventory[item().name][1] == 0:
+                    del self.inventory[item().name]
         else:
-            self.inventory[item().name][1] -= num
-            if self.inventory[item().name][1] == 0:
-                del self.inventory[item().name]
+            self.special_inventory[item().name] = [item]
 
     def specials(self):
-        if len(self.spellbook['Spells']) == 0 and len(self.spellbook['Skills']) == 0:
-            print("You do not have any abilities.")
-        else:
-            cast_list = []
-            if len(self.spellbook['Spells']) > 0:
-                print("#" + (14 * "-") + "#")
-                print("#--- Spells ---#")
-                print("Name - Mana Cost")
-                for name, spell in self.spellbook['Spells'].items():
-                    print(name + " - " + str(spell().cost))
-                    if spell().subtyp == 'Heal' and self.mana >= spell().cost:
-                        if not spell().combat:
-                            cast_list.append(name)
-                    elif spell().subtyp == 'Movement' and self.mana >= spell().cost:
-                        cast_list.append(name)
-            if len(self.spellbook['Skills']) > 0:
-                print("#" + (14 * "-") + "#")
-                print("#--- Skills ---#")
-                print("Name - Mana Cost")
-                for name, skill in self.spellbook['Skills'].items():
-                    print(name + " - " + str(skill().cost))
-            if self.cls in ['Warlock', 'Shadowcaster']:
-                print("")
-                print("{}'s Specials".format(self.familiar.name))
-                if len(self.familiar.spellbook['Spells']) > 0:
+        while True:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            if len(self.spellbook['Spells']) == 0 and len(self.spellbook['Skills']) == 0:
+                print("You do not have any abilities.")
+                break
+            else:
+                cast_list = []
+                print("Player: {} | Health: {}/{} | Mana: {}/{}".format(self.name, self.health, self.health_max,
+                                                                        self.mana, self.mana_max))
+                if len(self.spellbook['Spells']) > 0:
                     print("#" + (14 * "-") + "#")
                     print("#--- Spells ---#")
                     print("Name - Mana Cost")
-                    for name, spell in self.familiar.spellbook['Spells'].items():
+                    for name, spell in self.spellbook['Spells'].items():
                         print(name + " - " + str(spell().cost))
-                if len(self.familiar.spellbook['Skills']) > 0:
+                        if spell().subtyp == 'Heal' and self.mana >= spell().cost:
+                            if not spell().combat:
+                                cast_list.append(name)
+                        elif spell().subtyp == 'Movement' and self.mana >= spell().cost:
+                            cast_list.append(name)
+                if len(self.spellbook['Skills']) > 0:
                     print("#" + (14 * "-") + "#")
                     print("#--- Skills ---#")
                     print("Name - Mana Cost")
-                    for name, skill in self.familiar.spellbook['Skills'].items():
+                    for name, skill in self.spellbook['Skills'].items():
                         print(name + " - " + str(skill().cost))
-            input("Press enter to continue")
-            if len(cast_list) > 0:
-                cast_list.append('Go back')
-                while True:
+                if self.cls in ['Warlock', 'Shadowcaster']:
+                    print("")
+                    print("{}'s Specials".format(self.familiar.name))
+                    if len(self.familiar.spellbook['Spells']) > 0:
+                        print("#" + (14 * "-") + "#")
+                        print("#--- Spells ---#")
+                        print("Name - Mana Cost")
+                        for name, spell in self.familiar.spellbook['Spells'].items():
+                            print(name + " - " + str(spell().cost))
+                    if len(self.familiar.spellbook['Skills']) > 0:
+                        print("#" + (14 * "-") + "#")
+                        print("#--- Skills ---#")
+                        print("Name - Mana Cost")
+                        for name, skill in self.familiar.spellbook['Skills'].items():
+                            print(name + " - " + str(skill().cost))
+                input("Press enter to continue")
+                if len(cast_list) > 0:
+                    cast_list.append('Go back')
                     print("Pick the spell you'd like to cast.")
                     cast_index = storyline.get_response(cast_list)
                     if cast_list[cast_index] == 'Go back':
                         break
                     self.spellbook['Spells'][cast_list[cast_index]]().cast_out(self)
+                    if self.spellbook['Spells'][cast_list[cast_index]]().subtyp == 'Movement':
+                        break
+                else:
+                    break
+            time.sleep(1)
 
-    def save(self, wmap=None, tmp=False):
+    def save(self, tmp=False):
         if tmp:
             tmp_dir = "tmp_files"
             save_file = tmp_dir + "/{0}.tmp".format(str(self.name))
@@ -727,15 +667,8 @@ class Player(Character):
                     over = storyline.get_response(yes_no)
                     if yes_no[over] == "No":
                         break
-                _world = world.world_return()
-                for tile in wmap['World']:
-                    x, y, z = tile
-                    try:
-                        _world['World'][(x, y, z)].visited = wmap['World'][(x, y, z)].visited
-                    except KeyError:
-                        pass
                 save_dict = {'Player': self.__dict__,
-                             'World': _world}
+                             'World': self.world_dict['World']}
                 with open(save_file, 'wb') as save_game:
                     pickle.dump(save_dict, save_game)
                 print("Your game is now saved.")
@@ -746,11 +679,11 @@ class Player(Character):
         if unequip is None:
             equip = True
             print("Which piece of equipment would you like to replace? ")
-            option_list = ['Weapon', 'Armor', 'OffHand', 'Pendant', 'Ring', 'None']
+            option_list = ['Weapon', 'Armor', 'OffHand', 'Pendant', 'Ring', 'Go Back']
             slot = storyline.get_response(option_list)
             equip_slot = option_list[slot]
             item_type = option_list[slot]
-            if equip_slot == 'None':
+            if equip_slot == 'Go Back':
                 equip = False
             elif equip_slot == 'Ring' or equip_slot == 'Pendant':
                 item_type = 'Accessory'
@@ -768,7 +701,7 @@ class Player(Character):
                 print("You are currently equipped with {}.".format(self.equipment[equip_slot]().name))
                 old = self.equipment[equip_slot]
                 if item_type == 'Accessory':
-                    print("You current {} gives {}.".format(equip_slot, old().mod))  # TODO test
+                    print("You current {} gives {}.".format(equip_slot, old().mod))
                 shield = False
                 for item in self.inventory:
                     if item_type == equip_slot:
@@ -860,13 +793,13 @@ class Player(Character):
                 weapon_mod = self.dex + class_mod
             else:
                 weapon_mod = self.strength + class_mod
-            if not self.status_effects['Disarm']:
-                weapon_mod += self.equipment['Weapon']().damage
+            # if not self.status_effects['Disarm']:
+            #     weapon_mod += self.equipment['Weapon']().damage
             if 'Physical Damage' in self.equipment['Ring']().mod:
                 weapon_mod += int(self.equipment['Ring']().mod.split(' ')[0])
             weapon_mod += self.status_effects['Attack'][2]
             return weapon_mod
-        elif mod == 'off':
+        elif mod == 'offhand':
             if 'Monk' in self.cls and self.equipment['OffHand']().subtyp == 'Fist':
                 class_mod += int(self.dex * 0.5)
             try:
@@ -874,7 +807,7 @@ class Player(Character):
                 if 'Physical Damage' in self.equipment['Ring']().mod:
                     off_mod += (int(self.equipment['Ring']().mod.split(' ')[0]) // 2)
                 off_mod += self.status_effects['Attack'][2]
-                return off_mod
+                return off_mod // 2
             except AttributeError:
                 return 0
         elif mod == 'armor':
@@ -930,10 +863,9 @@ class Player(Character):
             return luck_mod
 
     def move(self, dx, dy):
-        world_dict = world.world_return()
         new_x = self.location_x + dx
         new_y = self.location_y + dy
-        if world_dict['World'][(new_x, new_y, self.location_z)].enter:
+        if self.world_dict['World'][(new_x, new_y, self.location_z)].enter:
             self.location_x += dx
             self.location_y += dy
 

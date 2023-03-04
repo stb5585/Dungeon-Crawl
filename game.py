@@ -8,6 +8,7 @@ import glob
 
 import pyfiglet
 
+import actions
 import world
 import character
 import storyline
@@ -16,6 +17,21 @@ import tutorial
 # Parameters
 home = os.getcwd()
 save_dir = "save_files"
+
+
+def relic_room(level):
+    relics = ['Triangulus', 'Quadrata', 'Hexagonum', 'Luna', 'Polaris', 'Infinitas']
+    texts = [
+        "A bright column of light highlights a pedestal at the center of the room.",
+        "You instantly realize the significance of the finding, sure that this is one of the six relics you seek.",
+        "You eagerly take the relic and instantly feel rejuvenated."
+        "You have obtained the {} relic!".format(relics[int(level) - 1])
+    ]
+    for text in texts:
+        time.sleep(0.1)
+        storyline.slow_type(text)
+    time.sleep(2)
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def unobtainium_room():
@@ -50,7 +66,6 @@ def final_boss(player):
 
 
 def play(timer):
-    world_dict = {'World': {}}
     os.system('cls' if os.name == 'nt' else 'clear')
     f = pyfiglet.Figlet(font='slant')
     print(f.renderText("DUNGEON CRAWL"))
@@ -62,54 +77,56 @@ def play(timer):
     os.system('cls' if os.name == 'nt' else 'clear')
     if play_index == 0:
         player = character.new_char()
-        world.load_tiles(world_dict=world_dict)
-        world_dict = world.world_return()
+        world.load_tiles(player)
+        player.world_dict['World'] = world.world_return().copy()
     elif play_index == 1:
         if len(glob.glob('save_files/*')) > 0:
             os.chdir(save_dir)
             player, world_dict = character.load_char()
-            os.chdir(home)
             world.save_world(world_dict=world_dict)
+            os.chdir(home)
         else:
             print("There are no save files to load. Proceeding to new character creation.")
             player = character.new_char()
-            world.load_tiles(world_dict=world_dict)
-            world_dict = world.world_return()
+            world.load_tiles(player)
+            player.world_dict['World'] = world.world_return().copy()
     else:
         player = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
         room = world.tile_exists(player.location_x, player.location_y, player.location_z)
-        room.modify_player(player, world_dict)
+        room.modify_player(player)
         if player.is_alive():
-            if (time.time() - timer) // (900 * player.pro_level):
-                world_dict = world.world_return()
-                world.load_tiles(world_dict=world_dict, reload=True)
+            if (time.time() - timer) // (300 * max(1, (player.level // 2)) * player.pro_level):
+                world.load_tiles(player, reload=True)
                 timer = time.time()
             room = world.tile_exists(player.location_x, player.location_y, player.location_z)
             try:
-                if room.special:
-                    room.special_text(player)
+                room.special_text(player)
             except AttributeError:
                 pass
-            room.modify_player(player, world_dict)
+            room.modify_player(player)
+            if not player.is_alive():
+                break
             os.system('cls' if os.name == 'nt' else 'clear')
-            room.minimap(player, world_dict)
+            room.minimap(player)
             if room.intro_text(player) is not None:
                 print(room.intro_text(player))
             print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player.name, player.health, player.health_max,
                                                                     player.mana, player.mana_max))
 
-            print("Choose an action:")
             available_actions = room.available_actions(player)
-            action_names = []
-            for acts in available_actions:
-                action_names.append(acts.name)
-            action_input = storyline.get_response(action_names)
-            action = available_actions[action_input]
-            player.do_action(action, **action.kwargs)
+            print("\t\t{}".format(actions.MoveNorth()))
+            print("\t{}\t{}".format(actions.MoveWest(), actions.MoveEast()))
+            print("\t\t{}".format(actions.MoveSouth()))
+            action_input = input()
+            for action in available_actions:
+                if action_input == action.hotkey:
+                    player.do_action(action, **action.kwargs)
+                    break
         else:
             player.death()
+    print("Goodbye")
 
 
 if __name__ == "__main__":

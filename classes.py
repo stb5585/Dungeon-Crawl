@@ -23,11 +23,15 @@ def define_class(race):
                   'Healer': Healer,
                   'Pathfinder': Pathfinder}
     while True:
-        print("Choose your character's class.")
         char_class = list()
         for cls in race.cls_res['Base']:
             char_class.append(cls)
-        class_index = storyline.get_response(char_class)
+        if len(char_class) > 1:
+            print("Choose your character's class.")
+            class_index = storyline.get_response(char_class)
+        else:
+            class_index = 0
+            time.sleep(0.5)
         print(class_dict[char_class[class_index]]().__str__() + "\n")
         print("Are you sure you want to play as a {}? ".format(class_dict[char_class[class_index]]().name.lower()))
         yes_no = ["Yes", "No"]
@@ -36,6 +40,7 @@ def define_class(race):
             break
         else:
             os.system('cls' if os.name == 'nt' else 'clear')
+            return False
     os.system('cls' if os.name == 'nt' else 'clear')
     return class_dict[char_class[class_index]]()
 
@@ -155,6 +160,7 @@ def promotion(player):
             if cls.name in races_dict[player.race]().cls_res['Second']:
                 class_options.append(cls.name)
     if len(class_options) > 1:
+        print("Which path would you like to follow?")
         print("Choose your path.")
         class_index = storyline.get_response(class_options)
     else:
@@ -182,18 +188,18 @@ def promotion(player):
         promoted_player.equipment['Armor'] = new_class.equipment['Armor']
         promoted_player.equipment['OffHand'] = new_class.equipment['OffHand']
         print("Stat Gains")
-        print("Strength: {} -> {}".format(promoted_player.strength, promoted_player.strength + new_class.str_plus))
-        promoted_player.strength += new_class.str_plus
-        print("Intelligence: {} -> {}".format(promoted_player.intel, promoted_player.intel + new_class.int_plus))
-        promoted_player.intel += new_class.int_plus
-        print("Wisdom: {} -> {}".format(promoted_player.wisdom, promoted_player.wisdom + new_class.wis_plus))
-        promoted_player.wisdom += new_class.wis_plus
-        print("Constitution: {} -> {}".format(promoted_player.con, promoted_player.con + new_class.con_plus))
-        promoted_player.con += new_class.con_plus
-        print("Charisma: {} -> {}".format(promoted_player.charisma, promoted_player.charisma + new_class.cha_plus))
-        promoted_player.charisma += new_class.cha_plus
-        print("Dexterity: {} -> {}".format(promoted_player.dex, promoted_player.dex + new_class.dex_plus))
-        promoted_player.dex += new_class.dex_plus
+        print("Strength: {} -> {}".format(promoted_player.strength, promoted_player.strength + new_class.stat_plus[0]))
+        promoted_player.strength += new_class.stat_plus[0]
+        print("Intelligence: {} -> {}".format(promoted_player.intel, promoted_player.intel + new_class.stat_plus[1]))
+        promoted_player.intel += new_class.stat_plus[1]
+        print("Wisdom: {} -> {}".format(promoted_player.wisdom, promoted_player.wisdom + new_class.stat_plus[2]))
+        promoted_player.wisdom += new_class.stat_plus[2]
+        print("Constitution: {} -> {}".format(promoted_player.con, promoted_player.con + new_class.stat_plus[3]))
+        promoted_player.con += new_class.stat_plus[3]
+        print("Charisma: {} -> {}".format(promoted_player.charisma, promoted_player.charisma + new_class.stat_plus[4]))
+        promoted_player.charisma += new_class.stat_plus[4]
+        print("Dexterity: {} -> {}".format(promoted_player.dex, promoted_player.dex + new_class.stat_plus[5]))
+        promoted_player.dex += new_class.stat_plus[5]
         print("New Equipment")
         print("Weapon: {}".format(player.equipment['Weapon']().name))
         print("OffHand: {}".format(player.equipment['OffHand']().name))
@@ -228,6 +234,10 @@ def promotion(player):
             print("{} the {} familiar has joined your team!".format(promoted_player.familiar.name,
                                                                     promoted_player.familiar.typ))
             input("Press enter to continue")
+        if new_class.name in ['Seeker', 'Wizard']:
+            promoted_player.teleport = (promoted_player.location_x,
+                                        promoted_player.location_y,
+                                        promoted_player.location_z)
         time.sleep(0.5)
     else:
         print("If you change your mind, you know where to find us.")
@@ -246,12 +256,7 @@ class Job:
                  restrictions, pro_level):
         self.name = name
         self.description = description
-        self.str_plus = str_plus
-        self.int_plus = int_plus
-        self.wis_plus = wis_plus
-        self.con_plus = con_plus
-        self.cha_plus = cha_plus
-        self.dex_plus = dex_plus
+        self.stat_plus = str_plus, int_plus, wis_plus, con_plus, cha_plus, dex_plus
         self.equipment = equipment
         self.restrictions = restrictions
         self.pro_level = pro_level
@@ -266,8 +271,8 @@ class Job:
                "Wisdom: {}\n" \
                "Constitution: {}\n" \
                "Charisma: {}\n" \
-               "Dexterity: {}".format(self.name, self.description, self.str_plus, self.int_plus, self.wis_plus,
-                                      self.con_plus, self.cha_plus, self.dex_plus)
+               "Dexterity: {}".format(self.name, self.description, self.stat_plus[0], self.stat_plus[1],
+                                      self.stat_plus[2], self.stat_plus[3], self.stat_plus[4], self.stat_plus[5])
 
 
 class Warrior(Job):

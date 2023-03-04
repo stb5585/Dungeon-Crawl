@@ -69,7 +69,7 @@ def ultimate(player):
 def blacksmith(player):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
-        if 'UNOBTAINIUM' in list(player.inventory.keys()) and player.pro_level == 3:
+        if 'UNOBTAINIUM' in list(player.special_inventory.keys()):
             ultimate(player)
         print("Welcome to Griswold's! What can I do you for?")
         time.sleep(0.5)
@@ -172,7 +172,7 @@ def tavern(player):
     time.sleep(1)
 
 
-def church(player, wmap):
+def church(player):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("Come in my child. You are always welcome in the arms of Elysia.")
@@ -182,7 +182,7 @@ def church(player, wmap):
         church_index = storyline.get_response(church_options)
         if church_options[church_index] == 'Promotion':
             if player.level // 20 > 0 and player.pro_level < 3:
-                storyline.slow_type("You have qualified for a promotion. Which path would you like to follow?\n")
+                storyline.slow_type("You have qualified for a promotion.\n")
                 classes.promotion(player)
                 print("Let the light of Elysia guide you on your new path.")
             elif player.pro_level == 3:
@@ -191,7 +191,7 @@ def church(player, wmap):
                 print("You need to be at least level 20 before you can promote your character.\n")
             time.sleep(1)
         elif church_options[church_index] == 'Save':
-            player.save(wmap)  # Can only save at church in town
+            player.save()  # Can only save at church in town
         elif church_options[church_index] == 'Quit':
             player.game_quit()
         elif church_options[church_index] == 'Leave':
@@ -205,7 +205,7 @@ def secret_shop(player):
         os.system('cls' if os.name == 'nt' else 'clear')
         print("You have found me in this god forsaken place. Since you're here, you might as well buy some supplies.")
         time.sleep(0.5)
-        buy_list = ['Weapon', 'OffHand', 'Armor', 'Accessory', 'Potion']
+        buy_list = ['Weapon', 'OffHand', 'Armor', 'Accessory', 'Potion', 'Misc']
         print("You have {} gold.".format(player.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
@@ -223,6 +223,45 @@ def secret_shop(player):
                 print("Something went wrong.")
                 time.sleep(1)
                 player.location_y += 1
+
+
+def ultimate_armor_repo(player):
+    looted = False
+    os.system('cls' if os.name == 'nt' else 'clear')
+    texts = [
+        "Hello, my name is Chisolm, Griswold's brother.",
+        "I tried to defeat the ultimate evil but could not even damage it.",
+        "I barely escaped, camping here to lick my wounds.",
+        "I decided I would instead use my blacksmith skills to help those who look to do what I could not.",
+        "Choose the type of armor you would prefer and I will make you the finest set you could imagine."
+    ]
+    for text in texts:
+        time.sleep(0.1)
+        storyline.slow_type(text)
+    while True:
+        type_list = ['Cloth', 'Light', 'Medium', 'Heavy']
+        armor_list = [items.MerlinRobe, items.DragonHide, items.Aegis, items.Genji]
+        armor_typ = storyline.get_response(type_list)
+        print("You have chosen for me to make you an immaculate {} armor. Is this correct?".format(
+            type_list[armor_typ].lower()))
+        yes_no = ['Yes', 'No']
+        confirm = storyline.get_response(yes_no)
+        if yes_no[confirm] == 'Yes':
+            chosen = armor_list[armor_typ]
+            print("Please wait while I craft your armor, it will only take a few moments.")
+            time.sleep(3)
+            print("I present to you the legendary armor, {}!".format(chosen().name))
+            player.modify_inventory(chosen, 1)
+            looted = True
+            time.sleep(2)
+            print("Now that I have fulfilled my goal, I will leave this place. Goodbye, {}!".format(player.name))
+        else:
+            print("You need time to consider you choice, I respect that. Come back when you have made your choice.")
+        break
+    time.sleep(1)
+    player.location_y += 1
+    os.system('cls' if os.name == 'nt' else 'clear')
+    return looted
 
 
 def buy(player, buy_list, in_town=True):
@@ -338,7 +377,7 @@ def sell(player):
                 time.sleep(1)
 
 
-def town(player, wmap):
+def town(player):
     os.system('cls' if os.name == 'nt' else 'clear')
     locations = [blacksmith, armory, alchemist, jeweler, church, tavern]
     town_options = ['Blacksmith', 'Armory', 'Alchemist', 'Jeweler', 'Church', 'Tavern', 'Dungeon', 'Character Menu']
@@ -356,7 +395,7 @@ def town(player, wmap):
             os.system('cls' if os.name == 'nt' else 'clear')
             player.character_menu()
         elif town_options[town_index] == 'Church':
-            locations[town_index](player, wmap)
+            locations[town_index](player)
         else:
             locations[town_index](player)
         os.system('cls' if os.name == 'nt' else 'clear')

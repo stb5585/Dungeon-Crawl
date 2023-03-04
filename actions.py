@@ -6,9 +6,10 @@ import character
 
 
 class Action:
-    def __init__(self, method, name, **kwargs):
+    def __init__(self, method, name, hotkey, **kwargs):
         self.method = method
         self.name = name
+        self.hotkey = hotkey
         self.kwargs = kwargs
 
     def __str__(self):
@@ -17,32 +18,32 @@ class Action:
 
 class MoveNorth(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_north, name='Move north')
+        super().__init__(method=character.Player.move_north, name='Move north (w)', hotkey='w')
 
 
 class MoveSouth(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_south, name='Move south')
+        super().__init__(method=character.Player.move_south, name='Move south (s)', hotkey='s')
 
 
 class MoveEast(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_east, name='Move east')
+        super().__init__(method=character.Player.move_east, name='Move east (d)', hotkey='d')
 
 
 class MoveWest(Action):
     def __init__(self):
-        super().__init__(method=character.Player.move_west, name='Move west')
+        super().__init__(method=character.Player.move_west, name='Move west (a)', hotkey='a')
 
 
 class StairsUp(Action):
     def __init__(self):
-        super().__init__(method=character.Player.stairs_up, name='Take stairs up')
+        super().__init__(method=character.Player.stairs_up, name='Take stairs up', hotkey="u")
 
 
 class StairsDown(Action):
     def __init__(self):
-        super().__init__(method=character.Player.stairs_down, name='Take stairs down')
+        super().__init__(method=character.Player.stairs_down, name='Take stairs down', hotkey="j")
 
 
 class ViewInventory(Action):
@@ -50,69 +51,64 @@ class ViewInventory(Action):
     Prints the player's inventory
     """
     def __init__(self):
-        super().__init__(method=character.Player.print_inventory, name='Inventory')
-
-
-class Attack(Action):
-    def __init__(self):
-        super().__init__(method=None, name="Attack")
-
-
-class CastSpell(Action):
-    def __init__(self):
-        super().__init__(method=None, name="Cast Spell")
-
-
-class UseSkill(Action):
-    def __init__(self):
-        super().__init__(method=None, name="Use Skill")
+        super().__init__(method=character.Player.print_inventory, name='Inventory', hotkey=None)
 
 
 class Flee(Action):
     def __init__(self):
-        super().__init__(method=character.Player.flee, name="Flee")
+        super().__init__(method=character.Player.flee, name="Flee", hotkey=None)
 
 
 class Status(Action):
     def __init__(self):
-        super().__init__(method=character.Player.status, name="Status")
-
-
-class Minimap(Action):
-    def __init__(self, world_dict):
-        super().__init__(method=character.Player.minimap, name="Minimap", world_dict=world_dict)
+        super().__init__(method=character.Player.status, name="Status", hotkey=None)
 
 
 class Equip(Action):
     def __init__(self):
-        super().__init__(method=character.Player.equip, name="Equip")
+        super().__init__(method=character.Player.equip, name="Equip", hotkey=None)
 
 
 class UseItem(Action):
-    def __init__(self):
-        super().__init__(method=character.Player.use_item, name="Item", enemy=None)
+    def __init__(self, tile=None):
+        super().__init__(method=character.Player.use_item, name="Item", hotkey=None, tile=tile)
 
 
 class Open(Action):
-    def __init__(self, enemy):
-        super().__init__(method=character.Player.open_up, name="Open", enemy=enemy)
+    def __init__(self, tile):
+        super().__init__(method=character.Player.open_up, name="Open", hotkey="o", tile=tile)
 
 
 class ListSpecials(Action):
     def __init__(self):
-        super().__init__(method=character.Player.specials, name="Specials")
+        super().__init__(method=character.Player.specials, name="Specials", hotkey=None)
 
 
 class Save(Action):
     def __init__(self, wmap):
-        super().__init__(method=character.Player.save, name="Save", wmap=wmap)
+        super().__init__(method=character.Player.save, name="Save", hotkey=None, wmap=wmap)
 
 
 class Quit(Action):
     def __init__(self):
-        super().__init__(method=character.Player.game_quit, name="Quit")
+        super().__init__(method=character.Player.game_quit, name="Quit", hotkey=None)
 
 
 class CharacterMenu(Action):
+    def __init__(self, tile=None):
+        super().__init__(method=character.Player.character_menu, name="Character Menu", hotkey="c", tile=tile)
+
+
+class Attack(Action):
     def __init__(self):
-        super().__init__(method=character.Player.character_menu, name="Character Menu")
+        super().__init__(method=None, name="Attack", hotkey=None)
+
+
+class CastSpell(Action):
+    def __init__(self):
+        super().__init__(method=None, name="Cast Spell", hotkey=None)
+
+
+class UseSkill(Action):
+    def __init__(self):
+        super().__init__(method=None, name="Use Skill", hotkey=None)

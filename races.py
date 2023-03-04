@@ -36,28 +36,23 @@ class Race:
     *_rng parameters set the range for which the random stats are chosen from
     """
 
-    def __init__(self, name, description, str_rng, int_rng, wis_rng, con_rng, cha_rng, dex_rng, cls_res, resistance):
+    def __init__(self, name, description, strength, intel, wisdom, con, charisma, dex, cls_res, resistance):
         self.name = name
         self.description = description
-        self.str_rng = str_rng
-        self.int_rng = int_rng
-        self.wis_rng = wis_rng
-        self.con_rng = con_rng
-        self.cha_rng = cha_rng
-        self.dex_rng = dex_rng
+        self.stats = strength, intel, wisdom, con, charisma, dex
         self.cls_res = cls_res
         self.resistance = resistance
 
     def __str__(self):
         return "Race: {}\n" \
                "Description: {}\n" \
-               "Stats (min/max):\n" \
-               "Strength: {}/{}\n" \
-               "Intelligence: {}/{}\n" \
-               "Wisdom: {}/{}\n" \
-               "Constitution: {}/{}\n" \
-               "Charisma: {}/{}\n" \
-               "Dexterity: {}/{}\n" \
+               "Stats:\n" \
+               "Strength: {}\n" \
+               "Intelligence: {}\n" \
+               "Wisdom: {}\n" \
+               "Constitution: {}\n" \
+               "Charisma: {}\n" \
+               "Dexterity: {}\n" \
                "Resistances:\n" \
                "Fire: {}\n" \
                "Ice: {}\n" \
@@ -69,24 +64,12 @@ class Race:
                "Death: {}\n" \
                "Holy: {}\n" \
                "Poison: {}\n" \
-               "Physical: {}\n".format(self.name, self.description,
-                                       self.str_rng[0], self.str_rng[1],
-                                       self.int_rng[0], self.int_rng[1],
-                                       self.wis_rng[0], self.wis_rng[1],
-                                       self.con_rng[0], self.con_rng[1],
-                                       self.cha_rng[0], self.cha_rng[1],
-                                       self.dex_rng[0], self.dex_rng[1],
-                                       self.resistance['Fire'],
-                                       self.resistance['Ice'],
-                                       self.resistance['Electric'],
-                                       self.resistance['Water'],
-                                       self.resistance['Earth'],
-                                       self.resistance['Wind'],
-                                       self.resistance['Shadow'],
-                                       self.resistance['Death'],
-                                       self.resistance['Holy'],
-                                       self.resistance['Poison'],
-                                       self.resistance['Physical'])
+               "Physical: {}\n".format(self.name, self.description, self.stats[0], self.stats[1], self.stats[2],
+                                       self.stats[3], self.stats[4], self.stats[5],
+                                       self.resistance['Fire'], self.resistance['Ice'], self.resistance['Electric'],
+                                       self.resistance['Water'], self.resistance['Earth'], self.resistance['Wind'],
+                                       self.resistance['Shadow'], self.resistance['Death'], self.resistance['Holy'],
+                                       self.resistance['Poison'], self.resistance['Physical'])
 
 
 class Human(Race):
@@ -96,8 +79,7 @@ class Human(Race):
                                                    "the most versatile of all races, making a viable option for all "
                                                    "classes. While they have no magical resistances, they also have no"
                                                    " weaknesses.",
-                         str_rng=(5, 14), int_rng=(5, 14), wis_rng=(5, 14),
-                         con_rng=(5, 14), cha_rng=(5, 14), dex_rng=(5, 14),
+                         strength=10, intel=10, wisdom=10, con=10, charisma=10, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
                                             'Sorcerer', 'Warlock', 'Spellblade',
@@ -130,8 +112,7 @@ class Elf(Race):
                                                  "casters and have decent resistance to elemental magic. They are not,"
                                                  " however, very good at fighting with weapons and have a low "
                                                  "constitution, making them more susceptible to death magic.",
-                         str_rng=(3, 11), int_rng=(7, 17), wis_rng=(7, 16),
-                         con_rng=(3, 11), cha_rng=(5, 15), dex_rng=(6, 15),
+                         strength=6, intel=12, wisdom=11, con=8, charisma=11, dex=12,
                          cls_res={'Base': ['Mage', 'Footpad', 'Healer', 'Pathfinder'],
                                   'First': ['Sorcerer', 'Warlock', 'Spellblade',
                                             'Thief', 'Inquisitor', 'Assassin',
@@ -163,8 +144,7 @@ class HalfElf(Race):
                                                       "improved magical prowess, as well as mild elemental resistance. "
                                                       "Like their elf cousins, they do have a slight susceptibility to "
                                                       "death magic.",
-                         str_rng=(5, 13), int_rng=(6, 16), wis_rng=(6, 15),
-                         con_rng=(4, 12), cha_rng=(5, 15), dex_rng=(5, 15),
+                         strength=8, intel=12, wisdom=10, con=8, charisma=10, dex=12,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
                                   'First': ['Paladin', 'Lancer',
                                             'Sorcerer', 'Warlock', 'Spellblade',
@@ -200,8 +180,7 @@ class Giant(Race):
                                                    "death spells, as well as a mild resistance to poisons and physical "
                                                    "damage. However, they are not the most pious beings and are weak "
                                                    "against holy spells and have the lowest charisma of any class.",
-                         str_rng=(10, 18), int_rng=(3, 11), wis_rng=(5, 14),
-                         con_rng=(6, 15), cha_rng=(2, 8), dex_rng=(3, 11),
+                         strength=15, intel=7, wisdom=8, con=14, charisma=6, dex=10,
                          cls_res={'Base': ['Warrior'],
                                   'First': ['Weapon Master'],
                                   'Second': ['Berserker']},
@@ -228,8 +207,7 @@ class Gnome(Race):
                                                    "divine, giving them a slight resistance against holy spells but are"
                                                    " weak against shadow. Gnomes prefer the civilized world and thus "
                                                    "are not found among the ranks of Pathfinders.",
-                         str_rng=(4, 13), int_rng=(7, 15), wis_rng=(5, 15),
-                         con_rng=(3, 13), cha_rng=(8, 18), dex_rng=(6, 15),
+                         strength=8, intel=10, wisdom=12, con=8, charisma=12, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
                                             'Sorcerer', 'Spellblade',
@@ -262,8 +240,7 @@ class Dwarf(Race):
                                                    "also have a healthy mistrust of the arcane. As beings of the Earth,"
                                                    " dwarves have resistance against earth, poison, and physical damage"
                                                    " but are weak against shadow magic.",
-                         str_rng=(5, 14), int_rng=(5, 13), wis_rng=(5, 15),
-                         con_rng=(6, 14), cha_rng=(6, 14), dex_rng=(4, 12),
+                         strength=12, intel=10, wisdom=10, con=12, charisma=8, dex=8,
                          cls_res={'Base': ['Warrior', 'Healer', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
                                             'Cleric', 'Priest', 'Monk',
@@ -296,8 +273,7 @@ class HalfOrc(Race):
                                                       "pursuit of the divine unappealing. Because of this, half orcs "
                                                       "are weak against holy magic but have mild resistances against "
                                                       "shadow, death, and poison.",
-                         str_rng=(6, 15), int_rng=(4, 13), wis_rng=(6, 15),
-                         con_rng=(5, 14), cha_rng=(3, 11), dex_rng=(6, 14),
+                         strength=13, intel=10, wisdom=8, con=11, charisma=8, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Lancer',
                                             'Sorcerer', 'Warlock', 'Spellblade',

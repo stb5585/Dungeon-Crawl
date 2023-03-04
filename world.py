@@ -9,18 +9,14 @@ import random
 
 
 # Parameters
-_world = {'World': {}}  # initialization of master world dictionary
+_world = {'World': {}}
 starting_position = (5, 10, 0)
 
 
-def world_return():
-    global _world
-    return _world
-
-
-def load_tiles(world_dict=None, reload=False):
+def load_tiles(player, reload=False):
     """Parses a file that describes the world space into the _world object"""
     global _world
+    world_dict = player.world_dict.copy()
     _world['World'][(5, 10, 0)] = getattr(__import__('map'), 'Town')(5, 10, 0)
     map_files = glob.glob('map_files/new_map_level_*')
     for map_file in map_files:
@@ -49,22 +45,17 @@ def load_tiles(world_dict=None, reload=False):
                     continue
                 elif 'Wall' in tile_name and reload:
                     continue
+                elif 'Boss' in tile_name and reload:
+                    continue
                 else:
                     tile = getattr(__import__('map'), tile_name)(x, y, z)
                 _world['World'][(x, y, z)] = tile
                 if world_dict is not None:
                     try:
                         _world['World'][(x, y, z)].visited = world_dict[(x, y, z)].visited
-                    except KeyError:
-                        pass
-                    try:
                         if "Door" in tile_name:
-                            _world['World'][(x, y, z)].lock = world_dict[(x, y, z)].lock
-                    except KeyError:
-                        pass
-                    try:
-                        if tile_name == "UnobtainiumRoom":
-                            _world['World'][(x, y, z)].looted = world_dict[(x, y, z)].looted
+                            _world['World'][(x, y, z)].locked = world_dict[(x, y, z)].locked
+                            _world['World'][(x, y, z)].open = world_dict[(x, y, z)].open
                     except KeyError:
                         pass
 
@@ -74,6 +65,11 @@ def tile_exists(x, y, z):
     return _world['World'].get((x, y, z))
 
 
+def world_return():
+    global _world
+    return _world['World']
+
+
 def save_world(world_dict):
     global _world
-    _world = world_dict
+    _world['World'] = world_dict.copy()
