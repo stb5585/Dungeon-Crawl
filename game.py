@@ -9,8 +9,7 @@ import glob
 import pyfiglet
 
 import actions
-import world
-import character
+import player
 import storyline
 import tutorial
 
@@ -49,11 +48,15 @@ def unobtainium_room():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def final_boss(player):
+def final_blocker(player_char):
+    texts = []
+
+
+def final_boss(player_char):
     texts = [
         "You enter a massive room. A great beast greets you.",
         "\"Hello {}, I've heard stories of an adventurer making easy work of the creatures scattered throughout the "
-        "labyrinth.".format(player.name),
+        "labyrinth.".format(player_char.name),
         "It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel, knowing that one of us"
         " will not leave here alive.",
         "Let us settle this!\""
@@ -76,57 +79,58 @@ def play(timer):
     play_index = storyline.get_response(play_options)
     os.system('cls' if os.name == 'nt' else 'clear')
     if play_index == 0:
-        player = character.new_char()
-        world.load_tiles(player)
-        player.world_dict['World'] = world.world_return().copy()
+        player_char = player.new_char()
+        player_char.load_tiles()
     elif play_index == 1:
         if len(glob.glob('save_files/*')) > 0:
             os.chdir(save_dir)
-            player, world_dict = character.load_char()
-            world.save_world(world_dict=world_dict)
+            player_char = player.load_char()
             os.chdir(home)
         else:
             print("There are no save files to load. Proceeding to new character creation.")
-            player = character.new_char()
-            world.load_tiles(player)
-            player.world_dict['World'] = world.world_return().copy()
+            player_char = player.new_char()
+            player_char.load_tiles()
     else:
-        player = tutorial.tutorial()
+        player_char = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
-        room = world.tile_exists(player.location_x, player.location_y, player.location_z)
-        room.modify_player(player)
-        if player.is_alive():
-            if (time.time() - timer) // (300 * max(1, (player.level // 2)) * player.pro_level):
-                world.load_tiles(player, reload=True)
+        room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
+        room.modify_player(player_char)
+        if player_char.is_alive():
+            if (time.time() - timer) // 90:  # (300 * max(1, (player_char.level // 2)) * player_char.pro_level):
+                player_char.load_tiles(reload=True)
                 timer = time.time()
-            room = world.tile_exists(player.location_x, player.location_y, player.location_z)
+            room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
             try:
-                room.special_text(player)
+                room.special_text(player_char)
             except AttributeError:
                 pass
-            room.modify_player(player)
-            if not player.is_alive():
-                break
-            os.system('cls' if os.name == 'nt' else 'clear')
-            room.minimap(player)
-            if room.intro_text(player) is not None:
-                print(room.intro_text(player))
-            print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player.name, player.health, player.health_max,
-                                                                    player.mana, player.mana_max))
+            room.modify_player(player_char)
+            if player_char.is_alive():
+                try:
+                    os.system('cls' if os.name == 'nt' else 'clear')
+                    player_char.minimap()
+                    if room.intro_text(player_char) is not None:
+                        print(room.intro_text(player_char))
+                    print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player_char.name,
+                                                                            player_char.health, player_char.health_max,
+                                                                            player_char.mana, player_char.mana_max))
 
-            available_actions = room.available_actions(player)
-            print("\t\t{}".format(actions.MoveNorth()))
-            print("\t{}\t{}".format(actions.MoveWest(), actions.MoveEast()))
-            print("\t\t{}".format(actions.MoveSouth()))
-            action_input = input()
-            for action in available_actions:
-                if action_input == action.hotkey:
-                    player.do_action(action, **action.kwargs)
+                    available_actions = room.available_actions(player_char)
+                    print("\t\t{}".format(actions.MoveNorth()))
+                    print("\t{}\t{}".format(actions.MoveWest(), actions.MoveEast()))
+                    print("\t\t{}".format(actions.MoveSouth()))
+                    action_input = input()
+                    for action in available_actions:
+                        if action_input == action.hotkey:
+                            player_char.do_action(action, **action.kwargs)
+                            break
+                except TypeError:
                     break
+            else:
+                player_char.death()
         else:
-            player.death()
-    print("Goodbye")
+            player_char.death()
 
 
 if __name__ == "__main__":

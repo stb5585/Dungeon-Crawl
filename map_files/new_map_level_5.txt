@@ -13,8 +13,8 @@ Wall	Wall	Wall	Wall	Wall	RandomTile	Wall	Wall	Wall	Wall	Wall	RandomTile	Wall	Emp
 Wall	Wall	Wall	Wall	Wall	RandomTile	RandomTile	RandomTile	RandomTile	RandomEnemyRoom	Wall	RandomTile	Wall	EmptyCavePath	Wall	Wall	Wall	Wall	Wall	RandomTile
 StairsDown	RedDragonBossRoom	EmptyCavePath	EmptyCavePath	EmptyCavePath	RandomTile	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	EmptyCavePath	Wall	Wall	Wall	Wall	Wall	RandomTile
 Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	EmptyCavePath	Wall	Wall	Wall	Wall	Wall	RandomTile
-LockedChestRoom1	Wall	FakeWall	FakeWall	FakeWall	FakeWall	EmptyCavePath	Wall	RandomTile	Wall	Wall	RandomTile	Wall	EmptyCavePath	Wall	RelicRoom	Wall	Wall	Wall	RandomTile
-LockedChestRoom0	FakeWall	FakeWall	Wall	Wall	Wall	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	LockedDoorSouth	Wall	DomingoBossRoom	Wall	Wall	Wall	RandomTile
-LockedChestRoom1	Wall	FakeWall	Wall	UnlockedChestRoom2	Wall	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	UnlockedChestRoom2	Wall	StairsUp	Wall	Wall	Wall	RandomTile
+LockedChestRoom	Wall	FakeWall	FakeWall	FakeWall	FakeWall	EmptyCavePath	Wall	RandomTile	Wall	Wall	RandomTile	Wall	EmptyCavePath	Wall	RelicRoom	Wall	Wall	Wall	RandomTile
+LockedChestRoom	FakeWall	FakeWall	Wall	Wall	Wall	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	LockedDoorSouth	Wall	DomingoBossRoom	Wall	Wall	Wall	RandomTile
+LockedChestRoom	Wall	FakeWall	Wall	UnlockedChestRoom2	Wall	Wall	Wall	RandomTile	Wall	Wall	RandomTile	Wall	UnlockedChestRoom2	Wall	StairsUp	Wall	Wall	Wall	RandomTile
 Wall	Wall	FakeWall	FakeWall	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile	Wall	Wall	RandomTile	Wall	Wall	Wall	Wall	Wall	Wall	Wall	RandomTile
 Wall	Wall	Wall	Wall	UnlockedChestRoom2	Wall	Wall	Wall	Wall	Wall	Wall	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile	RandomTile

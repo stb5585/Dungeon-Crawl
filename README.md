@@ -22,28 +22,19 @@ DESCRIPTION:
 
 FUTURE DEVELOPMENT:
 - Planned development
-    - Enhance storyline for a more immersive experience
-    - Deepen the dungeon to allow for additional challenge
     - Make item comparison easier for the shop
-    - add inspection of item in inventory (print item information)
+    - Add inspection of item in inventory (print item information)
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
       be farmed
     - Add quests to game; add tavern in town for obtaining quests
     - Add more accessories with various effects; special items for each final class
-    - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
     - Allow player to switch characters in-game (instead of exiting and re-loading)
-    - multiple players and enemies in battle
 
 - Possible development
-    - create new ranged class (archer -> hunter (tracking, pet)/ranger (sword and arrow)/arcane trickster (magical arrows)
-    - create 3rd promotion classes (likely crossover class)
-    - Item identification
-    - Add capability to have more than one playable character
     - Require rare items for promotion
-    - Give players alignments (G/N/E) with item restrictions
     - Add a tutorial so players can better understand the gameplay
-    - Implement map editor
     - Create battle arena
+    - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
 
 FILES:
 - actions.py

@@ -11,56 +11,58 @@ def reciprocal(x: int) -> float:
 
 
 def random_item(z: int):
-    item_dict = {'Weapon': {'Dagger': [[BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger],
-                                       [reciprocal(BronzeDagger().rarity), reciprocal(IronDagger().rarity),
-                                        reciprocal(SteelDagger().rarity), reciprocal(AdamantiteDagger().rarity),
-                                        reciprocal(MithrilDagger().rarity)],
+    item_dict = {'Weapon': {'Dagger': [[Dirk, Baselard, Kris, Rondel, Kukri],
+                                       [reciprocal(Dirk().rarity), reciprocal(Baselard().rarity),
+                                        reciprocal(Kris().rarity), reciprocal(Rondel().rarity),
+                                        reciprocal(Kukri().rarity)],
                                        ['1', '1', '2', '3', '4']],
-                            'Sword': [[BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword],
-                                      [reciprocal(BronzeSword().rarity), reciprocal(IronSword().rarity),
-                                       reciprocal(SteelSword().rarity), reciprocal(AdamantiteSword().rarity),
-                                       reciprocal(MithrilSword().rarity)],
+                            'Sword': [[Rapier, Jian, Talwar, Shamshir, Khopesh],
+                                      [reciprocal(Rapier().rarity), reciprocal(Jian().rarity),
+                                       reciprocal(Talwar().rarity), reciprocal(Shamshir().rarity),
+                                       reciprocal(Khopesh().rarity)],
                                       ['1', '1', '2', '3', '4']],
-                            'Mace': [[BronzeMace, IronMace, SteelMace, AdamantiteMace, MithrilMace],
-                                     [reciprocal(BronzeMace().rarity), reciprocal(IronMace().rarity),
-                                      reciprocal(SteelMace().rarity), reciprocal(AdamantiteMace().rarity),
-                                      reciprocal(MithrilMace().rarity)],
-                                     ['1', '1', '2', '3', '4']],
-                            'Fist': [[BronzeFist, IronFist, SteelFist, AdamantiteFist, MithrilFist],
-                                     [reciprocal(BronzeFist().rarity), reciprocal(IronFist().rarity),
-                                      reciprocal(SteelFist().rarity), reciprocal(AdamantiteFist().rarity),
-                                      reciprocal(MithrilFist().rarity)],
-                                     ['1', '2', '3', '4', '5']],
-                            'Ninja Blades': [[Tanto, Wakizashi],
-                                             [reciprocal(Tanto().rarity), reciprocal(Wakizashi().rarity)],
-                                             ['4', '5']],
-                            'Axe': [[Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe],
-                                    [reciprocal(Axe().rarity), reciprocal(BattleAxe().rarity),
-                                     reciprocal(GreatAxe().rarity), reciprocal(AdamantiteAxe().rarity),
-                                     reciprocal(MithrilAxe().rarity)],
-                                    ['1', '1', '2', '3', '4']],
-                            'Polearm': [[Spear, Lance, Pike, Halberd, Trident],
-                                        [reciprocal(Spear().rarity), reciprocal(Lance().rarity),
-                                         reciprocal(Pike().rarity), reciprocal(Halberd().rarity),
+                            'Club': [[Mace, WarHammer, Pernach, Morgenstern],
+                                     [reciprocal(Mace().rarity), reciprocal(WarHammer().rarity),
+                                      reciprocal(Pernach().rarity), reciprocal(Morgenstern().rarity)],
+                                     ['1', '2', '3', '4']],
+                            'Fist': [[BrassKnuckles, Cestus, BattleGauntlet, BaghNahk],
+                                     [reciprocal(BrassKnuckles().rarity), reciprocal(Cestus().rarity),
+                                      reciprocal(BattleGauntlet().rarity), reciprocal(BaghNahk().rarity)],
+                                     ['2', '3', '4', '5']],
+                            'Ninja Blade': [[Tanto, Wakizashi],
+                                            [reciprocal(Tanto().rarity), reciprocal(Wakizashi().rarity)],
+                                            ['4', '5']],
+                            'Longsword': [[Bastard, Claymore, Zweihander, Changdao, Flamberge],
+                                          [reciprocal(Bastard().rarity), reciprocal(Claymore().rarity),
+                                           reciprocal(Zweihander().rarity), reciprocal(Changdao().rarity),
+                                           reciprocal(Flamberge().rarity)],
+                                          ['1', '2', '2', '3', '4']],
+                            'Battle Axe': [[Mattock, Broadaxe, DoubleAxe, Parashu, GreatAxe],
+                                           [reciprocal(Mattock().rarity), reciprocal(Broadaxe().rarity),
+                                            reciprocal(DoubleAxe().rarity), reciprocal(Parashu().rarity),
+                                            reciprocal(GreatAxe().rarity)],
+                                           ['1', '2', '2', '3', '4']],
+                            'Polearm': [[Voulge, Partisan, Halberd, Naginata, Trident],
+                                        [reciprocal(Voulge().rarity), reciprocal(Partisan().rarity),
+                                         reciprocal(Halberd().rarity), reciprocal(Naginata().rarity),
                                          reciprocal(Trident().rarity)],
-                                        ['1', '1', '2', '3', '4']],
-                            'Staff': [[PineStaff, OakStaff, IronshodStaff, SerpentStaff, HolyStaff, RuneStaff,
+                                        ['1', '2', '2', '3', '4']],
+                            'Staff': [[Quarterstaff, Baston, IronshodStaff, SerpentStaff, HolyStaff, RuneStaff,
                                        MithrilshodStaff],
-                                      [reciprocal(PineStaff().rarity), reciprocal(OakStaff().rarity),
+                                      [reciprocal(Quarterstaff().rarity), reciprocal(Baston().rarity),
                                        reciprocal(IronshodStaff().rarity), reciprocal(SerpentStaff().rarity),
                                        reciprocal(HolyStaff().rarity), reciprocal(RuneStaff().rarity),
                                        reciprocal(MithrilshodStaff().rarity)],
                                       ['1', '1', '2', '3', '3', '4', '4']],
-                            'Hammer': [[OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul],
-                                       [reciprocal(OakHammer().rarity), reciprocal(Maul().rarity),
-                                        reciprocal(IronHammer().rarity), reciprocal(EarthHammer().rarity),
-                                        reciprocal(WarHammer().rarity), reciprocal(GreatMaul().rarity)],
-                                       ['1', '1', '2', '2', '3', '4']],
+                            'Hammer': [[Sledgehammer, Maul, EarthHammer, GreatMaul],
+                                       [reciprocal(Sledgehammer().rarity), reciprocal(Maul().rarity),
+                                        reciprocal(EarthHammer().rarity), reciprocal(GreatMaul().rarity)],
+                                       ['1', '2', '3', '4']],
                             },
-                 'OffHand': {'Shield': [[WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield],
-                                        [reciprocal(WoodShield().rarity), reciprocal(BronzeShield().rarity),
-                                         reciprocal(IronShield().rarity), reciprocal(SteelShield().rarity),
-                                         reciprocal(KiteShield().rarity), reciprocal(TowerShield().rarity)],
+                 'OffHand': {'Shield': [[Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise],
+                                        [reciprocal(Buckler().rarity), reciprocal(Aspis().rarity),
+                                         reciprocal(Targe().rarity), reciprocal(Glagwa().rarity),
+                                         reciprocal(KiteShield().rarity), reciprocal(Pavise().rarity)],
                                         ['1', '1', '2', '3', '4', '4']],
                              'Tome': [[Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon],
                                       [reciprocal(Book().rarity), reciprocal(TomeKnowledge().rarity),
@@ -91,11 +93,12 @@ def random_item(z: int):
                  'Accessory': {'Ring': [[IronRing, PowerRing],
                                         [reciprocal(IronRing().rarity), reciprocal(PowerRing().rarity)],
                                         ['1', '2']],
-                               'Pendant': [[SilverPendant, RubyPendant, VisionPendant],
-                                           [reciprocal(SilverPendant().rarity), reciprocal(RubyPendant().rarity),
-                                            reciprocal(VisionPendant().rarity)],
-                                           ['2', '2', '1']],
-
+                               'Pendant': [[VisionPendant, SilverPendant, RubyPendant, AntidotePendant, GorgonPendant,
+                                            DharmaPendant],
+                                           [reciprocal(VisionPendant().rarity), reciprocal(SilverPendant().rarity),
+                                            reciprocal(RubyPendant().rarity), reciprocal(AntidotePendant().rarity),
+                                            reciprocal(GorgonPendant().rarity), reciprocal(DharmaPendant().rarity)],
+                                           ['1', '2', '2', '2', '4', '4']],
                                },
                  'Potion': {'Health': [[HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                                        [reciprocal(HealthPotion().rarity), reciprocal(GreatHealthPotion().rarity),
@@ -154,6 +157,8 @@ class Item:
         self.description = description
         self.value = value
         self.restriction = list()
+        self.special = False
+        self.ultimate = False
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
@@ -172,19 +177,17 @@ class Weapon(Item):
         self.off = off
         self.typ = "Weapon"
         self.disarm = True
-        self.special = False
         self.ignore = False
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}\n{}-handed".format(self.name,
-                                                                                             self.description,
-                                                                                             self.value, self.damage,
-                                                                                             self.crit, self.handed)
+        return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}%\n{}-handed".format(
+            self.name, self.description, self.value, self.damage, int(round(1 / self.crit, 2) * 100), self.handed)
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         pass
 
 
+# One-handed weapons
 class NoWeapon(Weapon):
 
     def __init__(self):
@@ -193,47 +196,40 @@ class NoWeapon(Weapon):
                          off=True)
 
 
-class BronzeFist(Weapon):
+class BrassKnuckles(Weapon):
 
     def __init__(self):
-        super().__init__(name="BRONZE FIST", description="Bronze knuckles designed to focus a punch's force toward a "
-                                                         "harder and smaller contact area, increasing the chance of "
-                                                         "cuts and fractures.",
-                         value=150, rarity=5, damage=1, crit=7, handed=1, subtyp='Fist', unequip=False,
-                         off=True)
-
-
-class IronFist(Weapon):
-
-    def __init__(self):
-        super().__init__(name="IRON FIST", description="An iron studded leather glove with the finger tips removed.",
+        super().__init__(name="BRASS KNUCKLES", description="Brass knuckles are pieces of metal shaped to fit around "
+                                                            "the knuckles to add weight during hand-to-hand combat.",
                          value=2000, rarity=10, damage=3, crit=6, handed=1, subtyp='Fist', unequip=False,
                          off=True)
 
 
-class SteelFist(Weapon):
+class Cestus(Weapon):
 
     def __init__(self):
-        super().__init__(name="STEEL FIST", description="Steel knuckles designed similar to bronze knuckles with"
-                                                        " added spikes that protrude out for increased damage.",
+        super().__init__(name="CESTUS", description="A cestus is a battle glove that is typically used in gladiatorial "
+                                                    "events.",
                          value=7500, rarity=25, damage=4, crit=5, handed=1, subtyp='Fist', unequip=False,
                          off=True)
 
 
-class AdamantiteFist(Weapon):
+class BattleGauntlet(Weapon):
 
     def __init__(self):
-        super().__init__(name="ADAMANTITE FIST", description="A punching dagger made from hard adamantite meant for "
-                                                             "close quarter combat.",
+        super().__init__(name="BATTLE GAUNTLET", description="A battle gauntlet is a type of glove that protects the "
+                                                             "hand and wrist of a combatant, constructed with metal "
+                                                             "platings to inflict additional damage.",
                          value=10000, rarity=40, damage=6, crit=3, handed=1, subtyp='Fist', unequip=False,
                          off=True)
 
 
-class MithrilFist(Weapon):
+class BaghNahk(Weapon):
 
     def __init__(self):
-        super().__init__(name="MITHRIL FIST", description="A lightweight mesh glove made from mithril, providing added"
-                                                          "non-elemental magic damage.",
+        super().__init__(name="BAGH NAHK", description="The bagh nahk is a 'fist-load, claw-like' dagger designed to "
+                                                       "fit over the knuckles or be concealed under and against the "
+                                                       "palm.",
                          value=30000, rarity=50, damage=8, crit=2, handed=1, subtyp='Fist', unequip=False,
                          off=True)
 
@@ -249,6 +245,7 @@ class GodsHand(Weapon):
                          value=0, rarity=99, damage=10, crit=1, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         resist = target.check_mod('resist', 'Holy')
@@ -258,51 +255,45 @@ class GodsHand(Weapon):
             target.health -= damage
 
 
-class BronzeDagger(Weapon):
+class Dirk(Weapon):
 
     def __init__(self):
-        super().__init__(name="BRONZE DAGGER", description="A bronze knife with a very sharp point and usually two "
-                                                           "sharp edges, typically designed or capable of being used as"
-                                                           " a thrusting or stabbing weapon.",
+        super().__init__(name="DIRK", description="A dirk is a long bladed thrusting dagger.",
                          value=125, rarity=3, damage=1, crit=5, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
-class IronDagger(Weapon):
+class Baselard(Weapon):
 
     def __init__(self):
-        super().__init__(name="IRON DAGGER", description="An iron knife with a very sharp point and usually two "
-                                                         "sharp edges, typically designed or capable of being used as"
-                                                         " a thrusting or stabbing weapon.",
+        super().__init__(name="BASELARD", description="A baselard is a short bladed weapon with an H-shaped hilt.",
                          value=1500, rarity=7, damage=3, crit=4, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
-class SteelDagger(Weapon):
+class Kris(Weapon):
 
     def __init__(self):
-        super().__init__(name="STEEL DAGGER", description="A steel knife with a very sharp point and usually two "
-                                                          "sharp edges, typically designed or capable of being used as"
-                                                          " a thrusting or stabbing weapon.",
+        super().__init__(name="KRIS", description="A Kris is an asymmetrical dagger with distinctive blade-patterning "
+                                                  "achieved through alternating laminations of iron and nickelous iron,"
+                                                  " easily identified by its distinct wavy blade.",
                          value=5000, rarity=15, damage=5, crit=3, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
-class AdamantiteDagger(Weapon):
+class Rondel(Weapon):
 
     def __init__(self):
-        super().__init__(name="ADAMANTITE DAGGER", description="An adamantite knife with a very sharp point and usually"
-                                                               " two sharp edges, typically designed or capable of "
-                                                               "being used as a thrusting or stabbing weapon.",
+        super().__init__(name="RONDEL", description="A type of dagger with a stiff-blade, named for the round hand "
+                                                    "guard and round or spherical pommel.",
                          value=8000, rarity=25, damage=8, crit=2, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
 
-class MithrilDagger(Weapon):
+class Kukri(Weapon):
 
     def __init__(self):
-        super().__init__(name="MITHRIL DAGGER", description="An ultra-light blade made from the most prized of all "
-                                                            "metals, mithril.",
+        super().__init__(name="KUKRI", description="A kukri is a type of dagger with a distinct recurve in its blade.",
                          value=20000, rarity=40, damage=10, crit=2, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
 
@@ -318,6 +309,7 @@ class Carnwennan(Weapon):
                          value=0, rarity=99, damage=15, crit=1, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         if crit > 1:
@@ -329,54 +321,60 @@ class Carnwennan(Weapon):
                 print("{} is stunned for {} turns.".format(target.name, duration))
 
 
-class BronzeSword(Weapon):
+class Rapier(Weapon):
 
     def __init__(self):
-        super().__init__(name="BRONZE SWORD", description="A weapon with a long bronze blade and a hilt with a hand "
-                                                          "guard, used for thrusting or striking and now typically "
-                                                          "worn as part of ceremonial dress.",
+        super().__init__(name="RAPIER", description="A rapier is a slender and sharply pointed two-edged blade with a "
+                                                    "protective hilt.",
                          value=125, rarity=3, damage=2, crit=8, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
-class IronSword(Weapon):
+class Jian(Weapon):
 
     def __init__(self):
-        super().__init__(name="IRON SWORD", description="A weapon with a long iron blade and a hilt with a hand "
-                                                        "guard, used for thrusting or striking and now typically worn "
-                                                        "as part of ceremonial dress.",
+        super().__init__(name="JIAN", description="A jian is a double-edged straight sword with a guard that protects "
+                                                  "the wielder from opposing blades,",
                          value=2000, rarity=8, damage=5, crit=6, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
-class SteelSword(Weapon):
+class Talwar(Weapon):
 
     def __init__(self):
-        super().__init__(name="STEEL SWORD", description="A weapon with a long steel blade and a hilt with a hand "
-                                                         "guard, used for thrusting or striking and now typically worn "
-                                                         "as part of ceremonial dress.",
+        super().__init__(name="TALWAR", description="A talwar is curved, single-edged sword with an iron disc hilt and "
+                                                    "knucklebow, and a fullered blade.",
                          value=5500, rarity=15, damage=7, crit=5, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
-class AdamantiteSword(Weapon):
+class Shamshir(Weapon):
 
     def __init__(self):
-        super().__init__(name="ADAMANTITE SWORD", description="A weapon with a long adamantite blade and a hilt with "
-                                                              "a hand guard, used for thrusting or striking and now "
-                                                              "typically worn as part of ceremonial dress.",
+        super().__init__(name="SHAMSHIR", description="A shamshir has a radically curved blade featuring a slim blade "
+                                                      "with almost no taper until the very tip.",
                          value=10000, rarity=25, damage=10, crit=4, handed=1, subtyp='Sword', unequip=False,
                          off=True)
 
 
-class MithrilSword(Weapon):
+class Khopesh(Weapon):
 
     def __init__(self):
-        super().__init__(name="MITHRIL SWORD", description="A weapon with a long mithril blade and a hilt with "
-                                                           "a hand guard, used for thrusting or striking and now "
-                                                           "typically worn as part of ceremonial dress.",
+        super().__init__(name="KHOPESH", description="A khopesh is a sickle-shaped sword that evolved from battle axes"
+                                                     " and that can be used to disarm an opponent.",
                          value=22000, rarity=40, damage=12, crit=4, handed=1, subtyp='Sword', unequip=False,
                          off=True)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if target.equipment['Weapon']().subtyp != "Natural" and target.equipment['Weapon']().subtyp != "None":
+            chance = target.check_mod('luck', luck_factor=10)
+            if random.randint(wielder.strength // 2, wielder.strength) \
+                    > random.randint(target.dex // 2, target.dex) + chance:
+                turns = wielder.strength // 10
+                target.status_effects['Disarm'][0] = True
+                target.status_effects['Disarm'][1] = turns
+                print("{} is disarmed for {} turns.".format(target.name, turns))
 
 
 class Excalibur(Weapon):
@@ -390,154 +388,7 @@ class Excalibur(Weapon):
                          value=0, rarity=99, damage=18, crit=3, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.special = True
-
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        if crit > 1:
-            if random.randint((wielder.strength // 2), wielder.strength)\
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.strength // 10)
-                bleed_dmg = max(wielder.strength // 2, damage)
-                target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = duration
-                target.status_effects['Bleed'][2] = bleed_dmg
-                print("{} is bleeding for {} turns.".format(target.name, duration))
-
-
-class BronzeMace(Weapon):
-
-    def __init__(self):
-        super().__init__(name="BRONZE MACE", description="A mace is a blunt weapon, a type of club or virge that uses a"
-                                                         " heavy head on the end of a handle to deliver powerful "
-                                                         "strikes. A mace typically consists of a strong, heavy, wooden"
-                                                         " or metal shaft, often reinforced with metal, featuring a "
-                                                         "head made of bronze.",
-                         value=125, rarity=3, damage=3, crit=10, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-
-
-class IronMace(Weapon):
-
-    def __init__(self):
-        super().__init__(name="IRON MACE", description="A mace is a blunt weapon, a type of club or virge that uses a"
-                                                       " heavy head on the end of a handle to deliver powerful "
-                                                       "strikes. A mace typically consists of a strong, heavy, wooden"
-                                                       " or metal shaft, often reinforced with metal, featuring a "
-                                                       "head made of iron.",
-                         value=2000, rarity=7, damage=6, crit=9, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-
-
-class SteelMace(Weapon):
-
-    def __init__(self):
-        super().__init__(name="STEEL MACE", description="A mace is a blunt weapon, a type of club or virge that uses a"
-                                                        " heavy head on the end of a handle to deliver powerful "
-                                                        "strikes. A mace typically consists of a strong, heavy, wooden"
-                                                        " or metal shaft, often reinforced with metal, featuring a "
-                                                        "head made of steel.",
-                         value=4500, rarity=15, damage=8, crit=8, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-
-
-class AdamantiteMace(Weapon):
-
-    def __init__(self):
-        super().__init__(name="ADAMANTITE MACE", description="A mace is a blunt weapon, a type of club or virge that "
-                                                             "uses a heavy head on the end of a handle to deliver "
-                                                             "powerful strikes. A mace typically consists of a strong, "
-                                                             "heavy, wooden or metal shaft, often reinforced with "
-                                                             "metal, featuring a head made of adamantite.",
-                         value=10000, rarity=25, damage=12, crit=7, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-
-
-class MithrilMace(Weapon):
-
-    def __init__(self):
-        super().__init__(name="MITHRIL MACE", description="A mace is a blunt weapon, a type of club or virge that "
-                                                          "uses a heavy head on the end of a handle to deliver "
-                                                          "powerful strikes. A mace typically consists of a strong, "
-                                                          "heavy, wooden or metal shaft, often reinforced with "
-                                                          "metal, featuring a head made of mithril.",
-                         value=21000, rarity=40, damage=14, crit=6, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-
-
-class Mjolnir(Weapon):
-    """
-    Ultimate weapon; chance to stun on a critical hit based on strength
-    """
-
-    def __init__(self):
-        super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
-                                                     "mythology as one of the most fearsome and powerful weapons in "
-                                                     "existence, capable of leveling mountains.",
-                         value=0, rarity=99, damage=20, crit=5, handed=1, subtyp='Mace', unequip=False,
-                         off=True)
-        self.special = True
-
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        if crit > 1:
-            if random.randint(0, wielder.strength) \
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.strength // 10)
-                target.status_effects['Stun'][0] = True
-                target.status_effects['Stun'][1] = duration
-                print("{} is stunned for {} turns.".format(target.name, duration))
-
-
-class Axe(Weapon):
-
-    def __init__(self):
-        super().__init__(name="AXE", description="An axe specifically designed for combat.",
-                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-
-
-class BattleAxe(Weapon):
-
-    def __init__(self):
-        super().__init__(name="BATTLE AXE", description="A double-bladed, two-handed melee weapon.",
-                         value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-
-
-class GreatAxe(Weapon):
-
-    def __init__(self):
-        super().__init__(name="GREAT AXE", description="An enlarged battle axe, providing additional damaging power.",
-                         value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-
-
-class AdamantiteAxe(Weapon):
-
-    def __init__(self):
-        super().__init__(name="ADAMANTITE AXE", description="A double-bladed, two-handed melee weapon made from "
-                                                            "adamantite.",
-                         value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-
-
-class MithrilAxe(Weapon):
-
-    def __init__(self):
-        super().__init__(name="MITHRIL AXE", description="A double-bladed, two-handed melee weapon made from "
-                                                         "mithril.",
-                         value=30000, rarity=40, damage=16, crit=4, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-
-
-class Jarnbjorn(Weapon):
-    """
-    Ultimate weapon; chance on critical hit to cause bleed
-    """
-
-    def __init__(self):
-        super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=0, rarity=99, damage=23, crit=3, handed=2, subtyp='Axe', unequip=False,
-                         off=False)
-        self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         if crit > 1:
@@ -551,35 +402,287 @@ class Jarnbjorn(Weapon):
                 print("{} is bleeding for {} turns.".format(target.name, duration))
 
 
-class Spear(Weapon):
+class Mace(Weapon):
 
     def __init__(self):
-        super().__init__(name="SPEAR", description="A pole weapon consisting of a shaft, usually of wood, with a "
-                                                   "pointed head.",
+        super().__init__(name="MACE", description="A mace is a blunt weapon, a type of club or virge that uses a heavy"
+                                                  " head on the end of a handle to deliver powerful strikes. A mace "
+                                                  "typically consists of a strong, heavy, wooden or metal shaft, often"
+                                                  " reinforced with metal, featuring a head made of iron.",
+                         value=2000, rarity=7, damage=6, crit=9, handed=1, subtyp='Club', unequip=False,
+                         off=True)
+
+
+class WarHammer(Weapon):
+
+    def __init__(self):
+        super().__init__(name="WAR HAMMER", description="A war hammer is a club with a head featuring both a blunt end "
+                                                        "and a spike on the other end.",
+                         value=4500, rarity=15, damage=8, crit=8, handed=1, subtyp='Club', unequip=False,
+                         off=True)
+
+
+class Pernach(Weapon):
+
+    def __init__(self):
+        super().__init__(name="PERNACH", description="A pernach is a type of flanged mace used to penetrate even heavy "
+                                                     "armor plating.",
+                         value=10000, rarity=25, damage=12, crit=7, handed=1, subtyp='Club', unequip=False,
+                         off=True)
+
+
+class Morgenstern(Weapon):
+
+    def __init__(self):
+        super().__init__(name="MORGENSTERN", description="A morgenstern, or morning star, is a club-like weapon "
+                                                         "consisting of a shaft with an attached ball adorned with "
+                                                         "several spikes.",
+                         value=21000, rarity=40, damage=14, crit=6, handed=1, subtyp='Club', unequip=False,
+                         off=True)
+
+
+class Mjolnir(Weapon):
+    """
+    Ultimate weapon; chance to stun on a critical hit based on strength
+    """
+
+    def __init__(self):
+        super().__init__(name="MJOLNIR", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
+                                                     "mythology as one of the most fearsome and powerful weapons in "
+                                                     "existence, capable of leveling mountains.",
+                         value=0, rarity=99, damage=20, crit=5, handed=1, subtyp='Club', unequip=False,
+                         off=True)
+        self.special = True
+        self.ultimate = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint(0, wielder.strength) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                target.status_effects['Stun'][0] = True
+                target.status_effects['Stun'][1] = duration
+                print("{} is stunned for {} turns.".format(target.name, duration))
+
+
+class Tanto(Weapon):
+
+    def __init__(self):
+        super().__init__(name="TANTO", description="A tanto is a double-edged, straight blade, designed primarily as a "
+                                                   "stabbing weapon, but the edge can be used for slashing as well.",
+                         value=15000, rarity=40, damage=8, crit=3, handed=1, subtyp='Ninja Blade', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+
+
+class Wakizashi(Weapon):
+
+    def __init__(self):
+        super().__init__(name="WAKIZASHI", description="A wakizashi is a curved, single-edged blade with a narrow "
+                                                       "cross-section, producing a deadly strike.",
+                         value=65000, rarity=60, damage=12, crit=2, handed=1, subtyp='Ninja Blade', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+
+
+class Ninjato(Weapon):
+    """
+    Ultimate weapon; chance on crit to kill target
+    """
+
+    def __init__(self):
+        super().__init__(name="NINJATO", description="A mythical blade used by ninjas said to be possessed by a demon "
+                                                     "who steals the soul of those slain by the weapon.",
+                         value=0, rarity=99, damage=18, crit=1, handed=1, subtyp='Ninja Blade', unequip=False,
+                         off=True)
+        self.restriction = ['Ninja']
+        self.special = True
+        self.ultimate = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            resist = target.check_mod('resist', 'Death')
+            if resist < 1:
+                w_chance = wielder.check_mod('luck', luck_factor=10)
+                t_chance = target.check_mod('luck', luck_factor=10)
+                if random.randint(0, wielder.dex) + w_chance > \
+                        random.randint(target.con // 2, target.con) + t_chance:
+                    print("The {} blade rips the soul from {} and they drop dead to the ground!".format(
+                        self.name, target.name))
+
+
+# Two-handed weapons
+class Bastard(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="BASTARD", description="",
+                         value=700, rarity=6, damage=5, crit=7, handed=2, subtyp='Longsword', unequip=False, off=False)
+
+
+class Claymore(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="CLAYMORE", description="",
+                         value=4200, rarity=13, damage=9, crit=6, handed=2, subtyp='Longsword', unequip=False,
+                         off=False)
+
+
+class Zweihander(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="ZWEIHANDER", description="",
+                         value=9500, rarity=25, damage=11, crit=5, handed=2, subtyp='Longsword', unequip=False,
+                         off=False)
+
+
+class Changdao(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="CHANGDAO", description="",
+                         value=16000, rarity=30, damage=13, crit=4, handed=2, subtyp='Longsword', unequip=False,
+                         off=False)
+
+
+class Flamberge(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="FLAMBERGE", description="",
+                         value=31000, rarity=40, damage=15, crit=3, handed=2, subtyp='Longsword', unequip=False,
+                         off=False)
+
+
+class Executioner(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="EXECUTIONER'S BLADE", description="",
+                         value=0, rarity=99, damage=21, crit=2, handed=2, subtyp='Longsword', unequip=False, off=False)
+        self.special = True
+        self.ultimate = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            resist = target.check_mod('resist', 'Death')
+            if resist < 1:
+                w_chance = wielder.check_mod('luck', luck_factor=10)
+                t_chance = target.check_mod('luck', luck_factor=10)
+                if random.randint(0, wielder.strength) + w_chance > \
+                        random.randint(target.con // 2, target.con) + t_chance:
+                    print("The {} decapitates {} and they drop dead to the ground!".format(
+                        self.name, target.name))
+
+
+class Mattock(Weapon):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="MATTOCK", description="",
+                         value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Battle Axe', unequip=False, off=False)
+
+
+class Broadaxe(Weapon):
+
+    def __init__(self):
+        super().__init__(name="BROADAXE", description="",
+                         value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Battle Axe', unequip=False,
+                         off=False)
+
+
+class DoubleAxe(Weapon):
+
+    def __init__(self):
+        super().__init__(name="DOUBLE AXE", description="",
+                         value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Battle Axe', unequip=False,
+                         off=False)
+
+
+class Parashu(Weapon):
+
+    def __init__(self):
+        super().__init__(name="PARASHU", description="",
+                         value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Battle Axe', unequip=False,
+                         off=False)
+
+
+class GreatAxe(Weapon):
+
+    def __init__(self):
+        super().__init__(name="GREAT AXE", description="",
+                         value=30000, rarity=40, damage=16, crit=4, handed=2, subtyp='Battle Axe', unequip=False,
+                         off=False)
+
+
+class Jarnbjorn(Weapon):
+    """
+    Ultimate weapon; chance on critical hit to cause bleed
+    """
+
+    def __init__(self):
+        super().__init__(name="JARNBJORN", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
+                         value=0, rarity=99, damage=23, crit=3, handed=2, subtyp='Battle Axe', unequip=False,
+                         off=False)
+        self.special = True
+        self.ultimate = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if crit > 1:
+            if random.randint((wielder.strength // 2), wielder.strength) \
+                    > random.randint(target.con // 2, target.con):
+                duration = max(1, wielder.strength // 10)
+                bleed_dmg = max(wielder.strength // 2, damage)
+                target.status_effects['Bleed'][0] = True
+                target.status_effects['Bleed'][1] = duration
+                target.status_effects['Bleed'][2] = bleed_dmg
+                print("{} is bleeding for {} turns.".format(target.name, duration))
+
+
+class Voulge(Weapon):
+
+    def __init__(self):
+        super().__init__(name="VOULGE", description="",
                          value=800, rarity=6, damage=5, crit=6, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
 
-class Lance(Weapon):
+class Partisan(Weapon):
 
     def __init__(self):
-        super().__init__(name="LANCE", description="A pole weapon designed for thrusting.",
+        super().__init__(name="PARTISAN", description="",
                          value=3500, rarity=12, damage=9, crit=5, handed=2, subtyp='Polearm', unequip=False,
-                         off=False)
-
-
-class Pike(Weapon):
-
-    def __init__(self):
-        super().__init__(name="PIKE", description="A very long pole weapon designed for thrusting.",
-                         value=9000, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
 
 class Halberd(Weapon):
 
     def __init__(self):
-        super().__init__(name="HALBERD", description="A combined spear and battle axe.",
+        super().__init__(name="HALBERD", description="",
+                         value=9000, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False,
+                         off=False)
+
+
+class Naginata(Weapon):
+
+    def __init__(self):
+        super().__init__(name="NAGINATA", description="A combined spear and battle axe.",
                          value=13000, rarity=30, damage=13, crit=3, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
@@ -603,22 +706,21 @@ class Gungnir(Weapon):
                          value=0, rarity=99, damage=22, crit=2, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.ignore = True
+        self.ultimate = True
 
 
-class PineStaff(Weapon):
+class Quarterstaff(Weapon):
 
     def __init__(self):
-        super().__init__(name="PINE STAFF", description="A pine walking stick wielded in 2 hands and used to strike the"
-                                                        "opponent, typically used by magic users.",
+        super().__init__(name="QUARTERSTAFF", description="",
                          value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
 
-class OakStaff(Weapon):
+class Baston(Weapon):
 
     def __init__(self):
-        super().__init__(name="OAK STAFF", description="An oak walking stick wielded in 2 hands and used to strike the"
-                                                       "opponent, typically used by magic users.",
+        super().__init__(name="BASTON", description="",
                          value=800, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
@@ -647,6 +749,16 @@ class HolyStaff(Weapon):
                          value=7500, rarity=20, damage=11, crit=8, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.restricted = ['Priest', 'Archbishop']
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        resist = target.check_mod('resist', 'Holy')
+        damage = int(damage * (1 - resist))
+        if damage > 0:
+            print("The {} deals {} additional holy damage to {}.".format(self.name, damage, target.name))
+        elif damage < 0:
+            print("{} absorbs the holy damage from the {}.".format(target.name, self.name))
+        target.health -= damage
 
 
 class RuneStaff(Weapon):
@@ -676,6 +788,7 @@ class DragonStaff(Weapon):
                          off=False)
         self.restriction = ['Berserker', 'Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
         self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         mana_heal = random.randint(damage // 2, damage)
@@ -697,6 +810,7 @@ class PrincessGuard(Weapon):
                          off=False)
         self.restriction = ['Archbishop']
         self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         heal = random.randint(damage // 2, damage)
@@ -707,11 +821,11 @@ class PrincessGuard(Weapon):
             print("{}'s heal is regenerated by {}.".format(wielder.name, heal))
 
 
-class OakHammer(Weapon):
+class Sledgehammer(Weapon):
 
     def __init__(self):
-        super().__init__(name="OAK HAMMER", description="A large, 2-handed hammer made entirely of oak.",
-                         value=250, rarity=5, damage=3, crit=11, handed=2, subtyp='Hammer', unequip=False,
+        super().__init__(name="SLEDGEHAMMER", description="",
+                         value=800, rarity=7, damage=6, crit=9, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
 
@@ -720,15 +834,7 @@ class Maul(Weapon):
     def __init__(self):
         super().__init__(name="MAUL", description="A maul is a tool with a large, flat, often metal head, attached to a"
                                                   " long handle.",
-                         value=800, rarity=7, damage=6, crit=9, handed=2, subtyp='Hammer', unequip=False,
-                         off=False)
-
-
-class IronHammer(Weapon):
-
-    def __init__(self):
-        super().__init__(name="IRON HAMMER", description="A large, 2-handed hammer made entirely of iron.",
-                         value=2500, rarity=10, damage=8, crit=8, handed=2, subtyp='Hammer', unequip=False,
+                         value=5000, rarity=14, damage=14, crit=7, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
 
@@ -736,17 +842,18 @@ class EarthHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="EARTH HAMMER", description="A large, 2-handed hammer infused with the power of Gaia.",
-                         value=5000, rarity=14, damage=14, crit=7, handed=2, subtyp='Hammer', unequip=False,
-                         off=False)
-
-
-class WarHammer(Weapon):
-
-    def __init__(self):
-        super().__init__(name="WAR HAMMER", description="A war hammer is a late medieval weapon of war primarily used "
-                                                        "for close combat action, whose design resembles the hammer. ",
                          value=12000, rarity=32, damage=18, crit=6, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
+        self.special = True
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        resist = target.check_mod('resist', 'Earth')
+        damage = int(damage * (1 - resist))
+        if damage > 0:
+            print("The {} deals {} additional earth damage to {}.".format(self.name, damage, target.name))
+        elif damage < 0:
+            print("{} absorbs the earth damage from the {}.".format(target.name, self.name))
+        target.health -= damage
 
 
 class GreatMaul(Weapon):
@@ -769,6 +876,7 @@ class Skullcrusher(Weapon):
                          value=0, rarity=99, damage=26, crit=5, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.special = True
+        self.ultimate = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         if crit > 1:
@@ -778,48 +886,6 @@ class Skullcrusher(Weapon):
                 target.status_effects['Stun'][0] = True
                 target.status_effects['Stun'][1] = duration
                 print("{} is stunned for {} turns.".format(target.name, duration))
-
-
-class Tanto(Weapon):
-
-    def __init__(self):
-        super().__init__(name="TANTO", description="",
-                         value=15000, rarity=40, damage=8, crit=3, handed=1, subtyp='Ninja', unequip=False,
-                         off=True)
-        self.restriction = ['Ninja']
-
-
-class Wakizashi(Weapon):
-
-    def __init__(self):
-        super().__init__(name="WAKIZASHI", description="",
-                         value=65000, rarity=60, damage=12, crit=2, handed=1, subtyp='Ninja', unequip=False,
-                         off=True)
-        self.restriction = ['Ninja']
-
-
-class Ninjato(Weapon):
-    """
-    Ultimate weapon; chance on crit to kill target
-    """
-
-    def __init__(self):
-        super().__init__(name="NINJATO", description="",
-                         value=0, rarity=99, damage=18, crit=1, handed=1, subtyp='Ninja', unequip=False,
-                         off=True)
-        self.restriction = ['Ninja']
-        self.special = True
-
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        if crit > 1:
-            resist = target.check_mod('resist', 'Death')
-            if resist < 1:
-                w_chance = wielder.check_mod('luck', luck_factor=10)
-                t_chance = target.check_mod('luck', luck_factor=10)
-                if random.randint(0, wielder.dex) + w_chance > \
-                        random.randint(target.con // 2, target.con) + t_chance:
-                    print("The {} blade rips the soul from {} and they drop dead to the ground!".format(
-                        self.name.capitalize(), target.name))
 
 
 class Armor(Item):
@@ -834,6 +900,9 @@ class Armor(Item):
 
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\nArmor: {}".format(self.name, self.description, self.value, self.armor)
+
+    def special_effect(self, wearer, attacker):
+        pass
 
 
 class NoArmor(Armor):
@@ -1067,7 +1136,8 @@ class OffHand(Item):
         self.typ = 'OffHand'
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nBlock: {}".format(self.name, self.description, self.value, self.mod)
+        return "{}\n=====\n{}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class NoOffHand(OffHand):
@@ -1084,35 +1154,24 @@ class Buckler(OffHand):
                          value=25, rarity=2, mod=10, subtyp='Shield', unequip=False)
 
 
-class WoodShield(OffHand):
+class Aspis(OffHand):
 
     def __init__(self):
-        super().__init__(name="WOOD SHIELD", description="A broad piece of wood, held by straps used as a protection "
-                                                         "against blows or missiles.",
+        super().__init__(name="ASPIS", description="",
                          value=100, rarity=4, mod=8, subtyp='Shield', unequip=False)
 
 
-class BronzeShield(OffHand):
+class Targe(OffHand):
 
     def __init__(self):
-        super().__init__(name="BRONZE SHIELD", description="A broad piece of bronze, held by a handle attached on one "
-                                                           "side, used as a protection against blows or missiles.",
-                         value=250, rarity=6, mod=7, subtyp='Shield', unequip=False)
-
-
-class IronShield(OffHand):
-
-    def __init__(self):
-        super().__init__(name="IRON SHIELD", description="A broad piece of iron, held by a handle attached on one "
-                                                         "side, used as a protection against blows or missiles.",
+        super().__init__(name="TARGE", description="",
                          value=500, rarity=10, mod=6, subtyp='Shield', unequip=False)
 
 
-class SteelShield(OffHand):
+class Glagwa(OffHand):
 
     def __init__(self):
-        super().__init__(name="STEEL SHIELD", description="A broad piece of steel, held by a handle attached on one "
-                                                          "side, used as a protection against blows or missiles.",
+        super().__init__(name="GLAGWA", description="",
                          value=2500, rarity=20, mod=5, subtyp='Shield', unequip=False)
 
 
@@ -1127,10 +1186,10 @@ class KiteShield(OffHand):
                          value=10000, rarity=35, mod=4, subtyp='Shield', unequip=False)
 
 
-class TowerShield(OffHand):
+class Pavise(OffHand):
 
     def __init__(self):
-        super().__init__(name="TOWER SHIELD", description="A defensive bulwark, an impenetrable wall.",
+        super().__init__(name="PAVISE", description="",
                          value=25000, rarity=40, mod=3, subtyp='Shield', unequip=False)
 
 
@@ -1225,53 +1284,85 @@ class Accessory(Item):
         return "{}\n=====\n{}\nValue: {}\nMod: {}".format(self.name, self.description, self.value, self.mod)
 
 
-class NoPendant(Accessory):
-
-    def __init__(self):
-        super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=99, mod="No Mod",
-                         subtyp='Pendant', unequip=True)
-
-
 class NoRing(Accessory):
 
     def __init__(self):
         super().__init__(name="NO RING", description="No ring equipped.", value=0, rarity=99, mod="No Mod",
-                         subtyp='Ring', unequip=True)
+                         subtyp='None', unequip=True)
 
 
 class IronRing(Accessory):
 
     def __init__(self):
         super().__init__(name="IRON RING", description="A ring that improves the wearer's defense.",
-                         value=2000, rarity=12, mod="+5 Physical Defense", subtyp='Ring', unequip=False)
+                         value=2000, rarity=12, mod="+5 Physical Defense", subtyp="Ring", unequip=False)
 
 
 class PowerRing(Accessory):
 
     def __init__(self):
         super().__init__(name="POWER RING", description="A ring that improves the wearer's attack damage.",
-                         value=5000, rarity=18, mod="+5 Physical Damage", subtyp='Ring', unequip=False)
+                         value=5000, rarity=18, mod="+5 Physical Damage", subtyp="Ring", unequip=False)
 
 
-class SilverPendant(Accessory):
-
-    def __init__(self):
-        super().__init__(name="SILVER PENDANT", description="A necklace that improves the wearer's magic damage.",
-                         value=8000, rarity=22, mod="+5 Magic Damage", subtyp='Pendant', unequip=False)
-
-
-class RubyPendant(Accessory):
+class NoPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="RUBY PENDANT", description="A ruby necklace that improves the wearer's magic damage.",
-                         value=1800, rarity=10, mod="+5 Magic Defense", subtyp='Pendant', unequip=False)
+        super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=99, mod="No Mod",
+                         subtyp="None", unequip=True)
 
 
 class VisionPendant(Accessory):
 
     def __init__(self):
         super().__init__(name="PENDANT OF VISION", description="A pendant that that gives information about the enemy.",
-                         value=1200, rarity=7, mod="Vision", subtyp='Pendant', unequip=False)
+                         value=1200, rarity=7, mod="Vision", subtyp="Pendant", unequip=False)
+
+
+class RubyPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="RUBY PENDANT", description="A ruby necklace that improves the wearer's magic damage.",
+                         value=1800, rarity=10, mod="+5 Magic Defense", subtyp="Pendant", unequip=False)
+
+
+class SilverPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="SILVER PENDANT", description="A necklace that improves the wearer's magic damage.",
+                         value=8000, rarity=22, mod="+5 Magic Damage", subtyp="Pendant", unequip=False)
+
+
+class AntidotePendant(Accessory):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="ANTIDOTE PENDANT", description="Protects the wearer against the effects of poison.",
+                         value=2500, rarity=15, mod="Poison", subtyp="Pendant", unequip=False)
+
+
+class GorgonPendant(Accessory):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="GORGON PENDANT", description="Made from the scale of a Gorgon, this ring protects the "
+                                                            "wearer against petrification.",
+                         value=20000, rarity=35, mod="Stone", subtyp="Pendant", unequip=False)
+
+
+class DharmaPendant(Accessory):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name="DHARMA PENDANT", description="No need to fear the reaper while wearing this ring, giving"
+                                                            " the wearer immunity against instant death.",
+                         value=25000, rarity=40, mod="Death", subtyp="Pendant", unequip=False)
 
 
 class Potion(Item):
@@ -1359,14 +1450,14 @@ class Megalixir(Potion):
 
     def __init__(self):
         super().__init__(name="MEGALIXIR", description="A potion that restores up to 100% of your health and mana.",
-                         value=30000, rarity=75, subtyp='Elixir')
+                         value=30000, rarity=60, subtyp='Elixir')
         self.percent = 1.0
 
 
 class HPPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="HP POTION", description="A potion that permanently increases your strength by 1",
+        super().__init__(name="HP POTION", description="A potion that permanently increases your max health by 10.",
                          value=10000, rarity=20, subtyp='Stat')
         self.stat = 'hp'
 
@@ -1374,7 +1465,7 @@ class HPPotion(Potion):
 class MPPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="MP POTION", description="A potion that permanently increases your strength by 1",
+        super().__init__(name="MP POTION", description="A potion that permanently increases your max mana by 10.",
                          value=10000, rarity=20, subtyp='Stat')
         self.stat = 'mp'
 
@@ -1382,7 +1473,7 @@ class MPPotion(Potion):
 class StrengthPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="STRENGTH POTION", description="A potion that permanently increases your strength by 1",
+        super().__init__(name="STRENGTH POTION", description="A potion that permanently increases your strength by 1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'str'
 
@@ -1391,7 +1482,7 @@ class IntelPotion(Potion):
 
     def __init__(self):
         super().__init__(name="INTELLIGENCE POTION", description="A potion that permanently increases your intelligence"
-                                                                 " by 1",
+                                                                 " by 1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'int'
 
@@ -1399,7 +1490,7 @@ class IntelPotion(Potion):
 class WisdomPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="WISDOM POTION", description="A potion that permanently increases your wisdom by 1",
+        super().__init__(name="WISDOM POTION", description="A potion that permanently increases your wisdom by 1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'wis'
 
@@ -1408,7 +1499,7 @@ class ConPotion(Potion):
 
     def __init__(self):
         super().__init__(name="CONSTITUTION POTION", description="A potion that permanently increases your constitution"
-                                                                 " by 1",
+                                                                 " by 1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'con'
 
@@ -1416,7 +1507,7 @@ class ConPotion(Potion):
 class CharismaPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="CHARISMA POTION", description="A potion that permanently increases your strength by 1",
+        super().__init__(name="CHARISMA POTION", description="A potion that permanently increases your charisma by 1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'cha'
 
@@ -1424,7 +1515,8 @@ class CharismaPotion(Potion):
 class DexterityPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="DEXTERITY POTION", description="A potion that permanently increases your dexterity by 1",
+        super().__init__(name="DEXTERITY POTION", description="A potion that permanently increases your dexterity by "
+                                                              "1.",
                          value=20000, rarity=35, subtyp='Stat')
         self.stat = 'dex'
 
@@ -1432,8 +1524,8 @@ class DexterityPotion(Potion):
 class AardBeing(Potion):
 
     def __init__(self):
-        super().__init__(name="AARD of BEING", description="A potion that permanently increases all stats by 1",
-                         value=200000, rarity=100, subtyp='Stat')
+        super().__init__(name="AARD of BEING", description="A potion that permanently increases all stats by 1.",
+                         value=200000, rarity=75, subtyp='Stat')
         self.stat = 'all'
 
 
@@ -1484,7 +1576,7 @@ class Relic1(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Triangulus", description="The holy trinity of mind, body, and spirit are represented by "
+        super().__init__(name="TRIANGULUS", description="The holy trinity of mind, body, and spirit are represented by "
                                                         "the Triangulus relic.",
                          value=0, rarity=99, subtyp='Special')
 
@@ -1495,7 +1587,7 @@ class Relic2(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Quadrata", description="The Quadrata relic symbolizes order, trust, stability, and "
+        super().__init__(name="QUADRATA", description="The Quadrata relic symbolizes order, trust, stability, and "
                                                       "logic, the hallmarks of a well-balanced person.",
                          value=0, rarity=99, subtyp='Special')
 
@@ -1506,7 +1598,7 @@ class Relic3(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Hexagonum", description="The Hexagonum relic represents the natural world, since the "
+        super().__init__(name="HEXAGONUM", description="The Hexagonum relic represents the natural world, since the "
                                                        "hexagon is the considered the strongest shape and regularly "
                                                        "found in nature.",
                          value=0, rarity=99, subtyp='Special')
@@ -1518,7 +1610,7 @@ class Relic4(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Luna", description="The Moon, our celestial partner, is the inspiration for the Luna "
+        super().__init__(name="LUNA", description="The Moon, our celestial partner, is the inspiration for the Luna "
                                                   "relic and represents love for others.",
                          value=0, rarity=99, subtyp='Special')
 
@@ -1529,7 +1621,7 @@ class Relic5(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Polaris", description="The Polaris relic resembles the shape of a star and represents "
+        super().__init__(name="POLARIS", description="The Polaris relic resembles the shape of a star and represents "
                                                      "the guiding light of the North Star.",
                          value=0, rarity=99, subtyp='Special')
 
@@ -1540,24 +1632,24 @@ class Relic6(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Infinitas", description="Shaped like a circle, the Infinitas relic represents the never-"
+        super().__init__(name="INFINITAS", description="Shaped like a circle, the Infinitas relic represents the never-"
                                                        "ending struggle between good and evil.",
                          value=0, rarity=99, subtyp='Special')
 
 
 # Parameters
-items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, AdamantiteDagger, MithrilDagger, Carnwennan],
-                         'Sword': [BronzeSword, IronSword, SteelSword, AdamantiteSword, MithrilSword, Excalibur],
-                         'Mace': [BronzeMace, IronMace, SteelMace, AdamantiteMace, MithrilMace, Mjolnir],
-                         'Fist': [BronzeFist, IronFist, SteelFist, AdamantiteFist, MithrilFist, GodsHand],
-                         'Axe': [Axe, BattleAxe, GreatAxe, AdamantiteAxe, MithrilAxe, Jarnbjorn],
-                         'Polearm': [Spear, Lance, Pike, Halberd, Trident, Gungnir],
-                         'Staff': [PineStaff, OakStaff, IronshodStaff, SerpentStaff, HolyStaff, RuneStaff,
+items_dict = {'Weapon': {'Fist': [BrassKnuckles, Cestus, BattleGauntlet, BaghNahk, GodsHand],
+                         'Dagger': [Dirk, Baselard, Kris, Rondel, Kukri, Carnwennan],
+                         'Sword': [Rapier, Jian, Talwar, Shamshir, Khopesh, Excalibur],
+                         'Club': [Mace, WarHammer, Pernach, Morgenstern, Mjolnir],
+                         'Ninja Blade': [Tanto, Wakizashi, Ninjato],
+                         'Longsword': [Bastard, Claymore, Zweihander, Changdao, Flamberge, Executioner],
+                         'Battle Axe': [Mattock, Broadaxe, DoubleAxe, Parashu, GreatAxe, Jarnbjorn],
+                         'Polearm': [Voulge, Partisan, Halberd, Naginata, Trident, Gungnir],
+                         'Staff': [Quarterstaff, Baston, IronshodStaff, SerpentStaff, HolyStaff, RuneStaff,
                                    MithrilshodStaff, DragonStaff, PrincessGuard],
-                         'Hammer': [OakHammer, Maul, IronHammer, EarthHammer, WarHammer, GreatMaul, Skullcrusher],
-                         'Ninja Blades': [Tanto, Wakizashi, Ninjato]},
-              'OffHand': {'Shield': [WoodShield, BronzeShield, IronShield, SteelShield, KiteShield, TowerShield,
-                                     MedusaShield],
+                         'Hammer': [Sledgehammer, Maul, EarthHammer, GreatMaul, Skullcrusher]},
+              'OffHand': {'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, MedusaShield],
                           'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon,
                                    Magus]},
               'Armor': {'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, WizardRobe, CloakEnchantment, MerlinRobe],
@@ -1565,10 +1657,11 @@ items_dict = {'Weapon': {'Dagger': [BronzeDagger, IronDagger, SteelDagger, Adama
                         'Medium': [HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Aegis],
                         'Heavy': [RingMail, ChainMail, Splint, PlateMail, FullPlate, Genji]},
               'Accessory': {'Ring': [IronRing, PowerRing],
-                            'Pendant': [VisionPendant, SilverPendant, RubyPendant]},
+                            'Pendant': [VisionPendant, SilverPendant, RubyPendant, AntidotePendant, GorgonPendant,
+                                        DharmaPendant]},
               'Potion': {'Health': [HealthPotion, GreatHealthPotion, SuperHealthPotion, MasterHealthPotion],
                          'Mana': [ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                          'Elixir': [Elixir, Megalixir],
                          'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
                                   CharismaPotion, DexterityPotion, AardBeing]},
-              'Misc': {'Key': [Key, OldKey, Unobtainium]}}
+              'Misc': {'Key': [Key, OldKey]}}

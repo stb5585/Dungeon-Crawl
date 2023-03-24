@@ -5,7 +5,7 @@
 import os
 import time
 
-import enemies
+import companions
 import storyline
 import items
 import spells
@@ -86,10 +86,10 @@ def equip_check(item, item_typ, class_name):
 def choose_familiar():
     yes_no = ['Yes', 'No']
     fam_name = ''
-    choose_dict = {"Homunculus": [enemies.Homunculus(), "Defense"],
-                   "Fairy": [enemies.Fairy(), "Support"],
-                   "Mephit": [enemies.Mephit(), "Arcane"],
-                   "Jinkin": [enemies.Jinkin(), "Luck"]}
+    choose_dict = {"Homunculus": [companions.Homunculus(), "Defense"],
+                   "Fairy": [companions.Fairy(), "Support"],
+                   "Mephit": [companions.Mephit(), "Arcane"],
+                   "Jinkin": [companions.Jinkin(), "Luck"]}
     choose_list = list(choose_dict.keys())
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -127,7 +127,7 @@ def choose_familiar():
     return familiar
 
 
-def promotion(player):
+def promotion(player_char):
     exp_scale = 1  # TODO
     pro1_dict = {Warrior().name: [WeaponMaster(), Paladin(), Lancer()],
                  Mage().name: [Sorcerer(), Warlock(), Spellblade()],
@@ -149,15 +149,15 @@ def promotion(player):
                  Druid().name: [Lycan()],
                  Diviner().name: [Geomancer()],
                  Shaman().name: [Soulcatcher()]}
-    current_class = player.cls
+    current_class = player_char.cls
     class_options = []
-    if player.pro_level == 1:
+    if player_char.pro_level == 1:
         for cls in pro1_dict[current_class]:
-            if cls.name in races_dict[player.race]().cls_res['First']:
+            if cls.name in races_dict[player_char.race]().cls_res['First']:
                 class_options.append(cls.name)
     else:
         for cls in pro2_dict[current_class]:
-            if cls.name in races_dict[player.race]().cls_res['Second']:
+            if cls.name in races_dict[player_char.race]().cls_res['Second']:
                 class_options.append(cls.name)
     if len(class_options) > 1:
         print("Which path would you like to follow?")
@@ -165,7 +165,7 @@ def promotion(player):
         class_index = storyline.get_response(class_options)
     else:
         class_index = 0
-    if player.pro_level == 1:
+    if player_char.pro_level == 1:
         new_class = pro1_dict[current_class][class_index]
     else:
         new_class = pro2_dict[current_class][class_index]
@@ -175,14 +175,15 @@ def promotion(player):
     yes_no = ["Yes", "No"]
     promote = storyline.get_response(yes_no)
     if yes_no[promote] == 'Yes':
-        print("Congratulations! {} has been promoted from a {} to a {}!".format(player.name, current_class,
+        print("Congratulations! {} has been promoted from a {} to a {}!".format(player_char.name, current_class,
                                                                                 new_class.name))
-        player.equip(unequip=True)
-        promoted_player = player
+        time.sleep(0.5)
+        player_char.equip(unequip=True)
+        promoted_player = player_char
         promoted_player.pro_level = new_class.pro_level
         promoted_player.level = 1
         promoted_player.experience = 0
-        promoted_player.exp_to_gain = (exp_scale ** player.pro_level) * player.level
+        promoted_player.exp_to_gain = (exp_scale ** player_char.pro_level) * player_char.level
         promoted_player.cls = new_class.name
         promoted_player.equipment['Weapon'] = new_class.equipment['Weapon']
         promoted_player.equipment['Armor'] = new_class.equipment['Armor']
@@ -200,34 +201,42 @@ def promotion(player):
         promoted_player.charisma += new_class.stat_plus[4]
         print("Dexterity: {} -> {}".format(promoted_player.dex, promoted_player.dex + new_class.stat_plus[5]))
         promoted_player.dex += new_class.stat_plus[5]
+        time.sleep(0.5)
         print("New Equipment")
-        print("Weapon: {}".format(player.equipment['Weapon']().name))
-        print("OffHand: {}".format(player.equipment['OffHand']().name))
-        print("Armor: {}".format(player.equipment['Armor']().name))
-        if new_class.name == 'Warlock':
+        print("Weapon: {}".format(player_char.equipment['Weapon']().name))
+        print("OffHand: {}".format(player_char.equipment['OffHand']().name))
+        print("Armor: {}".format(player_char.equipment['Armor']().name))
+        time.sleep(0.5)
+        if new_class.name in ['Warlock', 'Monk']:
             promoted_player.spellbook['Spells'] = dict()
-            print("You unlearn all of your arcane spells.")
-            time.sleep(1)
+            print("You access to previously learned spells.")
+            time.sleep(0.5)
         elif new_class.name == 'Weapon Master':
             del promoted_player.spellbook['Skills']['Shield Slam']
             print("You unlearn Shield Slam.")
-            time.sleep(1)
+            time.sleep(0.5)
         elif new_class.name == 'Inquisitor':
             del promoted_player.spellbook['Skills']['Kidney Punch']
             print("You unlearn Kidney Punch.")
-            time.sleep(1)
+            time.sleep(0.5)
         if str(promoted_player.level) in spells.spell_dict[promoted_player.cls]:
             spell_gain = spells.spell_dict[promoted_player.cls][str(promoted_player.level)]
+            if spell_gain().name in promoted_player.spellbook['Spells'].keys():
+                print("{} goes up a level.".format(spell_gain().name))
+            else:
+                print("You have gained the ability to cast {}.".format(spell_gain().name))
             promoted_player.spellbook['Spells'][spell_gain().name] = spell_gain
-            print(spell_gain())
-            print("You have gained the ability to cast {}.".format(spell_gain().name))
-            time.sleep(1)
+            time.sleep(0.5)
         if str(promoted_player.level) in spells.skill_dict[promoted_player.cls]:
             skill_gain = spells.skill_dict[promoted_player.cls][str(promoted_player.level)]
+            if skill_gain().name in promoted_player.spellbook['Skills'].keys():
+                print("{} goes up a level.".format(skill_gain().name))
+            else:
+                print("You have gained the ability to use {}.".format(skill_gain().name))
             promoted_player.spellbook['Skills'][skill_gain().name] = skill_gain
-            print(skill_gain())
-            print("You have gained the ability to use {}.".format(skill_gain().name))
-            time.sleep(1)
+            if skill_gain().name == "Transform":
+                promoted_player.transform.append(skill_gain().t_creature)
+            time.sleep(0.5)
         input("Press enter to continue")
         if new_class.name == 'Warlock':
             promoted_player.familiar = choose_familiar()
@@ -247,8 +256,8 @@ def promotion(player):
 class Job:
     """
     Base definition for the class
-    min_* parameters set the minimum value the player will start out with, regardless of roll
-    equipment lists the items the player starts out with for the selected class
+    min_* parameters set the minimum value the player_char will start out with, regardless of roll
+    equipment lists the items the player_char starts out with for the selected class
     restrictions list the allowable item types the class can equip
     """
 
@@ -291,9 +300,10 @@ class Warrior(Job):
                                                      "most stout of the bass classes, this character is best for "
                                                      "someone who wants to hack and slash their way through the game.",
                          str_plus=1, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.BronzeSword, OffHand=items.WoodShield, Armor=items.HideArmor,
+                         equipment=dict(Weapon=items.Rapier, OffHand=items.Aspis, Armor=items.HideArmor,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', "Club", 'Longsword', "Battle Axe", 'Hammer',
+                                                  'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium', 'Heavy']},
                          pro_level=1)
@@ -302,8 +312,8 @@ class Warrior(Job):
 class WeaponMaster(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
-    Pros: Can dual wield and can equip light armor
-    Cons: Cannot use shields or heavy armor; does not get DEX bonus to attack when equipping fist weapons
+    Pros: Can dual wield and equip fists and staves
+    Cons: Cannot use shields or heavy armor
     """
 
     def __init__(self):
@@ -313,11 +323,11 @@ class WeaponMaster(Job):
                                                            "Masters really on dexterity, they lose the ability to wear"
                                                            " heavy armor and shields.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.GreatAxe, OffHand=items.NoOffHand, Armor=items.ScaleMail,
+                         equipment=dict(Weapon=items.DoubleAxe, OffHand=items.NoOffHand, Armor=items.ScaleMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace', 'Axe', 'Hammer', 'Polearm',
-                                                  'Staff'],
-                                       'OffHand': ['Fist', 'Dagger', 'Sword', 'Mace'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club", 'Longsword', "Battle Axe",
+                                                  'Hammer', 'Polearm', 'Staff'],
+                                       'OffHand': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
 
@@ -325,9 +335,8 @@ class WeaponMaster(Job):
 class Berserker(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
-    Pros: Can dual wield 2-handed weapons
-    Cons: Cannot use shields and can only equip light armor; does not get DEX bonus to attack when equipping fist
-    weapons
+    Additional Pros: Can dual wield 2-handed weapons
+    Additional Cons: Can only equip light armor
     """
 
     def __init__(self):
@@ -337,10 +346,12 @@ class Berserker(Job):
                                                        "reliance on maneuverability limits the type of armor to light "
                                                        "armor.",
                          str_plus=3, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.AdamantiteAxe, OffHand=items.WarHammer,
+                         equipment=dict(Weapon=items.Parashu, OffHand=items.EarthHammer,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
-                                       'OffHand': ['Fist', 'Dagger', 'Sword', 'Axe', 'Hammer', 'Polearm', 'Staff'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Longsword', "Battle Axe", 'Hammer',
+                                                  'Polearm', 'Staff'],
+                                       'OffHand': ['Fist', 'Dagger', 'Sword', 'Longsword', "Battle Axe", 'Hammer',
+                                                   'Polearm', 'Staff'],
                                        'Armor': ['Light']},
                          pro_level=3)
 
@@ -348,8 +359,8 @@ class Berserker(Job):
 class Paladin(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
-    Pros: Can use shields and heavy armor; can cast healing spells
-    Cons: Cannot equip 2-handed weapons except hammers; lower strength gain
+    Pros: Can cast healing spells
+    Cons: Cannot equip 2-handed weapons except hammers and cannot equip light armor
     """
 
     def __init__(self):
@@ -361,9 +372,9 @@ class Paladin(Job):
                                                      "defense\", and thus lose the ability to equip two-handed "
                                                      "weapons (except hammers).",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=2, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelMace, OffHand=items.IronShield, Armor=items.Splint,
+                         equipment=dict(Weapon=items.WarHammer, OffHand=items.Targe, Armor=items.Splint,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Sword', 'Mace', 'Hammer'],
+                         restrictions={'Weapon': ['Sword', "Club", 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=2)
@@ -372,8 +383,8 @@ class Paladin(Job):
 class Crusader(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
-    Pros: Can use shields and heavy armor; can cast healing spells
-    Cons: Cannot equip 2-handed weapons except hammers; lower strength gain
+    Additional Pros: None
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -381,9 +392,9 @@ class Crusader(Job):
                                                       "above all else. Crusaders continue the path of the paladin, "
                                                       "fully embracing all aspects that carry over.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment=dict(Weapon=items.AdamantiteMace, OffHand=items.TowerShield,
+                         equipment=dict(Weapon=items.Pernach, OffHand=items.KiteShield,
                                         Armor=items.PlateMail, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Sword', 'Mace', 'Hammer'],
+                         restrictions={'Weapon': ['Sword', "Club", 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=3)
@@ -392,8 +403,8 @@ class Crusader(Job):
 class Lancer(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
-    Pros: Can use polearms as 1-handed weapons; can equip shields and heavy armor
-    Cons: Cannot equip other 2-handed weapons or dual wield
+    Pros: Can use polearms as 1-handed weapons
+    Cons: Cannot equip other 2-handed weapons or dual wield; loses access to light armor
     """
 
     def __init__(self):
@@ -402,9 +413,9 @@ class Lancer(Job):
                                                     "while also using a shield. They are also adept at leaping high "
                                                     "into the air and driving that polearm into their enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.Pike, OffHand=items.IronShield, Armor=items.Splint,
+                         equipment=dict(Weapon=items.Halberd, OffHand=items.Targe, Armor=items.Splint,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Sword', 'Polearm'],
+                         restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=2)
@@ -413,8 +424,8 @@ class Lancer(Job):
 class Dragoon(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
-    Pros: Can use polearms as 1-handed weapons; can equip swords, shields and heavy armor
-    Cons: Cannot equip other 2-handed weapons or dual wield
+    Additional Pros: None
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -425,9 +436,9 @@ class Dragoon(Job):
                                                      " leap unnaturally high into the air and strike their foes with "
                                                      "deadly force from above.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.Halberd, OffHand=items.TowerShield, Armor=items.PlateMail,
+                         equipment=dict(Weapon=items.Naginata, OffHand=items.KiteShield, Armor=items.PlateMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Sword', 'Polearm'],
+                         restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=3)
@@ -448,9 +459,9 @@ class Mage(Job):
                                                   "vulnerable than any other class, they more than make up for it "
                                                   "with powerful magics.",
                          str_plus=0, int_plus=1, wis_plus=1, con_plus=0, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic,
+                         equipment=dict(Weapon=items.Quarterstaff, OffHand=items.NoOffHand, Armor=items.Tunic,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=1)
@@ -472,7 +483,7 @@ class Sorcerer(Job):
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=0, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
@@ -481,8 +492,8 @@ class Sorcerer(Job):
 class Wizard(Job):
     """
     Promotion: Mage -> Sorcerer -> Wizard
-    Pros: Higher intelligence gain; earlier access to spells and access to higher level spells
-    Cons: None
+    Additional Pros: Gains Boost and Teleport, as well as higher level Arcane spells
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -493,7 +504,7 @@ class Wizard(Job):
                          str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=1, dex_plus=0,
                          equipment=dict(Weapon=items.SerpentStaff, OffHand=items.NoOffHand,
                                         Armor=items.CloakEnchantment, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
@@ -512,9 +523,9 @@ class Warlock(Job):
                                                      "abilities, including the ability to summon a familiar to aid "
                                                      "them.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
+                         equipment=dict(Weapon=items.Kris, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
@@ -523,8 +534,8 @@ class Warlock(Job):
 class Shadowcaster(Job):
     """
     Promotion: Mage -> Warlock -> Shadowcaster
-    Pros: Higher strength and constitution gain; access to additional skills; more powerful familiars
-    Cons: Lower intelligence gain and limited access to higher level spells
+    Additional Pros: None
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -532,9 +543,9 @@ class Shadowcaster(Job):
                                                           "conjure the most demonic of powers, including the practicing"
                                                           " of forbidden blood magic.",
                          str_plus=1, int_plus=1, wis_plus=2, con_plus=2, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.Necronomicon,
+                         equipment=dict(Weapon=items.Rondel, OffHand=items.Necronomicon,
                                         Armor=items.CloakEnchantment, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
@@ -543,8 +554,8 @@ class Shadowcaster(Job):
 class Spellblade(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
-    Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords
-    and light armor
+    Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords,
+    longswords, and light armor; spell mod calculated from tome or longsword (1.5 * damage)
     Cons: Lower intelligence and wisdom gain; cannot equip staves; gains spells at a much slower pace
     """
 
@@ -555,9 +566,9 @@ class Spellblade(Job):
                                                         " has unlocked the ability to channel the learned magical power"
                                                         " through their blade to devastate enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelSword, OffHand=items.TomeKnowledge, Armor=items.Cuirboulli,
+                         equipment=dict(Weapon=items.Talwar, OffHand=items.TomeKnowledge, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', 'Longsword'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=2)
@@ -566,9 +577,8 @@ class Spellblade(Job):
 class KnightEnchanter(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
-    Pros: Adds melee damage based on mana percentage and level; higher strength and constitution gain; can equip swords
-    and light armor; adds armor based on intel and mana percentage
-    Cons: Lower intelligence and wisdom; cannot equip staves; gains spells at a much slower pace
+    Additional Pros: adds armor based on intel and mana percentage
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -576,9 +586,9 @@ class KnightEnchanter(Job):
                                                               " weapons and armor with magical enchantments that can "
                                                               "rival the most powerful fighter.",
                          str_plus=2, int_plus=1, wis_plus=1, con_plus=2, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.BookShadows,
+                         equipment=dict(Weapon=items.Shamshir, OffHand=items.BookShadows,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', 'Longsword'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=3)
@@ -600,10 +610,10 @@ class Footpad(Job):
                                                      " only base class that can dual wield, albeit the offhand weapon "
                                                      "must be a dagger.",
                          str_plus=0, int_plus=0, wis_plus=0, con_plus=0, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.BronzeSword, OffHand=items.BronzeDagger, Armor=items.PaddedArmor,
+                         equipment=dict(Weapon=items.Rapier, OffHand=items.Dirk, Armor=items.PaddedArmor,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace'],
-                                       'OffHand': ['Dagger'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
+                                       'OffHand': ['Fist', 'Dagger'],
                                        'Armor': ['Light']},
                          pro_level=1)
 
@@ -622,10 +632,10 @@ class Thief(Job):
                                                    "more quickly than other classes and are typically more well-"
                                                    "balanced.",
                          str_plus=1, int_plus=1, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.SteelSword, OffHand=items.SteelDagger, Armor=items.Cuirboulli,
+                         equipment=dict(Weapon=items.Talwar, OffHand=items.Kris, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace'],
-                                       'OffHand': ['Dagger'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
+                                       'OffHand': ['Fist', 'Dagger'],
                                        'Armor': ['Light']},
                          pro_level=2)
 
@@ -633,9 +643,8 @@ class Thief(Job):
 class Rogue(Job):
     """
     Promotion: Footpad -> Thief -> Rogue
-    Pros: Ability to dual wield (can use swords, maces, and fists in offhand); Access to stealth abilities earlier than
-     other classes; uses dex instead of strength for damage; more balanced stat gain
-    Cons: Lower dex gain
+    Additional Pros: Ability to dual wield swords and maces in offhand
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -645,10 +654,10 @@ class Rogue(Job):
                                                    "resourcefulness and versatility that has no rival. They gain the "
                                                    "ability to dual wield swords, maces, and fist weapons.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=1,
-                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.AdamantiteDagger,
+                         equipment=dict(Weapon=items.Shamshir, OffHand=items.Rondel,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace'],
-                                       'OffHand': ['Fist', 'Dagger', 'Sword', 'Mace'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
+                                       'OffHand': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'Armor': ['Light']},
                          pro_level=3)
 
@@ -670,9 +679,9 @@ class Inquisitor(Job):
                                                         "upon ordinary folk, and their mastery of lore and sharp eye "
                                                         "make them well-equipped to expose and end hidden evils.",
                          str_plus=1, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelSword, OffHand=items.IronShield, Armor=items.ScaleMail,
+                         equipment=dict(Weapon=items.Talwar, OffHand=items.Targe, Armor=items.ScaleMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', "Club"],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
@@ -681,9 +690,8 @@ class Inquisitor(Job):
 class Seeker(Job):
     """
     Promotion: Footpad -> Inquisitor -> Seeker
-    Pros: Increased strength and constitution; ability to perceive enemy status and weaknesses; access to medium armor,
-          shields, and some spells
-    Cons: Lower dexterity; lose ability to dual wield
+    Additional Pros: Gains ability to teleport and return to town
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -694,9 +702,9 @@ class Seeker(Job):
                                                     "mapping the dungeon and detecting any types of ‘anomalies’ they "
                                                     "may encounter in the depths.",
                          str_plus=1, int_plus=1, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment=dict(Weapon=items.AdamantiteSword, OffHand=items.TowerShield,
+                         equipment=dict(Weapon=items.Shamshir, OffHand=items.KiteShield,
                                         Armor=items.Breastplate, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Mace'],
+                         restrictions={'Weapon': ['Dagger', 'Sword', "Club"],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=3)
@@ -707,8 +715,7 @@ class Assassin(Job):
     Promotion: Footpad -> Assassin -> Ninja
     Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; can use fist
       weapons in the offhand slot; uses dex instead of strength for damage
-    Cons: Lower strength and constitution; can only equip daggers or fist weapons; do not gain DEX bonus with fist
-      weapons
+    Cons: Lower strength and constitution; can only equip daggers or fist weapons
     """
 
     def __init__(self):
@@ -718,7 +725,7 @@ class Assassin(Job):
                                                       "exterminate  the enemies of their deity. Stealth, poison, and "
                                                       "disguise help you eliminate your foes with deadly efficiency.",
                          str_plus=0, int_plus=0, wis_plus=2, con_plus=0, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.SteelDagger, Armor=items.Cuirboulli,
+                         equipment=dict(Weapon=items.Kris, OffHand=items.Kris, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
                          restrictions={'Weapon': ['Fist', 'Dagger'],
                                        'OffHand': ['Fist', 'Dagger'],
@@ -729,9 +736,8 @@ class Assassin(Job):
 class Ninja(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
-    Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; the only class
-      that can equip Ninja swords; uses dex instead of strength for damage
-    Cons: Lower strength and constitution; can only equip daggers
+    Additional Pros: Gains access to class only Ninja Blade weapons
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -742,10 +748,10 @@ class Ninja(Job):
                                                    "and Backstabbing their opponents, along with moderate thieving "
                                                    "skills.",
                          str_plus=0, int_plus=1, wis_plus=2, con_plus=0, cha_plus=0, dex_plus=3,
-                         equipment=dict(Weapon=items.Tanto, OffHand=items.AdamantiteDagger,
+                         equipment=dict(Weapon=items.Tanto, OffHand=items.Rondel,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Ninja Blades'],
-                                       'OffHand': ['Fist', 'Dagger', 'Ninja Blades'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Ninja Blade'],
+                                       'OffHand': ['Fist', 'Dagger', 'Ninja Blade'],
                                        'Armor': ['Light']},
                          pro_level=3)
 
@@ -765,9 +771,9 @@ class Healer(Job):
                                                     "healing and protective spells. Well, how does that work when "
                                                     "they are alone? Pretty much the same way!",
                          str_plus=0, int_plus=1, wis_plus=1, con_plus=0, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.PineStaff, OffHand=items.NoOffHand, Armor=items.Tunic,
+                         equipment=dict(Weapon=items.Quarterstaff, OffHand=items.NoOffHand, Armor=items.Tunic,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Shield', 'Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=1)
@@ -787,9 +793,9 @@ class Cleric(Job):
                                                     "is that the cleric cannot equip heavy armor (that will come...)"
                                                     " but gain additional protective abilities that paladins do not.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=1, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelMace, OffHand=items.IronShield, Armor=items.ScaleMail,
+                         equipment=dict(Weapon=items.WarHammer, OffHand=items.Targe, Armor=items.ScaleMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
@@ -798,10 +804,8 @@ class Cleric(Job):
 class Templar(Job):
     """
     Promotion: Healer -> Cleric -> Templar
-    Pros: Can equip heavy armor and hammers; gains additional protective abilities including turn undead; increased
-    strength and constitution
-    Cons: gains fewer healing spells compared to Archbishop class; no longer gains holy damage spells; lose access to
-    tomes and staves
+    Additional Pros: Can equip heavy armor and hammers
+    Additional Cons: lose access to staff weapons
     """
 
     def __init__(self):
@@ -811,9 +815,9 @@ class Templar(Job):
                                                      " a shield, they have also trained in the art of the 2-handed "
                                                      "hammer.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.AdamantiteMace, OffHand=items.TowerShield, Armor=items.PlateMail,
+                         equipment=dict(Weapon=items.Pernach, OffHand=items.KiteShield, Armor=items.PlateMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Mace', 'Hammer'],
+                         restrictions={'Weapon': ["Club", 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium', 'Heavy']},
                          pro_level=3)
@@ -822,7 +826,7 @@ class Templar(Job):
 class Priest(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
-    Pros: Access to the best healing and holy spells; only class that can equip the holy staff and Princess Guard
+    Pros: Access to the best healing and holy spells; only class that can equip the holy staff except Archbishop
     Cons: Can only equip cloth armor; lose access to shields
     """
 
@@ -834,7 +838,7 @@ class Priest(Job):
                          str_plus=0, int_plus=1, wis_plus=3, con_plus=0, cha_plus=0, dex_plus=0,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
@@ -843,8 +847,8 @@ class Priest(Job):
 class Archbishop(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
-    Pros: Access to the best healing and holy spells; only class that can equip the holy staff and Princess Guard
-    Cons: Can only equip cloth armor; lose access to shields
+    Additional Pros: Only class that can create and equip the Princess Guard
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -853,7 +857,7 @@ class Archbishop(Job):
                          str_plus=0, int_plus=1, wis_plus=4, con_plus=0, cha_plus=1, dex_plus=0,
                          equipment=dict(Weapon=items.HolyStaff, OffHand=items.NoOffHand, Armor=items.CloakEnchantment,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
@@ -862,18 +866,16 @@ class Archbishop(Job):
 class Monk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
-    Pros: Adds strength AND dexterity to hit and damage rolls when equipped with fist(s)
-    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains; can only equip fist weapons in
-    offhand
+    Pros: Adds wisdom to damage rolls; gains special skills
+    Cons: Can only wear light armor; loses access to spells
     """
 
     def __init__(self):
         super().__init__(name="Monk", description="Monks abandon the cloth to focus the mind into the body, harnessing "
-                                                  "the inner power of the chi. While an adept fighter with a staff, "
-                                                  "monks specialize in hand-to-hand combat, adding both strength and "
-                                                  "dexterity to their damage when equipped with Fist weapons.",
-                         str_plus=1, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.SteelFist, OffHand=items.SteelFist, Armor=items.Cuirboulli,
+                                                  "the inner power of the chi. Monks specialize in hand-to-hand combat,"
+                                                  " adding both strength and wisdom to their melee damage.",
+                         str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=1,
+                         equipment=dict(Weapon=items.Cestus, OffHand=items.Cestus, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
                          restrictions={'Weapon': ['Fist', 'Staff'],
                                        'OffHand': ['Fist'],
@@ -884,16 +886,16 @@ class Monk(Job):
 class MasterMonk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
-    Pros: Adds strength AND dexterity to hit and damage rolls when equipped with fist(s)
-    Cons: Can only wear light armor; stops gaining healing spells and wisdom gains; can only equip fist weapons in
-    offhand
+    Additional Pros: None
+    Additional Cons: None
     """
 
     def __init__(self):
         super().__init__(name="Master Monk", description="A master monk has fully attuned to the power of the chi, "
-                                                         "becoming unparalleled at dealing damage with its fists.",
+                                                         "becoming unparalleled at dealing damage with fists or a "
+                                                         "staff.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.AdamantiteFist, OffHand=items.AdamantiteFist,
+                         equipment=dict(Weapon=items.BattleGauntlet, OffHand=items.BattleGauntlet,
                                         Armor=items.StuddedLeather, Pendant=items.NoPendant, Ring=items.NoRing),
                          restrictions={'Weapon': ['Fist', 'Staff'],
                                        'OffHand': ['Fist'],
@@ -917,9 +919,9 @@ class Pathfinder(Job):
                                                         "aspects of nature, including the 4 classical elements: Earth, "
                                                         "Wind, Water, and Fire.",
                          str_plus=0, int_plus=0, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.BronzeDagger, OffHand=items.WoodShield, Armor=items.HideArmor,
+                         equipment=dict(Weapon=items.Dirk, OffHand=items.Buckler, Armor=items.HideArmor,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Mace', 'Polearm', 'Hammer', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Shield', 'Tome'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=1)
@@ -942,7 +944,7 @@ class Druid(Job):
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=1,
                          equipment=dict(Weapon=items.IronshodStaff, OffHand=items.NoOffHand, Armor=items.Cuirboulli,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Mace', 'Polearm', 'Hammer', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=2)
@@ -951,8 +953,8 @@ class Druid(Job):
 class Lycan(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
-    Pros: mastered the art of shapeshifting
-    Cons: loses ability to wear medium armor and shields; lose certain spells and abilities
+    Additional Pros: Can learn to transform into Red Dragon
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -960,9 +962,9 @@ class Lycan(Job):
                                                    "into their animal form, these lycans have gained mastery over their"
                                                    " powers to become something truly terrifying.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=2, cha_plus=0, dex_plus=2,
-                         equipment=dict(Weapon=items.WarHammer, OffHand=items.NoOffHand, Armor=items.StuddedLeather,
+                         equipment=dict(Weapon=items.Maul, OffHand=items.NoOffHand, Armor=items.StuddedLeather,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Mace', 'Polearm', 'Hammer', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=3)
@@ -971,7 +973,7 @@ class Lycan(Job):
 class Diviner(Job):
     """
     Promotion: Pathfinder -> Diviner -> Geomancer
-    Pros: added benefits/reduced effect of special tiles (once implemented); can learn enemy spells when cast against
+    Pros: can learn rank 1 enemy specials when cast against
     Cons: loses access to shields and some weapon choices
     """
 
@@ -982,9 +984,9 @@ class Diviner(Job):
                                                      "hyper aware of their surroundings, limiting the effect of traps "
                                                      "and magic effects.",
                          str_plus=0, int_plus=1, wis_plus=2, con_plus=1, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.SteelDagger, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
+                         equipment=dict(Weapon=items.Kris, OffHand=items.TomeKnowledge, Armor=items.SilverCloak,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
@@ -993,8 +995,8 @@ class Diviner(Job):
 class Geomancer(Job):
     """
     Promotion: Pathfinder -> Diviner -> Geomancer
-    Pros: added benefits/reduced effect of special tiles (once implemented); can learn enemy spells when cast against
-    Cons: loses access to shields and some weapon choices
+    Additional Pros: can learn rank 2 enemy specials when cast against
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -1004,9 +1006,9 @@ class Geomancer(Job):
                                                        "magical effects allow geomancers to manipulate special tiles to"
                                                        " their advantage.",
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=2, cha_plus=0, dex_plus=0,
-                         equipment=dict(Weapon=items.AdamantiteDagger, OffHand=items.DragonRouge,
+                         equipment=dict(Weapon=items.Rondel, OffHand=items.DragonRouge,
                                         Armor=items.CloakEnchantment, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Staff'],
+                         restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
@@ -1015,8 +1017,8 @@ class Geomancer(Job):
 class Shaman(Job):
     """
     Promotion: Pathfinder -> Shaman -> Soulcatcher
-    Pros: chance to gain essence from enemies; can dual wield fist weapons; can imbue weapons with elemental fury
-    Cons: does not gain DEX bonus from fist weapons; loses access to tomes and some weapons
+    Pros: Can dual wield fist weapons; can imbue weapons with elemental fury
+    Cons: Loses access to tomes and some weapons
     """
 
     def __init__(self):
@@ -1025,9 +1027,9 @@ class Shaman(Job):
                                                     "essence of the departed. They also commune with the chaotic "
                                                     "elements, gaining the ability to imbue their weapons.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.SteelFist, OffHand=items.SteelFist, Armor=items.ScaleMail,
+                         equipment=dict(Weapon=items.Cestus, OffHand=items.Cestus, Armor=items.ScaleMail,
                                         Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', "Club", 'Staff'],
                                        'OffHand': ['Fist', 'Shield'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=2)
@@ -1036,9 +1038,8 @@ class Shaman(Job):
 class Soulcatcher(Job):
     """
     Promotion: Pathfinder -> Shaman -> Soulcatcher
-    Pros: increased chance to gain essence from enemies; can dual wield fist weapons; can imbue weapons with elemental
-      fury
-    Cons: does not gain DEX bonus from fist weapons; loses access to tomes and some weapons
+    Additional Pros: Chance to gain essence from enemies
+    Additional Cons: None
     """
 
     def __init__(self):
@@ -1046,9 +1047,9 @@ class Soulcatcher(Job):
                                                          " They are much more adept at absorbing the essence of the "
                                                          "dead, while mastering elemental fury.",
                          str_plus=2, int_plus=1, wis_plus=1, con_plus=1, cha_plus=0, dex_plus=1,
-                         equipment=dict(Weapon=items.AdamantiteFist, OffHand=items.AdamantiteFist,
+                         equipment=dict(Weapon=items.BattleGauntlet, OffHand=items.BattleGauntlet,
                                         Armor=items.Breastplate, Pendant=items.NoPendant, Ring=items.NoRing),
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Mace', 'Staff'],
+                         restrictions={'Weapon': ['Fist', 'Dagger', "Club", 'Staff'],
                                        'OffHand': ['Fist', 'Shields'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=3)

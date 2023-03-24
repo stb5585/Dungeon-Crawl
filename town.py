@@ -3,8 +3,10 @@
 
 # Imports
 import os
+import random
 import time
 
+import enemies
 import items
 import storyline
 import classes
@@ -15,7 +17,12 @@ def shop_inventory():
     pass
 
 
-def ultimate(player):
+def tavern_patrons(player_char):
+    print("The bar is empty of patrons and the barkeep does not wish to talk right now.")
+    time.sleep(2)
+
+
+def ultimate(player_char):
     texts = [
         "Oh my...can it possibly be?...the legendary ore...Unobtainium?\n",
         "I can\'t believe you have found it!\n",
@@ -37,11 +44,11 @@ def ultimate(player):
     i = 0
     for typ, weapon in weapon_list.items():
         if typ == 'Staff':
-            if 'Archbishop' == player.cls:
+            if 'Archbishop' == player_char.cls:
                 weapon = weapon[0]
             else:
                 weapon = weapon[1]
-        if classes.equip_check(weapon, 'Weapon', player.cls):
+        if classes.equip_check(weapon, 'Weapon', player_char.cls):
             make_list.append(typ)
             i += 1
     make_list.append('Not Yet')
@@ -54,27 +61,27 @@ def ultimate(player):
     else:
         weapon = weapon_list[make_list[weapon_ind]]
         if type(weapon) == list:
-            if 'Archbishop' == player.cls:
+            if 'Archbishop' == player_char.cls:
                 weapon = weapon[0]
             else:
                 weapon = weapon[1]
         print("Give me a moment and I will make you an ultimate weapon...")
         time.sleep(5)
-        print("I present to you, {}, the mighty {}!".format(player.name, weapon().name))
-        player.modify_inventory(weapon, num=1)
-        del player.inventory['UNOBTAINIUM']
+        print("I present to you, {}, the mighty {}!".format(player_char.name, weapon().name))
+        player_char.modify_inventory(weapon, num=1)
+        del player_char.inventory['UNOBTAINIUM']
     time.sleep(2)
 
 
-def blacksmith(player):
+def blacksmith(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
-        if 'UNOBTAINIUM' in list(player.special_inventory.keys()):
-            ultimate(player)
+        if 'UNOBTAINIUM' in list(player_char.special_inventory.keys()):
+            ultimate(player_char)
         print("Welcome to Griswold's! What can I do you for?")
         time.sleep(0.5)
         buy_list = ['Weapon', 'OffHand', 'Go Back']
-        print("You have {} gold.".format(player.gold))
+        print("You have {} gold.".format(player_char.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -84,21 +91,21 @@ def blacksmith(player):
             return
         else:
             if option_list[opt_index] == 'Buy':
-                buy(player, buy_list)
+                buy(player_char, buy_list)
             elif option_list[opt_index] == 'Sell':
-                sell(player)
+                sell(player_char)
             else:
                 print("Something went wrong.")
                 return
 
 
-def armory(player):
+def armory(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("I have the finest armors for sale. Come in and look around.")
         time.sleep(0.5)
         buy_list = ['Armor', 'Go Back']
-        print("You have {} gold.".format(player.gold))
+        print("You have {} gold.".format(player_char.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -108,21 +115,21 @@ def armory(player):
             return
         else:
             if option_list[opt_index] == 'Buy':
-                buy(player, buy_list)
+                buy(player_char, buy_list)
             elif option_list[opt_index] == 'Sell':
-                sell(player)
+                sell(player_char)
             else:
                 print("Something went wrong.")
                 return
 
 
-def alchemist(player):
+def alchemist(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("Welcome to Ye Olde Item Shoppe.")
         time.sleep(0.5)
         buy_list = ['Potion', 'Misc', 'Go Back']
-        print("You have {} gold.".format(player.gold))
+        print("You have {} gold.".format(player_char.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -132,21 +139,21 @@ def alchemist(player):
             return
         else:
             if option_list[opt_index] == 'Buy':
-                buy(player, buy_list)
+                buy(player_char, buy_list)
             elif option_list[opt_index] == 'Sell':
-                sell(player)
+                sell(player_char)
             else:
                 print("Something went wrong.")
                 return
 
 
-def jeweler(player):
+def jeweler(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("Come glimpse the finest jewelry in the land.")
         time.sleep(0.5)
         buy_list = ['Accessory', 'Go Back']
-        print("You have {} gold.".format(player.gold))
+        print("You have {} gold.".format(player_char.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -156,23 +163,71 @@ def jeweler(player):
             return
         else:
             if option_list[opt_index] == 'Buy':
-                buy(player, buy_list)
+                buy(player_char, buy_list)
             elif option_list[opt_index] == 'Sell':
-                sell(player)
+                sell(player_char)
             else:
                 print("Something went wrong.")
                 return
 
 
-def tavern(player):
+def tavern(player_char):
     """
     Quests
     """
-    storyline.slow_type("Sorry but we are closed for construction. Come back once we are open!")
-    time.sleep(1)
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("Hey there, make yourself at home. Let me know if you need anything.")
+        options = ["Talk with Patrons", "View the Job Board", "Go Back"]
+        if any(x[2] for x in player_char.quest_dict.values()):
+            options.insert(0, "Turn In Quests")
+        choice = storyline.get_response(options)
+        if options[choice] == "Talk with Patrons":
+            tavern_patrons(player_char)
+        elif options[choice] == "View the Job Board":
+            num_quests = len(player_char.quest_dict)
+            if random.randint(0, num_quests ** 2) or num_quests > 5:
+                print("There are no jobs currently available.")
+            else:
+                level = str((player_char.level * player_char.pro_level) // 20)
+                while True:
+                    enemy = enemies.random_enemy(level)
+                    if enemy.name not in list(player_char.quest_dict.keys()):
+                        break
+                num = random.randint(2, 10)
+                print("We would like you to defeat {} {}s. Do you accept this quest?".format(num, enemy.name))
+                yes_no = ["Yes", "No"]
+                resp = storyline.get_response(yes_no)
+                if yes_no[resp] == "Yes":
+                    player_char.quest_dict[enemy.name] = [num, 0, False, enemy]
+                    print("Return here when the job is done and you will be rewarded.")
+                else:
+                    print("Fair enough. Come back later if you change your mind.")
+        elif options[choice] == "Turn In Quests":
+            turn_in_list = [x for x, y in player_char.quest_dict.items() if y[2]]
+            turn_in_choice = storyline.get_response(turn_in_list)
+            turn_in = turn_in_list[turn_in_choice]
+            del player_char.quest_dict[turn_in]
+            gold = random.randint(100, 200) * (player_char.pro_level * player_char.level)
+            player_char.gold += gold
+            exp = random.randint(10, 20) * (player_char.pro_level * player_char.level)
+            player_char.experience += exp
+            print("You gain {} gold and {} experience for completing the quest.".format(gold, exp))
+            while player_char.experience >= player_char.exp_to_gain:
+                player_char.level_up()
+            if random.randint(0, player_char.check_mod('luck', luck_factor=10)):
+                reward = items.random_item(player_char.pro_level + 2)
+                player_char.modify_inventory(reward, num=1)
+                print("And you have been rewarded with a {}.".format(reward().name))
+        elif options[choice] == "Go Back":
+            break
+        else:
+            print("This shouldn't be reached.")
+            raise BaseException
+        input("Press enter to continue")
 
 
-def church(player):
+def church(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("Come in my child. You are always welcome in the arms of Elysia.")
@@ -181,51 +236,51 @@ def church(player):
         church_options = ['Promotion', 'Save', 'Quit', 'Leave']
         church_index = storyline.get_response(church_options)
         if church_options[church_index] == 'Promotion':
-            if player.level // 20 > 0 and player.pro_level < 3:
+            if player_char.level // 20 > 0 and player_char.pro_level < 3:
                 storyline.slow_type("You have qualified for a promotion.\n")
-                classes.promotion(player)
+                classes.promotion(player_char)
                 print("Let the light of Elysia guide you on your new path.")
-            elif player.pro_level == 3:
+            elif player_char.pro_level == 3:
                 print("You are at max promotion level and can no longer be promoted.\n")
             else:
                 print("You need to be at least level 20 before you can promote your character.\n")
             time.sleep(1)
         elif church_options[church_index] == 'Save':
-            player.save()  # Can only save at church in town
+            player_char.save()  # Can only save at church in town
         elif church_options[church_index] == 'Quit':
-            player.game_quit()
+            player_char.game_quit()
         elif church_options[church_index] == 'Leave':
             print("Let the light of Elysia guide you.")
             time.sleep(1)
             break
 
 
-def secret_shop(player):
+def secret_shop(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         print("You have found me in this god forsaken place. Since you're here, you might as well buy some supplies.")
         time.sleep(0.5)
         buy_list = ['Weapon', 'OffHand', 'Armor', 'Accessory', 'Potion', 'Misc']
-        print("You have {} gold.".format(player.gold))
+        print("You have {} gold.".format(player_char.gold))
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
         if option_list[opt_index] == 'Leave':
             print("We're sorry to see you go. Come back anytime!")
             time.sleep(1)
-            player.location_y += 1
+            player_char.location_y += 1
         else:
             if option_list[opt_index] == 'Buy':
-                buy(player, buy_list, in_town=False)
+                buy(player_char, buy_list, in_town=False)
             elif option_list[opt_index] == 'Sell':
-                sell(player)
+                sell(player_char)
             else:
                 print("Something went wrong.")
                 time.sleep(1)
-                player.location_y += 1
+                player_char.location_y += 1
 
 
-def ultimate_armor_repo(player):
+def ultimate_armor_repo(player_char):
     looted = False
     os.system('cls' if os.name == 'nt' else 'clear')
     texts = [
@@ -251,20 +306,20 @@ def ultimate_armor_repo(player):
             print("Please wait while I craft your armor, it will only take a few moments.")
             time.sleep(3)
             print("I present to you the legendary armor, {}!".format(chosen().name))
-            player.modify_inventory(chosen, 1)
+            player_char.modify_inventory(chosen, 1)
             looted = True
             time.sleep(2)
-            print("Now that I have fulfilled my goal, I will leave this place. Goodbye, {}!".format(player.name))
+            print("Now that I have fulfilled my goal, I will leave this place. Goodbye, {}!".format(player_char.name))
         else:
             print("You need time to consider you choice, I respect that. Come back when you have made your choice.")
         break
     time.sleep(1)
-    player.location_y += 1
+    player_char.location_y += 1
     os.system('cls' if os.name == 'nt' else 'clear')
     return looted
 
 
-def buy(player, buy_list, in_town=True):
+def buy(player_char, buy_list, in_town=True):
     yes_no = ['Yes', 'No']
     print("Great! What would you like to buy?")
     time.sleep(0.5)
@@ -283,7 +338,7 @@ def buy(player, buy_list, in_town=True):
         item_options = []
         print(cat_list[cat_index])
         for item in items.items_dict[buy_list[buy_index]][cat_list[cat_index]]:
-            adj_cost = max(1, int(item().value - player.charisma * 2))
+            adj_cost = max(1, int(item().value - player_char.charisma * 2))
             if in_town:
                 if item().rarity < 35:
                     item_options.append(item().name + '  ' + str(adj_cost))
@@ -297,16 +352,16 @@ def buy(player, buy_list, in_town=True):
         if item_options[item_index] == 'Go Back':
             break
         buy_item = item_list[item_index]
-        buy_price = max(1, int(buy_item().value - (player.charisma * 2)))
-        if player.gold < buy_price:
+        buy_price = max(1, int(buy_item().value - (player_char.charisma * 2)))
+        if player_char.gold < buy_price:
             print("You do not have enough gold.")
             time.sleep(0.25)
         else:
-            print("You have {} gold coins.".format(player.gold))
+            print("You have {} gold coins.".format(player_char.gold))
             while True:
                 try:
                     num = int(input("How many {}s would you like to buy? ".format(buy_item().name)))
-                    if num * buy_price > player.gold:
+                    if num * buy_price > player_char.gold:
                         print("You do not have enough money for that purchase.")
                     elif num == 0:
                         pass
@@ -316,8 +371,8 @@ def buy(player, buy_list, in_town=True):
                         print("Do you still want to buy {} {}s? ".format(num, buy_item().name))
                         confirm = storyline.get_response(yes_no)
                         if yes_no[confirm] == 'Yes':
-                            player.gold -= buy_price
-                            player.modify_inventory(buy_item, num=num, sell=False)
+                            player_char.gold -= buy_price
+                            player_char.modify_inventory(buy_item, num=num, sell=False)
                             print("{} {} will be added to your inventory.".format(num, buy_item().name))
                         else:
                             print("Sorry to hear that. Come back when you have something you wish to buy.")
@@ -328,13 +383,13 @@ def buy(player, buy_list, in_town=True):
                     input()
 
 
-def sell(player):
+def sell(player_char):
     yes_no = ['Yes', 'No']
     print("We could always use more product. What do you have to sell?")
     time.sleep(0.5)
     sell_list = []
-    for key in player.inventory.keys():
-        if player.inventory[key][0]().rarity < 99:
+    for key in player_char.inventory.keys():
+        if player_char.inventory[key][0]().rarity < 99:
             sell_list.append(key)
     if len(sell_list) == 0:
         print("You don't have anything to sell.")
@@ -345,8 +400,8 @@ def sell(player):
     if sell_list[typ_index] == 'Go Back':
         return
     else:
-        sell_item = player.inventory[sell_list[typ_index]][0]
-        sell_amt = player.inventory[sell_list[typ_index]][1]
+        sell_item = player_char.inventory[sell_list[typ_index]][0]
+        sell_amt = player_char.inventory[sell_list[typ_index]][1]
         if sell_item().rarity >= 50:
             print("Wow, that's something you don't see everyday!")
         print("You have {} {} to sell.".format(sell_amt, sell_item().name))
@@ -354,14 +409,14 @@ def sell(player):
             try:
                 num = int(input("How many would you like to sell? "))
                 if num <= sell_amt and num != 0:
-                    sale_price = int(0.5 * num * sell_item().value + (player.charisma * 2))
+                    sale_price = int(0.5 * num * sell_item().value + (player_char.charisma * 2))
                     print("I'll give you {} gold coins for that.".format(sale_price))
                     print("Do you still want to sell? ")
                     confirm = storyline.get_response(yes_no)
                     if yes_no[confirm] == 'Yes':
-                        player.modify_inventory(player.inventory[sell_list[typ_index]][0], num=num,
-                                                sell=True)
-                        player.gold += sale_price
+                        player_char.modify_inventory(player_char.inventory[sell_list[typ_index]][0], num=num,
+                                                     sell=True)
+                        player_char.gold += sale_price
                         print("You sold {} {} for {} gold.".format(num, sell_item().name, sale_price))
                     else:
                         print("I am sorry to hear that. Come back when you have something you wish to "
@@ -377,7 +432,7 @@ def sell(player):
                 time.sleep(1)
 
 
-def town(player):
+def town(player_char):
     os.system('cls' if os.name == 'nt' else 'clear')
     locations = [blacksmith, armory, alchemist, jeweler, church, tavern]
     town_options = ['Blacksmith', 'Armory', 'Alchemist', 'Jeweler', 'Church', 'Tavern', 'Dungeon', 'Character Menu']
@@ -389,13 +444,13 @@ def town(player):
         if town_options[town_index] == 'Dungeon':
             print("You descend into the dungeon.")
             time.sleep(1)
-            player.location_x, player.location_y, player.location_z = (5, 10, 1)
+            player_char.location_x, player_char.location_y, player_char.location_z = (5, 10, 1)
             break
         elif town_options[town_index] == 'Character Menu':
             os.system('cls' if os.name == 'nt' else 'clear')
-            player.character_menu()
+            player_char.character_menu()
         elif town_options[town_index] == 'Church':
-            locations[town_index](player)
+            locations[town_index](player_char)
         else:
-            locations[town_index](player)
+            locations[town_index](player_char)
         os.system('cls' if os.name == 'nt' else 'clear')

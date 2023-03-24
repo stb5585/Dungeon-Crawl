@@ -10,7 +10,7 @@ import storyline
 # Functions
 def define_race():
     """
-    Allows the player to choose which race they wish to play
+    Allows the player_char to choose which race they wish to play
     """
     race_list = [Human, Elf, HalfElf, Giant, Gnome, Dwarf, HalfOrc]
     while True:
@@ -62,23 +62,24 @@ class Race:
                "Wind: {}\n" \
                "Shadow: {}\n" \
                "Death: {}\n" \
+               "Stone: {}\n" \
                "Holy: {}\n" \
                "Poison: {}\n" \
                "Physical: {}\n".format(self.name, self.description, self.stats[0], self.stats[1], self.stats[2],
                                        self.stats[3], self.stats[4], self.stats[5],
                                        self.resistance['Fire'], self.resistance['Ice'], self.resistance['Electric'],
                                        self.resistance['Water'], self.resistance['Earth'], self.resistance['Wind'],
-                                       self.resistance['Shadow'], self.resistance['Death'], self.resistance['Holy'],
-                                       self.resistance['Poison'], self.resistance['Physical'])
+                                       self.resistance['Shadow'], self.resistance['Death'], self.resistance['Stone'],
+                                       self.resistance['Holy'], self.resistance['Poison'], self.resistance['Physical'])
 
 
 class Human(Race):
 
     def __init__(self):
-        super().__init__(name="Human", description="Humans are something you, as a player, can relate to. They are "
-                                                   "the most versatile of all races, making a viable option for all "
-                                                   "classes. While they have no magical resistances, they also have no"
-                                                   " weaknesses.",
+        super().__init__(name="Human", description="Humans are something you, can relate to. They are the most "
+                                                   "versatile of all races, making a viable option for all classes. "
+                                                   "While they have no magical resistances, they also have no "
+                                                   "weaknesses.",
                          strength=10, intel=10, wisdom=10, con=10, charisma=10, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
@@ -99,6 +100,7 @@ class Human(Race):
                                      'Wind': 0.,
                                      'Shadow': 0.,
                                      'Death': 0.,
+                                     'Stone': 0.,
                                      'Holy': 0.,
                                      'Poison': 0.,
                                      'Physical': 0.}
@@ -130,6 +132,7 @@ class Elf(Race):
                                      'Wind': 0.25,
                                      'Shadow': 0,
                                      'Death': -0.2,
+                                     'Stone': 0.,
                                      'Holy': 0.,
                                      'Poison': 0.,
                                      'Physical': -0.1}
@@ -164,6 +167,7 @@ class HalfElf(Race):
                                      'Wind': 0.1,
                                      'Shadow': 0,
                                      'Death': -0.1,
+                                     'Stone': 0.,
                                      'Holy': 0.,
                                      'Poison': 0.,
                                      'Physical': -0.1}
@@ -192,6 +196,7 @@ class Giant(Race):
                                      'Wind': 0,
                                      'Shadow': 0,
                                      'Death': 0.5,
+                                     'Stone': 0.,
                                      'Holy': -0.3,
                                      'Poison': 0.33,
                                      'Physical': 0.2}
@@ -225,6 +230,7 @@ class Gnome(Race):
                                      'Wind': 0.,
                                      'Shadow': -0.2,
                                      'Death': 0.,
+                                     'Stone': 0.,
                                      'Holy': 0.2,
                                      'Poison': 0.,
                                      'Physical': 0.}
@@ -256,6 +262,7 @@ class Dwarf(Race):
                                      'Wind': 0.,
                                      'Shadow': -0.3,
                                      'Death': 0.,
+                                     'Stone': 0.,
                                      'Holy': 0.,
                                      'Poison': 0.25,
                                      'Physical': 0.1}
@@ -291,6 +298,7 @@ class HalfOrc(Race):
                                      'Wind': 0.,
                                      'Shadow': 0.2,
                                      'Death': 0.1,
+                                     'Stone': 0.,
                                      'Holy': -0.2,
                                      'Poison': 0.1,
                                      'Physical': 0.}
