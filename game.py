@@ -68,7 +68,7 @@ def final_boss(player_char):
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def play(timer):
+def play():
     os.system('cls' if os.name == 'nt' else 'clear')
     f = pyfiglet.Figlet(font='slant')
     print(f.renderText("DUNGEON CRAWL"))
@@ -88,6 +88,7 @@ def play(timer):
             os.chdir(home)
         else:
             print("There are no save files to load. Proceeding to new character creation.")
+            time.sleep(1)
             player_char = player.new_char()
             player_char.load_tiles()
     else:
@@ -97,21 +98,21 @@ def play(timer):
         room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
         room.modify_player(player_char)
         if player_char.is_alive():
-            if (time.time() - timer) // 90:  # (300 * max(1, (player_char.level // 2)) * player_char.pro_level):
-                player_char.load_tiles(reload=True)
-                timer = time.time()
             room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
             try:
                 room.special_text(player_char)
             except AttributeError:
                 pass
-            room.modify_player(player_char)
             if player_char.is_alive():
                 try:
                     os.system('cls' if os.name == 'nt' else 'clear')
                     player_char.minimap()
                     if room.intro_text(player_char) is not None:
                         print(room.intro_text(player_char))
+                        try:
+                            room.warning = True
+                        except AttributeError:
+                            pass
                     print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player_char.name,
                                                                             player_char.health, player_char.health_max,
                                                                             player_char.mana, player_char.mana_max))
@@ -134,5 +135,4 @@ def play(timer):
 
 
 if __name__ == "__main__":
-    start_time = time.time()
-    play(start_time)
+    play()

@@ -13,11 +13,15 @@ import classes
 
 
 # Functions
-def shop_inventory():
-    pass
-
-
 def tavern_patrons(player_char):
+    player_level = player_char.level + (20 * (player_char.pro_level - 1))
+    patrons = {'Barkeep': {1: "If you want to access you menu, you can almost always do so by hitting the (c) button.",
+                           10: "You have to be level 20 to get a promotion but you can gain more experience if you "
+                               "wait until level 30."},
+               'Waitress': {},
+               'Drunkard': {},
+               'Hooded Figure': {40: "The Devil is immune to normal weapons but legend says there is a material that "
+                                     "will do the job."}}
     print("The bar is empty of patrons and the barkeep does not wish to talk right now.")
     time.sleep(2)
 
@@ -180,7 +184,7 @@ def tavern(player_char):
         print("Hey there, make yourself at home. Let me know if you need anything.")
         options = ["Talk with Patrons", "View the Job Board", "Go Back"]
         if any(x[2] for x in player_char.quest_dict.values()):
-            options.insert(0, "Turn In Quests")
+            options.insert(0, "Turn In Bounty")
         choice = storyline.get_response(options)
         if options[choice] == "Talk with Patrons":
             tavern_patrons(player_char)
@@ -194,8 +198,8 @@ def tavern(player_char):
                     enemy = enemies.random_enemy(level)
                     if enemy.name not in list(player_char.quest_dict.keys()):
                         break
-                num = random.randint(2, 10)
-                print("We would like you to defeat {} {}s. Do you accept this quest?".format(num, enemy.name))
+                num = random.randint(3, 6)
+                print("We would like you to defeat {} {}s. Do you accept this bounty?".format(num, enemy.name))
                 yes_no = ["Yes", "No"]
                 resp = storyline.get_response(yes_no)
                 if yes_no[resp] == "Yes":
@@ -203,16 +207,16 @@ def tavern(player_char):
                     print("Return here when the job is done and you will be rewarded.")
                 else:
                     print("Fair enough. Come back later if you change your mind.")
-        elif options[choice] == "Turn In Quests":
-            turn_in_list = [x for x, y in player_char.quest_dict.items() if y[2]]
+        elif options[choice] == "Turn In Bounty":
+            turn_in_list = [x for x, y in player_char.quest_dict['Bounty'].items() if y[2]]
             turn_in_choice = storyline.get_response(turn_in_list)
             turn_in = turn_in_list[turn_in_choice]
-            del player_char.quest_dict[turn_in]
+            del player_char.quest_dict['Bounty'][turn_in]
             gold = random.randint(100, 200) * (player_char.pro_level * player_char.level)
             player_char.gold += gold
             exp = random.randint(10, 20) * (player_char.pro_level * player_char.level)
             player_char.experience += exp
-            print("You gain {} gold and {} experience for completing the quest.".format(gold, exp))
+            print("You gain {} gold and {} experience for completing the bounty.".format(gold, exp))
             while player_char.experience >= player_char.exp_to_gain:
                 player_char.level_up()
             if random.randint(0, player_char.check_mod('luck', luck_factor=10)):
@@ -372,7 +376,7 @@ def buy(player_char, buy_list, in_town=True):
                         confirm = storyline.get_response(yes_no)
                         if yes_no[confirm] == 'Yes':
                             player_char.gold -= buy_price
-                            player_char.modify_inventory(buy_item, num=num, sell=False)
+                            player_char.modify_inventory(buy_item, num=num, subtract=False)
                             print("{} {} will be added to your inventory.".format(num, buy_item().name))
                         else:
                             print("Sorry to hear that. Come back when you have something you wish to buy.")
@@ -415,7 +419,7 @@ def sell(player_char):
                     confirm = storyline.get_response(yes_no)
                     if yes_no[confirm] == 'Yes':
                         player_char.modify_inventory(player_char.inventory[sell_list[typ_index]][0], num=num,
-                                                     sell=True)
+                                                     subtract=True)
                         player_char.gold += sale_price
                         print("You sold {} {} for {} gold.".format(num, sell_item().name, sale_price))
                     else:

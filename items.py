@@ -4,6 +4,8 @@
 # Imports
 import random
 
+import spells
+
 
 # Functions
 def reciprocal(x: int) -> float:
@@ -11,6 +13,10 @@ def reciprocal(x: int) -> float:
 
 
 def random_item(z: int):
+    """
+    Returns a random item based on the given integer
+    """
+
     item_dict = {'Weapon': {'Dagger': [[Dirk, Baselard, Kris, Rondel, Kukri],
                                        [reciprocal(Dirk().rarity), reciprocal(Baselard().rarity),
                                         reciprocal(Kris().rarity), reciprocal(Rondel().rarity),
@@ -37,10 +43,10 @@ def random_item(z: int):
                                            reciprocal(Zweihander().rarity), reciprocal(Changdao().rarity),
                                            reciprocal(Flamberge().rarity)],
                                           ['1', '2', '2', '3', '4']],
-                            'Battle Axe': [[Mattock, Broadaxe, DoubleAxe, Parashu, GreatAxe],
+                            'Battle Axe': [[Mattock, Broadaxe, DoubleAxe, Parashu, Greataxe],
                                            [reciprocal(Mattock().rarity), reciprocal(Broadaxe().rarity),
                                             reciprocal(DoubleAxe().rarity), reciprocal(Parashu().rarity),
-                                            reciprocal(GreatAxe().rarity)],
+                                            reciprocal(Greataxe().rarity)],
                                            ['1', '2', '2', '3', '4']],
                             'Polearm': [[Voulge, Partisan, Halberd, Naginata, Trident],
                                         [reciprocal(Voulge().rarity), reciprocal(Partisan().rarity),
@@ -119,11 +125,28 @@ def random_item(z: int):
                                       reciprocal(WisdomPotion().rarity), reciprocal(ConPotion().rarity),
                                       reciprocal(CharismaPotion().rarity), reciprocal(DexterityPotion().rarity),
                                       reciprocal(AardBeing().rarity)],
-                                     ['1', '1', '2', '2', '2', '2', '2', '2', '5']]
+                                     ['1', '1', '2', '2', '2', '2', '2', '2', '6']],
+                            'Status': [[Antidote, EyeDrop, AntiCoagulant, PhoenixDown],
+                                       [reciprocal(Antidote().rarity), reciprocal(EyeDrop().rarity),
+                                        reciprocal(AntiCoagulant().rarity), reciprocal(PhoenixDown().rarity)],
+                                       ['1', '1', '2', '4']]
                             },
                  'Misc': {'Key': [[Key, OldKey],
                                   [reciprocal(Key().rarity), reciprocal(OldKey().rarity)],
-                                  ['1', '2']]}
+                                  ['1', '2']],
+                          'Scroll': [[BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
+                                     EarthScroll, WindScroll, ShadowScroll, HolyScroll, RegenScroll, SilenceScroll,
+                                     DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll],
+                                     [reciprocal(BlessScroll().rarity), reciprocal(SleepScroll().rarity),
+                                      reciprocal(FireScroll().rarity), reciprocal(IceScroll().rarity),
+                                      reciprocal(ElectricScroll().rarity), reciprocal(WaterScroll().rarity),
+                                      reciprocal(EarthScroll().rarity), reciprocal(WindScroll().rarity),
+                                      reciprocal(ShadowScroll().rarity), reciprocal(HolyScroll().rarity),
+                                      reciprocal(RegenScroll().rarity), reciprocal(SilenceScroll().rarity),
+                                      reciprocal(DispelScroll().rarity), reciprocal(DeathScroll().rarity),
+                                      reciprocal(SanctuaryScroll().rarity), reciprocal(UltimaScroll().rarity)],
+                                     ['1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '4', '4', '5', '6']]
+                          }
                  }
 
     while True:
@@ -145,17 +168,19 @@ def remove(typ):
 
 class Item:
     """
+    name: name of the item (currently capitalized) TODO
+    description: description of the item
     value: price in gold; sale price will be half this amount
     rarity: higher number means more rare
-    crit: chance to double damage; higher number means lower chance to crit
-    handed: identifies weapon as 1-handed or 2-handed; 2-handed weapons prohibit the ability to use a shield
-    block: higher number means lower chance to block; if block is successful, damage mitigation will be decided randomly
+    subtyp: the sub-type of the item (i.e. Sword would be a sub-type of Weapon)
     """
 
-    def __init__(self, name, description, value):
+    def __init__(self, name, description, value, rarity, subtyp):
         self.name = name
         self.description = description
         self.value = value
+        self.rarity = rarity
+        self.subtyp = subtyp
         self.restriction = list()
         self.special = False
         self.ultimate = False
@@ -163,16 +188,28 @@ class Item:
     def __str__(self):
         return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
 
+    def use(self, user, target=None, tile=None):
+        return True
+
 
 class Weapon(Item):
+    """
+    Subclass of the Item class
+    damage: the base damage for each weapon
+    crit: chance to double damage; higher number means lower chance to crit (calculation: 1 / crit parameter)
+    handed: identifies weapon as 1-handed or 2-handed; 2-handed weapons prohibit the ability to use a shield
+    unequip: boolean parameter indicating whether the object the base class used when an item is unequipped
+    off: whether the weapon can be equipped in the offhand
+    typ: the item type; 'Weapon' for this class
+    disarm: boolean indicating whether the weapon can be disarmed; default is True
+    ignore: boolean indicating whether the weapon automatically ignores armor when calculating damage
+    """
 
     def __init__(self, name, description, value, rarity, damage, crit, handed, subtyp, unequip, off):
-        super().__init__(name, description, value)
-        self.rarity = rarity
+        super().__init__(name, description, value, rarity, subtyp)
         self.damage = damage
         self.crit = crit
         self.handed = handed
-        self.subtyp = subtyp
         self.unequip = unequip
         self.off = off
         self.typ = "Weapon"
@@ -180,8 +217,9 @@ class Weapon(Item):
         self.ignore = False
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nDamage: {}\nCritical Chance: {}%\n{}-handed".format(
-            self.name, self.description, self.value, self.damage, int(round(1 / self.crit, 2) * 100), self.handed)
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nDamage: {}\nCritical Chance: {}%\n{}-handed".format(
+            self.name, self.description, self.subtyp, self.value, self.damage, int(1 / float(self.crit + 1) * 100),
+            self.handed)
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         pass
@@ -518,7 +556,10 @@ class Bastard(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="BASTARD", description="",
+        super().__init__(name="BASTARD SWORD", description="The bastard sword, also referred to as a hand-and-a-half "
+                                                           "sword, is a type of longsword that typically requires two "
+                                                           "hands to wield but can be wielded in one if the need "
+                                                           "arises.",
                          value=700, rarity=6, damage=5, crit=7, handed=2, subtyp='Longsword', unequip=False, off=False)
 
 
@@ -528,7 +569,11 @@ class Claymore(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="CLAYMORE", description="",
+        super().__init__(name="CLAYMORE", description="Coming from the Gaelic meaning 'Great Sword', the claymore is a "
+                                                      "two-handed sword featuring quillons (crossguards between the "
+                                                      "hilt and the blade) are angled in towards the blade and end in "
+                                                      "quatrefoils, and a tongue of metal protrudes down either side of"
+                                                      " the blade.",
                          value=4200, rarity=13, damage=9, crit=6, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
 
@@ -539,7 +584,8 @@ class Zweihander(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="ZWEIHANDER", description="",
+        super().__init__(name="ZWEIHANDER", description="German for 'two-handed', the zweihander is a double-edged, "
+                                                        "straight blade with a cruciform hilt.",
                          value=9500, rarity=25, damage=11, crit=5, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
 
@@ -550,7 +596,8 @@ class Changdao(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="CHANGDAO", description="",
+        super().__init__(name="CHANGDAO", description="A single-edged two-hander over seven feet long, roughly "
+                                                      "translates to 'long saber'.",
                          value=16000, rarity=30, damage=13, crit=4, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
 
@@ -561,7 +608,8 @@ class Flamberge(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="FLAMBERGE", description="",
+        super().__init__(name="FLAMBERGE", description="The flamberge is a type of flame-bladed sword featuring a "
+                                                       "signature wavy blade.",
                          value=31000, rarity=40, damage=15, crit=3, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
 
@@ -572,7 +620,9 @@ class Executioner(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="EXECUTIONER'S BLADE", description="",
+        super().__init__(name="EXECUTIONER'S BLADE", description="Designed specifically for decapitation, the "
+                                                                 "Executioner's Blade is a large, two-handed sword with"
+                                                                 " a broad blade that is highly efficient at killing.",
                          value=0, rarity=99, damage=21, crit=2, handed=2, subtyp='Longsword', unequip=False, off=False)
         self.special = True
         self.ultimate = True
@@ -595,14 +645,15 @@ class Mattock(Weapon):
     """
 
     def __init__(self):
-        super().__init__(name="MATTOCK", description="",
+        super().__init__(name="MATTOCK", description="A mattock is a hand tool used for digging, prying, and chopping, "
+                                                     "similar to the pickaxe.",
                          value=800, rarity=6, damage=6, crit=8, handed=2, subtyp='Battle Axe', unequip=False, off=False)
 
 
 class Broadaxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="BROADAXE", description="",
+        super().__init__(name="BROADAXE", description="A broadaxe is broad-headed axe with a large flaring blade.",
                          value=4500, rarity=13, damage=10, crit=7, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
 
@@ -610,7 +661,8 @@ class Broadaxe(Weapon):
 class DoubleAxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="DOUBLE AXE", description="",
+        super().__init__(name="DOUBLE AXE", description="The double axe is basically a broadaxe but with a blade on "
+                                                        "each side of the axehead.",
                          value=10000, rarity=25, damage=12, crit=5, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
 
@@ -618,15 +670,18 @@ class DoubleAxe(Weapon):
 class Parashu(Weapon):
 
     def __init__(self):
-        super().__init__(name="PARASHU", description="",
+        super().__init__(name="PARASHU", description="A parashu is a single-bladed battle axe with an arced edge "
+                                                     "extending beyond 180 degrees and paired with a spike on the non-"
+                                                     "cutting edge.",
                          value=15000, rarity=30, damage=14, crit=4, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
 
 
-class GreatAxe(Weapon):
+class Greataxe(Weapon):
 
     def __init__(self):
-        super().__init__(name="GREAT AXE", description="",
+        super().__init__(name="GREATAXE", description="A greataxe is a scaled up version of the double axe with greater"
+                                                      " mass and killing power.",
                          value=30000, rarity=40, damage=16, crit=4, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
 
@@ -658,7 +713,8 @@ class Jarnbjorn(Weapon):
 class Voulge(Weapon):
 
     def __init__(self):
-        super().__init__(name="VOULGE", description="",
+        super().__init__(name="VOULGE", description="A voulge is a basic polearm with a narrow single-edged blade "
+                                                    "mounted with a socket on a shaft.",
                          value=800, rarity=6, damage=5, crit=6, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
@@ -666,7 +722,9 @@ class Voulge(Weapon):
 class Partisan(Weapon):
 
     def __init__(self):
-        super().__init__(name="PARTISAN", description="",
+        super().__init__(name="PARTISAN", description="A partisan consists of a spearhead mounted on a long wooden "
+                                                      "shaft, with protrusions on the sides which aid in parrying "
+                                                      "sword thrusts.",
                          value=3500, rarity=12, damage=9, crit=5, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
@@ -674,7 +732,8 @@ class Partisan(Weapon):
 class Halberd(Weapon):
 
     def __init__(self):
-        super().__init__(name="HALBERD", description="",
+        super().__init__(name="HALBERD", description="A halberd is a two-handed pole weapon consisting of an axe blade "
+                                                     "topped with a spike mounted on a long shaft.",
                          value=9000, rarity=25, damage=11, crit=4, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
@@ -682,7 +741,9 @@ class Halberd(Weapon):
 class Naginata(Weapon):
 
     def __init__(self):
-        super().__init__(name="NAGINATA", description="A combined spear and battle axe.",
+        super().__init__(name="NAGINATA", description="A naginata consists of a wooden or metal pole with a curved "
+                                                      "single-edged blade on the end that has a round handguard between"
+                                                      " the blade and shaft.",
                          value=13000, rarity=30, damage=13, crit=3, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
 
@@ -712,7 +773,8 @@ class Gungnir(Weapon):
 class Quarterstaff(Weapon):
 
     def __init__(self):
-        super().__init__(name="QUARTERSTAFF", description="",
+        super().__init__(name="QUARTERSTAFF", description="A quarterstaff is a shaft of hardwood about eight feet long"
+                                                          " fitted with metal tips on each end.",
                          value=250, rarity=4, damage=2, crit=12, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
@@ -720,7 +782,8 @@ class Quarterstaff(Weapon):
 class Baston(Weapon):
 
     def __init__(self):
-        super().__init__(name="BASTON", description="",
+        super().__init__(name="BASTON", description="A baston is a long, light, and flexible staff weapon that is ideal"
+                                                    " for speed and precision.",
                          value=800, rarity=6, damage=3, crit=10, handed=2, subtyp='Staff', unequip=False,
                          off=False)
 
@@ -824,7 +887,9 @@ class PrincessGuard(Weapon):
 class Sledgehammer(Weapon):
 
     def __init__(self):
-        super().__init__(name="SLEDGEHAMMER", description="",
+        super().__init__(name="SLEDGEHAMMER", description="A sledgehammer is a tool with a large, flat, metal head, "
+                                                          "attached to a long handle that gathers momentum during a "
+                                                          "swing to apply a large force upon the target.",
                          value=800, rarity=7, damage=6, crit=9, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
@@ -832,8 +897,8 @@ class Sledgehammer(Weapon):
 class Maul(Weapon):
 
     def __init__(self):
-        super().__init__(name="MAUL", description="A maul is a tool with a large, flat, often metal head, attached to a"
-                                                  " long handle.",
+        super().__init__(name="SPIKE MAUL", description="A spike maul is similar to a sledgehammer except for having a"
+                                                        " more narrow face for increased damage.",
                          value=5000, rarity=14, damage=14, crit=7, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
@@ -859,8 +924,8 @@ class EarthHammer(Weapon):
 class GreatMaul(Weapon):
 
     def __init__(self):
-        super().__init__(name="GREAT MAUL", description="A great maul is a tool with a massive, flat, often metal "
-                                                        "head, attached to a long handle.",
+        super().__init__(name="GREAT MAUL", description="A great maul looks similar to a sledgehammer but is "
+                                                        "significantly larger in all aspects.",
                          value=27000, rarity=40, damage=20, crit=6, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
 
@@ -889,17 +954,21 @@ class Skullcrusher(Weapon):
 
 
 class Armor(Item):
+    """
+    armor: base armor for the item
+    unequip: boolean parameter indicating whether the object the base class used when an item is unequipped
+    typ: the item type; 'Armor' for this class
+    """
 
     def __init__(self, name, description, value, rarity, armor, subtyp, unequip):
-        super().__init__(name, description, value)
-        self.rarity = rarity
+        super().__init__(name, description, value, rarity, subtyp)
         self.armor = armor
-        self.subtyp = subtyp
         self.unequip = unequip
         self.typ = 'Armor'
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nArmor: {}".format(self.name, self.description, self.value, self.armor)
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nArmor: {}".format(self.name, self.description, self.subtyp,
+                                                                      self.value, self.armor)
 
     def special_effect(self, wearer, attacker):
         pass
@@ -1124,20 +1193,18 @@ class Genji(Armor):
 
 class OffHand(Item):
     """
-    mod stat depends on the off-hand item; mod for shields is block and spell damage modifier for tomes
+    mod: stat depends on the off-hand item; mod for shields is block and spell damage modifier for tomes
+        block: determines block chance, calculated as 1 / mod parameter (i.e. 1/2 or 50%)
+        spell damage: base attack spell modifier
+    unequip: boolean parameter indicating whether the object the base class used when an item is unequipped
+    typ: the item type; 'OffHand' for this class
     """
 
     def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
-        super().__init__(name, description, value)
-        self.rarity = rarity
+        super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
-        self.subtyp = subtyp
         self.unequip = unequip
         self.typ = 'OffHand'
-
-    def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class NoOffHand(OffHand):
@@ -1153,26 +1220,46 @@ class Buckler(OffHand):
         super().__init__(name="BUCKLER", description="A small round shield held by a handle or worn on the forearm.",
                          value=25, rarity=2, mod=10, subtyp='Shield', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+
 
 class Aspis(OffHand):
 
     def __init__(self):
-        super().__init__(name="ASPIS", description="",
+        super().__init__(name="ASPIS", description="An aspis is a heavy wooden shield with a handle at the edge and is "
+                                                   "strapped to the forearm for greater mobility.",
                          value=100, rarity=4, mod=8, subtyp='Shield', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class Targe(OffHand):
 
     def __init__(self):
-        super().__init__(name="TARGE", description="",
+        super().__init__(name="TARGE", description="A targe is a circular, concave shield fitted with straps on the "
+                                                   "inside to be attached to the forearm, featuring metal studs on the "
+                                                   "face for durability and additional offensive power.",
                          value=500, rarity=10, mod=6, subtyp='Shield', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class Glagwa(OffHand):
 
     def __init__(self):
-        super().__init__(name="GLAGWA", description="",
+        super().__init__(name="GLAGWA", description="A glagwa is a bell-shaped shield made from iron and covered with "
+                                                    "leather for improved durability.",
                          value=2500, rarity=20, mod=5, subtyp='Shield', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class KiteShield(OffHand):
@@ -1185,12 +1272,22 @@ class KiteShield(OffHand):
                                                          "similarity to a flying kite.",
                          value=10000, rarity=35, mod=4, subtyp='Shield', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+
 
 class Pavise(OffHand):
 
     def __init__(self):
-        super().__init__(name="PAVISE", description="",
+        super().__init__(name="PAVISE", description="A pavise is an oblong shield similar to a tower shield that "
+                                                    "features a spike at the bottom to hold it in place to provide full"
+                                                    " body protection.",
                          value=25000, rarity=40, mod=3, subtyp='Shield', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
 
 
 class MedusaShield(OffHand):
@@ -1201,12 +1298,20 @@ class MedusaShield(OffHand):
                                                            " magic.",
                          value=50000, rarity=50, mod=2, subtyp='Shield', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
+            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+
 
 class Book(OffHand):
 
     def __init__(self):
         super().__init__(name="BOOK", description="A random book.", value=25, rarity=2, mod=2, subtyp='Tome',
                          unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
 
 
 class TomeKnowledge(OffHand):
@@ -1215,12 +1320,20 @@ class TomeKnowledge(OffHand):
         super().__init__(name="TOME OF KNOWLEDGE", description="A tome containing secrets to enhancing spells.",
                          value=500, rarity=5, mod=5, subtyp='Tome', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
+
 
 class Grimoire(OffHand):
 
     def __init__(self):
         super().__init__(name="GRIMOIRE", description="A book of magic and invocations.",
                          value=2500, rarity=20, mod=7, subtyp='Tome', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
 
 
 class BookShadows(OffHand):
@@ -1231,6 +1344,10 @@ class BookShadows(OffHand):
                                                              "Neopagan religion of Wicca, and in many pagan practices.",
                          value=10000, rarity=35, mod=10, subtyp='Tome', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
+
 
 class DragonRouge(OffHand):
 
@@ -1239,6 +1356,10 @@ class DragonRouge(OffHand):
                                                           "ancient knowledge passed down through the ages.",
                          value=15000, rarity=40, mod=12, subtyp='Tome', unequip=False)
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
+
 
 class Vedas(OffHand):
 
@@ -1246,6 +1367,10 @@ class Vedas(OffHand):
         super().__init__(name="VEDAS", description="A large body of religious texts, consisting of some of the oldest "
                                                    "holy teachings.",
                          value=35000, rarity=45, mod=18, subtyp='Tome', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
 
 
 class Necronomicon(OffHand):
@@ -1256,12 +1381,20 @@ class Necronomicon(OffHand):
                          value=40000, rarity=50, mod=20, subtyp='Tome', unequip=False)
         self.restriction = ['Warlock', 'Necromancer']
 
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
+
 
 class Magus(OffHand):
 
     def __init__(self):
         super().__init__(name="MAGUS", description="A book of magical art written by a powerful wizard.",
                          value=75000, rarity=60, mod=30, subtyp='Tome', unequip=False)
+
+    def __str__(self):
+        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+            self.name, self.description, self.subtyp, self.value, self.mod)
 
 
 class Accessory(Item):
@@ -1270,13 +1403,14 @@ class Accessory(Item):
     Rings improve physical capabilities (either attack or defense)
     Pendants improve magical capabilities (either magic damage or defense)
     All modifications are considered magical and can't be ignored
+    mod: defines the specific mod for each item; string that will be parsed later
+    unequip: boolean parameter indicating whether the object the base class used when an item is unequipped
+    typ: the item type; 'Accessory' for this class
     """
 
     def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
-        super().__init__(name, description, value)
-        self.rarity = rarity
+        super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
-        self.subtyp = subtyp
         self.unequip = unequip
         self.typ = "Accessory"
 
@@ -1285,6 +1419,9 @@ class Accessory(Item):
 
 
 class NoRing(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="NO RING", description="No ring equipped.", value=0, rarity=99, mod="No Mod",
@@ -1292,6 +1429,9 @@ class NoRing(Accessory):
 
 
 class IronRing(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="IRON RING", description="A ring that improves the wearer's defense.",
@@ -1299,6 +1439,9 @@ class IronRing(Accessory):
 
 
 class PowerRing(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="POWER RING", description="A ring that improves the wearer's attack damage.",
@@ -1306,6 +1449,9 @@ class PowerRing(Accessory):
 
 
 class NoPendant(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="NO PENDANT", description="No pendant equipped.", value=0, rarity=99, mod="No Mod",
@@ -1313,6 +1459,9 @@ class NoPendant(Accessory):
 
 
 class VisionPendant(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="PENDANT OF VISION", description="A pendant that that gives information about the enemy.",
@@ -1320,6 +1469,9 @@ class VisionPendant(Accessory):
 
 
 class RubyPendant(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="RUBY PENDANT", description="A ruby necklace that improves the wearer's magic damage.",
@@ -1327,6 +1479,9 @@ class RubyPendant(Accessory):
 
 
 class SilverPendant(Accessory):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="SILVER PENDANT", description="A necklace that improves the wearer's magic damage.",
@@ -1366,11 +1521,12 @@ class DharmaPendant(Accessory):
 
 
 class Potion(Item):
+    """
+    typ: the item type; 'Potion' for this class
+    """
 
     def __init__(self, name, description, value, rarity, subtyp):
-        super().__init__(name, description, value)
-        self.rarity = rarity
-        self.subtyp = subtyp
+        super().__init__(name, description, value, rarity, subtyp)
         self.typ = "Potion"
 
 
@@ -1380,30 +1536,60 @@ class HealthPotion(Potion):
         super().__init__(name="HEALTH POTION", description="A potion that restores up to 25% of your health.",
                          value=100, rarity=5, subtyp='Health')
         self.percent = 0.25
+        self.item = HealthPotion
+
+    def use(self, user, target=None, tile=None):
+        if user.health == user.health_max:
+            print("You are already at full health.")
+            return False
+        user.modify_inventory(self.item, num=1, subtract=True)
+        if user.state != 'fight':
+            heal = int(user.health_max * self.percent)
+        else:
+            rand_heal = int(user.health_max * self.percent)
+            heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
+        print("The potion healed you for {} life.".format(heal))
+        user.health += heal
+        if user.health >= user.health_max:
+            user.health = user.health_max
+            print("You are at max health.")
+        return True
 
 
-class GreatHealthPotion(Potion):
+class GreatHealthPotion(HealthPotion):
 
     def __init__(self):
-        super().__init__(name="GREAT HEALTH POTION", description="A potion that restores up to 50% of your health.",
-                         value=600, rarity=10, subtyp='Health')
+        super().__init__()
+        self.name = "GREAT HEALTH POTION"
+        self.description = "A potion that restores up to 50% of your health."
+        self.value = 600
+        self.rarity = 10
         self.percent = 0.50
+        self.item = GreatHealthPotion
 
 
-class SuperHealthPotion(Potion):
+class SuperHealthPotion(HealthPotion):
 
     def __init__(self):
-        super().__init__(name="SUPER HEALTH POTION", description="A potion that restores up to 75% of your health.",
-                         value=3000, rarity=15, subtyp='Health')
+        super().__init__()
+        self.name = "SUPER HEALTH POTION"
+        self.description = "A potion that restores up to 75% of your health."
+        self.value = 3000
+        self.rarity = 15
         self.percent = 0.75
+        self.item = SuperHealthPotion
 
 
-class MasterHealthPotion(Potion):
+class MasterHealthPotion(HealthPotion):
 
     def __init__(self):
-        super().__init__(name="MASTER HEALTH POTION", description="A potion that restores up to 100% of your health.",
-                         value=10000, rarity=35, subtyp='Health')
+        super().__init__()
+        self.name = "MASTER HEALTH POTION"
+        self.description = "A potion that restores up to 100% of your health."
+        self.value = 10000
+        self.rarity = 35
         self.percent = 1.0
+        self.item = MasterHealthPotion
 
 
 class ManaPotion(Potion):
@@ -1412,30 +1598,60 @@ class ManaPotion(Potion):
         super().__init__(name="MANA POTION", description="A potion that restores up to 25% of your mana.",
                          value=250, rarity=10, subtyp='Mana')
         self.percent = 0.25
+        self.item = ManaPotion
+
+    def use(self, user, target=None, tile=None):
+        if user.mana == user.mana_max:
+            print("You are already at full mana.")
+            return False
+        user.modify_inventory(self.item, num=1, subtract=True)
+        if user.state != 'fight':
+            heal = int(user.mana_max * self.percent)
+        else:
+            rand_res = int(user.mana_max * self.percent)
+            heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+        print("The potion restored {} mana points.".format(heal))
+        user.mana += heal
+        if user.mana >= user.mana_max:
+            user.mana = user.mana_max
+            print("You are at full mana.")
+        return True
 
 
-class GreatManaPotion(Potion):
+class GreatManaPotion(ManaPotion):
 
     def __init__(self):
-        super().__init__(name="GREAT MANA POTION", description="A potion that restores up to 50% of your mana.",
-                         value=1500, rarity=20, subtyp='Mana')
+        super().__init__()
+        self.name = "GREAT MANA POTION"
+        self.description = "A potion that restores up to 50% of your mana."
+        self.value = 1500
+        self.rarity = 20
         self.percent = 0.50
+        self.item = GreatManaPotion
 
 
-class SuperManaPotion(Potion):
+class SuperManaPotion(ManaPotion):
 
     def __init__(self):
-        super().__init__(name="SUPER MANA POTION", description="A potion that restores up to 75% of your mana.",
-                         value=8000, rarity=35, subtyp='Mana')
+        super().__init__()
+        self.name = "SUPER MANA POTION"
+        self.description = "A potion that restores up to 75% of your mana."
+        self.value = 8000
+        self.rarity = 35
         self.percent = 0.75
+        self.item = SuperManaPotion
 
 
-class MasterManaPotion(Potion):
+class MasterManaPotion(ManaPotion):
 
     def __init__(self):
-        super().__init__(name="MASTER MANA POTION", description="A potion that restores up to 100% of your mana.",
-                         value=20000, rarity=50, subtyp='Mana')
+        super().__init__()
+        self.name = "MASTER MANA POTION"
+        self.description = "A potion that restores up to 100% of your mana."
+        self.value = 20000
+        self.rarity = 50
         self.percent = 1.0
+        self.item = MasterManaPotion
 
 
 class Elixir(Potion):
@@ -1444,14 +1660,43 @@ class Elixir(Potion):
         super().__init__(name="ELIXIR", description="A potion that restores up to 50% of your health and mana.",
                          value=10000, rarity=35, subtyp='Elixir')
         self.percent = 0.5
+        self.item = Elixir
+
+    def use(self, user, target=None, tile=None):
+        if user.health == user.health_max and user.mana == user.mana_max:
+            print("You are already at full health and mana.")
+            return False
+        user.modify_inventory(self.item, num=1, subtract=True)
+        if user.state != 'fight':
+            health_heal = int(user.health_max * self.percent)
+            mana_heal = int(user.mana_max * self.percent)
+        else:
+            rand_heal = int(user.health_max * self.percent)
+            rand_res = int(user.mana_max * self.percent)
+            health_heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
+            mana_heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+        print("The potion restored {} health points and {} mana points.".format(health_heal, mana_heal))
+        user.health += health_heal
+        user.mana += mana_heal
+        if user.health >= user.health_max:
+            user.health = user.health_max
+            print("You are at max health.")
+        if user.mana >= user.mana_max:
+            user.mana = user.mana_max
+            print("You are at full mana.")
+        return True
 
 
-class Megalixir(Potion):
+class Megalixir(Elixir):
 
     def __init__(self):
-        super().__init__(name="MEGALIXIR", description="A potion that restores up to 100% of your health and mana.",
-                         value=30000, rarity=60, subtyp='Elixir')
+        super().__init__()
+        self.name = "MEGALIXIR"
+        self.description = "A potion that restores up to 100% of your health and mana."
+        self.value = 30000
+        self.rarity = 60
         self.percent = 1.0
+        self.item = Megalixir
 
 
 class HPPotion(Potion):
@@ -1459,7 +1704,13 @@ class HPPotion(Potion):
     def __init__(self):
         super().__init__(name="HP POTION", description="A potion that permanently increases your max health by 10.",
                          value=10000, rarity=20, subtyp='Stat')
-        self.stat = 'hp'
+        self.mod = 10
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(HPPotion, num=1, subtract=True)
+        user.health_max += self.mod
+        print("{}'s HP has increased by {}!".format(user.name, self.mod))
+        return True
 
 
 class MPPotion(Potion):
@@ -1467,7 +1718,13 @@ class MPPotion(Potion):
     def __init__(self):
         super().__init__(name="MP POTION", description="A potion that permanently increases your max mana by 10.",
                          value=10000, rarity=20, subtyp='Stat')
-        self.stat = 'mp'
+        self.mod = 10
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(MPPotion, num=1, subtract=True)
+        user.mana_max += self.mod
+        print("{}'s MP has increased by {}!".format(user.name, self.mod))
+        return True
 
 
 class StrengthPotion(Potion):
@@ -1475,7 +1732,12 @@ class StrengthPotion(Potion):
     def __init__(self):
         super().__init__(name="STRENGTH POTION", description="A potion that permanently increases your strength by 1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'str'
+        
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(StrengthPotion, num=1, subtract=True)
+        user.strength += 1
+        print("{}'s strength has increased by 1!".format(user.name))
+        return True
 
 
 class IntelPotion(Potion):
@@ -1484,16 +1746,26 @@ class IntelPotion(Potion):
         super().__init__(name="INTELLIGENCE POTION", description="A potion that permanently increases your intelligence"
                                                                  " by 1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'int'
 
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(IntelPotion, num=1, subtract=True)
+        user.intel += 1
+        print("{}'s intelligence has increased by 1!".format(user.name))
+        return True
+    
 
 class WisdomPotion(Potion):
 
     def __init__(self):
         super().__init__(name="WISDOM POTION", description="A potion that permanently increases your wisdom by 1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'wis'
 
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(WisdomPotion, num=1, subtract=True)
+        user.wisdom += 1
+        print("{}'s wisdom has increased by 1!".format(user.name))
+        return True
+    
 
 class ConPotion(Potion):
 
@@ -1501,7 +1773,12 @@ class ConPotion(Potion):
         super().__init__(name="CONSTITUTION POTION", description="A potion that permanently increases your constitution"
                                                                  " by 1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'con'
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(ConPotion, num=1, subtract=True)
+        user.con += 1
+        print("{}'s constitution has increased by 1!".format(user.name))
+        return True
 
 
 class CharismaPotion(Potion):
@@ -1509,8 +1786,13 @@ class CharismaPotion(Potion):
     def __init__(self):
         super().__init__(name="CHARISMA POTION", description="A potion that permanently increases your charisma by 1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'cha'
 
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(CharismaPotion, num=1, subtract=True)
+        user.charisma += 1
+        print("{}'s charisma has increased by 1!".format(user.name))
+        return True
+    
 
 class DexterityPotion(Potion):
 
@@ -1518,23 +1800,119 @@ class DexterityPotion(Potion):
         super().__init__(name="DEXTERITY POTION", description="A potion that permanently increases your dexterity by "
                                                               "1.",
                          value=20000, rarity=35, subtyp='Stat')
-        self.stat = 'dex'
 
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(DexterityPotion, num=1, subtract=True)
+        user.dex += 1
+        print("{}'s dexterity has increased by 1!".format(user.name))
+        return True
+    
 
 class AardBeing(Potion):
 
     def __init__(self):
         super().__init__(name="AARD of BEING", description="A potion that permanently increases all stats by 1.",
                          value=200000, rarity=75, subtyp='Stat')
-        self.stat = 'all'
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(AardBeing, num=1, subtract=True)
+        user.strength += 1
+        user.intel += 1
+        user.wisdom += 1
+        user.con += 1
+        user.charisma += 1
+        user.dex += 1
+        print("All of {}'s stats have been increased by 1!".format(user.name))
+        return True
+    
+
+class Status(Potion):
+    """
+    
+    """
+    
+    def __init__(self):
+        super().__init__(name="Status", description="Base class for status items.",
+                         value=0, rarity=99, subtyp="Status")
+        self.status = None
+        self.item = Status
+
+    def use(self, user, target=None, tile=None):
+        if not user.status_effects[self.status][0]:
+            print("You are not affected by {}.".format(self.status.lower()))
+            return False
+        user.modify_inventory(self.item, num=1, subtract=True)
+        user.status_effects[self.status][0] = False
+        print("You have been cured of {}.".format(self.status.lower()))
+        return True
+    
+    
+class Antidote(Status):
+    """
+
+    """
+    def __init__(self):
+        super().__init__()
+        self.name = "ANTIDOTE"
+        self.description = "A potion that will cure poison."
+        self.value = 250
+        self.rarity = 10
+        self.status = 'Poison'
+        self.item = Antidote
+
+
+class EyeDrop(Status):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "EYE DROP"
+        self.description = "Eye drops that will cure blindness."
+        self.value = 250
+        self.rarity = 10
+        self.status = 'Blind'
+        self.item = EyeDrop
+
+
+class AntiCoagulant(Status):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "ANTI-COAGULANT"
+        self.description = "Anti-coagulants will cure bleeding."
+        self.value = 1000
+        self.rarity = 20
+        self.status = 'Bleed'
+        self.item = AntiCoagulant
+
+
+class PhoenixDown(Status):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "PHOENIX DOWN"
+        self.description = "A potion that will cure doom status."
+        self.value = 15000
+        self.rarity = 35
+        self.status = 'Doom'
+        self.item = PhoenixDown
 
 
 class Misc(Item):
+    """
+    typ: the item type; 'Misc' for this class
+    """
 
     def __init__(self, name, description, value, rarity, subtyp):
-        super().__init__(name, description, value)
-        self.rarity = rarity
-        self.subtyp = subtyp
+        super().__init__(name, description, value, rarity, subtyp)
         self.typ = "Misc"
 
 
@@ -1547,6 +1925,12 @@ class Key(Misc):
         super().__init__(name="KEY", description="Unlocks a locked chest but is consumed.", value=500, rarity=20,
                          subtyp='Key')
 
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(Key, num=1, subtract=True)
+        tile.locked = False
+        print("{} unlocks the chest.".format(user.name))
+        return True
+
 
 class OldKey(Misc):
     """
@@ -1557,6 +1941,285 @@ class OldKey(Misc):
         super().__init__(name="OLDKEY", description="Unlocks doors that may lead to either valuable treasure or to "
                                                     "powerful enemies.",
                          value=50000, rarity=40, subtyp='Key')
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(OldKey, num=1, subtract=True)
+        tile.locked = False
+        print("{} unlocks the door.".format(user.name))
+        return True
+
+
+class Scroll(Misc):
+    """
+    Scrolls allow for a one-time use of a spell; scrolls can only be used in combat
+    """
+
+    def __init__(self):
+        super().__init__(name="SCROLL", description="Base class for scrolls.", value=0, rarity=99, subtyp='Scroll')
+        self.spell = None
+        self.item = Scroll
+
+    def use(self, user, target=None, tile=None):
+        user.modify_inventory(self.item, num=1, subtract=True)
+        print("{} uses {}.".format(user.name, self.name))
+        self.spell().cast(user, target)
+        return True
+
+
+class BlessScroll(Scroll):
+    """
+    Bless
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "BLESS SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Bless, which increases " \
+                           "attack damage for several turns. The scroll will be consumed upon use."
+        self.value = 1000
+        self.rarity = 15
+        self.spell = spells.Bless
+        self.item = BlessScroll
+
+
+class SleepScroll(Scroll):
+    """
+    Sleep
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "SLEEP SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Sleep, which can put the " \
+                           "enemy to sleep. The scroll will be consumed upon use."
+        self.value = 2000
+        self.rarity = 25
+        self.spell = spells.Sleep
+        self.item = SleepScroll
+
+
+class FireScroll(Scroll):
+    """
+    Firebolt
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "FIRE SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the fire spell Firebolt. " \
+                           "The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.Firebolt
+        self.item = FireScroll
+
+
+class IceScroll(Scroll):
+    """
+    Ice Lance
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "ICE SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the ice spell Ice Lance. " \
+                           "The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.IceLance
+        self.item = IceScroll
+
+
+class ElectricScroll(Scroll):
+    """
+    Shock
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "ELECTRIC SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the electric spell Shock." \
+                           " The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.Shock
+        self.item = ElectricScroll
+
+
+class WaterScroll(Scroll):
+    """
+    Water Jet
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "WATER SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the water spell Water Jet" \
+                           ". The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.WaterJet
+        self.item = WaterScroll
+
+
+class EarthScroll(Scroll):
+    """
+    Tremor
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "EARTH SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the earth spell Tremor. " \
+                           "The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.Tremor
+        self.item = EarthScroll
+
+
+class WindScroll(Scroll):
+    """
+    Gust
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "WIND SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the wind spell Gust. The" \
+                           " scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.Gust
+        self.item = WindScroll
+
+
+class ShadowScroll(Scroll):
+    """
+    Shadow Bolt
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "SHADOW SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the shadow spell Shadow" \
+                           " Bolt. The scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.ShadowBolt
+        self.item = ShadowScroll
+
+
+class HolyScroll(Scroll):
+    """
+    Holy
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "HOLY SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the holy spell Holy. The" \
+                           " scroll will be consumed upon use."
+        self.value = 2500
+        self.rarity = 30
+        self.spell = spells.Holy
+        self.item = HolyScroll
+
+
+class RegenScroll(Scroll):
+    """
+    Regen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "REGEN SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the heal spell Regen, " \
+                           "which can heal the target over time. The scroll will be consumed upon use."
+        self.value = 5000
+        self.rarity = 35
+        self.spell = spells.Regen
+        self.item = RegenScroll
+
+
+class SilenceScroll(Scroll):
+    """
+    Silence
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "SILENCE SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Silence, which can " \
+                           "prevent an target from casting spell for a time. The scroll will be consumed upon use."
+        self.value = 5000
+        self.rarity = 35
+        self.spell = spells.Silence
+        self.item = SilenceScroll
+
+
+class DispelScroll(Scroll):
+    """
+    Dispel
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "DISPEL SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Dispel, which can remove " \
+                           "all positive status effects from the target. The scroll will be consumed upon use."
+        self.value = 7500
+        self.rarity = 40
+        self.spell = spells.Dispel
+        self.item = DispelScroll
+
+
+class DeathScroll(Scroll):
+    """
+    Desoul
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "DEATH SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Desoul, which can kill the" \
+                           " target. The scroll will be consumed upon use."
+        self.value = 10000
+        self.rarity = 45
+        self.spell = spells.Desoul
+        self.item = DeathScroll
+
+
+class SanctuaryScroll(Scroll):
+    """
+    Sanctuary
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "SANCTUARY SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast Sanctuary, which can " \
+                           "return the user to town. The scroll will be consumed upon use."
+        self.value = 25000
+        self.rarity = 50
+        self.spell = spells.Sanctuary
+        self.item = SanctuaryScroll
+
+
+class UltimaScroll(Scroll):
+    """
+    Ultima
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "ULTIMA SCROLL"
+        self.description = "Scroll inscribed with an incantation allowing the user to cast the powerful Ultima. The " \
+                           "scroll will be consumed upon use."
+        self.value = 50000
+        self.rarity = 65
+        self.spell = spells.Ultima
+        self.item = UltimaScroll
 
 
 class Unobtainium(Misc):
@@ -1572,7 +2235,7 @@ class Unobtainium(Misc):
 
 class Relic1(Misc):
     """
-
+    The first of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1583,7 +2246,7 @@ class Relic1(Misc):
 
 class Relic2(Misc):
     """
-
+    The second of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1594,7 +2257,7 @@ class Relic2(Misc):
 
 class Relic3(Misc):
     """
-
+    The third of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1606,7 +2269,7 @@ class Relic3(Misc):
 
 class Relic4(Misc):
     """
-
+    The fourth of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1617,7 +2280,7 @@ class Relic4(Misc):
 
 class Relic5(Misc):
     """
-
+    The fifth of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1628,7 +2291,7 @@ class Relic5(Misc):
 
 class Relic6(Misc):
     """
-
+    The sixth and final of six relics required to unlock the final boss
     """
 
     def __init__(self):
@@ -1644,7 +2307,7 @@ items_dict = {'Weapon': {'Fist': [BrassKnuckles, Cestus, BattleGauntlet, BaghNah
                          'Club': [Mace, WarHammer, Pernach, Morgenstern, Mjolnir],
                          'Ninja Blade': [Tanto, Wakizashi, Ninjato],
                          'Longsword': [Bastard, Claymore, Zweihander, Changdao, Flamberge, Executioner],
-                         'Battle Axe': [Mattock, Broadaxe, DoubleAxe, Parashu, GreatAxe, Jarnbjorn],
+                         'Battle Axe': [Mattock, Broadaxe, DoubleAxe, Parashu, Greataxe, Jarnbjorn],
                          'Polearm': [Voulge, Partisan, Halberd, Naginata, Trident, Gungnir],
                          'Staff': [Quarterstaff, Baston, IronshodStaff, SerpentStaff, HolyStaff, RuneStaff,
                                    MithrilshodStaff, DragonStaff, PrincessGuard],
@@ -1663,5 +2326,9 @@ items_dict = {'Weapon': {'Fist': [BrassKnuckles, Cestus, BattleGauntlet, BaghNah
                          'Mana': [ManaPotion, GreatManaPotion, SuperManaPotion, MasterManaPotion],
                          'Elixir': [Elixir, Megalixir],
                          'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
-                                  CharismaPotion, DexterityPotion, AardBeing]},
-              'Misc': {'Key': [Key, OldKey]}}
+                                  CharismaPotion, DexterityPotion, AardBeing],
+                         'Status': [Antidote, EyeDrop, AntiCoagulant, PhoenixDown]},
+              'Misc': {'Key': [Key, OldKey],
+                       'Scroll': [BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
+                                  EarthScroll, WindScroll, ShadowScroll, HolyScroll, RegenScroll, SilenceScroll,
+                                  DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll]}}

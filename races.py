@@ -33,7 +33,9 @@ def define_race():
 class Race:
     """
     Base definition for the Race class
-    *_rng parameters set the range for which the random stats are chosen from
+    Stat parameters define the starting stats for each race
+    Class restriction lists the available classes for each race
+    Resistance describes each race's resistances to magic
     """
 
     def __init__(self, name, description, strength, intel, wisdom, con, charisma, dex, cls_res, resistance):
@@ -74,6 +76,9 @@ class Race:
 
 
 class Human(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Human", description="Humans are something you, can relate to. They are the most "
@@ -108,6 +113,9 @@ class Human(Race):
 
 
 class Elf(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Elf", description="Elves are the magic users of the game. They are excellent spell "
@@ -140,6 +148,9 @@ class Elf(Race):
 
 
 class HalfElf(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Half Elf", description="Half elves are the result of interbreeding between humans and "
@@ -175,6 +186,9 @@ class HalfElf(Race):
 
 
 class Giant(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Giant", description="Giants live for one thing - slicing a monster in two with one"
@@ -204,6 +218,9 @@ class Giant(Race):
 
 
 class Gnome(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Gnome", description="Gnomes are very charismatic, giving them a distinct advantage in "
@@ -238,6 +255,9 @@ class Gnome(Race):
 
 
 class Dwarf(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Dwarf", description="Dwarves are very curious, always up for an adventure. They are "
@@ -270,6 +290,9 @@ class Dwarf(Race):
 
 
 class HalfOrc(Race):
+    """
+
+    """
 
     def __init__(self):
         super().__init__(name="Half Orc", description="Half orcs are the result of interbreeding between humans and "

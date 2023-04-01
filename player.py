@@ -11,6 +11,8 @@ import time
 import numpy
 import _pickle as pickle
 
+import combat
+import enemies
 from character import Character
 from classes import classes_dict
 import items
@@ -25,12 +27,13 @@ import town
 def new_char() -> object:
     """
     Defines a new character and places them in the town to start
-    Initial HP: 3 x constitution score
+    Initial HP: 2 x constitution score
     Level HP: (0.75 * level * promotion level) + (con // 2) (Average)
-    Initial MP: 2 x intel score + 1 x wisdom score
+    Initial MP: intelligence score + 0.5 x wisdom score
     Level MP: (0.75 * level * promotion level) + (intel // 2) (Average)
+    Initial Gold: 25 x charisma score
     """
-    exp_scale = 50
+    exp_scale = 25
     location_x, location_y, location_z = (5, 10, 0)
     name = ''
     # storyline.read_story("story_files/new_player.txt")
@@ -74,7 +77,7 @@ def load(char=None):
     if char is None:
         save_files = glob.glob("*.save")
         if len(save_files) == 0:
-            return {}
+            return dict()
         else:
             chars = []
             for f in save_files:
@@ -83,17 +86,15 @@ def load(char=None):
             choice = storyline.get_response(chars)
             save_file = chars[choice] + ".save"
             with open(save_file, 'rb') as save_file:
-                save_dict = pickle.load(save_file)
-                player_dict = save_dict
+                player_dict = pickle.load(save_file)
             return player_dict
     else:
         if os.path.exists(char + ".save"):
             with open(char + ".save", "rb") as save_file:
-                save_dict = pickle.load(save_file)
-                player_dict = save_dict
+                player_dict = pickle.load(save_file)
             return player_dict
         else:
-            return {}
+            return dict()
 
 
 def load_char(char=None, tmp=False):
@@ -163,9 +164,10 @@ class Player(Character):
         self.pro_level = pro_level
         self.gold = gold
         self.resistance = resistance
-        self.world_dict = {}
+        self.world_dict = dict()
         self.teleport = None
-        self.quest_dict = {}
+        self.quest_dict = dict(Bounty=dict())
+        self.kill_dict = dict()
 
     def __str__(self):
         return "Player: {} | Health: {}/{} | Mana: {}/{}".format(self.name, self.health, self.health_max,
@@ -215,10 +217,10 @@ class Player(Character):
         for i, l in enumerate(map_array):
             print(" ".join(l))
 
-    def load_tiles(self, reload=False):
+    def load_tiles(self):
         """Parses a file that describes the world space into the _world object"""
         world_dict = {(5, 10, 0): getattr(__import__('map'), 'Town')(5, 10, 0)}
-        map_files = glob.glob('map_files/new_map_level_*')
+        map_files = glob.glob('map_files/map_level_*')
         for map_file in map_files:
             z = map_file.split('_')[-1]
             z = int(z.split('.')[0])
@@ -229,20 +231,7 @@ class Player(Character):
                 cols = rows[y].split('\t')
                 for x in range(x_max):
                     tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
-                    if tile_name == 'RandomTile':
-                        if random.random() > 0.60:
-                            tile = getattr(__import__('map'), 'RandomEnemyRoom')(x, y, z)
-                        else:
-                            tile = getattr(__import__('map'), 'EmptyCavePath')(x, y, z)
-                    elif tile_name == 'RandomTile2':
-                        if random.random() > 0.60:
-                            tile = getattr(__import__('map'), 'RandomEnemyRoom2')(x, y, z)
-                        else:
-                            tile = getattr(__import__('map'), 'EmptyCavePath')(x, y, z)
-                    elif any(x in tile_name for x in ['Door', 'Stairs', 'Wall', 'Boss']) and reload:
-                        tile = self.world_dict[(x, y, z)]
-                    else:
-                        tile = getattr(__import__('map'), tile_name)(x, y, z)
+                    tile = getattr(__import__('map'), tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
                     try:
                         world_dict[(x, y, z)].visited = self.world_dict[(x, y, z)].visited
@@ -289,7 +278,7 @@ class Player(Character):
                 _, _ = self.weapon_damage(enemy)
                 valid_entry = True
             if action == 'Item':
-                valid_entry = self.use_item()
+                valid_entry = self.use_item(enemy=enemy)
             if action == 'Flee':
                 flee = self.flee(enemy)
                 valid_entry = True
@@ -304,7 +293,7 @@ class Player(Character):
                 spell_index = storyline.get_response(spell_list)
                 if spell_list[spell_index] == 'Go Back':
                     os.system('cls' if os.name == 'nt' else 'clear')
-                    return False, combat
+                    return False, combat, flee
                 else:
                     spell = self.spellbook['Spells'][spell_list[spell_index].split('  ')[0]]
                     spell().cast(self, enemy)
@@ -329,7 +318,7 @@ class Player(Character):
                 skill_index = storyline.get_response(skill_list)
                 if skill_list[skill_index] == 'Go Back':
                     os.system('cls' if os.name == 'nt' else 'clear')
-                    return False, combat
+                    return False, combat, flee
                 else:
                     valid = True
                     skill = self.spellbook['Skills'][skill_list[skill_index].split('  ')[0]]
@@ -337,7 +326,7 @@ class Player(Character):
                         self.mana -= skill().cost
                         flee = self.flee(enemy, smoke=True)
                     elif skill().name == 'Transform':
-                        skill().change(self)
+                        self.transform()
                         valid = False
                     else:
                         skill().use(self, enemy)
@@ -349,7 +338,6 @@ class Player(Character):
             r = random.choice(available_moves)
             self.do_action(r)
             combat = False
-        input("Press enter to continue")
         return valid_entry, combat, flee
 
     def has_relics(self):
@@ -374,9 +362,9 @@ class Player(Character):
         while True:
             os.system('cls' if os.name == 'nt' else 'clear')
             print(self.__str__())
-            option_list = [actions.Status(), actions.ViewInventory(), actions.ViewQuests(), actions.Equip(),
-                           actions.ListSpecials(), actions.UseItem(), actions.Quit()]
-            options = ["Status", "Inventory", "Quests", "Equip", "Specials", "Use Item", "Quit Game", "Leave"]
+            option_list = [actions.Status(), actions.ViewInventory(), actions.Equip(),
+                           actions.UseItem(), actions.ViewQuests(), actions.Quit()]
+            options = ["Status", "Inventory", "Equip", "Use Item", "Quests", "Quit Game", "Leave"]
             action_input = storyline.get_response(options)
             try:
                 action = option_list[action_input]
@@ -429,7 +417,10 @@ class Player(Character):
             print("Familiar Name: {}".format(self.familiar.name))
             print("Familiar Type: {}".format(self.familiar.typ))
             print("Specialty: {}".format(self.familiar.spec))
-        input("Press enter to continue")
+        option_list = ["Specials", "Go Back"]
+        option_input = storyline.get_response(option_list)
+        if option_list[option_input] == "Specials":
+            self.do_action(actions.ListSpecials(), **actions.ListSpecials().kwargs)
 
     def flee(self, enemy, smoke=False) -> bool:
         stun = enemy.status_effects['Stun'][0]
@@ -453,13 +444,12 @@ class Player(Character):
             self.state = 'normal'
             return True
 
-    def use_item(self, tile=None):
-        item = True
+    def use_item(self, enemy=None, tile=None):
+        valid = False
         item_list = []
-        if self.state == 'fight':
+        if enemy is not None:
             for itm in self.inventory:
-                if str(self.inventory[itm][0]().subtyp) == 'Health' \
-                        or str(self.inventory[itm][0]().subtyp) == 'Mana':
+                if str(self.inventory[itm][0]().subtyp) in ['Health', 'Mana', 'Status', 'Scroll']:
                     item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
         elif tile is not None:
             if 'LockedChest' in tile.__str__():
@@ -481,143 +471,19 @@ class Player(Character):
         if len(item_list) == 0:
             print("You do not have any items to use.")
             time.sleep(1)
-            return False
+            return valid
         item_list.append('Go back')
-        while item:
-            print("Which potion would you like to use?")
-            use_itm = storyline.get_response(item_list)
-            if item_list[use_itm] == 'Go back':
-                return False
-            itm = self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]
-            if 'Health' in itm().subtyp:
-                if self.health == self.health_max:
-                    print("You are already at full health.")
-                else:
-                    self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                    if self.state != 'fight':
-                        heal = int(self.health_max *
-                                   self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        print("The potion healed you for {} life.".format(heal))
-                        self.health += heal
-                        if self.health >= self.health_max:
-                            self.health = self.health_max
-                            print("You are at max health.")
-                    else:
-                        rand_heal = int(self.health_max *
-                                        self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        heal = random.randint(rand_heal // 2, rand_heal) * max(
-                            1, self.check_mod('luck', luck_factor=12))
-                        self.health += heal
-                        print("The potion healed you for {} life.".format(heal))
-                        if self.health >= self.health_max:
-                            self.health = self.health_max
-                            print("You are at max health.")
-            elif 'Mana' in itm().subtyp:
-                if self.mana == self.mana_max:
-                    print("You are already at full mana.")
-                else:
-                    self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                    if self.state != 'fight':
-                        heal = int(self.mana_max *
-                                   self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        print("The potion restored {} mana points.".format(heal))
-                        self.mana += heal
-                        if self.mana >= self.mana_max:
-                            self.mana = self.mana_max
-                            print("You are at full mana.")
-                    else:
-                        rand_res = int(self.mana_max *
-                                       self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        heal = random.randint(rand_res // 2, rand_res) * max(1, self.check_mod('luck', luck_factor=12))
-                        self.mana += heal
-                        print("The potion restored {} mana points.".format(heal))
-                        if self.mana >= self.mana_max:
-                            self.mana = self.mana_max
-                            print("You are at full mana.")
-            elif 'Elixir' in itm().subtyp:
-                if self.health == self.health_max and self.mana == self.mana_max:
-                    print("You are already at full health and mana.")
-                else:
-                    self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                    if self.state != 'fight':
-                        health_heal = int(self.health_max *
-                                          self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        mana_heal = int(self.mana_max *
-                                        self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        print("The potion restored {} health points and {} mana points.".format(health_heal, mana_heal))
-                        self.health += health_heal
-                        self.mana += mana_heal
-                        if self.health >= self.health_max:
-                            self.health = self.health_max
-                            print("You are at max health.")
-                        if self.mana >= self.mana_max:
-                            self.mana = self.mana_max
-                            print("You are at full mana.")
-                    else:
-                        rand_heal = int(self.health_max *
-                                        self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        rand_res = int(self.mana_max *
-                                       self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]().percent)
-                        health_heal = random.randint(rand_heal // 2, rand_heal) * max(
-                            1, self.check_mod('luck', luck_factor=12))
-                        mana_heal = random.randint(rand_res // 2, rand_res) * max(
-                            1, self.check_mod('luck', luck_factor=12))
-                        self.health += health_heal
-                        self.mana += mana_heal
-                        print("The potion restored {} health points and {} mana points.".format(health_heal, mana_heal))
-                        if self.health >= self.health_max:
-                            self.health = self.health_max
-                            print("You are at max health.")
-                        if self.mana >= self.mana_max:
-                            self.mana = self.mana_max
-                            print("You are at full mana.")
-            elif 'Stat' in itm().subtyp:
-                self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                if itm().stat == 'hp':
-                    self.health += 10
-                    self.health_max += 10
-                if itm().stat == 'mp':
-                    self.mana += 10
-                    self.mana_max += 10
-                if itm().stat == 'str':
-                    self.strength += 1
-                if itm().stat == 'int':
-                    self.intel += 1
-                if itm().stat == 'wis':
-                    self.wisdom += 1
-                if itm().stat == 'con':
-                    self.con += 1
-                if itm().stat == 'cha':
-                    self.charisma += 1
-                if itm().stat == 'dex':
-                    self.dex += 1
-                if itm().stat == 'all':
-                    self.strength += 1
-                    self.intel += 1
-                    self.wisdom += 1
-                    self.con += 1
-                    self.charisma += 1
-                    self.dex += 1
-                    print("All your stats have increased by 1.")
-                elif itm().stat == 'hp' or itm().stat == 'mp':
-                    print("Your {} has been increased by 5.".format(str(itm().stat.upper())))
-                else:
-                    print("Your {} has been increased by 1.".format(str(itm().name.split(' ')[0]).lower()))
-            elif 'Key' in itm().subtyp:
-                self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] -= 1
-                tile.locked = False
-                if 'Chest' in tile.__str__():
-                    print("{} unlocks the chest.".format(self.name))
-                elif 'Door' in tile.__str__():
-                    print("{} unlocks the door.".format(self.name))
-            if self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][1] == 0:
-                del self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]]
-            break
-        return True
+        print("Which item would you like to use?")
+        use_itm = storyline.get_response(item_list)
+        if item_list[use_itm] == 'Go back':
+            return valid
+        itm = self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]
+        valid = itm().use(self, target=enemy, tile=tile)
+        return valid
 
     def level_up(self):
-        if (self.level <= 50 and self.pro_level == 3) or self.level <= 30:
-            exp_scale = 50
+        if (self.level < 50 and self.pro_level == 3) or self.level < 30:
+            exp_scale = 25
             print("You gained a level.")
             if (self.level + 1) % 4 == 0:
                 print("Strength: {}".format(self.strength))
@@ -648,10 +514,10 @@ class Player(Character):
                 if stat_option[stat_index] == 'Dexterity':
                     self.dex += 1
                     print("You are now at {} dexterity.".format(self.dex))
-            health_gain = random.randint(self.con // 4, self.con) * max(1, self.check_mod('luck', luck_factor=12))
+            health_gain = random.randint(self.con // 3, self.con) * max(1, self.check_mod('luck', luck_factor=12))
             self.health_max += health_gain
             mana_gain = int((self.intel // 2 + self.wisdom // 3))
-            mana_gain = random.randint(mana_gain // 4, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
+            mana_gain = random.randint(mana_gain // 3, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
             self.mana_max += mana_gain
             self.level += 1
             print("You are now level {}.".format(self.level))
@@ -680,17 +546,27 @@ class Player(Character):
                 if skill_gain().name == 'Familiar':
                     self.familiar.level_up()
                 if skill_gain().name == "Transform":
-                    self.transform_list.append(skill_gain().t_creature)
-            self.experience -= self.exp_to_gain
-            self.exp_to_gain = (exp_scale ** self.pro_level) * self.level
+                    self.transform_list.append(enemies.Direbear())
+            if (self.level < 50 and self.pro_level == 3) or self.level < 30:
+                self.experience -= self.exp_to_gain
+                self.exp_to_gain = (exp_scale ** self.pro_level) * self.level
+            else:
+                self.experience = "Max"
+                self.exp_to_gain = "Max"
             time.sleep(0.5)
 
     def open_up(self, tile):
         if 'Chest' in tile.__str__():
-            tile.open = True
-            print("{} opens the chest, containing a {}.".format(self.name, tile.loot().name))
-            self.modify_inventory(tile.loot, 1)
-            input("Press enter to continue")
+            locked = 'Locked' in tile.__str__()
+            enemy = enemies.Mimic(self.location_z + int(locked))
+            if not random.randint(0, 3 + self.check_mod('luck', luck_factor=10)):
+                self.state = 'fight'
+                combat.battle(self, enemy)
+            if self.is_alive():
+                tile.open = True
+                print("{} opens the chest, containing a {}.".format(self.name, tile.loot().name))
+                self.modify_inventory(tile.loot, 1)
+                input("Press enter to continue")
         elif 'Door' in tile.__str__():
             tile.open = True
             print("{} opens the door.".format(self.name))
@@ -729,41 +605,27 @@ class Player(Character):
                 if self.equipment['Weapon']().handed == 1 or self.cls == 'Lancer' or self.cls == 'Dragoon' \
                         or self.cls == 'Berserker':
                     equip_list.insert(2, "OffHand - " + self.equipment['OffHand']().name.title())
+                equip_list.append("Go Back")
                 equip_input = storyline.get_response(equip_list)
                 equip_choice = equip_list[equip_input].split(" ")[0]
-                print(self.equipment[equip_choice]().__str__())
+                try:
+                    print(self.equipment[equip_choice]().__str__())
+                except KeyError:
+                    break
             else:
                 print("  Gold: {}".format(self.gold))
                 if len(self.inventory) > 0:
                     inv_list = []
                     for key in self.inventory:
                         inv_list.append(key.title() + ": " + str(self.inventory[key][1]))
+                    inv_list.append("Go Back")
                     inv_input = storyline.get_response(inv_list)
                     inv_choice = inv_list[inv_input].split(":")[0].upper()
-                    print(self.inventory[inv_choice][0]().__str__())
+                    try:
+                        print(self.inventory[inv_choice][0]().__str__())
+                    except KeyError:
+                        break
             input("Press enter to continue")
-
-    def modify_inventory(self, item, num=0, sell=False, steal=False, rare=False):
-        if not rare:
-            if not sell and not steal:
-                if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand' or \
-                        item().typ == 'Accessory':
-                    if not item().unequip:
-                        if item().name not in self.inventory:
-                            self.inventory[item().name] = [item, num]
-                        else:
-                            self.inventory[item().name][1] += num
-                else:
-                    if item().name not in self.inventory:
-                        self.inventory[item().name] = [item, num]
-                    else:
-                        self.inventory[item().name][1] += num
-            else:
-                self.inventory[item().name][1] -= num
-                if self.inventory[item().name][1] == 0:
-                    del self.inventory[item().name]
-        else:
-            self.special_inventory[item().name] = [item]
 
     def specials(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -1227,25 +1089,32 @@ class Player(Character):
         if all([self.is_alive(), not flee]):
             print("{} killed {}.".format(self.name, enemy.name))
             print("{} gained {} experience.".format(self.name, enemy.experience))
+            if enemy.name not in list(self.kill_dict.keys()):
+                self.kill_dict[enemy.name] = 0
+            self.kill_dict[enemy.name] += 1
             self.loot(enemy, tile)
             self.experience += enemy.experience
             self.class_upgrades(enemy)
             while self.experience >= self.exp_to_gain:
                 self.level_up()
-            self.quests(enemy)
+            self.quests(enemy=enemy, typ="Bounty")
         elif flee:
             pass
         else:
             print("{} was slain by {}.".format(self.name, enemy.name))
+            enemy.statuses(end=True)
+            enemy.health = enemy.health_max
+            enemy.mana = enemy.mana_max
             self.death()
 
-    def quests(self, enemy):
-        if enemy.name in self.quest_dict:
-            if not self.quest_dict[enemy.name][2]:
-                self.quest_dict[enemy.name][1] += 1
-            if self.quest_dict[enemy.name][1] == self.quest_dict[enemy.name][0]:
-                self.quest_dict[enemy.name][2] = True
-                print("You have completed a quest.")
+    def quests(self, enemy=None, typ=None):
+        if typ == "Bounty":
+            if enemy.name in self.quest_dict['Bounty']:
+                if not self.quest_dict['Bounty'][enemy.name][2]:
+                    self.quest_dict['Bounty'][enemy.name][1] += 1
+                if self.quest_dict['Bounty'][enemy.name][1] == self.quest_dict['Bounty'][enemy.name][0]:
+                    self.quest_dict['Bounty'][enemy.name][2] = True
+                    print("You have completed a bounty.")
 
     def view_quests(self):
         print("#" + (10 * "-") + "#")

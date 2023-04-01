@@ -35,12 +35,18 @@ def battle(player_char, enemy):
         available_actions = tile.available_actions(player_char)
         os.system('cls' if os.name == 'nt' else 'clear')
         player_char.minimap()
-        print(tile.intro_text(player_char))
-        if player_char.cls == 'Inquisitor' or player_char.cls == 'Seeker' or \
-                'Vision' in player_char.equipment['Pendant']().mod:
-            print(enemy)
+        if 'Boss' in tile.intro_text(player_char):
+            print("""
+            Boss Fight!
+            """)
+        print("""
+        {} is attacked by a {}.
+        """.format(player_char.name, enemy.name))
+        if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
+                'Vision' in player_char.equipment['Pendant']().mod]) and 'Boss' not in tile.intro_text(player_char):
+            print(enemy.__str__())
         print(player_char.__str__())
-        if not all([char.status_effects['Stun'][0], char.status_effects['Sleep'][0]]):
+        if not any([char.status_effects['Prone'][0], char.status_effects['Stun'][0], char.status_effects['Sleep'][0]]):
             while True:
                 action = char.options(action_list=available_actions)
                 valid_entry, combat, flee = char.combat_turn(opponent, action, combat, tile=tile)
@@ -50,11 +56,26 @@ def battle(player_char, enemy):
                     os.system('cls' if os.name == 'nt' else 'clear')
                     available_actions = tile.available_actions(player_char)
                     player_char.minimap()
-                    print(tile.intro_text(player_char))
-                    if (player_char.cls == 'Inquisitor' or player_char.cls == 'Seeker' or
-                            'Vision' in player_char.equipment['Pendant']().mod):
-                        print(enemy)
+                    if 'Boss' in tile.intro_text(player_char):
+                        print("""
+                        Boss Fight!
+                        """)
+                    print("""
+                    {} is attacked by a {}.
+                    """.format(player_char.name, enemy.name))
+                    if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
+                            'Vision' in player_char.equipment['Pendant']().mod]) and \
+                            'Boss' not in tile.intro_text(player_char):
+                        print(enemy.__str__())
                     print(player_char.__str__())
+        else:
+            if char.status_effects['Stun'][0]:
+                text = "stunned"
+            elif char.status_effects['Sleep'][0]:
+                text = "asleep"
+            else:
+                text = "prone"
+            print("{} is {}.".format(char.name, text))
 
         # Familiar's turn
         if combat:
@@ -73,6 +94,7 @@ def battle(player_char, enemy):
         else:
             char.statuses()
             char.special_effects(opponent)
+            input("Press enter to continue")
             if char == player_char:
                 char = enemy
                 opponent = player_char

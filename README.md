@@ -23,14 +23,13 @@ DESCRIPTION:
 FUTURE DEVELOPMENT:
 - Planned development
     - Make item comparison easier for the shop
-    - Add inspection of item in inventory (print item information)
-    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
-      be farmed
     - Add quests to game; add tavern in town for obtaining quests
-    - Add more accessories with various effects; special items for each final class
+    - Add special items for each final class
     - Allow player to switch characters in-game (instead of exiting and re-loading)
 
 - Possible development
+    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
+      be farmed
     - Require rare items for promotion
     - Add a tutorial so players can better understand the gameplay
     - Create battle arena
@@ -57,12 +56,14 @@ FILE DESCRIPTIONS:
 - actions.py
     - Defines the various user-inputted actions, including hotkeys
 - character.py
-    - Main file for controlling the playable character, including all actions/interactions with the world
+    - Main file for controlling the all characters, players, enemies, and companions
 - classes.py
     - File that controls the classes available for new characters to choose from; includes function that checks whether 
       an item can be equipped by a player's class
 - combat.py
     - Controls the combat system between the player and enemy
+- companions.py
+    - File that defines class companions (currently only Warlock familiars) 
 - enemies.py
     - Main file for controlling enemies, including the statistics and unique aspects of each enemy
 - game.py
@@ -71,6 +72,8 @@ FILE DESCRIPTIONS:
     - Main file for controlling items, including randomly generating for chests and drops
 - map.py
     - Defines the room tiles of the world and available movement per each tile
+- player.py
+    - File for controlling the playable character, including all actions/interactions with the world
 - races.py
     - File that outlines the various racial options when creating a new character
 - README.md
@@ -83,5 +86,3 @@ FILE DESCRIPTIONS:
     - Controls the interactions of the character while in town
 - tutorial.py
     - File that controls the tutorial; not yet implemented
-- world.py
-    - World manager that defines the map tiles and returns the world dictionary for save files

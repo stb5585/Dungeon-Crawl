@@ -3,6 +3,7 @@
 
 # Imports
 import random
+import time
 
 import enemies
 import actions
@@ -61,7 +62,7 @@ class MapTile:
         pass
 
     def adjacent_visited(self, player_char):
-        """Changes visited parameter for 8 adjacent tiles"""
+        """Changes visited parameter for 4 adjacent tiles"""
         # reveals 4 spaces in cardinal directions
         try:
             player_char.world_dict[(self.x + 1, self.y, self.z)].visited = True
@@ -89,44 +90,32 @@ class Town(MapTile):
         return ""
 
     def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
         player_char.state = 'normal'
         player_char.health = player_char.health_max
         player_char.mana = player_char.mana_max
         town.town(player_char)
 
-
-class EnemyRoom(MapTile):
-    def __init__(self, x, y, z, enemy):
-        super().__init__(x, y, z)
-        self.enemy = enemy
-
-    def intro_text(self, player_char):
-        if self.enemy.is_alive():
-            return """
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player_char.name)
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-    def modify_player(self, player_char):
-        self.visited = True
-        self.adjacent_visited(player_char)
-        if self.enemy.is_alive():
-            player_char.state = 'fight'
-            combat.battle(player_char, self.enemy)
-
-    def available_actions(self, player_char):
-        if self.enemy.is_alive():
-            action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
-            if len(player_char.spellbook['Spells']) > 0:
-                action_list.insert(1, actions.CastSpell())
-            if len(player_char.spellbook['Skills']) > 0:
-                action_list.insert(1, actions.UseSkill())
-            return action_list
-        else:
-            return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+    def adjacent_visited(self, player_char):
+        """Changes visited parameter for 4 adjacent tiles"""
+        # reveals 4 spaces in cardinal directions
+        try:
+            player_char.world_dict[(self.x + 1, self.y, 1)].visited = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x - 1, self.y, 1)].visited = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x, self.y - 1, 1)].visited = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x, self.y + 1, 1)].visited = True
+        except KeyError:
+            pass
 
 
 class StairsUp(MapTile):
@@ -204,41 +193,22 @@ class FakeWall(Wall):
         return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
 
-class RandomTile(MapTile):
-    """
-    Dummy tile; randomly picks between empty or random enemy
+class CavePath(MapTile):
     """
 
+    """
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
     def intro_text(self, player_char):
-        raise NotImplementedError()
-
-    def modify_player(self, player_char):
-        raise NotImplementedError()
-
-
-class RandomTile2(MapTile):
-    """
-    Dummy tile; randomly picks between empty or random enemy from 1 level lower
-    """
-
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z)
-
-    def intro_text(self, player_char):
-        raise NotImplementedError()
-
-    def modify_player(self, player_char):
-        raise NotImplementedError()
-
-
-class EmptyCavePath(MapTile):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z)
-
-    def intro_text(self, player_char):
+        if 'Keen Eye' in list(player_char.spellbook['Skills'].keys()):
+            if 'FakeWall' in [player_char.world_dict[(self.x + 1, self.y, 1)].__str__(),
+                              player_char.world_dict[(self.x - 1, self.y, 1)].__str__(),
+                              player_char.world_dict[(self.x, self.y + 1, 1)].__str__(),
+                              player_char.world_dict[(self.x, self.y - 1, 1)].__str__()]:
+                return """
+                Something seems off but you aren't quite sure what...
+                """
         return """
         
         """
@@ -253,61 +223,84 @@ class EmptyCavePath(MapTile):
                     player_char.modify_inventory(rand_item, 1)
                     print("{} finds {} and gives it to {}.".format(
                         player_char.familiar.name, rand_item().name, player_char.name))
+                    input("Press enter to continue")
+        if not random.randint(0, 2):
+            self.combat(player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
-
-
-class WarningTile(EmptyCavePath):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z)
-
-    def intro_text(self, player_char):
-        return """
-        Enemies beyond this point increase in difficulty. Plan accordingly.
-        """
-
-
-class RandomEnemyRoom0(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.random_enemy('0'))
-
-
-class RandomEnemyRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.random_enemy(str(z)))
-
-
-class RandomEnemyRoom2(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.random_enemy(str(z + 1)))
-
-
-class BossRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, None)
-
-    def intro_text(self, player_char):
-        if self.enemy.is_alive():
-            return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player_char.name.capitalize())
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-    def available_actions(self, player_char):
-        if self.enemy.is_alive():
-            action_list = [actions.Attack(), actions.UseItem()]
+        if player_char.state == 'fight':
+            action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
             if len(player_char.spellbook['Spells']) > 0:
                 action_list.insert(1, actions.CastSpell())
             if len(player_char.spellbook['Skills']) > 0:
                 action_list.insert(1, actions.UseSkill())
             return action_list
-        else:
-            return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def combat(self, player_char):
+        raise NotImplementedError
+
+
+class EmptyCavePath(CavePath):
+    """
+    Cave Path with no random enemies
+    """
+
+    def combat(self, player_char):
+        pass
+
+
+class CavePath0(CavePath):
+    """
+
+    """
+
+    def combat(self, player_char):
+        enemy = enemies.random_enemy('0')
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+
+
+class CavePath1(CavePath):
+    """
+
+    """
+
+    def combat(self, player_char):
+        enemy = enemies.random_enemy(str(self.z))
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+
+
+class CavePath2(CavePath):
+    """
+
+    """
+
+    def combat(self, player_char):
+        enemy = enemies.random_enemy(str(self.z + 1))
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+
+
+class BossRoom(CavePath):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = None
+
+    def available_actions(self, player_char):
+        if player_char.state == 'fight':
+            action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+            if len(player_char.spellbook['Spells']) > 0:
+                action_list.insert(1, actions.CastSpell())
+            if len(player_char.spellbook['Skills']) > 0:
+                action_list.insert(1, actions.UseSkill())
+            return action_list
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def combat(self, player_char):
+        player_char.state = 'fight'
+        combat.battle(player_char, self.enemy)
 
 
 class MinotaurBossRoom(BossRoom):
@@ -416,6 +409,13 @@ class UnlockedChestRoom(ChestRoom):
 
     def available_actions(self, player_char):
         if not self.open:
+            if player_char.state == 'fight':
+                action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+                if len(player_char.spellbook['Spells']) > 0:
+                    action_list.insert(1, actions.CastSpell())
+                if len(player_char.spellbook['Skills']) > 0:
+                    action_list.insert(1, actions.UseSkill())
+                return action_list
             return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
         else:
             return self.adjacent_moves(player_char, [actions.CharacterMenu()])
@@ -453,12 +453,25 @@ class LockedChestRoom(ChestRoom):
     def available_actions(self, player_char):
         if not self.open:
             if self.locked:
-                return self.adjacent_moves(player_char, [actions.UseSkill(), actions.UseItem(),
-                                                         actions.CharacterMenu(tile=self)])
+                return self.adjacent_moves(player_char, [actions.CharacterMenu(tile=self)])
             else:
+                if player_char.state == 'fight':
+                    action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+                    if len(player_char.spellbook['Spells']) > 0:
+                        action_list.insert(1, actions.CastSpell())
+                    if len(player_char.spellbook['Skills']) > 0:
+                        action_list.insert(1, actions.UseSkill())
+                    return action_list
                 return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
         else:
             return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def modify_player(self, player_char):
+        if self.locked:
+            if 'Lockpick' in list(player_char.spellbook['Skills'].keys()):
+                print("{} unlocks the chest.".format(player_char.name))
+                self.locked = False
+                time.sleep(1)
 
 
 class LockedChestRoom2(LockedChestRoom):
@@ -529,6 +542,24 @@ class LockedDoorSouth(LockedDoor):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.blocked = "South"
+
+
+class WarningTile(CavePath):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.warning = False
+
+    def intro_text(self, player_char):
+        if not self.warning:
+            return """
+            Enemies beyond this point increase in difficulty. Plan accordingly.
+            """
+        return """
+        
+        """
+
+    def combat(self, player_char):
+        pass
 
 
 class UnobtainiumRoom(SpecialTile):

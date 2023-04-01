@@ -72,11 +72,14 @@ class Character:
         """
         Function that controls melee attacks during combat
         """
-        hit = False  # indicates if the attack was successful for means of ability/weapon affects
+        hits = []  # indicates if the attack was successful for means of ability/weapon affects
+        crits = []
         attacks = ['Weapon']
         if self.equipment['OffHand']().typ == 'Weapon':
             attacks.append('OffHand')
-        for att in attacks:
+        for i, att in enumerate(attacks):
+            hits.append(False)
+            crits.append(1)
             if not ignore:
                 ignore = self.equipment[att]().ignore
             # attacker variables
@@ -84,15 +87,21 @@ class Character:
             if self.equipment[att]().subtyp == 'Natural':
                 typ = self.equipment[att]().att_name
                 if typ == 'leers':
-                    hit = True
+                    hits[i] = True
                     self.equipment[att]().special_effect(self, defender)
                     break
-            hit_mod = 1 + int(self.status_effects['Blind'][0]) + int(defender.invisible)
+            hit_mod = 1 + ((int(self.status_effects['Blind'][0]) +
+                            int(defender.invisible) +
+                            int(defender.flying)) / 2)
             if crit == 1:
                 if not random.randint(0, int(self.equipment[att]().crit)):
-                    crit = 2
+                    crits[i] = 2
+                else:
+                    crits[i] = 1
+            else:
+                crits[i] = crit
             dmg = max(1, dmg_mod + self.check_mod(att.lower()))
-            damage = max(0, int(random.randint(dmg // 2, dmg) * crit))
+            damage = max(0, int(random.randint(dmg // 2, dmg) * crits[i]))
 
             # defender variables
             prone = defender.status_effects['Prone'][0]
@@ -102,30 +111,26 @@ class Character:
             resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att]().ultimate)
             chance = defender.check_mod('luck', luck_factor=15)
             dodge = random.randint(0, defender.dex // 2) + chance > random.randint(
-                self.dex // (2 * hit_mod), self.dex // hit_mod)
+                int(self.dex / (2 * hit_mod)), int(self.dex / hit_mod))
             if any([prone, stun, sleep]):
                 dodge = False
 
             # combat
             if dodge:
-                if all([not prone, not stun, not sleep]):
-                    if 'Parry' in list(defender.spellbook['Skills'].keys()):
-                        print("{} parries {}'s attack and counterattacks!".format(defender.name, self.name))
-                        _, _ = defender.weapon_damage(self)
-                    else:
-                        print("{} evades {}'s attack.".format(defender.name, self.name))
+                if 'Parry' in list(defender.spellbook['Skills'].keys()):
+                    print("{} parries {}'s attack and counterattacks!".format(defender.name, self.name))
+                    _, _ = defender.weapon_damage(self)
                 else:
-                    print("This section shouldn't be reached.")
-                    raise NotImplementedError
+                    print("{} evades {}'s attack.".format(defender.name, self.name))
             else:
                 if hit_mod == 1:
-                    hit = True
+                    hits[i] = True
                 else:
                     a_chance = self.check_mod('luck', luck_factor=10)
                     if random.randint(0, 1 + a_chance):
-                        hit = True
-                if hit:
-                    if crit > 1:
+                        hits[i] = True
+                if hits[i]:
+                    if crits[i] > 1:
                         print("Critical hit!")
                     if cover:
                         print("{} steps in front of the attack, taking the damage for {}.".format(
@@ -159,7 +164,7 @@ class Character:
                             print("The mana shield around {} absorbs {} damage.".format(defender.name, damage))
                             defender.mana -= damage
                             damage = 0
-                            hit = False
+                            hits[i] = False
                     if damage > 0:
                         damage = max(0, int((damage - dam_red) * (1 - resist)))
                         defender.health -= damage
@@ -172,29 +177,29 @@ class Character:
                                     defender.status_effects['Sleep'][1] = 0
                         else:
                             print("{} {} {} but deals no damage.".format(self.name, typ, defender.name))
-                            hit = False
+                            hits[i] = False
                     else:
                         print("{} {} {} but deals no damage.".format(self.name, typ, defender.name))
-                        hit = False
+                        hits[i] = False
                     time.sleep(0.5)
                 else:
                     print("{} {} {} but misses entirely.".format(self.name, typ, defender.name))
-            if hit and self.equipment[att]().special and defender.is_alive():
-                self.equipment[att]().special_effect(self, defender, damage=damage, crit=crit)
+            if hits[i] and self.equipment[att]().special and defender.is_alive():
+                self.equipment[att]().special_effect(self, defender, damage=damage, crit=crits[i])
             time.sleep(0.5)
             if not defender.is_alive():
                 break
-            if hit and defender.equipment['Armor']().special:
+            if hits[i] and defender.equipment['Armor']().special:
                 defender.equipment['Armor']().special_effect(defender, self)
 
-        return hit, crit
+        return any(hits), max(crits)
 
     def is_alive(self):
         return self.health > 0
 
-    def modify_inventory(self, item, num=0, sell=False, steal=False, rare=False):
+    def modify_inventory(self, item, num=0, subtract=False, rare=False):
         if not rare:
-            if not sell and not steal:
+            if not subtract:
                 if item().typ == 'Weapon' or item().typ == 'Armor' or item().typ == 'OffHand' or \
                         item().typ == 'Accessory':
                     if not item().unequip:
@@ -320,6 +325,7 @@ class Character:
         """
 
         """
+
         if end:
             for key in list(self.status_effects.keys()):
                 self.status_effects[key][0] = False
