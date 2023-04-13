@@ -111,7 +111,7 @@ class Character:
             resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att]().ultimate)
             chance = defender.check_mod('luck', luck_factor=15)
             dodge = random.randint(0, defender.dex // 2) + chance > random.randint(
-                int(self.dex / (2 * hit_mod)), int(self.dex / hit_mod))
+                int(self.dex / hit_mod), self.dex)
             if any([prone, stun, sleep]):
                 dodge = False
 
@@ -216,6 +216,7 @@ class Character:
                 self.inventory[item().name][1] -= num
                 if self.inventory[item().name][1] == 0:
                     del self.inventory[item().name]
+                self.quests(item=item, subtract=True)
         else:
             self.special_inventory[item().name] = [item]
 
@@ -227,7 +228,7 @@ class Character:
                 class_mod += self.wisdom
             if self.cls in ['Spellblade', 'Knight Enchanter']:
                 class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
-            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:
+            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:  # add Footpad TODO
                 class_mod += self.dex
             else:
                 class_mod += self.strength
@@ -241,7 +242,7 @@ class Character:
                 class_mod += self.wisdom
             if self.cls in ['Spellblade', 'Knight Enchanter']:
                 class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
-            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:
+            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:  # add Footpad TODO
                 class_mod += self.dex
             else:
                 class_mod += self.strength
@@ -274,7 +275,7 @@ class Character:
             magic_mod = int(self.intel // 2) * self.pro_level
             if self.equipment['OffHand']().subtyp == 'Tome':
                 magic_mod += self.equipment['OffHand']().mod
-            elif self.equipment['Weapon']().subtyp == 'Staff' or \
+            if self.equipment['Weapon']().subtyp == 'Staff' or \
                     (self.cls in ['Spellblade', 'Knight Enchanter'] and
                      self.equipment['Weapon']().subtyp == 'Longsword'):
                 magic_mod += int(self.equipment['Weapon']().damage * 1.5)
@@ -314,6 +315,9 @@ class Character:
                         res_mod += fam_mod
                 if self.equipment['Pendant']().mod == typ:
                     res_mod = 1
+                elif self.equipment['Pendant']().mod == "Elemental" and \
+                        typ in ['Fire', 'Ice', 'Electric', 'Water', 'Earth', 'Wind']:
+                    res_mod += 0.25
                 return res_mod
             except KeyError:
                 return 0
@@ -325,24 +329,45 @@ class Character:
         """
 
         """
+        def default(status=None, end_combat=False):
+            if end_combat:
+                for key in list(self.status_effects.keys()):
+                    self.status_effects[key][0] = False
+                    self.status_effects[key][1] = 0
+                    try:
+                        self.status_effects[key][2] = 0
+                    except IndexError:
+                        pass
+            else:
+                self.status_effects[status][0] = False
+                self.status_effects[status][1] = 0
+                try:
+                    self.status_effects[status][2] = 0
+                except IndexError:
+                    pass
 
         if end:
-            for key in list(self.status_effects.keys()):
-                self.status_effects[key][0] = False
+            default(end_combat=end)
         else:
             if self.status_effects['Prone'][0] and all([not self.status_effects['Stun'][0],
                                                         not self.status_effects['Sleep'][0]]):
                 if not random.randint(0, self.status_effects['Prone'][1]):
-                    self.status_effects['Prone'][0] = False
+                    default(status='Prone')
                     print("{} is no longer prone.".format(self.name))
                 else:
                     self.status_effects['Prone'][1] -= 1
                     print("{} is still prone.".format(self.name))
+            if self.status_effects['Disarm'][0] and all([not self.status_effects['Stun'][0],
+                                                        not self.status_effects['Sleep'][0]]):
+                self.status_effects['Disarm'][1] -= 1
+                if self.status_effects['Disarm'][1] == 0:
+                    print("{} picks up their weapon.".format(self.name))
+                    default(status='Disarm')
             if self.status_effects['Silence'][0]:
                 self.status_effects['Silence'][1] -= 1
                 if self.status_effects['Silence'][1] == 0:
-                    print("{} is no longer silenced .".format(self.name))
-                    self.status_effects['Silence'][0] = False
+                    print("{} is no longer silenced.".format(self.name))
+                    default(status='Silence')
             if self.status_effects['Poison'][0]:
                 self.status_effects['Poison'][1] -= 1
                 poison_damage = self.status_effects['Poison'][2]
@@ -354,62 +379,53 @@ class Character:
                 else:
                     print("{} resisted the poison.".format(self.name))
                 if self.status_effects['Poison'][1] == 0:
-                    self.status_effects['Poison'][0] = False
+                    default(status='Poison')
                     print("The poison has left {}.".format(self.name))
             if self.status_effects['DOT'][0]:
                 self.status_effects['DOT'][1] -= 1
                 dot_damage = self.status_effects['DOT'][2]
-                dot_damage -= random.randint(0, self.wisdom)
                 if dot_damage > 0:
                     dot_damage = random.randint(dot_damage // 2, dot_damage)
                     self.health -= dot_damage
                     print("The magic damages {} for {} health points.".format(self.name, dot_damage))
-                elif dot_damage < 0:
-                    self.health -= dot_damage
-                    print("{} absorbs the magic for {} health points.".format(self.name, dot_damage))
                 else:
                     print("{} resisted the magic.".format(self.name))
                 if self.status_effects['DOT'][1] == 0:
-                    self.status_effects['DOT'][0] = False
+                    default(status='DOT')
                     print("The magic affecting {} has worn off.".format(self.name))
             if self.status_effects['Blind'][0]:
                 self.status_effects['Blind'][1] -= 1
                 if self.status_effects['Blind'][1] == 0:
                     print("{} is no longer blind.".format(self.name))
-                    self.status_effects['Blind'][0] = False
+                    default(status='Blind')
             if self.status_effects['Stun'][0]:
                 self.status_effects['Stun'][1] -= 1
                 if self.status_effects['Stun'][1] == 0:
                     print("{} is no longer stunned.".format(self.name))
-                    self.status_effects['Stun'][0] = False
+                    default(status='Stun')
             if self.status_effects['Sleep'][0]:
                 self.status_effects['Sleep'][1] -= 1
                 if self.status_effects['Sleep'][1] == 0:
                     print("{} is no longer asleep.".format(self.name))
-                    self.status_effects['Sleep'][0] = False
+                    default(status='Sleep')
             if self.status_effects['Reflect'][0]:
                 self.status_effects['Reflect'][1] -= 1
                 if self.status_effects['Reflect'][1] == 0:
                     print("{} is no longer reflecting magic.".format(self.name))
-                    self.status_effects['Reflect'][0] = False
+                    default(status='Reflect')
             if self.status_effects['Bleed'][0]:
                 self.status_effects['Bleed'][1] -= 1
                 bleed_damage = self.status_effects['Bleed'][2]
                 bleed_damage -= random.randint(0, self.con)
                 if bleed_damage > 0:
-                    bleed_damage = random.randint(bleed_damage // 2, bleed_damage)
+                    bleed_damage = max(1, random.randint(bleed_damage // 2, bleed_damage))
                     self.health -= bleed_damage
                     print("The bleed damages {} for {} health points.".format(self.name, bleed_damage))
                 else:
                     print("{} resisted the bleed.".format(self.name))
                 if self.status_effects['Bleed'][1] == 0:
-                    self.status_effects['Bleed'][0] = False
+                    default(status='Bleed')
                     print("{}'s wounds have healed and is no longer bleeding.".format(self.name))
-            if self.status_effects['Disarm'][0]:
-                self.status_effects['Disarm'][1] -= 1
-                if self.status_effects['Disarm'][1] == 0:
-                    print("{} picks up their weapon.".format(self.name))
-                    self.status_effects['Disarm'][0] = False
             if self.status_effects['Regen'][0]:
                 self.status_effects['Regen'][1] -= 1
                 heal = self.status_effects['Regen'][2]
@@ -419,12 +435,12 @@ class Character:
                 print("{}'s health has regenerated by {}.".format(self.name, heal))
                 if self.status_effects['Regen'][1] == 0:
                     print("Regeneration spell ends.")
-                    self.status_effects['Regen'][0] = False
+                    default(status='Regen')
             for stat in ['Attack', 'Defense', 'Magic', 'Magic Defense']:
                 if self.status_effects[stat][0]:
                     self.status_effects[stat][1] -= 1
                     if self.status_effects[stat][1] == 0:
-                        self.status_effects[stat][0] = False
+                        default(status=stat)
             # Doom needs to be last
             if self.status_effects['Doom'][0]:
                 self.status_effects['Doom'][1] -= 1
@@ -439,4 +455,7 @@ class Character:
         pass
 
     def death(self):
+        pass
+
+    def quests(self, enemy=None, item=None, subtract=False):
         pass

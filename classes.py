@@ -129,7 +129,7 @@ def choose_familiar():
 
 
 def promotion(player_char):
-    exp_scale = 25
+    exp_scale = 50
     pro1_dict = {Warrior().name: [WeaponMaster(), Paladin(), Lancer()],
                  Mage().name: [Sorcerer(), Warlock(), Spellblade()],
                  Footpad().name: [Thief(), Inquisitor(), Assassin()],
@@ -179,7 +179,7 @@ def promotion(player_char):
         print("Congratulations! {} has been promoted from a {} to a {}!".format(player_char.name, current_class,
                                                                                 new_class.name))
         time.sleep(0.5)
-        player_char.equip(unequip=True)
+        player_char.equip(unequip=True, promo=True)
         promoted_player = player_char
         promoted_player.pro_level = new_class.pro_level
         promoted_player.level = 1

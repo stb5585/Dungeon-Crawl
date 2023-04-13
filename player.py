@@ -33,7 +33,7 @@ def new_char() -> object:
     Level MP: (0.75 * level * promotion level) + (intel // 2) (Average)
     Initial Gold: 25 x charisma score
     """
-    exp_scale = 25
+    exp_scale = 50
     location_x, location_y, location_z = (5, 10, 0)
     name = ''
     # storyline.read_story("story_files/new_player.txt")
@@ -63,10 +63,11 @@ def new_char() -> object:
                          exp_to_gain=exp_scale, health=hp, health_max=hp, mana=mp, mana_max=mp,
                          strength=stats[0], intel=stats[1], wisdom=stats[2], con=stats[3], charisma=stats[4],
                          dex=stats[5], pro_level=1, gold=gil, resistance=race.resistance)
-    player_char.name = name.capitalize()
+    player_char.name = name
     player_char.race = race.name
     player_char.cls = cls.name
     player_char.equipment = cls.equipment
+    player_char.load_tiles()
     return player_char
 
 
@@ -125,12 +126,14 @@ def load_char(char=None, tmp=False):
         player_char.status_effects = player_dict['status_effects']
         player_char.equipment = player_dict['equipment']
         player_char.inventory = player_dict['inventory']
+        player_char.special_inventory = player_dict['special_inventory']
         player_char.spellbook = player_dict['spellbook']
         player_char.familiar = player_dict['familiar']
         player_char.transform_list = player_dict['transform_list']
         player_char.teleport = player_dict['teleport']
         player_char.world_dict = player_dict['world_dict']
         player_char.quest_dict = player_dict['quest_dict']
+        player_char.kill_dict = player_dict['kill_dict']
         return player_char
 
 
@@ -166,7 +169,9 @@ class Player(Character):
         self.resistance = resistance
         self.world_dict = dict()
         self.teleport = None
-        self.quest_dict = dict(Bounty=dict())
+        self.quest_dict = dict(Bounty=dict(),
+                               Main=dict(),
+                               Side=dict())
         self.kill_dict = dict()
 
     def __str__(self):
@@ -187,7 +192,7 @@ class Player(Character):
                     if self.world_dict[tile] is None:
                         continue
                     elif 'Stairs' in self.world_dict[tile].__str__():
-                        map_array[tile_x][tile_y] = "x"
+                        map_array[tile_x][tile_y] = "\u25E3"
                     elif 'DoorEast' in self.world_dict[tile].__str__() or \
                             'DoorWest' in self.world_dict[tile].__str__():
                         if not self.world_dict[tile].open:
@@ -201,10 +206,18 @@ class Player(Character):
                         else:
                             map_array[tile_x][tile_y] = "."
                     elif 'Wall' in self.world_dict[tile].__str__():
+                        # if 'Fake' in self.world_dict[tile].__str__():
+                        #     map_array[tile_x][tile_y] = "\u2592"
+                        # else:
                         map_array[tile_x][tile_y] = "#"
+                    elif 'Chest' in self.world_dict[tile].__str__():
+                        if self.world_dict[tile].open:
+                            map_array[tile_x][tile_y] = "\u25A1"
+                        else:
+                            map_array[tile_x][tile_y] = "\u25A0"
                     else:
                         map_array[tile_x][tile_y] = "."
-        map_array[self.location_y][self.location_x] = "+"
+        map_array[self.location_y][self.location_x] = "\u001b[5m+\u001b[0m"
         map_array[map_array == "0.0"] = " "
         map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
         map_array[map_array == "0.0"] = "\u203E"  # overline character
@@ -233,13 +246,6 @@ class Player(Character):
                     tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
                     tile = getattr(__import__('map'), tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
-                    try:
-                        world_dict[(x, y, z)].visited = self.world_dict[(x, y, z)].visited
-                        if "Door" in tile_name:
-                            world_dict[(x, y, z)].locked = self.world_dict[(x, y, z)].locked
-                            world_dict[(x, y, z)].open = self.world_dict[(x, y, z)].open
-                    except KeyError:
-                        pass
         self.world_dict = world_dict
 
     def options(self, action_list=None):
@@ -258,7 +264,7 @@ class Player(Character):
             action_input = storyline.get_response(option_list)
             return option_list[action_input]
 
-    def combat_turn(self, enemy, action, combat, tile=None):
+    def combat_turn(self, enemy, action, in_combat, tile=None):
         valid_entry = False
         flee = False
         if action == 'Remove Shield':
@@ -272,12 +278,12 @@ class Player(Character):
         else:
             if action == 'Open':
                 self.open_up(enemy)
-                combat = False
+                in_combat = False
                 valid_entry = True
             if action == 'Attack':
                 _, _ = self.weapon_damage(enemy)
                 valid_entry = True
-            if action == 'Item':
+            if action == 'Use Item':
                 valid_entry = self.use_item(enemy=enemy)
             if action == 'Flee':
                 flee = self.flee(enemy)
@@ -293,7 +299,7 @@ class Player(Character):
                 spell_index = storyline.get_response(spell_list)
                 if spell_list[spell_index] == 'Go Back':
                     os.system('cls' if os.name == 'nt' else 'clear')
-                    return False, combat, flee
+                    return False, in_combat, flee
                 else:
                     spell = self.spellbook['Spells'][spell_list[spell_index].split('  ')[0]]
                     spell().cast(self, enemy)
@@ -318,12 +324,12 @@ class Player(Character):
                 skill_index = storyline.get_response(skill_list)
                 if skill_list[skill_index] == 'Go Back':
                     os.system('cls' if os.name == 'nt' else 'clear')
-                    return False, combat, flee
+                    return False, in_combat, flee
                 else:
                     valid = True
                     skill = self.spellbook['Skills'][skill_list[skill_index].split('  ')[0]]
                     if skill().name == 'Smoke Screen':
-                        self.mana -= skill().cost
+                        skill().use(self, enemy)
                         flee = self.flee(enemy, smoke=True)
                     elif skill().name == 'Transform':
                         self.transform()
@@ -333,16 +339,22 @@ class Player(Character):
                     valid_entry = valid
         if flee:
             """Moves the player_char randomly to an adjacent tile"""
-            time.sleep(0.5)
+            time.sleep(1.5)
             available_moves = tile.adjacent_moves(self)
             r = random.choice(available_moves)
             self.do_action(r)
-            combat = False
-        return valid_entry, combat, flee
+            in_combat = False
+        return valid_entry, in_combat, flee
 
     def has_relics(self):
-        relics = ["TRIANGULUS", "QUADRATA", "HEXAGONUM", "LUNA", "POLARIS", "INFINITAS"]
+        relics = ["Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas"]
         return all(item in self.special_inventory.keys() for item in relics)
+
+    def max_level(self):
+        return any([(self.level == 50 and self.pro_level == 3), (self.level == 30 and self.pro_level < 3)])
+
+    def in_town(self):
+        return (self.location_x, self.location_y, self.location_z) == (5, 10, 0)
 
     def game_quit(self):
         """
@@ -405,7 +417,7 @@ class Player(Character):
             print("Critical Chance: {}%".format(str(main_crit)))
         print("Armor: {}".format(self.check_mod('armor')))
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: {}%".format(str(int(100 / float(self.equipment['OffHand']().mod)) + self.strength)))
+            print("Block Chance: {}%".format(str(int(100 / float(self.equipment['OffHand']().mod)))))
         elif len(self.spellbook['Spells']) > 0:
             spell_mod = self.check_mod('magic')
             print("Spell Modifier: +{}".format(str(spell_mod)))
@@ -424,145 +436,165 @@ class Player(Character):
 
     def flee(self, enemy, smoke=False) -> bool:
         stun = enemy.status_effects['Stun'][0]
-        if not all([smoke, stun]):
+        if smoke or stun:
+            print("{} flees from the {}.".format(self.name, enemy.name))
+            self.state = 'normal'
+            return True
+        else:
             chance = self.check_mod('luck', luck_factor=10)
             if random.randint(self.dex // 2, self.dex) + chance > \
                     random.randint(enemy.dex // 2, enemy.dex):
-                print("{} flees from the {}.".format(self.name.capitalize(), enemy.name))
+                print("{} flees from the {}.".format(self.name, enemy.name))
                 self.state = 'normal'
                 return True
             else:
-                print("{} couldn't escape from the {}.".format(self.name.capitalize(), enemy.name))
+                print("{} couldn't escape from the {}.".format(self.name, enemy.name))
                 return False
-        elif smoke:
-            print("{} disappears in a cloud of smoke.".format(self.name.capitalize()))
-            print("{} flees from the {}.".format(self.name.capitalize(), enemy.name))
-            self.state = 'normal'
-            return True
-        elif stun:
-            print("{} flees from the {}.".format(self.name.capitalize(), enemy.name))
-            self.state = 'normal'
-            return True
 
     def use_item(self, enemy=None, tile=None):
+        """
+
+        """
+
         valid = False
-        item_list = []
+        cat_dict = {'Health': [],
+                    'Mana': [],
+                    'Elixir': [],
+                    'Stat': [],
+                    'Status': [],
+                    'Scroll': [],
+                    'Key': []}
         if enemy is not None:
+            cat_list = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
             for itm in self.inventory:
-                if str(self.inventory[itm][0]().subtyp) in ['Health', 'Mana', 'Status', 'Scroll']:
-                    item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-        elif tile is not None:
-            if 'LockedChest' in tile.__str__():
-                for itm in self.inventory:
-                    if str(self.inventory[itm][0]().name) == 'KEY':
-                        item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-                    elif str(self.inventory[itm][0]().typ) == 'Potion':
-                        item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-            elif 'LockedDoor' in tile.__str__():
-                for itm in self.inventory:
-                    if str(self.inventory[itm][0]().name) == 'OLDKEY':
-                        item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-                    elif str(self.inventory[itm][0]().typ) == 'Potion':
-                        item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
+                if str(self.inventory[itm][0]().subtyp) in cat_list:
+                    cat_dict[str(self.inventory[itm][0]().subtyp)].append(
+                        str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
         else:
-            for itm in self.inventory:
-                if str(self.inventory[itm][0]().typ) == 'Potion':
-                    item_list.append(str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
-        if len(item_list) == 0:
-            print("You do not have any items to use.")
-            time.sleep(1)
-            return valid
-        item_list.append('Go back')
-        print("Which item would you like to use?")
-        use_itm = storyline.get_response(item_list)
-        if item_list[use_itm] == 'Go back':
-            return valid
-        itm = self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]
-        valid = itm().use(self, target=enemy, tile=tile)
+            cat_list = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll', 'Key']
+            if 'Locked' in tile.__str__():
+                for itm in self.inventory:
+                    if str(self.inventory[itm][0]().subtyp) in cat_list:
+                        cat_dict[str(self.inventory[itm][0]().subtyp)].append(
+                            str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
+            elif self.in_town():
+                cat_list = ['Stat']
+                for itm in self.inventory:
+                    if str(self.inventory[itm][0]().subtyp) == 'Stat':
+                        cat_dict[str(self.inventory[itm][0]().subtyp)].append(
+                            str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
+            else:
+                cat_list = ['Health', 'Mana', 'Elixir', 'Stat']
+                for itm in self.inventory:
+                    if str(self.inventory[itm][0]().subtyp) in cat_list:
+                        cat_dict[str(self.inventory[itm][0]().subtyp)].append(
+                            str(self.inventory[itm][0]().name) + '  ' + str(self.inventory[itm][1]))
+        cat_list.append('Go Back')
+        cat_choice = storyline.get_response(cat_list)
+        if cat_list[cat_choice] == 'Go Back':
+            pass
+        else:
+            item_list = cat_dict[cat_list[cat_choice]].copy()
+            if len(item_list) == 0:
+                print("You do not have any items to use.")
+                time.sleep(0.5)
+            else:
+                item_list.append('Go Back')
+                print("Which item would you like to use?")
+                use_itm = storyline.get_response(item_list)
+                if item_list[use_itm] == 'Go Back':
+                    pass
+                else:
+                    itm = self.inventory[re.split(r"\s{2,}", item_list[use_itm])[0]][0]
+                    valid = itm().use(self, target=enemy, tile=tile)
         return valid
 
     def level_up(self):
-        if (self.level < 50 and self.pro_level == 3) or self.level < 30:
-            exp_scale = 25
-            print("You gained a level.")
-            if (self.level + 1) % 4 == 0:
-                print("Strength: {}".format(self.strength))
-                print("Intelligence: {}".format(self.intel))
-                print("Wisdom: {}".format(self.wisdom))
-                print("Constitution: {}".format(self.con))
-                print("Charisma: {}".format(self.charisma))
-                print("Dexterity: {}".format(self.dex))
-                time.sleep(0.5)
-                print("Pick the stat you would like to increase.")
-                stat_option = ['Strength', 'Intelligence', 'Wisdom', 'Constitution', 'Charisma', 'Dexterity']
-                stat_index = storyline.get_response(stat_option)
-                if stat_option[stat_index] == 'Strength':
-                    self.strength += 1
-                    print("You are now at {} strength.".format(self.strength))
-                if stat_option[stat_index] == 'Intelligence':
-                    self.intel += 1
-                    print("You are now at {} intelligence.".format(self.intel))
-                if stat_option[stat_index] == 'Wisdom':
-                    self.wisdom += 1
-                    print("You are now at {} wisdom.".format(self.wisdom))
-                if stat_option[stat_index] == 'Constitution':
-                    self.con += 1
-                    print("You are now at {} constitution.".format(self.con))
-                if stat_option[stat_index] == 'Charisma':
-                    self.charisma += 1
-                    print("You are now at {} charisma.".format(self.charisma))
-                if stat_option[stat_index] == 'Dexterity':
-                    self.dex += 1
-                    print("You are now at {} dexterity.".format(self.dex))
-            health_gain = random.randint(self.con // 3, self.con) * max(1, self.check_mod('luck', luck_factor=12))
-            self.health_max += health_gain
-            mana_gain = int((self.intel // 2 + self.wisdom // 3))
-            mana_gain = random.randint(mana_gain // 3, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
-            self.mana_max += mana_gain
-            self.level += 1
-            print("You are now level {}.".format(self.level))
-            print("You have gained {} health points and {} mana points.".format(health_gain, mana_gain))
-            if str(self.level) in spells.spell_dict[self.cls]:
-                time.sleep(0.5)
-                spell_gain = spells.spell_dict[self.cls][str(self.level)]
-                if spell_gain().name in self.spellbook['Spells'].keys():
-                    print("{} goes up a level.".format(spell_gain().name))
-                else:
-                    print("You have gained the ability to cast {}.".format(spell_gain().name))
-                self.spellbook['Spells'][spell_gain().name] = spell_gain
-                time.sleep(0.5)
-            if str(self.level) in spells.skill_dict[self.cls]:
-                time.sleep(0.5)
-                skill_gain = spells.skill_dict[self.cls][str(self.level)]
-                if skill_gain().name in self.spellbook['Skills'].keys():
-                    print("{} goes up a level.".format(skill_gain().name))
-                else:
-                    print("You have gained the ability to use {}.".format(skill_gain().name))
-                self.spellbook['Skills'][skill_gain().name] = skill_gain
-                if skill_gain().name == 'Health/Mana Drain':
-                    del self.spellbook['Skills']['Health Drain']
-                    del self.spellbook['Skills']['Mana Drain']
-                time.sleep(0.5)
-                if skill_gain().name == 'Familiar':
-                    self.familiar.level_up()
-                if skill_gain().name == "Transform":
-                    self.transform_list.append(enemies.Direbear())
-            if (self.level < 50 and self.pro_level == 3) or self.level < 30:
-                self.experience -= self.exp_to_gain
-                self.exp_to_gain = (exp_scale ** self.pro_level) * self.level
-            else:
-                self.experience = "Max"
-                self.exp_to_gain = "Max"
+        exp_scale = 50
+        print("You gained a level.")
+        if (self.level + 1) % 4 == 0:
+            print("Strength: {}".format(self.strength))
+            print("Intelligence: {}".format(self.intel))
+            print("Wisdom: {}".format(self.wisdom))
+            print("Constitution: {}".format(self.con))
+            print("Charisma: {}".format(self.charisma))
+            print("Dexterity: {}".format(self.dex))
             time.sleep(0.5)
+            print("Pick the stat you would like to increase.")
+            stat_option = ['Strength', 'Intelligence', 'Wisdom', 'Constitution', 'Charisma', 'Dexterity']
+            stat_index = storyline.get_response(stat_option)
+            if stat_option[stat_index] == 'Strength':
+                self.strength += 1
+                print("You are now at {} strength.".format(self.strength))
+            if stat_option[stat_index] == 'Intelligence':
+                self.intel += 1
+                print("You are now at {} intelligence.".format(self.intel))
+            if stat_option[stat_index] == 'Wisdom':
+                self.wisdom += 1
+                print("You are now at {} wisdom.".format(self.wisdom))
+            if stat_option[stat_index] == 'Constitution':
+                self.con += 1
+                print("You are now at {} constitution.".format(self.con))
+            if stat_option[stat_index] == 'Charisma':
+                self.charisma += 1
+                print("You are now at {} charisma.".format(self.charisma))
+            if stat_option[stat_index] == 'Dexterity':
+                self.dex += 1
+                print("You are now at {} dexterity.".format(self.dex))
+        health_gain = random.randint(self.con // 3, self.con) * max(1, self.check_mod('luck', luck_factor=12))
+        self.health_max += health_gain
+        mana_gain = int((self.intel // 2 + self.wisdom // 3))
+        mana_gain = random.randint(mana_gain // 3, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
+        self.mana_max += mana_gain
+        self.level += 1
+        print("You are now level {}.".format(self.level))
+        print("You have gained {} health points and {} mana points.".format(health_gain, mana_gain))
+        if str(self.level) in spells.spell_dict[self.cls]:
+            time.sleep(0.5)
+            spell_gain = spells.spell_dict[self.cls][str(self.level)]
+            if spell_gain().name in self.spellbook['Spells'].keys():
+                print("{} goes up a level.".format(spell_gain().name))
+            else:
+                print("You have gained the ability to cast {}.".format(spell_gain().name))
+            self.spellbook['Spells'][spell_gain().name] = spell_gain
+            time.sleep(0.5)
+        if str(self.level) in spells.skill_dict[self.cls]:
+            time.sleep(0.5)
+            skill_gain = spells.skill_dict[self.cls][str(self.level)]
+            if skill_gain().name in self.spellbook['Skills'].keys():
+                print("{} goes up a level.".format(skill_gain().name))
+            else:
+                print("You have gained the ability to use {}.".format(skill_gain().name))
+            self.spellbook['Skills'][skill_gain().name] = skill_gain
+            if skill_gain().name == 'Health/Mana Drain':
+                del self.spellbook['Skills']['Health Drain']
+                del self.spellbook['Skills']['Mana Drain']
+            time.sleep(0.5)
+            if skill_gain().name == 'Familiar':
+                self.familiar.level_up()
+            if skill_gain().name == "Transform":
+                self.transform_list.append(enemies.Direbear())
+        if not self.max_level():
+            self.experience -= self.exp_to_gain
+            self.exp_to_gain = (exp_scale ** self.pro_level) * self.level
+        else:
+            self.experience = "Max"
+            self.exp_to_gain = "Max"
+        time.sleep(0.5)
 
     def open_up(self, tile):
         if 'Chest' in tile.__str__():
-            locked = 'Locked' in tile.__str__()
-            enemy = enemies.Mimic(self.location_z + int(locked))
-            if not random.randint(0, 3 + self.check_mod('luck', luck_factor=10)):
+            locked = int('Locked' in tile.__str__())
+            plus = int('2' in tile.__str__())
+            enemy = enemies.Mimic(self.location_z + locked + plus)
+            if not random.randint(0, 4 + self.check_mod('luck', luck_factor=10)):
+                print("There is a Mimic in the chest!")
+                time.sleep(1)
                 self.state = 'fight'
-                combat.battle(self, enemy)
-            if self.is_alive():
+                win = combat.battle(self, enemy)
+            else:
+                win = True
+            if win:
                 tile.open = True
                 print("{} opens the chest, containing a {}.".format(self.name, tile.loot().name))
                 self.modify_inventory(tile.loot, 1)
@@ -575,19 +607,20 @@ class Player(Character):
             raise BaseException
 
     def loot(self, enemy, tile):
-        for item in enemy.inventory:
-            if item == "Gold":
-                print("{} dropped {} gold.".format(enemy.name, enemy.inventory['Gold']))
-                self.gold += enemy.inventory['Gold']
-            else:
-                chance = max(1, int(enemy.inventory[item][0]().rarity / self.pro_level) -
-                             self.check_mod('luck', luck_factor=16))
-                if not random.randint(0, chance) and 'Boss' not in tile.__str__():
-                    print("{} dropped a {}.".format(enemy.name, enemy.inventory[item][0]().name))
-                    self.modify_inventory(enemy.inventory[item][0], 1)
-                elif 'Boss' in tile.__str__():
-                    print("{} dropped a {}.".format(enemy.name, enemy.inventory[item][0]().name))
-                    self.modify_inventory(enemy.inventory[item][0], 1)
+        print("{} dropped {} gold.".format(enemy.name, enemy.gold))
+        self.gold += enemy.gold
+        for item in enemy.inventory.values():
+            drop = False
+            chance = max(0, int(item[0]().rarity / self.pro_level) - self.check_mod('luck', luck_factor=16))
+            if not random.randint(0, chance) and 'Boss' not in tile.__str__():
+                print("{} dropped a {}.".format(enemy.name, item[0]().name))
+                drop = True
+            elif 'Boss' in tile.__str__():
+                print("{} dropped a {}.".format(enemy.name, item[0]().name))
+                drop = True
+            if drop:
+                self.modify_inventory(item[0], item[1])
+                self.quests(item=item[0])
 
     def print_inventory(self):
         while True:
@@ -598,13 +631,13 @@ class Player(Character):
             if options[choice] == "Go Back":
                 break
             elif options[choice] == "Equipment":
-                equip_list = ["Weapon - " + self.equipment['Weapon']().name.title(),
-                              "Armor - " + self.equipment['Armor']().name.title(),
-                              "Ring - " + self.equipment['Ring']().name.title(),
-                              "Pendant - " + self.equipment['Pendant']().name.title()]
+                equip_list = ["Weapon - " + self.equipment['Weapon']().name,
+                              "Armor - " + self.equipment['Armor']().name,
+                              "Ring - " + self.equipment['Ring']().name,
+                              "Pendant - " + self.equipment['Pendant']().name]
                 if self.equipment['Weapon']().handed == 1 or self.cls == 'Lancer' or self.cls == 'Dragoon' \
                         or self.cls == 'Berserker':
-                    equip_list.insert(2, "OffHand - " + self.equipment['OffHand']().name.title())
+                    equip_list.insert(2, "OffHand - " + self.equipment['OffHand']().name)
                 equip_list.append("Go Back")
                 equip_input = storyline.get_response(equip_list)
                 equip_choice = equip_list[equip_input].split(" ")[0]
@@ -613,18 +646,33 @@ class Player(Character):
                 except KeyError:
                     break
             else:
-                print("  Gold: {}".format(self.gold))
-                if len(self.inventory) > 0:
-                    inv_list = []
-                    for key in self.inventory:
-                        inv_list.append(key.title() + ": " + str(self.inventory[key][1]))
-                    inv_list.append("Go Back")
-                    inv_input = storyline.get_response(inv_list)
-                    inv_choice = inv_list[inv_input].split(":")[0].upper()
-                    try:
-                        print(self.inventory[inv_choice][0]().__str__())
-                    except KeyError:
-                        break
+                inv_option = ['Inventory', 'Special Inventory']
+                inv_choice = storyline.get_response(inv_option)
+                if inv_option[inv_choice] == 'Inventory':
+                    print("  Gold: {}".format(self.gold))
+                    if len(self.inventory) > 0:
+                        inv_list = []
+                        for key in self.inventory:
+                            inv_list.append(key + ": " + str(self.inventory[key][1]))
+                        inv_list.append("Go Back")
+                        inv_input = storyline.get_response(inv_list)
+                        inv_inspect = inv_list[inv_input].split(":")[0]
+                        try:
+                            print(self.inventory[inv_inspect][0]().__str__())
+                        except KeyError:
+                            break
+                else:
+                    if len(self.special_inventory) > 0:
+                        inv_list = []
+                        for key in self.special_inventory:
+                            inv_list.append(key)
+                        inv_list.append("Go Back")
+                        inv_input = storyline.get_response(inv_list)
+                        inv_inspect = inv_list[inv_input]
+                        try:
+                            print(self.special_inventory[inv_inspect][0]().__str__())
+                        except KeyError:
+                            break
             input("Press enter to continue")
 
     def specials(self):
@@ -636,81 +684,83 @@ class Player(Character):
         while True:
             os.system('cls' if os.name == 'nt' else 'clear')
             print(self.__str__())
-            specs = ['Spells', 'Skills', 'Go Back']
+            specs = ['Go Back']
+            for typ in self.spellbook:
+                if len(self.spellbook[typ]) > 0:
+                    specs.insert(0, typ)
+            if len(specs) == 1:
+                print("You do not have any specials.")
+                time.sleep(1)
+                return
             spec_input = storyline.get_response(specs)
             if specs[spec_input] == 'Go Back':
                 time.sleep(0.5)
                 return
-            if len(self.spellbook[specs[spec_input]]) == 0:
-                print("You do not have any {}.".format(specs[spec_input].lower()))
-                time.sleep(0.5)
+            while True:
                 os.system('cls' if os.name == 'nt' else 'clear')
-            else:
-                while True:
-                    os.system('cls' if os.name == 'nt' else 'clear')
-                    cast_list = []
-                    print(self.__str__())
-                    inspect_list = []
-                    for name, special in self.spellbook[specs[spec_input]].items():
-                        inspect_list.append(name)
-                        if special().subtyp == 'Heal' and self.mana >= special().cost:
-                            if not special().combat:
-                                cast_list.append(name)
-                        elif special().subtyp == 'Movement' and self.mana >= special().cost:
+                cast_list = []
+                print(self.__str__())
+                inspect_list = []
+                for name, special in self.spellbook[specs[spec_input]].items():
+                    inspect_list.append(name)
+                    if special().subtyp == 'Heal' and self.mana >= special().cost:
+                        if not special().combat:
                             cast_list.append(name)
-                    inspect_list.append("Go Back")
-                    inspect_input = storyline.get_response(inspect_list)
-                    if inspect_list[inspect_input] == 'Go Back':
-                        break
-                    else:
-                        choose_list = ["Inspect"]
-                        if inspect_list[inspect_input] in cast_list:
-                            choose_list.append("Cast")
-                        choose_input = storyline.get_response(choose_list)
-                        if choose_list[choose_input] == "Inspect":
-                            print(self.spellbook[specs[spec_input]][inspect_list[inspect_input]]())
-                            if inspect_list[inspect_input] == "Familiar":
-                                fam_inspect = ["Inspect Familiar", "Go Back"]
-                                fam_input = storyline.get_response(fam_inspect)
-                                if fam_inspect[fam_input] == "Go Back":
-                                    break
-                                else:
-                                    while True:
-                                        os.system('cls' if os.name == 'nt' else 'clear')
-                                        print("{}'s Specials".format(self.familiar.name))
-                                        spec_input = storyline.get_response(specs)
-                                        if specs[spec_input] == "Go Back":
-                                            break
-                                        else:
-                                            while True:
-                                                os.system('cls' if os.name == 'nt' else 'clear')
-                                                print("{}'s Specials".format(self.familiar.name))
-                                                if len(self.familiar.spellbook[specs[spec_input]]) == 0:
-                                                    print("{} does not have any {}.".format(self.familiar.name,
-                                                                                            specs[spec_input].lower()))
-                                                    time.sleep(1)
+                    elif special().subtyp == 'Movement' and self.mana >= special().cost:
+                        cast_list.append(name)
+                inspect_list.append("Go Back")
+                inspect_input = storyline.get_response(inspect_list)
+                if inspect_list[inspect_input] == 'Go Back':
+                    break
+                else:
+                    choose_list = ["Inspect"]
+                    if inspect_list[inspect_input] in cast_list:
+                        choose_list.append("Cast")
+                    choose_input = storyline.get_response(choose_list)
+                    if choose_list[choose_input] == "Inspect":
+                        print(self.spellbook[specs[spec_input]][inspect_list[inspect_input]]())
+                        if inspect_list[inspect_input] == "Familiar":
+                            fam_inspect = ["Inspect Familiar", "Go Back"]
+                            fam_input = storyline.get_response(fam_inspect)
+                            if fam_inspect[fam_input] == "Go Back":
+                                break
+                            else:
+                                while True:
+                                    os.system('cls' if os.name == 'nt' else 'clear')
+                                    print("{}'s Specials".format(self.familiar.name))
+                                    spec_input = storyline.get_response(specs)
+                                    if specs[spec_input] == "Go Back":
+                                        break
+                                    else:
+                                        while True:
+                                            os.system('cls' if os.name == 'nt' else 'clear')
+                                            print("{}'s Specials".format(self.familiar.name))
+                                            if len(self.familiar.spellbook[specs[spec_input]]) == 0:
+                                                print("{} does not have any {}.".format(self.familiar.name,
+                                                                                        specs[spec_input].lower()))
+                                                time.sleep(1)
+                                                break
+                                            else:
+                                                fam_specials = []
+                                                for name in self.familiar.spellbook[specs[spec_input]].keys():
+                                                    fam_specials.append(name)
+                                                fam_specials.append("Go Back")
+                                                fam_special = storyline.get_response(fam_specials)
+                                                if fam_specials[fam_special] == "Go Back":
                                                     break
                                                 else:
-                                                    fam_specials = []
-                                                    for name in self.familiar.spellbook[specs[spec_input]].keys():
-                                                        fam_specials.append(name)
-                                                    fam_specials.append("Go Back")
-                                                    fam_special = storyline.get_response(fam_specials)
-                                                    if fam_specials[fam_special] == "Go Back":
-                                                        break
-                                                    else:
-                                                        print(self.familiar.spellbook[
-                                                                  specs[spec_input]][fam_specials[fam_special]]())
-                                                        input("Press enter to continue")
-                            else:
-                                input("Press enter to continue")
-                            break
-                        elif choose_list[choose_input] == "Cast":
-                            self.spellbook[specs[spec_input]][inspect_list[inspect_input]]().cast_out(self)
+                                                    print(self.familiar.spellbook[
+                                                              specs[spec_input]][fam_specials[fam_special]]())
+                                                    input("Press enter to continue")
+                        else:
                             input("Press enter to continue")
-                            if self.spellbook[specs[spec_input]][inspect_list[inspect_input]]().subtyp == 'Movement':
-                                return
-                            break
+                        break
+                    elif choose_list[choose_input] == "Cast":
+                        self.spellbook[specs[spec_input]][inspect_list[inspect_input]]().cast_out(self)
+                        input("Press enter to continue")
+                        if self.spellbook[specs[spec_input]][inspect_list[inspect_input]]().subtyp == 'Movement':
+                            return
+                        break
 
             time.sleep(0.5)
 
@@ -735,7 +785,7 @@ class Player(Character):
                 time.sleep(1)
                 break
 
-    def equip(self, unequip=None):
+    def equip(self, unequip=None, promo=False):
         if unequip is None:
             equip = True
             print("Which piece of equipment would you like to replace? ")
@@ -790,36 +840,36 @@ class Player(Character):
                                             diff = self.inventory[item][0]().damage - self.equipment[
                                                 'OffHand']().damage
                                 if shield:
-                                    inv_list.append(item.title() + '   ' + str(diff) + '%')
+                                    inv_list.append(item + '   ' + str(diff) + '%')
                                 elif diff == '':
-                                    inv_list.append(item.title())
+                                    inv_list.append(item)
                                 elif diff < 0:
-                                    inv_list.append(item.title() + '  ' + str(diff))
+                                    inv_list.append(item + '  ' + str(diff))
                                 else:
-                                    inv_list.append(item.title() + '  +' + str(diff))
+                                    inv_list.append(item + '  +' + str(diff))
                     else:
                         if str(self.inventory[item][0]().subtyp) == equip_slot:
                             mod = self.inventory[item][0]().mod
-                            inv_list.append(item.title() + '  ' + mod)
+                            inv_list.append(item + '  ' + mod)
 
                 if not self.equipment[equip_slot]().unequip:
-                    inv_list.append('UNEQUIP'.title())
-                inv_list.append('KEEP CURRENT'.title())
+                    inv_list.append('Unequip')
+                inv_list.append('Keep Current')
                 print("Which {} would you like to equip? ".format(equip_slot.lower()))
                 replace = storyline.get_response(inv_list)
-                if inv_list[replace] == 'UNEQUIP'.title():
+                if inv_list[replace] == 'Unequip':
                     self.equipment[equip_slot] = items.remove(equip_slot)
                     self.modify_inventory(old, 1)
                     print("Your {} slot is now empty.".format(equip_slot.lower()))
-                elif inv_list[replace] == 'KEEP CURRENT'.title():
+                elif inv_list[replace] == 'Keep Current':
                     print("No equipment was changed.")
-                elif old().name == self.inventory[re.split(r"\s{2,}", inv_list[replace])[0].upper()][0]().name:
+                elif old().name == self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]][0]().name:
                     print("You are already equipped with a {}.".format(old().name))
                 else:
-                    if classes.equip_check(self.inventory[re.split(r"\s{2,}", inv_list[replace].upper())[0]],
+                    if classes.equip_check(self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]],
                                            item_type, self.cls):
                         self.equipment[equip_slot] = \
-                            self.inventory[re.split(r"\s{2,}", inv_list[replace])[0].upper()][0]
+                            self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]][0]
                         if self.cls != 'Lancer' and self.cls != 'Dragoon' and self.cls != 'Berserker':
                             if option_list[slot] == 'Weapon':
                                 if self.equipment['Weapon']().handed == 2:
@@ -829,9 +879,9 @@ class Player(Character):
                             elif self.equipment['Weapon']().handed == 2 and equip_slot == 'OffHand':
                                 old = self.equipment['Weapon']
                                 self.equipment['Weapon'] = items.remove('Weapon')
-                        self.inventory[re.split(r"\s{2,}", inv_list[replace])[0].upper()][1] -= 1
-                        if self.inventory[re.split(r"\s{2,}", inv_list[replace])[0].upper()][1] <= 0:
-                            del self.inventory[re.split(r"\s{2,}", inv_list[replace])[0].upper()]
+                        self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]][1] -= 1
+                        if self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]][1] <= 0:
+                            del self.inventory[re.split(r"\s{2,}", inv_list[replace])[0]]
                         if not old().unequip:
                             self.modify_inventory(old, 1)
                         print("You are now equipped with {}.".format(self.equipment[equip_slot]().name))
@@ -839,8 +889,12 @@ class Player(Character):
                 break
         elif unequip:
             for item in self.equipment:
-                if item in ['Weapon', 'Armor', 'OffHand', 'Ring', 'Pendant']:
-                    self.modify_inventory(self.equipment[item], 1)
+                if promo:
+                    if item in ['Weapon', 'Armor', 'OffHand']:
+                        self.modify_inventory(self.equipment[item], 1)
+                else:
+                    if item in ['Weapon', 'Armor', 'OffHand', 'Ring', 'Pendant']:
+                        self.modify_inventory(self.equipment[item], 1)
 
     def move(self, dx, dy):
         new_x = self.location_x + dx
@@ -1083,6 +1137,7 @@ class Player(Character):
             time.sleep(1)
 
     def end_combat(self, enemy, tile, flee=False):
+        self.state = 'normal'
         if self.cls not in classes_dict.keys():
             self.transform(back=True)
         self.statuses(end=True)
@@ -1093,11 +1148,12 @@ class Player(Character):
                 self.kill_dict[enemy.name] = 0
             self.kill_dict[enemy.name] += 1
             self.loot(enemy, tile)
-            self.experience += enemy.experience
+            if self.experience != 'Max':
+                self.experience += enemy.experience
             self.class_upgrades(enemy)
-            while self.experience >= self.exp_to_gain:
+            while self.experience >= self.exp_to_gain and self.experience != 'Max':
                 self.level_up()
-            self.quests(enemy=enemy, typ="Bounty")
+            self.quests(enemy=enemy)
         elif flee:
             pass
         else:
@@ -1107,18 +1163,96 @@ class Player(Character):
             enemy.mana = enemy.mana_max
             self.death()
 
-    def quests(self, enemy=None, typ=None):
-        if typ == "Bounty":
+    def quests(self, enemy=None, item=None, subtract=False):
+        if enemy is not None:
             if enemy.name in self.quest_dict['Bounty']:
                 if not self.quest_dict['Bounty'][enemy.name][2]:
                     self.quest_dict['Bounty'][enemy.name][1] += 1
-                if self.quest_dict['Bounty'][enemy.name][1] == self.quest_dict['Bounty'][enemy.name][0]:
-                    self.quest_dict['Bounty'][enemy.name][2] = True
-                    print("You have completed a bounty.")
+                    if self.quest_dict['Bounty'][enemy.name][1] == self.quest_dict['Bounty'][enemy.name][0]:
+                        self.quest_dict['Bounty'][enemy.name][2] = True
+                        print("You have completed a bounty.")
+            elif enemy.name in self.quest_dict['Main']:
+                if self.quest_dict['Main'][enemy.name]['Type'] == 'Defeat':
+                    self.quest_dict['Main'][enemy.name]['Completed'] = True
+                    print("You have completed the quest {}.".format(enemy.name))
+        elif item is not None:
+            if not subtract:
+                if item().name in list(self.quest_dict['Side'].keys()):
+                    if self.inventory[item().name][1] >= self.quest_dict['Side'][item().name]['Total'] and \
+                            not self.quest_dict['Side'][item().name]['Completed'] and \
+                            not self.quest_dict['Side'][item().name]['Turned In']:
+                        self.quest_dict['Side'][item().name]['Completed'] = True
+                        print("You have completed the quest {}.".format(item().name))
+            else:
+                if item().name in list(self.quest_dict['Side'].keys()):
+                    if item().name not in list(self.inventory.keys()):
+                        if self.quest_dict['Side'][item().name]['Completed'] and \
+                                not self.quest_dict['Side'][item().name]['Turned In']:
+                            self.quest_dict['Side'][item().name]['Completed'] = False
+                    else:
+                        if self.inventory[item().name][1] < self.quest_dict['Side'][item().name]['Total'] and \
+                                self.quest_dict['Side'][item().name]['Completed'] and \
+                                not self.quest_dict['Side'][item().name]['Turned In']:
+                            self.quest_dict['Side'][item().name]['Completed'] = False
 
     def view_quests(self):
-        print("#" + (10 * "-") + "#")
-        print("Quests: Remaining/Total")
-        for quest, info in self.quest_dict.items():
-            print("{}: {}/{}".format(quest, info[1], info[0]))
-        input("Press enter to continue")
+        """
+        {'Who': 'Barkeep',
+         'Type': 'Collect',
+         'Total': 10,
+         'Start Text': "Darn pesky rats keep getting into my food supply "
+                       "and I'd bet anything they come up from that "
+                       "dungeon. Help my out by killing as many as you need"
+                       " to collect 10 tails and I'll pay you 1000 gold.",
+         'End Text': "Good riddance to the bastards, hopefully this will "
+                     "keep my food supplies in good order. Here's the gold "
+                     "I promised you.",
+         'Reward': ['Gold'],
+         'Reward Number': 1000,
+         'Experience': 100,
+         'Completed': False,
+         'Turned In': False}
+        """
+
+        while True:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print("#" + (30 * "-") + "#")
+            print("  Bounties: Remaining/Total")
+            for quest, info in self.quest_dict["Bounty"].items():
+                print("  {}: {}/{}".format(quest, info[1], info[0]))
+            print("#" + (30 * "-") + "#")
+            print("  Quests")
+            inspect_list = []
+            for typ in ["Main", "Side"]:
+                for quest in self.quest_dict[typ].keys():
+                    if not self.quest_dict[typ][quest]['Turned In']:
+                        inspect_list.append(quest)
+            inspect_list.append("Go Back")
+            inspect_input = storyline.get_response(inspect_list)
+            quest = inspect_list[inspect_input]
+            if quest == "Go Back":
+                break
+            if quest in self.quest_dict['Main']:
+                info = self.quest_dict['Main'][quest]
+            elif quest in self.quest_dict['Side']:
+                info = self.quest_dict['Side'][quest]
+            else:
+                print("You shouldn't reach here.")
+                raise BaseException
+            if info['Type'] == 'Collect':
+                if quest in list(self.inventory.keys()):
+                    if self.inventory[quest][1] <= info['Total']:
+                        print("  Collect {} {}s: {}/{}".format(
+                            info['Total'], quest, self.inventory[quest][1], info['Total']))
+                    else:
+                        print("  Collect {} {}s: {}/{}".format(
+                            info['Total'], quest, info['Total'], info['Total']))
+                else:
+                    print("  Collect {} {}s: {}/{}".format(info['Total'], quest, 0, info['Total']))
+            elif info['Type'] == 'Defeat':
+                if quest in list(self.kill_dict.keys()):
+                    print("  {} {}: Completed".format(info['Type'], quest))
+                else:
+                    print("  {} {}".format(info['Type'], quest))
+            print("  Quest Giver: {}".format(info['Who']))
+            input("Press enter to continue")

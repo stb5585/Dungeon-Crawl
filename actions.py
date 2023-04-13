@@ -79,7 +79,7 @@ class Equip(Action):
 
 class UseItem(Action):
     def __init__(self, tile=None):
-        super().__init__(method=player.Player.use_item, name="Item", hotkey=None, tile=tile)
+        super().__init__(method=player.Player.use_item, name="Use Item", hotkey=None, tile=tile)
 
 
 class Open(Action):

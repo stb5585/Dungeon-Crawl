@@ -2,8 +2,12 @@
 """ map manager """
 
 # Imports
+import os
 import random
+import sys
 import time
+
+import pyfiglet
 
 import enemies
 import actions
@@ -159,7 +163,9 @@ class SpecialTile(MapTile):
         self.read = False
 
     def intro_text(self, player_char):
-        raise NotImplementedError
+        return """
+        
+        """
 
     def modify_player(self, player_char):
         self.adjacent_visited(player_char)
@@ -224,20 +230,20 @@ class CavePath(MapTile):
                     print("{} finds {} and gives it to {}.".format(
                         player_char.familiar.name, rand_item().name, player_char.name))
                     input("Press enter to continue")
-        if not random.randint(0, 2):
-            self.combat(player_char)
+        if not random.randint(0, 4):
+            self.enter_combat(player_char)
 
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
-            if len(player_char.spellbook['Spells']) > 0:
+            if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                 action_list.insert(1, actions.CastSpell())
             if len(player_char.spellbook['Skills']) > 0:
                 action_list.insert(1, actions.UseSkill())
             return action_list
         return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         raise NotImplementedError
 
 
@@ -246,7 +252,7 @@ class EmptyCavePath(CavePath):
     Cave Path with no random enemies
     """
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         pass
 
 
@@ -255,7 +261,7 @@ class CavePath0(CavePath):
 
     """
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         enemy = enemies.random_enemy('0')
         player_char.state = 'fight'
         combat.battle(player_char, enemy)
@@ -266,7 +272,7 @@ class CavePath1(CavePath):
 
     """
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         enemy = enemies.random_enemy(str(self.z))
         player_char.state = 'fight'
         combat.battle(player_char, enemy)
@@ -277,7 +283,7 @@ class CavePath2(CavePath):
 
     """
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         enemy = enemies.random_enemy(str(self.z + 1))
         player_char.state = 'fight'
         combat.battle(player_char, enemy)
@@ -291,14 +297,20 @@ class BossRoom(CavePath):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
-            if len(player_char.spellbook['Spells']) > 0:
+            if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                 action_list.insert(1, actions.CastSpell())
             if len(player_char.spellbook['Skills']) > 0:
                 action_list.insert(1, actions.UseSkill())
             return action_list
         return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
-    def combat(self, player_char):
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        if self.enemy.is_alive():
+            self.enter_combat(player_char)
+
+    def enter_combat(self, player_char):
         player_char.state = 'fight'
         combat.battle(player_char, self.enemy)
 
@@ -411,7 +423,7 @@ class UnlockedChestRoom(ChestRoom):
         if not self.open:
             if player_char.state == 'fight':
                 action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
-                if len(player_char.spellbook['Spells']) > 0:
+                if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                     action_list.insert(1, actions.CastSpell())
                 if len(player_char.spellbook['Skills']) > 0:
                     action_list.insert(1, actions.UseSkill())
@@ -457,7 +469,7 @@ class LockedChestRoom(ChestRoom):
             else:
                 if player_char.state == 'fight':
                     action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
-                    if len(player_char.spellbook['Spells']) > 0:
+                    if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                         action_list.insert(1, actions.CastSpell())
                     if len(player_char.spellbook['Skills']) > 0:
                         action_list.insert(1, actions.UseSkill())
@@ -467,6 +479,8 @@ class LockedChestRoom(ChestRoom):
             return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
     def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
         if self.locked:
             if 'Lockpick' in list(player_char.spellbook['Skills'].keys()):
                 print("{} unlocks the chest.".format(player_char.name))
@@ -558,7 +572,7 @@ class WarningTile(CavePath):
         
         """
 
-    def combat(self, player_char):
+    def enter_combat(self, player_char):
         pass
 
 
@@ -581,6 +595,7 @@ class UnobtainiumRoom(SpecialTile):
         if not self.read:
             game.unobtainium_room()
             self.read = True
+            os.system('cls' if os.name == 'nt' else 'clear')
 
 
 class RelicRoom(SpecialTile):
@@ -598,17 +613,18 @@ class RelicRoom(SpecialTile):
 
     def modify_player(self, player_char):
         self.adjacent_visited(player_char)
-        if not self.visited:
-            player_char.health = player_char.health_max
-            player_char.mana = player_char.mana_max
-            relics = [items.Relic1, items.Relic2, items.Relic3, items.Relic4, items.Relic5, items.Relic6]
-            player_char.modify_inventory(relics[player_char.location_z - 1], rare=True)
-            self.visited = True
+        self.visited = True
 
     def special_text(self, player_char):
         if not self.read:
             game.relic_room(player_char.location_z)
+            relics = [items.Relic1, items.Relic2, items.Relic3, items.Relic4, items.Relic5, items.Relic6]
+            player_char.modify_inventory(relics[player_char.location_z - 1], rare=True)
             self.read = True
+            print("Your health and mana have been restored to full!")
+            player_char.health = player_char.health_max
+            player_char.mana = player_char.mana_max
+            input("Press enter to continue")
 
 
 class FinalBlocker(SpecialTile):
@@ -623,7 +639,7 @@ class FinalBlocker(SpecialTile):
     def intro_text(self, player_char):
         if not player_char.has_relics:
             return """
-            You must collect all 6 relics before you can pass.
+            An invisible force blocks your path.
             """
         return """
         The way has opened. Destiny awaits! 
@@ -636,8 +652,45 @@ class FinalBlocker(SpecialTile):
 
     def special_text(self, player_char):
         if player_char.has_relics and not self.read:
-            game.final_blocker(player_char)
+            game.final_blocker()
             self.read = True
+            os.system('cls' if os.name == 'nt' else 'clear')
+
+
+class FinalRoom(SpecialTile):
+    """
+    TODO
+    Player will be given an option to fight or turn around; fight will move them to FinalBossRoom and turn around will
+      move them back to FinalBlocker
+    Tiles to show -
+    (13,  8, 6), (14,  8, 6), (15,  8, 6), (16,  8, 6), (17,  8, 6)
+    (13,  9, 6), (14,  9, 6), (15,  9, 6), (16,  9, 6), (17,  9, 6)
+    (13, 10, 6), (14, 10, 6), (15, 10, 6), (16, 10, 6), (17, 10, 6)
+    (13, 11, 6), (14, 11, 6), (15, 11, 6), (16, 11, 6), (17, 11, 6)
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def adjacent_visited(self, player_char):
+        """"
+        Changes visited parameter for area around final boss
+        """
+
+        for x in [13, 14, 15, 16, 17]:
+            for y in [8, 9, 10, 11]:
+                player_char.world_dict[(x, y, 6)].visited = True
+
+    def special_text(self, player_char):
+        game.final_boss(player_char)
+        if not player_char.is_alive():
+            os.system('cls' if os.name == 'nt' else 'clear')
+            f = pyfiglet.Figlet(font='slant')
+            print(f.renderText("GAME OVER"))
+            time.sleep(2)
+            sys.exit(0)
+        else:
+            pass
 
 
 class SecretShop(MapTile):

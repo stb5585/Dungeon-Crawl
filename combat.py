@@ -23,6 +23,7 @@ def battle(player_char, enemy):
     """
     Function that controls combat
     """
+
     flee = False
     char = initiative(player_char, enemy)
     if char == player_char:
@@ -35,15 +36,14 @@ def battle(player_char, enemy):
         available_actions = tile.available_actions(player_char)
         os.system('cls' if os.name == 'nt' else 'clear')
         player_char.minimap()
-        if 'Boss' in tile.intro_text(player_char):
+        if 'Boss' in tile.__str__():
             print("""
-            Boss Fight!
-            """)
+              Boss Fight!""")
         print("""
-        {} is attacked by a {}.
+    {} is attacked by a {}.
         """.format(player_char.name, enemy.name))
         if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
-                'Vision' in player_char.equipment['Pendant']().mod]) and 'Boss' not in tile.intro_text(player_char):
+                'Vision' in player_char.equipment['Pendant']().mod]) and 'Boss' not in tile.__str__():
             print(enemy.__str__())
         print(player_char.__str__())
         if not any([char.status_effects['Prone'][0], char.status_effects['Stun'][0], char.status_effects['Sleep'][0]]):
@@ -56,16 +56,15 @@ def battle(player_char, enemy):
                     os.system('cls' if os.name == 'nt' else 'clear')
                     available_actions = tile.available_actions(player_char)
                     player_char.minimap()
-                    if 'Boss' in tile.intro_text(player_char):
+                    if 'Boss' in tile.__str__():
                         print("""
-                        Boss Fight!
-                        """)
+              Boss Fight!""")
                     print("""
-                    {} is attacked by a {}.
+    {} is attacked by a {}.
                     """.format(player_char.name, enemy.name))
                     if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
                             'Vision' in player_char.equipment['Pendant']().mod]) and \
-                            'Boss' not in tile.intro_text(player_char):
+                            'Boss' not in tile.__str__():
                         print(enemy.__str__())
                     print(player_char.__str__())
         else:
@@ -102,7 +101,10 @@ def battle(player_char, enemy):
                 char = player_char
                 opponent = enemy
 
-    player_char.state = 'normal'
+    win = player_char.is_alive()
     player_char.end_combat(enemy, tile, flee=flee)
     if not flee:
         input("Press enter to continue")
+    else:
+        win = False
+    return win

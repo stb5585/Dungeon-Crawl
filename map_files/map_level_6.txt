@@ -9,7 +9,7 @@ EmptyCavePath	Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	W
 UnlockedChestRoom	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	Wall
 Wall	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	FinalBossRoom	EmptyCavePath	Wall	EmptyCavePath	Wall
 Wall	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall	EmptyCavePath	Wall
-Wall	Wall	Wall	CavePath1	CavePath1	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall	EmptyCavePath	Wall
+Wall	Wall	Wall	CavePath1	CavePath1	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	FinalRoom	EmptyCavePath	Wall	EmptyCavePath	Wall
 Wall	Wall	Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	FinalBlocker	Wall	Wall	EmptyCavePath	Wall
 StairsUp	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	Wall	FakeWall	FakeWall	FakeWall	Wall	FakeWall	FakeWall	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall
 Wall	Wall	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	FakeWall	Wall	FakeWall	Wall	FakeWall	Wall	Wall	Wall	Wall	Wall	Wall

@@ -13,14 +13,15 @@ import spells
 # Functions
 def random_enemy(level):
     """
-
+    Takes the current level a player is on and returns a random enemy
     """
+
     monsters = {'0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
                 '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
                       Panther(), TwistedDwarf(), BattleToad(), Satyr()],
                 '2': [Panther(), TwistedDwarf(), BattleToad(), Satyr(), Gnoll(), GiantOwl(), Orc(), Vampire(),
-                      Direwolf(), RedSlime(), GiantSnake(), GiantScorpion(), Warrior(), Harpy(), Naga(), Wererat(),
-                      Xorn(), SteelPredator()],
+                      VampireBat(), Direwolf(), RedSlime(), GiantSnake(), GiantScorpion(), Warrior(), Harpy(), Naga(),
+                      Wererat(), Xorn(), SteelPredator()],
                 '3': [Clannfear(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre(), BlackSlime(), GoldenEagle(),
                       PitViper(), Alligator(), Disciple(), Werewolf(), Antlion(), InvisibleStalker(), NightHag(),
                       Treant()],
@@ -42,6 +43,12 @@ def random_enemy(level):
 
 
 class Enemy(Character):
+    """
+    Same as player character with notable exceptions
+    cls: just the name of the enemy (used for transforming and other class checks)
+    experience: number of experience points awarded for defeating the enemy
+    enemy_typ: defines the base type template used for enemy
+    """
 
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__()
@@ -94,12 +101,16 @@ class Enemy(Character):
 
     def options(self, action_list=None):
         if not self.turtle:
-            action_list = ['Attack']
-            for spell_name, spell in self.spellbook['Spells'].items():
-                if self.spellbook['Spells'][spell_name]().passive:
-                    continue
-                elif self.spellbook['Spells'][spell_name]().cost <= self.mana:
-                    action_list.append(spell)
+            if self.name != 'Test':
+                action_list = ['Attack']
+            else:
+                action_list = []
+            if not self.status_effects['Silence'][0]:
+                for spell_name, spell in self.spellbook['Spells'].items():
+                    if self.spellbook['Spells'][spell_name]().passive:
+                        continue
+                    elif self.spellbook['Spells'][spell_name]().cost <= self.mana:
+                        action_list.append(spell)
             for skill_name, skill in self.spellbook['Skills'].items():
                 if self.spellbook['Skills'][skill_name]().passive:
                     continue
@@ -110,6 +121,8 @@ class Enemy(Character):
     def combat_turn(self, player_char, action, combat, tile=None):
         valid_entry = True
         cover = False
+        flee = False
+        fail_flee = False
         if any([self.status_effects['Stun'][0], self.status_effects['Sleep'][0]]):
             combat = True
         else:
@@ -117,46 +130,57 @@ class Enemy(Character):
             if player_char.cls in ['Warlock', 'Shadowcaster']:
                 if 'Cover' in list(player_char.familiar.spellbook['Skills'].keys()) and not random.randint(0, 3):
                     cover = True
-            if action == "Attack":
-                _, _ = self.weapon_damage(player_char, cover=cover)
-            elif action().typ == "Skill":
-                _ = action().use(self, player_char, cover=cover)
-                if action().name == "Shapeshift":
+            if player_char.pro_level > self.pro_level and random.randint(0, player_char.pro_level - self.pro_level):
+                if not random.randint(0, 1):
+                    if random.randint(0, self.dex) > random.randint(0, player_char.dex):
+                        combat = False
+                        flee = True
+                        print("{} runs away!".format(self.name))
+                        time.sleep(0.5)
+                    else:
+                        print("{} tries to run away...but fails.".format(self.name))
+                        fail_flee = True
+            if not flee and not fail_flee:
+                if action == "Attack":
                     _, _ = self.weapon_damage(player_char, cover=cover)
-                try:
-                    if action().rank == 1:
-                        if (player_char.cls == "Diviner" or player_char.cls == "Geomancer") and \
-                                action().name not in player_char.spellbook['Skills']:
-                            player_char.spellbook['Skills'][action().name] = action
-                            print(action())
-                            print("You have gained the ability to cast {}.".format(action().name))
-                    elif action().rank == 2:
-                        if player_char.cls == "Geomancer" and action().name not in player_char.spellbook['Skills']:
-                            player_char.spellbook['Skills'][action().name] = action
-                            print(action())
-                            print("You have gained the ability to cast {}.".format(action().name))
-                except AttributeError:
-                    pass
-            elif action().typ == "Spell":
-                action().cast(self, player_char, cover=cover)
-                try:
-                    if action().rank == 1:
-                        if (player_char.cls == "Diviner" or player_char.cls == "Geomancer") and \
-                                action().name not in player_char.spellbook['Spells']:
-                            player_char.spellbook['Spells'][action().name] = action
-                            print(action())
-                            print("You have gained the ability to cast {}.".format(action().name))
-                    elif action().rank == 2:
-                        if player_char.cls == "Geomancer" and action().name not in player_char.spellbook['Spells']:
-                            player_char.spellbook['Spells'][action().name] = action
-                            print(action())
-                            print("You have gained the ability to cast {}.".format(action().name))
-                except AttributeError:
-                    pass
-            else:
-                print("{} doesn't do anything.".format(self.name))
+                elif action().typ == "Skill":
+                    _ = action().use(self, player_char, cover=cover)
+                    if action().name == "Shapeshift":
+                        _, _ = self.weapon_damage(player_char, cover=cover)
+                    try:
+                        if action().rank == 1:
+                            if (player_char.cls == "Diviner" or player_char.cls == "Geomancer") and \
+                                    action().name not in player_char.spellbook['Skills']:
+                                player_char.spellbook['Skills'][action().name] = action
+                                print(action())
+                                print("You have gained the ability to cast {}.".format(action().name))
+                        elif action().rank == 2:
+                            if player_char.cls == "Geomancer" and action().name not in player_char.spellbook['Skills']:
+                                player_char.spellbook['Skills'][action().name] = action
+                                print(action())
+                                print("You have gained the ability to cast {}.".format(action().name))
+                    except AttributeError:
+                        pass
+                elif action().typ == "Spell":
+                    action().cast(self, player_char, cover=cover)
+                    try:
+                        if action().rank == 1:
+                            if (player_char.cls == "Diviner" or player_char.cls == "Geomancer") and \
+                                    action().name not in player_char.spellbook['Spells']:
+                                player_char.spellbook['Spells'][action().name] = action
+                                print(action())
+                                print("You have gained the ability to cast {}.".format(action().name))
+                        elif action().rank == 2:
+                            if player_char.cls == "Geomancer" and action().name not in player_char.spellbook['Spells']:
+                                player_char.spellbook['Spells'][action().name] = action
+                                print(action())
+                                print("You have gained the ability to cast {}.".format(action().name))
+                    except AttributeError:
+                        pass
+                else:
+                    print("{} doesn't do anything.".format(self.name))
         time.sleep(0.5)
-        return valid_entry, combat, False
+        return valid_entry, combat, flee
 
 
 class Misc(Enemy):
@@ -166,6 +190,10 @@ class Misc(Enemy):
 
 
 class Slime(Enemy):
+    """
+    Slime type; resistance against all attack magic types; weak against physical damage
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Slime'
@@ -181,18 +209,31 @@ class Slime(Enemy):
 
 
 class Animal(Enemy):
+    """
+    Animal type; no special features
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Animal'
+        self.inventory['Mystery Meat'] = [items.MysteryMeat, 1]
 
 
 class Humanoid(Enemy):
+    """
+    Humanoid type; no special features
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Humanoid'
 
 
 class Fey(Enemy):
+    """
+    Fey type; resistance against shadow damage
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Fey'
@@ -200,6 +241,10 @@ class Fey(Enemy):
 
 
 class Fiend(Enemy):
+    """
+    Fiend type; resistance against shadow damage and weak against holy; high resistance against death
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Fiend'
@@ -209,6 +254,10 @@ class Fiend(Enemy):
 
 
 class Undead(Enemy):
+    """
+    Undead type; resistance against shadow and poison and weak against fire; very weak against holy and immune to death
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Undead'
@@ -220,13 +269,21 @@ class Undead(Enemy):
 
 
 class Elemental(Enemy):
+    """
+    Elemental type; high resistance against physical damage
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Elemental'
-        self.resistance['Physical'] = 0.75
+        self.resistance['Physical'] = 0.25
 
 
 class Dragon(Enemy):
+    """
+    Dragon type; resistance against elemental and death magic types; mild resistance against physical
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Dragon'
@@ -242,12 +299,20 @@ class Dragon(Enemy):
 
 
 class Monster(Enemy):
+    """
+    Monster type; no special resistances
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Monster'
 
 
 class Aberration(Enemy):
+    """
+    Aberration type; no special resistances
+    """
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex, exp)
         self.enemy_typ = 'Aberration'
@@ -255,7 +320,7 @@ class Aberration(Enemy):
 
 class Construct(Enemy):
     """
-    Immune to death, stone, and poison, strong against physical
+    Construct type: immune to death, stone, and poison, strong against physical
     """
 
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex, exp):
@@ -287,9 +352,9 @@ class Bite(NaturalWeapon):
         self.att_name = 'bites'
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        if random.randint(0, crit):
+        if not random.randint(0, self.crit):
             print("The bite is diseased.")
-            if not random.randint(0, 39):
+            if not random.randint(0, 39 // crit):
                 print("The bite is diseased, crippling {} and lowering their constitution by 1.".format(target.name))
                 target.con -= 1
             else:
@@ -307,13 +372,31 @@ class Bite2(Bite):
         self.crit = 4
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        if random.randint(0, crit):
+        if not random.randint(0, self.crit):
             print("The bite is diseased.")
-            if not random.randint(0, 19):
+            if not random.randint(0, 19 // crit):
                 print("The disease cripples {}, lowering their constitution by 1.".format(target.name))
                 target.con -= 1
             else:
                 print("{} resists the disease.".format(target.name))
+
+
+class VampireBite(Bite):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.damage = 8
+        self.crit = 7
+
+    def special_effect(self, wielder, target, damage=0, crit=1):
+        if damage > 0:
+            print("{} drains {} and gains {} life.".format(wielder.name, target.name, damage))
+            wielder.health += damage
+            if wielder.health > wielder.health_max:
+                wielder.health = wielder.health_max
 
 
 class Claw(NaturalWeapon):
@@ -352,11 +435,13 @@ class Claw3(Claw):
         if resist < 1:
             if random.randint((wielder.dex // 2) * crit, wielder.dex * crit) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Bleed'][0]:
+                    print("{} is bleeding.".format(target.name))
                 duration = max(1, wielder.dex // 10)
                 bleed_dmg = int(max(wielder.dex // 2, damage) * crit * (1 - resist))
                 target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = duration
-                target.status_effects['Bleed'][2] = bleed_dmg
+                target.status_effects['Bleed'][1] = max(duration, target.status_effects['Bleed'][1])
+                target.status_effects['Bleed'][2] = max(bleed_dmg, target.status_effects['Bleed'][2])
 
 
 class BearClaw(NaturalWeapon):
@@ -374,12 +459,13 @@ class BearClaw(NaturalWeapon):
         if resist < 1:
             if random.randint((wielder.strength // 2) * crit, wielder.strength * crit) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Bleed'][0]:
+                    print("{} is bleeding.".format(target.name))
                 duration = max(1, wielder.strength // 10)
                 bleed_dmg = int(max(wielder.strength // 2, damage) * crit * (1 - resist))
                 target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = duration
-                target.status_effects['Bleed'][2] = bleed_dmg
-                print("{} is bleeding for {} turns.".format(target.name, duration))
+                target.status_effects['Bleed'][1] = max(duration, target.status_effects['Bleed'][1])
+                target.status_effects['Bleed'][2] = max(bleed_dmg, target.status_effects['Bleed'][2])
 
 
 class Stinger(NaturalWeapon):
@@ -397,12 +483,13 @@ class Stinger(NaturalWeapon):
         if resist < 1:
             if random.randint((wielder.dex * crit) // 2, (wielder.dex * crit)) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Poison'][0]:
+                    print("{} is poisoned.".format(target.name))
                 duration = max(1, wielder.dex // 10)
                 pois_dmg = max(1, int(damage * (1 - resist)) * crit)
                 target.status_effects['Poison'][0] = True
-                target.status_effects['Poison'][1] = duration
-                target.status_effects['Poison'][2] = pois_dmg
-                print("{} is poisoned for {} turns.".format(target.name, duration))
+                target.status_effects['Poison'][1] = max(duration, target.status_effects['Poison'][1])
+                target.status_effects['Poison'][2] = max(pois_dmg, target.status_effects['Poison'][2])
 
 
 class Pincers(NaturalWeapon):
@@ -411,28 +498,31 @@ class Pincers(NaturalWeapon):
     """
 
     def __init__(self):
-        super().__init__(name="Pincers", damage=2, crit=3, description="", off=True)
+        super().__init__(name="Pincers", damage=2, crit=6, description="", off=True)
         self.special = True
         self.att_name = 'bites'
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         resist = target.check_mod('resist', 'Poison')
         if resist < 1:
-            if random.randint((wielder.dex * crit) // 2, (wielder.dex * crit)) \
+            if random.randint(wielder.dex // 2, wielder.dex) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Poison'][0]:
+                    print("{} is poisoned.".format(target.name))
                 duration = max(1, wielder.dex // 10)
                 pois_dmg = max(1, int(damage * (1 - resist)) * crit)
                 target.status_effects['Poison'][0] = True
-                target.status_effects['Poison'][1] = duration
-                target.status_effects['Poison'][2] = pois_dmg
-                print("{} is poisoned for {} turns.".format(target.name, duration))
-                p_resist = target.check_mod('resist', 'Physical')
-                if random.randint(0, wielder.strength * crit) * (1 - p_resist) \
-                        > random.randint(target.con // 2, target.con):
-                    s_duration = max(1, wielder.strength // 10)
-                    target.status_effects['Stun'][0] = True
-                    target.status_effects['Stun'][1] = s_duration
-                    print("{} is stunned for {} turns.".format(target.name, s_duration))
+                target.status_effects['Poison'][1] = max(duration, target.status_effects['Poison'][1])
+                target.status_effects['Poison'][2] = max(pois_dmg, target.status_effects['Poison'][2])
+                if not target.status_effects['Stun'][0]:
+                    p_resist = target.check_mod('resist', 'Physical')
+                    if crit > 1:
+                        if random.randint(wielder.strength // 2, wielder.strength) * (1 - p_resist) \
+                                > random.randint(target.con // 2, target.con):
+                            s_duration = max(1, wielder.strength // 10)
+                            target.status_effects['Stun'][0] = True
+                            target.status_effects['Stun'][1] = s_duration
+                            print("{} is stunned.".format(target.name, s_duration))
 
 
 class Pincers2(Pincers):
@@ -443,7 +533,7 @@ class Pincers2(Pincers):
     def __init__(self):
         super().__init__()
         self.damage = 6
-        self.crit = 2
+        self.crit = 5
 
 
 class DemonClaw(NaturalWeapon):
@@ -490,12 +580,13 @@ class SnakeFang(NaturalWeapon):
         if resist < 1:
             if random.randint((wielder.dex * crit) // 2, (wielder.dex * crit)) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Poison'][0]:
+                    print("{} is poisoned.".format(target.name))
                 duration = max(1, wielder.dex // 10)
                 pois_dmg = int(damage * (1 - resist)) * crit
                 target.status_effects['Poison'][0] = True
-                target.status_effects['Poison'][1] = duration
-                target.status_effects['Poison'][2] = pois_dmg
-                print("{} is poisoned for {} turns.".format(target.name, duration))
+                target.status_effects['Poison'][1] = max(duration, target.status_effects['Poison'][1])
+                target.status_effects['Poison'][2] = max(pois_dmg, target.status_effects['Poison'][2])
 
 
 class SnakeFang2(SnakeFang):
@@ -520,14 +611,16 @@ class AlligatorTail(NaturalWeapon):
         self.att_name = 'swipes'
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        resist = target.check_mod('resist', 'Physical')
-        if resist < 1:
-            if random.randint(0, wielder.strength * crit) * (1 - resist) \
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.strength // 10)
-                target.status_effects['Stun'][0] = True
-                target.status_effects['Stun'][1] = duration
-                print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            resist = target.check_mod('resist', 'Physical')
+            if resist < 1:
+                if crit > 1:
+                    if random.randint(wielder.strength // 2, wielder.strength) * (1 - resist) \
+                            > random.randint(target.con // 2, target.con):
+                        duration = max(1, wielder.strength // 10)
+                        target.status_effects['Stun'][0] = True
+                        target.status_effects['Stun'][1] = duration
+                        print("{} is stunned.".format(target.name, duration))
 
 
 class LionPaw(NaturalWeapon):
@@ -626,12 +719,13 @@ class DragonClaw2(DragonClaw):
         if resist < 1:
             if random.randint((wielder.strength // 2) * crit, wielder.strength * crit) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Bleed'][0]:
+                    print("{} is bleeding.".format(target.name))
                 duration = max(1, wielder.strength // 10)
                 bleed_dmg = int(max(wielder.strength // 2, damage) * crit * (1 - resist))
                 target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = duration
-                target.status_effects['Bleed'][2] = bleed_dmg
-                print("{} is bleeding for {} turns.".format(target.name, duration))
+                target.status_effects['Bleed'][1] = max(duration, target.status_effects['Bleed'][1])
+                target.status_effects['Bleed'][2] = max(bleed_dmg, target.status_effects['Bleed'][2])
 
 
 class DragonTail(NaturalWeapon):
@@ -656,14 +750,16 @@ class DragonTail2(DragonTail):
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        resist = target.check_mod('resist', 'Physical')
-        if resist < 1:
-            if random.randint(0, wielder.strength * crit) * (1 - resist) \
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.strength // 10)
-                target.status_effects['Stun'][0] = True
-                target.status_effects['Stun'][1] = duration
-                print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            resist = target.check_mod('resist', 'Physical')
+            if resist < 1:
+                if crit > 1:
+                    if random.randint(wielder.strength // 2, wielder.strength) * (1 - resist) \
+                            > random.randint(target.con // 2, target.con):
+                        duration = max(1, wielder.strength // 10)
+                        target.status_effects['Stun'][0] = True
+                        target.status_effects['Stun'][1] = duration
+                        print("{} is stunned.".format(target.name))
 
 
 class NightmareHoof(NaturalWeapon):
@@ -711,11 +807,12 @@ class ElementalBlade(NaturalWeapon):
             print("{} damage was not effective against {}.".format(elemental_type, target.name))
         time.sleep(0.25)
         target.health -= damage
-        if damage != 0 and elemental_type == "Fire" and target.is_alive():
-            print("{} is on fire and will burn for the next 3 turns.".format(target.name))
+        if damage > 0 and elemental_type == "Fire" and target.is_alive():
+            if not target.status_effects['DOT'][0]:
+                print("{} is on fire.".format(target.name))
             target.status_effects['DOT'][0] = True
             target.status_effects['DOT'][1] = 3
-            target.status_effects['DOT'][2] = int(damage // 2)
+            target.status_effects['DOT'][2] = max(int(damage // 2), target.status_effects['DOT'][2])
             time.sleep(0.25)
 
 
@@ -748,19 +845,21 @@ class Tentacle2(Tentacle):
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        resist = target.check_mod('resist', 'Physical')
-        if resist < 1:
-            if random.randint(0, wielder.strength * crit) * (1 - resist) \
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.strength // 10)
-                target.status_effects['Stun'][0] = True
-                target.status_effects['Stun'][1] = duration
-                print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            resist = target.check_mod('resist', 'Physical')
+            if resist < 1:
+                if crit > 1:
+                    if random.randint(wielder.strength // 2, wielder.strength) * (1 - resist) \
+                            > random.randint(target.con // 2, target.con):
+                        duration = max(1, wielder.strength // 10)
+                        target.status_effects['Stun'][0] = True
+                        target.status_effects['Stun'][1] = duration
+                        print("{} is stunned.".format(target.name, duration))
 
 
 class InvisibleBlade(NaturalWeapon):
     """
-
+    Only stuns on crit
     """
 
     def __init__(self):
@@ -768,14 +867,16 @@ class InvisibleBlade(NaturalWeapon):
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        resist = target.check_mod('resist', 'Physical')
-        if resist < 1:
-            if random.randint(0, wielder.dex * crit) * (1 - resist) \
-                    > random.randint(target.con // 2, target.con):
-                duration = max(1, wielder.dex // 10)
-                target.status_effects['Stun'][0] = True
-                target.status_effects['Stun'][1] = duration
-                print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            resist = target.check_mod('resist', 'Physical')
+            if resist < 1:
+                if crit > 1:
+                    if random.randint(0, wielder.dex) * (1 - resist) \
+                            > random.randint(target.con // 2, target.con):
+                        duration = max(1, wielder.dex // 15)
+                        target.status_effects['Stun'][0] = True
+                        target.status_effects['Stun'][1] = duration
+                        print("{} is stunned.".format(target.name, duration))
 
 
 class CerberusClaw(NaturalWeapon):
@@ -792,12 +893,13 @@ class CerberusClaw(NaturalWeapon):
         if resist < 1:
             if random.randint((wielder.strength // 2) * crit, wielder.strength * crit) \
                     > random.randint(target.con // 2, target.con):
+                if not target.status_effects['Bleed'][0]:
+                    print("{} is bleeding.".format(target.name))
                 duration = max(1, wielder.strength // 10)
                 bleed_dmg = int(max(wielder.strength // 2, damage) * crit * (1 - resist))
                 target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = duration
-                target.status_effects['Bleed'][2] = bleed_dmg
-                print("{} is bleeding for {} turns.".format(target.name, duration))
+                target.status_effects['Bleed'][1] = max(duration, target.status_effects['Bleed'][1])
+                target.status_effects['Bleed'][2] = max(bleed_dmg, target.status_effects['Bleed'][2])
 
 
 class CerberusBite(NaturalWeapon):
@@ -823,43 +925,42 @@ class CerberusBite(NaturalWeapon):
 
 class LichHand(NaturalWeapon):
     """
-
+    Chance to paralyze (stun) enemy
     """
 
     def __init__(self):
-        super().__init__(name="touches", damage=12, crit=5, description="The cold, dead hand of a Lich. Their touch is "
-                                                                        "enough to paralyze even the most hardened "
-                                                                        "warrior.",
-                         off=True)
+        super().__init__(name="touches", damage=12, crit=5, description="", off=True)
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        if random.randint(wielder.intel // 4, wielder.intel) * crit \
-                > random.randint(target.wisdom // 2, target.wisdom):
-            duration = max(1, wielder.intel // 10)
-            target.status_effects['Stun'][0] = True
-            target.status_effects['Stun'][1] = duration
-            print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            if crit > 1:
+                if random.randint(wielder.intel // 4, wielder.intel) \
+                        > random.randint(target.wisdom // 2, target.wisdom):
+                    duration = max(1, wielder.intel // 10)
+                    target.status_effects['Stun'][0] = True
+                    target.status_effects['Stun'][1] = duration
+                    print("{} is stunned.".format(target.name))
 
 
 class Cannon(NaturalWeapon):
     """
-
+    Chance to stun the target
     """
 
     def __init__(self):
-        super().__init__(name="attacks", damage=40, crit=4, description="Launch a small warhead at the enemy, dealing "
-                                                                        "massive damage with a chance to stun.",
-                         off=True)
+        super().__init__(name="attacks", damage=40, crit=7, description="", off=True)
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
-        if random.randint(wielder.strength // 4, wielder.strength) * crit \
-                > random.randint(target.con // 2, target.con):
-            duration = max(1, wielder.strength // 10)
-            target.status_effects['Stun'][0] = True
-            target.status_effects['Stun'][1] = duration
-            print("{} is stunned for {} turns.".format(target.name, duration))
+        if not target.status_effects['Stun'][0]:
+            if crit > 1:
+                if random.randint(wielder.strength // 4, wielder.strength) \
+                        > random.randint(target.con // 2, target.con):
+                    duration = max(1, wielder.strength // 10)
+                    target.status_effects['Stun'][0] = True
+                    target.status_effects['Stun'][1] = duration
+                    print("{} is stunned.".format(target.name, duration))
 
 
 class DevilBlade(NaturalWeapon):
@@ -874,14 +975,15 @@ class DevilBlade(NaturalWeapon):
     def special_effect(self, wielder, target, damage=0, crit=1):
         w_chance = wielder.check_mod('luck', luck_factor=10)
         t_chance = target.check_mod('luck', luck_factor=20)
-        if random.randint(0, w_chance) > random.randint(0, t_chance):
-            effects = ['Stun', 'Doom', 'Blind', 'Disarm', 'Sleep', 'Poison', 'DOT', 'Bleed']
-            effect = random.choice(effects)
-            target.status_effects[effect][0] = True
-            target.status_effects[effect][1] = random.randint(1, 5)
-            if effect in ['Poison', 'DOT', 'Bleed']:
-                target.status_effects[effect][2] = damage
-            print("The attack inflicts {} on {}.".format(effect.lower(), target.name))
+        if crit > 1:
+            if random.randint(0, w_chance) > random.randint(0, t_chance):
+                effects = ['Stun', 'Doom', 'Blind', 'Disarm', 'Sleep', 'Poison', 'DOT', 'Bleed']
+                effect = random.choice(effects)
+                target.status_effects[effect][0] = True
+                target.status_effects[effect][1] = max(random.randint(1, 5), target.status_effects[effect][0])
+                if effect in ['Poison', 'DOT', 'Bleed']:
+                    target.status_effects[effect][2] += damage
+                print("The attack inflicts {} on {}.".format(effect.lower(), target.name))
 
 
 class NaturalArmor(items.Armor):
@@ -997,7 +1099,7 @@ class CerberusHide(NaturalArmor):
     """
 
     def __init__(self):
-        super().__init__(name='Cerberus Hide', armor=8, description="")
+        super().__init__(name='Cerberus Hide', armor=18, description="")
         self.special = True
         self.fire_damage = 50
 
@@ -1021,7 +1123,7 @@ class DevilSkin(NaturalArmor):
     """
 
     def __init__(self):
-        super().__init__(name='Cerberus Hide', armor=8, description="")
+        super().__init__(name='Devil Skin', armor=40, description="")
         self.special = True
         self.damage = 100
 
@@ -1072,40 +1174,39 @@ class Test(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Test", health=999, mana=999, strength=10, intel=0, wisdom=0, con=10, charisma=99, dex=25,
+        super().__init__(name="Test", health=999, mana=999, strength=0, intel=0, wisdom=0, con=10, charisma=99, dex=25,
                          exp=0)
-        self.z = 1
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
         self.spellbook = {"Spells": {},
-                          "Skills": {'Lick': spells.Lick,
-                                     'Throw Rock': spells.ThrowRock}}
+                          "Skills": {'Shapeshift': spells.Shapeshift}}
+        self.transform = [Quasit, ElectricBat, GiantCentipede, BattleToad]
+        self.pro_level = 0  # test for enemies running away
 
 
 class Mimic(Aberration):
     """
-    z: location level plus 1 if Locked
-    health: 10-280
-    mana: 20-245
+    z: location level plus 1 if Locked plus 1 if ChestRoom2
+    health: 10-40 * z
+    mana: 20-35 * z
     strength: 12-42
     intel: 6-24
     wisdom: 11-41
     con: 13-43
     charisma: 8-32
     dex: 12-36
-    exp: 25-350
-    gold: 50-700
+    exp: 25-50 * z
+    gold: 50-100 * z
     """
 
     def __init__(self, z):
         super().__init__(name='Mimic', health=(random.randint(10, 40) * z), mana=(random.randint(20, 35) * z),
-                         strength=(12 + (5 * (z - 1))), intel=(6 + (3 * (z - 1))), wisdom=(11 + (5 * (z - 1))),
+                         strength=(15 + (5 * (z - 1))), intel=(6 + (3 * (z - 1))), wisdom=(11 + (5 * (z - 1))),
                          con=(13 + (5 * (z - 1))), charisma=(8 + (4 * (z - 1))), dex=(12 + (4 * (z - 1))),
                          exp=(random.randint(25, 50) * z))
         self.gold = (random.randint(50, 100) * z)
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=self.gold)
         self.spellbook = {"Spells": {},
                           "Skills": {'Lick': spells.Lick,
                                      'Gold Toss': spells.GoldToss,
@@ -1113,7 +1214,7 @@ class Mimic(Aberration):
         self.resistance['Death'] = 1.
         self.resistance['Stone'] = 1.
         self.resistance['Poison'] = 1.
-        self.z = z
+        self.pro_level = z
 
 
 # Starting enemies
@@ -1123,13 +1224,15 @@ class GreenSlime(Slime):
     """
 
     def __init__(self):
-        super().__init__(name='Green Slime', health=random.randint(3, 10), mana=20, strength=6, intel=6, wisdom=99,
+        super().__init__(name='Green Slime', health=random.randint(3, 10), mana=20, strength=6, intel=10, wisdom=10,
                          con=8, charisma=1, dex=4, exp=random.randint(1, 20))
+        self.gold = random.randint(1, 8)
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(1, 8), Key=[items.Key, 1])
+        self.inventory['Key'] = [items.Key, 1]
         self.spellbook = {"Spells": {'Enfeeble': spells.Enfeeble},
                           "Skills": {}}
+        self.pro_level = 0
 
 
 class GiantRat(Animal):
@@ -1142,7 +1245,9 @@ class GiantRat(Animal):
                          charisma=6, dex=15, exp=random.randint(7, 14))
         self.equipment = dict(Weapon=Bite, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(1, 5))
+        self.gold = random.randint(1, 5)
+        self.inventory['Rat Tail'] = [items.RatTail, 1]
+        self.pro_level = 0
 
 
 class Goblin(Humanoid):
@@ -1153,12 +1258,12 @@ class Goblin(Humanoid):
     def __init__(self):
         super().__init__(name='Goblin', health=random.randint(3, 7), mana=0, strength=6, intel=5, wisdom=2, con=8,
                          charisma=12, dex=16, exp=random.randint(7, 16))
-        self.gold = random.randint(10, 20)
         self.equipment = dict(Weapon=items.Rapier, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=self.gold)
+        self.gold = random.randint(10, 20)
         self.spellbook = {"Spells": {},
                           "Skills": {"Gold Toss": spells.GoldToss}}
+        self.pro_level = 0
 
 
 class Bandit(Humanoid):
@@ -1171,10 +1276,11 @@ class Bandit(Humanoid):
                          charisma=10, dex=10, exp=random.randint(8, 18))
         self.equipment = dict(Weapon=items.Dirk, Armor=items.PaddedArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(15, 25))
+        self.gold = random.randint(15, 25)
         self.spellbook = {"Spells": {},
                           "Skills": {'Steal': spells.Steal,
                                      'Disarm': spells.Disarm}}
+        self.pro_level = 0
 
 
 class Skeleton(Undead):
@@ -1187,7 +1293,10 @@ class Skeleton(Undead):
                          charisma=5, dex=6, exp=random.randint(11, 20))
         self.equipment = dict(Weapon=items.Dirk, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(10, 20), Potion=[items.HealthPotion, 1])
+        self.gold = random.randint(10, 20)
+        self.inventory['Health Potion'] = [items.HealthPotion, 1]
+        self.resistance['Fire'] = 0.
+        self.pro_level = 0
 
 
 class Scarecrow(Construct):
@@ -1200,11 +1309,12 @@ class Scarecrow(Construct):
                          charisma=8, dex=11, exp=random.randint(13, 21))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(8, 16))
+        self.gold = random.randint(8, 16)
         self.spellbook = {"Spells": {},
                           "Skills": {'Sleeping Powder': spells.SleepingPowder}}
         self.resistance['Fire'] = -1.
         self.resistance['Physical'] = 0.
+        self.pro_level = 0
 
 
 # Level 1
@@ -1218,8 +1328,9 @@ class GiantCentipede(Animal):
                          con=8, charisma=8, dex=12, exp=random.randint(13, 24))
         self.equipment = dict(Weapon=Pincers, Armor=Carapace, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(10, 18))
+        self.gold = random.randint(10, 18)
         self.resistance['Physical'] = 0.25
+        self.pro_level = 1
 
 
 class GiantHornet(Animal):
@@ -1232,10 +1343,11 @@ class GiantHornet(Animal):
                          con=6, charisma=8, dex=18, exp=random.randint(13, 24))
         self.equipment = dict(Weapon=Stinger, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(6, 15))
+        self.gold = random.randint(6, 15)
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 1
 
 
 class ElectricBat(Animal):
@@ -1248,7 +1360,7 @@ class ElectricBat(Animal):
                          con=5, charisma=12, dex=22, exp=random.randint(17, 31))
         self.equipment = dict(Weapon=Bite, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(8, 21))
+        self.gold = random.randint(8, 21)
         self.spellbook = {"Spells": {'Shock': spells.Shock,
                                      'Silence': spells.Silence},
                           "Skills": {}}
@@ -1257,6 +1369,7 @@ class ElectricBat(Animal):
         self.resistance['Water'] = -0.25
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 1
 
 
 class Zombie(Undead):
@@ -1269,9 +1382,11 @@ class Zombie(Undead):
                          charisma=8, dex=8, exp=random.randint(11, 22))
         self.equipment = dict(Weapon=Bite, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(15, 30), Misc=[items.Key, 1])
+        self.gold = random.randint(15, 30)
+        self.inventory['Key'] = [items.Key, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Poison Strike': spells.PoisonStrike}}
+        self.pro_level = 1
 
 
 class Imp(Fiend):
@@ -1284,10 +1399,11 @@ class Imp(Fiend):
                          con=8, charisma=12, dex=12, exp=random.randint(15, 24))
         self.equipment = dict(Weapon=DemonClaw, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(15, 30))
+        self.gold = random.randint(15, 30)
         self.spellbook = {"Spells": {'Corruption': spells.Corruption,
                                      'Silence': spells.Silence},
                           "Skills": {}}
+        self.pro_level = 1
 
 
 class GiantSpider(Animal):
@@ -1300,10 +1416,12 @@ class GiantSpider(Animal):
                          con=8, charisma=10, dex=12, exp=random.randint(15, 24))
         self.equipment = dict(Weapon=Stinger, Armor=Carapace, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(15, 30), Potion=[items.ManaPotion, 1])
+        self.gold = random.randint(15, 30)
+        self.inventory['Mana Potion'] = [items.ManaPotion, 1]
         self.spellbook = {'Spells': {},
                           'Skills': {'Web': spells.Web}}
         self.resistance['Poison'] = 0.25
+        self.pro_level = 1
 
 
 class Quasit(Fiend):
@@ -1316,12 +1434,13 @@ class Quasit(Fiend):
                          con=11, charisma=14, dex=16, exp=random.randint(25, 44))
         self.equipment = dict(Weapon=DemonClaw, Armor=DemonArmor, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(25, 40))
+        self.gold = random.randint(25, 40)
         self.spellbook = {"Spells": {},
                           "Skills": {'Poison Strike': spells.PoisonStrike,
                                      'Shapeshift': spells.Shapeshift}}
         self.resistance['Poison'] = 1
         self.transform = [Quasit, ElectricBat, GiantCentipede, BattleToad]
+        self.pro_level = 1
 
 
 class Panther(Animal):
@@ -1334,13 +1453,15 @@ class Panther(Animal):
                          con=10, charisma=10, dex=13, exp=random.randint(19, 28))
         self.equipment = dict(Weapon=Claw, Armor=AnimalHide, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(18, 35))
+        self.gold = random.randint(10, 20)
+        self.inventory['Leather'] = [items.Leather, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Backstab': spells.Backstab,
                                      'Kidney Punch': spells.KidneyPunch,
                                      'Disarm': spells.Disarm,
                                      'Parry': spells.Parry}}
         self.resistance['Physical'] = 0.25
+        self.pro_level = 1
 
 
 class TwistedDwarf(Humanoid):
@@ -1353,9 +1474,11 @@ class TwistedDwarf(Humanoid):
                          con=12, charisma=8, dex=10, exp=random.randint(25, 44))
         self.equipment = dict(Weapon=items.Mattock, Armor=items.HideArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(25, 40), Weapon=[items.Mattock, 1])
+        self.gold = random.randint(10, 20)
+        self.inventory['Mattock'] = [items.Mattock, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': spells.PiercingStrike}}
+        self.pro_level = 1
 
 
 class BattleToad(Animal):
@@ -1368,10 +1491,11 @@ class BattleToad(Animal):
                          con=10, charisma=8, dex=15, exp=random.randint(30, 48))
         self.equipment = dict(Weapon=items.BrassKnuckles, Armor=items.NoArmor, OffHand=items.BrassKnuckles,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(31, 47))
+        self.gold = random.randint(31, 47)
         self.spellbook = {"Spells": {},
                           "Skills": {'Kidney Punch': spells.KidneyPunch,
                                      'Jump': spells.Jump}}
+        self.pro_level = 1
 
 
 class Satyr(Fey):
@@ -1384,7 +1508,8 @@ class Satyr(Fey):
                          charisma=12, dex=16, exp=random.randint(28, 44))
         self.equipment = dict(Weapon=items.Rapier, Armor=items.LeatherArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(29, 42), Weapon=[items.Rapier, 1], Armor=[items.LeatherArmor, 1])
+        self.gold = random.randint(29, 42)
+        self.inventory['Leather Armor'] = [items.LeatherArmor, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Stomp': spells.Stomp}}
         self.resistance['Fire'] = 0.1
@@ -1397,6 +1522,7 @@ class Satyr(Fey):
         self.resistance['Stone'] = 0.1
         self.resistance['Poison'] = 0.1
         self.resistance['Physical'] = 0.1
+        self.pro_level = 1
 
 
 class Minotaur(Monster):
@@ -1405,17 +1531,19 @@ class Minotaur(Monster):
     """
 
     def __init__(self):
-        super().__init__(name='Minotaur', health=random.randint(60, 84), mana=30, strength=18, intel=8, wisdom=10,
-                         con=14, charisma=14, dex=12, exp=random.randint(110, 250))
+        super().__init__(name='Minotaur', health=86, mana=30, strength=18, intel=8, wisdom=10, con=14, charisma=14,
+                         dex=12, exp=250)
         self.equipment = dict(Weapon=items.DoubleAxe, Armor=items.Cuirboulli, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(30, 75), Item=[items.random_item(2), 1])
+        self.gold = 200
+        self.inventory['Weapon'] = [items.random_item(2, typ='Weapon'), 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Mortal Strike': spells.MortalStrike,
                                      'Charge': spells.Charge,
                                      'Disarm': spells.Disarm,
                                      'Parry': spells.Parry}}
         self.resistance['Death'] = 1
+        self.pro_level = 99
 
 
 class Barghest(Fiend):
@@ -1425,18 +1553,19 @@ class Barghest(Fiend):
     """
 
     def __init__(self):
-        super().__init__(name='Barghest', health=random.randint(100, 145), mana=80, strength=25, intel=15, wisdom=14,
-                         con=18, charisma=14, dex=16, exp=random.randint(300, 500))
-        self.gold = random.randint(150, 280)
+        super().__init__(name='Barghest', health=145, mana=80, strength=25, intel=15, wisdom=14,
+                         con=18, charisma=14, dex=16, exp=500)
+        self.gold = 600
         self.equipment = dict(Weapon=Claw2, Armor=AnimalHide, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=self.gold, Item=[items.random_item(3), 1])
+        self.inventory['Old Key'] = [items.OldKey, 1]
         self.spellbook = {"Spells": {'Disease Breath': spells.DiseaseBreath},
                           "Skills": {'Shapeshift': spells.Shapeshift,
                                      'Trip': spells.Trip}}
         self.resistance['Death'] = 1
         self.resistance['Physical'] = 0.25
         self.transform = [Barghest, Goblin, Direwolf]
+        self.pro_level = 99
 
 
 # Level 2
@@ -1448,11 +1577,13 @@ class Gnoll(Humanoid):
     def __init__(self):
         super().__init__(name='Gnoll', health=random.randint(16, 24), mana=20, strength=13, intel=10, wisdom=5, con=8,
                          charisma=12, dex=16, exp=random.randint(45, 85))
-        self.equipment = dict(Weapon=items.Voulge, Armor=items.PaddedArmor, OffHand=items.NoOffHand,
+        self.equipment = dict(Weapon=items.Partisan, Armor=items.PaddedArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(30, 60), Weapon=[items.Voulge, 1])
+        self.gold = random.randint(10, 20)
+        self.inventory['Partisan'] = [items.Partisan, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Disarm': spells.Disarm}}
+        self.pro_level = 2
 
 
 class GiantSnake(Animal):
@@ -1465,8 +1596,10 @@ class GiantSnake(Animal):
                          con=14, charisma=10, dex=16, exp=random.randint(60, 100))
         self.equipment = dict(Weapon=SnakeFang, Armor=SnakeScales, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(35, 75))
+        self.gold = random.randint(35, 75)
+        self.inventory['Snake Skin'] = [items.SnakeSkin, 1]
         self.resistance['Poison'] = 0.25
+        self.pro_level = 2
 
 
 class Orc(Humanoid):
@@ -1479,9 +1612,11 @@ class Orc(Humanoid):
                          charisma=8, dex=14, exp=random.randint(45, 80))
         self.equipment = dict(Weapon=items.Jian, Armor=items.PaddedArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(20, 65), Weapon=[items.Jian, 1])
+        self.gold = random.randint(20, 65)
+        self.inventory['Jian'] = [items.Jian, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': spells.PiercingStrike}}
+        self.pro_level = 2
 
 
 class GiantOwl(Animal):
@@ -1494,10 +1629,12 @@ class GiantOwl(Animal):
                          con=10, charisma=1, dex=15, exp=random.randint(45, 80))
         self.equipment = dict(Weapon=Claw2, Armor=items.NoArmor, OffHand=Claw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(20, 65))
+        self.gold = random.randint(20, 65)
+        self.inventory['Feather'] = [items.Feather, 1]
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 2
 
 
 class Vampire(Undead):
@@ -1508,11 +1645,36 @@ class Vampire(Undead):
     def __init__(self):
         super().__init__(name='Vampire', health=random.randint(20, 28), mana=30, strength=20, intel=14, wisdom=12,
                          con=15, charisma=14, dex=14, exp=random.randint(50, 90))
+        self.equipment = dict(Weapon=VampireBite, Armor=items.NoArmor, OffHand=items.NoOffHand,
+                              Ring=items.NoRing, Pendant=items.NoPendant)
+        self.gold = random.randint(40, 90)
+        self.inventory['Great Health Potion'] = [items.GreatHealthPotion, 1]
+        self.spellbook = {"Spells": {'Silence': spells.Silence},
+                          "Skills": {'Shapeshift': spells.Shapeshift}}
+        self.transform = [Vampire, VampireBat]
+        self.pro_level = 2
+
+
+class VampireBat(Animal):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__(name='Vampire Bat', health=random.randint(20, 28), mana=30, strength=12, intel=16, wisdom=15,
+                         con=10, charisma=14, dex=18, exp=random.randint(50, 90))
         self.equipment = dict(Weapon=Bite, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(40, 90), Potion=[items.GreatHealthPotion, 1])
-        self.spellbook = {"Spells": {'Silence': spells.Silence},
-                          "Skills": {'Health Drain': spells.HealthDrain}}
+        self.gold = random.randint(40, 90)
+        self.inventory['Great Health Potion'] = [items.GreatHealthPotion, 1]
+        self.spellbook = {"Spells": {},
+                          "Skills": {'Health Drain': spells.HealthDrain,
+                                     'Shapeshift': spells.Shapeshift}}
+        self.transform = [Vampire, VampireBat]
+        self.flying = True
+        self.resistance['Earth'] = 1
+        self.resistance['Wind'] = -0.25
+        self.pro_level = 2
 
 
 class Direwolf(Animal):
@@ -1525,11 +1687,13 @@ class Direwolf(Animal):
                          charisma=10, dex=16, exp=random.randint(60, 100))
         self.equipment = dict(Weapon=Claw2, Armor=AnimalHide, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(35, 75))
+        self.gold = random.randint(35, 75)
+        self.inventory['Leather'] = [items.Leather, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Howl': spells.Howl,
                                      'Trip': spells.Trip}}
         self.resistance['Physical'] = 0.25
+        self.pro_level = 2
 
 
 class Wererat(Monster):
@@ -1542,7 +1706,8 @@ class Wererat(Monster):
                          charisma=8, dex=18, exp=random.randint(57, 94))
         self.equipment = dict(Weapon=Bite, Armor=AnimalHide, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(40, 65))
+        self.gold = random.randint(40, 65)
+        self.pro_level = 2
 
 
 class RedSlime(Slime):
@@ -1551,14 +1716,16 @@ class RedSlime(Slime):
     """
 
     def __init__(self):
-        super().__init__(name='Red Slime', health=random.randint(8, 20), mana=30, strength=10, intel=15, wisdom=99,
+        super().__init__(name='Red Slime', health=random.randint(8, 20), mana=30, strength=10, intel=15, wisdom=20,
                          con=12, charisma=10, dex=5, exp=random.randint(43, 150))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(20, 120), Potion=[items.SuperHealthPotion, 1])
+        self.gold = random.randint(40, 65)
+        self.inventory['Super Health Potion'] = [items.SuperHealthPotion, 1]
         self.spellbook = {'Spells': {'Firebolt': spells.Firebolt,
                                      'Enfeeble': spells.Enfeeble},
                           'Skills': {}}
+        self.pro_level = 2
 
 
 class GiantScorpion(Animal):
@@ -1571,9 +1738,10 @@ class GiantScorpion(Animal):
                          con=12, charisma=10, dex=9, exp=random.randint(65, 105))
         self.equipment = dict(Weapon=Stinger, Armor=Carapace, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(40, 65))
+        self.gold = random.randint(40, 65)
         self.resistance['Poison'] = 0.25
         self.resistance['Physical'] = 0.25
+        self.pro_level = 2
 
 
 class Warrior(Humanoid):
@@ -1586,11 +1754,14 @@ class Warrior(Humanoid):
                          con=12, charisma=10, dex=8, exp=random.randint(65, 110))
         self.equipment = dict(Weapon=items.Jian, Armor=items.RingMail, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(25, 100), Weapon=[items.Jian, 1], Armor=[items.RingMail, 1])
+        self.gold = random.randint(25, 100)
+        self.inventory['Jian'] = [items.Jian, 1]
+        self.inventory['Ring Mail'] = [items.RingMail, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': spells.PiercingStrike,
                                      'Disarm': spells.Disarm,
                                      'Parry': spells.Parry}}
+        self.pro_level = 2
 
 
 class Harpy(Monster):
@@ -1603,10 +1774,13 @@ class Harpy(Monster):
                          con=14, charisma=14, dex=23, exp=random.randint(65, 115))
         self.equipment = dict(Weapon=Claw2, Armor=items.NoArmor, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(50, 75))
+        self.gold = random.randint(50, 75)
         self.flying = True
+        self.spellbook = {'Spells': {},
+                          'Skills': {'Screech': spells.Screech}}
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 2
 
 
 class Naga(Monster):
@@ -1617,13 +1791,16 @@ class Naga(Monster):
     def __init__(self):
         super().__init__(name='Naga', health=random.randint(22, 28), mana=0, strength=15, intel=13, wisdom=15,
                          con=15, charisma=12, dex=17, exp=random.randint(67, 118))
-        self.equipment = dict(Weapon=items.Voulge, Armor=items.NoArmor, OffHand=items.NoOffHand,
+        self.equipment = dict(Weapon=items.Partisan, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(55, 75), Weapon=[items.Voulge, 1], Potion=[items.GreatManaPotion, 1])
+        self.gold = random.randint(55, 75)
+        self.inventory['Partisan'] = [items.Partisan, 1]
+        self.inventory['Great Mana Potion'] = [items.GreatManaPotion, 1]
         self.spellbook = {"Spells": {'Silence': spells.Silence},
-                          "Skills": {}}
+                          "Skills": {'Multi-Strike': spells.DoubleStrike}}
         self.resistance['Electric'] = -0.5
         self.resistance['Water'] = 0.75
+        self.pro_level = 2
 
 
 class Clannfear(Fiend):
@@ -1636,12 +1813,13 @@ class Clannfear(Fiend):
                          con=14, charisma=12, dex=15, exp=random.randint(77, 130))
         self.equipment = dict(Weapon=DemonClaw, Armor=AnimalHide, OffHand=DemonClaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(65, 92))
+        self.gold = random.randint(65, 92)
         self.spellbook = {'Spells': {},
                           'Skills': {'Trip': spells.Trip,
                                      'Charge': spells.Charge}}
         self.resistance['Fire'] = 0.75
         self.resistance['Electric'] = -0.5
+        self.pro_level = 2
 
 
 class Xorn(Elemental):
@@ -1654,7 +1832,7 @@ class Xorn(Elemental):
                          con=17, charisma=10, dex=12, exp=random.randint(74, 121))
         self.equipment = dict(Weapon=Claw, Armor=items.NoArmor, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(61, 99))
+        self.gold = random.randint(61, 99)
         self.spellbook = {'Spells': {'Tremor': spells.Tremor},
                           'Skills': {'ConsumeItem': spells.ConsumeItem}}
         self.resistance['Electric'] = 0.5
@@ -1662,6 +1840,7 @@ class Xorn(Elemental):
         self.resistance['Earth'] = 1.
         self.resistance['Stone'] = 1.
         self.resistance['Poison'] = 1.
+        self.pro_level = 2
 
 
 class SteelPredator(Construct):
@@ -1674,16 +1853,18 @@ class SteelPredator(Construct):
                          wisdom=12, con=14, charisma=12, dex=19, exp=random.randint(85, 129))
         self.equipment = dict(Weapon=Claw2, Armor=MetalPlating, OffHand=Claw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(65, 110))
-        self.spellbook = {'Spells': {},
-                          'Skills': {'Screech': spells.Screech,
-                                     'Charge': spells.Charge,
+        self.gold = random.randint(65, 110)
+        self.status_effects['Blind'] = [True, -1]
+        self.inventory['Scrap Metal'] = [items.ScrapMetal, 1]
+        self.spellbook = {'Spells': {'Silence': spells.Silence},
+                          'Skills': {'Charge': spells.Charge,
                                      'Destroy Metal': spells.DestroyMetal}}
         self.resistance['Fire'] = 0.5
         self.resistance['Ice'] = 0.5
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.75
         self.resistance['Earth'] = 0.
+        self.pro_level = 2
 
 
 class Pseudodragon(Dragon):
@@ -1692,17 +1873,19 @@ class Pseudodragon(Dragon):
     """
 
     def __init__(self):
-        super().__init__(name='Pseudodragon', health=random.randint(90, 135), mana=100, strength=28, intel=16,
-                         wisdom=16, con=20, charisma=20, dex=14, exp=random.randint(250, 450))
-        self.gold = random.randint(100, 400)
+        super().__init__(name='Pseudodragon', health=250, mana=100, strength=28, intel=26, wisdom=24, con=20,
+                         charisma=20, dex=18, exp=500)
+        self.gold = 1500
         self.equipment = dict(Weapon=DragonClaw, Armor=DragonScale, OffHand=DragonClaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=self.gold, Item=[items.random_item(random.randint(3, 4)), 1])
+        self.inventory['Item'] = [items.random_item(random.randint(2, 3)), 1]
+        self.inventory['Old Key'] = [items.OldKey, 1]
         self.spellbook = {'Spells': {'Fireball': spells.Fireball,
                                      'Blinding Fog': spells.BlindingFog,
                                      'Dispel': spells.Dispel},
                           'Skills': {'Gold Toss': spells.GoldToss}}
         self.resistance['Death'] = 1
+        self.pro_level = 99
 
 
 class Nightmare(Fiend):
@@ -1711,13 +1894,15 @@ class Nightmare(Fiend):
     """
 
     def __init__(self):
-        super().__init__(name='Nightmare', health=random.randint(180, 310), mana=100, strength=30, intel=17,
-                         wisdom=15, con=22, charisma=16, dex=15, exp=random.randint(400, 550))
+        super().__init__(name='Nightmare', health=410, mana=100, strength=30, intel=17, wisdom=15, con=22, charisma=16,
+                         dex=15, exp=800)
         self.equipment = dict(Weapon=NightmareHoof, Armor=AnimalHide2, OffHand=NightmareHoof,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(250, 400), Item=[items.random_item(random.randint(3, 4)), 1])
+        self.gold = 2500
+        self.inventory['Item'] = [items.random_item(random.randint(3, 4)), 1]
+        self.inventory['Old Key'] = [items.OldKey, 1]
         self.spellbook = {'Spells': {'Sleep': spells.Sleep,
-                                     'Firestorm': spells.Fireball},
+                                     'Firestorm': spells.Firestorm},
                           'Skills': {'Charge': spells.Charge,
                                      'Stomp': spells.Stomp,
                                      'Multi-Strike': spells.DoubleStrike}}
@@ -1728,6 +1913,7 @@ class Nightmare(Fiend):
         self.resistance['Death'] = 1
         self.resistance['Physical'] = 0.5
         self.flying = True
+        self.pro_level = 99
 
 
 # Level 3
@@ -1737,16 +1923,18 @@ class Direbear(Animal):
     """
 
     def __init__(self):
-        super().__init__(name='Direbear', health=random.randint(55, 70), mana=0, strength=25, intel=6, wisdom=6, con=26,
-                         charisma=12, dex=18, exp=random.randint(110, 210))
+        super().__init__(name='Direbear', health=random.randint(55, 70), mana=50, strength=25, intel=6, wisdom=6,
+                         con=26, charisma=12, dex=18, exp=random.randint(110, 210))
         self.equipment = dict(Weapon=BearClaw, Armor=AnimalHide2, OffHand=BearClaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(45, 60))
+        self.gold = random.randint(40, 65)
+        self.inventory['Leather'] = [items.Leather, 1]
         self.spellbook = {'Spells': {},
                           'Skills': {'Piercing Strike': spells.PiercingStrike,
                                      'Charge': spells.Charge,
                                      'Parry': spells.Parry}}
         self.resistance['Physical'] = 0.5
+        self.pro_level = 3
 
 
 class Ghoul(Undead):
@@ -1759,9 +1947,11 @@ class Ghoul(Undead):
                          charisma=11, dex=12, exp=random.randint(110, 190))
         self.equipment = dict(Weapon=Bite, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(35, 45), Potion=[items.SuperHealthPotion, 1])
+        self.gold = random.randint(35, 45)
+        self.inventory['Super Health Potion'] = [items.SuperHealthPotion, 1]
         self.spellbook = {"Spells": {'Disease Breath': spells.DiseaseBreath},
                           "Skills": {}}
+        self.pro_level = 3
 
 
 class PitViper(Animal):
@@ -1774,10 +1964,12 @@ class PitViper(Animal):
                          con=16, charisma=10, dex=18, exp=random.randint(115, 190))
         self.equipment = dict(Weapon=SnakeFang, Armor=SnakeScales, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(50, 85))
+        self.gold = random.randint(50, 85)
+        self.inventory['Snake Skin'] = [items.SnakeSkin, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
         self.resistance['Poison'] = 0.25
+        self.pro_level = 3
 
 
 class Disciple(Humanoid):
@@ -1788,15 +1980,18 @@ class Disciple(Humanoid):
     def __init__(self):
         super().__init__(name='Disciple', health=random.randint(40, 50), mana=70, strength=16, intel=17, wisdom=15,
                          con=16, charisma=12, dex=16, exp=random.randint(110, 190))
-        self.equipment = dict(Weapon=items.Kris, Armor=items.SilverCloak, OffHand=items.NoOffHand,
+        self.equipment = dict(Weapon=items.SerpentStaff, Armor=items.SilverCloak, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(55, 95), Potion=[items.SuperManaPotion, 1], Weapon=[items.Kris, 1],
-                              Armor=[items.SilverCloak, 1])
+        self.gold = random.randint(55, 95)
+        self.inventory['Super Mana Potion'] = [items.SuperManaPotion, 1]
+        self.inventory['Serpent Staff'] = [items.SerpentStaff, 1]
+        self.inventory['Silver Cloak'] = [items.SilverCloak, 1]
         self.spellbook = {'Spells': {'Firebolt': spells.Firebolt,
                                      'Ice Lance': spells.IceLance,
                                      'Shock': spells.Shock,
                                      'Enfeeble': spells.Enfeeble},
                           'Skills': {}}
+        self.pro_level = 3
 
 
 class BlackSlime(Slime):
@@ -1805,15 +2000,17 @@ class BlackSlime(Slime):
     """
 
     def __init__(self):
-        super().__init__(name='Black Slime', health=random.randint(25, 60), mana=80, strength=13, intel=20, wisdom=99,
+        super().__init__(name='Black Slime', health=random.randint(25, 60), mana=80, strength=13, intel=20, wisdom=30,
                          con=15, charisma=12, dex=6, exp=random.randint(85, 260))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(30, 180), Potion=[items.Elixir, 1])
+        self.gold = random.randint(30, 180)
+        self.inventory['Elixir'] = [items.Elixir, 1]
         self.spellbook = {'Spells': {'Shadow Bolt': spells.ShadowBolt,
                                      'Corruption': spells.Corruption,
                                      'Enfeeble': spells.Enfeeble},
                           'Skills': {}}
+        self.pro_level = 3
 
 
 class Ogre(Monster):
@@ -1822,15 +2019,17 @@ class Ogre(Monster):
     """
 
     def __init__(self):
-        super().__init__(name='Ogre', health=random.randint(40, 50), mana=40, strength=22, intel=14, wisdom=14, con=20,
+        super().__init__(name='Ogre', health=random.randint(40, 50), mana=40, strength=24, intel=18, wisdom=14, con=20,
                          charisma=10, dex=14, exp=random.randint(115, 195))
         self.equipment = dict(Weapon=items.Maul, Armor=items.Cuirboulli, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(50, 75), Weapon=[items.Maul, 1], Armor=[items.Cuirboulli, 1])
+        self.gold = random.randint(50, 75)
+        self.inventory['Maul'] = [items.Maul, 1]
+        self.inventory['Cuirboulli'] = [items.Cuirboulli, 1]
         self.spellbook = {"Spells": {'Magic Missile': spells.MagicMissile,
                                      'Dispel': spells.Dispel},
-                          "Skills": {'Piercing Strike': spells.PiercingStrike,
-                                     'Multi-Cast': spells.DoubleCast}}
+                          "Skills": {'Piercing Strike': spells.PiercingStrike}}
+        self.pro_level = 3
 
 
 class Alligator(Animal):
@@ -1839,13 +2038,14 @@ class Alligator(Animal):
     """
 
     def __init__(self):
-        super().__init__(name='Alligator', health=random.randint(60, 75), mana=20, strength=21, intel=8, wisdom=7,
+        super().__init__(name='Alligator', health=random.randint(60, 75), mana=20, strength=26, intel=8, wisdom=7,
                          con=20, charisma=10, dex=15, exp=random.randint(120, 200))
         self.equipment = dict(Weapon=AlligatorTail, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(40, 50))
+        self.gold = random.randint(40, 50)
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
+        self.pro_level = 3
 
 
 class Troll(Humanoid):
@@ -1858,9 +2058,12 @@ class Troll(Humanoid):
                          charisma=12, dex=15, exp=random.randint(125, 210))
         self.equipment = dict(Weapon=items.DoubleAxe, Armor=items.Cuirboulli, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(35, 45), Weapon=[items.DoubleAxe, 1], Armor=[items.Cuirboulli, 1])
+        self.gold = random.randint(35, 45)
+        self.inventory['Double Axe'] = [items.DoubleAxe, 1]
+        self.inventory['Cuirboulli'] = [items.Cuirboulli, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Mortal Strike': spells.MortalStrike}}
+        self.pro_level = 3
 
 
 class GoldenEagle(Animal):
@@ -1873,12 +2076,14 @@ class GoldenEagle(Animal):
                          con=17, charisma=15, dex=25, exp=random.randint(130, 220))
         self.equipment = dict(Weapon=Claw2, Armor=items.NoArmor, OffHand=Claw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(50, 75))
+        self.gold = random.randint(50, 75)
+        self.inventory['Feather'] = [items.Feather, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Screech': spells.Screech}}
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 3
 
 
 class EvilCrusader(Humanoid):
@@ -1889,16 +2094,19 @@ class EvilCrusader(Humanoid):
     def __init__(self):
         super().__init__(name='Evil Crusader', health=random.randint(45, 60), mana=50, strength=21, intel=18, wisdom=17,
                          con=26, charisma=14, dex=14, exp=random.randint(140, 225))
-        self.equipment = dict(Weapon=items.Talwar, Armor=items.Splint, OffHand=items.KiteShield,
+        self.equipment = dict(Weapon=items.Pernach, Armor=items.Splint, OffHand=items.KiteShield,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(65, 90), Weapon=[items.Talwar, 1], Armor=[items.Splint, 1],
-                              OffHand=[items.KiteShield, 1])
+        self.gold = random.randint(65, 90)
+        self.inventory['Pernach'] = [items.Pernach, 1]
+        self.inventory['Splint Mail'] = [items.Splint, 1]
+        self.inventory['Kite Shield'] = [items.KiteShield, 1]
         self.spellbook = {"Spells": {'Smite': spells.Smite},
                           "Skills": {'Shield Slam': spells.ShieldSlam,
                                      'Disarm': spells.Disarm,
                                      'Shield Block': spells.ShieldBlock}}
         self.resistance['Shadow'] = 0.5
         self.resistance['Holy'] = -0.5
+        self.pro_level = 3
 
 
 class Werewolf(Monster):
@@ -1909,14 +2117,15 @@ class Werewolf(Monster):
     def __init__(self):
         super().__init__(name='Werewolf', health=random.randint(55, 75), mana=85, strength=24, intel=10, wisdom=10,
                          con=20, charisma=14, dex=20, exp=random.randint(120, 200))
-        self.equipment = dict(Weapon=Claw3, Armor=AnimalHide2, OffHand=Claw2,
+        self.equipment = dict(Weapon=Claw3, Armor=AnimalHide, OffHand=Claw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(45, 55))
+        self.gold = random.randint(45, 55)
         self.spellbook = {"Spells": {},
-                          "Skills": {'Multi-Strike': spells.TripleStrike,
+                          "Skills": {'Multi-Strike': spells.DoubleStrike,
                                      'Parry': spells.Parry,
                                      'Howl': spells.Howl}}
         self.resistance['Physical'] = 0.5
+        self.pro_level = 3
 
 
 class Antlion(Animal):
@@ -1929,10 +2138,11 @@ class Antlion(Animal):
                          con=18, charisma=12, dex=18, exp=random.randint(110, 210))
         self.equipment = dict(Weapon=Pincers2, Armor=Carapace, OffHand=Pincers2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(40, 52))
+        self.gold = random.randint(40, 52)
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
         self.resistance['Physical'] = 0.25
+        self.pro_level = 3
 
 
 class InvisibleStalker(Elemental):
@@ -1941,19 +2151,18 @@ class InvisibleStalker(Elemental):
     """
 
     def __init__(self):
-        super().__init__(name="Invisible Stalker", health=random.randint(37, 56), mana=60, strength=19, intel=13,
+        super().__init__(name="Invisible Stalker", health=random.randint(25, 46), mana=60, strength=19, intel=13,
                          wisdom=16, con=14, charisma=18, dex=35, exp=random.randint(130, 230))
         self.equipment = dict(Weapon=InvisibleBlade, Armor=items.NoArmor, OffHand=InvisibleBlade,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(65, 79))
+        self.gold = random.randint(65, 79)
         self.spellbook = {"Spells": {},
                           "Skills": {'Backstab': spells.Backstab,
                                      'Pocket Sand': spells.PocketSand,
-                                     'Kidney Punch': spells.KidneyPunch,
                                      'Poison Strike': spells.PoisonStrike}}
         self.resistance['Poison'] = 1.
-        self.resistance['Physical'] = 0.25
         self.invisible = True
+        self.pro_level = 3
 
 
 class NightHag(Fey):
@@ -1966,7 +2175,7 @@ class NightHag(Fey):
                          con=12, charisma=14, dex=19, exp=random.randint(115, 212))
         self.equipment = dict(Weapon=items.Kris, Armor=items.SilverCloak, OffHand=items.Grimoire,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(70, 99))
+        self.gold = random.randint(70, 99)
         self.spellbook = {"Spells": {'Sleep': spells.Sleep,
                                      'Enfeeble': spells.Enfeeble,
                                      'Magic Missile': spells.MagicMissile},
@@ -1974,6 +2183,7 @@ class NightHag(Fey):
         self.resistance['Fire'] = 0.25
         self.resistance['Cold'] = 0.25
         self.resistance['Physical'] = 0.25
+        self.pro_level = 3
 
 
 class Treant(Fey):
@@ -1982,11 +2192,11 @@ class Treant(Fey):
     """
 
     def __init__(self):
-        super().__init__(name="Treant", health=random.randint(52, 78), mana=65, strength=21, intel=16, wisdom=21,
+        super().__init__(name="Treant", health=random.randint(52, 78), mana=65, strength=26, intel=16, wisdom=21,
                          con=20, charisma=12, dex=16, exp=random.randint(135, 220))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(60, 85))
+        self.gold = random.randint(60, 85)
         self.spellbook = {"Spells": {'Regen': spells.Regen2},
                           "Skills": {'Multi-Attack': spells.DoubleStrike,
                                      'Throw Rock': spells.ThrowRock}}
@@ -1994,6 +2204,7 @@ class Treant(Fey):
         self.resistance['Water'] = 1.5
         self.resistance['Poison'] = 1.
         self.resistance['Physical'] = 0.25
+        self.pro_level = 3
 
 
 class Cockatrice(Monster):
@@ -2002,11 +2213,13 @@ class Cockatrice(Monster):
     """
 
     def __init__(self):
-        super().__init__(name='Cockatrice', health=random.randint(200, 350), mana=99, strength=30, intel=16, wisdom=15,
-                         con=16, charisma=16, dex=22, exp=random.randint(500, 675))
+        super().__init__(name='Cockatrice', health=580, mana=99, strength=30, intel=16, wisdom=15, con=16, charisma=16,
+                         dex=22, exp=1000)
         self.equipment = dict(Weapon=Claw3, Armor=items.NoArmor, OffHand=DragonTail,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(400, 670), Item=[items.random_item(random.randint(3, 4)), 1])
+        self.gold = 5000
+        self.inventory['Pendant'] = [items.random_item(4, typ='Accessory', subtyp='Pendant'), 1]
+        self.inventory['Old Key'] = [items.OldKey, 1]
         self.spellbook = {"Spells": {'Petrify': spells.Petrify},
                           "Skills": {'Screech': spells.Screech}}
         self.flying = True
@@ -2014,6 +2227,7 @@ class Cockatrice(Monster):
         self.resistance['Wind'] = -0.25
         self.resistance['Death'] = 1
         self.resistance['Stone'] = 0.5
+        self.pro_level = 99
 
 
 class Wendigo(Fey):
@@ -2022,12 +2236,15 @@ class Wendigo(Fey):
     """
 
     def __init__(self):
-        super().__init__(name='Wendigo', health=random.randint(280, 410), mana=130, strength=32, intel=16, wisdom=19,
-                         con=21, charisma=14, dex=22, exp=random.randint(650, 875))
+        super().__init__(name='Wendigo', health=750, mana=130, strength=32, intel=16, wisdom=19, con=21, charisma=14,
+                         dex=22, exp=1500)
         self.equipment = dict(Weapon=Bite2, Armor=items.NoArmor, OffHand=DemonClaw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(800, 1050), Item=[items.random_item(random.randint(4, 5)), 1])
-        self.spellbook = {"Spells": {'Regen': spells.Regen2},
+        self.gold = 7500
+        self.inventory['Item'] = [items.random_item(random.randint(4, 5)), 1]
+        self.inventory['Old Key'] = [items.OldKey, 1]
+        self.spellbook = {"Spells": {'Regen': spells.Regen2,
+                                     'Terrify': spells.Terrify},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
         self.flying = True
         self.resistance['Fire'] = -0.75
@@ -2035,6 +2252,7 @@ class Wendigo(Fey):
         self.resistance['Earth'] = 1
         self.resistance['Death'] = 1
         self.resistance['Poison'] = 1
+        self.pro_level = 99
 
 
 # Level 4
@@ -2044,14 +2262,16 @@ class BrownSlime(Slime):
     """
 
     def __init__(self):
-        super().__init__(name='Brown Slime', health=random.randint(50, 80), mana=85, strength=17, intel=30, wisdom=99,
+        super().__init__(name='Brown Slime', health=random.randint(50, 80), mana=85, strength=17, intel=30, wisdom=40,
                          con=15, charisma=10, dex=8, exp=random.randint(190, 460))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(150, 280), Potion=[items.Vedas, 1])
+        self.gold = random.randint(150, 280)
+        self.inventory['Vedas'] = [items.Vedas, 1]
         self.spellbook = {'Spells': {'Mudslide': spells.Mudslide,
                                      'Enfeeble': spells.Enfeeble},
                           'Skills': {}}
+        self.pro_level = 4
 
 
 class Gargoyle(Elemental):
@@ -2064,7 +2284,7 @@ class Gargoyle(Elemental):
                          con=18, charisma=15, dex=21, exp=random.randint(210, 330))
         self.equipment = dict(Weapon=Claw3, Armor=StoneArmor, OffHand=Claw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(75, 125))
+        self.gold = random.randint(75, 125)
         self.spellbook = {"Spells": {'Blinding Fog': spells.BlindingFog},
                           "Skills": {}}
         self.flying = True
@@ -2072,6 +2292,7 @@ class Gargoyle(Elemental):
         self.resistance['Wind'] = -0.25
         self.resistance['Stone'] = 1
         self.resistance['Poison'] = 1
+        self.pro_level = 4
 
 
 class Conjurer(Humanoid):
@@ -2082,15 +2303,18 @@ class Conjurer(Humanoid):
     def __init__(self):
         super().__init__(name='Conjurer', health=random.randint(40, 65), mana=150, strength=14, intel=22, wisdom=18,
                          con=14, charisma=12, dex=13, exp=random.randint(215, 340))
-        self.equipment = dict(Weapon=items.SerpentStaff, Armor=items.GoldCloak, OffHand=items.NoOffHand,
+        self.equipment = dict(Weapon=items.RuneStaff, Armor=items.GoldCloak, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(110, 145), Potion=[items.MasterManaPotion, 1],
-                              Weapon=[items.SerpentStaff, 1], Armor=[items.GoldCloak, 1])
+        self.gold = random.randint(40, 65)
+        self.inventory['Master Mana Potion'] = [items.MasterManaPotion, 1]
+        self.inventory['Serpent Staff'] = [items.RuneStaff, 1]
+        self.inventory['Gold Cloak'] = [items.GoldCloak, 1]
         self.spellbook = {"Spells": {'Fireball': spells.Fireball,
                                      'Icicle': spells.Icicle,
                                      'Lightning': spells.Lightning,
                                      'Aqualung': spells.Aqualung},
                           "Skills": {'Mana Drain': spells.ManaDrain}}
+        self.pro_level = 4
 
 
 class Chimera(Monster):
@@ -2103,11 +2327,13 @@ class Chimera(Monster):
                          con=20, charisma=14, dex=14, exp=random.randint(230, 380))
         self.equipment = dict(Weapon=LionPaw, Armor=AnimalHide2, OffHand=LionPaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(100, 250), Potion=[items.SuperManaPotion, 1])
+        self.gold = random.randint(100, 250)
+        self.inventory['Super Mana Potion'] = [items.SuperManaPotion, 1]
         self.spellbook = {"Spells": {'Molten Rock': spells.MoltenRock,
                                      'Dispel': spells.Dispel},
                           "Skills": {}}
         self.resistance['Physical'] = 0.5
+        self.pro_level = 4
 
 
 class Dragonkin(Dragon):
@@ -2118,15 +2344,19 @@ class Dragonkin(Dragon):
     def __init__(self):
         super().__init__(name='Dragonkin', health=random.randint(80, 115), mana=90, strength=26, intel=10, wisdom=18,
                          con=20, charisma=18, dex=20, exp=random.randint(250, 480))
-        self.equipment = dict(Weapon=items.Halberd, Armor=items.Breastplate, OffHand=items.NoOffHand,
+        self.equipment = dict(Weapon=items.Halberd, Armor=items.Breastplate, OffHand=items.KiteShield,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(150, 300), Weapon=[items.Halberd, 1], Armor=[items.Breastplate, 1])
+        self.gold = random.randint(150, 300)
+        self.inventory['Halberd'] = [items.Halberd, 1]
+        self.inventory['Breastplate'] = [items.Breastplate, 1]
+        self.inventory['Kite Shield'] = [items.KiteShield, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Disarm': spells.Disarm,
                                      'Charge': spells.Charge}}
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 4
 
 
 class Griffin(Monster):
@@ -2139,13 +2369,15 @@ class Griffin(Monster):
                          con=18, charisma=16, dex=25, exp=random.randint(240, 450))
         self.equipment = dict(Weapon=LionPaw, Armor=AnimalHide2, OffHand=Claw3,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(140, 280), Potion=[items.Elixir, 1])
+        self.gold = random.randint(140, 280)
+        self.inventory['Elixir'] = [items.Elixir, 1]
         self.spellbook = {"Spells": {'Hurricane': spells.Hurricane},
                           "Skills": {'Screech': spells.Screech}}
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
         self.resistance['Physical'] = 0.5
+        self.pro_level = 4
 
 
 class DrowAssassin(Humanoid):
@@ -2158,8 +2390,9 @@ class DrowAssassin(Humanoid):
                          con=14, charisma=22, dex=28, exp=random.randint(280, 480))
         self.equipment = dict(Weapon=items.Rondel, Armor=items.StuddedLeather, OffHand=items.Rondel,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(160, 250), Weapon=[items.Rondel, 1],
-                              Armor=[items.StuddedLeather, 1], OffHand=[items.Rondel, 1])
+        self.gold = random.randint(160, 250)
+        self.inventory['Rondel'] = [items.Rondel, 1]
+        self.inventory['Studded Leather'] = [items.StuddedLeather, 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Poison Strike': spells.PoisonStrike,
                                      'Backstab': spells.Backstab,
@@ -2167,6 +2400,7 @@ class DrowAssassin(Humanoid):
                                      'Mug': spells.Mug,
                                      'Disarm': spells.Disarm,
                                      'Parry': spells.Parry}}
+        self.pro_level = 4
 
 
 class Cyborg(Construct):
@@ -2179,11 +2413,13 @@ class Cyborg(Construct):
                          con=18, charisma=10, dex=14, exp=random.randint(290, 500))
         self.equipment = dict(Weapon=Laser, Armor=MetalPlating, OffHand=ForceField,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(200, 300))
+        self.gold = random.randint(200, 300)
+        self.inventory['Scrap Metal'] = [items.ScrapMetal, 1]
         self.spellbook = {"Spells": {'Shock': spells.Shock},
                           "Skills": {}}
         self.resistance['Electric'] = 1.25
         self.resistance['Water'] = -0.75
+        self.pro_level = 4
 
     def special_effects(self, enemy):
         if self.health < int(self.health * 0.25):
@@ -2198,14 +2434,17 @@ class DarkKnight(Fiend):
     def __init__(self):
         super().__init__(name='Dark Knight', health=random.randint(85, 110), mana=60, strength=28, intel=15, wisdom=12,
                          con=21, charisma=14, dex=17, exp=random.randint(300, 550))
-        self.equipment = dict(Weapon=items.Trident, Armor=items.PlateMail, OffHand=items.KiteShield,
+        self.equipment = dict(Weapon=items.Flamberge, Armor=items.PlateMail, OffHand=items.KiteShield,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(300, 420), Weapon=[items.Trident, 1],
-                              Armor=[items.PlateMail, 1], OffHand=[items.KiteShield, 1])
+        self.gold = random.randint(300, 420)
+        self.inventory['Trident'] = [items.Flamberge, 1]
+        self.inventory['Plate Mail'] = [items.PlateMail, 1]
+        self.inventory['Kite Shield'] = [items.KiteShield, 1]
         self.spellbook = {"Spells": {'Enhance Blade': spells.EnhanceBlade},
                           "Skills": {'Shield Slam': spells.ShieldSlam,
                                      'Disarm': spells.Disarm,
                                      'Shield Block': spells.ShieldBlock}}
+        self.pro_level = 4
 
 
 class Myrmidon(Elemental):
@@ -2218,8 +2457,12 @@ class Myrmidon(Elemental):
                          con=18, charisma=10, dex=14, exp=random.randint(320, 600))
         self.equipment = dict(Weapon=ElementalBlade, Armor=items.PlateMail, OffHand=items.KiteShield,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(300, 450), Armor=[items.PlateMail, 1], OffHand=[items.KiteShield, 1])
+        self.gold = random.randint(300, 450)
+        self.inventory['Plate Mail'] = [items.PlateMail, 1]
+        self.inventory['Kite Shield'] = [items.KiteShield, 1]
+        self.inventory['Elemental Mote'] = [items.ElementalMote, 1]
         self.resistance['Poison'] = 1
+        self.pro_level = 4
 
 
 class FireMyrmidon(Myrmidon):
@@ -2315,24 +2558,26 @@ class DisplacerBeast(Fey):
                          wisdom=14, con=24, charisma=14, dex=26, exp=random.randint(300, 575))
         self.equipment = dict(Weapon=Claw3, Armor=AnimalHide2, OffHand=Tentacle,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(250, 360))
+        self.gold = random.randint(250, 360)
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.DoubleStrike,
                                      'Parry': spells.Parry}}
         self.invisible = True
+        self.pro_level = 4
 
 
 class Golem(Construct):
     """
-    Level 4 boss
+    Level 4 Boss
     """
 
     def __init__(self):
-        super().__init__(name='Golem', health=random.randint(300, 500), mana=100, strength=35, intel=10, wisdom=18,
-                         con=28, charisma=12, dex=20, exp=random.randint(500, 800))
+        super().__init__(name='Golem', health=1200, mana=100, strength=35, intel=25, wisdom=35, con=40, charisma=21,
+                         dex=20, exp=2000)
         self.equipment = dict(Weapon=Laser2, Armor=StoneArmor2, OffHand=ForceField2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(400, 600), Potion=[items.AardBeing, 1])
+        self.gold = 12000
+        self.inventory['Aard of Being'] = [items.AardBeing, 1]
         self.spellbook = {"Spells": {'Enfeeble': spells.Enfeeble},
                           "Skills": {'Multi-Strike': spells.DoubleStrike,
                                      'Crush': spells.Crush}}
@@ -2341,6 +2586,7 @@ class Golem(Construct):
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.25
         self.resistance['Earth'] = 0.5
+        self.pro_level = 99
 
 
 class Jester(Humanoid):
@@ -2349,14 +2595,15 @@ class Jester(Humanoid):
     """
 
     def __init__(self):
-        super().__init__(name="Jester", health=random.randint(50, 500), mana=random.randint(25, 200),
-                         strength=random.randint(10, 40), intel=random.randint(10, 40), wisdom=random.randint(10, 40),
-                         con=random.randint(10, 40), charisma=99, dex=random.randint(10, 40),
-                         exp=random.randint(1, 1000))
-        self.gold = random.randint(25, 10000)
+        super().__init__(name="Jester", health=random.randint(500, 1500), mana=random.randint(125, 300),
+                         strength=random.randint(30, 50), intel=random.randint(20, 40), wisdom=random.randint(20, 50),
+                         con=random.randint(30, 60), charisma=99, dex=random.randint(30, 50),
+                         exp=random.randint(2000, 10000))
+        self.gold = random.randint(5000, 100000)
         self.equipment = dict(Weapon=items.Kukri, Armor=items.StuddedCuirboulli, OffHand=items.Kukri,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=self.gold, Item=[items.random_item(random.randint(4, 5)), 1])
+        self.inventory['Item'] = [items.random_item(5), 1]
+        self.inventory['Old Key'] = [items.OldKey, 1]
         self.spellbook = {"Spells": {'Silence': spells.Silence},
                           "Skills": {'Gold Toss': spells.GoldToss,
                                      'Slot Machine': spells.SlotMachine}}
@@ -2372,6 +2619,7 @@ class Jester(Humanoid):
                            'Holy': random.uniform(-1, 1),
                            'Poison': random.uniform(-1, 1),
                            'Physical': random.uniform(-1, 1)}
+        self.pro_level = 99
 
 
 # Level 5
@@ -2385,12 +2633,14 @@ class ShadowSerpent(Elemental):
                          wisdom=15, con=22, charisma=16, dex=23, exp=random.randint(480, 790))
         self.equipment = dict(Weapon=SnakeFang2, Armor=SnakeScales2, OffHand=SnakeFang2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(280, 485), Potion=[items.Megalixir, 1])
+        self.gold = random.randint(280, 485)
+        self.inventory['Megalixir'] = [items.Megalixir, 1]
         self.spellbook = {"Spells": {'Corruption': spells.Corruption},
                           "Skills": {'Multi-Strike': spells.DoubleStrike}}
         self.resistance['Shadow'] = 0.9
         self.resistance['Holy'] = -0.75
         self.resistance['Poison'] = 0.25
+        self.pro_level = 5
 
 
 class Phlegm(Slime):
@@ -2403,12 +2653,14 @@ class Phlegm(Slime):
                          con=25, charisma=12, dex=10, exp=random.randint(350, 930))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(130, 750), Potion=[items.AardBeing, 1])
+        self.gold = random.randint(130, 750)
+        self.inventory['Aard of Being'] = [items.AardBeing, 1]
         self.spellbook = {"Spells": {'Poison Breath': spells.PoisonBreath,
                                      'Disease Breath': spells.DiseaseBreath,
                                      'Enfeeble': spells.Enfeeble},
                           "Skills": {}}
         self.resistance['Poison'] = 1.5
+        self.pro_level = 5
 
 
 class Beholder(Aberration):
@@ -2421,7 +2673,8 @@ class Beholder(Aberration):
                          con=28, charisma=20, dex=20, exp=random.randint(500, 900))
         self.equipment = dict(Weapon=Gaze, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(300, 500), OffHand=[items.MedusaShield, 1])
+        self.gold = random.randint(300, 500)
+        self.inventory['Medusa Shield'] = [items.MedusaShield, 1]
         self.spellbook = {"Spells": {'Magic Missile': spells.MagicMissile2,
                                      'Terrify': spells.Terrify,
                                      'Dispel': spells.Dispel,
@@ -2431,6 +2684,7 @@ class Beholder(Aberration):
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
         self.resistance['Death'] = 1
+        self.pro_level = 5
 
 
 class Behemoth(Aberration):
@@ -2443,7 +2697,7 @@ class Behemoth(Aberration):
                          con=30, charisma=18, dex=25, exp=random.randint(620, 950))
         self.equipment = dict(Weapon=LionPaw, Armor=AnimalHide2, OffHand=LionPaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(400, 550))
+        self.gold = random.randint(400, 550)
         self.spellbook = {"Spells": {'Holy': spells.Holy3,
                                      'Regen': spells.Regen3},
                           "Skills": {'Multi-Strike': spells.DoubleStrike,
@@ -2455,6 +2709,7 @@ class Behemoth(Aberration):
         self.resistance['Holy'] = 0.75
         self.resistance['Poison'] = 0.75
         self.resistance['Physical'] = 0.5
+        self.pro_level = 5
 
     def special_effects(self, enemy):
         if not self.is_alive():
@@ -2471,14 +2726,16 @@ class Lich(Undead):
                          con=20, charisma=36, dex=22, exp=random.randint(580, 920))
         self.equipment = dict(Weapon=LichHand, Armor=items.WizardRobe, OffHand=items.Necronomicon,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(400, 530), Armor=[items.WizardRobe, 1],
-                              OffHand=[items.Necronomicon, 1])
+        self.gold = random.randint(400, 530)
+        self.inventory['Wizard Robe'] = [items.WizardRobe, 1]
+        self.inventory['Necronomicon'] = [items.Necronomicon, 1]
         self.spellbook = {"Spells": {'Ice Blizzard': spells.IceBlizzard,
                                      'Desoul': spells.Desoul,
                                      'Terrify': spells.Terrify,
                                      'Disintegrate': spells.Disintegrate},
                           "Skills": {'Health/Mana Drain': spells.HealthManaDrain}}
         self.resistance['Ice'] = 0.9
+        self.pro_level = 5
 
 
 class Basilisk(Monster):
@@ -2491,13 +2748,14 @@ class Basilisk(Monster):
                          con=27, charisma=17, dex=20, exp=random.randint(630, 900))
         self.equipment = dict(Weapon=SnakeFang2, Armor=SnakeScales2, OffHand=SnakeFang2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(380, 520))
+        self.gold = random.randint(380, 520)
         self.spellbook = {"Spells": {'Petrify': spells.Petrify,
                                      'Poison Breath': spells.PoisonBreath},
                           "Skills": {'Mortal Strike': spells.MortalStrike2}}
         self.resistance['Death'] = 1.
         self.resistance['Stone'] = 0.5
         self.resistance['Poison'] = 0.75
+        self.pro_level = 5
 
 
 class MindFlayer(Aberration):
@@ -2510,8 +2768,10 @@ class MindFlayer(Aberration):
                          wisdom=35, con=25, charisma=22, dex=18, exp=random.randint(590, 850))
         self.equipment = dict(Weapon=items.MithrilshodStaff, Armor=items.WizardRobe, OffHand=items.Magus,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(450, 600), Weapon=[items.MithrilshodStaff, 1],
-                              Armor=[items.WizardRobe, 1], OffHand=[items.Magus, 1])
+        self.gold = random.randint(450, 600)
+        self.inventory['Mithrilshod Staff'] = [items.MithrilshodStaff, 1]
+        self.inventory['Wizard Robe'] = [items.WizardRobe, 1]
+        self.inventory['Magus'] = [items.Magus, 1]
         self.spellbook = {"Spells": {'Doom': spells.Doom,
                                      'Terrify': spells.Terrify,
                                      'Corruption': spells.Corruption},
@@ -2519,6 +2779,7 @@ class MindFlayer(Aberration):
         self.resistance['Shadow'] = 0.5
         self.resistance['Death'] = 1
         self.resistance['Holy'] = -0.25
+        self.pro_level = 5
 
 
 class Sandworm(Monster):
@@ -2531,7 +2792,7 @@ class Sandworm(Monster):
                          con=30, charisma=20, dex=18, exp=random.randint(610, 900))
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(380, 490))
+        self.gold = random.randint(380, 490)
         self.spellbook = {"Spells": {'Earthquake': spells.Earthquake,
                                      'Sandstorm': spells.Sandstorm},
                           "Skills": {'Consume Item': spells.ConsumeItem}}
@@ -2541,6 +2802,7 @@ class Sandworm(Monster):
         self.resistance['Stone'] = 1
         self.resistance['Poison'] = 1
         self.resistance['Physical'] = 0.75
+        self.pro_level = 5
 
 
 class Warforged(Construct):
@@ -2553,9 +2815,11 @@ class Warforged(Construct):
                          con=33, charisma=12, dex=10, exp=random.randint(580, 880))
         self.equipment = dict(Weapon=Cannon, Armor=StoneArmor2, OffHand=ForceField3,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(380, 490))
+        self.gold = random.randint(380, 490)
+        self.inventory['Scrap Metal'] = [items.ScrapMetal, 1]
         self.spellbook = {"Spells": {'Silence': spells.Silence},
                           "Skills": {'Turtle': spells.Turtle}}
+        self.pro_level = 5
 
     def special_effects(self, enemy):
         if not any([self.status_effects['Silence'][0],
@@ -2583,9 +2847,10 @@ class Wyrm(Dragon):
                          con=28, charisma=22, dex=23, exp=random.randint(620, 880))
         self.equipment = dict(Weapon=DragonTail2, Armor=DragonScale, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(650, 830))
+        self.gold = random.randint(650, 830)
         self.spellbook = {'Spells': {'Volcano': spells.Volcano},
-                          'Skills': {'Multi-Strike': spells.DoubleStrike}}
+                          'Skills': {'Multi-Strike': spells.TripleStrike}}
+        self.pro_level = 5
 
 
 class Hydra(Monster):
@@ -2598,7 +2863,7 @@ class Hydra(Monster):
                          con=28, charisma=24, dex=22, exp=random.randint(600, 850))
         self.equipment = dict(Weapon=Bite2, Armor=DragonScale, OffHand=DragonTail,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(400, 550))
+        self.gold = random.randint(400, 550)
         self.spellbook = {'Spells': {'Tsunami': spells.Tsunami},
                           'Skills': {'Multi-Strike': spells.TripleStrike}}
         self.resistance = {'Fire': 0,
@@ -2611,6 +2876,7 @@ class Hydra(Monster):
                            'Death': 1,
                            'Holy': 0,
                            'Poison': 0.75}
+        self.pro_level = 5
 
 
 class Wyvern(Dragon):
@@ -2623,12 +2889,13 @@ class Wyvern(Dragon):
                          con=30, charisma=25, dex=40, exp=random.randint(650, 900))
         self.equipment = dict(Weapon=DragonClaw2, Armor=DragonScale, OffHand=DragonClaw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(420, 570))
+        self.gold = random.randint(420, 570)
         self.spellbook = {"Spells": {'Tornado': spells.Tornado},
                           "Skills": {'Piercing Strike': spells.PiercingStrike}}
         self.flying = True
         self.resistance['Earth'] = 1
         self.resistance['Wind'] = -0.25
+        self.pro_level = 5
 
 
 class Archvile(Fiend):
@@ -2641,7 +2908,7 @@ class Archvile(Fiend):
                          con=38, charisma=28, dex=32, exp=random.randint(710, 980))
         self.equipment = dict(Weapon=items.BattleGauntlet, Armor=DemonArmor2, OffHand=items.BattleGauntlet,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(375, 555))
+        self.gold = random.randint(375, 555)
         self.spellbook = {"Spells": {'Sleep': spells.Sleep,
                                      'Corruption': spells.Corruption,
                                      'Terrify': spells.Terrify,
@@ -2652,6 +2919,7 @@ class Archvile(Fiend):
         self.resistance['Ice'] = 0.5
         self.resistance['Electric'] = 0.5
         self.resistance['Poison'] = 1.
+        self.pro_level = 5
 
 
 class BrainGorger(Aberration):
@@ -2665,7 +2933,8 @@ class BrainGorger(Aberration):
         self.status_effects['Blind'] = [True, -1]
         self.equipment = dict(Weapon=Tentacle2, Armor=items.NoArmor, OffHand=Tentacle2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(320, 515), Item=items.IntelPotion)
+        self.gold = random.randint(320, 515)
+        self.inventory['Intelligence Potion'] = items.IntelPotion
         self.spellbook = {"Spells": {'Terrify': spells.Terrify,
                                      'Weaken Mind': spells.WeakenMind},
                           "Skills": {'Brain Gorge': spells.BrainGorge}}
@@ -2676,6 +2945,7 @@ class BrainGorger(Aberration):
         self.resistance['Earth'] = 0.25
         self.resistance['Wind'] = 0.25
         self.resistance['Poison'] = 1.
+        self.pro_level = 5
 
 
 class Domingo(Aberration):
@@ -2684,11 +2954,11 @@ class Domingo(Aberration):
     """
 
     def __init__(self):
-        super().__init__(name='Domingo', health=random.randint(600, 800), mana=999, strength=0, intel=50, wisdom=40,
-                         con=45, charisma=60, dex=50, exp=random.randint(2000, 3000))
+        super().__init__(name='Domingo', health=1500, mana=999, strength=0, intel=50, wisdom=40, con=45, charisma=60,
+                         dex=50, exp=3500)
         self.equipment = dict(Weapon=items.NoWeapon, Armor=items.NoArmor, OffHand=items.NoOffHand,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(2500, 5000))
+        self.gold = 25000
         self.spellbook = {"Spells": {'Ultima': spells.Ultima},
                           "Skills": {'Multi-Cast': spells.DoubleCast}}
         self.flying = True
@@ -2702,6 +2972,7 @@ class Domingo(Aberration):
                            'Death': 1,
                            'Holy': 0.25,
                            'Poison': 0.25}
+        self.pro_level = 99
 
 
 class RedDragon(Dragon):
@@ -2712,11 +2983,12 @@ class RedDragon(Dragon):
     """
 
     def __init__(self):
-        super().__init__(name='Red Dragon', health=random.randint(750, 1000), mana=500, strength=50, intel=28,
-                         wisdom=35, con=30, charisma=40, dex=22, exp=random.randint(5000, 10000))
+        super().__init__(name='Red Dragon', health=2000, mana=500, strength=50, intel=38, wisdom=45, con=55,
+                         charisma=40, dex=35, exp=10000)
         self.equipment = dict(Weapon=DragonTail2, Armor=DragonScale, OffHand=DragonClaw2,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(7500, 10000), Item=[items.random_item(random.randint(5, 6)), 1])
+        self.gold = 50000
+        self.inventory['Item'] = [items.random_item(random.randint(5, 6)), 1]
         self.spellbook = {"Spells": {'Heal': spells.Heal3,
                                      'Volcano': spells.Volcano,
                                      'Ultima': spells.Ultima},
@@ -2728,13 +3000,14 @@ class RedDragon(Dragon):
                            'Electric': 0.5,
                            'Water': 0.5,
                            'Earth': 1.,
-                           'Wind': -0.25,
+                           'Wind': 0.25,
                            'Shadow': 0.5,
                            'Death': 1.,
                            'Stone': 1.,
                            'Holy': 0.5,
                            'Poison': 0.75,
-                           'Physical': 1.}
+                           'Physical': 0.25}
+        self.pro_level = 99
 
 
 # Final Boss Guard
@@ -2744,11 +3017,12 @@ class Cerberus(Fiend):
     """
 
     def __init__(self):
-        super().__init__(name='Cerberus', health=random.randint(1000, 1500), mana=500, strength=50, intel=28,
-                         wisdom=35, con=30, charisma=40, dex=22, exp=random.randint(10000, 20000))
+        super().__init__(name='Cerberus', health=2500, mana=500, strength=65, intel=28, wisdom=45, con=60, charisma=40,
+                         dex=38, exp=20000)
         self.equipment = dict(Weapon=CerberusBite, Armor=CerberusHide, OffHand=CerberusClaw,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=random.randint(2500, 5000), Item=[items.random_item(6), 1])
+        self.gold = 100000
+        self.inventory['Item'] = [items.random_item(6), 1]
         self.spellbook = {"Spells": {},
                           "Skills": {'Multi-Strike': spells.TripleStrike,
                                      'Trip': spells.Trip}}
@@ -2759,6 +3033,7 @@ class Cerberus(Fiend):
         self.resistance['Stone'] = 1.
         self.resistance['Holy'] = 0.25
         self.resistance['Physical'] = 0.5
+        self.pro_level = 99
 
 
 # Final Boss
@@ -2772,11 +3047,10 @@ class Devil(Fiend):
     """
 
     def __init__(self):
-        super().__init__(name='The Devil', health=3000, mana=1000, strength=48, intel=45, wisdom=60, con=45,
-                         charisma=80, dex=28, exp=0)
+        super().__init__(name='The Devil', health=5000, mana=1000, strength=75, intel=55, wisdom=70, con=85,
+                         charisma=80, dex=45, exp=0)
         self.equipment = dict(Weapon=DevilBlade, Armor=DevilSkin, OffHand=DevilBlade,
                               Ring=items.NoRing, Pendant=items.NoPendant)
-        self.inventory = dict(Gold=0)
         self.spellbook = {"Spells": {'Hellfire': spells.Hellfire,
                                      'Terrify': spells.Terrify,
                                      'Regen': spells.Regen3},
@@ -2796,6 +3070,7 @@ class Devil(Fiend):
                            'Physical': 1.}
         self.damage_mod = 0
         self.spell_mod = 0
+        self.pro_level = 99
 
     def check_mod(self, mod, typ=None, luck_factor=1, ultimate=False):
         class_mod = 0
