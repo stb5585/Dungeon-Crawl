@@ -1,5 +1,5 @@
-StairsUp	Wall	Wall	Wall	Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1
-CavePath1	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1
+StairsUp	Wall	Wall	WarpPoint	Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1
+CavePath1	CavePath1	Wall	EmptyCavePath	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1
 Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	CavePath1	Wall	UnlockedChestRoom	Wall	StairsUp	Wall	Wall	Wall	CavePath1
 Wall	CavePath1	CavePath1	CavePath1	Wall	CavePath1	Wall	CavePath1	CavePath1	Wall	Wall	CavePath1	Wall	LockedDoorNorth	Wall	Wall	Wall	Wall	Wall	CavePath1
 Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	Wall	Wall	Wall	Wall	CavePath1

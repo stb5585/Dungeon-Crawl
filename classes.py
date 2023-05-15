@@ -129,7 +129,7 @@ def choose_familiar():
 
 
 def promotion(player_char):
-    exp_scale = 50
+    exp_scale = 25
     pro1_dict = {Warrior().name: [WeaponMaster(), Paladin(), Lancer()],
                  Mage().name: [Sorcerer(), Warlock(), Spellblade()],
                  Footpad().name: [Thief(), Inquisitor(), Assassin()],
@@ -210,7 +210,7 @@ def promotion(player_char):
         time.sleep(0.5)
         if new_class.name in ['Warlock', 'Monk']:
             promoted_player.spellbook['Spells'] = dict()
-            print("You access to previously learned spells.")
+            print("You lose access to previously learned spells.")
             time.sleep(0.5)
         elif new_class.name == 'Weapon Master':
             del promoted_player.spellbook['Skills']['Shield Slam']
@@ -625,7 +625,7 @@ class Footpad(Job):
 class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
-    Pros: Access to stealth abilities earlier than other classes; uses dex instead of strength for damage; increased
+    Pros: Access to stealth abilities earlier than other classes; gains bonus to damage from dex; increased
         intel gain
     Cons: None
     """
@@ -718,7 +718,7 @@ class Assassin(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
     Pros: Higher dexterity and wisdom (magic defense); earlier access to skills and more powerful skills; can use fist
-      weapons in the offhand slot; uses dex instead of strength for damage
+      weapons in the offhand slot; gains bonus to damage from dex
     Cons: Lower strength and constitution; can only equip daggers or fist weapons
     """
 
@@ -936,7 +936,8 @@ class Pathfinder(Job):
 class Druid(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
-    Pros: gains animal abilities and statistics when shifted; increased strength and dex gain
+    Pros: gains animal abilities and statistics when shifted; increased strength and dex gain; gains bonus to damage
+      from dex
     Cons: loses ability to wear medium armor and shields; lower intel gain
     """
 

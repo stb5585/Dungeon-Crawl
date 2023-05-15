@@ -33,10 +33,9 @@ def new_char() -> object:
     Level MP: (0.75 * level * promotion level) + (intel // 2) (Average)
     Initial Gold: 25 x charisma score
     """
-    exp_scale = 50
+    exp_scale = 25
     location_x, location_y, location_z = (5, 10, 0)
     name = ''
-    # storyline.read_story("story_files/new_player.txt")
     os.system('cls' if os.name == 'nt' else 'clear')
     while name == '':
         storyline.slow_type("What is your character's name?\n")
@@ -52,7 +51,8 @@ def new_char() -> object:
         if cls:
             break
         time.sleep(0.5)
-    created = "Welcome to {}, the {} {}.\n".format(name, race.name, cls.name)
+    created = "Welcome {}, the {} {}.\n" \
+              "Report to the barracks for your orders.".format(name, race.name, cls.name)
     storyline.slow_type(created)
     time.sleep(1)
     stats = tuple(map(lambda x, y: x + y, race.stats, cls.stat_plus))
@@ -134,6 +134,9 @@ def load_char(char=None, tmp=False):
         player_char.world_dict = player_dict['world_dict']
         player_char.quest_dict = player_dict['quest_dict']
         player_char.kill_dict = player_dict['kill_dict']
+        player_char.invisible = player_dict['invisible']
+        player_char.flying = player_dict['flying']
+        player_char.storage = player_dict['storage']
         return player_char
 
 
@@ -167,12 +170,19 @@ class Player(Character):
         self.pro_level = pro_level
         self.gold = gold
         self.resistance = resistance
+        self.equipment = {'Weapon': items.NoWeapon,
+                          'Armor': items.NoArmor,
+                          'OffHand': items.NoOffHand,
+                          'Ring': items.NoRing,
+                          'Pendant': items.NoPendant}
         self.world_dict = dict()
         self.teleport = None
         self.quest_dict = dict(Bounty=dict(),
                                Main=dict(),
                                Side=dict())
         self.kill_dict = dict()
+        self.storage = dict()
+        self.warp_point = False
 
     def __str__(self):
         return "Player: {} | Health: {}/{} | Mana: {}/{}".format(self.name, self.health, self.health_max,
@@ -188,7 +198,7 @@ class Player(Character):
         for tile in self.world_dict:
             if self.location_z == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
-                if self.world_dict[tile].visited:
+                if self.world_dict[tile].near:
                     if self.world_dict[tile] is None:
                         continue
                     elif 'Stairs' in self.world_dict[tile].__str__():
@@ -206,9 +216,6 @@ class Player(Character):
                         else:
                             map_array[tile_x][tile_y] = "."
                     elif 'Wall' in self.world_dict[tile].__str__():
-                        # if 'Fake' in self.world_dict[tile].__str__():
-                        #     map_array[tile_x][tile_y] = "\u2592"
-                        # else:
                         map_array[tile_x][tile_y] = "#"
                     elif 'Chest' in self.world_dict[tile].__str__():
                         if self.world_dict[tile].open:
@@ -406,10 +413,10 @@ class Player(Character):
         print("Charisma: {}".format(self.charisma))
         print("Dexterity: {}".format(self.dex))
         main_dmg = self.check_mod('weapon')
-        main_crit = int(1 / float(self.equipment['Weapon']().crit + 1) * 100)
+        main_crit = round(self.equipment['Weapon']().crit * 100)
         if self.equipment['OffHand']().typ == 'Weapon':
             off_dmg = self.check_mod('offhand')
-            off_crit = int(1 / float(self.equipment['OffHand']().crit + 1) * 100)
+            off_crit = round(self.equipment['OffHand']().crit * 100)
             print("Attack: {}/{}".format(str(main_dmg), str(off_dmg)))
             print("Critical Chance: {}%/{}%".format(str(main_crit), str(off_crit)))
         else:
@@ -417,13 +424,20 @@ class Player(Character):
             print("Critical Chance: {}%".format(str(main_crit)))
         print("Armor: {}".format(self.check_mod('armor')))
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: {}%".format(str(int(100 / float(self.equipment['OffHand']().mod)))))
-        elif len(self.spellbook['Spells']) > 0:
+            print("Block Chance: {}%".format(round(self.equipment['OffHand']().mod) * 100))
+        if len(self.spellbook['Spells']) > 0:
             spell_mod = self.check_mod('magic')
             print("Spell Modifier: +{}".format(str(spell_mod)))
             if any([x().subtyp == 'Heal' for x in self.spellbook['Spells'].values()]):
                 heal_mod = self.check_mod('heal')
                 print("Heal Modifier: +{}".format(str(heal_mod)))
+        buffs = []
+        if any([self.flying, self.invisible]):
+            if self.flying:
+                buffs.append("Flying")
+            if self.invisible:
+                buffs.append("Invisible")
+            print("Buffs: " + ", ".join(buffs))
         print("#" + (10 * "-") + "#")
         if self.cls in ['Warlock', 'Shadowcaster']:
             print("Familiar Name: {}".format(self.familiar.name))
@@ -510,7 +524,7 @@ class Player(Character):
         return valid
 
     def level_up(self):
-        exp_scale = 50
+        exp_scale = 25
         print("You gained a level.")
         if (self.level + 1) % 4 == 0:
             print("Strength: {}".format(self.strength))
@@ -585,9 +599,9 @@ class Player(Character):
     def open_up(self, tile):
         if 'Chest' in tile.__str__():
             locked = int('Locked' in tile.__str__())
-            plus = int('2' in tile.__str__())
+            plus = int('ChestRoom2' in tile.__str__())
             enemy = enemies.Mimic(self.location_z + locked + plus)
-            if not random.randint(0, 4 + self.check_mod('luck', luck_factor=10)):
+            if not random.randint(0, 4 + self.check_mod('luck', luck_factor=10)) and self.level >= 10:
                 print("There is a Mimic in the chest!")
                 time.sleep(1)
                 self.state = 'fight'
@@ -607,19 +621,28 @@ class Player(Character):
             raise BaseException
 
     def loot(self, enemy, tile):
+        rare = False
         print("{} dropped {} gold.".format(enemy.name, enemy.gold))
         self.gold += enemy.gold
         for item in enemy.inventory.values():
             drop = False
-            chance = max(0, int(item[0]().rarity / self.pro_level) - self.check_mod('luck', luck_factor=16))
-            if not random.randint(0, chance) and 'Boss' not in tile.__str__():
-                print("{} dropped a {}.".format(enemy.name, item[0]().name))
-                drop = True
+            chance = self.check_mod('luck', luck_factor=16) + self.pro_level
+            if item[0]().rarity > (random.random() / chance) and 'Boss' not in tile.__str__():
+                if item[0]().subtyp == 'Enemy':
+                    for quest, info in self.quest_dict['Side'].items():
+                        if info['What'] == item[0] and not info['Completed']:
+                            rare = True
+                            drop = True
+                            break
+                else:
+                    drop = True
             elif 'Boss' in tile.__str__():
-                print("{} dropped a {}.".format(enemy.name, item[0]().name))
                 drop = True
+            else:
+                pass
             if drop:
-                self.modify_inventory(item[0], item[1])
+                print("{} dropped a {}.".format(enemy.name, item[0]().name))
+                self.modify_inventory(item[0], num=item[1], rare=rare)
                 self.quests(item=item[0])
 
     def print_inventory(self):
@@ -811,7 +834,10 @@ class Player(Character):
                 print("You are currently equipped with {}.".format(self.equipment[equip_slot]().name))
                 old = self.equipment[equip_slot]
                 if item_type == 'Accessory':
-                    print("You current {} gives {}.".format(equip_slot, old().mod))
+                    if old().mod in self.resistance or old().mod == 'Elemental':
+                        print("You current {} gives {} resistance.".format(equip_slot, old().mod))
+                    else:
+                        print("You current {} gives {}.".format(equip_slot, old().mod))
                 shield = False
                 for item in self.inventory:
                     if item_type == equip_slot:
@@ -827,18 +853,13 @@ class Player(Character):
                                 elif equip_slot == 'OffHand':
                                     if self.inventory[item][0]().typ == self.equipment['OffHand']().typ:
                                         if self.inventory[item][0]().subtyp == 'Shield':
-                                            try:
-                                                current_mod = 1 / self.equipment['OffHand']().mod
-                                            except ZeroDivisionError:
-                                                current_mod = 0
-                                            diff = int(((1 / self.inventory[item][0]().mod) -
-                                                        current_mod) * 100)
+                                            diff = int((self.inventory[item][0]().mod -
+                                                        self.equipment['OffHand']().mod) * 100)
                                             shield = True
                                         elif self.inventory[item][0]().subtyp == 'Tome':
                                             diff = self.inventory[item][0]().mod - self.equipment['OffHand']().mod
                                         else:
-                                            diff = self.inventory[item][0]().damage - self.equipment[
-                                                'OffHand']().damage
+                                            diff = self.inventory[item][0]().damage - self.equipment['OffHand']().damage
                                 if shield:
                                     inv_list.append(item + '   ' + str(diff) + '%')
                                 elif diff == '':
@@ -849,8 +870,7 @@ class Player(Character):
                                     inv_list.append(item + '  +' + str(diff))
                     else:
                         if str(self.inventory[item][0]().subtyp) == equip_slot:
-                            mod = self.inventory[item][0]().mod
-                            inv_list.append(item + '  ' + mod)
+                            inv_list.append(item + '  ' + self.inventory[item][0]().mod)
 
                 if not self.equipment[equip_slot]().unequip:
                     inv_list.append('Unequip')
@@ -885,6 +905,9 @@ class Player(Character):
                         if not old().unequip:
                             self.modify_inventory(old, 1)
                         print("You are now equipped with {}.".format(self.equipment[equip_slot]().name))
+                    if equip_slot == "Pendant":
+                        self.flying = "Flying" in self.equipment[equip_slot]().mod
+                        self.invisible = "Invisible" in self.equipment[equip_slot]().mod
                 time.sleep(0.5)
                 break
         elif unequip:
@@ -958,8 +981,6 @@ class Player(Character):
         self.status_effects['Blind'][0] = False
         self.status_effects['Bleed'][0] = False
         self.status_effects['Disarm'][0] = False
-        self.health = self.health_max
-        self.mana = self.mana_max
         self.location_x, self.location_y, self.location_z = (5, 10, 0)
         print("You wake up in town.")
         time.sleep(2)
@@ -1163,7 +1184,7 @@ class Player(Character):
             enemy.mana = enemy.mana_max
             self.death()
 
-    def quests(self, enemy=None, item=None, subtract=False):
+    def quests(self, enemy=None, item=None):
         if enemy is not None:
             if enemy.name in self.quest_dict['Bounty']:
                 if not self.quest_dict['Bounty'][enemy.name][2]:
@@ -1171,47 +1192,28 @@ class Player(Character):
                     if self.quest_dict['Bounty'][enemy.name][1] == self.quest_dict['Bounty'][enemy.name][0]:
                         self.quest_dict['Bounty'][enemy.name][2] = True
                         print("You have completed a bounty.")
-            elif enemy.name in self.quest_dict['Main']:
-                if self.quest_dict['Main'][enemy.name]['Type'] == 'Defeat':
-                    self.quest_dict['Main'][enemy.name]['Completed'] = True
-                    print("You have completed the quest {}.".format(enemy.name))
-        elif item is not None:
-            if not subtract:
-                if item().name in list(self.quest_dict['Side'].keys()):
-                    if self.inventory[item().name][1] >= self.quest_dict['Side'][item().name]['Total'] and \
-                            not self.quest_dict['Side'][item().name]['Completed'] and \
-                            not self.quest_dict['Side'][item().name]['Turned In']:
-                        self.quest_dict['Side'][item().name]['Completed'] = True
-                        print("You have completed the quest {}.".format(item().name))
             else:
-                if item().name in list(self.quest_dict['Side'].keys()):
-                    if item().name not in list(self.inventory.keys()):
-                        if self.quest_dict['Side'][item().name]['Completed'] and \
-                                not self.quest_dict['Side'][item().name]['Turned In']:
-                            self.quest_dict['Side'][item().name]['Completed'] = False
-                    else:
-                        if self.inventory[item().name][1] < self.quest_dict['Side'][item().name]['Total'] and \
-                                self.quest_dict['Side'][item().name]['Completed'] and \
-                                not self.quest_dict['Side'][item().name]['Turned In']:
-                            self.quest_dict['Side'][item().name]['Completed'] = False
+                for quest in self.quest_dict['Main'].keys():
+                    if self.quest_dict['Main'][quest]['What'] == enemy.name:
+                        self.quest_dict['Main'][quest]['Completed'] = True
+                        print("You have completed the quest {}.".format(enemy.name))
+        elif item is not None:
+            for quest in list(self.quest_dict['Side'].keys()):
+                if self.quest_dict['Side'][quest]['What'] == item:
+                    if self.special_inventory[item().name][1] >= self.quest_dict['Side'][quest]['Total'] and \
+                            not self.quest_dict['Side'][quest]['Completed'] and \
+                            not self.quest_dict['Side'][quest]['Turned In']:
+                        self.quest_dict['Side'][quest]['Completed'] = True
+                        print("You have completed the quest {}.".format(quest))
+        else:
+            if self.has_relics():
+                if 'The Holy Relics' in self.quest_dict['Main']:
+                    print("You have completed the quest The Holy Relics.")
+                    self.quest_dict['The Holy Relics']['Completed'] = True
 
     def view_quests(self):
         """
-        {'Who': 'Barkeep',
-         'Type': 'Collect',
-         'Total': 10,
-         'Start Text': "Darn pesky rats keep getting into my food supply "
-                       "and I'd bet anything they come up from that "
-                       "dungeon. Help my out by killing as many as you need"
-                       " to collect 10 tails and I'll pay you 1000 gold.",
-         'End Text': "Good riddance to the bastards, hopefully this will "
-                     "keep my food supplies in good order. Here's the gold "
-                     "I promised you.",
-         'Reward': ['Gold'],
-         'Reward Number': 1000,
-         'Experience': 100,
-         'Completed': False,
-         'Turned In': False}
+        Bounty Quests:
         """
 
         while True:
@@ -1219,40 +1221,155 @@ class Player(Character):
             print("#" + (30 * "-") + "#")
             print("  Bounties: Remaining/Total")
             for quest, info in self.quest_dict["Bounty"].items():
-                print("  {}: {}/{}".format(quest, info[1], info[0]))
+                if info[2]:
+                    print("  {}: Completed".format(quest))
+                else:
+                    print("  {}: {}/{}".format(quest, info[1], info[0]))
             print("#" + (30 * "-") + "#")
             print("  Quests")
             inspect_list = []
+            completed_list = []
             for typ in ["Main", "Side"]:
                 for quest in self.quest_dict[typ].keys():
                     if not self.quest_dict[typ][quest]['Turned In']:
                         inspect_list.append(quest)
+                    else:
+                        completed_list.append(quest)
+            if len(completed_list) > 0:
+                inspect_list.append("Completed Quests")
             inspect_list.append("Go Back")
             inspect_input = storyline.get_response(inspect_list)
             quest = inspect_list[inspect_input]
             if quest == "Go Back":
                 break
-            if quest in self.quest_dict['Main']:
-                info = self.quest_dict['Main'][quest]
-            elif quest in self.quest_dict['Side']:
-                info = self.quest_dict['Side'][quest]
+            elif quest == "Completed Quests":
+                for i in completed_list:
+                    print("  " + i)
             else:
-                print("You shouldn't reach here.")
-                raise BaseException
-            if info['Type'] == 'Collect':
-                if quest in list(self.inventory.keys()):
-                    if self.inventory[quest][1] <= info['Total']:
-                        print("  Collect {} {}s: {}/{}".format(
-                            info['Total'], quest, self.inventory[quest][1], info['Total']))
+                if quest in self.quest_dict['Main']:
+                    info = self.quest_dict['Main'][quest]
+                elif quest in self.quest_dict['Side']:
+                    info = self.quest_dict['Side'][quest]
+                else:
+                    print("You shouldn't reach here.")
+                    raise BaseException
+                if info['Type'] == 'Collect':
+                    item_name = info['What']().name
+                    if item_name in list(self.special_inventory.keys()):
+                        if self.special_inventory[item_name][1] < info['Total']:
+                            print("  Collect {} {}s: {}/{}".format(
+                                info['Total'], item_name, self.special_inventory[item_name][1], info['Total']))
+                        else:
+                            print("  Collect {} {}s: Completed".format(
+                                info['Total'], item_name))
                     else:
-                        print("  Collect {} {}s: {}/{}".format(
-                            info['Total'], quest, info['Total'], info['Total']))
+                        print("  Collect {} {}s: {}/{}".format(info['Total'], item_name, 0, info['Total']))
+                elif info['Type'] == 'Defeat':
+                    if info['What'] in list(self.kill_dict.keys()):
+                        print("  {} {}: Completed".format(info['Type'], info['What']))
+                    else:
+                        print("  {} {}".format(info['Type'], info['What']))
                 else:
-                    print("  Collect {} {}s: {}/{}".format(info['Total'], quest, 0, info['Total']))
-            elif info['Type'] == 'Defeat':
-                if quest in list(self.kill_dict.keys()):
-                    print("  {} {}: Completed".format(info['Type'], quest))
-                else:
-                    print("  {} {}".format(info['Type'], quest))
-            print("  Quest Giver: {}".format(info['Who']))
+                    if info['Completed']:
+                        print("  {} {}: Completed".format(info['Type'], info['What']))
+                    else:
+                        print("  {} {}".format(info['Type'], info['What']))
+                print("  Quest Giver: {}".format(info['Who']))
             input("Press enter to continue")
+
+    def check_mod(self, mod, typ=None, luck_factor=1, ultimate=False, ignore=False):
+        class_mod = 0
+        if mod == 'weapon':
+            weapon_mod = self.equipment['Weapon']().damage + self.strength
+            if 'Monk' in self.cls:
+                class_mod += (self.wisdom // 2)
+            if self.cls in ['Spellblade', 'Knight Enchanter']:
+                class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
+            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja', 'Druid', 'Lycan']:
+                class_mod += (self.dex // 2)
+            if 'Physical Damage' in self.equipment['Ring']().mod:
+                weapon_mod += int(self.equipment['Ring']().mod.split(' ')[0])
+            if self.status_effects['Attack'][0]:
+                weapon_mod += self.status_effects['Attack'][2]
+            return weapon_mod + class_mod
+        elif mod == 'offhand':
+            if 'Monk' in self.cls:
+                class_mod += self.wisdom
+            if self.cls in ['Spellblade', 'Knight Enchanter']:
+                class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
+            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja', 'Druid', 'Lycan']:
+                class_mod += (self.dex // 2)
+            try:
+                off_mod = self.equipment['OffHand']().damage + self.strength
+                if 'Physical Damage' in self.equipment['Ring']().mod:
+                    off_mod += int(self.equipment['Ring']().mod.split(' ')[0])
+                if self.status_effects['Attack'][0]:
+                    off_mod += self.status_effects['Attack'][2]
+                return int((off_mod + class_mod) * 0.75)
+            except AttributeError:
+                return 0
+        elif mod == 'armor':
+            armor_mod = self.equipment['Armor']().armor
+            if self.cls == 'Knight Enchanter':
+                class_mod += self.intel * (self.mana / self.mana_max)
+            if self.cls in ['Warlock', 'Shadowcaster']:
+                if self.familiar.typ == 'Homunculus' and random.randint(0, 1) and self.familiar.pro_level > 1:
+                    fam_mod = random.randint(0, 3) ** self.familiar.pro_level
+                    print("{} improves {}'s armor by {}.".format(self.familiar.name, self.name, fam_mod))
+                    class_mod += fam_mod
+            if 'Physical Defense' in self.equipment['Ring']().mod:
+                armor_mod += int(self.equipment['Ring']().mod.split(' ')[0])
+            if self.status_effects['Defense'][0]:
+                armor_mod += self.status_effects['Defense'][2]
+            return armor_mod * int(not ignore) + class_mod
+        elif mod == 'magic':
+            magic_mod = int(self.intel // 2) * self.pro_level
+            if self.equipment['OffHand']().subtyp == 'Tome':
+                magic_mod += self.equipment['OffHand']().mod
+            if self.equipment['Weapon']().subtyp == 'Staff' or \
+                    (self.cls in ['Spellblade', 'Knight Enchanter'] and
+                     self.equipment['Weapon']().subtyp == 'Longsword'):
+                magic_mod += int(self.equipment['Weapon']().damage * 1.5)
+            if 'Magic Damage' in self.equipment['Pendant']().mod:
+                magic_mod += int(self.equipment['Pendant']().mod.split(' ')[0])
+            if self.status_effects['Magic'][0]:
+                magic_mod += self.status_effects['Magic'][2]
+            return magic_mod + class_mod
+        elif mod == 'magic def':
+            m_def_mod = self.wisdom
+            if 'Magic Defense' in self.equipment['Pendant']().mod:
+                m_def_mod += int(self.equipment['Pendant']().mod.split(' ')[0])
+            if self.status_effects['Magic Defense'][0]:
+                m_def_mod += self.status_effects['Magic Defense'][2]
+            return m_def_mod + class_mod
+        elif mod == 'heal':
+            heal_mod = self.wisdom * self.pro_level
+            if self.equipment['OffHand']().subtyp == 'Tome':
+                heal_mod += self.equipment['OffHand']().mod
+            elif self.equipment['Weapon']().subtyp == 'Staff':
+                heal_mod += int(self.equipment['Weapon']().damage * 1.5)
+            if self.status_effects['Magic'][0]:
+                heal_mod += self.status_effects['Magic'][2]
+            return heal_mod + class_mod
+        elif mod == 'resist':
+            res_mod = self.resistance[typ]
+            if self.flying:
+                if typ == 'Earth':
+                    res_mod = 1
+                elif typ == 'Wind':
+                    res_mod = -0.25
+            if self.cls in ['Warlock', 'Shadowcaster']:
+                if self.familiar.typ == 'Mephit' and random.randint(0, 1) and self.familiar.pro_level > 1:
+                    fam_mod = 0.25 * random.randint(1, max(1, self.charisma // 10))
+                    print("{} increases {}'s resistance to {} by {}%.".format(self.familiar.name, self.name,
+                                                                              typ, int(fam_mod * 100)))
+                    res_mod += fam_mod
+            if self.equipment['Pendant']().mod == typ:
+                res_mod = 1
+            elif self.equipment['Pendant']().mod == "Elemental" and \
+                    typ in ['Fire', 'Ice', 'Electric', 'Water', 'Earth', 'Wind']:
+                res_mod += 0.25
+            return res_mod
+        elif mod == 'luck':
+            luck_mod = self.charisma // luck_factor
+            return luck_mod

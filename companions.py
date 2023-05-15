@@ -76,7 +76,7 @@ class Fairy(Character):
         print("{} has leveled up!".format(self.name))
         if self.pro_level == 1:
             self.pro_level = 2
-            spell_list = [spells.Reflect, spells.Heal2, spells.Regen2, spells.Bless2]
+            spell_list = [spells.Reflect, spells.Heal2, spells.Regen2]
             print_list = []
             for spell in spell_list:
                 time.sleep(0.5)

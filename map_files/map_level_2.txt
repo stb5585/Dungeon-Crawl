@@ -7,13 +7,13 @@ CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	
 Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2	Wall	Wall	CavePath2
 Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	CavePath1	Wall	Wall	Wall	Wall	UnlockedChestRoom2	CavePath2	Wall	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1	Wall	Wall	RelicRoom	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
-CavePath1	CavePath1	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1	Wall	UnlockedChestRoom2	LockedChestRoom2	UnlockedChestRoom2	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
+CavePath1	CavePath1	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath1	Wall	UnlockedChestRoom2	DeadBody	UnlockedChestRoom2	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 Wall	CavePath1	CavePath1	CavePath1	Wall	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	UnlockedChestRoom2	Wall	UnlockedChestRoom2	CavePath2	Wall	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	NightmareBossRoom	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 StairsDown	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	EmptyCavePath	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	EmptyCavePath	PseudodragonBossRoom	EmptyCavePath	UnlockedChestRoom2	Wall	EmptyCavePath	Wall	UnlockedChestRoom2	CavePath2	Wall	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	Wall	Wall	LockedDoorSouth	Wall	Wall	StairsDown	Wall	Wall	Wall	Wall	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
-Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	UnlockedChestRoom2	UnlockedChestRoom2	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
+Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	StairsUp	UnlockedChestRoom2	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 UnlockedChestRoom2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	UnlockedChestRoom2	LockedChestRoom2	Wall	CavePath2	Wall	Wall	UnlockedChestRoom2	CavePath2	Wall	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	UnlockedChestRoom2	UnlockedChestRoom2	Wall	CavePath2	Wall	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2

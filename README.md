@@ -23,8 +23,7 @@ DESCRIPTION:
 FUTURE DEVELOPMENT:
 - Planned development
     - Make item comparison easier for the shop
-    - Add quests to game; add tavern in town for obtaining quests
-    - Add special items for each final class
+    - Add special item(s) for each final class
     - Allow player to switch characters in-game (instead of exiting and re-loading)
 
 - Possible development
@@ -40,6 +39,7 @@ FILES:
 - character.py
 - classes.py
 - combat.py
+- companions.py
 - enemies.py
 - game.py
 - items.py

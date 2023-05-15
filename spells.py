@@ -4,7 +4,6 @@ import time
 
 import items
 import storyline
-from classes import classes_dict
 
 ###########################################
 """ spell manager """
@@ -148,62 +147,67 @@ class Luck(Skill):
 class ShieldSlam(Offensive):
     """
     Cannot crit with Shield Slam
+    multiplier indicates the factor by which the damage is calculated
     """
 
     def __init__(self):
         super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
                                                          'stun for several turns.',
                          cost=8)
+        self.multiplier = 5
 
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= self.cost
-        dam_red = target.check_mod('armor')
-        dmg_mod = int(user.strength * (8 / user.equipment['OffHand']().mod))
-        dmg_mod = random.randint(dmg_mod // 2, dmg_mod)
-        if 'Physical Damage' in user.equipment['Ring']().mod:
-            dmg_mod += int(user.equipment['Ring']().mod.split(' ')[0])
-        chance = target.check_mod('luck', luck_factor=10)
+        dodge = target.dodge_chance(user) > random.random()
         if any(target.status_effects[x][0] for x in ['Sleep', 'Stun', 'Prone']):
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(chance // 2, chance)
+            hit = True
+            dodge = False
         else:
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(chance, (target.dex // 2) + chance)
-        damage = max(1, dmg_mod)
-        if hit and cover:
-            print("{} steps in front of the attack, absorbing the damage directed at {}.".format(target.familiar.name,
-                                                                                                 target.name))
-        elif hit and damage > 0:
-            resist = target.check_mod('resist', typ='Physical')
-            damage = max(0, int((damage - dam_red) * (1 - resist)))
-            if hit and target.status_effects['Mana Shield'][0]:
-                damage //= target.status_effects['Mana Shield'][1]
-                if damage > target.mana:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
-                    damage -= target.mana
-                    target.mana = 0
-                    target.status_effects['Mana Shield'][0] = False
-                else:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
-                    target.mana -= damage
-                    damage = 0
-            if damage == 0:
-                print("{} swings their shield at {} but it does no damage.".format(user.name, target.name))
-            else:
-                target.health -= damage
-                print("{} damages {} with Shield Slam for {} hit points.".format(user.name, target.name, damage))
-                if target.is_alive() and not target.status_effects['Stun'][0]:
-                    if random.randint(0, user.strength) \
-                            > random.randint(target.strength // 2, target.strength):
-                        turns = max(1, user.strength // 10)
-                        target.status_effects['Stun'][0] = True
-                        target.status_effects['Stun'][1] = turns
-                        print("{} is stunned.".format(target.name, turns))
+            hit_per = user.hit_chance(target, typ='weapon')
+            hit = (hit_per > random.random())
+        if dodge:
+            print("{} evades {}'s attack.".format(target.name, user.name))
+        else:
+            dam_red = target.check_mod('armor')
+            dmg_mod = int(user.strength * user.equipment['OffHand']().mod * self.multiplier)
+            dmg_mod = random.randint(dmg_mod // 2, dmg_mod)
+            if 'Physical Damage' in user.equipment['Ring']().mod:
+                dmg_mod += int(user.equipment['Ring']().mod.split(' ')[0])
+            damage = max(1, dmg_mod)
+            if hit and cover:
+                print("{} steps in front of the attack, absorbing the damage directed at {}.".format(
+                    target.familiar.name, target.name))
+            elif hit:
+                resist = target.check_mod('resist', typ='Physical')
+                damage = max(0, int((damage - dam_red) * (1 - resist)))
+                if hit and target.status_effects['Mana Shield'][0] and damage > 0:
+                    damage //= target.status_effects['Mana Shield'][1]
+                    if damage > target.mana:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
+                        damage -= target.mana
+                        target.mana = 0
+                        target.status_effects['Mana Shield'][0] = False
                     else:
-                        print("{} fails to stun {}.".format(user.name, target.name))
-        elif not hit:
-            print("{} swings their shield at {} but miss entirely.".format(user.name, target.name))
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
+                        target.mana -= damage
+                        damage = 0
+                if damage == 0:
+                    print("{} hits {} with their shield but it does no damage.".format(user.name, target.name))
+                else:
+                    target.health -= damage
+                    print("{} damages {} with Shield Slam for {} hit points.".format(user.name, target.name, damage))
+                    if target.is_alive() and not target.status_effects['Stun'][0]:
+                        if random.randint(0, user.strength) \
+                                > random.randint(target.strength // 2, target.strength):
+                            turns = max(1, user.strength // 10)
+                            target.status_effects['Stun'][0] = True
+                            target.status_effects['Stun'][1] = turns
+                            print("{} is stunned.".format(target.name, turns))
+                        else:
+                            print("{} fails to stun {}.".format(user.name, target.name))
+            else:
+                print("{} swings their shield at {} but miss entirely.".format(user.name, target.name))
 
 
 class DoubleStrike(Offensive):
@@ -347,7 +351,7 @@ class DoubleCast(Offensive):
                     user.name))
                 user.mana += self.cost
                 break
-            if user.cls in classes_dict:
+            if user.cls in ['Sorcerer', 'Wizard', 'Archbishop', 'Diviner', 'Geomancer']:
                 spell_index = storyline.get_response(spell_list)
                 spell = user.spellbook['Spells'][spell_list[spell_index].rsplit('  ', 1)[0]]
             else:
@@ -390,8 +394,8 @@ class MortalStrike(Offensive):
             if random.randint((user.strength * crit) // 2, (user.strength * crit)) \
                     > random.randint(target.con // 2, target.con) and not target.status_effects['Mana Shield'][0]:
                 target.status_effects['Bleed'][0] = True
-                target.status_effects['Bleed'][1] = user.strength // 10
-                target.status_effects['Bleed'][2] = user.strength // 2
+                target.status_effects['Bleed'][1] = max(user.strength // 10, target.status_effects["Bleed"][1])
+                target.status_effects['Bleed'][2] = max(user.strength * crit, target.status_effects["Bleed"][2])
                 print("{} is bleeding.".format(target.name, user.strength // 10))
 
 
@@ -707,6 +711,7 @@ class PoisonStrike(Stealth):
     def __init__(self):
         super().__init__(name='Poison Strike', description='Attack the enemy with a chance to poison.',
                          cost=14)
+        self.damage = 5
 
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
@@ -716,13 +721,13 @@ class PoisonStrike(Stealth):
             if hit and target.is_alive() and not target.status_effects['Mana Shield'][0]:
                 resist = target.check_mod('resist', 'Poison')
                 if resist < 1:
-                    if random.randint((user.dex * crit) // 2, (user.dex * crit)) * (1 - resist) \
+                    if random.randint(user.dex // 2, user.dex) * crit * (1 - resist) \
                             > random.randint(target.con // 2, target.con):
                         turns = max(1, user.dex // 10)
-                        pois_dmg = int(user.dex * crit * (1 - resist))
+                        pois_dmg = random.randint(1, max(1, int((self.damage * user.pro_level) * (1 - resist))))
                         target.status_effects['Poison'][0] = True
-                        target.status_effects['Poison'][1] = turns
-                        target.status_effects['Poison'][2] = pois_dmg
+                        target.status_effects['Poison'][1] = max(turns, target.status_effects["Poison"][1])
+                        target.status_effects['Poison'][2] = max(pois_dmg, target.status_effects["Poison"][2])
                         print("{} is poisoned.".format(target.name, turns))
                     else:
                         print("{} resists the poison.".format(target.name))
@@ -1097,28 +1102,26 @@ class GoldToss(Luck):
                          cost=0)
         self.rank = 1
 
-    def use(self, user, target=None, fam=False, cover=False, max_thrown=None):
+    def use(self, user, target=None, fam=False, cover=False):
+        max_thrown = 0.1
         if not fam:
             name = user.name
             print("{} uses {}.".format(name, self.name))
         else:
             name = user.familiar.name
             print("{} uses {}.".format(name, self.name))
-            max_thrown = 0.1
+            max_thrown = 0.01
         if user.gold == 0:
             print("Nothing happens.")
         else:
             a_chance = user.check_mod('luck', luck_factor=20)
             d_chance = target.check_mod('luck', luck_factor=10)
-            if max_thrown:
-                gold = max(1, int(max_thrown * user.gold))
-            else:
-                gold = user.gold
+            gold = max(1, int(max_thrown * user.gold))
             damage = max(1, random.randint(1, gold) // (random.randint(1, 3) // max(1, a_chance)))
             user.gold -= damage
             print("{} throws {} gold at {}.".format(name, damage, target.name))
             if not random.randint(0, 1) and \
-                    not any(target.status_effects[x] for x in ['Sleep', 'Stun']):
+                    not any(target.status_effects[x][0] for x in ['Sleep', 'Stun']):
                 catch = random.randint(min(damage, d_chance), damage)
                 damage -= catch
                 if catch > 0:
@@ -1320,6 +1323,41 @@ class Lick(Skill):
                     print("{} is affected by {}.".format(target.name, random_effect.lower()))
 
 
+class AcidSpit(Skill):
+    """
+    dodge reduces damage by half
+    """
+
+    def __init__(self):
+        super().__init__(name="Acid Spit", description="Spit a corrosive substance on the target, dealing initial "
+                                                       "damage plus damage over time.",
+                         cost=6)
+        self.damage = 8
+
+    def use(self, user, target=None, cover=False):
+        print("{} uses {}.".format(user.name, self.name))
+        user.mana -= (self.cost * user.pro_level)
+        dmg = self.damage * user.pro_level
+        dam_red = target.check_mod('magic def')
+        damage = random.randint(dmg // 2, dmg) - dam_red
+        hit = user.hit_chance(target)
+        dodge = target.dodge_chance(user) > random.random()
+        if hit:
+            if dodge:
+                print("{} partially dodges the attack, only taking half damage.".format(target.name))
+                damage //= 2
+            damage -= (1 - (int(dodge) * 0.5))
+            if damage > 0:
+                target.status_effects["DOT"][0] = True
+                target.status_effects["DOT"][1] = 2
+                target.status_effects["DOT"][2] = max(damage, target.status_effects["DOT"][2])
+                print("{} is covered in a corrosive substance.".format(target.name))
+            else:
+                print("The acid is ineffective.")
+        else:
+            print("{} misses {} with {}.".format(user.name, target.name, self.name))
+
+
 class Web(Skill):
     """
 
@@ -1381,7 +1419,7 @@ class Shapeshift(Skill):
     def use(self, user, target=None, cover=False):
         while True:
             s_creature = random.choice(user.transform)()
-            if user.name != s_creature.name:
+            if user.cls != s_creature.cls:
                 break
         print("{} changes shape, becoming a {}.".format(user.name, s_creature.name))
         user.cls = s_creature.cls
@@ -1444,6 +1482,7 @@ class NightmareFuel(Skill):
             if random.randint(user.intel // 2, user.intel) > \
                     random.randint(target.wisdom // 2, target.wisdom):
                 damage = target.status_effects['Sleep'][1] * user.intel
+                target.health -= damage
                 print("{} invades {}'s dreams, dealing {} damage.".format(user.name, target.name, damage))
             else:
                 print("{} resists the spell.".format(target.name))
@@ -1467,48 +1506,52 @@ class ThrowRock(Skill):
         size = random.randint(0, 4)  # size of rock thrown
         sizes = ['tiny', 'small', 'medium', 'large', 'massive']
         print("{} throws a {} rock at {}.".format(user.name, sizes[size], target.name))
+        a_chance = user.check_mod('luck', luck_factor=10)
+        d_chance = target.check_mod('luck', luck_factor=15)
+        dodge = (random.randint(0, target.dex // 2) + d_chance >
+                 random.randint(user.dex // 2, user.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
         dam_red = target.check_mod('armor')
         resist = target.check_mod('resist', 'Physical')
-        hit_mod = 1 + ((int(user.status_effects['Blind'][0]) +
-                        int(target.invisible) +
-                        int(target.flying)) / 2)
-        chance = target.check_mod('luck', luck_factor=15)
-        dodge = random.randint(0, target.dex // 2) + chance > random.randint(
-            int(user.dex / (2 * hit_mod)), int(user.dex / hit_mod))
+        hit_per = user.hit_chance(target, typ='weapon')
+        hit = (hit_per > random.random())
         if stun:
             dodge = False
-        if cover and not dodge:
-            print("{} steps in front of the attack, absorbing the damage directed at {}.".format(target.familiar.name,
-                                                                                                 target.name))
-        elif not dodge:
-            damage = random.randint(user.strength // 4, user.strength // 3) * (size + 1)
-            damage = max(0, int((damage - dam_red) * (1 - resist)))
-            if target.status_effects['Mana Shield'][0]:
-                damage //= target.status_effects['Mana Shield'][1]
-                if damage > target.mana:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
-                    damage -= target.mana
-                    target.mana = 0
-                    target.status_effects['Mana Shield'][0] = False
-                else:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
-                    target.mana -= damage
-                    damage = 0
-            if damage > 0:
-                target.health -= damage
-                print("{} is hit by the rock and takes {} damage.".format(target.name, damage))
-                if not target.status_effects["Prone"][0]:
-                    if random.randint(user.strength // 2, user.strength) > \
-                            random.randint(target.strength // 2, target.strength):
-                        dif_rating = max(1, size)
-                        target.status_effects['Prone'][0] = True
-                        target.status_effects['Prone'][1] = dif_rating
-                        print("{} is knocked over and falls prone.".format(target.name))
-            else:
-                print("{} shrugs off the damage.".format(target.name))
+            hit = True
+        if dodge:
+            print("{} evades the attack.".format(target.name))
         else:
-            print("{} misses {} with the throw.".format(user.name, target.name))
+            if cover:
+                print("{} steps in front of the attack, absorbing the damage directed at {}.".format(target.familiar.name,
+                                                                                                     target.name))
+            elif hit:
+                damage = random.randint(user.strength // 4, user.strength // 3) * (size + 1)
+                damage = max(0, int((damage - dam_red) * (1 - resist)))
+                if target.status_effects['Mana Shield'][0]:
+                    damage //= target.status_effects['Mana Shield'][1]
+                    if damage > target.mana:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
+                        damage -= target.mana
+                        target.mana = 0
+                        target.status_effects['Mana Shield'][0] = False
+                    else:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
+                        target.mana -= damage
+                        damage = 0
+                if damage > 0:
+                    target.health -= damage
+                    print("{} is hit by the rock and takes {} damage.".format(target.name, damage))
+                    if not target.status_effects["Prone"][0]:
+                        if random.randint(user.strength // 2, user.strength) > \
+                                random.randint(target.strength // 2, target.strength):
+                            dif_rating = max(1, size)
+                            target.status_effects['Prone'][0] = True
+                            target.status_effects['Prone'][1] = dif_rating
+                            print("{} is knocked over and falls prone.".format(target.name))
+                else:
+                    print("{} shrugs off the damage.".format(target.name))
+            else:
+                print("{} misses {} with the throw.".format(user.name, target.name))
 
 
 class Stomp(Skill):
@@ -1524,48 +1567,54 @@ class Stomp(Skill):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= self.cost
         resist = target.check_mod('resist', 'Physical')
-        t_chance = target.check_mod('luck', luck_factor=10)
+        a_chance = user.check_mod('luck', luck_factor=10)
+        d_chance = target.check_mod('luck', luck_factor=15)
+        dodge = (random.randint(0, target.dex // 2) + d_chance >
+                 random.randint(user.dex // 2, user.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
         if stun:
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(t_chance // 2, t_chance)
+            dodge = False
+            hit = True
         else:
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(target.dex // 2, target.dex) + t_chance
-        if cover and hit:
-            print("{} steps in front of the attack, absorbing the damage directed at {}.".format(target.familiar.name,
-                                                                                                 target.name))
-        elif hit:
-            crit = 1
-            if not random.randint(0, t_chance):
-                crit = 2
-                print("Critical hit!")
-            damage = int(random.randint(user.strength // 2, user.strength) * (1 - resist)) * crit
-            if target.status_effects['Mana Shield'][0]:
-                damage //= target.status_effects['Mana Shield'][1]
-                if damage > target.mana:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
-                    damage -= target.mana
-                    target.mana = 0
-                    target.status_effects['Mana Shield'][0] = False
+            hit_per = user.hit_chance(target, typ='weapon')
+            hit = (hit_per > random.random())
+        if dodge:
+            print("{} evades the attack.".format(target.name))
+        else:
+            if cover and hit:
+                print("{} steps in front of the attack, absorbing the damage directed at {}.".format(
+                    target.familiar.name, target.name))
+            elif hit:
+                crit = 1
+                if not random.randint(0, a_chance):
+                    crit = 2
+                    print("Critical hit!")
+                damage = int(random.randint(user.strength // 2, user.strength) * (1 - resist)) * crit
+                if target.status_effects['Mana Shield'][0]:
+                    damage //= target.status_effects['Mana Shield'][1]
+                    if damage > target.mana:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
+                        damage -= target.mana
+                        target.mana = 0
+                        target.status_effects['Mana Shield'][0] = False
+                    else:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
+                        target.mana -= damage
+                        damage = 0
+                if damage > 0:
+                    target.health -= damage
+                    print("{} stomps {}, dealing {} damage.".format(user.name, target.name, damage))
+                    if not target.status_effects["Stun"][0]:
+                        if random.randint(user.strength // 2, user.strength) > \
+                                random.randint(target.con // 2, target.con):
+                            turns = max(2, user.strength // 10)
+                            target.status_effects["Stun"][0] = True
+                            target.status_effects["Stun"][1] = turns
+                            print("{} stunned {}.".format(user.name, target.name, turns))
                 else:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
-                    target.mana -= damage
-                    damage = 0
-            if damage > 0:
-                target.health -= damage
-                print("{} stomps {}, dealing {} damage.".format(user.name, target.name, damage))
-                if not target.status_effects["Stun"][0]:
-                    if random.randint(user.strength // 2, user.strength) > \
-                            random.randint(target.con // 2, target.con):
-                        turns = max(2, user.strength // 10)
-                        target.status_effects["Stun"][0] = True
-                        target.status_effects["Stun"][1] = turns
-                        print("{} stunned {}.".format(user.name, target.name, turns))
+                    print("{} stomps {} but deals no damage.")
             else:
-                print("{} stomps {} but deals no damage.")
-        else:
-            print("{} misses {}.".format(user.name, target.name))
+                print("{} misses {}.".format(user.name, target.name))
 
 
 class Screech(Skill):
@@ -1610,9 +1659,9 @@ class Detonate(Skill):
                          cost=0)
 
     def use(self, user, target=None, cover=False):
-        print("{} explodes, sending shrapnel in all directions.")
+        print("{} explodes, sending shrapnel in all directions.".format(user.name))
         resist = target.check_mod('resist', 'Physical')
-        damage = max(user.health // 4, int(user.health * (1 - resist)))
+        damage = max(user.health // 2, int(user.health * (1 - resist))) * random.randint(1, 4)
         if target.status_effects['Mana Shield'][0]:
             damage //= target.status_effects['Mana Shield'][1]
             if damage > target.mana:
@@ -1630,6 +1679,8 @@ class Detonate(Skill):
                 damage = max(1, damage // 2)
                 print("{} dodges the shrapnel, only taking half damage.".format(target.name))
             print("{} takes {} damage from the shrapnel.".format(target.name, damage))
+        else:
+            print("{} was unhurt by the explosion.".format(target.name))
         user.health = 0
 
 
@@ -1647,33 +1698,41 @@ class Crush(Skill):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= self.cost
         resist = target.check_mod('resist', 'Physical')
-        t_chance = target.check_mod('luck', luck_factor=12)
+        a_chance = user.check_mod('luck', luck_factor=15)
+        d_chance = target.check_mod('luck', luck_factor=10)
+        dodge = (random.randint(0, target.dex // 2) + d_chance >
+                 random.randint(user.dex // 2, user.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
         if stun:
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(t_chance // 2, t_chance)
+            hit = True
+            dodge = False
         else:
-            hit = random.randint(user.dex // 2, user.dex) > \
-                  random.randint(target.dex // 2, target.dex) + t_chance
-        if hit:
-            print("{} grabs {}.".format(user.name, target.name))
-            crit = 1
-            if not random.randint(0, t_chance):
-                crit = 2
-                print("Critical hit!")
-            damage = max(int(target.health * 0.25),
-                         int(random.randint(user.strength // 2, user.strength) * (1 - resist)) * crit)
-            target.health -= damage
-            print("{} crushes {}, dealing {} damage.".format(user.name, target.name, damage))
-            if random.randint(user.strength // 2, user.strength) > \
-                    random.randint(target.dex // 2, target.dex) + t_chance:
-                fall_damage = int(random.randint(user.strength // 2, user.strength) * (1 - resist))
-                target.health -= fall_damage
-                print("{} throws {} to the ground, dealing {} damage.".format(user.name, target.name, fall_damage))
+            a_hit = user.dex + user.strength
+            d_hit = target.dex + target.strength
+            hit = (random.randint(a_hit // 2, a_hit) + a_chance >
+                   random.randint(d_hit // 2, d_hit) + d_chance)
+        if dodge:
+            print("{} evades the attack.".format(target.name))
+        else:
+            if hit:
+                print("{} grabs {}.".format(user.name, target.name))
+                crit = 1
+                if not random.randint(0, d_chance):
+                    crit = 2
+                    print("Critical hit!")
+                damage = max(int(target.health * 0.25),
+                             int(random.randint(user.strength // 2, user.strength) * (1 - resist)) * crit)
+                target.health -= damage
+                print("{} crushes {}, dealing {} damage.".format(user.name, target.name, damage))
+                if random.randint(user.strength // 2, user.strength) > \
+                        random.randint(target.dex // 2, target.dex) + d_chance:
+                    fall_damage = int(random.randint(user.strength // 2, user.strength) * (1 - resist))
+                    target.health -= fall_damage
+                    print("{} throws {} to the ground, dealing {} damage.".format(user.name, target.name, fall_damage))
+                else:
+                    print("{} rolls as they hit the ground, preventing any fall damage.".format(target.name))
             else:
-                print("{} rolls as they hit the ground, preventing any fall damage.".format(target.name))
-        else:
-            print("{} grabs for {} but misses.".format(user.name, target.name))
+                print("{} grabs for {} but misses.".format(user.name, target.name))
 
 
 class ConsumeItem(Skill):
@@ -1692,15 +1751,14 @@ class ConsumeItem(Skill):
         user.mana -= self.cost
         u_chance = user.check_mod('luck', luck_factor=10)
         t_chance = target.check_mod('luck', luck_factor=10)
-        if random.randint(user.dex // 2, user.dex) + u_chance > \
-                random.randint(target.dex // 2, target.dex) + t_chance:
+        if random.randint(0, user.dex) + u_chance > random.randint(target.dex // 2, target.dex) + t_chance:
             if len(target.inventory) != 0 and random.randint(0, u_chance):
                 item_key = random.choice(list(target.inventory.keys()))
                 item = target.inventory[item_key][0]
                 target.modify_inventory(item, num=1, subtract=True)
                 print("{} steals {} from {} and consumes it.".format(user.name, item_key, target.name))
-                duration = max(1, item().rarity // 10)
-                amount = max(1, item().rarity // 2)
+                duration = max(1, int(1 / item().rarity))
+                amount = max(1, int(2 / item().rarity))
                 if item().typ == 'Weapon':
                     stat = 'Attack'
                     print("{}'s {} increases by {}.".format(user.name, stat.lower(), amount, duration))
@@ -1766,17 +1824,17 @@ class DestroyMetal(Skill):
         destroy_list = []
         destroy_loc = 'inv'
         for item in [target.inventory[x][0] for x in target.inventory.keys()]:
-            if item().subtyp in metal_items and not item().ultimate:
+            if item().subtyp in metal_items and not item().ultimate and item().rarity > 0:
                 destroy_list.append(item)
         if len(destroy_list) == 0:
             destroy_loc = 'equip'
             for slot, item in target.equipment.items():
-                if item().subtyp in metal_items and not item().ultimate:
+                if item().subtyp in metal_items and not item().ultimate and item().rarity > 0:
                     destroy_list.append(item)
         try:
             destroy_item = random.choice(destroy_list)
             t_chance = target.check_mod('luck', luck_factor=5)
-            if not random.randint(0, destroy_item().rarity + t_chance):
+            if not random.randint(0, int(2 / destroy_item().rarity) + t_chance):
                 if destroy_loc == 'inv':
                     print("{} destroys a {} out of {}'s inventory.".format(
                         user.name, destroy_item().name.lower(), target.name))
@@ -1814,6 +1872,93 @@ class Turtle(Skill):
                                                     " health.",
                          cost=0)
         self.passive = True
+
+
+class GoblinPunch(Skill):
+    """
+    does damage based on the strength difference between the user and target; the higher the target's strength is
+      compared to the user, the more damage it will cause
+    """
+
+    def __init__(self):
+        super().__init__(name="Goblin Punch", description="",
+                         cost=0)
+
+    def use(self, user, target=None, cover=False):
+        print("{} uses {}.".format(user.name, self.name))
+        user.mana -= self.cost
+        str_diff = target.strength - user.strength
+
+
+# class Blackjack(Skill):
+#     """
+#
+#     """
+#
+#     def __init__(self):
+#         super().__init__(name="Blackjack", description="Play a round of blackjack with the Jester; different things "
+#                                                        "happen depending on the result.",
+#                          cost=7)
+#
+#     def use(self, user, target=None, cover=False):
+#         def draw_card(cards):
+#             card = random.choice(cards)
+#             return cards.pop(cards.index(card))
+#
+#         def score(hand):
+#             total = 0
+#             for card in hand:
+#                 try:
+#                     total += int(card.split()[1])
+#                 except ValueError:
+#                     if card.split()[1] in ['J', 'Q', 'K']:
+#                         total += 10
+#                     else:
+#                         total += 11
+#                         if total > 21:
+#                             total -= 10
+#             return total
+#
+#         numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+#         suits = ["♠️", "♥️", "♣️", "♦️"]
+#         deck = [f"{suit} {number}" for suit in suits for number in numbers]
+#         print("{} uses {}.".format(user.name, self.name))
+#         user.mana -= self.cost
+#         user_hand = [draw_card(deck), draw_card(deck)]
+#         user_score = score(user_hand)
+#         user_stay = False
+#         target_hand = [draw_card(deck), draw_card(deck)]
+#         target_score = score(target_hand)
+#         target_stay = False
+#         while True:
+#             print("Your Hand: {} Jester's Hand: {}".format("".join(target_hand), "".join(user_hand)), end="\r")
+#             if target_score > 21:
+#                 break
+#             elif user_score > 21:
+#                 break
+#             else:
+#                 if not target_stay:
+#                     if target_score < 17:
+#                         target_hand.append(draw_card(deck))
+#                         target_score = score(target_hand)
+#                     else:
+#                         target_stay = True
+#                 if not user_stay:
+#                     if user_score < 17:
+#                         user_hand.append(draw_card(deck))
+#                         user_score = score(user_hand)
+#                     else:
+#                         user_stay = True
+#                 if all([target_stay, user_stay]):
+#                     break
+#             time.sleep(0.5)
+#         print("Your Hand: {} Jester's Hand: {}\n".format("".join(target_hand), "".join(user_hand)), end="\r")
+#         if target_score > 21:
+#             print("You busted!")
+#         elif user_score > 21:
+#             print("Jester busted!")
+#         else:
+#             pass
 
 
 class BrainGorge(Skill):
@@ -1949,67 +2094,73 @@ class Attack(Spell):
         stun = target.status_effects['Stun'][0]
         reflect = target.status_effects['Reflect'][0]
         spell_mod = caster.check_mod('magic')
-        chance = target.check_mod('luck', luck_factor=15)
-        if random.randint(target.dex // (4 + int(target.invisible)),
-                          target.dex // (2 + int(target.invisible))) + chance > \
-                random.randint(caster.intel // 2, caster.intel) and not stun and not reflect:
+        dodge = target.dodge_chance(caster) > random.random()
+        hit_per = caster.hit_chance(target, typ='spell')
+        hit = (hit_per > random.random())
+        if stun:
+            dodge = False
+            hit = True
+        if dodge and not reflect:
             print("{} dodged the {} and was unhurt.".format(target.name, self.name))
         elif cover:
             print("{} steps in front of the attack, absorbing the damage directed at {}.".format(target.familiar.name,
                                                                                                  target.name))
         else:
-            spell_dmg = int(self.damage + spell_mod)
-            if reflect:
-                target = caster
-                print("{} is reflected back at {}!".format(self.name, caster.name))
-            resist = target.check_mod('resist', typ=self.subtyp)
-            dam_red = target.check_mod('magic def')
-            damage = int(random.randint(spell_dmg // 2, spell_dmg))
-            crit = 1
-            if not random.randint(0, self.crit):
-                crit = 2
-            damage *= crit
-            if crit == 2:
-                print("Critical Hit!")
-            if target.status_effects['Mana Shield'][0]:
-                damage //= target.status_effects['Mana Shield'][1]
-                if damage > target.mana:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
-                    damage -= target.mana
-                    target.mana = 0
-                    target.status_effects['Mana Shield'][0] = False
-                else:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
-                    target.mana -= damage
-                    damage = 0
-            if damage < 0:
-                target.health -= damage
-                print("{} absorbs {} and is healed for {} health.".format(target.name, self.subtyp, abs(damage)))
-            else:
-                damage = int(damage * (1 - resist))
-                damage -= random.randint(dam_red // 2, dam_red)
-                if damage <= 0:
-                    print("{} was ineffective and does no damage.".format(self.name))
-                    damage = 0
-                elif random.randint(0, target.con // 2) > \
-                        random.randint((caster.intel * crit) // 2, (caster.intel * crit)):
-                    damage //= 2
-                    if damage > 0:
-                        print("{} shrugs off the {} and only receives half of the damage.".format(
-                            target.name, self.name))
-                        print("{} damages {} for {} hit points.".format(name, target.name, damage))
+            if hit:
+                spell_dmg = int(self.damage + spell_mod)
+                if reflect:
+                    target = caster
+                    print("{} is reflected back at {}!".format(self.name, caster.name))
+                resist = target.check_mod('resist', typ=self.subtyp)
+                dam_red = target.check_mod('magic def')
+                damage = int(random.randint(spell_dmg // 2, spell_dmg))
+                crit = 1
+                if not random.randint(0, self.crit):
+                    crit = 2
+                damage *= crit
+                if crit == 2:
+                    print("Critical Hit!")
+                if target.status_effects['Mana Shield'][0]:
+                    damage //= target.status_effects['Mana Shield'][1]
+                    if damage > target.mana:
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
+                        damage -= target.mana
+                        target.mana = 0
+                        target.status_effects['Mana Shield'][0] = False
                     else:
-                        print("{} was ineffective and does no damage.".format(self.name))
+                        print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
+                        target.mana -= damage
+                        damage = 0
+                if damage < 0:
+                    target.health -= damage
+                    print("{} absorbs {} and is healed for {} health.".format(target.name, self.subtyp, abs(damage)))
                 else:
-                    print("{} damages {} for {} hit points.".format(name, target.name, damage))
-                target.health -= damage
-                if target.is_alive() and damage > 0 and not reflect:
-                    self.special_effect(caster, target, damage, crit, fam=fam)
-                elif target.is_alive() and damage > 0 and reflect:
-                    self.special_effect(caster, caster, damage, crit, fam=fam)
-            if 'Counterspell' in list(target.spellbook['Spells'].keys()):
-                print("{} uses Counterspell.".format(target.name))
-                Counterspell().use(target, caster)
+                    damage = int(damage * (1 - resist))
+                    damage -= random.randint(dam_red // 4, dam_red)
+                    if damage <= 0:
+                        print("{} was ineffective and does no damage.".format(self.name))
+                        damage = 0
+                    elif random.randint(0, target.con // 2) > \
+                            random.randint((caster.intel * crit) // 2, (caster.intel * crit)):
+                        damage //= 2
+                        if damage > 0:
+                            print("{} shrugs off the {} and only receives half of the damage.".format(
+                                target.name, self.name))
+                            print("{} damages {} for {} hit points.".format(name, target.name, damage))
+                        else:
+                            print("{} was ineffective and does no damage.".format(self.name))
+                    else:
+                        print("{} damages {} for {} hit points.".format(name, target.name, damage))
+                    target.health -= damage
+                    if target.is_alive() and damage > 0 and not reflect:
+                        self.special_effect(caster, target, damage, crit, fam=fam)
+                    elif target.is_alive() and damage > 0 and reflect:
+                        self.special_effect(caster, caster, damage, crit, fam=fam)
+                if 'Counterspell' in list(target.spellbook['Spells'].keys()):
+                    print("{} uses Counterspell.".format(target.name))
+                    Counterspell().use(target, caster)
+            else:
+                print("The spell misses {}.".format(target.name))
 
     def special_effect(self, caster, target, damage, crit, fam=False):
         pass
@@ -2098,7 +2249,7 @@ class HealSpell(Spell):
                 name = caster.familiar.name
         crit = 1
         heal_mod = caster.check_mod('heal')
-        heal = int((random.randint(target.health_max // 2, target.health_max) * self.heal) + heal_mod)
+        heal = int((random.randint(target.health_max // 2, target.health_max) + heal_mod) * self.heal)
         if self.turns:
             self.hot(target, heal)
         else:
@@ -2151,7 +2302,7 @@ class MovementSpell(Spell):
 # Spells
 class MagicMissile(Attack):
     """
-
+    Can't be reflected
     """
 
     def __init__(self):
@@ -2176,11 +2327,16 @@ class MagicMissile(Attack):
             else:
                 name = caster.familiar.name
         stun = any(target.status_effects[x][0] for x in ['Sleep', 'Stun', 'Prone'])
-        reflect = target.status_effects['Reflect'][0]
         spell_mod = caster.check_mod('magic')
-        chance = target.check_mod('luck', luck_factor=15)
-        for _ in range(self.missiles):
-            hit = True
+        hits = []
+        for i in range(self.missiles):
+            hits.append(False)
+            dodge = target.dodge_chance(caster) > random.random()
+            hit_per = caster.hit_chance(target, typ='spell')
+            hits[i] = (hit_per > random.random())
+            if stun:
+                dodge = False
+                hits[i] = True
             damage = 0
             damage += random.randint(self.damage + spell_mod // 2, (self.damage + spell_mod))
             crit = 1
@@ -2189,46 +2345,51 @@ class MagicMissile(Attack):
             damage *= crit
             if crit == 2:
                 print("Critical Hit!")
-            if random.randint(0, target.dex // 2) + chance > \
-                    random.randint(caster.intel // 2, caster.intel) and not stun:
+            if dodge:
                 print("{} dodged the {} and was unhurt.".format(target.name, self.name))
-                hit = False
-            elif target.status_effects['Mana Shield'][0]:
-                damage //= target.status_effects['Mana Shield'][1]
-                if damage > target.mana:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
-                    damage -= target.mana
-                    target.mana = 0
-                    target.status_effects['Mana Shield'][0] = False
-                else:
-                    print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
-                    target.mana -= damage
-                    damage = 0
-            if hit and not target.status_effects['Mana Shield'][0]:
-                if reflect:
-                    target = caster
-                    print("{} is reflected back at {}!".format(self.name, caster.name))
-                dam_red = target.check_mod('magic def')
-                damage -= random.randint(dam_red // 2, dam_red)
-                if damage <= 0:
-                    print("{} was ineffective and does no damage".format(self.name))
-                    damage = 0
-                elif random.randint(0, target.con // 2) > \
-                        random.randint(caster.intel // 2, caster.intel):
-                    damage //= 2
-                    if damage > 0:
-                        print("{} shrugs off the {} and only receives half of the damage.".format(target.name,
-                                                                                                  self.name))
-                        print("{} damages {} for {} hit points.".format(name, target.name, damage))
-                    else:
+            elif cover:
+                print("{} steps in front of the attack, absorbing the damage directed at {}.".format(
+                    target.familiar.name, target.name))
+            else:
+                if hits[i]:
+                    if target.status_effects['Mana Shield'][0]:
+                        damage //= target.status_effects['Mana Shield'][1]
+                        if damage > target.mana:
+                            print("The mana shield around {} absorbs {} damage.".format(target.name, target.mana))
+                            damage -= target.mana
+                            target.mana = 0
+                            target.status_effects['Mana Shield'][0] = False
+                        else:
+                            print("The mana shield around {} absorbs {} damage.".format(target.name, damage))
+                            target.mana -= damage
+                            damage = 0
+                    dam_red = target.check_mod('magic def')
+                    damage -= random.randint(dam_red // 2, dam_red)
+                    if damage <= 0:
                         print("{} was ineffective and does no damage".format(self.name))
+                        damage = 0
+                    elif random.randint(0, target.con // 2) > \
+                            random.randint(caster.intel // 2, caster.intel):
+                        damage //= 2
+                        if damage > 0:
+                            print("{} shrugs off the {} and only receives half of the damage.".format(target.name,
+                                                                                                      self.name))
+                            print("{} damages {} for {} hit points.".format(name, target.name, damage))
+                        else:
+                            print("{} was ineffective and does no damage".format(self.name))
+                    else:
+                        print("{} damages {} for {} hit points.".format(name, target.name, damage))
+                    target.health -= damage
+                    time.sleep(1)
+                    if not target.is_alive():
+                        break
                 else:
-                    print("{} damages {} for {} hit points.".format(name, target.name, damage))
-                target.health -= damage
-                time.sleep(1)
-                if not target.is_alive():
-                    break
-            time.sleep(0.1)
+                    print("The spell misses {}.".format(target.name))
+                time.sleep(0.1)
+        if any(hits):
+            if 'Counterspell' in list(target.spellbook['Spells'].keys()):
+                print("{} uses Counterspell.".format(target.name))
+                Counterspell().use(target, caster)
 
 
 class MagicMissile2(MagicMissile):
@@ -2623,7 +2784,7 @@ class Corruption(Attack):
             turns = max(1, caster.intel // 10)
             target.status_effects["DOT"][0] = True
             target.status_effects["DOT"][1] = max(turns, target.status_effects["DOT"][1])
-            target.status_effects["DOT"][2] += damage // turns
+            target.status_effects["DOT"][2] = max(damage, target.status_effects["DOT"][2])
             print("{}'s magic penetrates {}'s defenses.".format(name, target.name))
 
 
@@ -2774,7 +2935,7 @@ class Disintegrate(DeathSpell):
 
 class Smite(HolySpell):
     """
-    Can't be reflected; holy damage crit based on melee crit and can be absorbed by mana shield
+    Can't be reflected; holy damage crit based on melee crit and can be absorbed by mana shield TODO
     """
 
     def __init__(self):
@@ -3288,7 +3449,7 @@ class PoisonBreath(Attack):
 
     def __init__(self):
         super().__init__(name="Poison Breath", description="Your spew forth a toxic breath, dealing poison damage and "
-                                                           "poisoning the target for 4 turns.",
+                                                           "poisoning the target.",
                          cost=20, damage=15, crit=5)
         self.subtyp = 'Poison'
         self.school = 'Poison'
@@ -3304,7 +3465,7 @@ class PoisonBreath(Attack):
             turns = max(2, caster.intel // 10)
             target.status_effects['Poison'][0] = True
             target.status_effects['Poison'][1] = max(turns, target.status_effects["Poison"][1])
-            target.status_effects['Poison'][2] = max(damage // turns, target.status_effects["Poison"][2])
+            target.status_effects['Poison'][2] = max(damage, target.status_effects["Poison"][2])
             print("{} poisons {}.".format(name, target.name, turns))
 
 
@@ -3522,8 +3683,8 @@ class Hellfire(Attack):
             turns = max(2, caster.intel // 10)
             target.status_effects["DOT"][0] = True
             target.status_effects["DOT"][1] = max(turns, target.status_effects["DOT"][1])
-            target.status_effects["DOT"][2] = max(damage // turns, target.status_effects["DOT"][2])
-            print("The flames of Hell continue to burn {}.".format(target.name, turns))
+            target.status_effects["DOT"][2] = max(damage, target.status_effects["DOT"][2])
+            print("The flames of Hell continue to burn {}.".format(target.name))
 
 
 # Parameters
@@ -3670,7 +3831,7 @@ spell_dict = {'Warrior': {},
                          '10': Sanctuary},
               'Assassin': {},
               'Ninja': {'20': Desoul},
-              'Healer': {'4': Heal,
+              'Healer': {'2': Heal,
                          '8': Regen,
                          '10': Holy,
                          '15': Dispel,

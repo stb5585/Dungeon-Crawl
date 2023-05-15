@@ -18,6 +18,62 @@ home = os.getcwd()
 save_dir = "save_files"
 
 
+# Functions
+def new_player():
+    """
+
+    """
+
+    os.system('cls' if os.name == 'nt' else 'clear')
+    texts = [
+        "A great evil has taken hold in the unlikeliest of places, a small town on the edge of the kingdom.\n",
+        "The town of Silvana has sent out a plea for help, with many coming from far and wide to test their mettle.\n",
+        "You, bright-eyed and bushy-tailed, decided that fame and glory were within reach.\n",
+        "What you didn't know was that all who had attempted this feat have never been heard from again.\n",
+        "Will you be different or just another lost soul?\n",
+    ]
+    for text in texts:
+        time.sleep(1)
+        storyline.slow_type(text)
+    time.sleep(2)
+
+
+def timmy():
+    """
+
+    """
+
+    os.system('cls' if os.name == 'nt' else 'clear')
+    texts = [
+        "'Hello...who's there?'\n",
+        "You see a small child peak out from behind some rubble.\n",
+        "'This place is scary...I want to go home.'\n",
+        "You have found the little boy, Timmy, and escort him home.\n"
+    ]
+    for text in texts:
+        time.sleep(1)
+        storyline.slow_type(text)
+    time.sleep(2)
+
+
+def dead_body():
+    """
+
+    """
+
+    os.system('cls' if os.name == 'nt' else 'clear')
+    texts = [
+        "Before you lies the body of a warrior, battered, bloody, and broken...\n",
+        "This must be the body of Joffrey, the one betrothed to the waitress at the tavern.\n",
+        "You move the body for a proper burial and notice a crushed gold locket lying on the ground.\n",
+        "You should return this to its rightful owner...\n"
+    ]
+    for text in texts:
+        time.sleep(1)
+        storyline.slow_type(text)
+    time.sleep(2)
+
+
 def relic_room(level):
     """
 
@@ -49,7 +105,7 @@ def unobtainium_room():
         "This must be the legendary ore you have heard so much about...\n",
         "You reach for it, half expecting to be obliterated...but all you feel is warmth throughout your body.\n",
         "You have obtained the Unobtainium!\n"
-        ]
+    ]
     for text in texts:
         time.sleep(1)
         storyline.slow_type(text)
@@ -59,12 +115,15 @@ def unobtainium_room():
 
 def final_blocker():
     """
-    TODO
+
     """
 
     os.system('cls' if os.name == 'nt' else 'clear')
-    texts = ["The invisible force that once blocked you path is no longer in your way.\n",
-             "\n"]
+    texts = [
+        "The invisible force that once blocked you path is now gone.\n",
+        "What lies ahead is unknown.\n"
+        "Proceed at your own peril...\n"
+    ]
     for text in texts:
         time.sleep(1)
         storyline.slow_type(text)
@@ -74,7 +133,6 @@ def final_blocker():
 
 def final_boss(player_char):
     """
-    TODO
     - Add option to continue or retreat
     """
 
@@ -82,11 +140,11 @@ def final_boss(player_char):
     texts = [
         "You enter a massive room. A great beast greets you.\n",
         "\"Hello again, {}. You have done well to reach me, many have tried and failed.\n".format(player_char.name),
-        "The bones of those that came before you litter this sanctum. Will you bones join them?\n",
+        "The bones of those that came before you litter this sanctum. Will your bones join them?\n",
         "It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel, knowing that one of us"
         " will not leave here alive.\n",
         "I give you but one chance to reconsider, after which I will not go easy on you.\""
-        ]
+    ]
     for text in texts:
         time.sleep(1)
         storyline.slow_type(text)
@@ -94,9 +152,12 @@ def final_boss(player_char):
     options = ['Fight', 'Retreat']
     response = storyline.get_response(options)
     if options[response] == "Fight":
-        pass
-    else:
-        pass
+        print("Then let us begin.")
+        time.sleep(1)
+        return True
+    print("Run away, little girl, run away!")
+    time.sleep(1)
+    return False
 
 
 def play():
@@ -110,8 +171,10 @@ def play():
     play_index = storyline.get_response(play_options)
     os.system('cls' if os.name == 'nt' else 'clear')
     if play_index == 0:
+        # new_player()
         player_char = player.new_char()
     elif play_index == 1:
+        print(f.renderText("DUNGEON CRAWL"))
         if len(glob.glob('save_files/*')) > 0:
             os.chdir(save_dir)
             player_char = player.load_char()
@@ -119,6 +182,7 @@ def play():
         else:
             print("There are no save files to load. Proceeding to new character creation.")
             time.sleep(1)
+            new_player()
             player_char = player.new_char()
     else:
         player_char = tutorial.tutorial()

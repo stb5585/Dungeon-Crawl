@@ -1,6 +1,7 @@
 # Imports
 import time
 import random
+from math import exp
 
 
 class Character:
@@ -68,10 +69,44 @@ class Character:
     def options(self, action_list=None):
         pass
 
+    def hit_chance(self, defender, typ='weapon'):
+        """
+        Things that affect hit chance
+        Weapon attack: whether char is blind, if enemy is flying and/or invisible, enemy status effects,
+            accessory bonuses
+        Spell attack: enemy status effects
+        """
+
+        def sigmoid(x):
+            return 1 / (1 + exp(-x))
+
+        hit_mod = sigmoid(random.randint(self.dex // 2, self.dex) /
+                          random.randint(defender.dex // 4, defender.dex))  # base hit percentage
+        if typ == 'weapon':
+            hit_mod *= (1 + int('Accuracy' in self.equipment['Ring']().mod) * 0.25)  # accuracy adds 25% chance to hit
+            hit_mod *= (1 - (int(self.status_effects['Blind'][0]) * 0.5))  # blind lowers accuracy by 50%
+            hit_mod *= (1 - (int(defender.invisible) * (1 / 3)))  # invisible lowers accuracy by 33.3%
+            hit_mod *= (1 - (int(defender.flying) * (1 / 10)))  # flying lowers accuracy by 10%
+        else:
+            hit_mod = 1
+            hit_mod *= (1 - (int(defender.invisible) * (1 / 3)))  # invisible lowers accuracy by 33.3%
+        if hit_mod < 0:
+            return 0
+        return hit_mod
+
+    def dodge_chance(self, attacker):
+        a_chance = random.randint(attacker.dex // 2, attacker.dex) + attacker.check_mod('luck', luck_factor=10)
+        d_chance = random.randint(0, self.dex) + self.check_mod('luck', luck_factor=15)
+        chance = (d_chance - a_chance) / (a_chance + d_chance)
+        chance += (0.1 * int('Dodge' in self.equipment['Ring']().mod))
+        print("Dodge chance: {}".format(chance))
+        return max(0, chance)
+
     def weapon_damage(self, defender, dmg_mod=0, crit=1, ignore=False, cover=False):
         """
         Function that controls melee attacks during combat
         """
+
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
         attacks = ['Weapon']
@@ -90,11 +125,9 @@ class Character:
                     hits[i] = True
                     self.equipment[att]().special_effect(self, defender)
                     break
-            hit_mod = 1 + ((int(self.status_effects['Blind'][0]) +
-                            int(defender.invisible) +
-                            int(defender.flying)) / 2)
+
             if crit == 1:
-                if not random.randint(0, int(self.equipment[att]().crit)):
+                if self.equipment[att]().crit > random.random():
                     crits[i] = 2
                 else:
                     crits[i] = 1
@@ -107,14 +140,14 @@ class Character:
             prone = defender.status_effects['Prone'][0]
             stun = defender.status_effects['Stun'][0]
             sleep = defender.status_effects['Sleep'][0]
-            dam_red = defender.check_mod('armor') * int(not ignore)
+            dam_red = defender.check_mod('armor', ignore=ignore)
             resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att]().ultimate)
-            chance = defender.check_mod('luck', luck_factor=15)
-            dodge = random.randint(0, defender.dex // 2) + chance > random.randint(
-                int(self.dex / hit_mod), self.dex)
+            dodge = defender.dodge_chance(self) > random.random()
+            hit_per = self.hit_chance(defender, typ='weapon')
+            hits[i] = (hit_per > random.random())
             if any([prone, stun, sleep]):
                 dodge = False
-
+                hits[i] = True
             # combat
             if dodge:
                 if 'Parry' in list(defender.spellbook['Skills'].keys()):
@@ -123,12 +156,6 @@ class Character:
                 else:
                     print("{} evades {}'s attack.".format(defender.name, self.name))
             else:
-                if hit_mod == 1:
-                    hits[i] = True
-                else:
-                    a_chance = self.check_mod('luck', luck_factor=10)
-                    if random.randint(0, 1 + a_chance):
-                        hits[i] = True
                 if hits[i]:
                     if crits[i] > 1:
                         print("Critical hit!")
@@ -136,23 +163,22 @@ class Character:
                         print("{} steps in front of the attack, taking the damage for {}.".format(
                             defender.familiar.name, defender.name))
                         damage = 0
-                    elif (defender.equipment['OffHand']().subtyp == 'Shield' and
+                    elif ((defender.equipment['OffHand']().subtyp == 'Shield' or
+                           'Dodge' in defender.equipment['Ring']().mod) and
                           not defender.status_effects['Mana Shield'][0]) and (not stun and not sleep):
-                        if not random.randint(0, int(defender.equipment['OffHand']().mod)):
-                            blk_amt = (100 / defender.equipment['OffHand']().mod +
-                                       random.randint(defender.strength // 2, defender.strength) -
-                                       random.randint(self.strength // 2, self.strength)) / 100
-                            if blk_amt <= 0:
-                                print("{} attempts to block {}'s attack but isn't strong enough.".format(
-                                    defender.name, self.name))
-                            else:
-                                if 'Shield Block' in list(defender.spellbook['Skills'].keys()):
-                                    blk_amt *= 2
-                                blk_amt = min(1, blk_amt)
-                                damage *= (1 - blk_amt)
-                                damage = int(damage * (1 - resist))
-                                print("{} blocks {}'s attack and mitigates {} percent of the damage.".format(
-                                    defender.name, self.name, int(blk_amt * 100)))
+                        blk_chance = defender.equipment['OffHand']().mod + \
+                                     (('Block' in defender.equipment['Ring']().mod) * 0.25)
+                        print("Block chance: {}".format(blk_chance))
+                        if blk_chance > random.random():
+                            blk_amt = (defender.strength * blk_chance) / self.strength
+                            print("Block percent: {}".format(blk_amt))
+                            if 'Shield Block' in list(defender.spellbook['Skills'].keys()):
+                                blk_amt *= 2
+                            blk_amt = min(1, blk_amt)
+                            damage *= (1 - blk_amt)
+                            damage = int(damage * (1 - resist))
+                            print("{} blocks {}'s attack and mitigates {} percent of the damage.".format(
+                                defender.name, self.name, int(blk_amt * 100)))
                     elif defender.status_effects['Mana Shield'][0]:
                         damage //= defender.status_effects['Mana Shield'][1]
                         if damage > defender.mana:
@@ -216,114 +242,15 @@ class Character:
                 self.inventory[item().name][1] -= num
                 if self.inventory[item().name][1] == 0:
                     del self.inventory[item().name]
-                self.quests(item=item, subtract=True)
         else:
-            self.special_inventory[item().name] = [item]
+            if item().name in self.special_inventory:
+                self.special_inventory[item().name][1] += num
+            else:
+                self.special_inventory[item().name] = [item, num]
+            self.quests(item=item)
 
-    def check_mod(self, mod, typ=None, luck_factor=1, ultimate=False):
-        class_mod = 0
-        if mod == 'weapon':
-            weapon_mod = self.equipment['Weapon']().damage
-            if 'Monk' in self.cls:
-                class_mod += self.wisdom
-            if self.cls in ['Spellblade', 'Knight Enchanter']:
-                class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
-            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:  # add Footpad TODO
-                class_mod += self.dex
-            else:
-                class_mod += self.strength
-            if 'Physical Damage' in self.equipment['Ring']().mod:
-                weapon_mod += int(self.equipment['Ring']().mod.split(' ')[0])
-            if self.status_effects['Attack'][0]:
-                weapon_mod += self.status_effects['Attack'][2]
-            return weapon_mod + class_mod
-        elif mod == 'offhand':
-            if 'Monk' in self.cls:
-                class_mod += self.wisdom
-            if self.cls in ['Spellblade', 'Knight Enchanter']:
-                class_mod += (self.level + ((self.pro_level - 1) * 20)) * (self.mana / self.mana_max)
-            if self.cls in ['Thief', 'Rogue', 'Assassin', 'Ninja']:  # add Footpad TODO
-                class_mod += self.dex
-            else:
-                class_mod += self.strength
-            try:
-                off_mod = self.equipment['OffHand']().damage
-                if 'Physical Damage' in self.equipment['Ring']().mod:
-                    off_mod += int(self.equipment['Ring']().mod.split(' ')[0])
-                if self.status_effects['Attack'][0]:
-                    off_mod += self.status_effects['Attack'][2]
-                return int((off_mod + class_mod) * 0.75)
-            except AttributeError:
-                return 0
-        elif mod == 'armor':
-            armor_mod = self.equipment['Armor']().armor
-            if self.cls == 'Knight Enchanter':
-                class_mod += self.intel * (self.mana / self.mana_max)
-            if self.turtle:
-                class_mod += 99
-            if self.cls in ['Warlock', 'Shadowcaster']:
-                if self.familiar.typ == 'Homunculus' and random.randint(0, 1) and self.familiar.pro_level > 1:
-                    fam_mod = random.randint(0, 3) ** self.familiar.pro_level
-                    print("{} improves {}'s armor by {}.".format(self.familiar.name, self.name, fam_mod))
-                    armor_mod += fam_mod
-            if 'Physical Defense' in self.equipment['Ring']().mod:
-                armor_mod += int(self.equipment['Ring']().mod.split(' ')[0])
-            if self.status_effects['Defense'][0]:
-                armor_mod += self.status_effects['Defense'][2]
-            return armor_mod + class_mod
-        elif mod == 'magic':
-            magic_mod = int(self.intel // 2) * self.pro_level
-            if self.equipment['OffHand']().subtyp == 'Tome':
-                magic_mod += self.equipment['OffHand']().mod
-            if self.equipment['Weapon']().subtyp == 'Staff' or \
-                    (self.cls in ['Spellblade', 'Knight Enchanter'] and
-                     self.equipment['Weapon']().subtyp == 'Longsword'):
-                magic_mod += int(self.equipment['Weapon']().damage * 1.5)
-            if 'Magic Damage' in self.equipment['Pendant']().mod:
-                magic_mod += int(self.equipment['Pendant']().mod.split(' ')[0])
-            if self.status_effects['Magic'][0]:
-                magic_mod += self.status_effects['Magic'][2]
-            return magic_mod + class_mod
-        elif mod == 'magic def':
-            m_def_mod = self.wisdom
-            if self.turtle:
-                class_mod += 99
-            if 'Magic Defense' in self.equipment['Pendant']().mod:
-                m_def_mod += int(self.equipment['Pendant']().mod.split(' ')[0])
-            if self.status_effects['Magic Defense'][0]:
-                m_def_mod += self.status_effects['Magic Defense'][2]
-            return m_def_mod + class_mod
-        elif mod == 'heal':
-            heal_mod = self.wisdom * self.pro_level
-            if self.equipment['OffHand']().subtyp == 'Tome':
-                heal_mod += self.equipment['OffHand']().mod
-            elif self.equipment['Weapon']().subtyp == 'Staff':
-                heal_mod += int(self.equipment['Weapon']().damage * 1.5)
-            if self.status_effects['Magic'][0]:
-                heal_mod += self.status_effects['Magic'][2]
-            return heal_mod + class_mod
-        elif mod == 'resist':
-            if ultimate and typ == 'Physical':  # ultimate weapons by pass Physical resistance
-                return 0
-            try:
-                res_mod = self.resistance[typ]
-                if self.cls in ['Warlock', 'Shadowcaster']:
-                    if self.familiar.typ == 'Mephit' and random.randint(0, 1) and self.familiar.pro_level > 1:
-                        fam_mod = 0.25 * random.randint(1, max(1, self.charisma // 10))
-                        print("{} increases {}'s resistance to {} by {}%.".format(self.familiar.name, self.name,
-                                                                                  typ, int(fam_mod * 100)))
-                        res_mod += fam_mod
-                if self.equipment['Pendant']().mod == typ:
-                    res_mod = 1
-                elif self.equipment['Pendant']().mod == "Elemental" and \
-                        typ in ['Fire', 'Ice', 'Electric', 'Water', 'Earth', 'Wind']:
-                    res_mod += 0.25
-                return res_mod
-            except KeyError:
-                return 0
-        elif mod == 'luck':
-            luck_mod = self.charisma // luck_factor
-            return luck_mod
+    def check_mod(self, mod, typ=None, luck_factor=1, ultimate=False, ignore=False):
+        return 0
 
     def statuses(self, end=False):
         """
@@ -373,7 +300,6 @@ class Character:
                 poison_damage = self.status_effects['Poison'][2]
                 poison_damage -= random.randint(0, self.con)
                 if poison_damage > 0:
-                    poison_damage = random.randint(poison_damage // 2, poison_damage)
                     self.health -= poison_damage
                     print("The poison damages {} for {} health points.".format(self.name, poison_damage))
                 else:
@@ -384,8 +310,8 @@ class Character:
             if self.status_effects['DOT'][0]:
                 self.status_effects['DOT'][1] -= 1
                 dot_damage = self.status_effects['DOT'][2]
+                dot_damage -= random.randint(0, self.wisdom)
                 if dot_damage > 0:
-                    dot_damage = random.randint(dot_damage // 2, dot_damage)
                     self.health -= dot_damage
                     print("The magic damages {} for {} health points.".format(self.name, dot_damage))
                 else:
@@ -393,6 +319,28 @@ class Character:
                 if self.status_effects['DOT'][1] == 0:
                     default(status='DOT')
                     print("The magic affecting {} has worn off.".format(self.name))
+            if self.status_effects['Bleed'][0]:
+                self.status_effects['Bleed'][1] -= 1
+                bleed_damage = self.status_effects['Bleed'][2]
+                bleed_damage -= random.randint(0, self.con)
+                if bleed_damage > 0:
+                    self.health -= bleed_damage
+                    print("The bleed damages {} for {} health points.".format(self.name, bleed_damage))
+                else:
+                    print("{} resisted the bleed.".format(self.name))
+                if self.status_effects['Bleed'][1] == 0:
+                    default(status='Bleed')
+                    print("{}'s wounds have healed and is no longer bleeding.".format(self.name))
+            if self.status_effects['Regen'][0]:  # TODO
+                self.status_effects['Regen'][1] -= 1
+                heal = self.status_effects['Regen'][2]
+                if heal > (self.health_max - self.health):
+                    heal = (self.health_max - self.health)
+                self.health += heal
+                print("{}'s health has regenerated by {}.".format(self.name, heal))
+                if self.status_effects['Regen'][1] == 0:
+                    print("Regeneration spell ends.")
+                    default(status='Regen')
             if self.status_effects['Blind'][0]:
                 self.status_effects['Blind'][1] -= 1
                 if self.status_effects['Blind'][1] == 0:
@@ -413,29 +361,6 @@ class Character:
                 if self.status_effects['Reflect'][1] == 0:
                     print("{} is no longer reflecting magic.".format(self.name))
                     default(status='Reflect')
-            if self.status_effects['Bleed'][0]:
-                self.status_effects['Bleed'][1] -= 1
-                bleed_damage = self.status_effects['Bleed'][2]
-                bleed_damage -= random.randint(0, self.con)
-                if bleed_damage > 0:
-                    bleed_damage = max(1, random.randint(bleed_damage // 2, bleed_damage))
-                    self.health -= bleed_damage
-                    print("The bleed damages {} for {} health points.".format(self.name, bleed_damage))
-                else:
-                    print("{} resisted the bleed.".format(self.name))
-                if self.status_effects['Bleed'][1] == 0:
-                    default(status='Bleed')
-                    print("{}'s wounds have healed and is no longer bleeding.".format(self.name))
-            if self.status_effects['Regen'][0]:
-                self.status_effects['Regen'][1] -= 1
-                heal = self.status_effects['Regen'][2]
-                if heal > (self.health_max - self.health):
-                    heal = (self.health_max - self.health)
-                self.health += heal
-                print("{}'s health has regenerated by {}.".format(self.name, heal))
-                if self.status_effects['Regen'][1] == 0:
-                    print("Regeneration spell ends.")
-                    default(status='Regen')
             for stat in ['Attack', 'Defense', 'Magic', 'Magic Defense']:
                 if self.status_effects[stat][0]:
                     self.status_effects[stat][1] -= 1
@@ -457,5 +382,5 @@ class Character:
     def death(self):
         pass
 
-    def quests(self, enemy=None, item=None, subtract=False):
+    def quests(self, enemy=None, item=None):
         pass

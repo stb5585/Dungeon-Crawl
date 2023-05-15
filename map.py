@@ -22,6 +22,7 @@ class MapTile:
         self.x = x
         self.y = y
         self.z = z
+        self.near = False
         self.visited = False  # tells whether the tile has been visited by player_char
         self.enter = True  # keeps player_char from entering walls
         self.special = False
@@ -68,20 +69,33 @@ class MapTile:
     def adjacent_visited(self, player_char):
         """Changes visited parameter for 4 adjacent tiles"""
         # reveals 4 spaces in cardinal directions
+        see = [True] * 4
         try:
-            player_char.world_dict[(self.x + 1, self.y, self.z)].visited = True
+            if 'LockedDoorEast' in self.__str__():
+                if not self.open:
+                    see[0] = False
+            player_char.world_dict[(self.x + 1, self.y, self.z)].near = see[0]
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x - 1, self.y, self.z)].visited = True
+            if 'LockedDoorWest' in self.__str__():
+                if not self.open:
+                    see[1] = False
+            player_char.world_dict[(self.x - 1, self.y, self.z)].near = see[1]
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x, self.y - 1, self.z)].visited = True
+            if 'LockedDoorNorth' in self.__str__():
+                if not self.open:
+                    see[2] = False
+            player_char.world_dict[(self.x, self.y - 1, self.z)].near = see[2]
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x, self.y + 1, self.z)].visited = True
+            if 'LockedDoorSouth' in self.__str__():
+                if not self.open:
+                    see[3] = False
+            player_char.world_dict[(self.x, self.y + 1, self.z)].near = see[3]
         except KeyError:
             pass
 
@@ -105,19 +119,19 @@ class Town(MapTile):
         """Changes visited parameter for 4 adjacent tiles"""
         # reveals 4 spaces in cardinal directions
         try:
-            player_char.world_dict[(self.x + 1, self.y, 1)].visited = True
+            player_char.world_dict[(self.x + 1, self.y, 1)].near = True
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x - 1, self.y, 1)].visited = True
+            player_char.world_dict[(self.x - 1, self.y, 1)].near = True
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x, self.y - 1, 1)].visited = True
+            player_char.world_dict[(self.x, self.y - 1, 1)].near = True
         except KeyError:
             pass
         try:
-            player_char.world_dict[(self.x, self.y + 1, 1)].visited = True
+            player_char.world_dict[(self.x, self.y + 1, 1)].near = True
         except KeyError:
             pass
 
@@ -168,6 +182,7 @@ class SpecialTile(MapTile):
         """
 
     def modify_player(self, player_char):
+        self.visited = True
         self.adjacent_visited(player_char)
 
     def special_text(self, player_char):
@@ -265,6 +280,15 @@ class CavePath0(CavePath):
         enemy = enemies.random_enemy('0')
         player_char.state = 'fight'
         combat.battle(player_char, enemy)
+        if 'Bring Him Home' in player_char.quest_dict['Side'].keys():
+            if not player_char.quest_dict['Side']['Bring Him Home']['Completed']:
+                if not random.randint(0, 20 - player_char.check_mod('luck', luck_factor=10)):
+                    game.timmy()
+                    player_char.quest_dict['Side']['Bring Him Home']['Completed'] = True
+                    print("You have completed the quest Bring Him Home.")
+                    time.sleep(2)
+                    player_char.location_x, player_char.location_y, player_char.location_z = (5, 10, 0)
+                    town.town(player_char)
 
 
 class CavePath1(CavePath):
@@ -351,6 +375,12 @@ class WendigoBossRoom(BossRoom):
         self.enemy = enemies.Wendigo()
 
 
+class IronGolemBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.IronGolem()
+
+
 class GolemBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -386,6 +416,18 @@ class FinalBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Devil()
 
+    def enter_combat(self, player_char):
+        player_char.state = 'fight'
+        combat.battle(player_char, self.enemy)
+        if not player_char.is_alive():
+            os.system('cls' if os.name == 'nt' else 'clear')
+            f = pyfiglet.Figlet(font='slant')
+            print(f.renderText("GAME OVER"))
+            time.sleep(2)
+            sys.exit(0)
+        else:
+            pass
+
 
 class ChestRoom(MapTile):
     def __init__(self, x, y, z, loot):
@@ -412,11 +454,11 @@ class UnlockedChestRoom(ChestRoom):
     def intro_text(self, player_char):
         if not self.open:
             return """
-            {} finds a chest. (Enter 'o' to open)
+        {} finds a chest. (Enter 'o' to open)
             """.format(player_char.name.capitalize())
         else:
             return """
-            This room has an open chest.
+        This room has an open chest.
             """
 
     def available_actions(self, player_char):
@@ -451,11 +493,11 @@ class LockedChestRoom(ChestRoom):
         if not self.open:
             if self.locked:
                 return """
-                {} finds a chest!!... but it is locked.
+            {} finds a chest!!... but it is locked.
                 """.format(player_char.name.capitalize())
             else:
                 return """
-                {} finds a chest. (Enter 'o' to open)
+            {} finds a chest. (Enter 'o' to open)
                 """.format(player_char.name.capitalize())
         else:
             return """
@@ -507,11 +549,11 @@ class LockedDoor(MapTile):
         if not self.open:
             if self.locked:
                 return """
-                {} finds a locked door. If only you could find the key...
+            {} finds a locked door. If only you could find the key...
                 """.format(player_char.name.capitalize())
             else:
                 return """
-                There is an unlocked door. (Enter 'o' to open)
+            There is an unlocked door. (Enter 'o' to open)
                 """
         else:
             return """
@@ -624,7 +666,39 @@ class RelicRoom(SpecialTile):
             print("Your health and mana have been restored to full!")
             player_char.health = player_char.health_max
             player_char.mana = player_char.mana_max
+            player_char.quests()
             input("Press enter to continue")
+
+
+class DeadBody(SpecialTile):
+    """
+
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player_char):
+        if not self.read:
+            return """
+            The body of a soldier lies in a heap on the floor.
+            """
+        return """
+        You see a burial mound with an inscription carved in the floor reading "Here lies Joffrey, survived by his one
+          true love. May he be a reminder of the horrors of combat."
+        """
+
+    def modify_player(self, player_char):
+        self.adjacent_visited(player_char)
+        self.visited = True
+
+    def special_text(self, player_char):
+        if 'A Bad Dream' in player_char.quest_dict.keys():
+            if not self.read:
+                game.dead_body()
+                player_char.modify_inventory(items.LuckyLocket, rare=True)
+                self.read = True
+                input("Press enter to continue")
 
 
 class FinalBlocker(SpecialTile):
@@ -659,7 +733,6 @@ class FinalBlocker(SpecialTile):
 
 class FinalRoom(SpecialTile):
     """
-    TODO
     Player will be given an option to fight or turn around; fight will move them to FinalBossRoom and turn around will
       move them back to FinalBlocker
     Tiles to show -
@@ -679,18 +752,15 @@ class FinalRoom(SpecialTile):
 
         for x in [13, 14, 15, 16, 17]:
             for y in [8, 9, 10, 11]:
-                player_char.world_dict[(x, y, 6)].visited = True
+                player_char.world_dict[(x, y, 6)].near = True
 
     def special_text(self, player_char):
-        game.final_boss(player_char)
-        if not player_char.is_alive():
-            os.system('cls' if os.name == 'nt' else 'clear')
-            f = pyfiglet.Figlet(font='slant')
-            print(f.renderText("GAME OVER"))
-            time.sleep(2)
-            sys.exit(0)
+        fight = game.final_boss(player_char)
+        if fight:
+            player_char.move_north()
+            player_char.move_north()
         else:
-            pass
+            player_char.move_south()
 
 
 class SecretShop(MapTile):
@@ -744,3 +814,19 @@ class UltimateArmorShop(MapTile):
 
     def available_actions(self, player_char):
         pass
+
+
+class WarpPoint(MapTile):
+    """
+
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player_char):
+        pass
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)

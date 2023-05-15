@@ -1,5 +1,5 @@
 StairsDown	Wall	Wall	Wall	Wall	CavePath1	CavePath1	CavePath1	CavePath1	StairsUp	LockedDoorEast	JesterBossRoom	LockedDoorEast	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	LockedDoorEast	CavePath2
-UnlockedChestRoom2	GolemBossRoom	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	LockedDoorSouth	Wall	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2
+UnlockedChestRoom2	IronGolemBossRoom	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	LockedDoorSouth	Wall	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2
 Wall	EmptyCavePath	Wall	CavePath1	Wall	CavePath1	Wall	Wall	CavePath1	Wall	Wall	CavePath2	Wall	Wall	Wall	StairsDown	Wall	Wall	Wall	CavePath2
 Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	CavePath2	Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	CavePath2
 Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath1	Wall	CavePath2	Wall	UnlockedChestRoom2	LockedDoorWest	CavePath2	LockedDoorEast	UnlockedChestRoom2	Wall	CavePath2

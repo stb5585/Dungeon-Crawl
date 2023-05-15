@@ -7,10 +7,35 @@ import random
 
 
 # Functions
+def combat_text(player_char, enemy, tile):
+    """
+
+    """
+
+    if 'Boss' in tile.__str__():
+        print("""
+            Boss Fight!
+        """)
+    if not enemy.invisible:
+        print("""
+        {} is attacked by a {}.
+        """.format(player_char.name, enemy.name))
+    else:
+        print("""
+        An unseen entity is attacking {}.
+        """.format(player_char.name))
+    if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
+            'Vision' in player_char.equipment['Pendant']().mod]) and \
+            'Boss' not in tile.__str__():
+        print(enemy.__str__())
+    print(player_char.__str__())
+
+
 def initiative(player_char, enemy):
     """
     Determine who goes char using each character's dexterity plus luck
     """
+
     p_chance = player_char.dex + player_char.check_mod('luck', luck_factor=10)
     e_chance = enemy.dex + enemy.check_mod('luck', luck_factor=10)
     total_chance = p_chance + e_chance
@@ -36,16 +61,7 @@ def battle(player_char, enemy):
         available_actions = tile.available_actions(player_char)
         os.system('cls' if os.name == 'nt' else 'clear')
         player_char.minimap()
-        if 'Boss' in tile.__str__():
-            print("""
-              Boss Fight!""")
-        print("""
-    {} is attacked by a {}.
-        """.format(player_char.name, enemy.name))
-        if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
-                'Vision' in player_char.equipment['Pendant']().mod]) and 'Boss' not in tile.__str__():
-            print(enemy.__str__())
-        print(player_char.__str__())
+        combat_text(player_char, enemy, tile)
         if not any([char.status_effects['Prone'][0], char.status_effects['Stun'][0], char.status_effects['Sleep'][0]]):
             while True:
                 action = char.options(action_list=available_actions)
@@ -56,17 +72,7 @@ def battle(player_char, enemy):
                     os.system('cls' if os.name == 'nt' else 'clear')
                     available_actions = tile.available_actions(player_char)
                     player_char.minimap()
-                    if 'Boss' in tile.__str__():
-                        print("""
-              Boss Fight!""")
-                    print("""
-    {} is attacked by a {}.
-                    """.format(player_char.name, enemy.name))
-                    if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
-                            'Vision' in player_char.equipment['Pendant']().mod]) and \
-                            'Boss' not in tile.__str__():
-                        print(enemy.__str__())
-                    print(player_char.__str__())
+                    combat_text(player_char, enemy, tile)
         else:
             if char.status_effects['Stun'][0]:
                 text = "stunned"
