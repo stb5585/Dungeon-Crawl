@@ -74,6 +74,8 @@ class MapTile:
             if 'LockedDoorEast' in self.__str__():
                 if not self.open:
                     see[0] = False
+                else:
+                    see[0] = True
             player_char.world_dict[(self.x + 1, self.y, self.z)].near = see[0]
         except KeyError:
             pass
@@ -81,6 +83,8 @@ class MapTile:
             if 'LockedDoorWest' in self.__str__():
                 if not self.open:
                     see[1] = False
+                else:
+                    see[0] = True
             player_char.world_dict[(self.x - 1, self.y, self.z)].near = see[1]
         except KeyError:
             pass
@@ -88,6 +92,8 @@ class MapTile:
             if 'LockedDoorNorth' in self.__str__():
                 if not self.open:
                     see[2] = False
+                else:
+                    see[0] = True
             player_char.world_dict[(self.x, self.y - 1, self.z)].near = see[2]
         except KeyError:
             pass
@@ -95,6 +101,8 @@ class MapTile:
             if 'LockedDoorSouth' in self.__str__():
                 if not self.open:
                     see[3] = False
+                else:
+                    see[0] = True
             player_char.world_dict[(self.x, self.y + 1, self.z)].near = see[3]
         except KeyError:
             pass
@@ -142,7 +150,8 @@ class StairsUp(MapTile):
 
     def intro_text(self, player_char):
         return """
-        {} sees a flight of stairs going up. (Enter 'u' to use)
+    {} sees a flight of stairs going up.
+            (Enter 'u' to use)
         """.format(player_char.name.capitalize())
 
     def modify_player(self, player_char):
@@ -159,7 +168,8 @@ class StairsDown(MapTile):
 
     def intro_text(self, player_char):
         return """
-        {} sees a flight of stairs going down. (Enter 'j' to use)
+    {} sees a flight of stairs going down. 
+            (Enter 'j' to use)
         """.format(player_char.name.capitalize())
 
     def modify_player(self, player_char):
@@ -178,6 +188,7 @@ class SpecialTile(MapTile):
 
     def intro_text(self, player_char):
         return """
+        
         
         """
 
@@ -229,8 +240,10 @@ class CavePath(MapTile):
                               player_char.world_dict[(self.x, self.y - 1, 1)].__str__()]:
                 return """
                 Something seems off but you aren't quite sure what...
+                
                 """
         return """
+        
         
         """
 
@@ -253,7 +266,7 @@ class CavePath(MapTile):
             action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
             if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                 action_list.insert(1, actions.CastSpell())
-            if len(player_char.spellbook['Skills']) > 0:
+            if player_char.usable_skills():
                 action_list.insert(1, actions.UseSkill())
             return action_list
         return self.adjacent_moves(player_char, [actions.CharacterMenu()])
@@ -323,7 +336,7 @@ class BossRoom(CavePath):
             action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
             if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                 action_list.insert(1, actions.CastSpell())
-            if len(player_char.spellbook['Skills']) > 0:
+            if player_char.usable_skills():
                 action_list.insert(1, actions.UseSkill())
             return action_list
         return self.adjacent_moves(player_char, [actions.CharacterMenu()])
@@ -454,11 +467,13 @@ class UnlockedChestRoom(ChestRoom):
     def intro_text(self, player_char):
         if not self.open:
             return """
-        {} finds a chest. (Enter 'o' to open)
+    {} finds a chest. (Enter 'o' to open)
+    
             """.format(player_char.name.capitalize())
         else:
             return """
         This room has an open chest.
+        
             """
 
     def available_actions(self, player_char):
@@ -467,7 +482,7 @@ class UnlockedChestRoom(ChestRoom):
                 action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
                 if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                     action_list.insert(1, actions.CastSpell())
-                if len(player_char.spellbook['Skills']) > 0:
+                if player_char.usable_skills():
                     action_list.insert(1, actions.UseSkill())
                 return action_list
             return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
@@ -493,15 +508,18 @@ class LockedChestRoom(ChestRoom):
         if not self.open:
             if self.locked:
                 return """
-            {} finds a chest!!... but it is locked.
+        {} finds a chest!!... but it is locked.
+        
                 """.format(player_char.name.capitalize())
             else:
                 return """
-            {} finds a chest. (Enter 'o' to open)
+        {} finds a chest. (Enter 'o' to open)
+        
                 """.format(player_char.name.capitalize())
         else:
             return """
             This room has an open chest.
+            
             """
 
     def available_actions(self, player_char):
@@ -513,7 +531,7 @@ class LockedChestRoom(ChestRoom):
                     action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
                     if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
                         action_list.insert(1, actions.CastSpell())
-                    if len(player_char.spellbook['Skills']) > 0:
+                    if player_char.usable_skills():
                         action_list.insert(1, actions.UseSkill())
                     return action_list
                 return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
@@ -549,15 +567,18 @@ class LockedDoor(MapTile):
         if not self.open:
             if self.locked:
                 return """
-            {} finds a locked door. If only you could find the key...
+        {} finds a locked door. 
+    If only you could find the key...
                 """.format(player_char.name.capitalize())
             else:
                 return """
-            There is an unlocked door. (Enter 'o' to open)
+        There is an unlocked door.
+            (Enter 'o' to open)
                 """
         else:
             return """
             There is an open door.
+            
             """
 
     def modify_player(self, player_char):
@@ -608,9 +629,11 @@ class WarningTile(CavePath):
     def intro_text(self, player_char):
         if not self.warning:
             return """
-            Enemies beyond this point increase in difficulty. Plan accordingly.
+            Enemies beyond this point increase in difficulty.
+                        Plan accordingly.
             """
         return """
+        
         
         """
 
@@ -625,6 +648,7 @@ class UnobtainiumRoom(SpecialTile):
     def intro_text(self, player_char):
         return """
         An empty pedestal stands in the center of the room.
+        
         """
 
     def modify_player(self, player_char):
@@ -651,6 +675,7 @@ class RelicRoom(SpecialTile):
     def intro_text(self, player_char):
         return """
         An empty pedestal stands in the center of the room.
+        
         """
 
     def modify_player(self, player_char):
@@ -682,6 +707,7 @@ class DeadBody(SpecialTile):
         if not self.read:
             return """
             The body of a soldier lies in a heap on the floor.
+            
             """
         return """
         You see a burial mound with an inscription carved in the floor reading "Here lies Joffrey, survived by his one
@@ -714,9 +740,11 @@ class FinalBlocker(SpecialTile):
         if not player_char.has_relics:
             return """
             An invisible force blocks your path.
+            
             """
         return """
         The way has opened. Destiny awaits! 
+        
         """
 
     def available_actions(self, player_char):
@@ -774,6 +802,7 @@ class SecretShop(MapTile):
     def intro_text(self, player_char):
         return """
         {} finds a secret shop in the depths of the dungeon.
+        
         """.format(player_char.name.capitalize())
 
     def modify_player(self, player_char):
@@ -798,11 +827,14 @@ class UltimateArmorShop(MapTile):
     def intro_text(self, player_char):
         if not self.looted:
             return """
-            {} finds a forge in the depths of the dungeon. A large man stands in front of you.
+            {} finds a forge in the depths of the dungeon. 
+                A large man stands in front of you.
+            
             """.format(player_char.name.capitalize())
         else:
             return """
             A large empty room.
+            
             """
 
     def modify_player(self, player_char):
@@ -823,10 +855,26 @@ class WarpPoint(MapTile):
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+        self.warped = False
 
     def intro_text(self, player_char):
-        pass
+        if not player_char.warp_point:
+            return """
+            
+            
+            """
+        else:
+            if not self.warped:
+                game.warp_point(player_char)
+            return """
+            
+            
+            """
 
     def modify_player(self, player_char):
+        self.warped = False
         self.visited = True
         self.adjacent_visited(player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])

@@ -36,14 +36,19 @@ def new_char() -> object:
     exp_scale = 25
     location_x, location_y, location_z = (5, 10, 0)
     name = ''
-    os.system('cls' if os.name == 'nt' else 'clear')
     while name == '':
+        os.system('cls' if os.name == 'nt' else 'clear')
         storyline.slow_type("What is your character's name?\n")
         name = input("").capitalize()
-        print("You have chosen to name your character {}. Is this correct? ".format(name))
-        keep = storyline.get_response(['Yes', 'No'])
-        if keep == 1:
+        if name == '' or len(name) > 20:
+            print("Please enter a valid name.")
+            time.sleep(1)
             name = ''
+        else:
+            print("You have chosen to name your character {}. Is this correct? ".format(name))
+            keep = storyline.get_response(['Yes', 'No'])
+            if keep == 1:
+                name = ''
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
         race = races.define_race()
@@ -222,6 +227,11 @@ class Player(Character):
                             map_array[tile_x][tile_y] = "\u25A1"
                         else:
                             map_array[tile_x][tile_y] = "\u25A0"
+                    elif 'Relic' in self.world_dict[tile].__str__():
+                        if not self.world_dict[tile].read:
+                            map_array[tile_x][tile_y] = "\u25C9"
+                        else:
+                            map_array[tile_x][tile_y] = "\u25CB"
                     else:
                         map_array[tile_x][tile_y] = "."
         map_array[self.location_y][self.location_x] = "\u001b[5m+\u001b[0m"
@@ -363,6 +373,12 @@ class Player(Character):
     def in_town(self):
         return (self.location_x, self.location_y, self.location_z) == (5, 10, 0)
 
+    def usable_skills(self):
+        for name, skill in self.spellbook['Skills'].items():
+            if not skill().passive:
+                return True
+        return False
+
     def game_quit(self):
         """
         Function that allows for exiting the game
@@ -424,7 +440,7 @@ class Player(Character):
             print("Critical Chance: {}%".format(str(main_crit)))
         print("Armor: {}".format(self.check_mod('armor')))
         if self.equipment['OffHand']().subtyp == 'Shield':
-            print("Block Chance: {}%".format(round(self.equipment['OffHand']().mod) * 100))
+            print("Block Chance: {}%".format(round(self.equipment['OffHand']().mod * 100)))
         if len(self.spellbook['Spells']) > 0:
             spell_mod = self.check_mod('magic')
             print("Spell Modifier: +{}".format(str(spell_mod)))
@@ -947,6 +963,11 @@ class Player(Character):
     def stairs_down(self):
         self.stairs(dz=1)
 
+    def change_location(self, x, y, z):
+        self.location_x = x
+        self.location_y = y
+        self.location_z = z
+
     def death(self):
         """
         Controls what happens when you die; no negative affect will occur for players under level 10
@@ -954,9 +975,13 @@ class Player(Character):
         time.sleep(2)
         stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
         if self.level > 9 or self.pro_level > 1:
-            print("Resurrection costs you half of your gold!")
-            self.gold = int(self.gold * 0.5)
-            if not random.randint(0, (9 + (self.charisma // 15))):  # 10% chance to lose a stats
+            cost = self.level * self.pro_level * 100 * self.location_z
+            cost = random.randint(cost // 2, cost)
+            if cost > self.gold:
+                cost = self.gold
+            print("Resurrection costs you {} gold.".format(cost))
+            self.gold -= cost
+            if not random.randint(0, self.charisma):
                 print("Complications occurred during your resurrection.")
                 stat_index = random.randint(0, 5)
                 stat_name = stat_list[stat_index]
@@ -1027,7 +1052,8 @@ class Player(Character):
                 if enemy.enemy_typ == 'Undead':
                     print("Gain enough experience to level.")
                     self.experience = self.exp_to_gain
-                    self.level_up()
+                    if self.max_level():
+                        self.level_up()
                 if enemy.enemy_typ == 'Dragon':
                     print("Your gold has been doubled.")
                     self.gold *= 2
@@ -1172,7 +1198,7 @@ class Player(Character):
             if self.experience != 'Max':
                 self.experience += enemy.experience
             self.class_upgrades(enemy)
-            while self.experience >= self.exp_to_gain and self.experience != 'Max':
+            while self.experience >= self.exp_to_gain and not self.max_level():
                 self.level_up()
             self.quests(enemy=enemy)
         elif flee:
@@ -1196,7 +1222,7 @@ class Player(Character):
                 for quest in self.quest_dict['Main'].keys():
                     if self.quest_dict['Main'][quest]['What'] == enemy.name:
                         self.quest_dict['Main'][quest]['Completed'] = True
-                        print("You have completed the quest {}.".format(enemy.name))
+                        print("You have completed the quest {}.".format(quest))
         elif item is not None:
             for quest in list(self.quest_dict['Side'].keys()):
                 if self.quest_dict['Side'][quest]['What'] == item:
@@ -1325,7 +1351,7 @@ class Player(Character):
         elif mod == 'magic':
             magic_mod = int(self.intel // 2) * self.pro_level
             if self.equipment['OffHand']().subtyp == 'Tome':
-                magic_mod += self.equipment['OffHand']().mod
+                magic_mod += (self.equipment['OffHand']().mod + (self.equipment['Weapon']().damage // 2))
             if self.equipment['Weapon']().subtyp == 'Staff' or \
                     (self.cls in ['Spellblade', 'Knight Enchanter'] and
                      self.equipment['Weapon']().subtyp == 'Longsword'):

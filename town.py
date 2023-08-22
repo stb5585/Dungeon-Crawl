@@ -80,11 +80,12 @@ def turn_in_quest(quest, player_char, typ):
         else:
             print("You received {} x{} and {} experience.".format(reward().name, num, exp))
     player_char.experience += exp
-    while player_char.experience >= player_char.exp_to_gain:
+    while player_char.experience >= player_char.exp_to_gain and not player_char.max_level():
         player_char.level_up()
     if player_char.quest_dict[typ][quest]['Type'] == 'Collect':
         item = player_char.quest_dict[typ][quest]['What']
         del player_char.special_inventory[item().name]
+    input("Press enter to continue")
 
 
 def accept_quest(quest, player_char, typ):
@@ -99,7 +100,7 @@ def accept_quest(quest, player_char, typ):
       Main: Level 35, defeat Nightmare, rewards 2 Old Keys and 4500 exp
       Side: Level 5, collect 12 Mystery Meat, rewards Super Health Potion and 150 exp
     Soldier
-      Main: Level 55, defeat Jester, rewards TODO
+      Main: Level 55, defeat Jester, rewards Evasion ring and 300000 exp
       Side: Level 25, collect 10 Scrap Metal, rewards a stat potion of the player's choice and 750 exp
     Drunkard
       Main: Level 35, defeat Cockatrice, rewards Gorgon Pendant and 5000 exp
@@ -524,7 +525,7 @@ def tavern_patrons(player_char):
         talks = patrons[options[option_input]]['Talk']
         level_talks = [talks[x] for x in talks if p_level >= x]
         print(random.choice(random.choice(level_talks)))
-    input("Press enter to continue")
+        input("Press enter to continue")
 
 
 def ultimate(player_char):
@@ -718,12 +719,13 @@ def barracks(player_char):
             choice = store_options[store_response]
             if choice == 'Store':
                 while True:
+                    os.system('cls' if os.name == 'nt' else 'clear')
+                    print("What would you like to add to your storage for safe keeping?")
                     p_items = list(player_char.inventory.keys())
                     if len(p_items) == 0:
                         print("You do not have anything to store at the moment.")
                         time.sleep(2)
                         break
-                    print("What would you like to add to your storage for safe keeping?")
                     p_items.append('Go Back')
                     p_choice = storyline.get_response(p_items)
                     if p_items[p_choice] == 'Go Back':
@@ -741,7 +743,9 @@ def barracks(player_char):
                                 try:
                                     print("You have {} {}s in your inventory.".format(total, p_items[p_choice]))
                                     num = int(input("How many would you like to store? "))
-                                    if num <= total:
+                                    if num < 0:
+                                        print("Please enter a valid quantity.")
+                                    elif num <= total:
                                         if itm().name not in player_char.storage.keys():
                                             player_char.storage[p_items[p_choice]] = [itm, num]
                                         else:
@@ -776,13 +780,16 @@ def barracks(player_char):
                                 try:
                                     print("You have {} {}s in storage.".format(total, retrieve_item))
                                     num = int(input("How many would you like to retrieve? "))
-                                    if num <= total:
+                                    if num < 0:
+                                        print("Please enter a valid quantity.")
+                                    elif num <= total:
                                         player_char.modify_inventory(player_char.storage[retrieve_item][0], num)
-                                        if num == total:
+                                        player_char.storage[retrieve_item][1] -= num
+                                        if player_char.storage[retrieve_item][1] == 0:
                                             del player_char.storage[retrieve_item]
                                         break
                                     else:
-                                        print("You do not have that many, please enter a correct value.")
+                                        print("You do not have that many, please enter a valid quantity.")
                                 except ValueError:
                                     print("Please enter a valid number.")
                                     input()
@@ -1090,10 +1097,10 @@ def tavern(player_char):
             exp = (random.randint(10, 20) ** player_char.pro_level) * player_char.level
             player_char.experience += exp
             print("You gain {} gold and {} experience for completing the bounty.".format(gold, exp))
-            while player_char.experience >= player_char.exp_to_gain:
+            while player_char.experience >= player_char.exp_to_gain and not player_char.max_level():
                 player_char.level_up()
             if random.randint(0, player_char.check_mod('luck', luck_factor=10)):
-                reward = items.random_item(player_char.pro_level + random.randint(0, 2))
+                reward = items.random_item(player_char.pro_level + random.randint(0, player_char.pro_level))
                 player_char.modify_inventory(reward, num=1)
                 print("And you have been rewarded with a {}.".format(reward().name))
             input("Press enter to continue")
@@ -1243,25 +1250,34 @@ def buy(player_char, buy_list, in_town=True):
 
     print("Great! What would you like to buy?")
     time.sleep(0.5)
-    buy_index = storyline.get_response(buy_list)
-    if buy_list[buy_index] == "Go Back":
-        return
+    if len(buy_list) > 2:
+        buy_index = storyline.get_response(buy_list)
+        if buy_list[buy_index] == "Go Back":
+            return
+    else:
+        buy_index = 0
     cat_list = []
     for cat in items.items_dict[buy_list[buy_index]]:
         try:
             if cat in classes.classes_dict[player_char.cls]().restrictions[buy_list[buy_index]]:
                 cat_list.append(cat)
         except KeyError:
-            cat_list.append(cat)
+            if (in_town and cat != 'Elixir') or not in_town:
+                cat_list.append(cat)
     cat_list.append('Go Back')
-    cat_index = storyline.get_response(cat_list)
-    if cat_list[cat_index] == 'Go Back':
-        return
+    if len(cat_list) > 2:
+        cat_index = storyline.get_response(cat_list)
+        if cat_list[cat_index] == 'Go Back':
+            return
+    else:
+        cat_index = 0
     while True:
         item_list = []
         item_options = []
         for item in items.items_dict[buy_list[buy_index]][cat_list[cat_index]]:
             diffs = []
+            if item().restriction and player_char.cls not in item().restriction:
+                continue
             if buy_list[buy_index] == 'Weapon':
                 diff = str(item().damage - player_char.equipment[buy_list[buy_index]]().damage)
                 if '-' not in diff:
@@ -1321,6 +1337,7 @@ def buy(player_char, buy_list, in_town=True):
             print("You do not have enough gold.")
             time.sleep(0.25)
         else:
+            print(buy_item().__str__())
             print("You have {} gold coins.".format(player_char.gold))
             while True:
                 try:
@@ -1407,7 +1424,7 @@ def town(player_char):
     os.system('cls' if os.name == 'nt' else 'clear')
     locations = [barracks, tavern, church]
     town_options = ['Barracks', 'Tavern', 'Church', 'Shops', 'Dungeon', 'Character Menu']
-    if not player_char.warp_point:  # TODO
+    if player_char.warp_point:
         town_options.insert(5, 'Warp Point')
     storyline.slow_type("Welcome to the town of Silvana!\n")
     time.sleep(0.5)
@@ -1419,7 +1436,7 @@ def town(player_char):
         if town_options[town_index] == 'Dungeon':
             print("You descend into the dungeon.")
             time.sleep(1)
-            player_char.location_x, player_char.location_y, player_char.location_z = (5, 10, 1)
+            player_char.change_location(5, 10, 1)
             break
         elif town_options[town_index] == 'Character Menu':
             os.system('cls' if os.name == 'nt' else 'clear')
@@ -1434,8 +1451,14 @@ def town(player_char):
             print("Hello, {}. Do you want to warp down to level 5?".format(player_char.name))
             confirm = storyline.get_response(yes_no)
             if yes_no[confirm] == 'Yes':
+                if not player_char.world_dict[(3, 0, 5)].visited:
+                    player_char.world_dict[(3, 0, 5)].visited = True
+                    player_char.world_dict[(2, 0, 5)].near = True
+                    player_char.world_dict[(4, 0, 5)].near = True
+                    player_char.world_dict[(3, 1, 5)].near = True
                 print("You step into the warp point, taking you deep into the dungeon.")
-                player_char.location_x, player_char.location_y, player_char.location_z = (3, 0, 5)
+                player_char.world_dict[(3, 0, 5)].warped = True
+                player_char.change_location(3, 0, 5)
             else:
                 print("Not a problem, come back when you change your mind.")
             time.sleep(1)

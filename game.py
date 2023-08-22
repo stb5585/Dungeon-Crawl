@@ -93,6 +93,20 @@ def relic_room(level):
     time.sleep(2)
 
 
+def warp_point(player_char):
+    yes_no = ["Yes", "No"]
+    print("Hello, {}. Do you want to warp back to town?".format(player_char.name))
+    confirm = storyline.get_response(yes_no)
+    if yes_no[confirm] == 'Yes':
+        print("You step into the warp point, taking you back to town.")
+        time.sleep(1)
+        player_char.world_dict[(3, 0, 5)].warped = True
+        player_char.change_location(5, 10, 0)
+    else:
+        print("Not a problem, come back when you change your mind.")
+    return
+
+
 def unobtainium_room():
     """
 
@@ -133,7 +147,7 @@ def final_blocker():
 
 def final_boss(player_char):
     """
-    - Add option to continue or retreat
+
     """
 
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -171,7 +185,7 @@ def play():
     play_index = storyline.get_response(play_options)
     os.system('cls' if os.name == 'nt' else 'clear')
     if play_index == 0:
-        # new_player()
+        new_player()
         player_char = player.new_char()
     elif play_index == 1:
         print(f.renderText("DUNGEON CRAWL"))
@@ -188,9 +202,12 @@ def play():
         player_char = tutorial.tutorial()
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
+        valid = False
         room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
         room.modify_player(player_char)
-        if player_char.is_alive():
+        while not valid:
+            if not player_char.is_alive():
+                break
             room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
             try:
                 room.special_text(player_char)
@@ -205,10 +222,11 @@ def play():
                         room.warning = True
                     except AttributeError:
                         pass
+                if player_char.in_town():
+                    break
                 print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player_char.name,
                                                                         player_char.health, player_char.health_max,
                                                                         player_char.mana, player_char.mana_max))
-
                 available_actions = room.available_actions(player_char)
                 print("\t\t{}".format(actions.MoveNorth()))
                 print("\t{}\t{}".format(actions.MoveWest(), actions.MoveEast()))
@@ -217,11 +235,14 @@ def play():
                 for action in available_actions:
                     if action_input == action.hotkey:
                         player_char.do_action(action, **action.kwargs)
+                        if action_input in ['w', 'a', 's', 'd', 'o', 'j', 'u']:
+                            valid = True
                         break
             else:
                 player_char.death()
-        else:
-            player_char.death()
+                valid = True
+            if valid:
+                break
 
 
 if __name__ == "__main__":

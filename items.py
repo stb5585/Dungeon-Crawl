@@ -150,9 +150,6 @@ def random_item(z, typ=None, subtyp=None):
         except ValueError:
             inds = list(range(levels.index(max(levels)), len(levels)))
         itms = [item_dict[rand_group][rand_type][0][i] for i in inds]
-        if len(itms) == 1:
-            treasure = itms[0]
-            break
         chances = [item_dict[rand_group][rand_type][1][i] for i in inds]
         chances = [x/sum(chances) for x in chances]
         treasure = random.choices(itms, chances)[0]
@@ -186,7 +183,7 @@ class Item:
         self.ultimate = False
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\n".format(self.name, self.description, self.value)
+        return "\n=====\n{}\n=====\n{}\nValue: {}\n=====\n".format(self.name, self.description, self.value)
 
     def use(self, user, target=None, tile=None):
         return True
@@ -217,8 +214,8 @@ class Weapon(Item):
         self.ignore = False
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nDamage: {}\nCritical Chance: {}%\n{}-handed".format(
-            self.name, self.description, self.subtyp, self.value, self.damage, int(1 / float(self.crit + 1) * 100),
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nDamage: {}\nCritical Chance: {}%\n{}-handed\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, self.damage, int(self.crit * 100),
             self.handed)
 
     def special_effect(self, wielder, target, damage=0, crit=1):
@@ -815,7 +812,7 @@ class HolyStaff(Weapon):
                                                         " and archbishops.",
                          value=7500, rarity=0.5, damage=11, crit=0.15, handed=2, subtyp='Staff', unequip=False,
                          off=False)
-        self.restricted = ['Priest', 'Archbishop']
+        self.restriction = ['Priest', 'Archbishop']
         self.special = True
 
     def special_effect(self, wielder, target, damage=0, crit=1):
@@ -972,8 +969,8 @@ class Armor(Item):
         self.typ = 'Armor'
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nArmor: {}".format(self.name, self.description, self.subtyp,
-                                                                      self.value, self.armor)
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nArmor: {}\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, self.armor)
 
     def special_effect(self, wearer, attacker):
         pass
@@ -1226,8 +1223,8 @@ class Buckler(OffHand):
                          value=25, rarity=0.95, mod=0.05, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class Aspis(OffHand):
@@ -1238,8 +1235,8 @@ class Aspis(OffHand):
                          value=100, rarity=0.9, mod=0.1, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class Targe(OffHand):
@@ -1251,8 +1248,8 @@ class Targe(OffHand):
                          value=500, rarity=0.8, mod=0.15, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class Glagwa(OffHand):
@@ -1263,8 +1260,8 @@ class Glagwa(OffHand):
                          value=2500, rarity=0.66, mod=0.2, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class KiteShield(OffHand):
@@ -1278,8 +1275,8 @@ class KiteShield(OffHand):
                          value=10000, rarity=0.5, mod=0.25, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class Pavise(OffHand):
@@ -1291,8 +1288,8 @@ class Pavise(OffHand):
                          value=25000, rarity=0.1, mod=0.3, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class MedusaShield(OffHand):
@@ -1304,8 +1301,8 @@ class MedusaShield(OffHand):
                          value=50000, rarity=0.01, mod=0.35, subtyp='Shield', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%".format(
-            self.name, self.description, self.subtyp, self.value, int(round(1 / self.mod, 2) * 100))
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nBlock: {}%\n=====\n".format(
+            self.name, self.description, self.subtyp, self.value, int(self.mod * 100))
 
 
 class Book(OffHand):
@@ -1315,7 +1312,7 @@ class Book(OffHand):
                          value=25, rarity=0.95, mod=2, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1326,7 +1323,7 @@ class TomeKnowledge(OffHand):
                          value=500, rarity=0.9, mod=5, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1337,7 +1334,7 @@ class Grimoire(OffHand):
                          value=2500, rarity=0.66, mod=7, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1350,7 +1347,7 @@ class BookShadows(OffHand):
                          value=10000, rarity=0.5, mod=10, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1362,7 +1359,7 @@ class DragonRouge(OffHand):
                          value=15000, rarity=0.1, mod=12, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1374,7 +1371,7 @@ class Vedas(OffHand):
                          value=35000, rarity=0.075, mod=18, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1387,7 +1384,7 @@ class Necronomicon(OffHand):
         self.restriction = ['Warlock', 'Necromancer']
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1398,7 +1395,7 @@ class Magus(OffHand):
                          value=75000, rarity=0.01, mod=30, subtyp='Tome', unequip=False)
 
     def __str__(self):
-        return "{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}".format(
+        return "\n=====\n{}\n=====\n{}\nType: {}\nValue: {}\nSpell Damage Mod: {}\n=====\n".format(
             self.name, self.description, self.subtyp, self.value, self.mod)
 
 
@@ -1420,7 +1417,7 @@ class Accessory(Item):
         self.typ = "Accessory"
 
     def __str__(self):
-        return "{}\n=====\n{}\nValue: {}\nMod: {}".format(self.name, self.description, self.value, self.mod)
+        return "\n=====\n{}\n=====\n{}\nValue: {}\nMod: {}\n=====\n".format(self.name, self.description, self.value, self.mod)
 
 
 class NoRing(Accessory):

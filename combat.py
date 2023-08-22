@@ -14,15 +14,16 @@ def combat_text(player_char, enemy, tile):
 
     if 'Boss' in tile.__str__():
         print("""
-            Boss Fight!
-        """)
+                Boss Fight!""")
     if not enemy.invisible:
         print("""
-        {} is attacked by a {}.
+    {} is attacked by a {}.
+        
         """.format(player_char.name, enemy.name))
     else:
         print("""
-        An unseen entity is attacking {}.
+    An unseen entity is attacking {}.
+        
         """.format(player_char.name))
     if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
             'Vision' in player_char.equipment['Pendant']().mod]) and \
@@ -110,7 +111,8 @@ def battle(player_char, enemy):
     win = player_char.is_alive()
     player_char.end_combat(enemy, tile, flee=flee)
     if not flee:
-        input("Press enter to continue")
+        if win:
+            input("Press enter to continue")
     else:
         win = False
     return win

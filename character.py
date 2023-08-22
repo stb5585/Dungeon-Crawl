@@ -73,7 +73,7 @@ class Character:
         """
         Things that affect hit chance
         Weapon attack: whether char is blind, if enemy is flying and/or invisible, enemy status effects,
-            accessory bonuses
+            accessory bonuses, difference in pro level
         Spell attack: enemy status effects
         """
 
@@ -87,6 +87,7 @@ class Character:
             hit_mod *= (1 - (int(self.status_effects['Blind'][0]) * 0.5))  # blind lowers accuracy by 50%
             hit_mod *= (1 - (int(defender.invisible) * (1 / 3)))  # invisible lowers accuracy by 33.3%
             hit_mod *= (1 - (int(defender.flying) * (1 / 10)))  # flying lowers accuracy by 10%
+            hit_mod += (0.05 * (self.pro_level - defender.pro_level))  # makes it easier to hit lower level creatures
         else:
             hit_mod = 1
             hit_mod *= (1 - (int(defender.invisible) * (1 / 3)))  # invisible lowers accuracy by 33.3%
@@ -94,12 +95,13 @@ class Character:
             return 0
         return hit_mod
 
-    def dodge_chance(self, attacker):
-        a_chance = random.randint(attacker.dex // 2, attacker.dex) + attacker.check_mod('luck', luck_factor=10)
+    def dodge_chance(self, attacker, typ='weapon'):
+        a_chance = attacker.check_mod('luck', luck_factor=10)
+        if typ == 'weapon':
+            a_chance += random.randint(attacker.dex // 2, attacker.dex)
         d_chance = random.randint(0, self.dex) + self.check_mod('luck', luck_factor=15)
         chance = (d_chance - a_chance) / (a_chance + d_chance)
         chance += (0.1 * int('Dodge' in self.equipment['Ring']().mod))
-        print("Dodge chance: {}".format(chance))
         return max(0, chance)
 
     def weapon_damage(self, defender, dmg_mod=0, crit=1, ignore=False, cover=False):
@@ -150,9 +152,12 @@ class Character:
                 hits[i] = True
             # combat
             if dodge:
+                hits[i] = False
                 if 'Parry' in list(defender.spellbook['Skills'].keys()):
                     print("{} parries {}'s attack and counterattacks!".format(defender.name, self.name))
                     _, _ = defender.weapon_damage(self)
+                    if not self.is_alive():
+                        return False, max(crits)
                 else:
                     print("{} evades {}'s attack.".format(defender.name, self.name))
             else:
@@ -168,10 +173,8 @@ class Character:
                           not defender.status_effects['Mana Shield'][0]) and (not stun and not sleep):
                         blk_chance = defender.equipment['OffHand']().mod + \
                                      (('Block' in defender.equipment['Ring']().mod) * 0.25)
-                        print("Block chance: {}".format(blk_chance))
                         if blk_chance > random.random():
                             blk_amt = (defender.strength * blk_chance) / self.strength
-                            print("Block percent: {}".format(blk_amt))
                             if 'Shield Block' in list(defender.spellbook['Skills'].keys()):
                                 blk_amt *= 2
                             blk_amt = min(1, blk_amt)

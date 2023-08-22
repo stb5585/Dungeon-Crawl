@@ -71,14 +71,12 @@ def equip_check(item, item_typ, class_name):
         item = item[0]
     for cls in class_list:
         if class_name == cls[0]:
-            try:
-                if cls[0] in item().restriction:
-                    return True
-            except AttributeError:
-                pass
             if item_typ == 'Accessory':
                 return True
             elif item().subtyp in cls[1]().restrictions[item_typ]:
+                if item().restriction:
+                    if cls[0] not in item().restriction:
+                        return False
                 return True
             else:
                 return False

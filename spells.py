@@ -200,7 +200,7 @@ class ShieldSlam(Offensive):
                     if target.is_alive() and not target.status_effects['Stun'][0]:
                         if random.randint(0, user.strength) \
                                 > random.randint(target.strength // 2, target.strength):
-                            turns = max(1, user.strength // 10)
+                            turns = max(1, user.strength // 8)
                             target.status_effects['Stun'][0] = True
                             target.status_effects['Stun'][1] = turns
                             print("{} is stunned.".format(target.name, turns))
@@ -393,9 +393,11 @@ class MortalStrike(Offensive):
         if hit and target.is_alive() and not target.status_effects['Bleed'][0]:
             if random.randint((user.strength * crit) // 2, (user.strength * crit)) \
                     > random.randint(target.con // 2, target.con) and not target.status_effects['Mana Shield'][0]:
+                bleed_dmg = user.strength * crit
+                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
                 target.status_effects['Bleed'][0] = True
                 target.status_effects['Bleed'][1] = max(user.strength // 10, target.status_effects["Bleed"][1])
-                target.status_effects['Bleed'][2] = max(user.strength * crit, target.status_effects["Bleed"][2])
+                target.status_effects['Bleed'][2] = max(bleed_dmg, target.status_effects["Bleed"][2])
                 print("{} is bleeding.".format(target.name, user.strength // 10))
 
 
@@ -711,7 +713,7 @@ class PoisonStrike(Stealth):
     def __init__(self):
         super().__init__(name='Poison Strike', description='Attack the enemy with a chance to poison.',
                          cost=14)
-        self.damage = 5
+        self.damage = 8
 
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
@@ -1306,11 +1308,11 @@ class Lick(Skill):
     def __init__(self):
         super().__init__(name="Lick", description="Lick the target, dealing damage and inflicting random status "
                                                   "effect(s).",
-                         cost=5)
+                         cost=10)
 
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
-        user.mana -= (self.cost * user.pro_level)
+        user.mana -= self.cost
         hit, crit = user.weapon_damage(target)
         if hit:
             status_effects = ['Prone', 'Silence', 'Stun', 'Blind', 'Sleep']
@@ -1337,7 +1339,7 @@ class AcidSpit(Skill):
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= (self.cost * user.pro_level)
-        dmg = self.damage * user.pro_level
+        dmg = self.damage * max(1, user.pro_level)
         dam_red = target.check_mod('magic def')
         damage = random.randint(dmg // 2, dmg) - dam_red
         hit = user.hit_chance(target)
@@ -1346,8 +1348,9 @@ class AcidSpit(Skill):
             if dodge:
                 print("{} partially dodges the attack, only taking half damage.".format(target.name))
                 damage //= 2
-            damage -= (1 - (int(dodge) * 0.5))
             if damage > 0:
+                print("{} takes {} damage from the acid.".format(target.name, damage))
+                target.health -= damage
                 target.status_effects["DOT"][0] = True
                 target.status_effects["DOT"][1] = 2
                 target.status_effects["DOT"][2] = max(damage, target.status_effects["DOT"][2])
@@ -1478,10 +1481,15 @@ class NightmareFuel(Skill):
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= self.cost
+        crit = 1
+        if random.random() > 0.9:  # 10% chance to crit
+            print("Critical hit!")
+            crit = 2
         if target.status_effects['Sleep'][0]:
             if random.randint(user.intel // 2, user.intel) > \
                     random.randint(target.wisdom // 2, target.wisdom):
-                damage = target.status_effects['Sleep'][1] * user.intel
+                damage = target.status_effects['Sleep'][1] * user.intel * crit
+                damage = max(1, random.randint(damage // 2, damage))
                 target.health -= damage
                 print("{} invades {}'s dreams, dealing {} damage.".format(user.name, target.name, damage))
             else:
@@ -1881,13 +1889,23 @@ class GoblinPunch(Skill):
     """
 
     def __init__(self):
-        super().__init__(name="Goblin Punch", description="",
+        super().__init__(name="Goblin Punch", description="Attack the target multiple times with a flurry of punches, "
+                                                          "dealing damage based on the strength difference between the "
+                                                          "user and target.",
                          cost=0)
+        self.max_punches = 5
 
     def use(self, user, target=None, cover=False):
         print("{} uses {}.".format(user.name, self.name))
-        user.mana -= self.cost
-        str_diff = target.strength - user.strength
+        num_attacks = max(1, random.randint(user.pro_level, self.max_punches))
+        str_diff = max(1, user.strength - target.strength)
+        for _ in range(num_attacks):
+            if user.hit_chance(target) > random.random():
+                target.health -= str_diff
+                print("{} punches {} for {} damage.".format(user.name, target.name, str_diff))
+            else:
+                print("{} punches air, missing {}.".format(user.name, target.name))
+            time.sleep(0.1)
 
 
 # class Blackjack(Skill):
@@ -2482,7 +2500,7 @@ class Scorch(Attack):
 
     def __init__(self):
         super().__init__(name='Scorch', description='Light a fire and watch the enemy burn!',
-                         cost=10, damage=14, crit=10)
+                         cost=6, damage=14, crit=10)
         self.subtyp = 'Fire'
         self.school = 'Elemental'
 
@@ -2595,7 +2613,7 @@ class WaterJet(Attack):
 
     def __init__(self):
         super().__init__(name='Water Jet', description='A jet of water erupts from beneath the enemy\'s feet.',
-                         cost=6, damage=12, crit=5)
+                         cost=4, damage=12, crit=5)
         self.subtyp = 'Water'
         self.school = 'Elemental'
 
@@ -2695,7 +2713,7 @@ class Gust(Attack):
 
     def __init__(self):
         super().__init__(name='Gust', description='A strong gust of wind whips past the enemy.',
-                         cost=12, damage=15, crit=6)
+                         cost=7, damage=15, crit=6)
         self.subtyp = 'Wind'
         self.school = 'Elemental'
 
@@ -3117,7 +3135,7 @@ class Heal2(Heal):
 
     def __init__(self):
         super().__init__()
-        self.cost = 25
+        self.cost = 18
         self.heal = 0.5
         self.crit = 3
 
@@ -3129,7 +3147,7 @@ class Heal3(Heal):
 
     def __init__(self):
         super().__init__()
-        self.cost = 35
+        self.cost = 25
         self.heal = 0.75
         self.crit = 2
 
@@ -3692,15 +3710,17 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
                           '8': PiercingStrike,
                           '10': Disarm,
                           '13': Parry,
-                          '15': Charge,
-                          '17': DoubleStrike},
+                          '15': Charge},
               'Weapon Master': {'1': MortalStrike,
-                                '10': TripleStrike},
+                                '6': DoubleStrike,
+                                '20': TripleStrike},
               'Berserker': {'1': BattleCry,
                             '5': MortalStrike2,
-                            '10': QuadStrike},
-              'Paladin': {'6': ShieldBlock},
-              'Crusader': {'5': MortalStrike},
+                            '15': QuadStrike},
+              'Paladin': {'6': ShieldBlock,
+                          '18': DoubleStrike},
+              'Crusader': {'5': MortalStrike,
+                           '22': TripleStrike},
               'Lancer': {'2': Jump,
                          '15': DoubleJump},
               'Dragoon': {'10': ShieldBlock,
@@ -3794,13 +3814,13 @@ spell_dict = {'Warrior': {},
                        '6': MagicMissile,
                        '8': IceLance,
                        '13': Shock,
-                       '16': Enfeeble,
-                       '20': Dispel},
+                       '16': Enfeeble},
               'Sorcerer': {'2': Icicle,
                            '6': Reflect,
                            '8': Lightning,
                            '10': Sleep,
                            '15': Fireball,
+                           '16': Dispel,
                            '18': MagicMissile2,
                            '20': WeakenMind},
               'Wizard': {'4': Firestorm,
@@ -3813,14 +3833,16 @@ spell_dict = {'Warrior': {},
                           '4': Corruption,
                           '10': Terrify,
                           '12': ShadowBolt2,
-                          '15': Doom},
+                          '15': Doom,
+                          '19': Dispel},
               'Shadowcaster': {'8': ShadowBolt3,
                                '18': Desoul},
               'Spellblade': {'20': Reflect},
               'Knight Enchanter': {'1': EnhanceArmor,
                                    '3': Fireball,
                                    '9': Icicle,
-                                   '12': Lightning},
+                                   '12': Lightning,
+                                   '20': Dispel},
               'Footpad': {},
               'Thief': {},
               'Rogue': {},
@@ -3834,7 +3856,6 @@ spell_dict = {'Warrior': {},
               'Healer': {'2': Heal,
                          '8': Regen,
                          '10': Holy,
-                         '15': Dispel,
                          '18': Heal2},
               'Cleric': {'2': Smite,
                          '3': TurnUndead,
@@ -3844,31 +3865,35 @@ spell_dict = {'Warrior': {},
                          '16': Smite2,
                          '19': TurnUndead2},
               'Templar': {'6': Regen2,
-                          '10': Smite3},
+                          '10': Smite3,
+                          '18': Dispel},
               'Priest': {'1': Regen2,
                          '3': Holy2,
                          '6': Shell,
                          '8': Heal3,
                          '10': ManaShield,
                          '11': Cleanse,
-                         '15': Bless},
+                         '15': Bless,
+                         '17': Dispel},
               'Archbishop': {'4': Holy3,
                              '6': Silence,
                              '7': Regen3,
                              '15': ManaShield2,
                              '20': Resurrection},
               'Monk': {'15': Shell},
-              'Master Monk': {'2': Reflect},
+              'Master Monk': {'2': Reflect,
+                              '12': Dispel},
               'Pathfinder': {'5': Tremor,
                              '11': WaterJet,
                              '14': Gust,
-                             '18': Dispel,
                              '19': Scorch},
               'Druid': {'5': Regen},
-              'Lycan': {},
-              'Diviner': {'3': Enfeeble},
+              'Lycan': {'8': Dispel},
+              'Diviner': {'3': Enfeeble,
+                          '14': Dispel},
               'Geomancer': {'10': WeakenMind,
                             '15': Boost},
               'Shaman': {'9': Regen},
-              'Soulcatcher': {'12': Desoul},
+              'Soulcatcher': {'6': Dispel,
+                              '12': Desoul},
               }
