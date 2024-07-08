@@ -11,7 +11,6 @@ import items
 import storyline
 import classes
 
-
 # variables
 yes_no = ['Yes', 'No']
 
@@ -229,303 +228,319 @@ def tavern_patrons(player_char):
     Soldier: level 10
     Hooded Figure: level 25
     """
-    os.system('cls' if os.name == 'nt' else 'clear')
-    p_level = player_level(player_char)
-    patrons = {'Barkeep': {'Talk': {1: ["If you want to access the character menu, you can do so by hitting the (c) "
-                                        "button.",
-                                        "Make sure to stop by from time to time. You never know who might show up.",
-                                        "Equipment vendors will only show you what you can equip. If you can't find an"
-                                        " item type, your class probably can't use it."],
-                                    5: ["How did you like that stat bonus at level 4? You get another every 4th "
-                                        "level, so plan your promotions accordingly.",
-                                        "If you get a quest from someone, come back and talk with them after it is "
-                                        "completed and they will likely reward you for your efforts."],
-                                    10: ["You have to be level 20 to get a promotion but you can gain more experience"
-                                         " if you wait until level 30.",
-                                         "Locked chests contain more powerful items compared with unlocked ones, "
-                                         "however you need a key or a lockpick to get to the treasure."]
-                                    },
-                           'Main': {10: {'The Butcher': {'Who': 'Barkeep',
-                                                         'Type': 'Defeat',
-                                                         'What': 'Minotaur',
-                                                         'Total': 1,
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        p_level = player_level(player_char)
+        patrons = {'Barkeep': {'Talk': {1: ["If you want to access the character menu, you can do so by hitting the (c) "
+                                            "button.",
+                                            "Make sure to stop by from time to time. You never know who might show up.",
+                                            "Equipment vendors will only show you what you can equip. If you can't find an"
+                                            " item type, your class probably can't use it."],
+                                        5: ["How did you like that stat bonus at level 4? You get another every 4th "
+                                            "level, so plan your promotions accordingly.",
+                                            "If you get a quest from someone, come back and talk with them after it is "
+                                            "completed and they will likely reward you for your efforts."],
+                                        10: ["You have to be level 20 to get a promotion but you can gain more experience"
+                                             " if you wait until level 30.",
+                                             "Locked chests contain more powerful items compared with unlocked ones, "
+                                             "however you need a key or a lockpick to get to the treasure."]
+                                        },
+                               'Main': {10: {'The Butcher': {'Who': 'Barkeep',
+                                                             'Type': 'Defeat',
+                                                             'What': 'Minotaur',
+                                                             'Total': 1,
+                                                             'Start Text':
+                                                                 "There is a monster guarding the steps to the first floor,"
+                                                                 " the Minotaur, that is responsible for lots of carnage. "
+                                                                 "If you defeat it, I will give you something to help you "
+                                                                 "explore the dungeon.",
+                                                             'End Text':
+                                                                 "I'm glad to hear you took that butcher out. Here's an "
+                                                                 "item that should help you in your quest.",
+                                                             'Reward': [items.OldKey],
+                                                             'Reward Number': 1,
+                                                             'Experience': 200,
+                                                             'Completed': False,
+                                                             'Turned In': False}
+                                             },
+                                        },
+                               'Side': {1: {'Rat Trap': {'Who': 'Barkeep',
+                                                         'Type': 'Collect',
+                                                         'What': items.RatTail,
+                                                         'Total': 6,
                                                          'Start Text':
-                                                             "There is a monster guarding the steps to the first floor,"
-                                                             " the Minotaur, that is responsible for lots of carnage. "
-                                                             "If you defeat it, I will give you something to help you "
-                                                             "explore the dungeon.",
+                                                             "Darn pesky rats keep getting into my food supply and I'd bet "
+                                                             "anything they come up from that dungeon. Help my out by "
+                                                             "killing as many as you need to collect 6 tails and I'll pay "
+                                                             "you 600 gold.",
                                                          'End Text':
-                                                             "I'm glad to hear you took that butcher out. Here's an "
-                                                             "item that should help you in your quest.",
-                                                         'Reward': [items.OldKey],
-                                                         'Reward Number': 1,
-                                                         'Experience': 200,
+                                                             "Good riddance to the bastards, hopefully this will keep my "
+                                                             "food supplies in good order. Here's the gold I promised you.",
+                                                         'Reward': ['Gold'],
+                                                         'Reward Number': 600,
+                                                         'Experience': 100,
                                                          'Completed': False,
                                                          'Turned In': False}
-                                         },
-                                    },
-                           'Side': {1: {'Rat Trap': {'Who': 'Barkeep',
-                                                     'Type': 'Collect',
-                                                     'What': items.RatTail,
-                                                     'Total': 6,
-                                                     'Start Text':
-                                                         "Darn pesky rats keep getting into my food supply and I'd bet "
-                                                         "anything they come up from that dungeon. Help my out by "
-                                                         "killing as many as you need to collect 6 tails and I'll pay "
-                                                         "you 600 gold.",
-                                                     'End Text':
-                                                         "Good riddance to the bastards, hopefully this will keep my "
-                                                         "food supplies in good order. Here's the gold I promised you.",
-                                                     'Reward': ['Gold'],
-                                                     'Reward Number': 600,
-                                                     'Experience': 100,
-                                                     'Completed': False,
-                                                     'Turned In': False}
+                                            }
                                         }
-                                    }
-                           },
-               'Waitress': {'Talk': {1: ["Entering the town will replenish your health and mana. Seems like you could "
-                                         "take advantage of that.",
-                                         "Sorry, I can't talk now! I am getting married and need to make as much money "
-                                         "as I can."],
-                                     10: ["(sobbing) I can't believe it...a week before our wedding and my husband to "
-                                          "be decides to join the fight against the prime evil...I want to be mad but "
-                                          "he says he can't stand by when I am in danger. My hero..."],
-                                     25: ["Joffrey returned yesterday bloodied but resolute. He has gained much "
-                                          "experience and hopes to have found the source of our suffering by month's "
-                                          "end. I gave him my lucky pendant to return to me when his mission is "
-                                          "complete."],
-                                     },
-                            'Main': {35: {"A Bad Dream": {'Who': 'Waitress',
-                                                          'Type': 'Locate',
-                                                          'What': "Joffrey",
-                                                          'Total': 1,
-                                                          'Start Text':
-                                                              "This morning I woke in a sweat...I dreamed I was "
-                                                              "standing in a square room and to my horror a great "
-                                                              "flaming horse struck down my betrothed...please find my "
-                                                              "Joffrey before my dream truly becomes a nightmare...",
-                                                          'End Text':
-                                                              "My pendant...Elysia take me...he left me these keys last"
-                                                              " I saw of him...please avenge my love...",
-                                                          'Reward': [items.OldKey],
-                                                          'Reward Number': 2,
-                                                          'Experience': 4500,
-                                                          'Completed': False,
-                                                          'Turned In': False}
-                                          }
-                                     },
-                            'Side': {5: {"Where's the Beef?": {'Who': 'Waitress',
-                                                               'Type': 'Collect',
-                                                               'What': items.MysteryMeat,
-                                                               'Total': 12,
-                                                               'Start Text':
-                                                                   "My wedding day is fast approaching and we are "
-                                                                   "trying to save a few gold, so I am cooking the meal"
-                                                                   " for the guests. If you could bring me back 12 "
-                                                                   "pieces of mystery meat, I can reward you with this "
-                                                                   "potion I received as a tip once.",
-                                                               'End Text':
-                                                                   "Thank you, thank you, thank you! You have made my "
-                                                                   "special day that much easier. Please take this as a"
-                                                                   " token of my appreciation.",
-                                                               'Reward': [items.SuperHealthPotion],
-                                                               'Reward Number': 1,
-                                                               'Experience': 150,
-                                                               'Completed': False,
-                                                               'Turned In': False}
+                               },
+                   'Waitress': {'Talk': {1: ["Entering the town will replenish your health and mana. Seems like you could "
+                                             "take advantage of that.",
+                                             "Sorry, I can't talk now! I am getting married and need to make as much money "
+                                             "as I can."],
+                                         10: ["(sobbing) I can't believe it...a week before our wedding and my husband to "
+                                              "be decides to join the fight against the prime evil...I want to be mad but "
+                                              "he says he can't stand by when I am in danger. My hero..."],
+                                         25: ["Joffrey returned yesterday bloodied but resolute. He has gained much "
+                                              "experience and hopes to have found the source of our suffering by month's "
+                                              "end. I gave him my lucky pendant to return to me when his mission is "
+                                              "complete."],
+                                         },
+                                'Main': {35: {"A Bad Dream": {'Who': 'Waitress',
+                                                              'Type': 'Locate',
+                                                              'What': "Joffrey",
+                                                              'Total': 1,
+                                                              'Start Text':
+                                                                  "This morning I woke in a sweat...I dreamed I was "
+                                                                  "standing in a square room and to my horror a great "
+                                                                  "flaming horse struck down my betrothed...please find my "
+                                                                  "Joffrey before my dream truly becomes a nightmare...",
+                                                              'End Text':
+                                                                  "My pendant...Elysia take me...he left me these keys last"
+                                                                  " I saw of him...please avenge my love...(the "
+                                                                  "waitress runs out sobbing...)",
+                                                              'Reward': [items.OldKey],
+                                                              'Reward Number': 2,
+                                                              'Experience': 4500,
+                                                              'Completed': False,
+                                                              'Turned In': False}
+                                              }
+                                         },
+                                'Side': {5: {"Where's the Beef?": {'Who': 'Waitress',
+                                                                   'Type': 'Collect',
+                                                                   'What': items.MysteryMeat,
+                                                                   'Total': 12,
+                                                                   'Start Text':
+                                                                       "My wedding day is fast approaching and we are "
+                                                                       "trying to save a few gold, so I am cooking the meal"
+                                                                       " for the guests. If you could bring me back 12 "
+                                                                       "pieces of mystery meat, I can reward you with this "
+                                                                       "potion I received as a tip once.",
+                                                                   'End Text':
+                                                                       "Thank you, thank you, thank you! You have made my "
+                                                                       "special day that much easier. Please take this as a"
+                                                                       " token of my appreciation.",
+                                                                   'Reward': [items.SuperHealthPotion],
+                                                                   'Reward Number': 1,
+                                                                   'Experience': 150,
+                                                                   'Completed': False,
+                                                                   'Turned In': False}
+                                             }
                                          }
-                                     }
-                            },
-               'Soldier': {'Talk': {10: ["You may find locked doors along your path while exploring the dungeon. You "
-                                         "can't open these with just any old key, you need an actual Old Key."],
-                                    25: ["I just finished my shift guarding the old warehouse behind the barracks. They"
-                                         " won't tell us what's in there but I have seen several scientists come and "
-                                         "go."],
-                                    65: ["The Devil is immune to normal weapons but legend says there is a "
-                                         "material that will do the job."]
-                                    },
-                           'Main': {55: {'No Laughing Matter': {'Who': 'Soldier',
-                                                                'Type': 'Defeat',
-                                                                'What': 'Jester',
-                                                                'Total': 1,
-                                                                'Start Text':
-                                                                    "During my first week of training, a senior officer"
-                                                                    " told us a story about a former recruit who went "
-                                                                    "mad. He was a bit of an outcast and many of the "
-                                                                    "other soldiers bullied him for his weirdness, as "
-                                                                    "it was told. He had a fondness for card tricks and"
-                                                                    " claimed he was an 'Agent of Chaos', whatever that"
-                                                                    " means...anyway, he finally cracked one day and "
-                                                                    "disappeared, never to be heard from again...that "
-                                                                    "is until we started receiving the body parts...the"
-                                                                    " freak has been sending back parts of adventurers "
-                                                                    "with notes talking about revenge and signed by the"
-                                                                    " Jester. Someone needs to take this sick bastard "
-                                                                    "out before anyone else gets hurt. Be careful, you "
-                                                                    "never truly know what you may get with this guy.",
-                                                                'End Text':
-                                                                    "Excellent work! Hopefully the souls of those "
-                                                                    "tortured by the Jester will be able to rest now. "
-                                                                    "This magical ring was shipped back with one of the"
-                                                                    " body parts, it increases your chance to evade "
-                                                                    "attacks in combat. I'm sure the Jester thought he "
-                                                                    "was being clever, since it took so long for "
-                                                                    "someone to finally catch him. It's fitting that "
-                                                                    "you would wear it now.",
-                                                                'Reward': [items.EvasionRing],
-                                                                'Reward Number': 1,
-                                                                'Experience': 300000,
-                                                                'Completed': False,
-                                                                'Turned In': False}}},
-                           'Side': {25: {'Metalingus': {'Who': 'Soldier',
-                                                        'Type': 'Collect',
-                                                        'What': items.ScrapMetal,
-                                                        'Total': 10,
-                                                        'Start Text':
-                                                            "The city guard are in desperate need of new equipment but "
-                                                            "we unfortunately are running short on the required "
-                                                            "materials. If you can bring back 10 pieces of scrap metal,"
-                                                            " I can use my connections with the alchemist shop and get "
-                                                            "you a really nice potion for your troubles.",
-                                                        'End Text':
-                                                            "You are a life saver, literally. This metal will help to "
-                                                            "fortify the town against the scum that patrols the "
-                                                            "dungeon. Here is a token of my appreciation.",
-                                                        'Reward': [items.StrengthPotion, items.IntelPotion,
-                                                                   items.WisdomPotion, items.ConPotion,
-                                                                   items.CharismaPotion, items.DexterityPotion],
-                                                        'Reward Number': 1,
-                                                        'Experience': 750,
-                                                        'Completed': False,
-                                                        'Turned In': False}
-                                         }
-                                    }
-                           },
-               'Drunkard': {'Talk': {8: ["(hic)...I am not as think as you drunk I am...(hic)"],
-                                     25: ["Do you see (hic) that person in the corner? What's their deal, TAKE THE "
-                                          "HOOD OFF ALREADY!...ah whatever..."],
-                                     30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."]
-                                     },
-                            'Main': {35: {"Lapidation": {'Who': 'Drunkard',
-                                                         'Type': 'Defeat',
-                                                         'What': 'Cockatrice',
-                                                         'Total': 1,
-                                                         'Start Text':
-                                                             "Let me tell you a quick story...back in the day I used to"
-                                                             " be an adventurer. My friend and I had delved too deep "
-                                                             "into the dungeon below and were trapped with no escape. A"
-                                                             " giant bird-looking monstrosity had us pinned...we made a"
-                                                             " run for it...but we weren't fast enough. I still "
-                                                             "remember the look on Rutger's face as he turned to stone "
-                                                             "in front of me...this necklace is the only reason I am "
-                                                             "still here. If you come across the beast, make sure it's "
-                                                             "dead before you are. (hic)...hmmm...what was I sayin'?",
-                                                         'End Text':
-                                                             "Rutger can now be at peace...I can finally let go of the "
-                                                             "past (hic). Here, take this necklace, I don't need it "
-                                                             "anymore...",
-                                                         'Reward': [items.GorgonPendant],
-                                                         'Reward Number': 1,
-                                                         'Experience': 5000,
-                                                         'Completed': False,
-                                                         'Turned In': False}
-                                          }
-                                     },
-                            'Side': {18: {"I'm Molting!": {'Who': 'Drunkard',
-                                                           'Type': 'Collect',
-                                                           'What': items.SnakeSkin,
-                                                           'Total': 8,
-                                                           'Start Text':
-                                                               "SNAKES! Oh my I hate those things...(hic)...slithering "
-                                                               "about. It's unnatural...I think...(hic)...what was I "
-                                                               "saying?...Oh yeah, bring me some snake skins and I'll "
-                                                               "give you these poison curing thingies I found...(hic)",
-                                                           'End Text':
-                                                               "WHY WOULD YOU BRING...oh yeah I asked you to...(hic).."
-                                                               "thanks I guess. Here's those things...ANTIDOTES, that's"
-                                                               " what they're called. BARKEEP, another beer please..."
-                                                               "(hic).",
-                                                           'Reward': [items.Antidote],
-                                                           'Reward Number': 5,
-                                                           'Experience': 400,
-                                                           'Completed': False,
-                                                           'Turned In': False}
-                                          }
-                                     }
-                            },
-               'Hooded Figure': {'Talk': {25: ["..."],
-                                          35: ["Hmm...interesting..."],
-                                          50: ["Your power has grown...I am impressed."],
-                                          60: ["Have you defeated the Red Dragon yet?"],
-                                          },
-                                 'Main': {30: {'Payback': {'Who': 'Hooded Figure',
-                                                           'Type': 'Defeat',
-                                                           'What': 'Pseudodragon',
-                                                           'Total': 1,
-                                                           'Start Text':
-                                                               "My rival, a wizard known for unimaginable cruelty, is "
-                                                               "looking to increase her power by upgrading her "
-                                                               "familiar. She has her eyes set on a particular "
-                                                               "creature, a Pseudodragon, that dwells in the dungeon "
-                                                               "below. Destroy this creature before she can corrupt it "
-                                                               "and I will reward you.",
-                                                           'End Text':
-                                                               "You have done well in taking care of this threat. Take "
-                                                               "this reward and use it wisely.",
-                                                           'Reward': [items.Megalixir],
-                                                           'Reward Number': 1,
-                                                           'Experience': 3000,
-                                                           'Completed': False,
-                                                           'Turned In': False}
-                                               },
-                                          60: {'Dracarys': {'Who': 'Hooded Figure',
-                                                            'Type': 'Defeat',
-                                                            'What': 'Red Dragon',
-                                                            'Total': 1,
+                                },
+                   'Soldier': {'Talk': {10: ["You may find locked doors along your path while exploring the dungeon. You "
+                                             "can't open these with just any old key, you need an actual Old Key."],
+                                        25: ["I just finished my shift guarding the old warehouse behind the barracks. They"
+                                             " won't tell us what's in there but I have seen several scientists come and "
+                                             "go."],
+                                        65: ["The Devil is immune to normal weapons but legend says there is a "
+                                             "material that will do the job."]
+                                        },
+                               'Main': {55: {'No Laughing Matter': {'Who': 'Soldier',
+                                                                    'Type': 'Defeat',
+                                                                    'What': 'Jester',
+                                                                    'Total': 1,
+                                                                    'Start Text':
+                                                                        "During my first week of training, a senior officer"
+                                                                        " told us a story about a former recruit who went "
+                                                                        "mad. He was a bit of an outcast and many of the "
+                                                                        "other soldiers bullied him for his weirdness, as "
+                                                                        "it was told. He had a fondness for card tricks and"
+                                                                        " claimed he was an 'Agent of Chaos', whatever that"
+                                                                        " means...anyway, he finally cracked one day and "
+                                                                        "disappeared, never to be heard from again...that "
+                                                                        "is until we started receiving the body parts...the"
+                                                                        " freak has been sending back parts of adventurers "
+                                                                        "with notes talking about revenge and signed by the"
+                                                                        " Jester. Someone needs to take this sick bastard "
+                                                                        "out before anyone else gets hurt. Be careful, you "
+                                                                        "never truly know what you may get with this guy.",
+                                                                    'End Text':
+                                                                        "Excellent work! Hopefully the souls of those "
+                                                                        "tortured by the Jester will be able to rest now. "
+                                                                        "This magical ring was shipped back with one of the"
+                                                                        " body parts, it increases your chance to evade "
+                                                                        "attacks in combat. I'm sure the Jester thought he "
+                                                                        "was being clever, since it took so long for "
+                                                                        "someone to finally catch him. It's fitting that "
+                                                                        "you would wear it now.",
+                                                                    'Reward': [items.EvasionRing],
+                                                                    'Reward Number': 1,
+                                                                    'Experience': 300000,
+                                                                    'Completed': False,
+                                                                    'Turned In': False}}},
+                               'Side': {25: {'Metalingus': {'Who': 'Soldier',
+                                                            'Type': 'Collect',
+                                                            'What': items.ScrapMetal,
+                                                            'Total': 8,
                                                             'Start Text':
-                                                                "The depths are home to a powerful Red Dragon. She is "
-                                                                "not to be taken lightly, however if you are able to "
-                                                                "defeat her, the path to glory will be yours.",
+                                                                "The city guard are in desperate need of new equipment but "
+                                                                "we unfortunately are running short on the required "
+                                                                "materials. If you can bring back 8 pieces of scrap metal,"
+                                                                " I can use my connections with the alchemist shop and get "
+                                                                "you a really nice potion for your troubles.",
                                                             'End Text':
-                                                                "You have proven yourself worthy for the ultimate "
-                                                                "challenge...me. Take this as a reminder of the "
-                                                                "futility of being a hero...there will always be "
-                                                                "another evil to deal with and that evil will always "
-                                                                "pale in comparison to my wrath. Pursue me at your own "
-                                                                "peril.",
-                                                            'Reward': [items.ClassRing],
+                                                                "You are a life saver, literally. This metal will help to "
+                                                                "fortify the town against the scum that patrols the "
+                                                                "dungeon. Here is a token of my appreciation.",
+                                                            'Reward': [items.StrengthPotion, items.IntelPotion,
+                                                                       items.WisdomPotion, items.ConPotion,
+                                                                       items.CharismaPotion, items.DexterityPotion],
                                                             'Reward Number': 1,
-                                                            'Experience': 500000,
+                                                            'Experience': 750,
                                                             'Completed': False,
                                                             'Turned In': False}
-                                               }
-                                          },
-                                 'Side': {}
-                                 }
-               }
-    options = ["Barkeep", "Waitress"]
-    if p_level >= 8:
-        options.append("Drunkard")
-        if p_level >= 10:
-            options.append("Soldier")
-            if p_level >= 25:
-                if 'Red Dragon' in player_char.quest_dict['Main']:
-                    if not player_char.quest_dict['Main']['Red Dragon']['Turned In']:
+                                             }
+                                        }
+                               },
+                   'Drunkard': {'Talk': {8: ["(hic)...I am not as think as you drunk I am...(hic)"],
+                                         25: ["Do you see (hic) that person in the corner? What's their deal, TAKE THE "
+                                              "HOOD OFF ALREADY!...ah whatever..."],
+                                         30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."]
+                                         },
+                                'Main': {35: {"Lapidation": {'Who': 'Drunkard',
+                                                             'Type': 'Defeat',
+                                                             'What': 'Cockatrice',
+                                                             'Total': 1,
+                                                             'Start Text':
+                                                                 "Let me tell you a quick story...back in the day I used to"
+                                                                 " be an adventurer. My friend and I had delved too deep "
+                                                                 "into the dungeon below and were trapped with no escape. A"
+                                                                 " giant bird-looking monstrosity had us pinned...we made a"
+                                                                 " run for it...but we weren't fast enough. I still "
+                                                                 "remember the look on Rutger's face as he turned to stone "
+                                                                 "in front of me...this necklace is the only reason I am "
+                                                                 "still here. If you come across the beast, make sure it's "
+                                                                 "dead before you are. (hic)...hmmm...what was I sayin'?",
+                                                             'End Text':
+                                                                 "Rutger can now be at peace...I can finally let go of the "
+                                                                 "past (hic). Here, take this necklace, I don't need it "
+                                                                 "anymore...",
+                                                             'Reward': [items.GorgonPendant],
+                                                             'Reward Number': 1,
+                                                             'Experience': 5000,
+                                                             'Completed': False,
+                                                             'Turned In': False}
+                                              }
+                                         },
+                                'Side': {18: {"I'm Molting!": {'Who': 'Drunkard',
+                                                               'Type': 'Collect',
+                                                               'What': items.SnakeSkin,
+                                                               'Total': 8,
+                                                               'Start Text':
+                                                                   "SNAKES! Oh my I hate those things...(hic)...slithering "
+                                                                   "about. It's unnatural...I think...(hic)...what was I "
+                                                                   "saying?...Oh yeah, bring me some snake skins and I'll "
+                                                                   "give you these poison curing thingies I found...(hic)",
+                                                               'End Text':
+                                                                   "WHY WOULD YOU BRING...oh yeah I asked you to...(hic).."
+                                                                   "thanks I guess. Here's those things...ANTIDOTES, that's"
+                                                                   " what they're called. BARKEEP, another beer please..."
+                                                                   "(hic).",
+                                                               'Reward': [items.Antidote],
+                                                               'Reward Number': 5,
+                                                               'Experience': 400,
+                                                               'Completed': False,
+                                                               'Turned In': False}
+                                              }
+                                         }
+                                },
+                   'Busboy': {
+                       'Talk': {1: ["The waitress left crying some time ago...sounds like her fiance was killed in the "
+                                    "dungeons."],
+                                },
+                       'Main': {},
+                       'Side': {}
+                       },
+                   'Hooded Figure': {'Talk': {25: ["..."],
+                                              35: ["Hmm...interesting..."],
+                                              50: ["Your power has grown...I am impressed."],
+                                              60: ["Have you defeated the Red Dragon yet?"],
+                                              },
+                                     'Main': {30: {'Payback': {'Who': 'Hooded Figure',
+                                                               'Type': 'Defeat',
+                                                               'What': 'Pseudodragon',
+                                                               'Total': 1,
+                                                               'Start Text':
+                                                                   "My rival, a wizard known for unimaginable cruelty, is "
+                                                                   "looking to increase her power by upgrading her "
+                                                                   "familiar. She has her eyes set on a particular "
+                                                                   "creature, a Pseudodragon, that dwells in the dungeon "
+                                                                   "below. Destroy this creature before she can corrupt it "
+                                                                   "and I will reward you.",
+                                                               'End Text':
+                                                                   "You have done well in taking care of this threat. Take "
+                                                                   "this reward and use it wisely.",
+                                                               'Reward': [items.Megalixir],
+                                                               'Reward Number': 1,
+                                                               'Experience': 3000,
+                                                               'Completed': False,
+                                                               'Turned In': False}
+                                                   },
+                                              60: {'Dracarys': {'Who': 'Hooded Figure',
+                                                                'Type': 'Defeat',
+                                                                'What': 'Red Dragon',
+                                                                'Total': 1,
+                                                                'Start Text':
+                                                                    "The depths are home to a powerful Red Dragon. She is "
+                                                                    "not to be taken lightly, however if you are able to "
+                                                                    "defeat her, the path to glory will be yours.",
+                                                                'End Text':
+                                                                    "You have proven yourself worthy for the ultimate "
+                                                                    "challenge...me. Take this as a reminder of the "
+                                                                    "futility of being a hero...there will always be "
+                                                                    "another evil to deal with and that evil will always "
+                                                                    "pale in comparison to my wrath. Pursue me at your own "
+                                                                    "peril.",
+                                                                'Reward': [items.ClassRing],
+                                                                'Reward Number': 1,
+                                                                'Experience': 500000,
+                                                                'Completed': False,
+                                                                'Turned In': False}
+                                                   }
+                                              },
+                                     'Side': {}
+                                     }
+                   }
+        options = ["Barkeep"]
+        if 'A Bad Dream' in player_char.quest_dict['Main']:
+            if not player_char.quest_dict['Main']['A Bad Dream']['Turned In']:
+                options.append("Waitress")
+            else:
+                options.append('Busboy')
+        else:
+            options.append('Waitress')
+        if p_level >= 8:
+            options.append("Drunkard")
+            if p_level >= 10:
+                options.append("Soldier")
+                if p_level >= 25:
+                    if 'Red Dragon' in player_char.quest_dict['Main']:
+                        if not player_char.quest_dict['Main']['Red Dragon']['Turned In']:
+                            options.append("Hooded Figure")
+                    else:
                         options.append("Hooded Figure")
-                else:
-                    options.append("Hooded Figure")
-    options.append('Go Back')
-    print("Who would you like to talk with?")
-    option_input = storyline.get_response(options)
-    if options[option_input] == 'Go Back':
-        return
-    quest = check_quests(patrons[options[option_input]], player_char)
-    if not quest:
-        talks = patrons[options[option_input]]['Talk']
-        level_talks = [talks[x] for x in talks if p_level >= x]
-        print(random.choice(random.choice(level_talks)))
-        input("Press enter to continue")
+        options.append('Go Back')
+        print("Who would you like to talk with?")
+        option_input = storyline.get_response(options)
+        if options[option_input] == 'Go Back':
+            return
+        quest = check_quests(patrons[options[option_input]], player_char)
+        if not quest:
+            talks = patrons[options[option_input]]['Talk']
+            level_talks = [talks[x] for x in talks if p_level >= x]
+            print(random.choice(random.choice(level_talks)))
+            input("Press enter to continue")
 
 
 def ultimate(player_char):
@@ -1070,23 +1085,38 @@ def tavern(player_char):
             tavern_patrons(player_char)
         elif options[choice] == "View the Job Board":
             num_quests = len(player_char.quest_dict['Bounty'])
-            if random.randint(0, num_quests ** 3) or num_quests > 5:
-                print("There are no jobs currently available.")
-            else:
-                level = str(min(6, p_level // 10))
-                while True:
-                    enemy = enemies.random_enemy(level)
-                    if enemy.name not in list(player_char.quest_dict['Bounty'].keys()):
-                        break
+            bounty_list = []
+            level = str(min(6, p_level // 10))
+            while len(bounty_list) + num_quests < 3:
+                enemy = enemies.random_enemy(level)
                 num = random.randint(3, 8)
-                print("We would like you to defeat {} {}s. Do you accept this bounty?".format(num, enemy.name))
+                if enemy.name not in list(player_char.quest_dict['Bounty'].keys()) and \
+                        enemy.name not in [x[0].name for x in bounty_list]:
+                    bounty_list.append([enemy, num])
+            bounty_options = [x[0].name for x in bounty_list]
+            if num_quests > 0:
+                bounty_options.append("Abandon Bounty")
+            bounty_options.append("Leave")
+            bounty_choice = storyline.get_response(bounty_options)
+            if bounty_options[bounty_choice] == "Leave":
+                continue
+            elif bounty_options[bounty_choice] == "Abandon Bounty":
+                abandon_list = list(player_char.quest_dict['Bounty'].keys())
+                abandon_choice = storyline.get_response(abandon_list)
+                print("Are you sure you want to abandon the {} bounty? ".format(abandon_list[abandon_choice]))
                 resp = storyline.get_response(yes_no)
                 if yes_no[resp] == "Yes":
-                    player_char.quest_dict['Bounty'][enemy.name] = [num, 0, False, enemy]
+                    del player_char.quest_dict['Bounty'][abandon_list[abandon_choice]]
+            else:
+                selection = bounty_list[bounty_choice]
+                print("We would like you to defeat {} {}s. Do you accept this bounty?".format(
+                    selection[1], selection[0].name))
+                resp = storyline.get_response(yes_no)
+                if yes_no[resp] == "Yes":
+                    player_char.quest_dict['Bounty'][selection[0].name] = [selection[1], 0, False, selection[0]]
                     print("Return here when the job is done and you will be rewarded.")
                 else:
                     print("Fair enough. Come back later if you change your mind.")
-            input("Press enter to continue")
         elif options[choice] == "Turn In Bounty":
             turn_in_list = [x for x, y in player_char.quest_dict['Bounty'].items() if y[2]]
             turn_in_choice = storyline.get_response(turn_in_list)
@@ -1144,7 +1174,7 @@ def church(player_char):
         print("Come in my child. You are always welcome in the arms of Elysia.")
         time.sleep(0.5)
         print("How can we be of service?")
-        church_options = ['Promotion', 'Save', 'Quit', 'Leave']
+        church_options = ['Promotion', 'Save', 'Quit Game', 'Leave']
         church_index = storyline.get_response(church_options)
         if church_options[church_index] == 'Promotion':
             if player_char.level // 20 > 0 and player_char.pro_level < 3:
@@ -1158,8 +1188,10 @@ def church(player_char):
             time.sleep(1)
         elif church_options[church_index] == 'Save':
             player_char.save()  # Can only save at church in town
-        elif church_options[church_index] == 'Quit':
-            player_char.game_quit()
+        elif church_options[church_index] == 'Quit Game':
+            q = player_char.game_quit()
+            if q:
+                return
         elif church_options[church_index] == 'Leave':
             print("Let the light of Elysia guide you.")
             time.sleep(1)
@@ -1429,6 +1461,8 @@ def town(player_char):
     storyline.slow_type("Welcome to the town of Silvana!\n")
     time.sleep(0.5)
     while True:
+        if player_char.quit:
+            break
         player_char.health = player_char.health_max
         player_char.mana = player_char.mana_max
         print("Where would you like to go?")

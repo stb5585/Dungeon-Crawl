@@ -706,12 +706,12 @@ class DeadBody(SpecialTile):
     def intro_text(self, player_char):
         if not self.read:
             return """
-            The body of a soldier lies in a heap on the floor.
+        The body of a soldier lies in a heap on the floor.
             
             """
         return """
-        You see a burial mound with an inscription carved in the floor reading "Here lies Joffrey, survived by his one
-          true love. May he be a reminder of the horrors of combat."
+"Here lies Joffrey, survived by his one true love.
+ May he be a reminder of the horrors of combat."
         """
 
     def modify_player(self, player_char):
@@ -719,10 +719,11 @@ class DeadBody(SpecialTile):
         self.visited = True
 
     def special_text(self, player_char):
-        if 'A Bad Dream' in player_char.quest_dict.keys():
+        if 'A Bad Dream' in player_char.quest_dict['Main'].keys():
             if not self.read:
                 game.dead_body()
                 player_char.modify_inventory(items.LuckyLocket, rare=True)
+                player_char.quest_dict['Main']['A Bad Dream']['Completed'] = True
                 self.read = True
                 input("Press enter to continue")
 

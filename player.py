@@ -4,12 +4,11 @@
 # Imports
 import os
 import re
-import sys
 import glob
 import random
 import time
 import numpy
-import _pickle as pickle
+import pickle
 
 import combat
 import enemies
@@ -88,8 +87,11 @@ def load(char=None):
             chars = []
             for f in save_files:
                 chars.append(f.split('.')[0].capitalize())
+            chars.append('Go Back')
             print("Select the name of the character you want to load.")
             choice = storyline.get_response(chars)
+            if chars[choice] == 'Go Back':
+                return dict()
             save_file = chars[choice] + ".save"
             with open(save_file, 'rb') as save_file:
                 player_dict = pickle.load(save_file)
@@ -118,6 +120,8 @@ def load_char(char=None, tmp=False):
             player_dict = load()
         else:
             player_dict = load(char)
+        if player_dict == dict():
+            return player_dict
         player_char = Player(player_dict['location_x'], player_dict['location_y'], player_dict['location_z'],
                              player_dict['state'], player_dict['level'], player_dict['experience'],
                              player_dict['exp_to_gain'], player_dict['health'], player_dict['health_max'],
@@ -142,6 +146,7 @@ def load_char(char=None, tmp=False):
         player_char.invisible = player_dict['invisible']
         player_char.flying = player_dict['flying']
         player_char.storage = player_dict['storage']
+        player_char.quit = False
         return player_char
 
 
@@ -188,6 +193,7 @@ class Player(Character):
         self.kill_dict = dict()
         self.storage = dict()
         self.warp_point = False
+        self.quit = False
 
     def __str__(self):
         return "Player: {} | Health: {}/{} | Mana: {}/{}".format(self.name, self.health, self.health_max,
@@ -288,7 +294,7 @@ class Player(Character):
             print("The mana shield dissolves around {}.".format(self.name))
             self.status_effects['Mana Shield'][0] = False
             valid_entry = False
-            time.sleep(0.5)
+            time.sleep(0.1)
         elif action == 'Untransform':
             self.transform(back=True)
             valid_entry = False
@@ -388,7 +394,9 @@ class Player(Character):
         q = storyline.get_response(yes_no)
         if yes_no[q] == "Yes":
             print("Goodbye, {}!".format(self.name))
-            sys.exit(0)
+            time.sleep(2)
+            self.quit = True
+            return True
 
     def character_menu(self, tile=None):
         """
@@ -408,6 +416,8 @@ class Player(Character):
                 else:
                     self.do_action(action, **action.kwargs)
             except IndexError:
+                break
+            if self.quit:
                 break
             time.sleep(0.5)
 
@@ -1184,6 +1194,7 @@ class Player(Character):
             time.sleep(1)
 
     def end_combat(self, enemy, tile, flee=False):
+        time.sleep(0.5)
         self.state = 'normal'
         if self.cls not in classes_dict.keys():
             self.transform(back=True)

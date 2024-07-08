@@ -1,3 +1,6 @@
+##########################################
+""" character manager """
+
 # Imports
 import time
 import random
@@ -67,6 +70,9 @@ class Character:
         self.turtle = False
 
     def options(self, action_list=None):
+        pass
+
+    def combat_turn(self, enemy, action, combat, tile=None):
         pass
 
     def hit_chance(self, defender, typ='weapon'):
@@ -210,12 +216,12 @@ class Character:
                     else:
                         print("{} {} {} but deals no damage.".format(self.name, typ, defender.name))
                         hits[i] = False
-                    time.sleep(0.5)
                 else:
                     print("{} {} {} but misses entirely.".format(self.name, typ, defender.name))
+                if i < (len(attacks) - 1):
+                    time.sleep(0.5)
             if hits[i] and self.equipment[att]().special and defender.is_alive():
                 self.equipment[att]().special_effect(self, defender, damage=damage, crit=crits[i])
-            time.sleep(0.5)
             if not defender.is_alive():
                 break
             if hits[i] and defender.equipment['Armor']().special:

@@ -3,6 +3,7 @@
 
 # Imports
 import os
+import sys
 import time
 import glob
 
@@ -16,9 +17,24 @@ import tutorial
 # Parameters
 home = os.getcwd()
 save_dir = "save_files"
+f = pyfiglet.Figlet(font='slant')
 
 
 # Functions
+def load_player():
+    """
+
+    """
+
+    print(f.renderText("DUNGEON CRAWL"))
+    player_char = None
+    if len(glob.glob('save_files/*')) > 0:
+        os.chdir(save_dir)
+        player_char = player.load_char()
+        os.chdir(home)
+    return player_char
+
+
 def new_player():
     """
 
@@ -176,32 +192,40 @@ def final_boss(player_char):
 
 def play():
     os.system('cls' if os.name == 'nt' else 'clear')
-    f = pyfiglet.Figlet(font='slant')
     print(f.renderText("DUNGEON CRAWL"))
     time.sleep(2)
     if not os.path.exists('save_files'):
         os.mkdir('save_files')
-    play_options = ['New Game', 'Load Game', 'Tutorial']
-    play_index = storyline.get_response(play_options)
-    os.system('cls' if os.name == 'nt' else 'clear')
-    if play_index == 0:
-        new_player()
-        player_char = player.new_char()
-    elif play_index == 1:
-        print(f.renderText("DUNGEON CRAWL"))
-        if len(glob.glob('save_files/*')) > 0:
-            os.chdir(save_dir)
-            player_char = player.load_char()
-            os.chdir(home)
-        else:
-            print("There are no save files to load. Proceeding to new character creation.")
-            time.sleep(1)
+    while True:
+        play_options = ['New Game', 'Load Game', 'Tutorial', 'Exit']
+        play_index = storyline.get_response(play_options)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        if play_options[play_index] == 'New Game':
             new_player()
             player_char = player.new_char()
-    else:
-        player_char = tutorial.tutorial()
+        elif play_options[play_index] == 'Load Game':
+            print(f.renderText("DUNGEON CRAWL"))
+            if len(glob.glob('save_files/*')) > 0:
+                os.chdir(save_dir)
+                player_char = player.load_char()
+                os.chdir(home)
+            else:
+                print("There are no save files to load. Proceeding to new character creation.")
+                time.sleep(1)
+                new_player()
+                player_char = player.new_char()
+        elif play_options[play_index] == 'Tutorial':
+            player_char = tutorial.tutorial()
+        else:
+            print(f.renderText("GOODBYE..."))
+            time.sleep(2)
+            sys.exit(0)
+        if player_char != dict():
+            break
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
+        if player_char.quit:
+            break
         valid = False
         room = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
         room.modify_player(player_char)
@@ -215,14 +239,15 @@ def play():
                 pass
             if player_char.is_alive():
                 os.system('cls' if os.name == 'nt' else 'clear')
-                player_char.minimap()
+                if not player_char.quit:
+                    player_char.minimap()
                 if room.intro_text(player_char) is not None:
                     print(room.intro_text(player_char))
                     try:
                         room.warning = True
                     except AttributeError:
                         pass
-                if player_char.in_town():
+                if player_char.in_town() or player_char.quit:
                     break
                 print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player_char.name,
                                                                         player_char.health, player_char.health_max,
@@ -246,4 +271,5 @@ def play():
 
 
 if __name__ == "__main__":
-    play()
+    while True:
+        play()

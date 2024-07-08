@@ -2019,6 +2019,12 @@ class Status(Potion):
         except IndexError:
             pass
         print("You have been cured of {}.".format(self.status.lower()))
+        if user.health < user.health_max:
+            heal = int(0.1 * user.health_max)
+            heal = random.randint(heal // 2, heal)
+            heal = min(heal, user.health_max - user.health)
+            user.health += heal
+            print("You have been healed for {} health.".format(heal))
         return True
 
 

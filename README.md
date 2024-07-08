@@ -7,9 +7,9 @@ CREATION DATE: March 2020
 LANGUAGE: Python 3.6.7, iPython 7.5.0
 
 DEPENDENCIES:
-- pyfiglet 0.8 (pos1)
-- numpy
-- simple_term_menu
+- pyfiglet 1.0.2
+- numpy 1.26.1
+- simple_term_menu 1.6.1
 
 EXECUTION:
 - python game.py

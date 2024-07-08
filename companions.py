@@ -1,3 +1,6 @@
+###########################################
+""" companion manager """
+
 # Imports
 import time
 

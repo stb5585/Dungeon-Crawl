@@ -1,12 +1,12 @@
+###########################################
+""" spell manager """
+
 # Imports
 import random
 import time
 
 import items
 import storyline
-
-###########################################
-""" spell manager """
 
 
 class Ability:
@@ -1482,12 +1482,12 @@ class NightmareFuel(Skill):
         print("{} uses {}.".format(user.name, self.name))
         user.mana -= self.cost
         crit = 1
-        if random.random() > 0.9:  # 10% chance to crit
-            print("Critical hit!")
-            crit = 2
         if target.status_effects['Sleep'][0]:
             if random.randint(user.intel // 2, user.intel) > \
                     random.randint(target.wisdom // 2, target.wisdom):
+                if random.random() > 0.9:  # 10% chance to crit
+                    print("Critical hit!")
+                    crit = 2
                 damage = target.status_effects['Sleep'][1] * user.intel * crit
                 damage = max(1, random.randint(damage // 2, damage))
                 target.health -= damage
@@ -2476,7 +2476,7 @@ class Fireball(Attack):
 
     def __init__(self):
         super().__init__(name='Fireball', description='A giant ball of fire that consumes the enemy.',
-                         cost=10, damage=25, crit=8)
+                         cost=10, damage=25, crit=10)
         self.subtyp = 'Fire'
         self.school = 'Arcane'
 
@@ -2488,7 +2488,7 @@ class Firestorm(Attack):
 
     def __init__(self):
         super().__init__(name='Firestorm', description='Fire rains from the sky, incinerating the enemy.',
-                         cost=20, damage=40, crit=6)
+                         cost=20, damage=40, crit=10)
         self.subtyp = 'Fire'
         self.school = 'Arcane'
 
@@ -2500,7 +2500,7 @@ class Scorch(Attack):
 
     def __init__(self):
         super().__init__(name='Scorch', description='Light a fire and watch the enemy burn!',
-                         cost=6, damage=14, crit=10)
+                         cost=6, damage=14, crit=9)
         self.subtyp = 'Fire'
         self.school = 'Elemental'
 
@@ -2513,7 +2513,7 @@ class MoltenRock(Attack):
     def __init__(self):
         super().__init__(name='Molten Rock', description='A giant, molten boulder is hurled at the enemy, dealing great'
                                                          ' fire damage.',
-                         cost=16, damage=28, crit=8)
+                         cost=16, damage=28, crit=9)
         self.subtyp = 'Fire'
         self.school = 'Elemental'
         self.rank = 1
@@ -2527,7 +2527,7 @@ class Volcano(Attack):
     def __init__(self):
         super().__init__(name='Volcano', description='A mighty eruption burst out from beneath the enemy\' feet, '
                                                      'dealing massive fire damage.',
-                         cost=24, damage=48, crit=6)
+                         cost=24, damage=48, crit=9)
         self.subtyp = 'Fire'
         self.school = 'Elemental'
         self.rank = 2
@@ -2540,7 +2540,7 @@ class IceLance(Attack):
 
     def __init__(self):
         super().__init__(name='Ice Lance', description='A javelin of ice launched at the enemy.',
-                         cost=4, damage=8, crit=4)
+                         cost=4, damage=4, crit=2)
         self.subtyp = 'Ice'
         self.school = 'Arcane'
 
@@ -2552,7 +2552,7 @@ class Icicle(Attack):
 
     def __init__(self):
         super().__init__(name='Icicle', description='Frozen shards rain from the sky.',
-                         cost=9, damage=15, crit=3)
+                         cost=9, damage=15, crit=2)
         self.subtyp = 'Ice'
         self.school = 'Arcane'
 
@@ -2577,7 +2577,7 @@ class Shock(Attack):
 
     def __init__(self):
         super().__init__(name='Shock', description='An electrical arc from the caster\'s hands to the enemy.',
-                         cost=6, damage=12, crit=7)
+                         cost=6, damage=10, crit=4)
         self.subtyp = 'Electric'
         self.school = 'Arcane'
 
@@ -2589,7 +2589,7 @@ class Lightning(Attack):
 
     def __init__(self):
         super().__init__(name='Lightning', description='Throws a bolt of lightning at the enemy.',
-                         cost=15, damage=22, crit=6)
+                         cost=15, damage=18, crit=4)
         self.subtyp = 'Electric'
         self.school = 'Arcane'
 
@@ -2601,7 +2601,7 @@ class Electrocution(Attack):
 
     def __init__(self):
         super().__init__(name='Electrocution', description='A million volts of electricity passes through the enemy.',
-                         cost=25, damage=38, crit=5)
+                         cost=25, damage=32, crit=4)
         self.subtyp = 'Electric'
         self.school = 'Arcane'
 
@@ -2613,7 +2613,7 @@ class WaterJet(Attack):
 
     def __init__(self):
         super().__init__(name='Water Jet', description='A jet of water erupts from beneath the enemy\'s feet.',
-                         cost=4, damage=12, crit=5)
+                         cost=4, damage=12, crit=3)
         self.subtyp = 'Water'
         self.school = 'Elemental'
 
@@ -2626,7 +2626,7 @@ class Aqualung(Attack):
     def __init__(self):
         super().__init__(name='Aqualung', description='Giant water bubbles surround the enemy and burst, causing great '
                                                       'water damage.',
-                         cost=13, damage=20, crit=4)
+                         cost=13, damage=20, crit=3)
         self.subtyp = 'Water'
         self.school = 'Elemental'
         self.rank = 1
@@ -2652,7 +2652,7 @@ class Tremor(Attack):
 
     def __init__(self):
         super().__init__(name='Tremor', description='The ground shakes, causing objects to fall and damage the enemy.',
-                         cost=3, damage=8, crit=7)
+                         cost=3, damage=8, crit=8)
         self.subtyp = 'Earth'
         self.school = 'Elemental'
 
@@ -2665,7 +2665,7 @@ class Mudslide(Attack):
     def __init__(self):
         super().__init__(name='Mudslide', description='A torrent of mud and earth sweep over the enemy, causing earth '
                                                       'damage.',
-                         cost=16, damage=30, crit=6)
+                         cost=16, damage=30, crit=8)
         self.subtyp = 'Earth'
         self.school = 'Elemental'
         self.rank = 1
@@ -2679,7 +2679,7 @@ class Earthquake(Attack):
     def __init__(self):
         super().__init__(name='Earthquake', description='The cave wall and ceiling are brought down by a massive '
                                                         'seismic event, dealing devastating earth damage.',
-                         cost=26, damage=50, crit=5)
+                         cost=26, damage=50, crit=8)
         self.subtyp = 'Earth'
         self.school = 'Elemental'
         self.rank = 2
@@ -2687,7 +2687,7 @@ class Earthquake(Attack):
 
 class Sandstorm(Attack):
     """
-
+    Enemy Spell
     """
 
     def __init__(self):
@@ -2725,7 +2725,7 @@ class Hurricane(Attack):
 
     def __init__(self):
         super().__init__(name='Hurricane', description='A violent storm berates your foes, causing great wind damage.',
-                         cost=22, damage=26, crit=4)
+                         cost=22, damage=26, crit=6)
         self.subtyp = 'Wind'
         self.school = 'Elemental'
         self.rank = 1
@@ -2739,7 +2739,7 @@ class Tornado(Attack):
     def __init__(self):
         super().__init__(name='Tornado', description='You bring down a cyclone that pelts the enemy with debris and '
                                                      'causes massive wind damage.',
-                         cost=40, damage=40, crit=2)
+                         cost=40, damage=40, crit=6)
         self.subtyp = 'Wind'
         self.school = 'Elemental'
         self.rank = 2
