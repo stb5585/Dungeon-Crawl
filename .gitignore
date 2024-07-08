@@ -5,11 +5,8 @@ __pycache__/*
 .idea/*
 
 # skip currently unneeded files/directories
-resources/*
-display.py
-commit_notes.txt
-shop_inventory.txt
 pickle_story.py
+modify_save.py
 
 # ignore save_files
 save_files/*

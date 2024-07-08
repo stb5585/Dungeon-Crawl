@@ -7,48 +7,39 @@ CREATION DATE: March 2020
 LANGUAGE: Python 3.6.7, iPython 7.5.0
 
 DEPENDENCIES:
-- pyfiglet 0.8 (pos1)
-- numpy
-- pickle
+- pyfiglet 1.0.2
+- numpy 1.26.1
+- simple_term_menu 1.6.1
 
 EXECUTION:
-- ipython game.py
+- python game.py
  
 DESCRIPTION:
 - A dungeon crawl, text-based RPG that takes inspiration from many games. The current iteration allows for character 
   creation options from race and class selection, random statistical rolls, interactive town format, and 5-level dungeon
   crawl.  
+  - Charisma is essentially a luck statistic, lowering cost and improving chance of success
 
 FUTURE DEVELOPMENT:
 - Planned development
-    - Enhance storyline for a more immersive experience
-    - Deepen the dungeon to allow for additional challenge
-    - Add graphical representation (in terminal) for a more complete game experience; already improved minimap
     - Make item comparison easier for the shop
-    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
-      be farmed
-    - Add quests to game; add tavern in town for obtaining quests
-    - Enhance enemies to make them more dynamic (resistance/weakness, etc)
-    - Add more accessories with various effects; special items for each final class
-    - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
+    - Add special item(s) for each final class
     - Allow player to switch characters in-game (instead of exiting and re-loading)
 
 - Possible development
-    - Item identification
-    - Add capability to have more than one playable character
+    - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
+      be farmed
     - Require rare items for promotion
-    - Allow a character to change class
-    - Give players alignments (G/N/E) with item restrictions
     - Add a tutorial so players can better understand the gameplay
-    - Implement map editor
     - Create battle arena
-
+    - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
 
 FILES:
 - actions.py
 - character.py
 - classes.py
 - combat.py
+- companions.py
 - enemies.py
 - game.py
 - items.py
@@ -65,12 +56,14 @@ FILE DESCRIPTIONS:
 - actions.py
     - Defines the various user-inputted actions, including hotkeys
 - character.py
-    - Main file for controlling the playable character, including all actions/interactions with the world
+    - Main file for controlling the all characters, players, enemies, and companions
 - classes.py
     - File that controls the classes available for new characters to choose from; includes function that checks whether 
       an item can be equipped by a player's class
 - combat.py
     - Controls the combat system between the player and enemy
+- companions.py
+    - File that defines class companions (currently only Warlock familiars) 
 - enemies.py
     - Main file for controlling enemies, including the statistics and unique aspects of each enemy
 - game.py
@@ -79,17 +72,17 @@ FILE DESCRIPTIONS:
     - Main file for controlling items, including randomly generating for chests and drops
 - map.py
     - Defines the room tiles of the world and available movement per each tile
+- player.py
+    - File for controlling the playable character, including all actions/interactions with the world
 - races.py
     - File that outlines the various racial options when creating a new character
 - README.md
-    - General desciption of program
+    - General description of program
 - spells.py
     - Main file for controlling spells and skills of the character classes
 - storyline.py
     - File that is primarily used for user-input function; will eventually house the storyline
 - town.py
-    - Controls the iteractions of the character while in town
+    - Controls the interactions of the character while in town
 - tutorial.py
     - File that controls the tutorial; not yet implemented
-- world.py
-    - World manager that defines the map tiles and returns the world dictionary for save files

@@ -2,13 +2,17 @@
 """ map manager """
 
 # Imports
-import numpy
+import os
+import random
+import sys
+import time
+
+import pyfiglet
 
 import enemies
 import actions
 import game
 import items
-import world
 import combat
 import town
 
@@ -18,151 +22,185 @@ class MapTile:
         self.x = x
         self.y = y
         self.z = z
-        self.visited = False  # tells whether the tile has been visited by player
-        self.enter = True  # keeps player from entering walls
+        self.near = False
+        self.visited = False  # tells whether the tile has been visited by player_char
+        self.enter = True  # keeps player_char from entering walls
         self.special = False
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         raise NotImplementedError()
 
-    def modify_player(self, player, wmap):
+    def modify_player(self, player_char):
         raise NotImplementedError()
 
-    def adjacent_moves(self, append_list: list = None, blocked=None):
+    def adjacent_moves(self, player_char, append_list: list = None, blocked=None):
         """Returns all move actions for adjacent tiles."""
         if append_list is None:
             append_list = []
         moves = []
         try:
-            if world.tile_exists(self.x + 1, self.y, self.z).enter and blocked != "East":
+            if player_char.world_dict[(self.x + 1, self.y, self.z)].enter and blocked != "East":
                 moves.append(actions.MoveEast())
-        except AttributeError:
+        except KeyError:
             pass
         try:
-            if world.tile_exists(self.x - 1, self.y, self.z).enter and blocked != "West":
+            if player_char.world_dict[(self.x - 1, self.y, self.z)].enter and blocked != "West":
                 moves.append(actions.MoveWest())
-        except AttributeError:
+        except KeyError:
             pass
         try:
-            if world.tile_exists(self.x, self.y - 1, self.z).enter and blocked != "North":
+            if player_char.world_dict[(self.x, self.y - 1, self.z)].enter and blocked != "North":
                 moves.append(actions.MoveNorth())
-        except AttributeError:
+        except KeyError:
             pass
         try:
-            if world.tile_exists(self.x, self.y + 1, self.z).enter and blocked != "South":
+            if player_char.world_dict[(self.x, self.y + 1, self.z)].enter and blocked != "South":
                 moves.append(actions.MoveSouth())
-        except AttributeError:
+        except KeyError:
             pass
         for item in append_list:
             moves.append(item)
         return moves
 
-    def available_actions(self, player):
+    def available_actions(self, player_char):
         """Returns all the available actions in this room."""
         pass
 
-    def adjacent_visited(self, wmap):
-        """Changes visited parameter for 8 adjacent tiles"""
+    def adjacent_visited(self, player_char):
+        """Changes visited parameter for 4 adjacent tiles"""
         # reveals 4 spaces in cardinal directions
-        if world.tile_exists(self.x + 1, self.y, self.z):
-            wmap['World'][(self.x + 1, self.y, self.z)].visited = True
-        if world.tile_exists(self.x - 1, self.y, self.z):
-            wmap['World'][(self.x - 1, self.y, self.z)].visited = True
-        if world.tile_exists(self.x, self.y - 1, self.z):
-            wmap['World'][(self.x, self.y - 1, self.z)].visited = True
-        if world.tile_exists(self.x, self.y + 1, self.z):
-            wmap['World'][(self.x, self.y + 1, self.z)].visited = True
-
-    def minimap(self, player, world_dict):
-        """
-        Function that allows the player to view the current dungeon level in terminal
-        15 x 10 grid
-        """
-        level = player.location_z
-        map_size = (20, 20)
-        map_array = numpy.zeros(map_size).astype(str)
-        for tile in world_dict['World']:
-            if level == tile[2]:
-                tile_x, tile_y = tile[1], tile[0]
-                if world_dict['World'][tile] is None:
-                    continue
-                elif 'stairs' in world_dict['World'][tile].intro_text(player) and world_dict['World'][tile].visited:
-                    map_array[tile_x][tile_y] = "x"  # 75
-                elif world_dict['World'][tile].enter:
-                    map_array[tile_x][tile_y] = " "  # 255
+        see = [True] * 4
+        try:
+            if 'LockedDoorEast' in self.__str__():
+                if not self.open:
+                    see[0] = False
                 else:
-                    if world_dict['World'][tile].visited:
-                        map_array[tile_x][tile_y] = "#"
-        map_array[player.location_y][player.location_x] = "+"  # 125
-        map_array[map_array == "0.0"] = " "
-        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
-        map_array[map_array == "0.0"] = "\u203E"  # overline character
-        map_array = numpy.vstack([map_array, numpy.zeros(map_array.shape[1])])
-        map_array[map_array == "0.0"] = "_"
-        map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[0]), 1)
-        map_array[map_array == "0.0"] = "|"
-        map_array = numpy.append(map_array, numpy.zeros(map_array.shape[0]).reshape(-1, 1), 1)
-        map_array[map_array == "0.0"] = "|"
-        for i, l in enumerate(map_array):
-            print(" ".join(l))
+                    see[0] = True
+            player_char.world_dict[(self.x + 1, self.y, self.z)].near = see[0]
+        except KeyError:
+            pass
+        try:
+            if 'LockedDoorWest' in self.__str__():
+                if not self.open:
+                    see[1] = False
+                else:
+                    see[0] = True
+            player_char.world_dict[(self.x - 1, self.y, self.z)].near = see[1]
+        except KeyError:
+            pass
+        try:
+            if 'LockedDoorNorth' in self.__str__():
+                if not self.open:
+                    see[2] = False
+                else:
+                    see[0] = True
+            player_char.world_dict[(self.x, self.y - 1, self.z)].near = see[2]
+        except KeyError:
+            pass
+        try:
+            if 'LockedDoorSouth' in self.__str__():
+                if not self.open:
+                    see[3] = False
+                else:
+                    see[0] = True
+            player_char.world_dict[(self.x, self.y + 1, self.z)].near = see[3]
+        except KeyError:
+            pass
 
 
 class Town(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         return ""
 
-    def modify_player(self, player, wmap):
-        player.state = 'normal'
-        player.health = player.health_max
-        player.mana = player.mana_max
-        town.town(player, wmap)
-
-
-class EnemyRoom(MapTile):
-    def __init__(self, x, y, z, enemy):
-        super().__init__(x, y, z)
-        self.enemy = enemy
-
-    def intro_text(self, player):
-        return ""
-
-    def modify_player(self, player, wmap):
+    def modify_player(self, player_char):
         self.visited = True
-        self.adjacent_visited(wmap)
-        if self.enemy.is_alive():
-            player.state = 'fight'
-            combat.battle(player, self.enemy, wmap)
+        self.adjacent_visited(player_char)
+        player_char.state = 'normal'
+        player_char.health = player_char.health_max
+        player_char.mana = player_char.mana_max
+        town.town(player_char)
 
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
-                return [actions.Attack(), actions.UseSkill(), actions.CastSpell(), actions.UseItem()]
-            elif len(player.spellbook['Spells']) > 0:
-                return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
-            elif len(player.spellbook['Skills']) > 0:
-                return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
-            else:
-                return [actions.Attack(), actions.UseItem()]
-        else:
-            return self.adjacent_moves([actions.Status()])
+    def adjacent_visited(self, player_char):
+        """Changes visited parameter for 4 adjacent tiles"""
+        # reveals 4 spaces in cardinal directions
+        try:
+            player_char.world_dict[(self.x + 1, self.y, 1)].near = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x - 1, self.y, 1)].near = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x, self.y - 1, 1)].near = True
+        except KeyError:
+            pass
+        try:
+            player_char.world_dict[(self.x, self.y + 1, 1)].near = True
+        except KeyError:
+            pass
+
+
+class StairsUp(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player_char):
+        return """
+    {} sees a flight of stairs going up.
+            (Enter 'u' to use)
+        """.format(player_char.name.capitalize())
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.StairsUp(), actions.CharacterMenu()])
+
+
+class StairsDown(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, player_char):
+        return """
+    {} sees a flight of stairs going down. 
+            (Enter 'j' to use)
+        """.format(player_char.name.capitalize())
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.StairsDown(), actions.CharacterMenu()])
 
 
 class SpecialTile(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.special = True
+        self.read = False
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
+        return """
+        
+        
+        """
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+    def special_text(self, player_char):
         raise NotImplementedError
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
-
-    def special_text(self, player):
-        raise NotImplementedError
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
 
 class Wall(MapTile):
@@ -170,483 +208,674 @@ class Wall(MapTile):
         super().__init__(x, y, z)
         self.enter = False
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         return ""
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
 
 
-class RandomTile(MapTile):
+class FakeWall(Wall):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = True
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+
+class CavePath(MapTile):
     """
-    Dummy tile; world.py will see this and randomly pick between empty or random enemy
+
     """
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self, player):
-        raise NotImplementedError()
-
-    def modify_player(self, player, wmap):
-        raise NotImplementedError()
-
-
-class RandomTile2(MapTile):
-    """
-    Dummy tile; world.py will see this and randomly pick between empty or random enemy from 1 level lower
-    """
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z)
-
-    def intro_text(self, player):
-        raise NotImplementedError()
-
-    def modify_player(self, player, wmap):
-        raise NotImplementedError()
-
-
-class EmptyCavePath(MapTile):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z)
-
-    def intro_text(self, player):
-        return ""
-
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
-
-    def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
-
-
-class LockedDoor(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.LockedDoor())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            if self.enemy.lock:
+    def intro_text(self, player_char):
+        if 'Keen Eye' in list(player_char.spellbook['Skills'].keys()):
+            if 'FakeWall' in [player_char.world_dict[(self.x + 1, self.y, 1)].__str__(),
+                              player_char.world_dict[(self.x - 1, self.y, 1)].__str__(),
+                              player_char.world_dict[(self.x, self.y + 1, 1)].__str__(),
+                              player_char.world_dict[(self.x, self.y - 1, 1)].__str__()]:
                 return """
-                {} finds a locked door. If only you could find the key...
-                """.format(player.name.capitalize())
+                Something seems off but you aren't quite sure what...
+                
+                """
+        return """
+        
+        
+        """
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        if player_char.cls in ['Warlock', 'Shadowcaster']:
+            if player_char.familiar.typ == 'Jinkin' and player_char.familiar.pro_level == 3:
+                if not random.randint(0, int(20 - player_char.check_mod('luck', luck_factor=10))):
+                    rand_item = items.random_item(self.z)
+                    player_char.modify_inventory(rand_item, 1)
+                    print("{} finds {} and gives it to {}.".format(
+                        player_char.familiar.name, rand_item().name, player_char.name))
+                    input("Press enter to continue")
+        if not random.randint(0, 4):
+            self.enter_combat(player_char)
+
+    def available_actions(self, player_char):
+        if player_char.state == 'fight':
+            action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+            if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
+                action_list.insert(1, actions.CastSpell())
+            if player_char.usable_skills():
+                action_list.insert(1, actions.UseSkill())
+            return action_list
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def enter_combat(self, player_char):
+        raise NotImplementedError
+
+
+class EmptyCavePath(CavePath):
+    """
+    Cave Path with no random enemies
+    """
+
+    def enter_combat(self, player_char):
+        pass
+
+
+class CavePath0(CavePath):
+    """
+
+    """
+
+    def enter_combat(self, player_char):
+        enemy = enemies.random_enemy('0')
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+        if 'Bring Him Home' in player_char.quest_dict['Side'].keys():
+            if not player_char.quest_dict['Side']['Bring Him Home']['Completed']:
+                if not random.randint(0, 20 - player_char.check_mod('luck', luck_factor=10)):
+                    game.timmy()
+                    player_char.quest_dict['Side']['Bring Him Home']['Completed'] = True
+                    print("You have completed the quest Bring Him Home.")
+                    time.sleep(2)
+                    player_char.location_x, player_char.location_y, player_char.location_z = (5, 10, 0)
+                    town.town(player_char)
+
+
+class CavePath1(CavePath):
+    """
+
+    """
+
+    def enter_combat(self, player_char):
+        enemy = enemies.random_enemy(str(self.z))
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+
+
+class CavePath2(CavePath):
+    """
+
+    """
+
+    def enter_combat(self, player_char):
+        enemy = enemies.random_enemy(str(self.z + 1))
+        player_char.state = 'fight'
+        combat.battle(player_char, enemy)
+
+
+class BossRoom(CavePath):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = None
+
+    def available_actions(self, player_char):
+        if player_char.state == 'fight':
+            action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+            if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
+                action_list.insert(1, actions.CastSpell())
+            if player_char.usable_skills():
+                action_list.insert(1, actions.UseSkill())
+            return action_list
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        if self.enemy.is_alive():
+            self.enter_combat(player_char)
+
+    def enter_combat(self, player_char):
+        player_char.state = 'fight'
+        combat.battle(player_char, self.enemy)
+
+
+class MinotaurBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Minotaur()
+
+
+class BarghestBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Barghest()
+
+
+class PseudodragonBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Pseudodragon()
+
+
+class NightmareBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Nightmare()
+
+
+class CockatriceBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Cockatrice()
+
+
+class WendigoBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Wendigo()
+
+
+class IronGolemBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.IronGolem()
+
+
+class GolemBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Golem()
+
+
+class JesterBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Jester()
+
+
+class DomingoBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Domingo()
+
+
+class RedDragonBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.RedDragon()
+
+
+class CerberusBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Cerberus()
+
+
+class FinalBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Devil()
+
+    def enter_combat(self, player_char):
+        player_char.state = 'fight'
+        combat.battle(player_char, self.enemy)
+        if not player_char.is_alive():
+            os.system('cls' if os.name == 'nt' else 'clear')
+            f = pyfiglet.Figlet(font='slant')
+            print(f.renderText("GAME OVER"))
+            time.sleep(2)
+            sys.exit(0)
+        else:
+            pass
+
+
+class ChestRoom(MapTile):
+    def __init__(self, x, y, z, loot):
+        super().__init__(x, y, z)
+        self.loot = loot
+
+    def intro_text(self, player_char):
+        raise NotImplementedError
+
+    def available_actions(self, player_char):
+        raise NotImplementedError
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+
+class UnlockedChestRoom(ChestRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, items.random_item(z))
+        self.open = False
+        self.locked = False
+
+    def intro_text(self, player_char):
+        if not self.open:
+            return """
+    {} finds a chest. (Enter 'o' to open)
+    
+            """.format(player_char.name.capitalize())
+        else:
+            return """
+        This room has an open chest.
+        
+            """
+
+    def available_actions(self, player_char):
+        if not self.open:
+            if player_char.state == 'fight':
+                action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+                if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
+                    action_list.insert(1, actions.CastSpell())
+                if player_char.usable_skills():
+                    action_list.insert(1, actions.UseSkill())
+                return action_list
+            return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
+        else:
+            return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+
+class UnlockedChestRoom2(UnlockedChestRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.loot = items.random_item(z + 1)
+        self.open = False
+        self.locked = False
+
+
+class LockedChestRoom(ChestRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z, items.random_item(z + 1))
+        self.open = False
+        self.locked = True
+
+    def intro_text(self, player_char):
+        if not self.open:
+            if self.locked:
+                return """
+        {} finds a chest!!... but it is locked.
+        
+                """.format(player_char.name.capitalize())
             else:
                 return """
-                There is an unlocked door.
+        {} finds a chest. (Enter 'o' to open)
+        
+                """.format(player_char.name.capitalize())
+        else:
+            return """
+            This room has an open chest.
+            
+            """
+
+    def available_actions(self, player_char):
+        if not self.open:
+            if self.locked:
+                return self.adjacent_moves(player_char, [actions.CharacterMenu(tile=self)])
+            else:
+                if player_char.state == 'fight':
+                    action_list = [actions.Attack(), actions.UseItem(), actions.Flee()]
+                    if len(player_char.spellbook['Spells']) > 0 and not player_char.status_effects['Silence'][0]:
+                        action_list.insert(1, actions.CastSpell())
+                    if player_char.usable_skills():
+                        action_list.insert(1, actions.UseSkill())
+                    return action_list
+                return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()])
+        else:
+            return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        if self.locked:
+            if 'Lockpick' in list(player_char.spellbook['Skills'].keys()):
+                print("{} unlocks the chest.".format(player_char.name))
+                self.locked = False
+                time.sleep(1)
+
+
+class LockedChestRoom2(LockedChestRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.loot = items.random_item(z + 2)
+        self.open = False
+        self.locked = True
+
+
+class LockedDoor(MapTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.open = False
+        self.locked = True
+        self.blocked = None
+
+    def intro_text(self, player_char):
+        if not self.open:
+            if self.locked:
+                return """
+        {} finds a locked door. 
+    If only you could find the key...
+                """.format(player_char.name.capitalize())
+            else:
+                return """
+        There is an unlocked door.
+            (Enter 'o' to open)
                 """
         else:
             return """
             There is an open door.
+            
             """
+
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+    def available_actions(self, player_char):
+        if not self.open:
+            if self.locked:
+                return self.adjacent_moves(player_char, [actions.UseItem(tile=self), actions.CharacterMenu(tile=self)],
+                                           blocked=self.blocked)
+            else:
+                return self.adjacent_moves(player_char, [actions.Open(self), actions.CharacterMenu()],
+                                           blocked=self.blocked)
+        else:
+            return self.adjacent_moves(player_char, [actions.CharacterMenu()])
 
 
 class LockedDoorEast(LockedDoor):
     def __init__(self, x, y, z):
-        super(LockedDoorEast, self).__init__(x, y, z)
+        super().__init__(x, y, z)
         self.blocked = "East"
-
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
-            else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
-        else:
-            return self.adjacent_moves([actions.Status()])
 
 
 class LockedDoorWest(LockedDoor):
     def __init__(self, x, y, z):
-        super(LockedDoorWest, self).__init__(x, y, z)
+        super().__init__(x, y, z)
         self.blocked = "West"
-
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
-            else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
-        else:
-            return self.adjacent_moves([actions.Status()])
 
 
 class LockedDoorNorth(LockedDoor):
     def __init__(self, x, y, z):
-        super(LockedDoorNorth, self).__init__(x, y, z)
+        super().__init__(x, y, z)
         self.blocked = "North"
-
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
-            else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
-        else:
-            return self.adjacent_moves([actions.Status()])
 
 
 class LockedDoorSouth(LockedDoor):
     def __init__(self, x, y, z):
-        super(LockedDoorSouth, self).__init__(x, y, z)
+        super().__init__(x, y, z)
         self.blocked = "South"
 
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            if self.enemy.lock:
-                return self.adjacent_moves([actions.UseItem(), actions.Status()], blocked=self.blocked)
-            else:
-                return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()], blocked=self.blocked)
-        else:
-            return self.adjacent_moves([actions.Status()])
 
-
-class RandomEnemyRoom(EnemyRoom):
+class WarningTile(CavePath):
     def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.random_enemy(str(z)))
+        super().__init__(x, y, z)
+        self.warning = False
 
-    def intro_text(self, player):
-        if 'Chest' in self.enemy.name:
-            if self.enemy.is_alive():
-                if self.enemy.lock:
-                    return """
-                    {} finds a chest!!... but it is locked.
-                    """.format(player.name.capitalize())
-                else:
-                    return """
-                    {} finds a chest!!
-                    """.format(player.name.capitalize())
-            else:
-                return """
-                This room has an open chest.
-                """
-        else:
-            if self.enemy.is_alive():
-                return """
-                An enemy {} attacks {}!
-                """.format(self.enemy.name, player.name.capitalize())
-            else:
-                return """
-                A dead {} lies on the ground.
-                """.format(self.enemy.name)
-
-    def available_actions(self, player):
-        if 'Chest' in self.enemy.name:
-            if self.enemy.is_alive():
-                if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
-                else:
-                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
-            else:
-                return self.adjacent_moves([actions.Status()])
-        else:
-            if self.enemy.is_alive():
-                if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(), actions.UseSkill(), actions.CastSpell(),
-                            actions.UseItem()]
-                elif len(player.spellbook['Spells']) > 0:
-                    return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
-                elif len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
-                else:
-                    return [actions.Attack(), actions.UseItem()]
-            else:
-                return self.adjacent_moves([actions.Status()])
-
-
-class RandomEnemyRoom2(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.random_enemy(str(z + 1)))
-
-    def intro_text(self, player):
-        if 'Chest' in self.enemy.name:
-            if self.enemy.is_alive():
-                if self.enemy.lock:
-                    return """
-                    {} finds a chest!!... but it is locked.
-                    """.format(player.name.capitalize())
-                else:
-                    return """
-                    {} finds a chest!!
-                    """.format(player.name.capitalize())
-            else:
-                return """
-                This room has an open chest.
-                """
-        else:
-            if self.enemy.is_alive():
-                return """
-                An enemy {} attacks {}!
-                """.format(self.enemy.name, player.name.capitalize())
-            else:
-                return """
-                A dead {} lies on the ground.
-                """.format(self.enemy.name)
-
-    def available_actions(self, player):
-        if 'Chest' in self.enemy.name:
-            if self.enemy.is_alive():
-                if self.enemy.lock:
-                    return self.adjacent_moves([actions.UseSkill(), actions.UseItem(), actions.Status()])
-                else:
-                    return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
-            else:
-                return self.adjacent_moves([actions.Status()])
-        else:
-            if self.enemy.is_alive():
-                if len(player.spellbook['Spells']) > 0 and len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(), actions.UseSkill(), actions.CastSpell(),
-                            actions.UseItem()]
-                elif len(player.spellbook['Spells']) > 0:
-                    return [actions.Attack(), actions.CastSpell(), actions.UseItem()]
-                elif len(player.spellbook['Skills']) > 0:
-                    return [actions.Attack(), actions.UseSkill(), actions.UseItem()]
-                else:
-                    return [actions.Attack(), actions.UseItem()]
-            else:
-                return self.adjacent_moves([actions.Status()])
-
-
-class MinotaurRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Minotaur())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
+    def intro_text(self, player_char):
+        if not self.warning:
             return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player.name.capitalize())
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-
-class PseudodragonRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Pseudodragon())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player.name.capitalize())
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-
-class CockatriceRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Cockatrice())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player.name.capitalize())
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-
-class GolemRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Golem())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player.name.capitalize())
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-
-class DomingoRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Domingo())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            {} stumbles across a floating, tentacled creature wearing a white hat. 
-            """.format(player.name)
-        else:
-            return """
-            A dead {} lies on the ground.
-            """.format(self.enemy.name)
-
-
-class RedDragonRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.RedDragon())
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            Boss fight!
-            An enemy {} attacks {}!
-            """.format(self.enemy.name, player.name.capitalize())
-        else:
-            return """
-            The smoking ruins of the once great beast lie in a heap.
+            Enemies beyond this point increase in difficulty.
+                        Plan accordingly.
             """
+        return """
+        
+        
+        """
 
-
-class LootRoom(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Chest(z))
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            {} finds a chest!!
-            """.format(player.name.capitalize())
-        else:
-            return """
-            This room has an open chest.
-            """
-
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
-        else:
-            return self.adjacent_moves([actions.Status()])
-
-
-class LootRoom2(EnemyRoom):
-    def __init__(self, x, y, z):
-        super().__init__(x, y, z, enemies.Chest(z + 1))
-
-    def intro_text(self, player):
-        if self.enemy.is_alive():
-            return """
-            {} finds a chest!!
-            """.format(player.name.capitalize())
-        else:
-            return """
-            This room has an open chest.
-            """
-
-    def available_actions(self, player):
-        if self.enemy.is_alive():
-            return self.adjacent_moves([actions.Open(enemy=self.enemy), actions.Status()])
-        else:
-            return self.adjacent_moves([actions.Status()])
+    def enter_combat(self, player_char):
+        pass
 
 
 class UnobtainiumRoom(SpecialTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        self.visited = False
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         return """
         An empty pedestal stands in the center of the room.
+        
         """
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
+    def modify_player(self, player_char):
+        self.adjacent_visited(player_char)
         if not self.visited:
-            player.modify_inventory(items.Unobtainium, num=1)
+            player_char.modify_inventory(items.Unobtainium, rare=True)
             self.visited = True
 
-    def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
+    def special_text(self, player_char):
+        if not self.read:
+            game.unobtainium_room()
+            self.read = True
+            os.system('cls' if os.name == 'nt' else 'clear')
 
-    def special_text(self, player):
-        game.unobtainium_room()
 
+class RelicRoom(SpecialTile):
+    """
 
-class FinalBossRoom(SpecialTile):
+    """
+
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        self.visited = False
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         return """
-        Step forward to face your destiny.
+        An empty pedestal stands in the center of the room.
+        
         """
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
+    def modify_player(self, player_char):
+        self.adjacent_visited(player_char)
         self.visited = True
 
-    def available_actions(self, player):
-        return self.adjacent_moves([actions.Status()])
+    def special_text(self, player_char):
+        if not self.read:
+            game.relic_room(player_char.location_z)
+            relics = [items.Relic1, items.Relic2, items.Relic3, items.Relic4, items.Relic5, items.Relic6]
+            player_char.modify_inventory(relics[player_char.location_z - 1], rare=True)
+            self.read = True
+            print("Your health and mana have been restored to full!")
+            player_char.health = player_char.health_max
+            player_char.mana = player_char.mana_max
+            player_char.quests()
+            input("Press enter to continue")
 
-    def special_text(self, player):
-        if not self.visited:
-            game.final_boss(player)
 
+class DeadBody(SpecialTile):
+    """
 
-class StairsUp(MapTile):
+    """
+
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
+        if not self.read:
+            return """
+        The body of a soldier lies in a heap on the floor.
+            
+            """
         return """
-        {} sees a flight of stairs going up.
-        """.format(player.name.capitalize())
+"Here lies Joffrey, survived by his one true love.
+ May he be a reminder of the horrors of combat."
+        """
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
+    def modify_player(self, player_char):
+        self.adjacent_visited(player_char)
+        self.visited = True
 
-    def available_actions(self, player):
-        return self.adjacent_moves([actions.StairsUp(), actions.Status()])
+    def special_text(self, player_char):
+        if 'A Bad Dream' in player_char.quest_dict['Main'].keys():
+            if not self.read:
+                game.dead_body()
+                player_char.modify_inventory(items.LuckyLocket, rare=True)
+                player_char.quest_dict['Main']['A Bad Dream']['Completed'] = True
+                self.read = True
+                input("Press enter to continue")
 
 
-class StairsDown(MapTile):
+class FinalBlocker(SpecialTile):
+    """
+
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.blocked = "North"
+
+    def intro_text(self, player_char):
+        if not player_char.has_relics:
+            return """
+            An invisible force blocks your path.
+            
+            """
+        return """
+        The way has opened. Destiny awaits! 
+        
+        """
+
+    def available_actions(self, player_char):
+        if not player_char.has_relics:
+            return self.adjacent_moves(player_char, [actions.CharacterMenu()], blocked=self.blocked)
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
+
+    def special_text(self, player_char):
+        if player_char.has_relics and not self.read:
+            game.final_blocker()
+            self.read = True
+            os.system('cls' if os.name == 'nt' else 'clear')
+
+
+class FinalRoom(SpecialTile):
+    """
+    Player will be given an option to fight or turn around; fight will move them to FinalBossRoom and turn around will
+      move them back to FinalBlocker
+    Tiles to show -
+    (13,  8, 6), (14,  8, 6), (15,  8, 6), (16,  8, 6), (17,  8, 6)
+    (13,  9, 6), (14,  9, 6), (15,  9, 6), (16,  9, 6), (17,  9, 6)
+    (13, 10, 6), (14, 10, 6), (15, 10, 6), (16, 10, 6), (17, 10, 6)
+    (13, 11, 6), (14, 11, 6), (15, 11, 6), (16, 11, 6), (17, 11, 6)
+    """
+
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self, player):
-        return """
-        {} sees a flight of stairs going down.
-        """.format(player.name.capitalize())
+    def adjacent_visited(self, player_char):
+        """"
+        Changes visited parameter for area around final boss
+        """
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
+        for x in [13, 14, 15, 16, 17]:
+            for y in [8, 9, 10, 11]:
+                player_char.world_dict[(x, y, 6)].near = True
 
-    def available_actions(self, player):
-        return self.adjacent_moves([actions.StairsDown(), actions.Status()])
+    def special_text(self, player_char):
+        fight = game.final_boss(player_char)
+        if fight:
+            player_char.move_north()
+            player_char.move_north()
+        else:
+            player_char.move_south()
 
 
 class SecretShop(MapTile):
+    """
+
+    """
+
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
-    def intro_text(self, player):
+    def intro_text(self, player_char):
         return """
         {} finds a secret shop in the depths of the dungeon.
-        """.format(player.name.capitalize())
+        
+        """.format(player_char.name.capitalize())
 
-    def modify_player(self, player, wmap):
-        self.adjacent_visited(wmap)
-        player.state = 'normal'
-        town.secret_shop(player)
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        player_char.state = 'normal'
+        town.secret_shop(player_char)
 
-    def available_actions(self, player):
+    def available_actions(self, player_char):
         pass
 
 
-class EndTile(MapTile):
+class UltimateArmorShop(MapTile):
+    """
+
+    """
+
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+        self.looted = False
 
-    def intro_text(self, player):
-        return """"""
+    def intro_text(self, player_char):
+        if not self.looted:
+            return """
+            {} finds a forge in the depths of the dungeon. 
+                A large man stands in front of you.
+            
+            """.format(player_char.name.capitalize())
+        else:
+            return """
+            A large empty room.
+            
+            """
 
-    def modify_player(self, player, wmap):
-        raise NotImplementedError  # TODO create function for ending the game
+    def modify_player(self, player_char):
+        self.visited = True
+        self.adjacent_visited(player_char)
+        player_char.state = 'normal'
+        if not self.looted:
+            self.looted = town.ultimate_armor_repo(player_char)
 
-    def available_actions(self, player):
+    def available_actions(self, player_char):
         pass
 
+
+class WarpPoint(MapTile):
+    """
+
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.warped = False
+
+    def intro_text(self, player_char):
+        if not player_char.warp_point:
+            return """
+            
+            
+            """
+        else:
+            if not self.warped:
+                game.warp_point(player_char)
+            return """
+            
+            
+            """
+
+    def modify_player(self, player_char):
+        self.warped = False
+        self.visited = True
+        self.adjacent_visited(player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions.CharacterMenu()])
