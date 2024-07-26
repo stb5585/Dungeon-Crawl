@@ -5,7 +5,6 @@
 import time
 import random
 from math import exp
-
 from dataclasses import dataclass
 
 
