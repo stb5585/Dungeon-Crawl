@@ -48,12 +48,12 @@ def story_flow(story_dict: dict, response=False):
         curr_page = get_response(page['Options'])
         if response:
             return curr_page
+    return curr_page
 
 
 def read_story(story_file, response=False):
-    with open(story_file, 'rb') as file:
+    with open(story_file, "rb") as file:
         story_dict = pickle.load(file)
     if not response:
-        story_flow(story_dict)
-    else:
-        return story_flow(story_dict, response=response)
+        return story_flow(story_dict)
+    return story_flow(story_dict, response=response)

@@ -1,5 +1,6 @@
-##########################################
-""" Basic RPG """
+"""
+The main module to run the Dungeon Crawl game.
+"""
 
 # Imports
 import os
@@ -9,14 +10,12 @@ import glob
 
 import pyfiglet
 
-import actions
 import player
 import storyline
 import tutorial
 
 # Parameters
 home = os.getcwd()
-save_dir = "save_files"
 f = pyfiglet.Figlet(font='slant')
 
 
@@ -29,7 +28,7 @@ def load_player():
     print(f.renderText("DUNGEON CRAWL"))
     player_char = None
     if len(glob.glob('save_files/*')) > 0:
-        os.chdir(save_dir)
+        os.chdir("save_files")
         player_char = player.load_char()
         os.chdir(home)
     return player_char
@@ -90,7 +89,7 @@ def dead_body():
     time.sleep(2)
 
 
-def relic_room(level):
+def relic_room(floor):
     """
 
     """
@@ -100,8 +99,8 @@ def relic_room(level):
     texts = [
         "A bright column of light highlights a pedestal at the center of the room.\n",
         "You instantly realize the significance of the finding, sure that this is one of the six relics you seek.\n",
-        "You eagerly take the relic and instantly feel rejuvenated.\n"
-        "You have obtained the {} relic!\n".format(relics[int(level) - 1])
+        f"You eagerly take the relic and instantly feel rejuvenated.\nYou have obtained the {relics[int(floor) - 1]} "
+        f"relic!\n"
     ]
     for text in texts:
         time.sleep(1)
@@ -110,17 +109,15 @@ def relic_room(level):
 
 
 def warp_point(player_char):
-    yes_no = ["Yes", "No"]
-    print("Hello, {}. Do you want to warp back to town?".format(player_char.name))
-    confirm = storyline.get_response(yes_no)
-    if yes_no[confirm] == 'Yes':
+    print(f"Hello, {player_char.name}. Do you want to warp back to town?")
+    confirm = storyline.get_response(["Yes", "No"])
+    if not confirm:
         print("You step into the warp point, taking you back to town.")
         time.sleep(1)
         player_char.world_dict[(3, 0, 5)].warped = True
         player_char.change_location(5, 10, 0)
     else:
         print("Not a problem, come back when you change your mind.")
-    return
 
 
 def unobtainium_room():
@@ -169,7 +166,7 @@ def final_boss(player_char):
     os.system('cls' if os.name == 'nt' else 'clear')
     texts = [
         "You enter a massive room. A great beast greets you.\n",
-        "\"Hello again, {}. You have done well to reach me, many have tried and failed.\n".format(player_char.name),
+        f"\"Hello again, {player_char.name}. You have done well to reach me, many have tried and failed.\n",
         "The bones of those that came before you litter this sanctum. Will your bones join them?\n",
         "It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel, knowing that one of us"
         " will not leave here alive.\n",
@@ -197,16 +194,17 @@ def play():
     if not os.path.exists('save_files'):
         os.mkdir('save_files')
     while True:
+        player_char = {}
         play_options = ['New Game', 'Load Game', 'Tutorial', 'Exit']
         play_index = storyline.get_response(play_options)
         os.system('cls' if os.name == 'nt' else 'clear')
         if play_options[play_index] == 'New Game':
-            new_player()
+            # new_player() TODO
             player_char = player.new_char()
         elif play_options[play_index] == 'Load Game':
             print(f.renderText("DUNGEON CRAWL"))
             if len(glob.glob('save_files/*')) > 0:
-                os.chdir(save_dir)
+                os.chdir("save_files")
                 player_char = player.load_char()
                 os.chdir(home)
             else:
@@ -215,12 +213,12 @@ def play():
                 new_player()
                 player_char = player.new_char()
         elif play_options[play_index] == 'Tutorial':
-            player_char = tutorial.tutorial()
+            tutorial.tutorial()
         else:
             print(f.renderText("GOODBYE..."))
             time.sleep(2)
             sys.exit(0)
-        if player_char != dict():
+        if player_char != {}:
             break
     os.system('cls' if os.name == 'nt' else 'clear')
     while True:
@@ -249,17 +247,16 @@ def play():
                         pass
                 if player_char.in_town() or player_char.quit:
                     break
-                print("Player: {} | Health: {}/{} | Mana: {}/{}".format(player_char.name,
-                                                                        player_char.health, player_char.health_max,
-                                                                        player_char.mana, player_char.mana_max))
+                print(f"Player: {player_char.name} | Health: {player_char.health.current}/{player_char.health.max} | Mana: "
+                      f"{player_char.mana.current}/{player_char.mana.max}")
                 available_actions = room.available_actions(player_char)
-                print("\t\t{}".format(actions.MoveNorth()))
-                print("\t{}\t{}".format(actions.MoveWest(), actions.MoveEast()))
-                print("\t\t{}".format(actions.MoveSouth()))
+                print(f"\t\t{player.actions_dict['MoveNorth']['name']}")
+                print(f"\t{player.actions_dict['MoveWest']['name']}\t{player.actions_dict['MoveEast']['name']}")
+                print(f"\t\t{player.actions_dict['MoveSouth']['name']}")
                 action_input = input()
                 for action in available_actions:
-                    if action_input == action.hotkey:
-                        player_char.do_action(action, **action.kwargs)
+                    if action_input == action['hotkey']:
+                        action['method'](player_char)
                         if action_input in ['w', 'a', 's', 'd', 'o', 'j', 'u']:
                             valid = True
                         break

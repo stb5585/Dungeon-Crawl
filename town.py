@@ -11,13 +11,10 @@ import items
 import storyline
 import classes
 
-# variables
-yes_no = ['Yes', 'No']
-
 
 # Functions
 def player_level(player_char):
-    return player_char.level + (30 * (player_char.pro_level - 1))
+    return player_char.level.level + (30 * (player_char.level.pro_level - 1))
 
 
 def upgrade(player_char):
@@ -26,7 +23,7 @@ def upgrade(player_char):
     upgrades non-ultimate weapon to be an ultimate weapon (for damaging the final boss) or further upgrade an existing
       ultimate weapon (increase damage, crit chance, etc.) TODO
     """
-    pass
+    return player_char
 
 
 def power_up(player_char):
@@ -35,10 +32,10 @@ def power_up(player_char):
     adds feature to either item or player TODO
     """
 
-    def foo(self):
+    def test():
         print("hello world!")
 
-    setattr(player_char, 'foo', foo)
+    setattr(player_char, 'test', test)
 
 
 def turn_in_quest(quest, player_char, typ):
@@ -47,7 +44,7 @@ def turn_in_quest(quest, player_char, typ):
     """
 
     os.system('cls' if os.name == 'nt' else 'clear')
-    print('{}'.format(player_char.quest_dict[typ][quest]['Who']))
+    print(f"{player_char.quest_dict[typ][quest]['Who']}")
     storyline.slow_type(player_char.quest_dict[typ][quest]['End Text'] + '\n', typing_speed=125)
     time.sleep(1)
     player_char.quest_dict[typ][quest]['Turned In'] = True
@@ -62,24 +59,23 @@ def turn_in_quest(quest, player_char, typ):
     exp = player_char.quest_dict[typ][quest]['Experience']
     if reward == 'Gold':
         player_char.gold += player_char.quest_dict[typ][quest]['Reward Number']
-        print("You received {} gold and {} experience.".format(
-            player_char.quest_dict[typ][quest]['Reward Number'], exp))
+        print(f"You received {player_char.quest_dict[typ][quest]['Reward Number']} gold and {exp} experience.")
     elif reward == 'Upgrade':
         upgrade(player_char)
     elif reward == 'Power Up':
         power_up(player_char)
     elif reward == 'Warp Point':
         player_char.warp = True
-        print("You received {} experience and gain access to the Warp Point.".format(exp))
+        print(f"You received {exp} experience and gain access to the Warp Point.")
     else:
         num = player_char.quest_dict[typ][quest]['Reward Number']
         player_char.modify_inventory(reward, num=num)
         if num == 1:
-            print("You received {} and {} experience.".format(reward().name, exp))
+            print(f"You received {reward().name} and {exp} experience.")
         else:
-            print("You received {} x{} and {} experience.".format(reward().name, num, exp))
-    player_char.experience += exp
-    while player_char.experience >= player_char.exp_to_gain and not player_char.max_level():
+            print(f"You received {reward().name} x{num} and {exp} experience.")
+    player_char.level.exp += exp
+    while player_char.level.exp >= player_char.level.exp_to_gain and not player_char.max_level():
         player_char.level_up()
     if player_char.quest_dict[typ][quest]['Type'] == 'Collect':
         item = player_char.quest_dict[typ][quest]['What']
@@ -158,18 +154,18 @@ def accept_quest(quest, player_char, typ):
                     'Sergeant': ["Outstanding! Return to me when you have completed the quest.",
                                  "You came a long way for nothing..."]
                     }
-    key = list(quest.keys())[0]
+    key = list(quest)[0]
     who = quest[key]['Who']
-    print("{}".format(who))
+    print(f"{who}")
     storyline.slow_type(quest[key]['Start Text'] + '\n', typing_speed=125)
     print("Do you accept this quest?")
-    main_input = storyline.get_response(yes_no)
+    main_input = storyline.get_response(["Yes", "No"])
     accepted = False
-    if yes_no[main_input] == 'Yes':
+    if not main_input:
         player_char.quest_dict[typ][key] = quest[key]
         print(response_map[who][0])
         if quest[key]['Type'] == 'Defeat':
-            if key in list(player_char.kill_dict.keys()):
+            if key in player_char.kill_dict:
                 player_char.quest_dict[typ][key]['Completed'] = True
         accepted = True
     else:
@@ -184,8 +180,8 @@ def check_quests(quest_dict, player_char):
     """
 
     p_level = player_level(player_char)
-    player_mains = list(player_char.quest_dict['Main'].keys())
-    player_sides = list(player_char.quest_dict['Side'].keys())
+    player_mains = list(player_char.quest_dict['Main'])
+    player_sides = list(player_char.quest_dict['Side'])
     mains = quest_dict['Main']
     main_quests = [mains[x] for x in mains if p_level >= x]
     sides = quest_dict['Side']
@@ -193,7 +189,7 @@ def check_quests(quest_dict, player_char):
     quest = False
     if len(main_quests) > 0:
         for main_quest in main_quests:
-            key = list(main_quest.keys())[0]
+            key = list(main_quest)[0]
             if key in player_mains:
                 if player_char.quest_dict['Main'][key]['Completed'] and \
                         not player_char.quest_dict['Main'][key]['Turned In']:
@@ -205,7 +201,7 @@ def check_quests(quest_dict, player_char):
                 break
     if len(side_quests) > 0:
         for side_quest in side_quests:
-            key = list(side_quest.keys())[0]
+            key = list(side_quest)[0]
             if key in player_sides:
                 if player_char.quest_dict['Side'][key]['Completed'] and \
                         not player_char.quest_dict['Side'][key]['Turned In']:
@@ -231,17 +227,17 @@ def tavern_patrons(player_char):
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         p_level = player_level(player_char)
-        patrons = {'Barkeep': {'Talk': {1: ["If you want to access the character menu, you can do so by hitting the (c) "
-                                            "button.",
+        patrons = {'Barkeep': {'Talk': {1: ["If you want to access the character menu, you can do so by hitting the (c)"
+                                            " button.",
                                             "Make sure to stop by from time to time. You never know who might show up.",
-                                            "Equipment vendors will only show you what you can equip. If you can't find an"
-                                            " item type, your class probably can't use it."],
+                                            "Equipment vendors will only show you what you can equip. If you can't find"
+                                            " an item type, your class probably can't use it."],
                                         5: ["How did you like that stat bonus at level 4? You get another every 4th "
                                             "level, so plan your promotions accordingly.",
                                             "If you get a quest from someone, come back and talk with them after it is "
                                             "completed and they will likely reward you for your efforts."],
-                                        10: ["You have to be level 20 to get a promotion but you can gain more experience"
-                                             " if you wait until level 30.",
+                                        10: ["You have to be level 20 to get a promotion but you can gain more "
+                                             "experience if you wait until level 30.",
                                              "Locked chests contain more powerful items compared with unlocked ones, "
                                              "however you need a key or a lockpick to get to the treasure."]
                                         },
@@ -250,13 +246,13 @@ def tavern_patrons(player_char):
                                                              'What': 'Minotaur',
                                                              'Total': 1,
                                                              'Start Text':
-                                                                 "There is a monster guarding the steps to the first floor,"
-                                                                 " the Minotaur, that is responsible for lots of carnage. "
-                                                                 "If you defeat it, I will give you something to help you "
-                                                                 "explore the dungeon.",
+                                                                 "There is a monster guarding the steps to the first "
+                                                                 "floor, the Minotaur, that is responsible for lots of "
+                                                                 "carnage. If you defeat it, I will give you something "
+                                                                 "to help you explore the dungeon.",
                                                              'End Text':
-                                                                 "I'm glad to hear you took that butcher out. Here's an "
-                                                                 "item that should help you in your quest.",
+                                                                 "I'm glad to hear you took that butcher out. Here's an"
+                                                                 " item that should help you in any future quests.",
                                                              'Reward': [items.OldKey],
                                                              'Reward Number': 1,
                                                              'Experience': 200,
@@ -269,13 +265,14 @@ def tavern_patrons(player_char):
                                                          'What': items.RatTail,
                                                          'Total': 6,
                                                          'Start Text':
-                                                             "Darn pesky rats keep getting into my food supply and I'd bet "
-                                                             "anything they come up from that dungeon. Help my out by "
-                                                             "killing as many as you need to collect 6 tails and I'll pay "
-                                                             "you 600 gold.",
+                                                             "Darn pesky rats keep getting into my food supply and I'd "
+                                                             "bet anything they come up from that dungeon. Help my out "
+                                                             "by killing as many as you need to collect 6 tails and "
+                                                             "I'll pay you 600 gold.",
                                                          'End Text':
-                                                             "Good riddance to the bastards, hopefully this will keep my "
-                                                             "food supplies in good order. Here's the gold I promised you.",
+                                                             "Good riddance to the bastards, hopefully this will keep "
+                                                             "my food supplies in good order. Here's the gold I "
+                                                             "promised you.",
                                                          'Reward': ['Gold'],
                                                          'Reward Number': 600,
                                                          'Experience': 100,
@@ -284,17 +281,17 @@ def tavern_patrons(player_char):
                                             }
                                         }
                                },
-                   'Waitress': {'Talk': {1: ["Entering the town will replenish your health and mana. Seems like you could "
-                                             "take advantage of that.",
-                                             "Sorry, I can't talk now! I am getting married and need to make as much money "
-                                             "as I can."],
-                                         10: ["(sobbing) I can't believe it...a week before our wedding and my husband to "
-                                              "be decides to join the fight against the prime evil...I want to be mad but "
-                                              "he says he can't stand by when I am in danger. My hero..."],
+                   'Waitress': {'Talk': {1: ["Entering the town will replenish your health and mana. Seems like you "
+                                             "could take advantage of that.",
+                                             "Sorry, I can't talk now! I am getting married and need to make as much "
+                                             "money as I can."],
+                                         10: ["(sobbing) I can't believe it...a week before our wedding and my husband "
+                                              "to be decides to join the fight against the prime evil...I want to be "
+                                              "mad but he says he can't stand by when I am in danger. My hero..."],
                                          25: ["Joffrey returned yesterday bloodied but resolute. He has gained much "
-                                              "experience and hopes to have found the source of our suffering by month's "
-                                              "end. I gave him my lucky pendant to return to me when his mission is "
-                                              "complete."],
+                                              "experience and hopes to have found the source of our suffering by "
+                                              "month's end. I gave him my lucky pendant to return to me when his "
+                                              "mission is complete."],
                                          },
                                 'Main': {35: {"A Bad Dream": {'Who': 'Waitress',
                                                               'Type': 'Locate',
@@ -303,11 +300,12 @@ def tavern_patrons(player_char):
                                                               'Start Text':
                                                                   "This morning I woke in a sweat...I dreamed I was "
                                                                   "standing in a square room and to my horror a great "
-                                                                  "flaming horse struck down my betrothed...please find my "
-                                                                  "Joffrey before my dream truly becomes a nightmare...",
+                                                                  "flaming horse struck down my betrothed...please find"
+                                                                  " my Joffrey before my dream truly becomes a "
+                                                                  "nightmare...",
                                                               'End Text':
-                                                                  "My pendant...Elysia take me...he left me these keys last"
-                                                                  " I saw of him...please avenge my love...(the "
+                                                                  "My pendant...Elysia take me...he left me these keys "
+                                                                  "last I saw of him...please avenge my love...(the "
                                                                   "waitress runs out sobbing...)",
                                                               'Reward': [items.OldKey],
                                                               'Reward Number': 2,
@@ -322,14 +320,14 @@ def tavern_patrons(player_char):
                                                                    'Total': 12,
                                                                    'Start Text':
                                                                        "My wedding day is fast approaching and we are "
-                                                                       "trying to save a few gold, so I am cooking the meal"
-                                                                       " for the guests. If you could bring me back 12 "
-                                                                       "pieces of mystery meat, I can reward you with this "
-                                                                       "potion I received as a tip once.",
+                                                                       "trying to save a few gold, so I am cooking the "
+                                                                       "meal for the guests. If you could bring me back"
+                                                                       " 12 pieces of mystery meat, I can reward you "
+                                                                       "with this potion I received as a tip once.",
                                                                    'End Text':
-                                                                       "Thank you, thank you, thank you! You have made my "
-                                                                       "special day that much easier. Please take this as a"
-                                                                       " token of my appreciation.",
+                                                                       "Thank you, thank you, thank you! You have made "
+                                                                       "my special day that much easier. Please take "
+                                                                       "this as a token of my appreciation.",
                                                                    'Reward': [items.SuperHealthPotion],
                                                                    'Reward Number': 1,
                                                                    'Experience': 150,
@@ -338,11 +336,11 @@ def tavern_patrons(player_char):
                                              }
                                          }
                                 },
-                   'Soldier': {'Talk': {10: ["You may find locked doors along your path while exploring the dungeon. You "
-                                             "can't open these with just any old key, you need an actual Old Key."],
-                                        25: ["I just finished my shift guarding the old warehouse behind the barracks. They"
-                                             " won't tell us what's in there but I have seen several scientists come and "
-                                             "go."],
+                   'Soldier': {'Talk': {10: ["You may find locked doors along your path while exploring the dungeon. "
+                                             "You can't open these with just any old key, you need an actual Old Key."],
+                                        25: ["I just finished my shift guarding the old warehouse behind the barracks. "
+                                             "They won't tell us what's in there but I have seen several scientists "
+                                             "come and go."],
                                         65: ["The Devil is immune to normal weapons but legend says there is a "
                                              "material that will do the job."]
                                         },
@@ -351,29 +349,31 @@ def tavern_patrons(player_char):
                                                                     'What': 'Jester',
                                                                     'Total': 1,
                                                                     'Start Text':
-                                                                        "During my first week of training, a senior officer"
-                                                                        " told us a story about a former recruit who went "
-                                                                        "mad. He was a bit of an outcast and many of the "
-                                                                        "other soldiers bullied him for his weirdness, as "
-                                                                        "it was told. He had a fondness for card tricks and"
-                                                                        " claimed he was an 'Agent of Chaos', whatever that"
-                                                                        " means...anyway, he finally cracked one day and "
-                                                                        "disappeared, never to be heard from again...that "
-                                                                        "is until we started receiving the body parts...the"
-                                                                        " freak has been sending back parts of adventurers "
-                                                                        "with notes talking about revenge and signed by the"
-                                                                        " Jester. Someone needs to take this sick bastard "
-                                                                        "out before anyone else gets hurt. Be careful, you "
-                                                                        "never truly know what you may get with this guy.",
+                                                                        "During my first week of training, a senior "
+                                                                        "officer told us a story about a former recruit"
+                                                                        " who went mad. He was a bit of an outcast and "
+                                                                        "many of the other soldiers bullied him for his"
+                                                                        " weirdness, as it was told. He had a fondness "
+                                                                        "for card tricks and claimed he was an 'Agent "
+                                                                        "of Chaos', whatever that means...anyway, he "
+                                                                        "finally cracked one day and disappeared, never"
+                                                                        " to be heard from again...that is until we "
+                                                                        "started receiving the body parts...the freak "
+                                                                        "has been sending back parts of adventurers "
+                                                                        "with notes talking about revenge and signed by"
+                                                                        " the Jester. Someone needs to take this sick "
+                                                                        "bastard out before anyone else gets hurt. Be "
+                                                                        "careful, you never truly know what you may get"
+                                                                        " with this guy.",
                                                                     'End Text':
                                                                         "Excellent work! Hopefully the souls of those "
-                                                                        "tortured by the Jester will be able to rest now. "
-                                                                        "This magical ring was shipped back with one of the"
-                                                                        " body parts, it increases your chance to evade "
-                                                                        "attacks in combat. I'm sure the Jester thought he "
-                                                                        "was being clever, since it took so long for "
-                                                                        "someone to finally catch him. It's fitting that "
-                                                                        "you would wear it now.",
+                                                                        "tortured by the Jester will be able to rest "
+                                                                        "now. This magical ring was shipped back with "
+                                                                        "one of the body parts, it increases your "
+                                                                        "chance to evade attacks in combat. I'm sure "
+                                                                        "the Jester thought he was being clever, since "
+                                                                        "it took so long for someone to finally catch "
+                                                                        "him. It's fitting that you would wear it now.",
                                                                     'Reward': [items.EvasionRing],
                                                                     'Reward Number': 1,
                                                                     'Experience': 300000,
@@ -384,14 +384,15 @@ def tavern_patrons(player_char):
                                                             'What': items.ScrapMetal,
                                                             'Total': 8,
                                                             'Start Text':
-                                                                "The city guard are in desperate need of new equipment but "
-                                                                "we unfortunately are running short on the required "
-                                                                "materials. If you can bring back 8 pieces of scrap metal,"
-                                                                " I can use my connections with the alchemist shop and get "
-                                                                "you a really nice potion for your troubles.",
+                                                                "The city guard are in desperate need of new equipment "
+                                                                "but we unfortunately are running short on the required"
+                                                                " materials. If you can bring back 8 pieces of scrap "
+                                                                "metal, I can use my connections with the alchemist "
+                                                                "shop and get you a really nice potion for your "
+                                                                "troubles.",
                                                             'End Text':
-                                                                "You are a life saver, literally. This metal will help to "
-                                                                "fortify the town against the scum that patrols the "
+                                                                "You are a life saver, literally. This metal will help "
+                                                                "to fortify the town against the scum that patrols the "
                                                                 "dungeon. Here is a token of my appreciation.",
                                                             'Reward': [items.StrengthPotion, items.IntelPotion,
                                                                        items.WisdomPotion, items.ConPotion,
@@ -413,19 +414,20 @@ def tavern_patrons(player_char):
                                                              'What': 'Cockatrice',
                                                              'Total': 1,
                                                              'Start Text':
-                                                                 "Let me tell you a quick story...back in the day I used to"
-                                                                 " be an adventurer. My friend and I had delved too deep "
-                                                                 "into the dungeon below and were trapped with no escape. A"
-                                                                 " giant bird-looking monstrosity had us pinned...we made a"
-                                                                 " run for it...but we weren't fast enough. I still "
-                                                                 "remember the look on Rutger's face as he turned to stone "
-                                                                 "in front of me...this necklace is the only reason I am "
-                                                                 "still here. If you come across the beast, make sure it's "
-                                                                 "dead before you are. (hic)...hmmm...what was I sayin'?",
+                                                                 "Let me tell you a quick story...back in the day I "
+                                                                 "used to be an adventurer. My friend and I had delved "
+                                                                 "too deep into the dungeon below and were trapped with"
+                                                                 " no escape. A giant bird-looking monstrosity had us "
+                                                                 "pinned...we made a run for it...but we weren't fast "
+                                                                 "enough. I still remember the look on Rutger's face as"
+                                                                 " he turned to stone in front of me...this necklace is"
+                                                                 " the only reason I am still here. If you come across "
+                                                                 "the beast, make sure it's dead before you are. "
+                                                                 "(hic)...hmmm...what was I sayin'?",
                                                              'End Text':
-                                                                 "Rutger can now be at peace...I can finally let go of the "
-                                                                 "past (hic). Here, take this necklace, I don't need it "
-                                                                 "anymore...",
+                                                                 "Rutger can now be at peace...I can finally let go of "
+                                                                 "the past (hic). Here, take this necklace, I don't "
+                                                                 "need it anymore...",
                                                              'Reward': [items.GorgonPendant],
                                                              'Reward Number': 1,
                                                              'Experience': 5000,
@@ -438,15 +440,16 @@ def tavern_patrons(player_char):
                                                                'What': items.SnakeSkin,
                                                                'Total': 8,
                                                                'Start Text':
-                                                                   "SNAKES! Oh my I hate those things...(hic)...slithering "
-                                                                   "about. It's unnatural...I think...(hic)...what was I "
-                                                                   "saying?...Oh yeah, bring me some snake skins and I'll "
-                                                                   "give you these poison curing thingies I found...(hic)",
+                                                                   "SNAKES! Oh my I hate those things...(hic)..."
+                                                                   "slithering about. It's unnatural...I think...(hic)"
+                                                                   "...what was I saying?...Oh yeah, bring me some "
+                                                                   "snake skins and I'll give you these poison curing "
+                                                                   "thingies I found...(hic)",
                                                                'End Text':
-                                                                   "WHY WOULD YOU BRING...oh yeah I asked you to...(hic).."
-                                                                   "thanks I guess. Here's those things...ANTIDOTES, that's"
-                                                                   " what they're called. BARKEEP, another beer please..."
-                                                                   "(hic).",
+                                                                   "WHY WOULD YOU BRING...oh yeah I asked you to..."
+                                                                   "(hic)..thanks I guess. Here's those things..."
+                                                                   "ANTIDOTES, that's what they're called. BARKEEP, "
+                                                                   "another beer please...(hic).",
                                                                'Reward': [items.Antidote],
                                                                'Reward Number': 5,
                                                                'Experience': 400,
@@ -472,15 +475,15 @@ def tavern_patrons(player_char):
                                                                'What': 'Pseudodragon',
                                                                'Total': 1,
                                                                'Start Text':
-                                                                   "My rival, a wizard known for unimaginable cruelty, is "
-                                                                   "looking to increase her power by upgrading her "
+                                                                   "My rival, a wizard known for unimaginable cruelty, "
+                                                                   "is looking to increase her power by upgrading her "
                                                                    "familiar. She has her eyes set on a particular "
-                                                                   "creature, a Pseudodragon, that dwells in the dungeon "
-                                                                   "below. Destroy this creature before she can corrupt it "
-                                                                   "and I will reward you.",
+                                                                   "creature, a Pseudodragon, that dwells in the "
+                                                                   "dungeon below. Destroy this creature before she can"
+                                                                   " corrupt it and I will reward you.",
                                                                'End Text':
-                                                                   "You have done well in taking care of this threat. Take "
-                                                                   "this reward and use it wisely.",
+                                                                   "You have done well in taking care of this threat. "
+                                                                   "Take this reward and use it wisely.",
                                                                'Reward': [items.Megalixir],
                                                                'Reward Number': 1,
                                                                'Experience': 3000,
@@ -492,16 +495,17 @@ def tavern_patrons(player_char):
                                                                 'What': 'Red Dragon',
                                                                 'Total': 1,
                                                                 'Start Text':
-                                                                    "The depths are home to a powerful Red Dragon. She is "
-                                                                    "not to be taken lightly, however if you are able to "
-                                                                    "defeat her, the path to glory will be yours.",
+                                                                    "The depths are home to a powerful Red Dragon. She "
+                                                                    "is not to be taken lightly, however if you are "
+                                                                    "able to defeat her, the path to glory will be "
+                                                                    "yours.",
                                                                 'End Text':
                                                                     "You have proven yourself worthy for the ultimate "
                                                                     "challenge...me. Take this as a reminder of the "
                                                                     "futility of being a hero...there will always be "
-                                                                    "another evil to deal with and that evil will always "
-                                                                    "pale in comparison to my wrath. Pursue me at your own "
-                                                                    "peril.",
+                                                                    "another evil to deal with and that evil will "
+                                                                    "always pale in comparison to my wrath. Pursue me "
+                                                                    "at your own peril.",
                                                                 'Reward': [items.ClassRing],
                                                                 'Reward Number': 1,
                                                                 'Experience': 500000,
@@ -581,17 +585,17 @@ def ultimate(player_char):
         print("I am sorry to hear that...please come back if you change your mind.")
     else:
         weapon = weapon_list[make_list[weapon_ind]]
-        if type(weapon) == list:
+        if isinstance(weapon, list):
             if 'Archbishop' == player_char.cls:
                 weapon = weapon[0]
             else:
                 weapon = weapon[1]
         print("Give me a moment and I will make you an ultimate weapon...")
         time.sleep(5)
-        print("I present to you, {}, the mighty {}!".format(player_char.name, weapon().name))
+        print(f"I present to you, {player_char.name}, the mighty {weapon().name}!")
         player_char.modify_inventory(weapon, num=1)
         del player_char.inventory['Unobtainium']
-        if "He Ain't Heavy" in list(player_char.quest_dict['Side'].keys()):
+        if "He Ain't Heavy" in player_char.quest_dict['Side']:
             if player_char.quest_dict['Side']["He Ain't Heavy"]['Turned In']:
                 print("I still have a bit of ore left if you want me to upgrade another weapon or I may even be able to"
                       " improve the one I just made.")
@@ -736,7 +740,7 @@ def barracks(player_char):
                 while True:
                     os.system('cls' if os.name == 'nt' else 'clear')
                     print("What would you like to add to your storage for safe keeping?")
-                    p_items = list(player_char.inventory.keys())
+                    p_items = list(player_char.inventory)
                     if len(p_items) == 0:
                         print("You do not have anything to store at the moment.")
                         time.sleep(2)
@@ -745,33 +749,31 @@ def barracks(player_char):
                     p_choice = storyline.get_response(p_items)
                     if p_items[p_choice] == 'Go Back':
                         break
-                    else:
-                        itm, total = player_char.inventory[p_items[p_choice]]
-                        if total == 1:
-                            if itm().name not in player_char.storage:
-                                player_char.storage[p_items[p_choice]] = [itm, 1]
-                            else:
-                                player_char.storage[p_items[p_choice]][1] += 1
-                            player_char.modify_inventory(itm, num=1, subtract=True)
+                    itm, total = player_char.inventory[p_items[p_choice]]
+                    if total == 1:
+                        if itm().name not in player_char.storage:
+                            player_char.storage[p_items[p_choice]] = [itm, 1]
                         else:
-                            while True:
-                                try:
-                                    print("You have {} {}s in your inventory.".format(total, p_items[p_choice]))
-                                    num = int(input("How many would you like to store? "))
-                                    if num < 0:
-                                        print("Please enter a valid quantity.")
-                                    elif num <= total:
-                                        if itm().name not in player_char.storage.keys():
-                                            player_char.storage[p_items[p_choice]] = [itm, num]
-                                        else:
-                                            player_char.storage[p_items[p_choice]][1] += num
-                                        player_char.modify_inventory(itm, num=num, subtract=True)
-                                        break
+                            player_char.storage[p_items[p_choice]][1] += 1
+                        player_char.modify_inventory(itm, num=1, subtract=True)
+                    else:
+                        while True:
+                            try:
+                                print(f"You have {total} {p_items[p_choice]}s in your inventory.")
+                                num = int(input("How many would you like to store? "))
+                                if num < 0:
+                                    print("Please enter a valid quantity.")
+                                elif num <= total:
+                                    if itm().name not in player_char.storage:
+                                        player_char.storage[p_items[p_choice]] = [itm, num]
                                     else:
-                                        print("You do not have that many, please enter a correct value.")
-                                except ValueError:
-                                    print("Please enter a valid number.")
-                                    input()
+                                        player_char.storage[p_items[p_choice]][1] += num
+                                    player_char.modify_inventory(itm, num=num, subtract=True)
+                                    break
+                                print("You do not have that many, please enter a correct value.")
+                            except ValueError:
+                                print("Please enter a valid number.")
+                                input()
                         time.sleep(1)
                         if len(player_char.inventory) == 0:
                             break
@@ -787,42 +789,37 @@ def barracks(player_char):
                     retrieve_item = retrieve_items[retrieve_response]
                     if retrieve_item == 'Go Back':
                         break
+                    retrieve_item = retrieve_item.split(': ')[0]
+                    if player_char.storage[retrieve_item][1] > 1:
+                        total = player_char.storage[retrieve_item][1]
+                        while True:
+                            try:
+                                print(f"You have {total} {retrieve_item}s in storage.")
+                                num = int(input("How many would you like to retrieve? "))
+                                if num < 0:
+                                    print("Please enter a valid quantity.")
+                                elif num <= total:
+                                    player_char.modify_inventory(player_char.storage[retrieve_item][0], num)
+                                    player_char.storage[retrieve_item][1] -= num
+                                    if player_char.storage[retrieve_item][1] == 0:
+                                        del player_char.storage[retrieve_item]
+                                    break
+                                print("You do not have that many, please enter a valid quantity.")
+                            except ValueError:
+                                print("Please enter a valid number.")
+                                input()
                     else:
-                        retrieve_item = retrieve_item.split(': ')[0]
-                        if player_char.storage[retrieve_item][1] > 1:
-                            total = player_char.storage[retrieve_item][1]
-                            while True:
-                                try:
-                                    print("You have {} {}s in storage.".format(total, retrieve_item))
-                                    num = int(input("How many would you like to retrieve? "))
-                                    if num < 0:
-                                        print("Please enter a valid quantity.")
-                                    elif num <= total:
-                                        player_char.modify_inventory(player_char.storage[retrieve_item][0], num)
-                                        player_char.storage[retrieve_item][1] -= num
-                                        if player_char.storage[retrieve_item][1] == 0:
-                                            del player_char.storage[retrieve_item]
-                                        break
-                                    else:
-                                        print("You do not have that many, please enter a valid quantity.")
-                                except ValueError:
-                                    print("Please enter a valid number.")
-                                    input()
-                        else:
-                            player_char.modify_inventory(player_char.storage[retrieve_item][0], 1)
-                            del player_char.storage[retrieve_item]
-                        time.sleep(1)
-                    if len(player_char.storage) == 0:
-                        break
-            else:
-                pass
+                        player_char.modify_inventory(player_char.storage[retrieve_item][0], 1)
+                        del player_char.storage[retrieve_item]
+                    time.sleep(1)
+                if len(player_char.storage) == 0:
+                    break
         else:
             valid = check_quests(quests, player_char)
             if not valid:
                 # add helpful comments for each quest if not completed TODO
                 responses = ["There are no quests available at this time. Check back in regularly and I might have "
-                             "something for you.",
-                             ]
+                             "something for you."]
                 print(responses[0])
             time.sleep(2)
 
@@ -860,13 +857,13 @@ def blacksmith(player_char):
                        }
               }
     if player_char.world_dict[(9, 1, 6)].visited and \
-            "He Ain't Heavy" not in list(player_char.quest_dict['Side'].keys()):
+            "He Ain't Heavy" not in player_char.quest_dict['Side']:
         player_char.quest_dict['Side']["He Ain't Heavy"] = quests['Side'][60]["He Ain't Heavy"]
         player_char.quest_dict['Side']["He Ain't Heavy"]['Completed'] = True
     check_quests(quests, player_char)
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
-        if 'Unobtainium' in list(player_char.special_inventory.keys()):
+        if 'Unobtainium' in player_char.special_inventory:
             ultimate(player_char)
         print("Welcome to Griswold's! What can I do you for?")
         time.sleep(0.5)
@@ -874,7 +871,7 @@ def blacksmith(player_char):
         if player_char.cls not in ['Footpad', 'Weapon Master', 'Thief', 'Assassin', 'Monk', 'Berserker', 'Rogue',
                                    'Ninja', 'Master Monk']:
             buy_list.insert(1, 'OffHand')
-        print("You have {} gold.".format(player_char.gold))
+        print(f"You have {player_char.gold} gold.")
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -882,14 +879,18 @@ def blacksmith(player_char):
             print("We're sorry to see you go. Come back anytime!")
             time.sleep(1)
             return
+        if option_list[opt_index] == 'Buy':
+            buy(player_char, buy_list)
+        elif option_list[opt_index] == 'Sell':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            done = False
+            while not done:
+                done = sell(player_char)
+                time.sleep(0.5)
+                os.system('cls' if os.name == 'nt' else 'clear')
         else:
-            if option_list[opt_index] == 'Buy':
-                buy(player_char, buy_list)
-            elif option_list[opt_index] == 'Sell':
-                sell(player_char)
-            else:
-                print("Something went wrong.")
-                return
+            print("Something went wrong.")
+            return
 
 
 def armory(player_char):
@@ -906,9 +907,9 @@ def armory(player_char):
                                                 'Total': 8,
                                                 'Start Text':
                                                     "The thieves guild has placed an order for several sets of leather "
-                                                    "armor but my supply is getting short at the moment. Say, you look "
-                                                    "capable enough, do you think you could retrieve some for me? I'll "
-                                                    "pay top dollar for them.",
+                                                    "armor but my supply of materials is getting short at the moment. "
+                                                    "Say, you look capable enough, do you think you could retrieve "
+                                                    "some for me? I'll pay top dollar for them.",
                                                 'End Text':
                                                     "I knew it when I first saw you that you were the person for the "
                                                     "job. As promised here's some gold for your efforts.",
@@ -940,7 +941,7 @@ def armory(player_char):
         print("I have the finest armors for sale. Come in and look around.")
         time.sleep(0.5)
         buy_list = ['Armor', 'Go Back']
-        print("You have {} gold.".format(player_char.gold))
+        print(f"You have {player_char.gold} gold.")
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -948,14 +949,18 @@ def armory(player_char):
             print("We're sorry to see you go. Come back anytime!")
             time.sleep(1)
             return
+        if option_list[opt_index] == 'Buy':
+            buy(player_char, buy_list)
+        elif option_list[opt_index] == 'Sell':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            done = False
+            while not done:
+                done = sell(player_char)
+                time.sleep(0.5)
+                os.system('cls' if os.name == 'nt' else 'clear')
         else:
-            if option_list[opt_index] == 'Buy':
-                buy(player_char, buy_list)
-            elif option_list[opt_index] == 'Sell':
-                sell(player_char)
-            else:
-                print("Something went wrong.")
-                return
+            print("Something went wrong.")
+            return
 
 
 def alchemist(player_char):
@@ -990,7 +995,7 @@ def alchemist(player_char):
         print("Welcome to Ye Olde Item Shoppe.")
         time.sleep(0.5)
         buy_list = ['Potion', 'Misc', 'Go Back']
-        print("You have {} gold.".format(player_char.gold))
+        print(f"You have {player_char.gold} gold.")
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -998,14 +1003,18 @@ def alchemist(player_char):
             print("We're sorry to see you go. Come back anytime!")
             time.sleep(1)
             return
+        if option_list[opt_index] == 'Buy':
+            buy(player_char, buy_list)
+        elif option_list[opt_index] == 'Sell':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            done = False
+            while not done:
+                done = sell(player_char)
+                time.sleep(0.5)
+                os.system('cls' if os.name == 'nt' else 'clear')
         else:
-            if option_list[opt_index] == 'Buy':
-                buy(player_char, buy_list)
-            elif option_list[opt_index] == 'Sell':
-                sell(player_char)
-            else:
-                print("Something went wrong.")
-                return
+            print("Something went wrong.")
+            return
 
 
 def jeweler(player_char):
@@ -1050,7 +1059,7 @@ def jeweler(player_char):
         print("Jeweler: Come glimpse the finest jewelry in the land.")
         time.sleep(0.5)
         buy_list = ['Accessory', 'Go Back']
-        print("You have {} gold.".format(player_char.gold))
+        print(f"You have {player_char.gold} gold.")
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -1058,14 +1067,18 @@ def jeweler(player_char):
             print("We're sorry to see you go. Come back anytime!")
             time.sleep(1)
             return
+        if option_list[opt_index] == 'Buy':
+            buy(player_char, buy_list)
+        elif option_list[opt_index] == 'Sell':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            done = False
+            while not done:
+                done = sell(player_char)
+                time.sleep(0.5)
+                os.system('cls' if os.name == 'nt' else 'clear')
         else:
-            if option_list[opt_index] == 'Buy':
-                buy(player_char, buy_list)
-            elif option_list[opt_index] == 'Sell':
-                sell(player_char)
-            else:
-                print("Something went wrong.")
-                return
+            print("Something went wrong.")
+            return
 
 
 def tavern(player_char):
@@ -1090,7 +1103,7 @@ def tavern(player_char):
             while len(bounty_list) + num_quests < 3:
                 enemy = enemies.random_enemy(level)
                 num = random.randint(3, 8)
-                if enemy.name not in list(player_char.quest_dict['Bounty'].keys()) and \
+                if enemy.name not in player_char.quest_dict['Bounty'] and \
                         enemy.name not in [x[0].name for x in bounty_list]:
                     bounty_list.append([enemy, num])
             bounty_options = [x[0].name for x in bounty_list]
@@ -1100,19 +1113,18 @@ def tavern(player_char):
             bounty_choice = storyline.get_response(bounty_options)
             if bounty_options[bounty_choice] == "Leave":
                 continue
-            elif bounty_options[bounty_choice] == "Abandon Bounty":
-                abandon_list = list(player_char.quest_dict['Bounty'].keys())
+            if bounty_options[bounty_choice] == "Abandon Bounty":
+                abandon_list = list(player_char.quest_dict['Bounty'])
                 abandon_choice = storyline.get_response(abandon_list)
-                print("Are you sure you want to abandon the {} bounty? ".format(abandon_list[abandon_choice]))
-                resp = storyline.get_response(yes_no)
-                if yes_no[resp] == "Yes":
+                print(f"Are you sure you want to abandon the {abandon_list[abandon_choice]} bounty? ")
+                resp = storyline.get_response(["Yes", "No"])
+                if not resp:
                     del player_char.quest_dict['Bounty'][abandon_list[abandon_choice]]
             else:
                 selection = bounty_list[bounty_choice]
-                print("We would like you to defeat {} {}s. Do you accept this bounty?".format(
-                    selection[1], selection[0].name))
-                resp = storyline.get_response(yes_no)
-                if yes_no[resp] == "Yes":
+                print(f"We would like you to defeat {selection[1]} {selection[0].name}s. Do you accept this bounty?")
+                resp = storyline.get_response(["Yes", "No"])
+                if not resp:
                     player_char.quest_dict['Bounty'][selection[0].name] = [selection[1], 0, False, selection[0]]
                     print("Return here when the job is done and you will be rewarded.")
                 else:
@@ -1121,24 +1133,24 @@ def tavern(player_char):
             turn_in_list = [x for x, y in player_char.quest_dict['Bounty'].items() if y[2]]
             turn_in_choice = storyline.get_response(turn_in_list)
             turn_in = turn_in_list[turn_in_choice]
+            num = player_char.quest_dict['Bounty'][turn_in][0]
             del player_char.quest_dict['Bounty'][turn_in]
-            gold = random.randint(100, 200) * p_level * player_char.pro_level
+            gold = random.randint(25*num, 50*num) * p_level * player_char.level.pro_level
             player_char.gold += gold
-            exp = (random.randint(10, 20) ** player_char.pro_level) * player_char.level
-            player_char.experience += exp
-            print("You gain {} gold and {} experience for completing the bounty.".format(gold, exp))
-            while player_char.experience >= player_char.exp_to_gain and not player_char.max_level():
+            exp = (random.randint(5*num, 10*num) ** player_char.level.pro_level) * player_char.level.level
+            player_char.level.exp += exp
+            print(f"You gain {gold} gold and {exp} experience for completing the bounty.")
+            while player_char.level.exp >= player_char.level.exp_to_gain and not player_char.max_level():
                 player_char.level_up()
             if random.randint(0, player_char.check_mod('luck', luck_factor=10)):
-                reward = items.random_item(player_char.pro_level + random.randint(0, player_char.pro_level))
+                reward = items.random_item(player_char.level.pro_level + random.randint(0, player_char.level.pro_level))
                 player_char.modify_inventory(reward, num=1)
-                print("And you have been rewarded with a {}.".format(reward().name))
+                print(f"And you have been rewarded with a {reward().name}.")
             input("Press enter to continue")
         elif options[choice] == "Go Back":
             break
         else:
-            print("This shouldn't be reached.")
-            raise BaseException
+            raise AssertionError("You shouldn't reach here.")
 
 
 def church(player_char):
@@ -1177,11 +1189,11 @@ def church(player_char):
         church_options = ['Promotion', 'Save', 'Quit Game', 'Leave']
         church_index = storyline.get_response(church_options)
         if church_options[church_index] == 'Promotion':
-            if player_char.level // 20 > 0 and player_char.pro_level < 3:
+            if player_char.level.level // 20 > 0 and player_char.level.pro_level < 3:
                 storyline.slow_type("You have qualified for a promotion.\n", typing_speed=125)
                 classes.promotion(player_char)
                 print("Let the light of Elysia guide you on your new path.")
-            elif player_char.pro_level == 3:
+            elif player_char.level.pro_level == 3:
                 print("You are at max promotion level and can no longer be promoted.\n")
             else:
                 print("You need to be at least level 20 before you can promote your character.\n")
@@ -1196,6 +1208,8 @@ def church(player_char):
             print("Let the light of Elysia guide you.")
             time.sleep(1)
             break
+        else:
+            raise AssertionError("You shouldn't reach here.")
 
 
 def secret_shop(player_char):
@@ -1208,7 +1222,7 @@ def secret_shop(player_char):
         print("You have found me in this god forsaken place. Since you're here, you might as well buy some supplies.")
         time.sleep(0.5)
         buy_list = ['Weapon', 'OffHand', 'Armor', 'Accessory', 'Potion', 'Misc']
-        print("You have {} gold.".format(player_char.gold))
+        print(f"You have {player_char.gold} gold.")
         print("Did you want to buy or sell?")
         option_list = ['Buy', 'Sell', 'Leave']
         opt_index = storyline.get_response(option_list)
@@ -1220,7 +1234,12 @@ def secret_shop(player_char):
             if option_list[opt_index] == 'Buy':
                 buy(player_char, buy_list, in_town=False)
             elif option_list[opt_index] == 'Sell':
-                sell(player_char)
+                os.system('cls' if os.name == 'nt' else 'clear')
+                done = False
+                while not done:
+                    done = sell(player_char)
+                    time.sleep(0.5)
+                    os.system('cls' if os.name == 'nt' else 'clear')
             else:
                 print("Something went wrong.")
                 time.sleep(1)
@@ -1232,7 +1251,7 @@ def ultimate_armor_repo(player_char):
 
     """
 
-    if "He Ain't Heavy" in list(player_char.quest_dict['Side'].keys()):
+    if "He Ain't Heavy" in player_char.quest_dict['Side']:
         player_char.quest_dict['Side']["He Ain't Heavy"]['Completed'] = True
         print("Hmmm, I see my big brother sent you to look for me. Tell him do not worry about me and that I will not "
               "return until the ultimate evil has been vanquished.")
@@ -1254,18 +1273,18 @@ def ultimate_armor_repo(player_char):
         type_list = ['Cloth', 'Light', 'Medium', 'Heavy']
         armor_list = [items.MerlinRobe, items.DragonHide, items.Aegis, items.Genji]
         armor_typ = storyline.get_response(type_list)
-        print("You have chosen for me to make you an immaculate {} armor. Is this correct?".format(
-            type_list[armor_typ].lower()))
-        confirm = storyline.get_response(yes_no)
-        if yes_no[confirm] == 'Yes':
+        print(f"You have chosen for me to make you an immaculate {type_list[armor_typ].lower()} armor. Is this "
+              f"correct?")
+        confirm = storyline.get_response(["Yes", "No"])
+        if not confirm:
             chosen = armor_list[armor_typ]
             print("Please wait while I craft your armor, it will only take a few moments.")
             time.sleep(3)
-            print("I present to you the legendary armor, {}!".format(chosen().name))
+            print(f"I present to you the legendary armor, {chosen().name}!")
             player_char.modify_inventory(chosen, 1)
             looted = True
             time.sleep(2)
-            print("Now that I have fulfilled my goal, I will leave this place. Goodbye, {}!".format(player_char.name))
+            print(f"Now that I have fulfilled my goal, I will leave this place. Goodbye, {player_char.name}!")
         else:
             print("You need time to consider you choice, I respect that. Come back when you have made your choice.")
         break
@@ -1291,7 +1310,7 @@ def buy(player_char, buy_list, in_town=True):
     cat_list = []
     for cat in items.items_dict[buy_list[buy_index]]:
         try:
-            if cat in classes.classes_dict[player_char.cls]().restrictions[buy_list[buy_index]]:
+            if cat in player_char.cls.restrictions[buy_list[buy_index]]:
                 cat_list.append(cat)
         except KeyError:
             if (in_town and cat != 'Elixir') or not in_town:
@@ -1326,13 +1345,19 @@ def buy(player_char, buy_list, in_town=True):
                     diff = "+" + diff
                 diffs.append(diff)
             elif buy_list[buy_index] == 'OffHand':
-                if player_char.equipment['OffHand']().subtyp == 'Shield':
-                    diff = str(round((item().mod - player_char.equipment[buy_list[buy_index]]().mod) * 100)) + "%"
+                if item().subtyp == 'Shield':
+                    if player_char.equipment[buy_list[buy_index]]().subtyp == 'Shield':
+                        diff = str(int((item().mod - player_char.equipment[buy_list[buy_index]]().mod) * 100)) + "%"
+                    else:
+                        diff = str(int(item().mod * 100)) + "%"
                     if '-' not in diff:
                         diff = "+" + diff
                     diffs.append(diff)
-                elif player_char.equipment['OffHand']().subtyp == 'Tome':
-                    diff = str(item().mod - player_char.equipment[buy_list[buy_index]]().mod)
+                elif item().subtyp == 'Tome':
+                    if player_char.equipment[buy_list[buy_index]]().subtyp == 'Tome':
+                        diff = str(item().mod - player_char.equipment[buy_list[buy_index]]().mod)
+                    else:
+                        diff = str(item().mod)
                     if '-' not in diff:
                         diff = "+" + diff
                     diffs.append(diff)
@@ -1344,7 +1369,7 @@ def buy(player_char, buy_list, in_town=True):
                 diff_str = "/".join(diffs)
             except TypeError:
                 diff_str = ""
-            adj_cost = max(1, int(item().value - player_char.charisma * 2))
+            adj_cost = max(1, int(item().value - player_char.stats.charisma * 2))
             if in_town:
                 if item().rarity >= 0.25:
                     if diff_str:
@@ -1364,29 +1389,31 @@ def buy(player_char, buy_list, in_town=True):
         if item_options[item_index] == 'Go Back':
             break
         buy_item = item_list[item_index]
-        buy_price = max(1, int(buy_item().value - (player_char.charisma * 2)))
+        buy_price = max(1, int(buy_item().value - (player_char.stats.charisma * 2)))
         if player_char.gold < buy_price:
             print("You do not have enough gold.")
             time.sleep(0.25)
         else:
-            print(buy_item().__str__())
-            print("You have {} gold coins.".format(player_char.gold))
+            print(str(buy_item()))
+            print(f"You have {player_char.gold} gold coins.")
             while True:
                 try:
-                    num = int(input("How many {}s would you like to buy? ".format(buy_item().name)))
+                    num = int(input(f"How many {buy_item().name}s would you like to buy? "))
                     if num * buy_price > player_char.gold:
                         print("You do not have enough money for that purchase.")
                     elif num == 0:
                         pass
+                    elif not player_char.add_weight((buy_item, num)):
+                        print("You cannot carry that much weight.")
                     else:
                         buy_price *= num
-                        print("That will cost {} gold coins.".format(buy_price))
-                        print("Do you still want to buy {} {}? ".format(num, buy_item().name))
-                        confirm = storyline.get_response(yes_no)
-                        if yes_no[confirm] == 'Yes':
+                        print(f"That will cost {buy_price} gold coins.")
+                        print(f"Do you still want to buy {num} {buy_item().name}? ")
+                        confirm = storyline.get_response(["Yes", "No"])
+                        if not confirm:
                             player_char.gold -= buy_price
                             player_char.modify_inventory(buy_item, num=num, subtract=False)
-                            print("{} {} will be added to your inventory.".format(num, buy_item().name))
+                            print(f"{num} {buy_item().name} will be added to your inventory.")
                         else:
                             print("Sorry to hear that. Come back when you have something you wish to buy.")
                     input("Press enter to continue.")
@@ -1404,48 +1431,47 @@ def sell(player_char):
     print("We could always use more product. What do you have to sell?")
     time.sleep(0.5)
     sell_list = []
-    for key in player_char.inventory.keys():
+    for key in player_char.inventory:
         if player_char.inventory[key][0]().rarity > 0:
             sell_list.append(key)
     if len(sell_list) == 0:
         print("You don't have anything to sell.")
         time.sleep(1)
-        return
+        return True
     sell_list.append('Go Back')
     typ_index = storyline.get_response(sell_list)
     if sell_list[typ_index] == 'Go Back':
-        return
-    else:
-        sell_item = player_char.inventory[sell_list[typ_index]][0]
-        sell_amt = player_char.inventory[sell_list[typ_index]][1]
-        if sell_item().rarity < 0.25:
-            print("Wow, that's something you don't see everyday!")
-        print("You have {} {} to sell.".format(sell_amt, sell_item().name))
-        while True:
-            try:
-                num = int(input("How many would you like to sell? "))
-                if num <= sell_amt and num != 0:
-                    sale_price = int(0.5 * num * sell_item().value + (player_char.charisma * 2))
-                    print("I'll give you {} gold coins for that.".format(sale_price))
-                    print("Do you still want to sell? ")
-                    confirm = storyline.get_response(yes_no)
-                    if yes_no[confirm] == 'Yes':
-                        player_char.modify_inventory(player_char.inventory[sell_list[typ_index]][0], num=num,
-                                                     subtract=True)
-                        player_char.gold += sale_price
-                        print("You sold {} {} for {} gold.".format(num, sell_item().name, sale_price))
-                    else:
-                        print("I am sorry to hear that. Come back when you have something you wish to "
-                              "sell.")
-                elif num == 0:
-                    pass
+        return True
+    sell_item = player_char.inventory[sell_list[typ_index]][0]
+    sell_amt = player_char.inventory[sell_list[typ_index]][1]
+    if sell_item().rarity < 0.25:
+        print("Wow, that's something you don't see everyday!")
+    print(f"You have {sell_amt} {sell_item().name} to sell.")
+    while True:
+        try:
+            num = int(input("How many would you like to sell? "))
+            if num <= sell_amt and num != 0:
+                sale_price = int(0.5 * num * sell_item().value + (player_char.stats.charisma * 2))
+                print(f"I'll give you {sale_price} gold coins for that.")
+                print("Do you still want to sell? ")
+                confirm = storyline.get_response(["Yes", "No"])
+                if not confirm:
+                    player_char.modify_inventory(player_char.inventory[sell_list[typ_index]][0], num=num,
+                                                 subtract=True)
+                    player_char.gold += sale_price
+                    print(f"You sold {num} {sell_item().name} for {sale_price} gold.")
                 else:
-                    print("You cannot sell more than you have.")
-                input("Press enter to continue.")
-                return
-            except ValueError:
-                print("Please enter a valid number.")
-                time.sleep(1)
+                    print("I am sorry to hear that. Come back when you have something you wish to "
+                          "sell.")
+            elif num == 0:
+                pass
+            else:
+                print("You cannot sell more than you have.")
+            input("Press enter to continue.")
+            return False
+        except ValueError:
+            print("Please enter a valid number.")
+            time.sleep(1)
 
 
 def town(player_char):
@@ -1463,8 +1489,8 @@ def town(player_char):
     while True:
         if player_char.quit:
             break
-        player_char.health = player_char.health_max
-        player_char.mana = player_char.mana_max
+        player_char.health.current = player_char.health.max
+        player_char.mana.current = player_char.mana.max
         print("Where would you like to go?")
         town_index = storyline.get_response(town_options)
         if town_options[town_index] == 'Dungeon':
@@ -1472,7 +1498,7 @@ def town(player_char):
             time.sleep(1)
             player_char.change_location(5, 10, 1)
             break
-        elif town_options[town_index] == 'Character Menu':
+        if town_options[town_index] == 'Character Menu':
             os.system('cls' if os.name == 'nt' else 'clear')
             player_char.character_menu()
         elif town_options[town_index] == 'Shops':
@@ -1482,9 +1508,9 @@ def town(player_char):
                 shop_locs = [blacksmith, armory, alchemist, jeweler]
                 shop_locs[shop_index](player_char)
         elif town_options[town_index] == 'Warp Point':
-            print("Hello, {}. Do you want to warp down to level 5?".format(player_char.name))
-            confirm = storyline.get_response(yes_no)
-            if yes_no[confirm] == 'Yes':
+            print(f"Hello, {player_char.name}. Do you want to warp down to level 5?")
+            confirm = storyline.get_response(["Yes", "No"])
+            if not confirm:
                 if not player_char.world_dict[(3, 0, 5)].visited:
                     player_char.world_dict[(3, 0, 5)].visited = True
                     player_char.world_dict[(2, 0, 5)].near = True
