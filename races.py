@@ -4,6 +4,9 @@
 # Imports
 import os
 
+from dataclasses import dataclass
+from typing import Dict, List
+
 import storyline
 
 
@@ -12,24 +15,20 @@ def define_race():
     """
     Allows the player_char to choose which race they wish to play
     """
-    race_list = [Human, Elf, HalfElf, Giant, Gnome, Dwarf, HalfOrc]
     while True:
         print("Choose a race for your character.")
-        create_race = ['Human', 'Elf', 'Half Elf', 'Giant', 'Gnome', 'Dwarf', 'Half Orc']
-        race_index = storyline.get_response(create_race)
-        race = race_list[race_index]()
+        race_index = storyline.get_response(list(races_dict))
+        race = list(races_dict.values())[race_index]()
         print(race)
-        print("Are you sure you want to play as a {}? ".format(race_list[race_index]().name.lower()))
-        yes_no = ["Yes", "No"]
-        choose = storyline.get_response(yes_no)
-        if yes_no[choose] == "Yes":
+        print(f"Are you sure you want to play as a {list(races_dict.values())[race_index]().name.lower()}? ")
+        choose = storyline.get_response(["Yes", "No"])
+        if not choose:
             break
-        else:
-            os.system('cls' if os.name == 'nt' else 'clear')
-    os.system('cls' if os.name == 'nt' else 'clear')
-    return race_list[race_index]()
+        os.system('cls' if os.name == 'nt' else 'clear')
+    return list(races_dict.values())[race_index]()
 
 
+@dataclass
 class Race:
     """
     Base definition for the Race class
@@ -38,52 +37,53 @@ class Race:
     Resistance describes each race's resistances to magic
     """
 
-    def __init__(self, name, description, strength, intel, wisdom, con, charisma, dex, cls_res, resistance):
-        self.name = name
-        self.description = description
-        self.stats = strength, intel, wisdom, con, charisma, dex
-        self.cls_res = cls_res
-        self.resistance = resistance
+    name: str
+    description: str
+    strength: int
+    intel: int
+    wisdom: int
+    con: int
+    charisma: int
+    dex: int
+    cls_res: Dict[str, List[str]]
+    resistance: Dict[str, float]
 
     def __str__(self):
-        return "Race: {}\n" \
-               "Description: {}\n" \
-               "Stats:\n" \
-               "Strength: {}\n" \
-               "Intelligence: {}\n" \
-               "Wisdom: {}\n" \
-               "Constitution: {}\n" \
-               "Charisma: {}\n" \
-               "Dexterity: {}\n" \
-               "Resistances:\n" \
-               "Fire: {}\n" \
-               "Ice: {}\n" \
-               "Electric: {}\n" \
-               "Water: {}\n" \
-               "Earth: {}\n" \
-               "Wind: {}\n" \
-               "Shadow: {}\n" \
-               "Death: {}\n" \
-               "Stone: {}\n" \
-               "Holy: {}\n" \
-               "Poison: {}\n" \
-               "Physical: {}\n".format(self.name, self.description, self.stats[0], self.stats[1], self.stats[2],
-                                       self.stats[3], self.stats[4], self.stats[5],
-                                       self.resistance['Fire'], self.resistance['Ice'], self.resistance['Electric'],
-                                       self.resistance['Water'], self.resistance['Earth'], self.resistance['Wind'],
-                                       self.resistance['Shadow'], self.resistance['Death'], self.resistance['Stone'],
-                                       self.resistance['Holy'], self.resistance['Poison'], self.resistance['Physical'])
+        return (f"\n===========Description=============\n"
+                f"{self.description}\n"
+                f"==============Stats================\n"
+                f"          Strength: {self.strength}\n"
+                f"      Intelligence: {self.intel}\n"
+                f"            Wisdom: {self.wisdom}\n"
+                f"      Constitution: {self.con}\n"
+                f"          Charisma: {self.charisma}\n"
+                f"         Dexterity: {self.dex}\n"
+                f"===========Resistances=============\n"
+                f"            Fire: {self.resistance['Fire']}\n"
+                f"             Ice: {self.resistance['Ice']}\n"
+                f"        Electric: {self.resistance['Electric']}\n"
+                f"           Water: {self.resistance['Water']}\n"
+                f"           Earth: {self.resistance['Earth']}\n"
+                f"            Wind: {self.resistance['Wind']}\n"
+                f"          Shadow: {self.resistance['Shadow']}\n"
+                f"           Death: {self.resistance['Death']}\n"
+                f"           Stone: {self.resistance['Stone']}\n"
+                f"            Holy: {self.resistance['Holy']}\n"
+                f"          Poison: {self.resistance['Poison']}\n"
+                f"        Physical: {self.resistance['Physical']}\n"
+                f"===================================\n")
 
 
+@dataclass
 class Human(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Human", description="Humans are something you, can relate to. They are the most "
-                                                   "versatile of all races, making a viable option for all classes. "
-                                                   "While they have no magical resistances, they also have no "
+        super().__init__(name="Human", description="Humans are something you, can relate \nto. They are the most "
+                                                   "versatile of \nall races, making a viable option \nfor all classes. "
+                                                   "While they have no \nmagical resistances, they also have \nno "
                                                    "weaknesses.",
                          strength=10, intel=10, wisdom=10, con=10, charisma=10, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
@@ -112,16 +112,17 @@ class Human(Race):
                          )
 
 
+@dataclass
 class Elf(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Elf", description="Elves are the magic users of the game. They are excellent spell "
-                                                 "casters and have decent resistance to elemental magic. They are not,"
-                                                 " however, very good at fighting with weapons and have a low "
-                                                 "constitution, making them more susceptible to death magic.",
+        super().__init__(name="Elf", description="Elves are the magic users of the \ngame. They are excellent spell \n"
+                                                 "casters and have decent resistance \nto elemental magic. They are not,"
+                                                 " \nhowever, very good at fighting with \nweapons and have a low "
+                                                 "constitution, \nmaking them more susceptible to death \nmagic.",
                          strength=6, intel=12, wisdom=11, con=8, charisma=11, dex=12,
                          cls_res={'Base': ['Mage', 'Footpad', 'Healer', 'Pathfinder'],
                                   'First': ['Sorcerer', 'Warlock', 'Spellblade',
@@ -147,16 +148,17 @@ class Elf(Race):
                          )
 
 
+@dataclass
 class HalfElf(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Half Elf", description="Half elves are the result of interbreeding between humans and "
-                                                      "elves. They are just as versatile as humans and possess an "
-                                                      "improved magical prowess, as well as mild elemental resistance. "
-                                                      "Like their elf cousins, they do have a slight susceptibility to "
+        super().__init__(name="Half Elf", description="Half elves are the result of inter-\nbreeding between humans and "
+                                                      "elves. \nThey are just as versatile as humans \nand possess an "
+                                                      "improved magical prowess, \nas well as mild elemental resistance. \n"
+                                                      "Like their elf cousins, they do have \na slight susceptibility to "
                                                       "death magic.",
                          strength=8, intel=12, wisdom=10, con=8, charisma=10, dex=12,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
@@ -185,19 +187,19 @@ class HalfElf(Race):
                          )
 
 
+@dataclass
 class Giant(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Giant", description="Giants live for one thing - slicing a monster in two with one"
-                                                   " blow. Known for their brutal ways and having the advantage of"
-                                                   " being over eight feet tall, they make the best Warriors one can"
-                                                   " find. Giants are a sturdy race and have great resistance against "
-                                                   "death spells, as well as a mild resistance to poisons and physical "
-                                                   "damage. However, they are not the most pious beings and are weak "
-                                                   "against holy spells and have the lowest charisma of any class.",
+        super().__init__(name="Giant", description="Known for their brutal ways and having \nthe advantage of"
+                                                   " being over eight feet \ntall, Giants make the best Warriors \none can"
+                                                   " find. Giants are a sturdy race \nand have great resistance against "
+                                                   "\ndeath spells, as well as a mild resistance \nto poisons and physical "
+                                                   "damage. However, \nthey are not the most pious beings \nand are weak "
+                                                   "against holy spells \nand have the lowest charisma of any class.",
                          strength=15, intel=7, wisdom=8, con=14, charisma=6, dex=10,
                          cls_res={'Base': ['Warrior'],
                                   'First': ['Weapon Master'],
@@ -217,18 +219,19 @@ class Giant(Race):
                          )
 
 
+@dataclass
 class Gnome(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Gnome", description="Gnomes are very charismatic, giving them a distinct advantage in "
-                                                   "money making, vendor relations, and are especially lucky. They are "
-                                                   "also above average spell caster with a slight affinity toward the "
-                                                   "divine, giving them a slight resistance against holy spells but are"
-                                                   " weak against shadow. Gnomes prefer the civilized world and thus "
-                                                   "are not found among the ranks of Pathfinders.",
+        super().__init__(name="Gnome", description="Gnomes are very charismatic, giving \nthem a distinct advantage in "
+                                                   "money \nmaking, vendor relations, and are \nespecially lucky. They are "
+                                                   "also \nabove average spell caster with a \nslight affinity toward the "
+                                                   "divine, \ngiving them a slight resistance to \nholy spells. Gnomes "
+                                                   "prefer the civilized \nworld and thus are not found among the \nranks"
+                                                   " of Pathfinders.",
                          strength=8, intel=10, wisdom=12, con=8, charisma=12, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
@@ -254,18 +257,17 @@ class Gnome(Race):
                          )
 
 
+@dataclass
 class Dwarf(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Dwarf", description="Dwarves are very curious, always up for an adventure. They are "
-                                                   "also fairly versatile, although not as much as humans. They are"
-                                                   " more robust but lack the dexterity to be an elite Footpad and "
-                                                   "also have a healthy mistrust of the arcane. As beings of the Earth,"
-                                                   " dwarves have resistance against earth, poison, and physical damage"
-                                                   " but are weak against shadow magic.",
+        super().__init__(name="Dwarf", description="Dwarves are a versatile race, rivaled \nonly by the human races. They are"
+                                                   " \nrobust but are not very nimble and \nhave a healthy mistrust of the "
+                                                   "\narcane. As beings of the Earth, \ndwarves have resistance against "
+                                                   "earth, \npoison, and physical damage but are \nweak against shadow magic.",
                          strength=12, intel=10, wisdom=10, con=12, charisma=8, dex=8,
                          cls_res={'Base': ['Warrior', 'Healer', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Paladin', 'Lancer',
@@ -289,20 +291,19 @@ class Dwarf(Race):
                          )
 
 
+@dataclass
 class HalfOrc(Race):
     """
 
     """
 
     def __init__(self):
-        super().__init__(name="Half Orc", description="Half orcs are the result of interbreeding between humans and "
-                                                      "orcs, which while rare does occur. While not a strong as their "
-                                                      "full-blood brethren, half orcs are much stronger on average "
-                                                      "than humans. However the stigma related to half orcs makes "
-                                                      "them far less charismatic. There inherit bloodlust makes the "
-                                                      "pursuit of the divine unappealing. Because of this, half orcs "
-                                                      "are weak against holy magic but have mild resistances against "
-                                                      "shadow, death, and poison.",
+        super().__init__(name="Half Orc", description="Half orcs are the result of inter-\nbreeding between humans and "
+                                                      "orcs, \nwhich while rare does occur. While not \na strong as their "
+                                                      "full-blood brethren, \nhalf orcs are much stronger on average \n"
+                                                      "than humans. However the stigma related \nto half orcs makes "
+                                                      "them far less \ncharismatic. There inherit bloodlust \nmakes the "
+                                                      "pursuit of the divine \nunappealing.",
                          strength=13, intel=10, wisdom=8, con=11, charisma=8, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Pathfinder'],
                                   'First': ['Weapon Master', 'Lancer',

@@ -4,6 +4,7 @@
 # Imports
 import os
 import random
+import time
 
 
 # Functions
@@ -12,24 +13,24 @@ def combat_text(player_char, enemy, tile):
 
     """
 
-    if 'Boss' in tile.__str__():
+    if 'Boss' in str(tile):
         print("""
                 Boss Fight!""")
     if not enemy.invisible:
-        print("""
-    {} is attacked by a {}.
+        print(f"""
+    {player_char.name} is attacked by a {enemy.name}.
         
-        """.format(player_char.name, enemy.name))
+        """)
     else:
-        print("""
-    An unseen entity is attacking {}.
+        print(f"""
+    An unseen entity is attacking {player_char.name}.
         
-        """.format(player_char.name))
-    if any([player_char.cls == 'Inquisitor', player_char.cls == 'Seeker',
+        """)
+    if any([player_char.cls.name == 'Inquisitor', player_char.cls.name == 'Seeker',
             'Vision' in player_char.equipment['Pendant']().mod]) and \
-            'Boss' not in tile.__str__():
-        print(enemy.__str__())
-    print(player_char.__str__())
+            'Boss' not in str(tile):
+        print(str(enemy))
+    print(str(player_char))
 
 
 def initiative(player_char, enemy):
@@ -37,12 +38,13 @@ def initiative(player_char, enemy):
     Determine who goes char using each character's dexterity plus luck
     """
 
-    p_chance = player_char.dex + player_char.check_mod('luck', luck_factor=10)
-    e_chance = enemy.dex + enemy.check_mod('luck', luck_factor=10)
+    p_chance = player_char.stats.dex + player_char.check_mod('luck', luck_factor=10)
+    e_chance = enemy.stats.dex + enemy.check_mod('luck', luck_factor=10)
     total_chance = p_chance + e_chance
     chance_list = [p_chance / total_chance, e_chance / total_chance]
-    choice = random.choices([player_char, enemy], chance_list)[0]
-    return choice
+    first = random.choices([player_char, enemy], chance_list)[0]
+    second = player_char if first == enemy else enemy
+    return first, second
 
 
 def battle(player_char, enemy):
@@ -51,11 +53,7 @@ def battle(player_char, enemy):
     """
 
     flee = False
-    char = initiative(player_char, enemy)
-    if char == player_char:
-        opponent = enemy
-    else:
-        opponent = player_char
+    first, second = initiative(player_char, enemy)
     tile = player_char.world_dict[(player_char.location_x, player_char.location_y, player_char.location_z)]
     combat = True
     while all([player_char.is_alive(), enemy.is_alive()]):
@@ -63,50 +61,50 @@ def battle(player_char, enemy):
         os.system('cls' if os.name == 'nt' else 'clear')
         player_char.minimap()
         combat_text(player_char, enemy, tile)
-        if not any([char.status_effects['Prone'][0], char.status_effects['Stun'][0], char.status_effects['Sleep'][0]]):
+        if not any([first.status_effects['Prone'].active,
+                    first.status_effects['Stun'].active,
+                    first.status_effects['Sleep'].active]):
             while True:
-                action = char.options(action_list=available_actions)
-                valid_entry, combat, flee = char.combat_turn(opponent, action, combat, tile=tile)
+                action = first.options(action_list=available_actions)
+                valid_entry, combat, flee = first.combat_turn(second, action, combat)
                 if valid_entry:
                     break
-                else:
-                    os.system('cls' if os.name == 'nt' else 'clear')
-                    available_actions = tile.available_actions(player_char)
-                    player_char.minimap()
-                    combat_text(player_char, enemy, tile)
+                os.system('cls' if os.name == 'nt' else 'clear')
+                available_actions = tile.available_actions(player_char)
+                player_char.minimap()
+                combat_text(player_char, enemy, tile)
         else:
-            if char.status_effects['Stun'][0]:
+            if first.status_effects['Stun'].active:
                 text = "stunned"
-            elif char.status_effects['Sleep'][0]:
+            elif first.status_effects['Sleep'].active:
                 text = "asleep"
             else:
                 text = "prone"
-            print("{} is {}.".format(char.name, text))
+            print(f"{first.name} is {text}.")
 
         # Familiar's turn
         if combat:
-            char.familiar_turn(opponent)
+            first.familiar_turn(second)
 
-        if not opponent.is_alive():
-            if 'Resurrection' in list(char.spellbook['Spells'].keys()) and \
-                    abs(char.health) <= char.mana:
-                opponent.spellbook['Spells']['Resurrection']().cast(opponent, char)
+        if not second.is_alive():
+            if 'Resurrection' in first.spellbook['Spells'] and \
+                    abs(first.health.current) <= first.mana.current:
+                second.spellbook['Spells']['Resurrection']().cast(second, target=first)
                 combat = True
             else:
                 combat = False
 
         if not combat:
             break
+        first.statuses()
+        first.special_effects(second)
+        input("Press enter to continue")
+        if first == player_char:
+            first = enemy
+            second = player_char
         else:
-            char.statuses()
-            char.special_effects(opponent)
-            input("Press enter to continue")
-            if char == player_char:
-                char = enemy
-                opponent = player_char
-            else:
-                char = player_char
-                opponent = enemy
+            first = player_char
+            second = enemy
 
     win = player_char.is_alive()
     player_char.end_combat(enemy, tile, flee=flee)
