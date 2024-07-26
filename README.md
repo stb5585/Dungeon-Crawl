@@ -4,12 +4,24 @@ AUTHOR: Shawn Thomas Booth
 
 CREATION DATE: March 2020
 
-LANGUAGE: Python 3.6.7, iPython 7.5.0
+LANGUAGE: Python 3.11.6
 
 DEPENDENCIES:
+Standard
+- dataclasses
+- glob
+- math
+- os
+- pickle
+- random
+- re
+- sys
+- time
+- typing
+3rd Party
 - pyfiglet 1.0.2
-- numpy 1.26.1
-- simple_term_menu 1.6.1
+- numpy 2.0.1
+- simple-term-menu 1.6.4
 
 EXECUTION:
 - python game.py
@@ -24,7 +36,8 @@ FUTURE DEVELOPMENT:
 - Planned development
     - Make item comparison easier for the shop
     - Add special item(s) for each final class
-    - Allow player to switch characters in-game (instead of exiting and re-loading)
+    - implement a TUI for better gameplay
+    - add logic to enemies to make them smarter
 
 - Possible development
     - Add shop_inventory dictionary; lowest level items will be available by default and subsequent items will need to 
@@ -35,7 +48,7 @@ FUTURE DEVELOPMENT:
     - Create tile types that have different effects (i.e. Stud tile which spawns enemies from a lower floor)
 
 FILES:
-- actions.py
+- abilities.py
 - character.py
 - classes.py
 - combat.py
@@ -46,15 +59,14 @@ FILES:
 - map.py
 - races.py
 - README.md
-- spells.py
 - storyline.py
 - town.py
 - tutorial.py
 - world.py
 
 FILE DESCRIPTIONS:
-- actions.py
-    - Defines the various user-inputted actions, including hotkeys
+- abilities.py
+    - Main file for controlling spells and skills of the character classes
 - character.py
     - Main file for controlling the all characters, players, enemies, and companions
 - classes.py
@@ -78,8 +90,6 @@ FILE DESCRIPTIONS:
     - File that outlines the various racial options when creating a new character
 - README.md
     - General description of program
-- spells.py
-    - Main file for controlling spells and skills of the character classes
 - storyline.py
     - File that is primarily used for user-input function; will eventually house the storyline
 - town.py

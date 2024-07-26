@@ -4,7 +4,6 @@
 # Imports
 import os
 import random
-import time
 
 
 # Functions
