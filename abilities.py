@@ -4,14 +4,9 @@
 # Imports
 import random
 import time
-from dataclasses import dataclass
-
-import items
-import enemies
-import storyline
+from textwrap import wrap
 
 
-@dataclass
 class Ability:
     """
     name: name of the ability
@@ -22,107 +17,147 @@ class Ability:
     typ: the type of the ability
     subtyp: the subtype of the ability
     """
-    name: str
-    description: str
-    cost: int
-    combat: bool = True
-    passive: bool = False
-    typ: str = ""
-    subtyp: str = ""
+    def __init__(self, name, description, cost):
+        self.name = name
+        self.description = "\n".join(wrap(description, 35))
+        self.cost = cost
+        self.combat = True
+        self.passive = False
+        self.typ = ""
+        self.subtyp = ""
 
     def __str__(self):
-        str_text = f"Type: {self.typ}\nSub-Type: {self.subtyp}\n{self.description}\n"
+        str_text = (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+                    f"{self.description}\n"
+                    f"{35*'-'}\n"
+                    f"Type: {self.typ}\n"
+                    f"Sub-Type: {self.subtyp}\n")
         if not self.passive:
             str_text += f"Mana Cost: {self.cost}\n"
         else:
             str_text += "Passive\n"
+        str_text += f"==================================="
         return str_text
     
     def special_effect(self, caster, target, damage, crit):
-        pass
+        return ""
 
 
-@dataclass
-class Spell(Ability):
-    """
-    typ: the type of these abilities is 'Spell'
-    """
-    typ: str = 'Spell'
-
-
-@dataclass
 class Skill(Ability):
     """
     typ: the type of these abilities is 'Skill'
     """
-    typ: str = 'Skill'
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.typ = 'Skill'
+
+    def use(self, user, target=None, cover=False):
+        pass
+
+
+class Spell(Ability):
+    """
+    typ: the type of these abilities is 'Spell'
+    """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.typ = 'Spell'
+
+    def cast(self, caster, target=None, cover=False):
+        pass
 
 
 """
 Skill section
 """
-@dataclass
 class Offensive(Skill):
     """
     subtyp: the subtype of these abilities is 'Offensive', meaning they either inflict damage or some other status
         effect
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Offensive'
 
-    subtyp: str = 'Offensive'
-
-@dataclass
 class Defensive(Skill):
     """
     subtyp: the subtype of these abilities is 'Defensive', meaning they work to protect the user
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Defensive'
 
-    subtyp: str = 'Defensive'
 
-
-@dataclass
 class Stealth(Skill):
     """
     subtyp: the subtype of these abilities is 'Stealth', meaning they work through subterfuge of some kind
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Stealth'
 
-    subtyp: str = 'Stealth'
 
-
-@dataclass
 class Enhance(Skill):
     """
-    subtyp: the subtype of these abilities is 'Enhance', meaning they enhance the user's equipment (Spellblade/Knight
-        Enchanter)
+    subtyp: the subtype of these abilities is 'Enhance', meaning they enhance the user
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Enhance'
 
-    subtyp: str = 'Enhance'
 
-
-@dataclass
 class Drain(Skill):
     """
     subtyp: the subtype of these abilities is 'Drain', meaning they drain health and/or mana from the enemy
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Drain'
 
-    subtyp: str = 'Drain'
 
-
-@dataclass
 class Class(Skill):
     """
     subtyp: the subtype of these abilities is 'Class', meaning they are specific to a particular class
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Class'
 
-    subtyp: str = 'Class'
+
+class Truth(Skill):
+    """
+    subtyp: the subtype of these abilities is 'Truth', specific to Inquisitor/Seeker classes
+    """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Truth'
 
 
-@dataclass
+class MartialArts(Skill):
+    """
+    subtyp: the subtype of these abilities is 'Martial Arts', specific to Monk/Master Monk classes
+    """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Martial Arts'
+
+
 class Luck(Skill):
     """
     subtyp: the subtype of these abilities is 'Luck', meaning they rely mostly on luck (charisma)
     """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Luck'
 
-    subtyp: str = 'Luck'
+
+class PowerUp(Skill):
+    """
+    subtyp: the subtype of these abilities is 'Power Up', special abilities given for retrieving the Power Core
+    """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Power Up'
 
 
 # Skills #
@@ -137,10 +172,9 @@ class ShieldSlam(Offensive):
         super().__init__(name='Shield Slam', description='Slam the enemy with your shield, damaging with a chance to '
                                                          'stun for several turns.',
                          cost=8)
-        self.multiplier = 5
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         dodge = target.dodge_chance(user) > random.random()
         if any(target.status_effects[x].active for x in ['Sleep', 'Stun', 'Prone']):
@@ -150,66 +184,75 @@ class ShieldSlam(Offensive):
             hit_per = user.hit_chance(target, typ='weapon')
             hit = hit_per > random.random()
         if dodge:
-            print(f"{target.name} evades {user.name}'s attack.")
+            use_str += f"{target.name} evades {user.name}'s attack.\n"
         else:
-            dam_red = target.check_mod('armor')
-            dmg_mod = int(user.stats.strength * user.equipment['OffHand']().mod * self.multiplier)
-            dmg_mod = random.randint(dmg_mod // 2, dmg_mod)
-            if 'Physical Damage' in user.equipment['Ring']().mod:
-                dmg_mod += int(user.equipment['Ring']().mod.split(' ')[0])
-            damage = max(1, dmg_mod)
+            dam_red = target.check_mod('armor', enemy=user)
+            damage = max(1, user.stats.strength + user.equipment['OffHand'].weight)
             if hit and cover:
-                print(f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                      f"{target.name}.")
+                use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
             elif hit:
-                resist = target.check_mod('resist', typ='Physical')
+                resist = target.check_mod('resist', enemy=user, typ='Physical')
                 damage = max(0, int((damage - dam_red) * (1 - resist)))
-                if hit and target.status_effects['Mana Shield'].active and damage > 0:
-                    damage //= target.status_effects['Mana Shield'].duration
-                    if damage > target.mana.current:
-                        print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                        damage -= target.mana.current
-                        target.mana.current = 0
-                        target.status_effects['Mana Shield'].active = False
-                    else:
-                        print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                        target.mana.current -= damage
-                        damage = 0
+                if hit and damage > 0:
+                    if target.status_effects['Mana Shield'].active:
+                        mana_loss = damage // target.status_effects['Mana Shield'].duration
+                        if mana_loss > target.mana.current:
+                            abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                            use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                            damage -= abs_dam
+                            target.mana.current = 0
+                            target.status_effects['Mana Shield'].active = False
+                            use_str += f"The mana shield dissolves around {target.name}.\n"
+                        else:
+                            use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                            target.mana.current -= mana_loss
+                            damage = 0
+                    elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                        if damage >= target.status_effects['Power Up'].extra:
+                            use_str += (f"The shield around {target.name} absorbs "
+                                       f"{target.status_effects['Power Up'].extra} damage.\n")
+                            damage -= target.status_effects['Power Up'].extra
+                            target.status_effects['Power Up'].active = False
+                            use_str += f"The shield dissolves around {target.name}.\n"
+                        else:
+                            use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                            target.status_effects['Power Up'].extra -= damage
+                            damage = 0
                 if damage == 0:
-                    print(f"{user.name} hits {target.name} with their shield but it does no damage.")
+                    use_str += f"{user.name} hits {target.name} with their shield but it does no damage.\n"
                 else:
                     target.health.current -= damage
-                    print(f"{user.name} damages {target.name} with Shield Slam for {damage} hit points.")
+                    use_str += f"{user.name} damages {target.name} with Shield Slam for {damage} hit points.\n"
                     if target.is_alive() and not target.status_effects['Stun'].active:
                         if random.randint(0, user.stats.strength) \
                                 > random.randint(target.stats.strength // 2, target.stats.strength):
                             turns = max(1, user.stats.strength // 8)
                             target.status_effects['Stun'].active = True
                             target.status_effects['Stun'].duration = turns
-                            print(f"{target.name} is stunned.")
+                            use_str += f"{target.name} is stunned.\n"
                         else:
-                            print(f"{user.name} fails to stun {target.name}.")
+                            use_str += f"{user.name} fails to stun {target.name}.\n"
             else:
-                print(f"{user.name} swings their shield at {target.name} but miss entirely.")
+                use_str += f"{user.name} swings their shield at {target.name} but miss entirely.\n"
+        return use_str
 
 
 class DoubleStrike(Offensive):
-    """
-
-    """
 
     def __init__(self):
-        super().__init__(name='Multi-Strike', description='Perform two melee attacks with your primary weapon.',
+        super().__init__(name='Double Strike', description='Perform two melee attacks at normal damage.',
                          cost=14)
         self.strikes = 2  # number of strikes performed
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         for _ in range(self.strikes):
-            _, _ = user.weapon_damage(target, cover=cover)
+            wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=1.0)
+            use_str += wd_str
             if not target.is_alive():
                 break
+        return use_str
 
 
 class TripleStrike(DoubleStrike):
@@ -219,54 +262,53 @@ class TripleStrike(DoubleStrike):
 
     def __init__(self):
         super().__init__()
-        self.description = 'Perform three melee attacks with your primary weapon.'
+        self.name = "Triple Strike"
+        self.description = "\n".join(wrap("Perform three melee attacks at normal damage.", 35))
         self.strikes = 3
         self.cost = 26
 
 
-class QuadStrike(DoubleStrike):
+class QuadStrike(TripleStrike):
     """
     Replaces TripleStrike
     """
 
     def __init__(self):
         super().__init__()
-        self.description = 'Perform four melee attacks with your primary weapon.'
+        self.name = "Quad Strike"
+        self.description = "\n".join(wrap("Perform four melee attacks at normal damage.", 35))
         self.strikes = 4
         self.cost = 40
 
 
-class FlurryBlades(DoubleStrike):
+class FlurryBlades(QuadStrike):
     """
     Replaces QuadStrike
     """
 
     def __init__(self):
         super().__init__()
-        self.description = 'Perform five melee attacks with your primary weapon.'
+        self.name = "Flurry of Blades"
+        self.description = "\n".join(wrap("Perform five melee attacks at normal damage.", 35))
         self.strikes = 5
         self.cost = 50
 
 
 class PiercingStrike(Offensive):
-    """
-
-    """
 
     def __init__(self):
-        super().__init__(name='Piercing Strike', description='Pierces the enemy\'s defenses, ignoring armor.',
+        super().__init__(name='Piercing Strike', description='Pierces the enemy\'s defenses, ignoring armor and '
+                                                             'striking true.',
                          cost=5)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        _, _ = user.weapon_damage(target, cover=cover, ignore=True)
+        use_str, _, _ = user.weapon_damage(target, cover=cover, ignore=True, hit=True)
+        return use_str
+
 
 
 class Jump(Offensive):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Jump', description='Leap into the air and bring down your weapon onto the enemy, '
@@ -276,12 +318,14 @@ class Jump(Offensive):
         self.crit = 2
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         for _ in range(self.strikes):
-            _, _ = user.weapon_damage(target, cover=cover, crit=2)
+            wd_str, _, _ = user.weapon_damage(target, cover=cover, crit=self.crit)
+            use_str += wd_str
             if not target.is_alive():
                 break
+        return use_str
 
 
 class DoubleJump(Jump):
@@ -291,59 +335,62 @@ class DoubleJump(Jump):
 
     def __init__(self):
         super().__init__()
+        self.name = "Double Jump"
         self.strikes = 2
         self.cost = 25
 
 
-class TripleJump(Jump):
+class TripleJump(DoubleJump):
     """
     Replaces Double Jump
     """
 
     def __init__(self):
         super().__init__()
+        self.name = "Triple Jump"
         self.strikes = 3
         self.cost = 40
 
 
 class DoubleCast(Offensive):
-    """
-
-    """
 
     def __init__(self):
-        super().__init__(name='Multi-Cast', description='Cast multiple spells in a single turn.',
+        super().__init__(name='Doublecast', description='Cast multiple spells in a single turn.',
                          cost=10)
         self.cast = 2
 
-    def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+    def use(self, user, target=None, cover=False, game=None):
+        import utils
+        use_str = ""
         user.mana.current -= self.cost
         j = 0
         while j < self.cast:
             spell_list = []
             for entry in user.spellbook['Spells']:
-                if user.spellbook['Spells'][entry]().cost <= user.mana.current:
-                    if user.spellbook['Spells'][entry]().name != 'Magic Missile':
+                if user.spellbook['Spells'][entry].cost <= user.mana.current:
+                    if user.spellbook['Spells'][entry].name != 'Magic Missile':
                         if user.cls:
-                            spell_list.append(str(entry) + '  ' + str(user.spellbook['Spells'][entry]().cost))
+                            spell_list.append(str(entry) + '  ' + str(user.spellbook['Spells'][entry].cost))
                         else:
                             spell_list.append(str(entry))
             if len(spell_list) == 0:
-                print(f"{user.name} does not have enough mana to cast any spells with Multi-Cast.")
+                use_str += f"{user.name} does not have enough mana to cast any spells with {self.name}.\n"
                 user.mana.current += self.cost
                 break
-            if user.cls in ['Sorcerer', 'Wizard', 'Archbishop', 'Diviner', 'Geomancer']:
-                spell_index = storyline.get_response(spell_list)
+            if game:
+                choices = ['first', 'second', 'third']
+                popup = utils.SelectionPopupMenu(game, f"Select the {choices[j]} spell", spell_list)
+                spell_index = popup.navigate_popup()
                 spell = user.spellbook['Spells'][spell_list[spell_index].rsplit('  ', 1)[0]]
             else:
                 spell_index = random.choice(spell_list)
                 spell = user.spellbook['Spells'][spell_index]
-            spell().cast(user, target=target, cover=False)
+            cast_message = spell.cast(user, target=target, cover=cover)
+            use_str += cast_message
             j += 1
-            time.sleep(1)
             if not target.is_alive():
                 break
+        return use_str
 
 
 class TripleCast(DoubleCast):
@@ -353,6 +400,7 @@ class TripleCast(DoubleCast):
 
     def __init__(self):
         super().__init__()
+        self.name = "Triplecast"
         self.cast = 3
         self.cost = 20
 
@@ -364,23 +412,23 @@ class MortalStrike(Offensive):
 
     def __init__(self):
         super().__init__(name='Mortal Strike', description='Assault the enemy, striking them with a critical hit and '
-                                                           'placing a bleed effect that deals damage.',
+                                                           'placing a bleed effect that deals damage. Requires a 2-handed '
+                                                           'weapon.',
                          cost=10)
         self.crit = 2
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target, cover=cover, crit=self.crit)
+        use_str, hit, crit = user.weapon_damage(target, cover=cover, crit=self.crit)
         if hit and target.is_alive() and not target.status_effects['Bleed'].active:
-            if random.randint((user.stats.strength * crit) // 2, (user.stats.strength * crit)) \
-                    > random.randint(target.stats.con // 2, target.stats.con) and not target.status_effects['Mana Shield'].active:
-                bleed_dmg = user.stats.strength * crit
+            bleed_dmg = int(user.stats.strength * crit)
+            if random.randint(bleed_dmg // 2, bleed_dmg) > random.randint(target.stats.con // 2, target.stats.con):
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
                 target.status_effects['Bleed'].active = True
                 target.status_effects['Bleed'].duration = max(user.stats.strength // 10, target.status_effects["Bleed"].duration)
                 target.status_effects['Bleed'].extra = max(bleed_dmg, target.status_effects["Bleed"].extra)
-                print(f"{target.name} is bleeding.")
+                use_str += f"{target.name} is bleeding.\n"
+        return use_str
 
 
 class MortalStrike2(MortalStrike):
@@ -395,9 +443,6 @@ class MortalStrike2(MortalStrike):
 
 
 class BattleCry(Offensive):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Battle Cry", description="Unleash a furious scream, increasing your attack damage for "
@@ -405,19 +450,18 @@ class BattleCry(Offensive):
                          cost=16)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        turns = max(2, user.stats.strength // 10)
-        dmg_mod = max(1, user.stats.strength // 2)
+        turns = max(5, user.stats.strength // 5)
+        dmg_mod = random.randint(user.stats.strength // 4, user.stats.strength)
         user.status_effects['Attack'].active = True
         user.status_effects['Attack'].duration = max(user.status_effects['Attack'].duration, turns)
         user.status_effects['Attack'].extra += dmg_mod
-        print(f"{user.name}'s attack damage increases by {dmg_mod}.")
+        return f"{user.name}'s attack damage increases by {dmg_mod}.\n"
 
 
 class Charge(Offensive):
     """
-    Can stun then attacks, as opposed to other abilities that attack then stun
+    Can stun then attacks at 3/4 damage, as opposed to other abilities that attack then stun
     """
 
     def __init__(self):
@@ -426,14 +470,16 @@ class Charge(Offensive):
                          cost=10)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         if random.randint(user.stats.strength // 2, user.stats.strength) > \
                 random.randint(target.stats.con // 2, target.stats.con) and not target.status_effects['Stun'].active:
             target.status_effects["Stun"].active = True
             target.status_effects["Stun"].duration = 1
-            print(f"{user.name} stunned {target.name}.")
-        _, _ = user.weapon_damage(target)
+            use_str += f"{user.name} stunned {target.name}.\n"
+        wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=0.75)
+        use_str += wd_str
+        return use_str
 
 
 # Defensive skills
@@ -443,9 +489,9 @@ class ShieldBlock(Defensive):
     """
 
     def __init__(self):
-        super().__init__(name='Shield Block', description='Ready your shield after attacking in anticipation for a '
-                                                          'melee attack. If the enemy attacks, it is blocked and '
-                                                          'reduces the damage received.',
+        super().__init__(name='Shield Block', description="You are much more proficient with a shield than most, "
+                                                          "increasing the amount of damage blocked by 25% when using "
+                                                          "a shield.",
                          cost=0)
         self.passive = True
 
@@ -463,34 +509,28 @@ class Parry(Defensive):
 
 
 class Disarm(Defensive):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Disarm', description='Surprise the enemy by attacking their weapon, knocking it out of '
                                                     'their grasp.',
                          cost=4)
 
-    def use(self, user, target=None, cover=False):
-        name = user.name
-        print(f"{name} uses {self.name}.")
-        user.mana.current -= self.cost
-        if target.equipment["Weapon"]().subtyp not in ["Natural", "None"]:
+    def use(self, user, target=None, fam=False, cover=False):
+        if not fam:
+            user.mana.current -= self.cost
+        if target.equipment["Weapon"].subtyp not in ["Natural", "None"]:
             if not target.status_effects["Disarm"].active:
                 chance = target.check_mod("luck", luck_factor=10)
-                if random.randint(user.stats.strength // 2, user.stats.strength) \
-                        > random.randint(target.stats.dex // 2, target.stats.dex) + chance:
-                    turns = max(2, user.stats.strength // 10)
+                max_stat = max(user.stats.strength, user.stats.dex)
+                if random.randint(max_stat // 2, max_stat) \
+                        > random.randint(0, target.stats.dex) + chance:
+                    turns = random.randint(2, 5)
                     target.status_effects['Disarm'].active = True
                     target.status_effects['Disarm'].duration = turns
-                    print(f"{target.name} is disarmed.")
-                else:
-                    print(f"{name} fails to disarm the {target.name}.")
-            else:
-                print(f"{target.name} is already disarmed.")
-        else:
-            print(f"The {target.name} cannot be disarmed.")
+                    return f"{target.name} is disarmed.\n"
+                return f"{user.name} fails to disarm the {target.name}.\n"
+            return f"{target.name} is already disarmed.\n"
+        return f"The {target.name} cannot be disarmed.\n"
 
 
 class Cover(Defensive):
@@ -507,9 +547,6 @@ class Cover(Defensive):
 
 # Stealth skills
 class Backstab(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Backstab', description='Strike the opponent in the back, guaranteeing a hit and ignoring'
@@ -517,40 +554,32 @@ class Backstab(Stealth):
                          cost=6)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        _, _ = user.weapon_damage(target, cover=cover, ignore=True)
+        use_str, _, _ = user.weapon_damage(target, cover=cover, ignore=True, hit=True)
+        return use_str
 
 
 class PocketSand(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Pocket Sand', description='Throw sand in the eyes of your enemy, blinding them and '
-                                                         'reducing their chance to hit on a melee attack for 2 turns.',
+                                                         'reducing their chance to hit on a melee attack for 5 turns.',
                          cost=8)
 
-    def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
+    def use(self, user, target=None, fam=False, cover=False):
+        if not fam:
+            user.mana.current -= self.cost
         if not target.status_effects['Disarm'].active:
             if random.randint(user.stats.dex // 2, user.stats.dex) \
-                    > random.randint(target.stats.dex // 2, target.stats.dex):
+                    > random.randint(0, target.stats.dex):
                 target.status_effects['Blind'].active = True
-                target.status_effects['Blind'].duration = max(2, user.stats.dex // 10)
-                print(f"{target.name} is blinded.")
-            else:
-                print(f"{user.name} fails to blind {target.name}.")
-        else:
-            print(f"{target.name} is already blinded.")
+                target.status_effects['Blind'].duration = max(5, user.stats.dex // 10)
+                return f"{target.name} is blinded.\n"
+            return f"{user.name} fails to blind {target.name}.\n"
+        return f"{target.name} is already blinded.\n"
 
 
 class SleepingPowder(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Sleeping Powder", description="Releases a powerful toxin that puts the target to sleep.",
@@ -558,48 +587,40 @@ class SleepingPowder(Stealth):
         self.turns = 2
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         if not target.status_effects['Sleep'].active:
-            if random.randint(user.stats.dex // 2, user.stats.dex) \
-                    > random.randint(target.stats.dex // 2, target.stats.dex):
+            mag_def = target.check_mod('magic def', enemy=user)
+            if random.randint(user.stats.dex // 2, user.stats.dex) > random.randint(0, mag_def):
                 target.status_effects['Sleep'].active = True
                 target.status_effects['Sleep'].duration = self.turns
-                print(f"{target.name} is asleep.")
-            else:
-                print(f"{user.name} fails to put {target.name} to sleep.")
-        else:
-            print(f"{target.name} is already asleep.")
+                return f"{target.name} is asleep.\n"
+            return f"{user.name} fails to put {target.name} to sleep.\n"
+        return f"{target.name} is already asleep.\n"
 
 
 class KidneyPunch(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Kidney Punch', description='Punch the enemy in the kidney, rendering them stunned.',
-                         cost=18)
+                         cost=12)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target, cover=cover)
+        use_str, hit, crit = user.weapon_damage(target, cover=cover)
         if not target.status_effects['Stun'].active:
-            if hit and target.is_alive() and not target.status_effects['Mana Shield'].active:
-                if random.randint(0, (user.stats.dex * crit)) \
+            if hit and target.is_alive() and not target.status_effects['Mana Shield'].active and \
+                not (target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active):
+                if random.randint(0, int(user.stats.dex * crit)) \
                         > random.randint(target.stats.con // 2, target.stats.con):
                     target.status_effects['Stun'].active = True
                     target.status_effects['Stun'].duration = max(2, user.stats.dex // 10)
-                    print(f"{target.name} is stunned.")
+                    use_str += f"{target.name} is stunned.\n"
                 else:
-                    print(f"{user.name} fails to stun {target.name}.")
+                    use_str += f"{user.name} fails to stun {target.name}.\n"
+        return use_str
 
 
 class SmokeScreen(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Smoke Screen', description='Obscure the player in a puff of smoke, allowing the '
@@ -608,66 +629,56 @@ class SmokeScreen(Stealth):
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        print(f"{user.name} casts {self.name}.")
-        print(f"{user.name} disappears in a cloud of smoke.")
+        use_str = ""
+        return use_str
 
 
 class Steal(Stealth):
-    """
-
-    """
 
     def __init__(self):
-        super().__init__(name='Steal', description='Relieve the enemy of their items.',
+        super().__init__(name='Steal', description='Relieve the enemy of their items or gold.',
                          cost=6)
 
-    def use(self, user, target=None, cover=False, crit=1, mug=False):
-        if not mug:
-            print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
-        if len(target.inventory) != 0:
-            chance = user.check_mod('luck', luck_factor=16)
-            if random.randint((user.stats.dex * crit) // 2, (user.stats.dex * crit)) + chance > \
-                    random.randint(target.stats.dex // 2, target.stats.dex):
-                item_key = random.choice(list(target.inventory))
-                item = target.inventory[item_key][0]
-                target.modify_inventory(item, num=1, subtract=True)
-                if item_key == 'Gold':
-                    print(f"{user.name} steals {item} gold from {target.name}.")
-                    user.gold += item
-                else:  # if monster steals from player, item is lost
+    def use(self, user, target=None, crit=1, mug=False, fam=False, cover=False):
+        if not (mug and fam):
+            user.mana.current -= self.cost
+        gold_or_item = random.choice(["Gold", "Item"])
+        if gold_or_item == "Item":
+            if len(target.inventory) != 0:
+                chance = user.check_mod('luck', luck_factor=16)
+                if random.randint(int(user.stats.dex * crit) // 2, int(user.stats.dex * crit)) + chance > \
+                        random.randint(target.stats.dex // 2, target.stats.dex):
+                    item_key = random.choice(list(target.inventory))
+                    item = target.inventory[item_key][0]
+                    target.modify_inventory(item, subtract=True)
                     try:
-                        user.modify_inventory(item, num=1)
+                        user.modify_inventory(item)
                     except AttributeError:
                         pass
-                    print(f"{user.name} steals {item_key} from {target.name}.")
-            else:
-                print("Steal fails.")
-        else:
-            print(f"{target.name} doesn't have anything to steal.")
+                    return f"{user.name} steals {item_key} from {target.name}.\n"
+                return "Steal fails.\n"
+            return f"{target.name} doesn't have anything to steal.\n"
+        gold_amount = random.randint(1, max(1, int(target.gold * 0.05)))  # max of 5% of gold
+        user.gold += gold_amount
+        target.gold -= gold_amount
+        return f"{user.name} steals {gold_amount} gold from {target.name}.\n"
 
 
 class Mug(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Mug', description='Attack the enemy with a chance to steal their items.',
                          cost=20)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target, cover=cover)
+        use_str, hit, crit = user.weapon_damage(target, cover=cover)
         if hit:
-            Steal().use(user, target, cover=False, crit=crit, mug=True)
+            use_str += Steal().use(user, target, crit=crit, mug=True)
+        return use_str
 
 
 class Lockpick(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Lockpick', description='Unlock a locked chest.',
@@ -675,44 +686,56 @@ class Lockpick(Stealth):
         self.passive = True
 
 
-# Poison Skills
 class PoisonStrike(Stealth):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Poison Strike', description='Attack the enemy with a chance to poison.',
                          cost=14)
-        self.damage = 8
+        self.damage = 0.05  # 5% of target's max health per turn
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target, cover=cover)
+        use_str, hit, crit = user.weapon_damage(target, cover=cover)
         if not target.status_effects['Poison'].active:
-            if hit and target.is_alive() and not target.status_effects['Mana Shield'].active:
+            if hit and target.is_alive():
                 resist = target.check_mod('resist', 'Poison')
                 if resist < 1:
                     if random.randint(user.stats.dex // 2, user.stats.dex) * crit * (1 - resist) \
                             > random.randint(target.stats.con // 2, target.stats.con):
-                        turns = max(1, user.stats.dex // 10)
-                        pois_dmg = random.randint(1, max(1, int((self.damage * user.level.pro_level) * (1 - resist))))
+                        turns = max(5, user.stats.dex // 5)
+                        pois_dmg = int(target.health.max * self.damage * (1- resist))
                         target.status_effects['Poison'].active = True
                         target.status_effects['Poison'].duration = max(turns, target.status_effects["Poison"].duration)
                         target.status_effects['Poison'].extra = max(pois_dmg, target.status_effects["Poison"].extra)
-                        print(f"{target.name} is poisoned.")
+                        use_str += f"{target.name} is poisoned.\n"
                     else:
-                        print(f"{target.name} resists the poison.")
+                        use_str += f"{target.name} resists the poison.\n"
                 else:
-                    print(f"{target.name} is immune to poison.")
+                    use_str += f"{target.name} is immune to poison.\n"
+        return use_str
+
+
+class SneakAttack(Stealth):
+    """
+    only usable when target is prone, stunned, or asleep
+    """
+
+    def __init__(self):
+        super().__init__(name="Sneak Attack", description="", cost=15)
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        if any([target.status_effects['Prone'].active,
+                target.status_effects['Stun'].active,
+                target.status_effects['Sleep'].active]):
+            use_str, _, _ = user.weapon_damage(target, dmg_mod=2.0, crit=2, ignore=True, cover=cover)
+        else:
+            use_str = f"{self.name} is ineffective against {target.name}."
+        return use_str
 
 
 # Enhance skills
 class ImbueWeapon(Enhance):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Imbue Weapon', description='Imbue your weapon with magical energy to enhance the '
@@ -720,11 +743,13 @@ class ImbueWeapon(Enhance):
                          cost=12)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
-        dmg_mod = max(1, user.stats.intel // 3)
-        print(f"{user.name}'s weapon has been imbued with arcane power, increasing damage by {dmg_mod}.")
-        _, _ = user.weapon_damage(target, cover=cover, dmg_mod=dmg_mod)
+        dmg_mod = max(1., user.stats.intel / 15)
+        use_str += f"{user.name}'s weapon has been imbued with arcane power, increasing damage by {dmg_mod}."
+        dmg_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=dmg_mod)
+        use_str += dmg_str
+        return use_str
 
 
 class EnhanceBlade(Enhance):
@@ -740,9 +765,6 @@ class EnhanceBlade(Enhance):
 
 
 class EnhanceArmor(Enhance):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Enhance Armor', description='The Knight Enchanter can imbue their armor with arcane '
@@ -752,22 +774,74 @@ class EnhanceArmor(Enhance):
         self.passive = True
 
 
-# Drain skills
-class HealthDrain(Drain):
+class ManaShield(Enhance):
+    """
+    Reduction indicates how much damage a single mana point reduces
     """
 
-    """
+    def __init__(self):
+        super().__init__(name="Mana Shield", description="A protective shield envelopes the caster, absorbing 2 damage "
+                                                         "at the expense of every 1 mana.",
+                         cost=4)
+        self.reduction = 2
+
+    def use(self, user, target=None, cover=False):
+        use_str = ""
+        target = user
+        if not target.status_effects['Mana Shield'].active:
+            user.mana.current -= self.cost
+            target.status_effects['Mana Shield'].active = True
+            target.status_effects['Mana Shield'].duration = self.reduction
+            use_str += f"A mana shield envelopes {target.name}.\n"
+        else:
+            use_str += f"The mana shield dissolves around {target.name}.\n"
+            target.status_effects['Mana Shield'].active = False
+        return use_str
+
+
+class ManaShield2(ManaShield):
+
+    def __init__(self):
+        super().__init__()
+        self.description = "A protective shield envelopes the caster, absorbing 4 damage at the expense of every 1 mana.",
+        self.reduction = 4
+
+
+class ElementalStrike(Enhance):
+
+    def __init__(self):
+        super().__init__(name="Elemental Strike", description='Attack the enemy with your weapon and a random '
+                                                              'elemental spell.',
+                         cost=15)
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        use_str, hit, crit = user.weapon_damage(target, cover=cover)
+        if hit and target.is_alive():
+            spell_list = [Scorch(),
+                          WaterJet(),
+                          Tremor(),
+                          Gust()]
+            spell = random.choice(spell_list)
+            use_str += f"The enemy is struck by the elemental force of {spell.subtyp}."
+            use_str += spell.cast(user, target=target, special=True, cover=cover)
+            if crit > 1 and target.is_alive():
+                use_str += spell.cast(user, target=target, special=True, cover=cover)
+        return use_str
+
+
+# Drain skills
+class HealthDrain(Drain):
 
     def __init__(self):
         super().__init__(name='Health Drain', description='Drain the enemy, absorbing their health.',
                          cost=10)
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user, target=None, special=False, cover=False):
         if not special:
-            print(f"{user.name} uses {self.name}.")
             user.mana.current -= self.cost
-        drain = random.randint((user.health.current + user.stats.intel) // 5,
-                               (user.health.current + user.stats.intel) // 1.5)
+        drain = random.randint((user.health.current + user.stats.charisma) // 5,
+                               (user.health.current + user.stats.charisma) // 1.5)
         chance = target.check_mod('luck', luck_factor=1)
         if not random.randint(user.stats.wisdom // 2, user.stats.wisdom) > random.randint(0, target.stats.wisdom // 2) + chance:
             drain = drain // 2
@@ -775,24 +849,20 @@ class HealthDrain(Drain):
         target.health.current -= drain
         user.health.current += drain
         user.health.current = min(user.health.current, user.health.max)
-        print(f"{user.name} drains {drain} health from {target.name}.")
+        return f"{user.name} drains {drain} health from {target.name}.\n"
 
 
 class ManaDrain(Drain):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Mana Drain', description='Drain the enemy, absorbing their mana.',
                          cost=0)
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user, target=None, special=False, cover=False):
         if not special:
-            print(f"{user.name} uses {self.name}.")
             user.mana.current -= self.cost
-        drain = random.randint((user.mana.current + user.stats.intel) // 5,
-                               (user.mana.current + user.stats.intel) // 1.5)
+        drain = random.randint((user.mana.current + user.stats.charisma) // 5,
+                               (user.mana.current + user.stats.charisma) // 1.5)
         chance = target.check_mod('luck', luck_factor=10)
         if not random.randint(user.stats.wisdom // 2, user.stats.wisdom) > random.randint(0, target.stats.wisdom // 2) + chance:
             drain = drain // 2
@@ -800,7 +870,7 @@ class ManaDrain(Drain):
         target.mana.current -= drain
         user.mana.current += drain
         user.mana.current = min(user.mana.current, user.mana.max)
-        print(f"{user.name} drains {drain} mana from {target.name}.")
+        return f"{user.name} drains {drain} mana from {target.name}.\n"
 
 
 class HealthManaDrain(Drain):
@@ -814,17 +884,14 @@ class HealthManaDrain(Drain):
                          cost=0)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        HealthDrain().use(user, target, special=True, cover=False)
-        ManaDrain().use(user, target, special=True, cover=False)
+        use_str = HealthDrain().use(user, target, special=True)
+        use_str += ManaDrain().use(user, target, special=True)
+        return use_str
 
 
 # Class skills
 class LearnSpell(Class):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Learn Spell', description='Enables a diviner to learn rank 1 enemy spells.',
@@ -839,7 +906,7 @@ class LearnSpell2(LearnSpell):
 
     def __init__(self):
         super().__init__()
-        self.description = "Enables a diviner to learn rank 2 enemy spells."
+        self.description = "\n".join(wrap("Enables a diviner to learn rank 2 enemy spells.", 35))
 
 
 class Transform(Class):
@@ -848,13 +915,14 @@ class Transform(Class):
     """
 
     def __init__(self):
-        super().__init__(name='Transform', description='Transforms the druid into a powerful creature, assuming the '
-                                                       'spells and abilities inherent to the creature.',
+        super().__init__(name='Transform', description="Transforms the druid into a Panther, assuming the spells and "
+                                                       "abilities inherent to the creature.",
                          cost=0)
-        self.t_creature = enemies.Panther
 
     def use(self, user):
-        user.transform = self.t_creature
+        from enemies import Panther
+        user.transform_type = Panther()
+        return ""
 
 
 class Transform2(Transform):
@@ -864,7 +932,12 @@ class Transform2(Transform):
 
     def __init__(self):
         super().__init__()
-        self.t_creature = enemies.Direbear
+        self.description = "Transforms the druid into a Direbear, assuming the spells and abilities inherent to the creature."
+
+    def use(self, user):
+        from enemies import Direbear
+        user.transform_type = Direbear()
+        return ""
 
 
 class Transform3(Transform):
@@ -874,7 +947,12 @@ class Transform3(Transform):
 
     def __init__(self):
         super().__init__()
-        self.t_creature = enemies.Werewolf
+        self.description = "Transforms the druid into a Werewolf, assuming the spells and abilities inherent to the creature."
+
+    def use(self, user):
+        from enemies import Werewolf
+        user.transform_type = Werewolf()
+        return ""
 
 
 class Transform4(Transform):
@@ -884,13 +962,15 @@ class Transform4(Transform):
 
     def __init__(self):
         super().__init__()
-        self.t_creature = enemies.RedDragon
+        self.description = "Transforms the druid into a Red Dragon, assuming the spells and abilities inherent to the creature."
+
+    def use(self, user):
+        from enemies import RedDragon
+        user.transform_type = RedDragon()
+        return ""
 
 
 class Familiar(Class):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Familiar", description="The warlock gains the assistance of a familiar, a magic serving "
@@ -901,47 +981,18 @@ class Familiar(Class):
 
 
 class Familiar2(Familiar):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
-        self.description = "The warlock's familiar gains strength, unlocking additional abilities."
+        self.description = "\n".join(wrap("The warlock's familiar gains strength, unlocking additional abilities.", 35))
 
 
 class Familiar3(Familiar):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
-        self.description = "The warlock's familiar gains additional strength, unlocking even more abilities."
-
-
-class ElementalStrike(Class):
-    """
-
-    """
-
-    def __init__(self):
-        super().__init__(name="Elemental Strike", description='Attack the enemy with your weapon and a random '
-                                                              'elemental spell.',
-                         cost=15)
-
-    def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target, cover=cover)
-        if hit and target.is_alive():
-            spell_list = [Scorch, WaterJet, Tremor, Gust]
-            spell = random.choice(spell_list)
-            if crit > 1:
-                spell().cast(user, target=target, cover=False)
-                spell().cast(user, target=target, cover=False)
-            else:
-                spell().cast(user, target=target, cover=False)
+        self.description = "\n".join(wrap("The warlock's familiar gains additional strength, unlocking even more "
+                                          "abilities.", 35))
 
 
 class AbsorbEssence(Class):
@@ -968,50 +1019,26 @@ class AbsorbEssence(Class):
         self.passive = True
 
 
-class LegSweep(Class):
+class Reveal(Truth):
     """
-
-    """
-
-    def __init__(self):
-        super().__init__(name="Leg Sweep", description="Sweep the leg, tripping the enemy and leaving them prone.",
-                         cost=8)
-
-    def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
-        hit, _ = user.weapon_damage(target, cover=cover)
-        if hit and target.is_alive():
-            if not target.status_effects['Prone'].active:
-                if random.randint(user.stats.strength // 2, user.stats.strength) > \
-                        random.randint(target.stats.strength // 2, target.stats.strength) and not target.flying:
-                    target.status_effects['Prone'].active = True
-                    target.status_effects['Prone'].duration = max(1, user.stats.strength // 20)
-                    print(f"{user.name} trips {target.name} and they fall prone.")
-
-
-class ChiHeal(Class):
-    """
-
+    gives player sight and increases shadow resistance by 25%
     """
 
     def __init__(self):
-        super().__init__(name="Chi Heal", description="The monk channels his chi energy, healing 25% of their health"
-                                                      " and removing all negative status effects.",
-                         cost=25)
+        super().__init__(name="Reveal", description="An Inquisitor is a champion of truth, exposing secrets and "
+                                                     "gaining protection from shadow.",
+                        cost=0)
+        self.passive = True
 
-    def use(self, user, target=None, cover=False):
-        target = user
-        print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
-        Heal().cast(user, target=target, special=True, cover=False)
-        Cleanse().cast(user, target=target, special=True, cover=False)
+    def use(self, user):
+        user.sight = True
+        user.resistance['Shadow'] += 0.25
+        if user.equipment['Pendant'].name == "Pendant of Vision":
+            user.modify_inventory(user.equipment['Pendant'], 1)
+            user.equipment['Pendant'] = user.unequip("Pendant")
 
 
-class Inspect(Class):
-    """
-
-    """
+class Inspect(Truth):
 
     def __init__(self):
         super().__init__(name="Inspect", description="Your attention to detail allows you to inspect aspects of the "
@@ -1019,15 +1046,14 @@ class Inspect(Class):
                          cost=5)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         inspect_text = target.inspect() + "\n"
-        print(inspect_text)
+        return inspect_text
 
 
-class ExploitWeakness(Class):
+class ExploitWeakness(Truth):
     """
-    Adds damage to melee attack equal to the user's strength multiplied by the lowest resistance
+    Adds damage multiplier to melee attack equal to the lowest resistance
     """
 
     def __init__(self):
@@ -1036,29 +1062,99 @@ class ExploitWeakness(Class):
                          cost=10)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         types = list(target.resistance)
         resists = list(target.resistance.values())
         weak = min(resists)
         if weak < 0:
-            mod = int(user.stats.strength * -weak)
-            print(f"{user.name} targets {target.name}'s weakness to {types[resists.index(weak)].lower()} to "
-                  f"increase their attack!")
+            mod = 1 - weak  # negative resistance will result in increased damage
+            use_str = f"{user.name} targets {target.name}'s weakness to {types[resists.index(weak)].lower()} to increase their attack!\n"
         else:
-            mod = 0
-            print(f"{target.name} has no identifiable weakness. The skill is ineffective.")
-        time.sleep(0.5)
-        _, _ = user.weapon_damage(target, dmg_mod=mod)
+            mod = 1
+            use_str = f"{target.name} has no identifiable weakness. The skill is ineffective.\n"
+        wd_str, _, _ = user.weapon_damage(target, dmg_mod=mod)
+        return use_str + wd_str
 
 
-class KeenEye(Class):
+class KeenEye(Truth):
     """
-    Gives Seekers insights about their surroundings
+    Gives Inquisitor insights about their surroundings
     """
 
     def __init__(self):
-        super().__init__(name="Keen Eye", description="As a Seeker, you can gain insights into your surroundings.",
+        super().__init__(name="Keen Eye", description="As an Inquisitor, you can gain insights into your surroundings.",
+                         cost=0)
+        self.passive = True
+
+
+# Martial Art Skills
+class LegSweep(MartialArts):
+
+    def __init__(self):
+        super().__init__(name="Leg Sweep", description="Sweep the leg, tripping the enemy and leaving them prone.",
+                         cost=8)
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        use_str, hit, _ = user.weapon_damage(target, cover=cover)
+        if hit and target.is_alive():
+            if not target.status_effects['Prone'].active:
+                if random.randint(user.stats.strength // 2, user.stats.strength) > \
+                        random.randint(target.stats.strength // 2, target.stats.strength) and not target.flying:
+                    target.status_effects['Prone'].active = True
+                    target.status_effects['Prone'].duration = max(1, user.stats.strength // 20)
+                    use_str += f"{user.name} trips {target.name} and they fall prone.\n"
+        return use_str
+
+
+class ChiHeal(MartialArts):
+
+    def __init__(self):
+        super().__init__(name="Chi Heal", description="The monk channels his chi energy, healing 25% of their health"
+                                                      " and removing all negative status effects.",
+                         cost=16)
+
+    def use(self, user, target=None, cover=False):
+        target = user
+        user.mana.current -= self.cost
+        use_str = Heal().cast(user, target=target, special=True)
+        use_str += Cleanse().cast(user, target=target, special=True)
+        return use_str
+
+
+class PurityBody(MartialArts):
+
+    def __init__(self):
+        super().__init__(name="Purity of Body", description="Through meditation and perserverance, the monk gains "
+                                                            "control over their body, increasing resistance against poison "
+                                                            "and stone.",
+                         cost=0)
+        self.passive = True
+
+    def use(self, user):
+        user.resistance["Poison"] = 0.5
+        user.resistance["Stone"] = 0.5
+
+
+class PurityBody2(MartialArts):
+
+    def __init__(self):
+        super().__init__(name="Purity of Body", description="Further meditation and perserverance, the monk masters "
+                                                            "control over their body, gaining immunity against poison "
+                                                            "and stone.",
+                         cost=0)
+        self.passive = True
+
+    def use(self, user):
+        user.resistance["Poison"] = 1.
+        user.resistance["Stone"] = 1.
+
+
+class Evasion(MartialArts):
+
+    def __init__(self):
+        super().__init__(name="Evasion", description="You have become highly attuned at your surroundings, anticipating "
+                                                     "other's actions and increasing your chance to dodge attacks.",
                          cost=0)
         self.passive = True
 
@@ -1077,29 +1173,28 @@ class GoldToss(Luck):
                          cost=0)
         self.rank = 1
 
-    def use(self, user, target=None, cover=False):
-        max_thrown = 0.1
-        print(f"{user.name} uses {self.name}.")
+    def use(self, user, target=None, fam=False, cover=False):
+        max_thrown = min(target.health.current, user.gold)
         if user.gold == 0:
-            print("Nothing happens.")
-        else:
-            a_chance = user.check_mod('luck', luck_factor=20)
-            d_chance = target.check_mod('luck', luck_factor=10)
-            gold = max(1, int(max_thrown * user.gold))
-            damage = max(1, random.randint(1, gold) // (random.randint(1, 3) // max(1, a_chance)))
-            user.gold -= damage
-            print(f"{user.name} throws {damage} gold at {target.name}.")
-            if not random.randint(0, 1) and \
-                    not any(target.status_effects[x].active for x in ['Sleep', 'Stun', 'Prone']):
-                catch = random.randint(min(damage, d_chance), damage)
-                damage -= catch
-                if catch > 0:
-                    target.gold += catch
-                    print(f"{target.name} catches some of the gold thrown, gaining {catch} gold.")
-            else:
-                pass
+            return "Nothing happens.\n"
+        d_chance = target.check_mod('luck', luck_factor=10)
+        damage = random.randint(1, max_thrown)
+        user.gold -= damage
+        use_str = f"{user.name} throws {damage} gold at {target.name}.\n"
+        if not random.randint(0, 1) and \
+                not any(target.status_effects[x].active for x in ['Sleep', 'Stun', 'Prone']):
+            catch = random.randint(min(damage, d_chance), damage)
+            damage -= catch
+            if catch > 0:
+                target.gold += catch
+                if damage > 0:
+                    use_str += f"{target.name} catches some of the gold thrown, gaining {catch} gold.\n"
+                else:
+                    use_str += f"{target.name} catches all of the gold thrown, gaining {catch} gold.\n"
+        if damage > 0:
             target.health.current -= damage
-            print(f"{user.name} does {damage} damage to {target.name}.")
+            use_str += f"{user.name} does {damage} damage to {target.name}.\n"
+        return use_str
 
 
 class SlotMachine(Luck):
@@ -1127,20 +1222,10 @@ class SlotMachine(Luck):
                          cost=15)
         self.rank = 2
 
-    def use(self, user, target=None, cover=False):
-        def spin_wheel():
-            dice = ["*", "*", "*"]
-
-            for die, _ in enumerate(dice):
-                for _ in range(25):
-                    dice[die] = str(random.randint(0, 9))
-                    print(f"\t{dice[0]}{dice[1]}{dice[2]}", end="\r")
-                    time.sleep(0.05)
-
-            print(f"\t{dice[0]}{dice[1]}{dice[2]}\n", end="\r")
-            time.sleep(1)
-
-            return "".join(dice)
+    def use(self, game, user, target=None, fam=False):
+        import utils
+        use_str = ""
+        popup = utils.SlotMachinePopupMenu(game, "")
 
         hands = {"Death": ["666", "999"],
                  "Trips": ["000", "111", "222", "333", "444", "555", "777", "888"],
@@ -1157,33 +1242,32 @@ class SlotMachine(Luck):
                                 '909', '919', '929', '939', '949', '959', '969', '979', '989']}
         user_chance = user.check_mod('luck', luck_factor=10)
         target_chance = target.check_mod('luck', luck_factor=10)
-        print(f"{user.name} uses {self.name}.")
         success = False
         retries = 0
         while not success:
-            spin = spin_wheel()
+            spin = popup.results()
             if spin in hands['Death']:
-                print("The mark of the beast!")
+                use_str += "The mark of the beast!\n"
                 success = True
                 if target_chance > user_chance + 1:
                     target = user
                 resist = target.check_mod('resist', typ='Death')
                 if resist < 1:
                     target.health.current = 0
-                    print(f"Death has come for {target.name}!")
+                    use_str += f"Death has come for {target.name}!\n"
                 else:
-                    print(f"{target.name} is immune to death spells.")
+                    use_str += f"{target.name} is immune to death spells.\n"
             elif spin in hands['Trips']:
-                print("3 of a Kind!")
+                use_str += "3 of a Kind!\n"
                 success = True
                 if random.randint(0, max(1, user_chance)):
                     target = user
                 target.health.current = target.health.max
                 target.mana.current = target.mana.max
-                print(f"{target.name} has been revitalized! Health and mana are restored.")
-                Cleanse().cast(target, special=True, cover=False)
+                use_str += f"{target.name} has been revitalized! Health and mana are restored.\n"
+                use_str += Cleanse().cast(target, special=True)
             elif "".join(sorted(spin)) in hands['Straight']:
-                print("Straight!")
+                use_str += "Straight!\n"
                 success = True
                 if target_chance > user_chance + 1:
                     target = user
@@ -1192,19 +1276,27 @@ class SlotMachine(Luck):
                 for i in ints:
                     damage *= i
                 target.health.current -= damage
-                print(f"{target.name} takes {damage} damage.")
+                use_str += f"{target.name} takes {damage} damage.\n"
             elif spin in hands['Palindrome']:
-                print("Palindrome!")
+                use_str += "Palindrome!\n"
                 success = True
                 if target_chance > user_chance + 1:
                     target = user
-                spell_list = [MagicMissile3, Firestorm, IceBlizzard, Electrocution, Tsunami, Earthquake, Tornado,
-                              ShadowBolt3, Holy3, Ultima]
+                spell_list = [MagicMissile3(),
+                              Firestorm(),
+                              IceBlizzard(),
+                              Electrocution(),
+                              Tsunami(),
+                              Earthquake(),
+                              Tornado(),
+                              ShadowBolt3(),
+                              Holy3(),
+                              Ultima()]
                 spell = spell_list[int(spin[1])]
-                print(f"{spell().name} is cast!")
-                spell().cast(user, target=target, special=True, cover=False)
+                use_str += f"{spell.name} is cast!\n"
+                use_str += spell.cast(user, target=target, special=True)
             elif len(set(spin)) == 2:
-                print('Pairs!')
+                use_str += 'Pairs!\n'
                 success = True
                 duration = int(min(set(list(spin)), key=list(spin).count))  # number of turns effect will last
                 if duration == 0:
@@ -1218,53 +1310,389 @@ class SlotMachine(Luck):
                 if not random.randint(0, 1):
                     target = user
                 effect = random.choice(effects)
-                print(f"{effect} has been randomly selected to affect {target.name}.")
-                typ = len(target.status_effects[effect])
+                use_str += f"{effect} has been randomly selected to affect {target.name}.\n"
                 target.status_effects[effect].active = True
                 target.status_effects[effect].duration = max(duration, target.status_effects[effect].duration)
-                if typ == 3:
-                    target.status_effects[effect].extra = amount
-                    if effect in ["Attack", "Defense", "Magic", "Magic Defense"]:
-                        print(f"{target.name}'s {effect.lower()} is temporarily increased by {amount}.")
+                if effect == "Poison":
+                    amount *= int(target.health.max * 0.01)
+                target.status_effects[effect].extra = amount
+                if effect in ["Attack", "Defense", "Magic", "Magic Defense"]:
+                    use_str += f"{target.name}'s {effect.lower()} is temporarily increased by {amount}.\n"
             elif all(int(x) % 2 == 0 for x in list(spin)):
-                print("Evens!")
+                use_str += "Evens!\n"
                 success = True
                 if user_chance + 1 >= target_chance:
                     target = user
                 target.gold += (int(spin) * 10)
-                print(f"{target.name} gains {int(spin)} gold!")
+                use_str += f"{target.name} gains {int(spin)} gold!\n"
             elif all(int(x) % 2 == 1 for x in list(spin)):
-                print("Odds!")
+                use_str += "Odds!\n"
                 success = True
                 level = min(list(spin))
                 if user_chance + 1 >= target_chance:
                     target = user
-                item = items.random_item(int(level))
+                from items import random_item
+                item = random_item(int(level))
                 try:
-                    target.modify_inventory(item, num=1)
+                    target.modify_inventory(item)
                 except AttributeError:
                     pass
-                print(f"{target.name} gains {item().name}.")
+                use_str += f"{target.name} gains {item.name}.\n"
             elif random.randint(0, user_chance):
-                print("Chance!")
+                use_str += "Chance!\n"
                 success = True
                 mod = int(random.choice(list(spin)))
-                print(f"{user.name} gains {mod} attack.")
-                user.weapon_damage(target, dmg_mod=mod)
+                use_str += f"{user.name} gains {mod} attack.\n"
+                wd_str, _, _ = user.weapon_damage(target, dmg_mod=1)
+                use_str += wd_str
             else:
                 if random.randint(0, user_chance) and retries < 2:
-                    print("No luck, try again.")
+                    textbox = utils.TextBox(game)
+                    textbox.print_text_in_rectangle("No luck, try again.")
+                    time.sleep(1)
+                    textbox.clear_rectangle()
                     retries += 1
                 else:
                     success = True
-                    print("Nothing happens.")
+                    use_str += "Nothing happens.\n"
+        return use_str
+
+
+class Blackjack(Luck):
+
+    def __init__(self):
+        super().__init__(name="Blackjack", description="Play a round of blackjack with the Jester; different things "
+                                                       "happen depending on the result.",
+                         cost=7)
+
+    def use(self, game, user, target=None, cover=False):
+        import utils
+        user.mana.current -= self.cost
+        use_str = ""
+        popup = utils.BlackjackPopupMenu(game, f"{user.name} Hand  {target.name} Hand")
+        result = popup.navigate_popup()
+        prizes = {"Win": ["Regen", "Gold", ""],
+                  "Break": ["Ultima"],
+                  "Draw": []}
+        if result == "Target Win":
+            use_str += f"{target.name} wins the hand!\n"
+        elif result == "Target Break":
+            use_str += f"Oh no, {target.name} busted...\n"
+        elif result == "User Break":
+            target = user
+            use_str += f"Oh no, {user.name} busted...\n"
+        elif result == "User Win":
+            target = user
+            use_str += f"{user.name} wins the hand!\n"
+        else:
+            use_str += f"It's a draw!\n"
+        return use_str
+
+
+# Power Up skills
+class BloodRage(PowerUp):
+    """
+    Berserker Power Up
+    attack increases as health decreases; if below 30% health, bonus to defense
+    """
+
+    def __init__(self):
+        super().__init__(name="Blood Rage", description="A berserker's rage knows no bounds, their power growing as "
+                                                        "their blood is spilled. Attack power increases as health "
+                                                        "decreases and gains an increase to defense below 30%.",
+                         cost=0)
+        self.passive = True
+
+
+class DivineAegis(PowerUp):
+    """
+    Crusader Power Up
+    create shell that absorbs damage and increases healing; if the shield survives the full duration, it will explode
+      and deal holy damage to the enemy
+    """
+
+    def __init__(self):
+        super().__init__(name="Divine Aegis", description="The power of faith envelopes your body for a time, "
+                                                          "shielding you from harm and increases healing spells "
+                                                          "while active. If the shield survives the duration, it will"
+                                                          " explode in a brilliant light, dealing holy damage equal "
+                                                          "to the remaining damage absorption.",
+                         cost=20)
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        dam_abs = random.randint(user.health.max // 4, user.health.max // 2)
+        user.status_effects["Power Up"].active = True
+        user.status_effects["Power Up"].duration = 5
+        user.status_effects["Power Up"].extra = dam_abs
+        return f"A shield envelopes {user.name}.\n"
+
+
+class DragonsFury(PowerUp):
+    """
+    Dragoon Power Up
+    attack and defense double for each successive hit; a miss resets this buff
+    """
+
+    def __init__(self):
+        super().__init__(name="Dragon's Fury", description="The power up unleashed the dragon within, a power that "
+                                                           "continues to grow. With each successive hit",
+                         cost=0)
+        self.passive = True
+
+
+class SpellMastery(PowerUp):
+    """
+    Wizard Power Up
+    automatically triggers when no spells can be cast due to low mana; all spells
+          become free for a short time and mana regens based on damage dealt
+    """
+
+    def __init__(self):
+        super().__init__(name="Spell Mastery", description="The Wizard is so good at spell casting that even running out"
+                                                           " of mana won't stop them. This ability automatically triggers"
+                                                           " when no spells can be cast due to low mana, making spells "
+                                                           "free for a time. While active mana is regenerated based on "
+                                                           "damage dealt.",
+                         cost=0)
+        self.passive = True
+
+
+class VeilShadows(PowerUp):
+    """
+    Shadowcaster Power Up
+    become one with the darkness, making the player invisible to most enemies and making them harder to hit; increases
+         damage of initial attack if first
+    """
+
+    def __init__(self):
+        super().__init__(name="Veil of Shadows", description="Darkness becomes light and light falls to darkness, "
+                                                             "concealing the Shadowcaster from all but the most keen "
+                                                             "eyes. The player gains invisibility and a bonus to damage"
+                                                             " at the beginning of battle if they have initiative.",
+                         cost=0)
+        self.passive = True
+
+
+class ArcaneBlast(PowerUp):
+    """
+    Knight Enchanter Power Up
+    blast the enemy with a powerful attack, draining all remaining mana points; mana
+          will regen in full over the next 4 turns (25% per turn)
+    """
+
+    def __init__(self):
+        super().__init__(name="Arcane Blast", description="The power of the arcane can be devastating, especially "
+                                                          "when its full force is realized. The Knight Enchanter "
+                                                          "can expend its remaining energy in a powerful blast, at the"
+                                                          " expense of all remaining mana. If the enemy remains, mana "
+                                                          "will regenerate in full over the next 4 turns.",
+                         cost=0)
+
+    def use(self, user, target=None, cover=False):
+        use_str = ""
+        dam_red = target.check_mod('magic def', enemy=user) // 10
+        damage = random.randint(user.mana.current // dam_red, user.mana.current)
+        user.mana.current = 0
+        user.status_effects['Power Up'].active = True
+        user.status_effects['Power Up'].duration = 4
+        target.health.current -= damage
+        use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
+        return use_str
+
+
+class StrokeLuck(PowerUp):
+    """
+    Rogue Power Up
+    the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, as well as dodge and critical chance
+    """
+
+    def __init__(self):
+        super().__init__(name="Stroke of Luck", description="The master of tricks and subterfuge also has Lady Luck on "
+                                                            "its side, gaining a bonus to all luck-based rolls.",
+                         cost=0)
+        self.passive = True
+
+
+class EyesUnseen(PowerUp):
+    """
+    Seeker Power Up
+    gain increased awareness of battle situations, increasing critical chance as well as chance to dodge/parry attacks
+    """
+
+    def __init__(self):
+        super().__init__(name="Eyes of the Unseen", description="The Seeker excels at rooting out the evil that hides "
+                                                                "in the shadows. Studying these enemies has improved "
+                                                                "their own game, improving battle awareness and increasing"
+                                                                " both critical and dodge chance.",
+                         cost=0)
+        self.passive = True
+
+
+class BladeFatalities(PowerUp):
+    """
+    Ninja Power Up
+    sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing damage dealt and absorbing
+         it into the user
+    """
+
+    def __init__(self):
+        super().__init__(name="Blade of Fatalities", description="The spirit of Muramasa demands a sacrifice but will"
+                                                                 " grant ultimate power. The user will give up 25% of "
+                                                                 "their health for increased damage and draining health"
+                                                                 " into the user.",
+                         cost=0)
+
+    def use(self, user, target=None, cover=False):
+        per_health = int(0.25 * user.health.current)
+        use_str = f"{user.name} sacrifices {per_health} health to imbue their blades with the spirit of Muramasa!\n"
+        user.status_effects['Power Up'].active = True
+        user.status_effects['Power Up'].duration = 5
+        user.status_effects['Power Up'].extra = max(per_health // 5, 5)
+        return use_str
+
+
+class HolyRetribution(PowerUp):
+    """
+    Templar Power Up
+    the Templar is surrounded by holy swords, reflecting 25% percent of damage back at the attacker; while
+          the shield is active, attack damage is increased
+    """
+
+    def __init__(self):
+        super().__init__(name="Holy Retribution", description="The power of Elysia repels you...or the enemy's attacks"
+                                                              " in this case. Holy blades reflect 25% of weapon damage"
+                                                              " back to the attacker. While active, the player also "
+                                                              "receives a boost to attack damage.",
+                         cost=25)
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        user.status_effects["Power Up"].active = True
+        user.status_effects["Power Up"].duration = 5
+        return f"{user.name} is surrounded by holy blades.\n"
+
+
+class GreatGospel(PowerUp):
+    """
+    Archbishop Power Up
+    regens health and mana over time, and restores status; increases resistance and holy damage for duration
+    """
+
+    def __init__(self):
+        super().__init__(name="Great Gospel", description="A white orb with a hint of green descends upon you, surrounding"
+                                                          " you character with a benevolent aura. This aura removes all"
+                                                          " status effects and regens both health and mana of the user. "
+                                                          "While active, resistance and holy damage are increased.",
+                         cost=35)
+
+    def use(self, user, target=None, cover=False):
+        use_str = f"{user.name} gains a holy aura.\n"
+        user.mana.current -= self.cost
+        user.status_effects["Power Up"].active = True
+        user.status_effects["Power Up"].duration = 5
+        use_str += Cleanse().cast(user, special=True)
+        return use_str
+
+
+class DimMak(PowerUp):
+    """
+    Master Monk Power Up
+    unleash a powerful attack that deals heavy damage and can either stun or in some cases kill the target; if the
+        target is killed, the user will absorb the enemy's essence and will be regenerated by its max health and mana
+    """
+
+    def __init__(self):
+        super().__init__(name="Dim Mak", description="The life force of chi is typically ruled by restraint however "
+                                                     "there is one exception, the powerful Dim Mak or touch of death."
+                                                     " This ability has a chance to either stun or kill its target, with"
+                                                     " death allowing the user to absorb the essence of the enemy, "
+                                                     "gaining health and mana.",
+                         cost=50)
+
+    def use(self, user, target=None, cover=False):
+        use_str = ""
+        user.mana.current -= self.cost
+        wd_str, _, _ = user.weapon_damage(target, crit=3, ignore=True, hit=True)
+        use_str += wd_str
+        if target.is_alive():
+            if not (random.randint(0, target.con) + target.check_mod("luck", luck_factor=5)) and \
+                target.check_mod("resist", user, "Death") < 1:
+                    use_str += f"{target.name} sustains a lethal blow and collapses to the ground.\n"
+                    target.health.current = 0
+            else:
+                if random.random() > target.check_mod("resist", "Physical"):
+                    use_str += f"{target.name} is stunned.\n"
+                    target.status_effects["Stun"].active = True
+                    target.status_effects["Stun"].duration = user.stats.wisdom // 10
+            if target.is_alive():
+                return use_str
+        user.health.current = min(user.health.max, user.health.current + target.health.max)
+        user.mana.current = min(user.mana.max, user.mana.current + target.mana.max)
+        use_str += f"{user.name} gains the essence of {target.name}, gaining health and mana.\n"
+        return use_str
+
+
+class LunarFrenzy(PowerUp):
+    """
+    Lycan Power Up
+    the longer the Lycan is transformed, the further into madness they fall, increasing
+          damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
+          will be unable to transform back until after the battle
+    """
+
+    def __init__(self):
+        super().__init__(name="Lunar Frenzy", description="Transformation is a powerful ability, achievable as a Druid "
+                                                          "but perfected by the Lycan. You gain an increased brutality "
+                                                          "while transformed, dealing increasing damage and healing on "
+                                                          "critical hits the longer you are changed. This does come at "
+                                                          "a cost, as you will reach a point where you can no longer "
+                                                          "change back until after combat.",
+                         cost=0)
+        self.passive = True
+
+
+class TetraDisaster(PowerUp):
+    """
+    Geomancer Power Up
+    unleash a powerful attack consisting of all 4 elements; this will also increase resistance of caster to the 
+        4 elements by 50%
+    """
+
+    def __init__(self):
+        super().__init__(name="Tetra-Disaster", description="The 4 elements of the natural world are mighty on their "
+                                                            "own but together they can wreak an incredible level of "
+                                                            "destruction. Unleash them all at once with this powerful "
+                                                            "spell, increasing resistance of each by 50%.",
+                         cost=20)
+
+    def use(self, user, target=None, cover=False):
+        use_str = ""
+        user.mana.current -= self.cost
+        elements = ["Fire", "Water", "Wind", "Earth"]
+        for spell in user.spellbook["Spells"].values():
+            if spell.subtyp in elements:
+                use_str += spell().use(user, target=target, special=True)
+        user.status_effects["Power Up"].active = True
+        user.status_effects["Power Up"].duration = 5
+        return use_str
+
+
+class SoulHarvest(PowerUp):
+    """
+    Soulcatcher Power Up
+    each enemy killed of a particular type will improve conbat expertise against that enemy type, improving attack,
+        defense, magic, and magic defense
+    """
+
+    def __init__(self):
+        super().__init__(name="Soul Harvest", description="",
+                         cost=0)
+        self.passive = True
 
 
 # Enemy skills
 class Lick(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Lick", description="Lick the target, dealing damage and inflicting random status "
@@ -1272,9 +1700,8 @@ class Lick(Skill):
                          cost=10)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
-        hit, _ = user.weapon_damage(target)
+        use_str, hit, _ = user.weapon_damage(target, cover=cover)
         if hit:
             status_effects = ['Prone', 'Silence', 'Stun', 'Blind', 'Sleep']
             if random.randint(user.stats.strength // 2, user.stats.strength) > \
@@ -1283,7 +1710,8 @@ class Lick(Skill):
                 if not target.status_effects[random_effect].active:
                     target.status_effects[random_effect].active = True
                     target.status_effects[random_effect].duration = random.randint(2, max(3, user.stats.strength // 8))
-                    print(f"{target.name} is affected by {random_effect.lower()}.")
+                    use_str += f"{target.name} is affected by {random_effect.lower()}.\n"
+        return use_str
 
 
 class AcidSpit(Skill):
@@ -1298,41 +1726,38 @@ class AcidSpit(Skill):
         self.damage = 8
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= (self.cost * user.level.pro_level)
-        dmg = self.damage * max(1, user.level.pro_level)
-        dam_red = target.check_mod('magic def')
+        dmg = self.damage * max(1, user.level.pro_level) + (user.stats.intel // 2)
+        dam_red = target.check_mod('magic def', enemy=user)
         damage = random.randint(dmg // 2, dmg) - dam_red
         hit = user.hit_chance(target)
         dodge = target.dodge_chance(user) > random.random()
         if hit:
             if dodge:
-                print(f"{target.name} partially dodges the attack, only taking half damage.")
+                use_str += f"{target.name} partially dodges the attack, only taking half damage.\n"
                 damage //= 2
             if damage > 0:
-                print(f"{target.name} takes {damage} damage from the acid.")
+                use_str += f"{target.name} takes {damage} damage from the acid.\n"
                 target.health.current -= damage
                 target.status_effects["DOT"].active = True
                 target.status_effects["DOT"].duration = 2
                 target.status_effects["DOT"].extra = max(damage, target.status_effects["DOT"].extra)
-                print(f"{target.name} is covered in a corrosive substance.")
+                use_str += f"{target.name} is covered in a corrosive substance.\n"
             else:
-                print("The acid is ineffective.")
+                use_str += "The acid is ineffective.\n"
         else:
-            print(f"{user.name} misses {target.name} with {self.name}.")
+            use_str += f"{user.name} misses {target.name} with {self.name}.\n"
+        return use_str
 
 
 class Web(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Web", description="Expel a thick, sticky substance onto the enemy, leaving them prone.",
                          cost=6)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         if random.randint(user.stats.dex // 2, user.stats.dex) > \
                 random.randint(target.stats.strength // 2, target.stats.strength):
@@ -1341,15 +1766,11 @@ class Web(Skill):
                 target.status_effects['Prone'].duration = max(1, user.stats.strength // 20)
             else:
                 target.status_effects['Prone'].duration += 1
-            print(f"{target.name} is trapped in a web and is prone.")
-        else:
-            print(f"{target.name} evades the web.")
+            return f"{target.name} is trapped in a web and is prone.\n"
+        return f"{target.name} evades the web.\n"
 
 
 class Howl(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Howl", description="The wolf howls at the moon, terrifying the enemy.",
@@ -1357,23 +1778,21 @@ class Howl(Skill):
 
     def use(self, user, target=None, cover=False):
         turns = max(1, user.stats.strength // 10)
-        print(f"{user.name} howls at the moon.")
+        use_str = f"{user.name} howls at the moon.\n"
         user.mana.current -= self.cost
         if not target.status_effects["Stun"].active:
             if random.randint(0, user.stats.strength) > random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects["Stun"].active = True
                 target.status_effects['Stun'].duration = turns
-                print(f"{user.name} stunned {target.name}.")
+                use_str += f"{user.name} stunned {target.name}.\n"
             else:
-                print(f"{target.name}'s resolve is steadfast.")
+                use_str += f"{target.name}'s resolve is steadfast.\n"
         else:
-            print(f"{target.name} is already stunned.")
+            use_str += f"{target.name} is already stunned.\n"
+        return use_str
 
 
 class Shapeshift(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Shapeshift', description="Some enemies can change their appearance and type. This is the"
@@ -1385,7 +1804,6 @@ class Shapeshift(Skill):
             s_creature = random.choice(user.transform)()
             if user.cls != s_creature.cls:
                 break
-        print(f"{user.name} changes shape, becoming a {s_creature.name}.")
         user.cls = s_creature.cls
         user.stats = s_creature.stats
         user.equipment = s_creature.equipment
@@ -1393,41 +1811,35 @@ class Shapeshift(Skill):
         user.resistance = s_creature.resistance
         user.flying = s_creature.flying
         user.invisible = s_creature.invisible
-        user.spellbook['Skills']['Shapeshift'] = Shapeshift
+        user.spellbook['Skills']['Shapeshift'] = Shapeshift()
+        return f"{user.name} changes shape, becoming a {s_creature.name}.\n"
 
 
 class Trip(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Trip", description="Grab the enemy's leg and trip them to the ground, leaving them "
                                                   "prone.",
                          cost=6)
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user, target=None, special=False, cover=False):
         if not special:
-            print(f"{user.name} uses {self.name}.")
             user.mana.current -= self.cost
         if not target.status_effects["Prone"].active:
-            if random.randint(user.stats.dex // 2, user.stats.dex) > \
-                    random.randint(target.stats.strength // 2, target.stats.strength) and not target.flying:
+            if random.randint(0, user.stats.dex) > \
+                    random.randint(target.stats.dex // 2, target.stats.dex) and not target.flying:
                 target.status_effects['Prone'].active = True
                 target.status_effects['Prone'].duration = max(1, user.stats.strength // 20)
-                print(f"{user.name} trips {target.name} and they fall prone.")
-            else:
-                if not special:
-                    print(f"{user.name} fails to trip {target.name}.")
+                return f"{user.name} trips {target.name} and they fall prone.\n"
+            if not special:
+                return f"{user.name} fails to trip {target.name}.\n"
         else:
             if not special:
-                print(f"{target.name} is already prone.")
+                return f"{target.name} is already prone.\n"
+        return ""
 
 
 class NightmareFuel(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Nightmare Fuel", description="Invade the enemy's dreams, messing with their mind and "
@@ -1435,29 +1847,56 @@ class NightmareFuel(Skill):
                          cost=20)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         crit = 1
         if target.status_effects['Sleep'].active:
             if random.randint(user.stats.intel // 2, user.stats.intel) > \
                     random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-                if random.random() > 0.9:  # 10% chance to crit
-                    print("Critical hit!")
+                if random.random() > 0.5:  # 50% chance to crit
+                    use_str += "Critical hit!\n"
                     crit = 2
-                damage = target.status_effects['Sleep'].duration * user.stats.intel * crit
+                damage = int(target.status_effects['Sleep'].duration * user.stats.intel * crit)
                 damage = max(1, random.randint(damage // 2, damage))
                 target.health.current -= damage
-                print(f"{user.name} invades {target.name}'s dreams, dealing {damage} damage.")
+                use_str += f"{user.name} invades {target.name}'s dreams, dealing {damage} damage.\n"
             else:
-                print(f"{target.name} resists the spell.")
+                use_str += f"{target.name} resists the spell.\n"
         else:
-            print("The spell does nothing.")
+            use_str += "The spell does nothing.\n"
+        return use_str
+
+
+class WidowsWail(Skill):
+    """
+    Special skill of waitress; does more damage as the user's HP diminishes
+    """
+
+    def __init__(self):
+        super().__init__(name="Widow's Wail", description="The agony of loss is released, affecting both the target "
+                                                          "and user. Both will take non-elemental damage based on the "
+                                                          "current health of the user.",
+                         cost=12)
+        self.damage = 20
+        self.max_damage = 200
+
+    def use(self, user, target=None, cover=False):
+        use_str = ""
+        user.mana.current -= self.cost
+        dmg = int((user.health.max / user.health.current) * self.damage)
+        damage = min(self.max_damage, dmg)
+        if random.randint(user.stats.intel // 2, user.stats.intel) > \
+            random.randint(user.stats.wisdom // 2, user.stats.wisdom):
+            use_str += f"Anguish overwhelms {user.name}, taking {damage} damage.\n"
+            user.health.current -= damage
+        if random.randint(user.stats.intel // 2, user.stats.intel) > \
+            random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+            use_str += f"Anguish overwhelms {target.name}, taking {damage} damage.\n"
+            target.health.current -= damage
+        return use_str
 
 
 class ThrowRock(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Throw Rock", description="Grab the nearest rock or stone and chuck it at the enemy, with"
@@ -1465,17 +1904,16 @@ class ThrowRock(Skill):
                          cost=7)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         size = random.randint(0, 4)  # size of rock thrown
         sizes = ['tiny', 'small', 'medium', 'large', 'massive']
-        print(f"{user.name} throws a {sizes[size]} rock at {target.name}.")
+        use_str = f"{user.name} throws a {sizes[size]} rock at {target.name}.\n"
         a_chance = user.check_mod('luck', luck_factor=10)
         d_chance = target.check_mod('luck', luck_factor=15)
         dodge = (random.randint(0, target.stats.dex // 2) + d_chance >
                  random.randint(user.stats.dex // 2, user.stats.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
-        dam_red = target.check_mod('armor')
+        dam_red = target.check_mod('armor', enemy=user)
         resist = target.check_mod('resist', 'Physical')
         hit_per = user.hit_chance(target, typ='weapon')
         hit = hit_per > random.random()
@@ -1483,51 +1921,65 @@ class ThrowRock(Skill):
             dodge = False
             hit = True
         if dodge:
-            print(f"{target.name} evades the attack.")
+            use_str += f"{target.name} evades the attack.\n"
         else:
             if cover:
-                print(f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                      f"{target.name}.")
+                use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
             elif hit:
-                damage = random.randint(user.stats.strength // 4, user.stats.strength // 3) * (size + 1)
+                crit = 1
+                if (a_chance - d_chance) * 0.1 > random.random():
+                    crit = 2
+                    use_str += "Critical hit!\n"
+                damage = random.randint(user.stats.strength // 4, user.stats.strength // 3) * (size + 1) * crit
                 damage = max(0, int((damage - dam_red) * (1 - resist)))
                 if target.status_effects['Mana Shield'].active:
-                    damage //= target.status_effects['Mana Shield'].duration
-                    if damage > target.mana.current:
-                        print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                        damage -= target.mana.current
+                    mana_loss = damage // target.status_effects['Mana Shield'].duration
+                    if mana_loss > target.mana.current:
+                        abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                        use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                        damage -= abs_dam
                         target.mana.current = 0
                         target.status_effects['Mana Shield'].active = False
+                        use_str += f"The mana shield dissolves around {target.name}.\n"
                     else:
-                        print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                        target.mana.current -= damage
+                        use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                        target.mana.current -= mana_loss
+                        damage = 0
+                elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                    if damage >= target.status_effects['Power Up'].extra:
+                        use_str += (f"The shield around {target.name} absorbs "
+                                    f"{target.status_effects['Power Up'].extra} damage.\n")
+                        damage -= target.status_effects['Power Up'].extra
+                        target.status_effects['Power Up'].active = False
+                        use_str += f"The shield dissolves around {target.name}.\n"
+                    else:
+                        use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                        target.status_effects['Power Up'].extra -= damage
                         damage = 0
                 if damage > 0:
                     target.health.current -= damage
-                    print(f"{target.name} is hit by the rock and takes {damage} damage.")
+                    use_str += f"{target.name} is hit by the rock and takes {damage} damage.\n"
                     if not target.status_effects["Prone"].active:
                         if random.randint(user.stats.strength // 2, user.stats.strength) > \
                                 random.randint(target.stats.strength // 2, target.stats.strength):
                             target.status_effects['Prone'].active = True
                             target.status_effects['Prone'].duration = max(1, size)
-                            print(f"{target.name} is knocked over and falls prone.")
+                            use_str += f"{target.name} is knocked over and falls prone.\n"
                 else:
-                    print(f"{target.name} shrugs off the damage.")
+                    use_str += f"{target.name} shrugs off the damage.\n"
             else:
-                print(f"{user.name} misses {target.name} with the throw.")
+                use_str += f"{user.name} misses {target.name} with the throw.\n"
+        return use_str
 
 
 class Stomp(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Stomp", description="Stomp on the enemy, dealing damage with a chance to stun.",
                          cost=8)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         resist = target.check_mod('resist', 'Physical')
         a_chance = user.check_mod('luck', luck_factor=10)
@@ -1542,42 +1994,54 @@ class Stomp(Skill):
             hit_per = user.hit_chance(target, typ='weapon')
             hit = hit_per > random.random()
         if dodge:
-            print(f"{target.name} evades the attack.")
-        else:
-            if cover and hit:
-                print(f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                      f"{target.name}.")
-            elif hit:
-                crit = 1
-                if not random.randint(0, a_chance):
-                    crit = 2
-                    print("Critical hit!")
-                damage = int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist)) * crit
-                if target.status_effects['Mana Shield'].active:
-                    damage //= target.status_effects['Mana Shield'].duration
-                    if damage > target.mana.current:
-                        print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                        damage -= target.mana.current
-                        target.mana.current = 0
-                        target.status_effects['Mana Shield'].active = False
-                    else:
-                        print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                        target.mana.current -= damage
-                        damage = 0
-                if damage > 0:
-                    target.health.current -= damage
-                    print(f"{user.name} stomps {target.name}, dealing {damage} damage.")
-                    if not target.status_effects["Stun"].active:
-                        if random.randint(user.stats.strength // 2, user.stats.strength) > \
-                                random.randint(target.stats.con // 2, target.stats.con):
-                            turns = max(2, user.stats.strength // 10)
-                            target.status_effects["Stun"].active = True
-                            target.status_effects['Stun'].duration = turns
-                            print(f"{user.name} stunned {target.name}.")
+            return f"{target.name} evades the attack.\n"
+        if cover and hit:
+            use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
+        elif hit:
+            crit = 1
+            if (a_chance - d_chance) * 0.1 > random.random():
+                crit = 2
+                use_str += "Critical hit!\n"
+            damage = int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist) * crit)
+            if target.status_effects['Mana Shield'].active:
+                mana_loss = damage // target.status_effects['Mana Shield'].duration
+                if mana_loss > target.mana.current:
+                    abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                    use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                    damage -= abs_dam
+                    target.mana.current = 0
+                    target.status_effects['Mana Shield'].active = False
+                    use_str += f"The mana shield dissolves around {target.name}.\n"
                 else:
-                    print("{} stomps {} but deals no damage.")
+                    use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                    target.mana.current -= mana_loss
+                    damage = 0
+            elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                if damage >= target.status_effects['Power Up'].extra:
+                    use_str += (f"The shield around {target.name} absorbs "
+                                f"{target.status_effects['Power Up'].extra} damage.\n")
+                    damage -= target.status_effects['Power Up'].extra
+                    target.status_effects['Power Up'].active = False
+                    use_str += f"The shield dissolves around {target.name}.\n"
+                else:
+                    use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                    target.status_effects['Power Up'].extra -= damage
+                    damage = 0
+            if damage > 0:
+                target.health.current -= damage
+                use_str += f"{user.name} stomps {target.name}, dealing {damage} damage.\n"
+                if not target.status_effects["Stun"].active:
+                    if random.randint(user.stats.strength // 2, user.stats.strength) > \
+                            random.randint(target.stats.con // 2, target.stats.con):
+                        turns = max(2, user.stats.strength // 10)
+                        target.status_effects["Stun"].active = True
+                        target.status_effects['Stun'].duration = turns
+                        use_str += f"{user.name} stunned {target.name}.\n"
             else:
-                print(f"{user.name} misses {target.name}.")
+                use_str += "{} stomps {} but deals no damage.\n"
+        else:
+            use_str += f"{user.name} misses {target.name}.\n"
+        return use_str
 
 
 class Screech(Skill):
@@ -1591,7 +2055,7 @@ class Screech(Skill):
                          cost=15)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         damage = 0
         if random.randint(user.stats.dex // 2, user.stats.dex) + user.stats.intel > \
@@ -1600,19 +2064,20 @@ class Screech(Skill):
             damage = int(user.stats.intel * (1 - resist))
             if damage > 0:
                 target.health.current -= damage
-                print(f"The deafening screech hurts {target.name} for {damage} damage.")
+                use_str += f"The deafening screech hurts {target.name} for {damage} damage.\n"
                 if not target.status_effects["Silence"].active:
                     duration = random.randint(1, max(2, user.stats.intel // 10))
                     target.status_effects['Silence'].active = True
                     target.status_effects['Silence'].duration = duration
-                    print(f"{target.name} has been silenced.")
+                    use_str += f"{target.name} has been silenced.\n"
         if damage <= 0:
-            print("The spell is ineffective.")
+            use_str += "The spell is ineffective.\n"
+        return use_str
 
 
 class Detonate(Skill):
     """
-    Cannot fully resist the damage except with Mana Shield
+    Cannot fully resist the damage except with an active shield
     """
 
     def __init__(self):
@@ -1622,29 +2087,43 @@ class Detonate(Skill):
                          cost=0)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} explodes, sending shrapnel in all directions.")
+        use_str = (f"{user.name} explodes, sending shrapnel in all directions.")
         resist = target.check_mod('resist', 'Physical')
         damage = max(user.health.current // 2, int(user.health.current * (1 - resist))) * random.randint(1, 4)
         if target.status_effects['Mana Shield'].active:
-            damage //= target.status_effects['Mana Shield'].duration
-            if damage > target.mana.current:
-                print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                damage -= target.mana.current
+            mana_loss = damage // target.status_effects['Mana Shield'].duration
+            if mana_loss > target.mana.current:
+                abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                damage -= abs_dam
                 target.mana.current = 0
                 target.status_effects['Mana Shield'].active = False
+                use_str += f"The mana shield dissolves around {target.name}.\n"
             else:
-                print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                target.mana.current -= damage
+                use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                target.mana.current -= mana_loss
+                damage = 0
+        elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+            if damage >= target.status_effects['Power Up'].extra:
+                use_str += (f"The shield around {target.name} absorbs "
+                            f"{target.status_effects['Power Up'].extra} damage.\n")
+                damage -= target.status_effects['Power Up'].extra
+                target.status_effects['Power Up'].active = False
+                use_str += f"The shield dissolves around {target.name}.\n"
+            else:
+                use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                target.status_effects['Power Up'].extra -= damage
                 damage = 0
         if damage > 0:
             t_chance = target.check_mod('luck', luck_factor=20)
             if random.randint(0, target.stats.dex // 15) + t_chance:
                 damage = max(1, damage // 2)
-                print(f"{target.name} dodges the shrapnel, only taking half damage.")
-            print(f"{target.name} takes {damage} damage from the shrapnel.")
+                use_str += f"{target.name} dodges the shrapnel, only taking half damage.\n"
+            use_str += f"{target.name} takes {damage} damage from the shrapnel.\n"
         else:
-            print(f"{target.name} was unhurt by the explosion.")
+            use_str += f"{target.name} was unhurt by the explosion.\n"
         user.health.current = 0
+        return use_str
 
 
 class Crush(Skill):
@@ -1658,7 +2137,6 @@ class Crush(Skill):
                          cost=25)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
         user.mana.current -= self.cost
         resist = target.check_mod('resist', 'Physical')
         a_chance = user.check_mod('luck', luck_factor=15)
@@ -1675,33 +2153,29 @@ class Crush(Skill):
             hit = (random.randint(a_hit // 2, a_hit) + a_chance >
                    random.randint(d_hit // 2, d_hit) + d_chance)
         if dodge:
-            print(f"{target.name} evades the attack.")
-        else:
-            if hit:
-                print(f"{user.name} grabs {target.name}.")
-                crit = 1
-                if not random.randint(0, d_chance):
-                    crit = 2
-                    print("Critical hit!")
-                damage = max(int(target.health.current * 0.25),
-                             int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist)) * crit)
-                target.health.current -= damage
-                print(f"{user.name} crushes {target.name}, dealing {damage} damage.")
-                if random.randint(user.stats.strength // 2, user.stats.strength) > \
-                        random.randint(target.stats.dex // 2, target.stats.dex) + d_chance:
-                    fall_damage = int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist))
-                    target.health.current -= fall_damage
-                    print(f"{user.name} throws {target.name} to the ground, dealing {fall_damage} damage.")
-                else:
-                    print(f"{target.name} rolls as they hit the ground, preventing any fall damage.")
+            return f"{target.name} evades the attack.\n"
+        if hit:
+            use_str = f"{user.name} grabs {target.name}.\n"
+            crit = 1
+            if (a_chance - d_chance) * 0.1 > random.random():
+                crit = 2
+                use_str += "Critical hit!\n"
+            damage = max(int(target.health.current * 0.25),
+                            int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist) * crit))
+            target.health.current -= damage
+            use_str += f"{user.name} crushes {target.name}, dealing {damage} damage.\n"
+            if random.randint(user.stats.strength // 2, user.stats.strength) > \
+                    random.randint(target.stats.dex // 2, target.stats.dex) + d_chance:
+                fall_damage = int(random.randint(user.stats.strength // 2, user.stats.strength) * (1 - resist))
+                target.health.current -= fall_damage
+                use_str += f"{user.name} throws {target.name} to the ground, dealing {fall_damage} damage.\n"
             else:
-                print(f"{user.name} grabs for {target.name} but misses.")
+                use_str += f"{target.name} rolls as they hit the ground, preventing any fall damage.\n"
+            return use_str
+        return f"{user.name} grabs for {target.name} but misses.\n"
 
 
 class ConsumeItem(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Consume Item", description="You enjoy the finer things in life, which includes metal, "
@@ -1710,7 +2184,7 @@ class ConsumeItem(Skill):
                          cost=14)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         u_chance = user.check_mod('luck', luck_factor=10)
         t_chance = target.check_mod('luck', luck_factor=10)
@@ -1718,38 +2192,39 @@ class ConsumeItem(Skill):
             if len(target.inventory) != 0 and random.randint(0, u_chance):
                 item_key = random.choice(list(target.inventory))
                 item = target.inventory[item_key][0]
-                target.modify_inventory(item, num=1, subtract=True)
-                print(f"{user.name} steals {item_key} from {target.name} and consumes it.")
-                duration = max(1, int(1 / item().rarity))
-                amount = max(1, int(2 / item().rarity))
-                if item().typ == 'Weapon':
+                target.modify_inventory(item, subtract=True)
+                use_str += f"{user.name} steals {item_key} from {target.name} and consumes it.\n"
+                duration = max(1, int(1 / item.rarity))
+                amount = max(1, int(2 / item.rarity))
+                if item.typ == 'Weapon':
                     stat = 'Attack'
-                    print(f"{user.name}'s {stat.lower()} increases by {amount}.")
-                elif item().typ == 'Armor':
+                    use_str += f"{user.name}'s {stat.lower()} increases by {amount}.\n"
+                elif item.typ == 'Armor':
                     stat = 'Defense'
-                    print(f"{user.name}'s {stat.lower()} increases by {amount}.")
-                elif item().typ == 'OffHand':
-                    if item().subtyp == 'Tome':
+                    use_str += f"{user.name}'s {stat.lower()} increases by {amount}.\n"
+                elif item.typ == 'OffHand':
+                    if item.subtyp == 'Tome':
                         stat = 'Magic'
                     else:
                         stat = 'Magic Defense'
-                    print(f"{user.name}'s {stat.lower()} increases by {amount}.")
-                elif item().typ == 'Accessory':
-                    if item().subtyp == 'Ring':
+                    use_str += f"{user.name}'s {stat.lower()} increases by {amount}.\n"
+                elif item.typ == 'Accessory':
+                    if item.subtyp == 'Ring':
                         stat = random.choice(['Attack', 'Defense'])
                     else:
                         stat = random.choice(['Magic', 'Magic Defense'])
-                    print(f"{user.name}'s {stat.lower()} increases by {amount}.")
-                elif item().typ == 'Potion':
-                    if item().subtyp != 'Stat':
+                    use_str += f"{user.name}'s {stat.lower()} increases by {amount}.\n"
+                elif item.typ == 'Potion':
+                    if item.subtyp != 'Stat':
                         stat = 'Regen'
-                        print(f"{user.name} regenerated HP over {duration} turns.")
+                        use_str += f"{user.name} regenerated HP over {duration} turns.\n"
                     else:
                         stat = 'Poison'
-                        print(f"{user.name} is poisoned.")
+                        use_str += f"{user.name} is poisoned.\n"
+                        amount = int(target.health.max * 0.05)
                 else:
                     stat = random.choice(['Silence', 'Stun', 'Blind', 'Sleep'])
-                    print(f'{user.name} is affected by {stat.lower()}.')
+                    use_str += f'{user.name} is affected by {stat.lower()}.\n'
                 user.status_effects[stat].active = True
                 user.status_effects[stat].duration = duration + 1
                 try:
@@ -1759,72 +2234,69 @@ class ConsumeItem(Skill):
             else:
                 gold = random.randint(target.gold // 100, target.gold // 50) * u_chance
                 regen = gold // 10
-                print(f"{user.name} steals {gold} gold from {target.name} and consumes it.")
-                print(f"{user.name} regains {regen} health and mana.")
+                use_str += f"{user.name} steals {gold} gold from {target.name} and consumes it.\n"
+                use_str += f"{user.name} regains {regen} health and mana.\n"
                 user.health.current += regen
                 user.health.current = min(user.health.current, user.health.max)
                 user.mana.current += regen
                 user.mana.current = min(user.mana.current, user.mana.max)
         else:
-            print(f"{user.name} can't steal anything.")
+            use_str += f"{user.name} can't steal anything.\n"
+        return use_str
 
 
 class DestroyMetal(Skill):
-    """
-
-    """
     def __init__(self):
         super().__init__(name="Destroy Metal", description="Target metal items and destroy them.",
                          cost=27)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
         metal_items = ['Fist', 'Dagger', 'Sword', 'Ninja Blade', 'Longsword', 'Battle Axe', 'Polearm',
                        'Shield', 'Heavy', 'Ring', 'Pendant', 'Key']
         destroy_list = []
         destroy_loc = 'inv'
         for item in [target.inventory[x][0] for x in target.inventory]:
-            if item().subtyp in metal_items and not item().ultimate and item().rarity > 0:
+            if item.subtyp in metal_items and not item.ultimate and item.rarity > 0:
                 destroy_list.append(item)
         if len(destroy_list) == 0:
             destroy_loc = 'equip'
             for item in target.equipment.values():
-                if item().subtyp in metal_items and not item().ultimate and item().rarity > 0:
+                if item.subtyp in metal_items and not item.ultimate and item.rarity > 0:
                     destroy_list.append(item)
         try:
             destroy_item = random.choice(destroy_list)
             t_chance = target.check_mod('luck', luck_factor=5)
-            if not random.randint(0, int(2 / destroy_item().rarity) + t_chance):
+            if not random.randint(0, int(2 / destroy_item.rarity) + t_chance):
+                from items import remove_equipment
                 if destroy_loc == 'inv':
-                    print(f"{user.name} destroys a {destroy_item().name.lower()} out of {target.name}'s inventory.")
-                    target.modify_inventory(destroy_item, num=1, subtract=True)
+                    use_str += f"{user.name} destroys a {destroy_item.name} out of {target.name}'s inventory.\n"
+                    target.modify_inventory(destroy_item, subtract=True)
                 elif destroy_loc == 'equip':
-                    if destroy_item().typ not in ['Weapon', 'Accessory']:
-                        print(f"{user.name} destroys {target.name}'s {destroy_item().typ.lower()}.")
-                        target.equipment[destroy_item().typ] = items.remove(destroy_item().typ)
-                    elif destroy_item().typ == 'Accessory':
-                        print(f"{user.name} destroys {target.name}'s {destroy_item().subtyp.lower()}.")
-                        target.equipment[destroy_item().subtyp] = items.remove(destroy_item().subtyp)
+                    if destroy_item.typ not in ['Weapon', 'Accessory']:
+                        use_str += f"{user.name} destroys {target.name}'s {destroy_item.typ}.\n"
+                        target.equipment[destroy_item.typ] = remove_equipment(destroy_item.typ)
+                    elif destroy_item.typ == 'Accessory':
+                        use_str += f"{user.name} destroys {target.name}'s {destroy_item.subtyp}.\n"
+                        target.equipment[destroy_item.subtyp] = remove_equipment(destroy_item.subtyp)
                     else:
                         if target.equipment['OffHand'] == destroy_item:
-                            target.equipment['OffHand'] = items.remove('OffHand')
-                            print(f"{user.name} destroys {target.name}'s offhand weapon.")
+                            target.equipment['OffHand'] = remove_equipment('OffHand')
+                            use_str += f"{user.name} destroys {target.name}'s offhand weapon.\n"
                         else:
-                            target.equipment[destroy_item().typ] = items.remove(destroy_item().typ)
-                            print(f"{user.name} destroys {target.name}'s {destroy_item().typ.lower()}.")
+                            target.equipment[destroy_item.typ] = remove_equipment(destroy_item.typ)
+                            use_str += f"{user.name} destroys {target.name}'s {destroy_item.typ}.\n"
                 else:
                     raise AssertionError("You shouldn't reach here.")
             else:
-                print(f"{user.name} fails to destroy any items.")
+                use_str += f"{user.name} fails to destroy any items.\n"
         except IndexError:
-            print(f"{target.name} isn't carrying any metal items.")
+            use_str += f"{target.name} isn't carrying any metal items.\n"
+        return use_str
 
 
 class Turtle(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Turtle", description="Hunker down into a ball, reducing all damage to 0 and regenerating"
@@ -1847,86 +2319,16 @@ class GoblinPunch(Skill):
         self.max_punches = 5
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         num_attacks = max(1, random.randint(user.level.pro_level, self.max_punches))
-        str_diff = max(1, user.stats.strength - target.stats.strength)
+        str_diff = max(1 + user.level.pro_level, (target.stats.strength - user.stats.strength) // 2)
         for _ in range(num_attacks):
             if user.hit_chance(target) > random.random():
                 target.health.current -= str_diff
-                print(f"{user.name} punches {target.name} for {str_diff} damage.")
+                use_str += f"{user.name} punches {target.name} for {str_diff} damage.\n"
             else:
-                print(f"{user.name} punches air, missing {target.name}.")
-            time.sleep(0.1)
-
-
-class Blackjack(Skill):
-    """
-
-    """
-
-    def __init__(self):
-        super().__init__(name="Blackjack", description="Play a round of blackjack with the Jester; different things "
-                                                       "happen depending on the result.",
-                         cost=7)
-
-    def use(self, user, target=None, cover=False):
-        def draw_card(cards):
-            card = random.choice(cards)
-            return cards.pop(cards.index(card))
-
-        def score(hand):
-            total = 0
-            for card in hand:
-                try:
-                    total += int(card.split()[1])
-                except ValueError:
-                    if card.split()[1] in ['J', 'Q', 'K']:
-                        total += 10
-                    else:
-                        total += 11
-                        if total > 21:
-                            total -= 10
-            return total
-
-        numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
-        suits = ["♠️", "♥️", "♣️", "♦️"]
-        deck = [f"{suit} {number}" for suit in suits for number in numbers]
-        print(f"{user.name} uses {self.name}.")
-        user.mana.current -= self.cost
-        user_hand = [draw_card(deck), draw_card(deck)]
-        user_score = score(user_hand)
-        user_stay = False
-        target_hand = [draw_card(deck), draw_card(deck)]
-        target_score = score(target_hand)
-        target_stay = False
-        while True:
-            print(f"Your Hand: {''.join(target_hand)} Jester's Hand: {''.join(user_hand)}", end="\r")
-            if target_score > 21:
-                break
-            if user_score > 21:
-                break
-            if not target_stay:
-                if target_score < 17:
-                    target_hand.append(draw_card(deck))
-                    target_score = score(target_hand)
-                else:
-                    target_stay = True
-            if not user_stay:
-                if user_score < 17:
-                    user_hand.append(draw_card(deck))
-                    user_score = score(user_hand)
-                else:
-                    user_stay = True
-            if all([target_stay, user_stay]):
-                break
-            time.sleep(0.5)
-        print(f"Your Hand: {''.join(target_hand)} Jester's Hand: {''.join(user_hand)}\n", end="\r")
-        if target_score > 21:
-            print("You busted!")
-        elif user_score > 21:
-            print("Jester busted!")
-        else:
-            pass
+                use_str += f"{user.name} punches air, missing {target.name}.\n"
+        return use_str
 
 
 class BrainGorge(Skill):
@@ -1940,31 +2342,31 @@ class BrainGorge(Skill):
                          cost=30)
 
     def use(self, user, target=None, cover=False):
-        print(f"{user.name} uses {self.name}.")
+        use_str = ""
         user.mana.current -= self.cost
-        hit, crit = user.weapon_damage(target)
+        wd_str, hit, crit = user.weapon_damage(target)
+        use_str += wd_str
         if hit:
             t_chance = target.check_mod('luck', luck_factor=15)
-            print(f"{user.name} latches onto {target.name}.")
+            use_str += f"{user.name} latches onto {target.name}.\n"
             if any([target.status_effects['Stun'].active, target.status_effects["Sleep"].active]) or \
                 (random.randint(user.stats.strength // 2, user.stats.strength) >
                  random.randint(target.stats.con // 2, target.stats.con) + t_chance):
                 resist = target.check_mod('resist', 'Physical')
-                damage = int(random.randint(user.stats.strength // 4, user.stats.strength) * (1 - resist)) * crit
+                damage = int(random.randint(user.stats.strength // 4, user.stats.strength) * (1 - resist) * crit)
                 target.health.current -= damage
                 if damage > 0:
-                    print(f"{user.name} does an additional {damage} damage to {target.name}.")
+                    use_str += f"{user.name} does an additional {damage} damage to {target.name}.\n"
                     if not target.is_alive() or \
                             (random.randint(user.stats.intel // 2, user.stats.intel) >
-                             random.randint(target.stats.wisdom // 2, target.stats.wisdom) + t_chance):
+                             random.randint(target.stats.wisdom // 2, target.stats.wisdom) + \
+                                target.check_mod('magic def', enemy=user)):
                         target.stats.intel -= 1
-                        print(f"{user.name} eats a part of {target.name}'s brain, lowering their intelligence by 1.")
+                        use_str += f"{user.name} eats a part of {target.name}'s brain, lowering their intelligence by 1.\n"
+        return use_str
 
 
 class Counterspell(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Counterspell", description="If the Behemoth is the target of an attack spell, it will "
@@ -1974,13 +2376,10 @@ class Counterspell(Skill):
 
     def use(self, user, target=None, cover=False):
         spell = random.choice(user.spellbook['Spells'].values())
-        spell().cast(user, target=target, cover=cover)
+        return spell.cast(user, target=target, cover=cover)
 
 
 class FinalAttack(Skill):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Final Attack", description="Upon death, the behemoth unleashes the powerful Meteor "
@@ -2002,29 +2401,34 @@ class ChooseFate(Skill):
                                                          "decide what he will do for that turn.",
                          cost=0)
 
-    def use(self, user, target=None, cover=False):
-        print("I'm bored, you choose.")
+    def use(self, game, user, target=None, cover=False):
+        import utils
+        use_str = ""
+        choose_message = "I'm bored, you choose."
         options = ['Attack', 'Hellfire', 'Crush']
-        option = storyline.get_response(options)
+        popup = utils.SelectionPopupMenu(game, choose_message, options)
+        option_index = popup.navigate_popup()
         mod_up = random.randint(10, 25)
-        if options[option] == 'Attack':
-            _, _ = user.weapon_damage(target)
+        if options[option_index] == 'Attack':
+            wd_str, _, _ = user.weapon_damage(target)
+            use_str += wd_str
             user.damage_mod += mod_up
-            print("Hahaha, my power increases!")
-        elif options[option] == 'Hellfire':
+            use_str += "Hahaha, my power increases!\n"
+        elif options[option_index] == 'Hellfire':
             user.spell_mod += mod_up
             Hellfire().cast(user, target=target)
-            print("The devastation will only get worse from here.")
-        elif options[option] == "Crush":
+            use_str += "The devastation will only get worse from here.\n"
+        elif options[option_index] == "Crush":
             Crush().use(user, target)
             mod_down = random.randint(0, 10)
             if user.damage_mod > 0:
                 user.damage_mod -= mod_down
             if user.spell_mod > 0:
                 user.spell_mod -= mod_down
-            print("Interesting choice...maybe I'll show pity.")
+            use_str += "Interesting choice...maybe I'll show pity.\n"
         else:
             raise AssertionError("You shouldn't reach here.")
+        return use_str
 
 
 """
@@ -2032,9 +2436,6 @@ Spell section
 """
 # Spell types
 class Attack(Spell):
-    """
-
-    """
 
     def __init__(self, name, description, cost, damage, crit):
         super().__init__(name, description, cost)
@@ -2042,13 +2443,13 @@ class Attack(Spell):
         self.crit = crit
         self.turns = None
 
-    def cast(self, caster, target=None, cover=False, special=False):
-        if not special:
-            print(f"{caster.name} casts {self.name}.")
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        cast_message = ""
+        if not (special or fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
             caster.mana.current -= self.cost
         stun = target.status_effects['Stun'].active
         reflect = target.status_effects['Reflect'].active
-        spell_mod = caster.check_mod('magic')
+        spell_mod = caster.check_mod('magic', enemy=target)
         dodge = target.dodge_chance(caster) > random.random()
         hit_per = caster.hit_chance(target, typ='spell')
         hit = hit_per > random.random()
@@ -2056,71 +2457,88 @@ class Attack(Spell):
             dodge = False
             hit = True
         if dodge and not reflect:
-            print(f"{target.name} dodged the {self.name} and was unhurt.")
+            cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
         elif cover:
-            print(f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                  f"{target.name}.")
+            cast_message += (f"{target.familiar.name} steps in front of the attack,"
+                             f" absorbing the damage directed at {target.name}.\n")
         else:
             if hit:
-                spell_dmg = int(self.damage + spell_mod)
+                damage = int(self.damage + spell_mod)
                 if reflect:
                     target = caster
-                    print(f"{self.name} is reflected back at {caster.name}!")
+                    cast_message += f"{self.name} is reflected back at {caster.name}!\n"
                 resist = target.check_mod('resist', typ=self.subtyp)
-                dam_red = target.check_mod('magic def')
-                damage = int(random.randint(spell_dmg // 2, spell_dmg))
+                dam_red = target.check_mod('magic def', enemy=caster)
                 crit = 1
                 if not random.randint(0, self.crit):
                     crit = 2
                 damage *= crit
                 if crit == 2:
-                    print("Critical Hit!")
+                    cast_message += "Critical Hit!\n"
+                if caster.cls.name == "Archbishop" and caster.status_effects['Power Up'].active and self.subtyp == "Holy":
+                    damage = int(damage * 1.25)
                 if target.status_effects['Mana Shield'].active:
-                    damage //= target.status_effects['Mana Shield'].duration
-                    if damage > target.mana.current:
-                        print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                        damage -= target.mana.current
+                    mana_loss = damage // target.status_effects['Mana Shield'].duration
+                    if mana_loss > target.mana.current:
+                        abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                        cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                        damage -= abs_dam
                         target.mana.current = 0
                         target.status_effects['Mana Shield'].active = False
+                        cast_message += f"The mana shield dissolves around {target.name}.\n"
                     else:
-                        print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                        target.mana.current -= damage
+                        cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                        target.mana.current -= mana_loss
+                        damage = 0
+                elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                    if damage >= target.status_effects['Power Up'].extra:
+                        use_str += (f"The shield around {target.name} absorbs "
+                                    f"{target.status_effects['Power Up'].extra} damage.\n")
+                        damage -= target.status_effects['Power Up'].extra
+                        target.status_effects['Power Up'].active = False
+                        use_str += f"The shield dissolves around {target.name}.\n"
+                    else:
+                        use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                        target.status_effects['Power Up'].extra -= damage
                         damage = 0
                 if damage < 0:
                     target.health.current -= damage
-                    print(f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.")
+                    cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
                 else:
                     damage = int(damage * (1 - resist))
                     damage -= random.randint(dam_red // 4, dam_red)
                     if damage <= 0:
-                        print(f"{self.name} was ineffective and does no damage.")
+                        cast_message += f"The spell was ineffective and does no damage.\n"
                         damage = 0
                     elif random.randint(0, target.stats.con // 2) > \
                             random.randint((caster.stats.intel * crit) // 2, (caster.stats.intel * crit)):
                         damage //= 2
                         if damage > 0:
-                            print(f"{target.name} shrugs off the {self.name} and only receives half of the damage.")
-                            print(f"{caster.name} damages {target.name} for {damage} hit points.")
+                            cast_message += f"{target.name} shrugs off the spell and only receives half of the damage.\n"
+                            cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
                         else:
-                            print(f"{self.name} was ineffective and does no damage.")
+                            cast_message += f"The spell was ineffective and does no damage.\n"
                     else:
-                        print(f"{caster.name} damages {target.name} for {damage} hit points.")
+                        cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
                     target.health.current -= damage
                     if target.is_alive() and damage > 0 and not reflect:
-                        self.special_effect(caster, target, damage, crit)
+                        cast_message += self.special_effect(caster, target, damage, crit)
                     elif target.is_alive() and damage > 0 and reflect:
-                        self.special_effect(caster, caster, damage, crit)
-                if 'Counterspell' in target.spellbook['Spells']:
-                    print(f"{target.name} uses Counterspell.")
-                    Counterspell().use(target, caster)
+                        cast_message += self.special_effect(caster, caster, damage, crit)
+                if 'Counterspell' in target.spellbook['Spells'] and not random.randint(0, 4):  # TODO
+                    cast_message += f"{target.name} uses Counterspell.\n"
+                    cast_message += Counterspell().use(target, caster)
             else:
-                print(f"The spell misses {target.name}.")
+                cast_message += f"The spell misses {target.name}.\n"
+            if caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active and damage > 0:
+                cast_message += f"{caster.name} regens {damage} mana.\n"
+                caster.mana.current += damage
+                if caster.mana.current > caster.mana.max:
+                    caster.mana.current = caster.mana.max
+        return cast_message
 
 
 class HolySpell(Spell):
-    """
-
-    """
 
     def __init__(self, name, description, cost, damage, crit):
         super().__init__(name, description, cost)
@@ -2129,37 +2547,25 @@ class HolySpell(Spell):
         self.subtyp = 'Holy'
 
 
-@dataclass
 class SupportSpell(Spell):
-    """
-
-    """
-
-    subtyp: str = 'Support'
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Support'
 
 
-@dataclass
 class DeathSpell(Spell):
-    """
-
-    """
-
-    subtyp: str = 'Death'
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Death'
 
 
-@dataclass
 class StatusSpell(Spell):
-    """
-
-    """
-
-    subtyp: str = 'Status'
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Status'
 
 
 class HealSpell(Spell):
-    """
-
-    """
 
     def __init__(self, name, description, cost, heal, crit):
         super().__init__(name, description, cost)
@@ -2169,10 +2575,11 @@ class HealSpell(Spell):
         self.subtyp = 'Heal'
         self.combat = False
 
-    def cast(self, caster, target=None, cover=False, special=False):
-        target = caster
-        if not special:
-            print(f"{caster.name} casts {self.name}.")
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        cast_message = ""
+        if not fam:
+            target = caster
+        if not (special or fam):
             caster.mana.current -= self.cost
         crit = 1
         heal_mod = caster.check_mod('heal')
@@ -2181,42 +2588,21 @@ class HealSpell(Spell):
             self.hot(target, heal)
         else:
             if not random.randint(0, self.crit):
-                print("Critical Heal!")
+                cast_message += "Critical Heal!\n"
                 crit = 2
             heal *= crit
             target.health.current += heal
-            print(f"{caster.name} heals {target.name} for {heal} hit points.")
+            cast_message += f"{caster.name} heals {target.name} for {heal} hit points.\n"
             if target.health.current >= target.health.max:
                 target.health.current = target.health.max
-                print(f"{target.name} is at full health.")
-
-    def cast_out(self, player_char):
-        player_char.mana.current -= self.cost
-        print(f"{player_char.name} casts {self.name}.")
-        if player_char.health.current == player_char.health.max:
-            print("You are already at full health.")
-            return
-        crit = 1
-        heal_mod = player_char.check_mod('heal')
-        heal = int(player_char.health.max * self.heal + heal_mod)
-        if not random.randint(0, self.crit):
-            print("Critical Heal!")
-            crit = 2
-        heal *= crit
-        player_char.health.current += heal
-        print(f"{player_char.name} heals themself for {heal} hit points.")
-        if player_char.health.current >= player_char.health.max:
-            player_char.health.current = player_char.health.max
-            print(f"{player_char.name} is at full health.")
+                cast_message += f"{target.name} is at full health.\n"
+        return cast_message
 
 
-@dataclass
 class MovementSpell(Spell):
-    """
-
-    """
-
-    subtyp: str = 'Movement'
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Movement'
 
 
 # Spells
@@ -2232,13 +2618,12 @@ class MagicMissile(Attack):
         self.subtyp = 'Non-elemental'
         self.missiles = 1
 
-    def cast(self, caster, target=None, cover=False, special=False):
-        if not special:
-            name = caster.name
-            print(f"{name} casts {self.name}.")
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        cast_message = ""
+        if not (special or fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
             caster.mana.current -= self.cost
         stun = any(target.status_effects[x].active for x in ['Sleep', 'Stun', 'Prone'])
-        spell_mod = caster.check_mod('magic')
+        spell_mod = caster.check_mod('magic', enemy=target)
         hits = []
         for i in range(self.missiles):
             hits.append(False)
@@ -2248,64 +2633,77 @@ class MagicMissile(Attack):
             if stun:
                 dodge = False
                 hits[i] = True
-            damage = 0
-            damage += random.randint(self.damage + spell_mod // 2, (self.damage + spell_mod))
+            damage = self.damage + spell_mod
             crit = 1
             if not random.randint(0, self.crit):
                 crit = 2
             damage *= crit
             if crit == 2:
-                print("Critical Hit!")
+                cast_message += "Critical Hit!\n"
             if dodge:
-                print(f"{target.name} dodged the {self.name} and was unhurt.")
+                cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
             elif cover:
-                print(f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                      f"{target.name}.")
+                cast_message += (f"{target.familiar.name} steps in front of the attack, "
+                                 f"absorbing the damage directed at {target.name}.\n")
             else:
                 if hits[i]:
                     if target.status_effects['Mana Shield'].active:
-                        damage //= target.status_effects['Mana Shield'].duration
-                        if damage > target.mana.current:
-                            print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                            damage -= target.mana.current
+                        mana_loss = damage // target.status_effects['Mana Shield'].duration
+                        if mana_loss > target.mana.current:
+                            abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                            cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                            damage -= abs_dam
                             target.mana.current = 0
                             target.status_effects['Mana Shield'].active = False
+                            cast_message += f"The mana shield dissolves around {target.name}.\n"
                         else:
-                            print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                            target.mana.current -= damage
+                            cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                            target.mana.current -= mana_loss
                             damage = 0
-                    dam_red = target.check_mod('magic def')
+                    elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                        if damage >= target.status_effects['Power Up'].extra:
+                            use_str += (f"The shield around {target.name} absorbs "
+                                       f"{target.status_effects['Power Up'].extra} damage.\n")
+                            damage -= target.status_effects['Power Up'].extra
+                            target.status_effects['Power Up'].active = False
+                            use_str += f"The shield dissolves around {target.name}.\n"
+                        else:
+                            use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                            target.status_effects['Power Up'].extra -= damage
+                            damage = 0
+                    dam_red = target.check_mod('magic def', enemy=caster)
                     damage -= random.randint(dam_red // 2, dam_red)
                     if damage <= 0:
-                        print(f"{self.name} was ineffective and does no damage")
+                        cast_message += f"{self.name} was ineffective and does no damage.\n"
                         damage = 0
                     elif random.randint(0, target.stats.con // 2) > \
                             random.randint(caster.stats.intel // 2, caster.stats.intel):
                         damage //= 2
                         if damage > 0:
-                            print(f"{target.name} shrugs off the {self.name} and only receives half of the damage.")
-                            print(f"{name} damages {target.name} for {damage} hit points.")
+                            cast_message += f"{target.name} shrugs off the {self.name} and only receives half of the damage.\n"
+                            cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
                         else:
-                            print(f"{self.name} was ineffective and does no damage")
+                            cast_message += f"{self.name} was ineffective and does no damage.\n"
                     else:
-                        print(f"{name} damages {target.name} for {damage} hit points.")
+                        cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
                     target.health.current -= damage
-                    time.sleep(1)
                     if not target.is_alive():
                         break
                 else:
-                    print(f"The spell misses {target.name}.")
-                time.sleep(0.1)
+                    cast_message += f"The spell misses {target.name}.\n"
+                if caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active and damage > 0:
+                    cast_message += f"{caster.name} regens {damage} mana.\n"
+                    caster.mana.current += damage
+                    if caster.mana.current > caster.mana.max:
+                        caster.mana.current = caster.mana.max
         if any(hits):
-            if 'Counterspell' in target.spellbook['Spells']:
-                print(f"{target.name} uses Counterspell.")
-                Counterspell().use(target, caster)
+            if 'Counterspell' in target.spellbook['Spells'] and not random.randint(0, 4):  # TODO
+                cast_message += f"{target.name} uses Counterspell.\n"
+                cast_message += Counterspell().use(target, caster)
+        return cast_message
 
 
 class MagicMissile2(MagicMissile):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2314,9 +2712,6 @@ class MagicMissile2(MagicMissile):
 
 
 class MagicMissile3(MagicMissile):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2349,7 +2744,24 @@ class Meteor(Attack):
         self.subtyp = 'Non-elemental'
 
 
-class Firebolt(Attack):
+class FireSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Fire'
+    
+    def special_effect(self, caster, target, damage, crit):
+        special_str = ""
+        if random.randint(0, caster.stats.intel // 2) > \
+            random.randint(target.stats.wisdom // 4, target.stats.wisdom):
+                special_str += f"{target.name} is set ablaze.\n"
+                dmg = random.randint(damage // 4, damage // 2)
+                target.status_effects["DOT"].active = True
+                target.status_effects["DOT"].duration = max(2, target.status_effects["DOT"].duration)
+                target.status_effects["DOT"].extra = max(dmg, target.status_effects["DOT"].extra)
+        return special_str
+
+
+class Firebolt(FireSpell):
     """
     Arcane fire spells have lower crit but hit harder on average
     """
@@ -2357,75 +2769,81 @@ class Firebolt(Attack):
     def __init__(self):
         super().__init__(name='Firebolt', description='A mote of fire propelled at the foe.',
                          cost=2, damage=8, crit=10)
-        self.subtyp = 'Fire'
         self.school = 'Arcane'
 
 
-class Fireball(Attack):
-    """
-
-    """
+class Fireball(Firebolt):
 
     def __init__(self):
-        super().__init__(name='Fireball', description='A giant ball of fire that consumes the enemy.',
-                         cost=10, damage=25, crit=10)
-        self.subtyp = 'Fire'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = "Fireball"
+        self.description = "A giant ball of fire that consumes the enemy."
+        self.cost = 10
+        self.damage = 25
 
 
-class Firestorm(Attack):
-    """
-
-    """
+class Firestorm(Fireball):
 
     def __init__(self):
-        super().__init__(name='Firestorm', description='Fire rains from the sky, incinerating the enemy.',
-                         cost=20, damage=40, crit=10)
-        self.subtyp = 'Fire'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = 'Firestorm'
+        self.description = 'Fire rains from the sky, incinerating the enemy.'
+        self.cost = 20
+        self.damage = 40
 
 
-class Scorch(Attack):
-    """
-
-    """
+class Scorch(FireSpell):
 
     def __init__(self):
         super().__init__(name='Scorch', description='Light a fire and watch the enemy burn!',
                          cost=6, damage=14, crit=9)
-        self.subtyp = 'Fire'
         self.school = 'Elemental'
 
 
-class MoltenRock(Attack):
+class MoltenRock(Scorch):
     """
     Rank 1 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Molten Rock', description='A giant, molten boulder is hurled at the enemy, dealing great'
-                                                         ' fire damage.',
-                         cost=16, damage=28, crit=9)
-        self.subtyp = 'Fire'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Molten Rock'
+        self.description = 'A giant, molten boulder is hurled at the enemy, dealing great fire damage.'
+        self.cost = 16
+        self.damage = 28
         self.rank = 1
 
 
-class Volcano(Attack):
+class Volcano(MoltenRock):
     """
     Rank 2 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Volcano', description='A mighty eruption burst out from beneath the enemy\' feet, '
-                                                     'dealing massive fire damage.',
-                         cost=24, damage=48, crit=9)
-        self.subtyp = 'Fire'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Volcano'
+        self.description = 'A mighty eruption burst out from beneath the enemy\' feet, dealing massive fire damage.'
+        self.cost = 24
+        self.damage = 48
         self.rank = 2
 
 
-class IceLance(Attack):
+class IceSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Ice'
+    
+    def special_effect(self, caster, target, damage, crit):
+        special_str = ""
+        if random.randint(0, caster.stats.intel // 2) > \
+            random.randint(target.stats.wisdom // 4, target.stats.wisdom):
+                dmg = random.randint(damage // 2, damage)
+                special_str += f"{target.name} is chilled to the bone, taking an extra {dmg} damage.\n"
+                target.health.current -= dmg
+        return special_str
+
+
+class IceLance(IceSpell):
     """
     Arcane ice spells have lower average damage but have the highest chance to crit
     """
@@ -2433,36 +2851,45 @@ class IceLance(Attack):
     def __init__(self):
         super().__init__(name='Ice Lance', description='A javelin of ice launched at the enemy.',
                          cost=4, damage=4, crit=2)
-        self.subtyp = 'Ice'
         self.school = 'Arcane'
 
 
-class Icicle(Attack):
-    """
-
-    """
+class Icicle(IceLance):
 
     def __init__(self):
-        super().__init__(name='Icicle', description='Frozen shards rain from the sky.',
-                         cost=9, damage=15, crit=2)
-        self.subtyp = 'Ice'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = 'Icicle'
+        self.description = 'Frozen shards rain from the sky.'
+        self.cost = 9
+        self.damage = 15
 
 
-class IceBlizzard(Attack):
-    """
-
-    """
+class IceBlizzard(Icicle):
 
     def __init__(self):
-        super().__init__(name='Ice Blizzard', description='The enemy is encased in a blistering cold, penetrating into '
-                                                          'its bones.',
-                         cost=18, damage=25, crit=2)
-        self.subtyp = 'Ice'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = 'Ice Blizzard'
+        self.description = 'The enemy is encased in a blistering cold, penetrating into its bones.'
+        self.cost = 18
+        self.damage = 25
 
 
-class Shock(Attack):
+class ElectricSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Electric'
+
+    def special_effect(self, caster, target, damage, crit):
+        special_str = ""
+        if random.randint(0, caster.stats.intel // 2) > \
+            random.randint(target.stats.wisdom // 4, target.stats.wisdom):
+                special_str += f"{target.name} gets shocked and is stunned.\n"
+                target.status_effects["Stun"].active = True
+                target.status_effects["Stun"].duration = max(1 + crit, target.status_effects["Stun"].duration)
+        return special_str
+
+
+class Shock(ElectricSpell):
     """
     Arcane electric spells have better crit than fire and better damage than ice
     """
@@ -2470,114 +2897,123 @@ class Shock(Attack):
     def __init__(self):
         super().__init__(name='Shock', description='An electrical arc from the caster\'s hands to the enemy.',
                          cost=6, damage=10, crit=4)
-        self.subtyp = 'Electric'
         self.school = 'Arcane'
 
 
-class Lightning(Attack):
-    """
-
-    """
+class Lightning(Shock):
 
     def __init__(self):
-        super().__init__(name='Lightning', description='Throws a bolt of lightning at the enemy.',
-                         cost=15, damage=18, crit=4)
-        self.subtyp = 'Electric'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = 'Lightning'
+        self.description = 'Throws a bolt of lightning at the enemy.'
+        self.cost = 15
+        self.damage = 18
 
 
-class Electrocution(Attack):
-    """
-
-    """
+class Electrocution(Lightning):
 
     def __init__(self):
-        super().__init__(name='Electrocution', description='A million volts of electricity passes through the enemy.',
-                         cost=25, damage=32, crit=4)
-        self.subtyp = 'Electric'
-        self.school = 'Arcane'
+        super().__init__()
+        self.name = 'Electrocution'
+        self.description = 'A million volts of electricity passes through the enemy.'
+        self.cost = 25
+        self.damage = 32
 
 
-class WaterJet(Attack):
-    """
+class WaterSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Water'
 
-    """
+    def special_effect(self, caster, target, damage, crit):  # TODO add prone status
+        special_str = ""
+        return special_str
+
+
+class WaterJet(WaterSpell):
 
     def __init__(self):
         super().__init__(name='Water Jet', description='A jet of water erupts from beneath the enemy\'s feet.',
                          cost=4, damage=12, crit=3)
-        self.subtyp = 'Water'
         self.school = 'Elemental'
 
 
-class Aqualung(Attack):
+class Aqualung(WaterJet):
     """
     Rank 1 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Aqualung', description='Giant water bubbles surround the enemy and burst, causing great '
-                                                      'water damage.',
-                         cost=13, damage=20, crit=3)
-        self.subtyp = 'Water'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Aqualung'
+        self.description = 'Giant water bubbles surround the enemy and burst, causing great water damage.'
+        self.cost = 13
+        self.damage = 20
         self.rank = 1
 
 
-class Tsunami(Attack):
+class Tsunami(Aqualung):
     """
     Rank 2 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Water Jet', description='A massive tidal wave cascades over your foes.',
-                         cost=26, damage=32, crit=3)
-        self.subtyp = 'Water'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Tsunami'
+        self.description = 'A massive tidal wave cascades over your foes.'
+        self.cost = 26
+        self.damage = 32
         self.rank = 2
 
 
-class Tremor(Attack):
-    """
+class EarthSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Earth'
 
-    """
+    def special_effect(self, caster, target, damage, crit):  # TODO
+        special_str = ""
+        return special_str
+
+
+class Tremor(EarthSpell):
 
     def __init__(self):
         super().__init__(name='Tremor', description='The ground shakes, causing objects to fall and damage the enemy.',
                          cost=3, damage=8, crit=8)
-        self.subtyp = 'Earth'
         self.school = 'Elemental'
 
 
-class Mudslide(Attack):
+class Mudslide(Tremor):
     """
     Rank 1 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Mudslide', description='A torrent of mud and earth sweep over the enemy, causing earth '
-                                                      'damage.',
-                         cost=16, damage=30, crit=8)
-        self.subtyp = 'Earth'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Mudslide'
+        self.description = 'A torrent of mud and earth sweep over the enemy, causing earth damage.'
+        self.cost = 16
+        self.damage = 30
         self.rank = 1
 
 
-class Earthquake(Attack):
+class Earthquake(Mudslide):
     """
     Rank 2 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Earthquake', description='The cave wall and ceiling are brought down by a massive '
-                                                        'seismic event, dealing devastating earth damage.',
-                         cost=26, damage=50, crit=8)
-        self.subtyp = 'Earth'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Earthquake'
+        self.description = 'The cave wall and ceiling are brought down by a massive seismic event, dealing '\
+            'devastating earth damage.'
+        self.cost = 26
+        self.damage = 50
         self.rank = 2
 
 
-class Sandstorm(Attack):
+class Sandstorm(EarthSpell):
     """
     Enemy Spell
     """
@@ -2586,73 +3022,84 @@ class Sandstorm(Attack):
         super().__init__(name='Sandstorm', description='Engulf the enemy in a sandstorm, doing damage and blinding '
                                                        'them.',
                          cost=22, damage=32, crit=6)
-        self.subtyp = 'Earth'
 
     def special_effect(self, caster, target, damage, crit):
+        special_str = ""
         if not target.status_effects["Blind"].active:
             if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
                     random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects['Blind'].active = True
                 target.status_effects['Blind'].duration = max(2, caster.stats.intel // 10)
-                print(f"{target.name} is blinded by the {self.name}.")
+                special_str += f"{target.name} is blinded by the {self.name}.\n"
+        return special_str
 
 
-class Gust(Attack):
-    """
+class WindSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Wind'
 
-    """
+    def special_effect(self, caster, target, damage, crit):  # TODO add eject enemy effect
+        special_str = ""
+        return special_str
+
+
+class Gust(WindSpell):
 
     def __init__(self):
         super().__init__(name='Gust', description='A strong gust of wind whips past the enemy.',
                          cost=7, damage=15, crit=6)
-        self.subtyp = 'Wind'
         self.school = 'Elemental'
 
 
-class Hurricane(Attack):
+class Hurricane(Gust):
     """
     Rank 1 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Hurricane', description='A violent storm berates your foes, causing great wind damage.',
-                         cost=22, damage=26, crit=6)
-        self.subtyp = 'Wind'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Hurricane'
+        self.description = 'A violent storm berates your foes, causing great wind damage.'
+        self.cost = 22
+        self.damage = 26
         self.rank = 1
 
 
-class Tornado(Attack):
+class Tornado(Hurricane):
     """
     Rank 2 Enemy Spell
     """
 
     def __init__(self):
-        super().__init__(name='Tornado', description='You bring down a cyclone that pelts the enemy with debris and '
-                                                     'causes massive wind damage.',
-                         cost=40, damage=40, crit=6)
-        self.subtyp = 'Wind'
-        self.school = 'Elemental'
+        super().__init__()
+        self.name = 'Tornado'
+        self.description = 'You bring down a cyclone that pelts the enemy with debris and causes massive wind damage.'
+        self.cost = 40
+        self.damage = 40
         self.rank = 2
 
 
-class ShadowBolt(Attack):
-    """
+class ShadowSpell(Attack):
+    def __init__(self, name, description, cost, damage, crit):
+        super().__init__(name, description, cost, damage, crit)
+        self.subtyp = 'Shadow'
 
-    """
+    def special_effect(self, caster, target, damage, crit):  # TODO chance to drain enemy to heal user
+        special_str = ""
+        return special_str
+
+
+class ShadowBolt(ShadowSpell):
 
     def __init__(self):
         super().__init__(name='Shadow Bolt', description='Launch a bolt of magic infused with dark energy, damaging the'
                                                          ' enemy.',
                          cost=8, damage=15, crit=5)
-        self.subtyp = 'Shadow'
         self.school = 'Shadow'
 
 
 class ShadowBolt2(ShadowBolt):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2662,9 +3109,6 @@ class ShadowBolt2(ShadowBolt):
 
 
 class ShadowBolt3(ShadowBolt):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2673,30 +3117,25 @@ class ShadowBolt3(ShadowBolt):
         self.crit = 3
 
 
-class Corruption(Attack):
-    """
-
-    """
+class Corruption(ShadowSpell):
 
     def __init__(self):
         super().__init__(name='Corruption', description='Damage the enemy and add a debuff that does damage over time.',
                          cost=16, damage=12, crit=5)
-        self.subtyp = 'Shadow'
 
     def special_effect(self, caster, target, damage, crit):
-        if random.randint((caster.stats.intel * crit) // 2, (caster.stats.intel * crit)) \
+        special_str = ""
+        if random.randint((caster.stats.charisma * crit) // 2, (caster.stats.charisma * crit)) \
                 > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-            turns = max(1, caster.stats.intel // 10)
+            turns = max(1, caster.stats.charisma // 10)
             target.status_effects["DOT"].active = True
             target.status_effects["DOT"].duration = max(turns, target.status_effects["DOT"].duration)
             target.status_effects["DOT"].extra = max(damage, target.status_effects["DOT"].extra)
-            print(f"{caster.name}'s magic penetrates {target.name}'s defenses.")
+            special_str += f"{caster.name}'s magic penetrates {target.name}'s defenses.\n"
+        return special_str
 
 
-class Terrify(Attack):
-    """
-
-    """
+class Terrify(ShadowSpell):
 
     def __init__(self):
         super().__init__(name='Terrify', description='Get in the mind of the enemy, terrifying them into inaction and '
@@ -2704,12 +3143,15 @@ class Terrify(Attack):
                          cost=18, damage=10, crit=4)
 
     def special_effect(self, caster, target, damage, crit):
+        special_str = ""
         if not target.status_effects["Stun"].active:
-            if random.randint(0, (caster.stats.intel * crit)) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-                turns = max(1, caster.stats.intel // 10)
+            if random.randint(0, (caster.stats.charisma * crit)) > \
+                random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+                turns = max(crit, caster.stats.charisma // 10)
                 target.status_effects["Stun"].active = True
                 target.status_effects["Stun"].duration = turns
-                print(f"{caster.name} stunned {target.name}.")
+                special_str += f"{caster.name} stunned {target.name}.\n"
+        return special_str
 
 
 class Doom(DeathSpell):
@@ -2721,27 +3163,28 @@ class Doom(DeathSpell):
         super().__init__(name='Doom', description='Places a timer on the enemy\'s life, ending it when the timer '
                                                   'expires.',
                          cost=15)
-        self.timer = 3
+        self.timer = 5
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster, target=None, special=False, cover=False):
+        cast_message = ""
         if not special:
-            print(f"{caster.name} casts {self.name}.")
             caster.mana.current -= self.cost
         resist = target.check_mod('resist', typ=self.subtyp)
         chance = target.check_mod('luck', luck_factor=10)
         if resist < 1:
             if not target.status_effects["Doom"].active:
-                if random.randint(caster.stats.intel // 4, caster.stats.intel) * (1 - resist) \
+                if random.randint(caster.stats.charisma // 4, caster.stats.charisma) * (1 - resist) \
                         > random.randint(target.stats.wisdom // 2, target.stats.wisdom) + chance:
                     target.status_effects["Doom"].active = True
                     target.status_effects["Doom"].duration = self.timer
-                    print(f"A timer has been placed on {target.name}'s life.")
+                    cast_message += f"A timer has been placed on {target.name}'s life.\n"
                 else:
                     if not special:
-                        print("The magic has no effect.")
+                        cast_message += "The magic has no effect.\n"
         else:
             if not special:
-                print(f"{target.name} is immune to death spells.")
+                cast_message += f"{target.name} is immune to death spells.\n"
+        return cast_message
 
 
 class Desoul(DeathSpell):
@@ -2753,23 +3196,24 @@ class Desoul(DeathSpell):
         super().__init__(name='Desoul', description='Removes the soul from the enemy, instantly killing it.',
                          cost=50)
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster, target=None, special=False, cover=False):
+        cast_message = ""
         if not special:
-            print(f"{caster.name} casts {self.name}.")
             caster.mana.current -= self.cost
         resist = target.check_mod('resist', typ=self.subtyp)
         chance = target.check_mod('luck', luck_factor=10)
         if resist < 1:
-            if random.randint(0, caster.stats.intel) * (1 - resist) \
+            if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
                 target.health.current = 0
-                print(f"{target.name} has their soul ripped right out and falls to the ground dead.")
+                cast_message += f"{target.name} has their soul ripped right out and falls to the ground dead.\n"
             else:
                 if not special:
-                    print("The spell has no effect.")
+                    cast_message += "The spell has no effect.\n"
         else:
             if not special:
-                print(f"{target.name} is immune to death spells.")
+                cast_message += f"{target.name} is immune to death spells.\n"
+        return cast_message
 
 
 class Petrify(DeathSpell):
@@ -2782,26 +3226,27 @@ class Petrify(DeathSpell):
                          cost=50)
         self.rank = 2
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster, target=None, special=False, cover=False):
+        cast_message = ""
         if not special:
-            print(f"{caster.name} casts {self.name}.")
             caster.mana.current -= self.cost
-        if target.equipment['OffHand']().name == 'MEDUSA SHIELD':
-            print(f"{target.name} uses the Medusa Shield to reflect {self.name} back at {caster.name}!")
+        if target.equipment['OffHand'].name == 'MEDUSA SHIELD':
+            cast_message += f"{target.name} uses the Medusa Shield to reflect {self.name} back at {caster.name}!"
             target = caster
         resist = target.check_mod('resist', typ="Stone")
         chance = target.check_mod('luck', luck_factor=1)
         if resist < 1:
-            if random.randint(0, caster.stats.intel) * (1 - resist) \
+            if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
                 target.health.current = 0
-                print(f"{target.name} is turned to stone!")
+                cast_message += f"{target.name} is turned to stone!"
             else:
                 if not special:
-                    print("The spell has no effect.")
+                    cast_message += "The spell has no effect.\n"
         else:
             if not special:
-                print(f"{target.name} is immune to death spells.")
+                cast_message += f"{target.name} is immune to petrify.\n"
+        return cast_message
 
 
 class Disintegrate(DeathSpell):
@@ -2814,24 +3259,24 @@ class Disintegrate(DeathSpell):
                                                           'obliterating them or doing great damage.',
                          cost=65)
 
-    def cast(self, caster, target=None, cover=False, special=False):
-        if not special:
-            print(f"{caster.name} casts {self.name}.")
-            caster.mana.current -= self.cost
+    def cast(self, caster, target=None, cover=False):
+        cast_message = ""
+        caster.mana.current -= self.cost
         resist = target.check_mod('resist', typ=self.subtyp)
         chance = target.check_mod('luck', luck_factor=15)
         if resist < 1:
-            if random.randint(0, caster.stats.intel) * (1 - resist) \
+            if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
                 target.health.current = 0
-                print(f"The intense blast from disintegrate leaves {target.name} in a heap of ashes.")
+                cast_message += f"The intense blast from disintegrate leaves {target.name} in a heap of ashes.\n"
         if target.is_alive():
-            damage = int(caster.stats.intel + (target.health.current * 0.25))
+            damage = int(caster.stats.charisma + (target.health.current * 0.25))
             if random.randint(0, chance):
-                print(f"{target.name} dodges the brunt of the blast, taking only half damage.")
+                cast_message += f"{target.name} dodges the brunt of the blast, taking only half damage.\n"
                 damage //= 2
             target.health.current -= damage
-            print(f"The blast from {self.name.lower()} hurts {target.name} for {damage} damage.")
+            cast_message += f"The blast from {self.name.lower()} hurts {target.name} for {damage} damage.\n"
+        return cast_message
 
 
 class Smite(HolySpell):
@@ -2842,81 +3287,86 @@ class Smite(HolySpell):
     def __init__(self):
         super().__init__(name='Smite', description='The power of light rebukes the enemy, adding bonus holy damage to '
                                                    'a successful attack roll.',
-                         cost=10, damage=20, crit=4)
+                         cost=10, damage=10, crit=4)
         self.school = 'Holy'
 
     def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name}.")
+        cast_message = ""
         caster.mana.current -= self.cost
-        hit, crit = caster.weapon_damage(target, cover=cover)
+        wd_str, hit, crit = caster.weapon_damage(target, cover=cover)
+        cast_message += wd_str
         if hit and target.is_alive():
-            spell_mod = caster.check_mod('magic')
-            dam_red = target.check_mod('magic def')
+            spell_mod = caster.check_mod('magic', enemy=target)
+            dam_red = target.check_mod('magic def', enemy=caster)
             resist = target.check_mod('resist', 'Holy')
-            spell_dmg = int(self.damage + spell_mod)
-            damage = int(random.randint(spell_dmg // 2, spell_dmg))
+            damage = int(self.damage + spell_mod)
             damage *= crit
             if target.status_effects['Mana Shield'].active:
-                damage //= target.status_effects['Mana Shield'].duration
-                if damage > target.mana.current:
-                    print(f"The mana shield around {target.name} absorbs {target.mana.current} damage.")
-                    damage -= target.mana.current
+                mana_loss = damage // target.status_effects['Mana Shield'].duration
+                if mana_loss > target.mana.current:
+                    abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                    cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                    damage -= abs_dam
                     target.mana.current = 0
                     target.status_effects['Mana Shield'].active = False
+                    cast_message += f"The mana shield dissolves around {target.name}.\n"
                 else:
-                    print(f"The mana shield around {target.name} absorbs {damage} damage.")
-                    target.mana.current -= damage
+                    cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                    target.mana.current -= mana_loss
+                    damage = 0
+            elif target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active:
+                if damage >= target.status_effects['Power Up'].extra:
+                    use_str += (f"The shield around {target.name} absorbs "
+                                f"{target.status_effects['Power Up'].extra} damage.\n")
+                    damage -= target.status_effects['Power Up'].extra
+                    target.status_effects['Power Up'].active = False
+                    use_str += f"The shield dissolves around {target.name}.\n"
+                else:
+                    use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
+                    target.status_effects['Power Up'].extra -= damage
                     damage = 0
             damage = int(damage * (1 - resist))
             if damage < 0:
                 target.health.current -= damage
-                print(f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.")
+                cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
             else:
                 damage -= random.randint(dam_red // 2, dam_red)
                 if damage <= 0:
                     damage = 0
-                    print(f"{self.name} was ineffective and does no damage.")
+                    cast_message += f"{self.name} was ineffective and does no damage.\n"
                 elif random.randint(0, target.stats.con // 2) > \
                         random.randint((caster.stats.intel * crit) // 2, (caster.stats.intel * crit)):
                     damage //= 2
                     if damage > 0:
-                        print(f"{target.name} shrugs off the {self.name} and only receives half of the damage.")
-                        print(f"{caster.name} smites {target.name} for {damage} hit points.")
+                        cast_message += f"{target.name} shrugs off the {self.name} and only receives half of the damage.\n"
+                        cast_message += f"{caster.name} smites {target.name} for {damage} hit points.\n"
                     else:
-                        print(f"{self.name} was ineffective and does no damage.")
+                        cast_message += f"{self.name} was ineffective and does no damage.\n"
                 else:
-                    print(f"{caster.name} smites {target.name} for {damage} hit points.")
+                    cast_message += f"{caster.name} smites {target.name} for {damage} hit points.\n"
                 target.health.current -= damage
+        return cast_message
 
 
 class Smite2(Smite):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.cost = 20
-        self.damage = 35
+        self.damage = 20
         self.crit = 3
 
 
 class Smite3(Smite):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.cost = 32
-        self.damage = 50
+        self.damage = 35
         self.crit = 2
 
 
 class Holy(Attack):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Holy', description='The enemy is bathed in a holy light, cleansing it of evil.',
@@ -2925,9 +3375,6 @@ class Holy(Attack):
 
 
 class Holy2(Holy):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2937,9 +3384,6 @@ class Holy2(Holy):
 
 
 class Holy3(Holy):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2960,37 +3404,34 @@ class TurnUndead(HolySpell):
                          cost=12, damage=5, crit=5)
 
     def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name}.")
+        cast_message = ""
         caster.mana.current -= self.cost
         if target.enemy_typ == "Undead":
             crit = 1
             chance = max(2, target.check_mod('luck', luck_factor=6))
             if not random.randint(0, self.crit):
-                print("Critical hit!")
+                cast_message += "Critical hit!\n"
                 crit = 2
                 chance -= 1
             if not random.randint(0, chance):
                 target.health.current = 0
-                print(f"The {target.name} has been rebuked, destroying the undead monster.")
+                cast_message += f"The {target.name} has been rebuked, destroying the undead monster.\n"
             else:
-                spell_mod = caster.check_mod('magic')
-                dam_red = target.check_mod('magic def')
+                spell_mod = caster.check_mod('magic', enemy=target)
+                dam_red = target.check_mod('magic def', enemy=caster)
                 resist = target.check_mod('resist', 'Holy')
-                spell_dmg = int(self.damage + spell_mod)
-                damage = random.randint(spell_dmg // 2, spell_dmg)
+                damage = int(self.damage + spell_mod)
                 damage *= crit
                 damage = int(damage * (1 - resist))
                 damage -= dam_red
                 target.health.current -= damage
-                print(f"{caster.name} damages {target.name} for {damage} hit points.")
+                cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
         else:
-            print("The spell does nothing.")
+            cast_message += "The spell does nothing.\n"
+        return cast_message
 
 
 class TurnUndead2(TurnUndead):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -3007,42 +3448,53 @@ class Heal(HealSpell):
     def __init__(self):
         super().__init__(name='Heal', description='A glowing light envelopes your body and heals you for a percentage '
                                                   'of the target\'s health.',
-                         cost=12, heal=0.25, crit=5)
+                         cost=6, heal=0.33, crit=5)
+
+    def cast_out(self, game):
+        cast_message = (f"{game.player_char.name} casts {self.name}.\n")
+        if game.player_char.health.current == game.player_char.health.max:
+            cast_message += f"You are already at full health.\n"
+            return cast_message
+        game.player_char.mana.current -= self.cost
+        crit = 1
+        heal_mod = game.player_char.check_mod('heal')
+        heal = int(game.player_char.health.max * self.heal + heal_mod)
+        if not random.randint(0, self.crit):
+            cast_message += f"Critical Heal!\n"
+            crit = 2
+        heal *= crit
+        game.player_char.health.current += heal
+        cast_message += f"{game.player_char.name} heals themself for {heal} hit points.\n"
+        if game.player_char.health.current >= game.player_char.health.max:
+            game.player_char.health.current = game.player_char.health.max
+            cast_message += f"{game.player_char.name} is at full health.\n"
+        return cast_message
 
 
 class Heal2(Heal):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
-        self.cost = 18
-        self.heal = 0.5
+        self.cost = 12
+        self.heal = 0.66
         self.crit = 3
 
 
 class Heal3(Heal):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.cost = 25
-        self.heal = 0.75
+        self.heal = 1.
         self.crit = 2
 
 
 class Regen(HealSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Regen', description='Cooling waters stimulate your natural healing ability, regenerating'
                                                    ' health over time.',
-                         cost=8, heal=0.1, crit=5)
+                         cost=8, heal=0.25, crit=5)
         self.combat = True
         self.turns = 3
 
@@ -3053,50 +3505,39 @@ class Regen(HealSpell):
 
 
 class Regen2(Regen):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.cost = 18
-        self.heal = 0.2
+        self.heal = 0.4
 
 
 class Regen3(Regen):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.cost = 30
-        self.heal = 0.3
+        self.heal = 0.75
 
 
 class Bless(SupportSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Bless", description="A prayer is spoken, bestowing a mighty blessing upon the caster's "
                                                    "weapon, increasing melee damage.",
                          cost=8)
 
-    def cast(self, caster, target=None, cover=False):
-        if target is None:
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        if not fam:
             target = caster
-            print(f"{caster.name} casts {self.name} on themself.")
-        else:
-            print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+        if not (fam or special):
+            caster.mana.current -= self.cost
         duration = max(2, caster.stats.wisdom // 10)
         amount = max(5, caster.stats.wisdom // 2)
         target.status_effects['Attack'].active = True
         target.status_effects['Attack'].duration = duration
         target.status_effects['Attack'].extra = amount
-        print(f"{target.name}'s attack increases by {amount}.")
+        return f"{target.name}'s attack increases by {amount}.\n"
 
 
 class Boost(SupportSpell):
@@ -3109,17 +3550,15 @@ class Boost(SupportSpell):
                                                    " damage.",
                          cost=22)
 
-    def cast(self, caster, target=None, cover=False):
-        if target is None:
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        if not fam:
             target = caster
-            print(f"{caster.name} casts {self.name} on themself.")
-        else:
-            print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+        if not (special or fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
+            caster.mana.current -= self.cost
         target.status_effects['Magic'].active = True
         target.status_effects['Magic'].duration = max(2, caster.stats.intel // 10)
         target.status_effects['Magic'].extra = max(1, caster.stats.intel // 2)
-        print(f"{target.name}'s magic increases by {target.status_effects['Magic'].extra}.")
+        return f"{target.name}'s magic increases by {target.status_effects['Magic'].extra}.\n"
 
 
 class Shell(SupportSpell):
@@ -3132,75 +3571,35 @@ class Shell(SupportSpell):
                                                    " magic attacks.",
                          cost=26)
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster, target=None, special=False, cover=False):
         if target is None:
             target = caster
-            print(f"{caster.name} casts {self.name} on themself.")
-        else:
-            print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+        if not special:
+            caster.mana.current -= self.cost
         target.status_effects['Magic Defense'].active = True
         target.status_effects['Magic Defense'].duration = max(2, caster.stats.intel // 10)
         target.status_effects['Magic Defense'].extra = max(1, caster.stats.intel // 2)
-        print(f"{target.name}'s magic defense increases by {target.status_effects['Magic Defense'].extra}.")
-
-
-class ManaShield(SupportSpell):
-    """
-    Reduction indicates how much damage a single mana point reduces
-    """
-
-    def __init__(self):
-        super().__init__(name="Mana Shield", description="A protective shield envelopes the caster, absorbing damage "
-                                                         "at the expense of mana.",
-                         cost=0)
-        self.reduction = 1
-
-    def cast(self, caster, target=None, cover=False):
-        target = caster
-        print(f"{caster.name} casts {self.name}.")
-        caster.mana.current -= self.cost
-        target.status_effects['Mana Shield'].active = True
-        target.status_effects['Mana Shield'].duration = self.reduction
-        print(f"A mana shield envelopes {target.name}.")
-
-
-class ManaShield2(ManaShield):
-    """
-
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.reduction = 2
+        return f"{target.name}'s magic defense increases by {target.status_effects['Magic Defense'].extra}.\n"
 
 
 class Reflect(SupportSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Reflect", description="A magical shield surrounds the user, reflecting incoming spells "
                                                      "back at the caster.",
                          cost=14)
 
-    def cast(self, caster, target=None, cover=False):
-        if target is None:
+    def cast(self, caster, target=None, fam=False, cover=False):
+        if not fam:
             target = caster
-            print(f"{caster.name} casts {self.name} on themself.")
-        else:
-            print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+            if not caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active:
+                caster.mana.current -= self.cost
         target.status_effects['Reflect'].active = True
-        target.status_effects['Reflect'].duration = max(2, caster.stats.intel // 10)
-        print(f"A magic force field envelopes {target.name}.")
+        target.status_effects['Reflect'].duration = max(4, caster.stats.intel // 10)
+        return f"A magic force field envelopes {target.name}.\n"
 
 
 class Resurrection(SupportSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Resurrection", description="The ultimate boon bestowed upon only the chosen few. Life "
@@ -3209,43 +3608,36 @@ class Resurrection(SupportSpell):
         self.passive = True
 
     def cast(self, caster, target=None, cover=False):
+        cast_message = ""
         if target is None:
             target = caster
-            print(f"{caster.name} casts {self.name} on themself.")
             max_heal = target.health.max - target.health.current
             if target.mana.current > max_heal:
                 target.health.current = target.health.max
                 target.mana.current -= max_heal
-                print(f"{target.name} expends mana and is healed to full life!")
+                cast_message += f"{target.name} expends mana and is healed to full life!"
             else:
                 target.health.current += target.mana.current
-                print(f"{target.name} expends all mana and is healed for {target.mana.current} hit points!")
+                cast_message += f"{target.name} expends all mana and is healed for {target.mana.current} hit points!"
                 target.mana.current = 0
         else:
-            print(f"{caster.name} casts {self.name} on {target.name}.")
             heal = int(target.health.max * 0.1)
             target.health.current = heal
-            print(f"{target.name} is brought back to life and is healed for {heal} hit points.")
+            cast_message += f"{target.name} is brought back to life and is healed for {heal} hit points.\n"
         caster.mana.current -= self.cost
+        return cast_message
 
 
 class Cleanse(SupportSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Cleanse", description="You feel all ailments leave your body like a draught of panacea.",
                          cost=20)
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
         if target is None:
             target = caster
-        if not special:
-            if target is None:
-                print(f"{caster.name} casts {self.name} on themself.")
-            else:
-                print(f"{caster.name} casts {self.name} on {target.name}.")
+        if not (special or fam):
             caster.mana.current -= self.cost
         target.status_effects['Stun'].active = False
         target.status_effects['Doom'].active = False
@@ -3254,46 +3646,56 @@ class Cleanse(SupportSpell):
         target.status_effects['Poison'].active = False
         target.status_effects['DOT'].active = False
         target.status_effects['Bleed'].active = False
-        print(f"All negative status effects have been cured for {target.name}!")
+        return f"All negative status effects have been cured for {target.name}!\n"
+
+
+class ResistAll(SupportSpell):
+
+    def __init__(self):
+        super().__init__(name="Resist All", description="", cost=25)
+
+    def cast(self, caster, target=None, special=False):
+        return f"All spell resistances are increased by 50% for {target.name}.\n"
 
 
 class Sanctuary(MovementSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name='Sanctuary', description='Return to town from anywhere in the dungeon.',
                          cost=100)
 
-    def cast_out(self, player_char):
-        player_char.mana.current -= self.cost
-        print(f"{player_char.name} casts Sanctuary and is transported back to town.")
-        player_char.health.current = player_char.health.max
-        player_char.mana.current = player_char.mana.max
-        player_char.location_x, player_char.location_y, player_char.location_z = (5, 10, 0)
+    def cast_out(self, game):
+        game.player_char.mana.current -= self.cost
+        game.player_char.health.current = game.player_char.health.max
+        game.player_char.mana.current = game.player_char.mana.max
+        game.player_char.location_x, game.player_char.location_y, game.player_char.location_z = (5, 10, 0)
+        return f"{game.player_char.name} casts Sanctuary and is transported back to town.\n"
 
 
 class Teleport(MovementSpell):
     """
-
+    TODO
     """
 
     def __init__(self):
-        super().__init__(name='Teleport', description='Teleport the user to a previously set location.',
+        super().__init__(name='Teleport', description='Teleport the user to a previously set location on the same level.',
                          cost=50)
         self.combat = False
 
-    def cast_out(self, player_char):
+    def cast_out(self, game):
+        import utils
+        teleport_message = "Do you want to set your location or teleport to the previous location?"
         options = ['Set', 'Teleport']
-        option_index = storyline.get_response(options)
+        popup = utils.SelectionPopupMenu(game, teleport_message, options)
+        option_index = popup.navigate_popup()
         if options[option_index] == 'Set':
-            print(f"This location has been set for teleport by {player_char.name}.")
-            player_char.teleport = player_char.location_x, player_char.location_y, player_char.location_z
+            cast_message = f"This location has been set for teleport by {game.player_char.name}.\n"
+            game.player_char.teleport = game.player_char.location_x, game.player_char.location_y, game.player_char.location_z
         else:
-            print(f"{player_char.name} teleports to set location.")
-            player_char.mana.current -= self.cost
-            player_char.location_x, player_char.location_y, player_char.location_z = player_char.teleport
+            cast_message = f"{game.player_char.name} teleports to set location.\n"
+            game.player_char.mana.current -= self.cost
+            game.player_char.location_x, game.player_char.location_y, game.player_char.location_z = game.player_char.teleport
+        return cast_message
 
 
 class BlindingFog(StatusSpell):
@@ -3310,18 +3712,15 @@ class BlindingFog(StatusSpell):
         self.rank = 1
 
     def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name}.")
         caster.mana.current -= self.cost
         if not target.status_effects["Blind"].active:
             if random.randint(caster.stats.intel // 2, caster.stats.intel) \
                     > random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects['Blind'].active = True
                 target.status_effects['Blind'].duration = self.turns
-                print(f"{target.name} is blinded.")
-            else:
-                print("The spell had no effect.")
-        else:
-            print(f"{target.name} is already blinded.")
+                return f"{target.name} is blinded.\n"
+            return "The spell had no effect.\n"
+        return f"{target.name} is already blinded.\n"
 
 
 class PoisonBreath(Attack):
@@ -3338,13 +3737,18 @@ class PoisonBreath(Attack):
         self.rank = 2
 
     def special_effect(self, caster, target, damage, crit):
+        special_str = ""
         if random.randint((caster.stats.intel * crit) // 2, (caster.stats.intel * crit)) \
-                > random.randint(target.stats.con // 2, target.stats.con) and not target.status_effects['Mana Shield'].active:
+                > random.randint(target.stats.con // 2, target.stats.con) and \
+                    not target.status_effects['Mana Shield'].active and \
+                        not (target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active):
             turns = max(2, caster.stats.intel // 10)
+            damage *= (target.health.max * 0.005)  # 0.5% of max health times the damage
             target.status_effects['Poison'].active = True
             target.status_effects['Poison'].duration = max(turns, target.status_effects["Poison"].duration)
             target.status_effects['Poison'].extra = max(damage, target.status_effects["Poison"].extra)
-            print(f"{caster.name} poisons {target.name}.")
+            special_str += f"{caster.name} poisons {target.name}.\n"
+        return special_str
 
 
 class DiseaseBreath(StatusSpell):
@@ -3359,74 +3763,58 @@ class DiseaseBreath(StatusSpell):
         self.school = 'Disease'
 
     def cast(self, caster, target=None, cover=False):
+        cast_message = "The spell does nothing.\n"
         caster.mana.current -= self.cost
-        print(f"{caster.name} casts {self.name}.")
         t_chance = target.check_mod('luck', luck_factor=10)
         if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
                 random.randint(target.stats.con // 2, target.stats.con):
             if not random.randint(0, 9 + t_chance):
-                print(f"The disease cripples {target.name}, lowering their constitution by 1.")
+                cast_message = f"The disease cripples {target.name}, lowering their constitution by 1.\n"
                 target.stats.con -= 1
-            else:
-                print("The spell does nothing.")
-        else:
-            print("The spell does nothing.")
+        return cast_message
 
 
 class Sleep(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Sleep", description="A magical tune lulls the target to sleep.",
                          cost=9)
         self.turns = 3
 
-    def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name}.")
-        caster.mana.current -= self.cost
+    def cast(self, caster, target=None, special=False, cover=False):
+        if not (special or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
+            caster.mana.current -= self.cost
         if not target.status_effects["Sleep"].active:
             if random.randint(caster.stats.intel // 2, caster.stats.intel) \
                     > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
                 target.status_effects['Sleep'].active = True
                 target.status_effects['Sleep'].duration = self.turns
-                print(f"{target.name} is asleep.")
-            else:
-                print(f"{caster.name} fails to put {target.name} to sleep.")
-        else:
-            print(f"{target.name} is already asleep.")
+                return f"{target.name} is asleep.\n"
+            return f"{caster.name} fails to put {target.name} to sleep.\n"
+        return f"{target.name} is already asleep.\n"
 
 
 class Stupefy(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Stupefy", description="Hit the enemy so hard, they go stupid and cannot act.",
                          cost=14)
         self.turns = 2
 
-    def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+    def cast(self, caster, target=None, fam=False, cover=False):
+        if not fam:
+            caster.mana.current -= self.cost
         if not target.status_effects["Stun"].active:
             if random.randint(0, caster.stats.intel) \
                     > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
                 target.status_effects['Stun'].active = True
                 target.status_effects['Stun'].duration = self.turns
-                print(f"{target.name} is stunned.")
-            else:
-                print(f"{caster.name} fails to stun {target.name}.")
-        else:
-            print(f"{target.name} is already stunned.")
+                return f"{target.name} is stunned.\n"
+            return f"{caster.name} fails to stun {target.name}.\n"
+        return f"{target.name} is already stunned.\n"
 
 
 class WeakenMind(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Weaken Mind", description="Attack the enemy's mind, diminishing their ability to deal "
@@ -3434,85 +3822,80 @@ class WeakenMind(StatusSpell):
                          cost=20)
 
     def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(target.stats.con // 2, target.stats.con):
+        cast_message = ""
+        if not caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active:
+            caster.mana.current -= self.cost
+        if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
+            random.randint(target.stats.con // 2, target.stats.con):
             for stat in ['Magic', 'Magic Defense']:
                 stat_mod = random.randint(max(1, caster.stats.intel // 5), max(5, caster.stats.intel // 2))
                 target.status_effects[stat].active = True
-                target.status_effects[stat].duration = random.randint(1, max(2, caster.stats.intel // 10))
-                target.status_effects[stat].extra = target.status_effects[stat] - stat_mod
-                print(f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.")
+                target.status_effects[stat].duration += random.randint(1, max(2, caster.stats.intel // 10))
+                target.status_effects[stat].extra -= stat_mod
+                cast_message += f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.\n"
+        return cast_message
 
 
 class Enfeeble(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Enfeeble", description="Cripple your foe, reducing their attack and defense rating.",
                          cost=12)
 
-    def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+    def cast(self, caster, target=None, fam=False, cover=False):
+        cast_message = ""
+        if not (fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
+            caster.mana.current -= self.cost
         if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(target.stats.con // 2, target.stats.con):
             for stat in ['Attack', 'Defense']:
                 stat_mod = random.randint(max(1, caster.stats.intel // 5), max(5, caster.stats.intel // 2))
                 target.status_effects[stat].active = True
-                target.status_effects[stat].duration = random.randint(1, max(2, caster.stats.intel // 10))
-                target.status_effects[stat].extra = target.status_effects[stat].extra - stat_mod
-                print(f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.")
+                target.status_effects[stat].duration += random.randint(1, max(2, caster.stats.intel // 10))
+                target.status_effects[stat].extra -= stat_mod
+                cast_message += f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.\n"
         else:
-            print(f"{target.name} resists the spell.")
+            cast_message += f"{target.name} resists the spell.\n"
+        return cast_message
 
 
 class Dispel(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Dispel", description="Cast an anti-magic spell on your foe, removing any positive status"
                                                     " effects.",
                          cost=20)
 
-    def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+    def cast(self, caster, target=None, special=False, cover=False):
+        if not (special or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
+            caster.mana.current -= self.cost
+        if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
+            random.randint(target.stats.wisdom // 2, target.stats.wisdom):
             target.status_effects["Regen"].active = False
             target.status_effects["Attack"].active = False
             target.status_effects["Defense"].active = False
             target.status_effects["Magic"].active = False
             target.status_effects["Magic Defense"].active = False
-            print(f"All positive status effects removed from {target.name}.")
-        else:
-            print(f"{target.name} resists the spell.")
+            return f"All positive status effects removed from {target.name}.\n"
+        return f"{target.name} resists the spell.\n"
 
 
 class Silence(StatusSpell):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Silence", description="Tongue-tie the enemy's brain, making spell casting impossible.",
                          cost=20)
 
-    def cast(self, caster, target=None, cover=False):
-        print(f"{caster.name} casts {self.name} on {target.name}.")
-        caster.mana.current -= self.cost
+    def cast(self, caster, target=None, special=False, cover=False):
+        if not special:
+            caster.mana.current -= self.cost
         if not target.status_effects["Silence"].active:
-            if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+            if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
+                random.randint(target.stats.wisdom // 2, target.stats.wisdom):
                 target.status_effects['Silence'].active = True
                 target.status_effects['Silence'].duration = random.randint(1, max(2, caster.stats.intel // 10))
-                print(f"{target.name} has been silenced.")
-            else:
-                print("The spell is ineffective.")
-        else:
-            print(f"{target.name} is already silenced.")
+                return f"{target.name} has been silenced.\n"
+            return "The spell is ineffective.\n"
+        return f"{target.name} is already silenced.\n"
 
 
 # Enemy spells
@@ -3528,27 +3911,28 @@ class Hellfire(Attack):
         self.subtyp = 'Non-elemental'
 
     def special_effect(self, caster, target, damage, crit):
+        special_str = ""
         if random.randint((caster.stats.intel * crit) // 2, (caster.stats.intel * crit)) \
                 > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
             turns = max(2, caster.stats.intel // 10)
             target.status_effects["DOT"].active = True
             target.status_effects["DOT"].duration = max(turns, target.status_effects["DOT"].duration)
             target.status_effects["DOT"].extra = max(damage, target.status_effects["DOT"].extra)
-            print(f"The flames of Hell continue to burn {target.name}.")
+            special_str += f"The flames of Hell continue to burn {target.name}.\n"
+        return special_str
 
 
 # Parameters
 skill_dict = {'Warrior': {'3': ShieldSlam,
                           '8': PiercingStrike,
                           '10': Disarm,
-                          '13': Parry,
-                          '15': Charge},
+                          '15': Charge,
+                          '23': Parry,
+                          '28': BattleCry},
               'Weapon Master': {'1': MortalStrike,
-                                '6': DoubleStrike,
-                                '20': TripleStrike},
-              'Berserker': {'1': BattleCry,
-                            '5': MortalStrike2,
-                            '15': QuadStrike},
+                                '6': DoubleStrike},
+              'Berserker': {'5': MortalStrike2,
+                            '20': TripleStrike},
               'Paladin': {'6': ShieldBlock,
                           '18': DoubleStrike},
               'Crusader': {'5': MortalStrike,
@@ -3556,11 +3940,11 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
               'Lancer': {'2': Jump,
                          '15': DoubleJump},
               'Dragoon': {'10': ShieldBlock,
-                          '12': BattleCry,
                           '20': TripleJump},
-              'Mage': {},
+              'Mage': {'25': ManaShield},
               'Sorcerer': {'10': DoubleCast},
-              'Wizard': {'15': TripleCast},
+              'Wizard': {'5': ManaShield2,
+                         '15': TripleCast},
               'Warlock': {'1': Familiar,
                           '5': HealthDrain,
                           '15': ManaDrain,
@@ -3580,21 +3964,23 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
                           '12': KidneyPunch,
                           '16': DoubleStrike,
                           '19': SleepingPowder,
-                          '20': Parry},
+                          '25': Parry},
               'Thief': {'5': Lockpick,
                         '8': TripleStrike,
+                        '12': GoldToss,
                         '15': Mug,
                         '20': PoisonStrike},
-              'Rogue': {'20': QuadStrike},
-              'Inquisitor': {'1': ShieldSlam,
+              'Rogue': {'5': SneakAttack,
+                        '10': SlotMachine,
+                        '20': QuadStrike},
+              'Inquisitor': {'1': Reveal,
+                             '2': PiercingStrike,
                              '5': Inspect,
                              '10': ExploitWeakness,
                              '12': TripleStrike,
-                             '15': ShieldBlock,
-                             '18': MortalStrike},
-              'Seeker': {'6': Charge,
-                         '10': KeenEye,
-                         '13': Parry},
+                             '14': KeenEye,
+                             '15': ShieldBlock},
+              'Seeker': {'30': QuadStrike},
               'Assassin': {'5': TripleStrike,
                            '8': PoisonStrike,
                            '15': Lockpick,
@@ -3604,25 +3990,36 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
               'Healer': {},
               'Cleric': {'6': ShieldSlam,
                          '12': ShieldBlock},
-              'Templar': {'2': Parry,
-                          '14': Charge},
-              'Priest': {},
-              'Archbishop': {'5': DoubleCast},
+              'Templar': {'1': Parry,
+                          '4': PiercingStrike,
+                          '14': Charge,
+                          '22': DoubleStrike},
+              'Priest': {'10': ManaShield},
+              'Archbishop': {'5': DoubleCast,
+                             '15': ManaShield2},
               'Monk': {'1': ChiHeal,
                        '3': DoubleStrike,
                        '5': LegSweep,
-                       '13': KidneyPunch,
-                       '19': TripleStrike},
-              'Master Monk': {'10': QuadStrike},
+                       '10': PurityBody,
+                       '19': TripleStrike,
+                       '25': Parry},
+              'Master Monk': {'1': Evasion,
+                              '10': QuadStrike,
+                              '15': PurityBody2},
               'Pathfinder': {},
-              'Druid': {'1': Transform,
-                        '10': Transform2},
-              'Lycan': {'1': Transform3},
+              'Druid': {'2': Transform,
+                        '10': Transform2,
+                        '15': MortalStrike},
+              'Lycan': {'1': Transform3,
+                        '11': Charge,
+                        '15': BattleCry,
+                        '25': MortalStrike2},
               'Diviner': {'1': LearnSpell,
                           '18': DoubleCast},
               'Geomancer': {'1': LearnSpell2,
                             '25': TripleCast},
               'Shaman': {'1': ElementalStrike,
+                         '6': PiercingStrike,
                          '14': DoubleStrike},
               'Soulcatcher': {'1': AbsorbEssence,
                               '2': Parry,
@@ -3632,7 +4029,7 @@ skill_dict = {'Warrior': {'3': ShieldSlam,
 spell_dict = {'Warrior': {},
               'Weapon Master': {},
               'Berserker': {},
-              'Paladin': {'2': Heal,
+              'Paladin': {'1': Heal,
                           '4': Smite,
                           '16': Heal2},
               'Crusader': {'3': Smite2,
@@ -3682,14 +4079,15 @@ spell_dict = {'Warrior': {},
                              '12': Enfeeble,
                              '15': Reflect},
               'Seeker': {'1': Teleport,
+                         '4': ResistAll,
                          '10': Sanctuary},
               'Assassin': {},
               'Ninja': {'20': Desoul},
               'Healer': {'2': Heal,
                          '8': Regen,
                          '10': Holy,
-                         '18': Heal2},
-              'Cleric': {'2': Smite,
+                         '26': Heal2},
+              'Cleric': {'1': Smite,
                          '3': TurnUndead,
                          '5': Bless,
                          '14': Cleanse,
@@ -3702,15 +4100,13 @@ spell_dict = {'Warrior': {},
               'Priest': {'1': Regen2,
                          '3': Holy2,
                          '6': Shell,
-                         '8': Heal3,
-                         '10': ManaShield,
                          '11': Cleanse,
                          '15': Bless,
-                         '17': Dispel},
+                         '17': Dispel,
+                         '30': Heal3},
               'Archbishop': {'4': Holy3,
                              '6': Silence,
                              '7': Regen3,
-                             '15': ManaShield2,
                              '20': Resurrection},
               'Monk': {'15': Shell},
               'Master Monk': {'2': Reflect,

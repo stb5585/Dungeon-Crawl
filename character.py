@@ -2,10 +2,14 @@
 """ character manager """
 
 # Imports
-import time
 import random
 from math import exp
 from dataclasses import dataclass
+
+
+# functions
+def sigmoid(x):
+    return 1 / (1 + exp(-x))
 
 
 # Character dataclasses
@@ -35,9 +39,9 @@ class Resource:
 @dataclass
 class Level:
     level: int = 1
-    pro_level: int = 0
+    pro_level: int = 1
     exp: int = 0
-    exp_to_gain: int = 0
+    exp_to_gain: int = 25
 
 @dataclass
 class StatusEffect:
@@ -77,7 +81,7 @@ class Character:
         __init__():
             Initializes a Character object.
         
-        statuses(end=False):
+        statuses(game, end=False):
             Manages and updates the character's status effects, applying their respective consequences
             and handling the end of combat.
     """
@@ -95,15 +99,24 @@ class Character:
         self.inventory = {}
         self.spellbook = {'Spells': {},
                           'Skills': {}}
-        self.status_effects={"Prone": StatusEffect(False, 0), "Silence": StatusEffect(False, 0),
-                             "Mana Shield": StatusEffect(False, 0), "Stun": StatusEffect(False, 0),
-                             "Doom": StatusEffect(False, 0), "Blind": StatusEffect(False, 0),
-                             "Disarm": StatusEffect(False, 0), "Sleep": StatusEffect(False, 0),
-                             "Reflect": StatusEffect(False, 0), "Poison": StatusEffect(False, 0, 0),
-                             "DOT": StatusEffect(False, 0, 0), "Bleed": StatusEffect(False, 0, 0),
-                             "Regen": StatusEffect(False, 0, 0), "Attack": StatusEffect(False, 0, 0),
-                             "Defense": StatusEffect(False, 0, 0), "Magic": StatusEffect(False, 0, 0),
-                             "Magic Defense": StatusEffect(False, 0, 0)}
+        self.status_effects={"Prone": StatusEffect(False, 0),
+                             "Silence": StatusEffect(False, 0),
+                             "Stun": StatusEffect(False, 0),
+                             "Doom": StatusEffect(False, 0),
+                             "Blind": StatusEffect(False, 0),
+                             "Disarm": StatusEffect(False, 0),
+                             "Sleep": StatusEffect(False, 0),
+                             "Poison": StatusEffect(False, 0, 0),
+                             "DOT": StatusEffect(False, 0, 0),
+                             "Bleed": StatusEffect(False, 0, 0),
+                             "Attack": StatusEffect(False, 0, 0),
+                             "Defense": StatusEffect(False, 0, 0),
+                             "Magic": StatusEffect(False, 0, 0),
+                             "Magic Defense": StatusEffect(False, 0, 0),
+                             "Regen": StatusEffect(False, 0, 0),
+                             "Reflect": StatusEffect(False, 0),
+                             "Mana Shield": StatusEffect(False, 0),
+                             "Power Up": StatusEffect(False, 0, 0)}
         self.resistance = {'Fire': 0.,
                            'Ice': 0.,
                            'Electric': 0.,
@@ -111,13 +124,14 @@ class Character:
                            'Earth': 0.,
                            'Wind': 0.,
                            'Shadow': 0.,
-                           'Death': 0.,
-                           'Stone': 0.,
                            'Holy': 0.,
                            'Poison': 0.,
+                           'Death': 0.,
+                           'Stone': 0.,
                            'Physical': 0.}
         self.flying = False
         self.invisible = False
+        self.sight = False
 
     def hit_chance(self, defender, typ='weapon'):
         """
@@ -129,68 +143,86 @@ class Character:
             Spell attack: enemy status effects
         """
 
-        def sigmoid(x):
-            return 1 / (1 + exp(-x))
-
         hit_mod = sigmoid(random.randint(self.stats.dex // 2, self.stats.dex) /
                           random.randint(defender.stats.dex // 4, defender.stats.dex))  # base hit percentage
         if typ == 'weapon':
-            hit_mod *= 1 + 0.25 * ('Accuracy' in self.equipment['Ring']().mod)  # accuracy adds 25% chance to hit
+            hit_mod *= 1 + 0.25 * ('Accuracy' in self.equipment['Ring'].mod)  # accuracy adds 25% chance to hit
             hit_mod *= 1 - 0.5 * self.status_effects['Blind'].active  # blind lowers accuracy by 50%
             hit_mod *= 1 - (1 / 10) * defender.flying  # flying lowers accuracy by 10%
             hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
         else:
             hit_mod = 1
         hit_mod *= 1 - (1 / 3) * defender.invisible  # invisible lowers accuracy by 33.3%
+        if hasattr(self, "encumbered"):
+            if self.encumbered:
+                hit_mod *= 0.75  # lower hit chance by 75% if encumbered
         return max(0, hit_mod)
 
-    def dodge_chance(self, attacker, typ='weapon'):
-        a_chance = attacker.check_mod('luck', luck_factor=10)
-        if typ == 'weapon':
-            a_chance += random.randint(attacker.stats.dex // 2, attacker.stats.dex)
+    def dodge_chance(self, attacker):
+        armor_factor = {"None": 1, "Natural": 1, "Cloth": 1, "Light": 2, "Medium": 3, "Heavy": 4}
+        a_chance = random.randint(attacker.stats.dex // 4, attacker.stats.dex) + \
+            attacker.check_mod('luck', enemy=self, luck_factor=10)
         d_chance = random.randint(0, self.stats.dex) + self.check_mod('luck', luck_factor=15)
-        chance = (d_chance - a_chance) / (a_chance + d_chance)
-        chance += 0.1 * ('Dodge' in self.equipment['Ring']().mod)
+        chance = (d_chance - a_chance) / (a_chance + d_chance) / armor_factor[self.equipment['Armor'].subtyp]
+        chance += 0.1 * ('Dodge' in self.equipment['Ring'].mod + "Evasion" in self.spellbook['Skills'])
+        if self.cls.name == "Seeker" or (self.cls.name == "Templar" and self.status_effects['Power Up'].active):
+            chance += (0.25 * self.power_up)
+        if hasattr(self, "encumbered"):
+            if self.encumbered:
+                chance /= 2  # lower dodge chance by half if encumbered
         return max(0, chance)
+    
+    def critical_chance(self, att):
+        base_crit = 0.005 * (self.stats.dex + self.check_mod("luck", luck_factor=10))
+        crit_chance = self.equipment[att].crit + base_crit
+        if self.cls.name == "Seeker":
+            crit_chance += (0.1 * self.power_up)
+        return crit_chance
 
-    def weapon_damage(self, defender, dmg_mod=0, crit=1, ignore=False, cover=False):
+    def weapon_damage(self, defender, dmg_mod=1., crit=1, ignore=False, cover=False, hit=False):
         """
         Function that controls melee attacks during combat
+        defender(Character): the target of the attack
+        dmg_mod(float): a percentage value that modifies the amount of damage done
+        crit(int): the damage multiplier for a critical hit
+        ignore(bool): whether the attack ignores the target's defenses
+        cover(bool): whether the attack can be blocked by a familiar or pet
+        hit(bool): guarantees hit if target doesn't dodge
         """
 
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
         attacks = ['Weapon']
-        if self.equipment['OffHand']().typ == 'Weapon':
+        if self.equipment['OffHand'].typ == 'Weapon':
             attacks.append('OffHand')
-
+        weapon_dam_str = ""
         for i, att in enumerate(attacks):
-            hits.append(False)
+            hits.append(hit)
             crits.append(1)
-            ignore = ignore or self.equipment[att]().ignore
+            ignore = ignore or self.equipment[att].ignore
             # attacker variables
             typ = 'attacks'
-            if self.equipment[att]().subtyp == 'Natural':
-                typ = self.equipment[att]().att_name
+            if self.equipment[att].subtyp == 'Natural':
+                typ = self.equipment[att].att_name
                 if typ == 'leers':
                     hits[i] = True
-                    self.equipment[att]().special_effect(self, defender)
+                    weapon_dam_str += self.equipment[att].special_effect(self, defender)
                     break
-
-            crit_chance = self.equipment[att]().crit + (0.005 * self.stats.dex)
-            crits[i] = 2 if crit == 1 and crit_chance > random.random() else crit
-            dmg = max(1, dmg_mod + self.check_mod(att.lower()))
-            damage = max(0, int(random.randint(dmg // 2, dmg) * crits[i]))
+            crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
+            dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
+            crit_per = random.uniform(1, crits[i])
+            damage = max(0, int(random.randint(dmg // 2, dmg) * crit_per))
 
             # defender variables
             prone = defender.status_effects['Prone'].active
             stun = defender.status_effects['Stun'].active
             sleep = defender.status_effects['Sleep'].active
-            dam_red = defender.check_mod('armor', ignore=ignore)
-            resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att]().ultimate)
+            dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
+            resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att].ultimate)
             dodge = defender.dodge_chance(self) > random.random()
-            hit_per = self.hit_chance(defender, typ='weapon')
-            hits[i] = hit_per > random.random()
+            if not hit:
+                hit_per = self.hit_chance(defender, typ='weapon')
+                hits[i] = hit_per > random.random()
             if any([prone, stun, sleep]):
                 dodge = False
                 hits[i] = True
@@ -199,92 +231,152 @@ class Character:
             if dodge:
                 hits[i] = False
                 if 'Parry' in defender.spellbook['Skills']:
-                    print(f"{defender.name} parries {self.name}'s attack and counterattacks!")
-                    defender.weapon_damage(self)
+                    weapon_dam_str += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
+                    counter_str, _, _ = defender.weapon_damage(self)
+                    weapon_dam_str += counter_str
                     if not self.is_alive():
-                        return False, max(crits)
+                        return weapon_dam_str, any(hits), max(crits)
                 else:
-                    print(f"{defender.name} evades {self.name}'s attack.")
+                    weapon_dam_str += f"{defender.name} evades {self.name}'s attack.\n"
             else:
                 if hits[i]:
                     if crits[i] > 1:
-                        print("Critical hit!")
+                        weapon_dam_str += "Critical hit!\n"
                     if cover:
-                        print(f"{defender.familiar.name} steps in front of the attack, "
-                              f"taking the damage for {defender.name}.")
+                        weapon_dam_str += (f"{defender.familiar.name} steps in front of the attack, "
+                                           f"taking the damage for {defender.name}.\n")
                         damage = 0
-                    elif ((defender.equipment['OffHand']().subtyp == 'Shield' or
-                           'Dodge' in defender.equipment['Ring']().mod) and
-                          not defender.status_effects['Mana Shield'].active) and (not stun and not sleep):
-                        blk_chance = defender.equipment['OffHand']().mod + \
-                                     (('Block' in defender.equipment['Ring']().mod) * 0.25)
+                    elif ((defender.equipment['OffHand'].subtyp == 'Shield' or
+                           'Dodge' in defender.equipment['Ring'].mod) and
+                          not defender.status_effects['Mana Shield'].active and \
+                            not (defender.cls.name == "Crusader" and defender.power_up and 
+                                 defender.status_effects['Power Up'].active)) and (not stun and not sleep):
+                        blk_chance = defender.check_mod('shield', enemy=self) / 100
                         if blk_chance > random.random():
-                            blk_amt = (defender.stats.strength * blk_chance) / self.stats.strength
+                            blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage)
                             if 'Shield Block' in defender.spellbook['Skills']:
-                                blk_amt *= 2
-                            blk_amt = min(1, blk_amt)
-                            damage *= (1 - blk_amt)
-                            damage = int(damage * (1 - resist))
-                            print(f"{defender.name} blocks {self.name}'s attack and mitigates "
-                                  f"{int(blk_amt * 100)} percent of the damage.")
+                                blk_per *= 1.25
+                            blk_per = min(1, blk_per)
+                            damage *= (1 - blk_per)
+                            damage = int(damage)
+                            weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
+                                               f"{int(blk_per * 100)} percent of the damage.\n")
                     elif defender.status_effects['Mana Shield'].active:
-                        damage //= defender.status_effects['Mana Shield'].duration
-                        if damage > defender.mana.current:
-                            print(f"The mana shield around {defender.name} absorbs {defender.mana.current} damage.")
-                            damage -= defender.mana.current
+                        mana_loss = damage // defender.status_effects['Mana Shield'].duration
+                        if mana_loss > defender.mana.current:
+                            abs_dam = defender.mana.current * defender.status_effects['Mana Shield'].duration
+                            weapon_dam_str += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
+                            damage -= abs_dam
                             defender.mana.current = 0
                             defender.status_effects['Mana Shield'].active = False
+                            weapon_dam_str += f"The mana shield dissolves around {defender.name}.\n"
                         else:
-                            print(f"The mana shield around {defender.name} absorbs {damage} damage.")
-                            defender.mana.current -= damage
+                            weapon_dam_str += f"The mana shield around {defender.name} absorbs {damage} damage.\n"
+                            defender.mana.current -= mana_loss
                             damage = 0
                             hits[i] = False
-
+                    elif defender.cls.name == "Crusader" and defender.power_up and defender.status_effects['Power Up'].active:
+                        if damage >= defender.status_effects['Power Up'].extra:
+                            weapon_dam_str += (f"The shield around {defender.name} absorbs "
+                                       f"{defender.status_effects['Power Up'].extra} damage.\n")
+                            damage -= defender.status_effects['Power Up'].extra
+                            defender.status_effects['Power Up'].active = False
+                            weapon_dam_str += f"The shield dissolves around {defender.name}.\n"
+                        else:
+                            weapon_dam_str += f"The shield around {defender.name} absorbs {damage} damage.\n"
+                            defender.status_effects['Power Up'].extra -= damage
+                            damage = 0
+                            hits[i] = False
+                    elif defender.cls.name == "Templar" and defender.power_up and defender.status_effects['Power Up'].active:
+                        ref_dam = int(0.25 * damage)
+                        damage -= ref_dam
+                        self.health.current -= ref_dam
+                        weapon_dam_str += f"{ref_dam} is reflected back at {self.name}.\n"
                     if damage > 0:
                         damage = max(0, int((damage - dam_red) * (1 - resist)))
                         defender.health.current -= damage
                         if damage > 0:
-                            print(f"{self.name} {typ} {defender.name} for {damage} damage.")
+                            weapon_dam_str += f"{self.name} {typ} {defender.name} for {damage} damage.\n"
                             if sleep and not random.randint(0, 1):
-                                    print(f"The attack awakens {defender.name}!")
+                                    weapon_dam_str += f"The attack awakens {defender.name}!\n"
                                     defender.status_effects['Sleep'].active = False
                                     defender.status_effects['Sleep'].duration = 0
+                            if self.cls.name in "Ninja" and self.power_up:
+                                dam_abs = self.status_effects['Power Up'].active * damage
+                                self.health.current += dam_abs
+                                weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
+                            if self.cls.name in "Lycan" and self.power_up:
+                                dam_abs = damage // 2
+                                self.health.current += dam_abs
+                                if dam_abs > 0:
+                                    weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
                         else:
-                            print(f"{self.name} {typ} {defender.name} but deals no damage.")
+                            weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
                             hits[i] = False
                     else:
-                        print(f"{self.name} {typ} {defender.name} but deals no damage.")
+                        weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
                         hits[i] = False
                 else:
-                    print(f"{self.name} {typ} {defender.name} but misses entirely.")
-                if i < (len(attacks) - 1):
-                    time.sleep(0.5)
-
+                    weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
             if hits[i]:
-                defender.equipment['Armor']().special_effect(defender, self)
+                weapon_dam_str += defender.equipment['Armor'].special_effect(defender, self)
                 if defender.is_alive():
-                    self.equipment[att]().special_effect(self, defender, damage=damage, crit=crits[i])
+                    weapon_dam_str += self.equipment[att].special_effect(self, defender, damage=damage, crit=crits[i])
+                if self.cls.name == "Dragoon" and self.power_up:
+                    self.status_effects['Power Up'].active = True
+                    self.status_effects['Power Up'].duration += 1
+            else:
+                if self.cls.name == "Dragoon" and self.power_up:
+                    self.status_effects['Power Up'].active = False
+                    self.status_effects['Power Up'].duration = 0    
 
-        return any(hits), max(crits)
+        return weapon_dam_str, any(hits), max(crits)
+
+    def flee(self, enemy, smoke=False):
+        stun = enemy.status_effects['Stun'].active
+        success = False
+        flee_message = f"{self.name} couldn't escape from the {enemy.name}."
+        if smoke:
+            flee_message = f"{self.name} disappears in a cloud of smoke."
+            self.state = 'normal'
+            success = True
+        chance = self.check_mod('luck', luck_factor=10)
+        if random.randint(self.stats.dex // 2, self.stats.dex) + chance > \
+                random.randint(enemy.stats.dex // 2, enemy.stats.dex) or stun:
+            flee_message = f"{self.name} flees from the {enemy.name}."
+            self.state = 'normal'
+            success = True
+        return success, flee_message
 
     def is_alive(self):
         return self.health.current > 0
 
-    def modify_inventory(self, item, num=0, subtract=False, rare=False):
+    def modify_inventory(self, item, num=1, subtract=False, rare=False, quest=False, storage=False):
         inventory = self.special_inventory if rare else self.inventory
         if subtract:
-            inventory[item().name][1] -= num
-            if inventory[item().name][1] == 0:
-                del inventory[item().name]
+            for _ in range(num):
+                inventory[item.name].pop(0)
+                if storage:
+                    if item.name not in self.storage:
+                        self.storage[item.name] = []
+                    self.storage[item.name].append(item)
+            if not len(inventory[item.name]):
+                del inventory[item.name]
         else:
-            if item().name not in inventory:
-                inventory[item().name] = [item, num]
-            else:
-                inventory[item().name][1] += num
-        if rare:
+            if item.name not in inventory:
+                inventory[item.name] = []
+            num = min(num, 99 - len(inventory[item.name]))
+            for _ in range(num):
+                inventory[item.name].append(item)
+                if storage:
+                    self.storage[item.name].pop(0)
+                    if not len(self.storage[item.name]):
+                        del self.storage[item.name]
+        if quest:
             self.quests(item=item)
 
-    def statuses(self, end=False):
+    def statuses(self, game, end=False):
+
         def default(status=None, end_combat=False):
             if end_combat:
                 for key in self.status_effects.keys():
@@ -299,24 +391,25 @@ class Character:
         if end:
             default(end_combat=True)
         else:
+            status_text = ""
             if self.status_effects['Prone'].active and all([not self.status_effects['Stun'].active,
                                                             not self.status_effects['Sleep'].active]):
                 if not random.randint(0, self.status_effects['Prone'].duration):
                     default(status='Prone')
-                    print(f"{self.name} is no longer prone.")
+                    status_text += f"{self.name} is no longer prone.\n"
                 else:
                     self.status_effects['Prone'].duration -= 1
-                    print(f"{self.name} is still prone.")
+                    status_text += f"{self.name} is still prone.\n"
             if self.status_effects['Disarm'].active and all([not self.status_effects['Stun'].active,
                                                             not self.status_effects['Sleep'].active]):
                 self.status_effects['Disarm'].duration -= 1
                 if self.status_effects['Disarm'].duration == 0:
-                    print(f"{self.name} picks up their weapon.")
+                    status_text += f"{self.name} picks up their weapon.\n"
                     default(status='Disarm')
             if self.status_effects['Silence'].active:
                 self.status_effects['Silence'].duration -= 1
                 if self.status_effects['Silence'].duration == 0:
-                    print(f"{self.name} is no longer silenced.")
+                    status_text += f"{self.name} is no longer silenced.\n"
                     default(status='Silence')
             if self.status_effects['Poison'].active:
                 self.status_effects['Poison'].duration -= 1
@@ -324,78 +417,103 @@ class Character:
                 poison_damage -= random.randint(0, self.stats.con)
                 if poison_damage > 0:
                     self.health.current -= poison_damage
-                    print(f"The poison damages {self.name} for {poison_damage} health points.")
+                    status_text += f"The poison damages {self.name} for {poison_damage} health points.\n"
                 else:
-                    print(f"{self.name} resisted the poison.")
+                    status_text += f"{self.name} resisted the poison.\n"
                 if self.status_effects['Poison'].duration == 0:
                     default(status='Poison')
-                    print(f"The poison has left {self.name}.")
+                    status_text += f"The poison has left {self.name}.\n"
             if self.status_effects['DOT'].active:
                 self.status_effects['DOT'].duration -= 1
                 dot_damage = self.status_effects['DOT'].extra
                 dot_damage -= random.randint(0, self.stats.wisdom)
                 if dot_damage > 0:
                     self.health.current -= dot_damage
-                    print(f"The magic damages {self.name} for {dot_damage} health points.")
+                    status_text += f"The magic damages {self.name} for {dot_damage} health points.\n"
                 else:
-                    print(f"{self.name} resisted the magic.")
+                    status_text += f"{self.name} resisted the magic.\n"
                 if self.status_effects['DOT'].duration == 0:
                     default(status='DOT')
-                    print(f"The magic affecting {self.name} has worn off.")
+                    status_text += f"The magic affecting {self.name} has worn off.\n"
             if self.status_effects['Bleed'].active:
                 self.status_effects['Bleed'].duration -= 1
                 bleed_damage = self.status_effects['Bleed'].extra
                 bleed_damage -= random.randint(0, self.stats.con)
                 if bleed_damage > 0:
                     self.health.current -= bleed_damage
-                    print(f"The bleed damages {self.name} for {bleed_damage} health points.")
+                    status_text += f"The bleed damages {self.name} for {bleed_damage} health points.\n"
                 else:
-                    print(f"{self.name} resisted the bleed.")
+                    status_text += f"{self.name} resisted the bleed.\n"
                 if self.status_effects['Bleed'].duration == 0:
                     default(status='Bleed')
-                    print(f"{self.name}'s wounds have healed and is no longer bleeding.")
+                    status_text += f"{self.name}'s wounds have healed and is no longer bleeding.\n"
             if self.status_effects['Regen'].active:
                 self.status_effects['Regen'].duration -= 1
                 heal = self.status_effects['Regen'].extra
                 heal = min(heal, self.health.max - self.health.current)
                 self.health.current += heal
-                print(f"{self.name}'s health has regenerated by {heal}.")
+                status_text += f"{self.name}'s health has regenerated by {heal}.\n"
                 if self.status_effects['Regen'].duration == 0:
-                    print("Regeneration spell ends.")
+                    status_text += "Regeneration spell ends.\n"
                     default(status='Regen')
             if self.status_effects['Blind'].active:
                 self.status_effects['Blind'].duration -= 1
                 if self.status_effects['Blind'].duration == 0:
-                    print(f"{self.name} is no longer blind.")
+                    status_text += f"{self.name} is no longer blind.\n"
                     default(status='Blind')
             if self.status_effects['Stun'].active:
                 self.status_effects['Stun'].duration -= 1
                 if self.status_effects['Stun'].duration == 0:
-                    print(f"{self.name} is no longer stunned.")
+                    status_text += f"{self.name} is no longer stunned.\n"
                     default(status='Stun')
             if self.status_effects['Sleep'].active:
                 self.status_effects['Sleep'].duration -= 1
                 if self.status_effects['Sleep'].duration == 0:
-                    print(f"{self.name} is no longer asleep.")
+                    status_text += f"{self.name} is no longer asleep.\n"
                     default(status='Sleep')
             if self.status_effects['Reflect'].active:
                 self.status_effects['Reflect'].duration -= 1
                 if self.status_effects['Reflect'].duration == 0:
-                    print(f"{self.name} is no longer reflecting magic.")
+                    status_text += f"{self.name} is no longer reflecting magic.\n"
                     default(status='Reflect')
             for stat in ['Attack', 'Defense', 'Magic', 'Magic Defense']:
                 if self.status_effects[stat].active:
                     self.status_effects[stat].duration -= 1
                     if self.status_effects[stat].duration == 0:
                         default(status=stat)
+            if self.status_effects['Power Up'].active:
+                if self.cls.name == "Lycan":
+                    self.status_effects['Power Up'].duration += 1
+                elif self.cls.name == "Dragoon":
+                    pass
+                else:
+                    self.status_effects['Power Up'].duration -= 1
+                if self.cls.name == "Knight Enchanter" and self.power_up:
+                    mana_regen = int(self.mana.max * 0.25)
+                    self.mana.current += mana_regen
+                    status_text += f"{self.name} regens 25% of mana.\n"
+                if self.cls.name == "Archbishop" and self.power_up:
+                    health_regen = int(self.health.max * 0.10)
+                    mana_regen = int(self.mana.max * 0.10)
+                    self.health.current += health_regen
+                    self.mana.current += mana_regen
+                    status_text += f"{self.name} regens 10% of health and mana.\n"
+                if self.status_effects['Power Up'].duration == 0:
+                    if self.cls.name == "Crusader" and self.power_up:
+                        status_text += (f"The shield around {self.name} explodes, dealing "
+                                        f"{self.status_effects['Power Up'].extra} damage to the enemy.\n")
+                    default(status='Power Up')
             if self.status_effects['Doom'].active:
                 self.status_effects['Doom'].duration -= 1
                 if self.status_effects['Doom'].duration == 0:
-                    print(f"The Doom countdown has expired and so has {self.name}!")
+                    status_text += f"The Doom countdown has expired and so has {self.name}!\n"
                     self.health.current = 0
+            return status_text
 
     def special_effects(self, target):
-        pass
+        special_str = ""
+        return special_str
 
     def familiar_turn(self, target):
-        pass
+        familiar_str = ""
+        return familiar_str

@@ -8,6 +8,7 @@ LANGUAGE: Python 3.11.6
 
 DEPENDENCIES:
 Standard
+- curses
 - dataclasses
 - glob
 - math
@@ -18,13 +19,12 @@ Standard
 - sys
 - time
 - typing
+
 3rd Party
-- pyfiglet 1.0.2
 - numpy 2.0.1
-- simple-term-menu 1.6.4
 
 EXECUTION:
-- python game.py
+- source launch.sh
  
 DESCRIPTION:
 - A dungeon crawl, text-based RPG that takes inspiration from many games. The current iteration allows for character 
@@ -56,10 +56,9 @@ FILES:
 - enemies.py
 - game.py
 - items.py
-- map.py
+- map_tiles.py
 - races.py
 - README.md
-- storyline.py
 - town.py
 - tutorial.py
 - world.py
@@ -82,7 +81,7 @@ FILE DESCRIPTIONS:
     - The primary file for the game; controls how and when the game functions
 - items.py
     - Main file for controlling items, including randomly generating for chests and drops
-- map.py
+- map_tiles.py
     - Defines the room tiles of the world and available movement per each tile
 - player.py
     - File for controlling the playable character, including all actions/interactions with the world
@@ -90,8 +89,6 @@ FILE DESCRIPTIONS:
     - File that outlines the various racial options when creating a new character
 - README.md
     - General description of program
-- storyline.py
-    - File that is primarily used for user-input function; will eventually house the storyline
 - town.py
     - Controls the interactions of the character while in town
 - tutorial.py

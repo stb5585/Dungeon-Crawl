@@ -6,9 +6,9 @@ __pycache__/*
 
 # skip currently unneeded files/directories
 test_suite.py
-pickle_story.py
 modify_save.py
 fixes.txt
 
 # ignore save_files
 save_files/*
+backup_saves/*

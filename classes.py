@@ -2,106 +2,54 @@
 """ class manager """
 
 # Imports
-import os
-import time
-from typing import Dict, List
-from dataclasses import dataclass
+from textwrap import wrap
 
-import companions
-import enemies
-import storyline
-import abilities
 import items
-from races import races_dict
+import utils
 
 
 # Functions
-def define_class(race):
-    """
-    Allows user to select desired class and returns the object
-    """
-    class_dict = {i: j['class'] for i, j in classes_dict.items()}
-    while True:
-        char_class = []
-        for cls in race.cls_res['Base']:
-            char_class.append(cls)
-        if len(char_class) > 1:
-            print("Choose your character's class.")
-            class_index = storyline.get_response(char_class)
-        else:
-            class_index = 0
-            time.sleep(0.5)
-        print(str(class_dict[char_class[class_index]]()) + "\n")
-        print(f"Are you sure you want to play as a {class_dict[char_class[class_index]]().name.lower()}? ")
-        choose = storyline.get_response(["Yes", "No"])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        if not choose:
-            return class_dict[char_class[class_index]]()
-        return False
-
-
-def equip_check(item, item_typ, cls):
+def equip_check(item, cls, equip_slot):
     """
     Checks if the class allows the item type to be equipped
     """
 
-    if item_typ == 'Accessory':
-        return True
-    if isinstance(item, list):
-        item = item[0]
-    if item().subtyp in cls.restrictions[item_typ]:
-        if item().restriction:
-            if cls.name not in item().restriction:
+    if equip_slot in ["Ring", "Pendant"]:
+        if item.subtyp == equip_slot:
+            return True
+        return False
+    if item.subtyp in cls.restrictions[equip_slot]:
+        if item.restriction:
+            if cls.name not in item.restriction:
                 return False
         return True
     return False
 
 
-def choose_familiar():
+def choose_familiar(game):
+    import companions
     fam_name = ''
-    choose_dict = {"Homunculus": [companions.Homunculus(), "Defense"],
-                   "Fairy": [companions.Fairy(), "Support"],
-                   "Mephit": [companions.Mephit(), "Arcane"],
-                   "Jinkin": [companions.Jinkin(), "Luck"]}
+    choose_dict = {"Homunculus": companions.Homunculus(),
+                   "Fairy": companions.Fairy(),
+                   "Mephit": companions.Mephit(),
+                   "Jinkin": companions.Jinkin()}
     choose_list = list(choose_dict)
-    while True:
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print("Choose your familiar.")
-        choice = storyline.get_response(choose_list)
-        fam_typ = choose_list[choice]
-        storyline.slow_type(fam_typ + "\n")
-        storyline.slow_type("Type: " + choose_dict[fam_typ][0].enemy_typ + "\n")
-        storyline.slow_type("Specialty: " + choose_dict[fam_typ][1] + "\n")
-        time.sleep(0.5)
-        print(choose_dict[fam_typ][0].inspect())
-        time.sleep(0.5)
-        if len(choose_dict[fam_typ][0].spellbook['Spells']) > 0:
-            print("Spells: " + ", ".join(choose_dict[fam_typ][0].spellbook['Spells']) + "\n")
-            time.sleep(0.5)
-        if len(choose_dict[fam_typ][0].spellbook['Skills']) > 0:
-            print("Skills: " + ", ".join(choose_dict[fam_typ][0].spellbook['Skills']) + "\n")
-            time.sleep(0.5)
-        print(f"You have chosen a {fam_typ} as your familiar. Are you sure?")
-        keep = storyline.get_response(["Yes", "No"])
-        if not keep:
-            break
+    promo_popup = utils.PromotionPopupMenu(game, "Select Familiar", "Mage", familiar=True)
+    promo_popup.update_options(choose_list, choose_dict)
+    fam_idx = promo_popup.navigate_popup()
     while fam_name == '':
-        os.system('cls' if os.name == 'nt' else 'clear')
-        storyline.slow_type("What is your familiar's name?\n")
-        fam_name = input("").capitalize()
-        print(f"You have chosen to name your familiar {fam_name}. Is this correct? ")
-        keep = storyline.get_response(["Yes", "No"])
-        if keep:
+        fam_name = utils.player_input(game, "What is your familiar's name?").capitalize()
+        confirm_str = f"You have chosen to name your familiar {fam_name}. Is this correct? "
+        confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
+        if not confirm.navigate_popup():
             fam_name = ''
-    familiar = choose_dict[fam_typ][0]
+    familiar = choose_dict[choose_list[fam_idx]]
     familiar.name = fam_name
-    familiar.typ = fam_typ
-    familiar.spec = choose_dict[fam_typ][1]
     return familiar
 
 
-def promotion(player_char):
-    exp_scale = 25
+def promotion(game):
+    pro_message = "Choose your path"
     pro1_dict = {cls_dict['class']().name: [pro['class']() for pro in cls_dict['pro'].values()] 
                  for cls_dict in classes_dict.values()}
     pro2_dict = {
@@ -110,104 +58,100 @@ def promotion(player_char):
         for sub_pro in cls_dict['pro'].values()
         for nested_pro in sub_pro.get('pro', {}).values()
     }
-    current_class = player_char.cls.name
+    current_class = game.player_char.cls.name
     class_options = []
-    if player_char.level.pro_level == 1:
-        for cls in pro1_dict[current_class]:
-            if cls.name in races_dict[player_char.race.name]().cls_res['First']:
-                class_options.append(cls.name)
-        print("Which path would you like to follow?")
-        print("Choose your path.")
-        class_index = storyline.get_response(class_options)
-        new_class = pro1_dict[current_class][class_index]
-    else:
-        new_class = pro2_dict[current_class][0]
-    print(new_class)
-    print(f"You have chosen to promote from {current_class} to {new_class.name}.")
-    print("Do you wish to continue?")
-    promote = storyline.get_response(["Yes", "No"])
-    if not promote:
-        print(f"Congratulations! {player_char.name} has been promoted from a {current_class} to a {new_class.name}!")
-        time.sleep(0.5)
-        player_char.equip(unequip=True, promo=True)
-        promoted_player = player_char
-        promoted_player.cls = new_class
-        promoted_player.level.pro_level = new_class.pro_level
-        promoted_player.level.level = 1
-        promoted_player.level.exp = 0
-        promoted_player.level.exp_to_gain = (exp_scale ** player_char.level.pro_level) * player_char.level.level
-        print("Stat Gains")
-        print(f"Strength: {promoted_player.stats.strength} -> {promoted_player.stats.strength + new_class.str_plus}")
-        promoted_player.stats.strength += new_class.str_plus
-        print(f"Intelligence: {promoted_player.stats.intel} -> {promoted_player.stats.intel + new_class.int_plus}")
-        promoted_player.stats.intel += new_class.int_plus
-        print(f"Wisdom: {promoted_player.stats.wisdom} -> {promoted_player.stats.wisdom + new_class.wis_plus}")
-        promoted_player.stats.wisdom += new_class.wis_plus
-        print(f"Constitution: {promoted_player.stats.con} -> {promoted_player.stats.con + new_class.con_plus}")
-        promoted_player.stats.con += new_class.con_plus
-        print(f"Charisma: {promoted_player.stats.charisma} -> {promoted_player.stats.charisma + new_class.cha_plus}")
-        promoted_player.stats.charisma += new_class.cha_plus
-        print(f"Dexterity: {promoted_player.stats.dex} -> {promoted_player.stats.dex + new_class.dex_plus}")
-        promoted_player.stats.dex += new_class.dex_plus
-        time.sleep(0.5)
-        promoted_player.equipment['Weapon'] = new_class.equipment['Weapon']
-        promoted_player.equipment['Armor'] = new_class.equipment['Armor']
-        promoted_player.equipment['OffHand'] = new_class.equipment['OffHand']
-        print("New Equipment")
-        print(f"Weapon: {player_char.equipment['Weapon']().name}")
-        print(f"OffHand: {player_char.equipment['OffHand']().name}")
-        print(f"Armor: {player_char.equipment['Armor']().name}")
-        time.sleep(0.5)
-        if new_class.name in ['Warlock', 'Monk']:
-            promoted_player.spellbook['Spells'] = {}
-            print("You lose access to previously learned spells.")
-            time.sleep(0.5)
-        elif new_class.name == 'Weapon Master':
-            del promoted_player.spellbook['Skills']['Shield Slam']
-            print("You unlearn Shield Slam.")
-            time.sleep(0.5)
-        elif new_class.name == 'Inquisitor':
-            del promoted_player.spellbook['Skills']['Kidney Punch']
-            print("You unlearn Kidney Punch.")
-            time.sleep(0.5)
-        if str(promoted_player.level.level) in abilities.spell_dict[promoted_player.cls.name]:
-            spell_gain = abilities.spell_dict[promoted_player.cls][str(promoted_player.level.level)]
-            if spell_gain().name in promoted_player.spellbook['Spells']:
-                print(f"{spell_gain().name} goes up a level.")
-            else:
-                print(f"You have gained the ability to cast {spell_gain().name}.")
-            promoted_player.spellbook['Spells'][spell_gain().name] = spell_gain
-            time.sleep(0.5)
-        if str(promoted_player.level.level) in abilities.skill_dict[promoted_player.cls.name]:
-            skill_gain = abilities.skill_dict[promoted_player.cls][str(promoted_player.level.level)]
-            if skill_gain().name in promoted_player.spellbook['Skills']:
-                print(f"{skill_gain().name} goes up a level.")
-            else:
-                print(f"You have gained the ability to use {skill_gain().name}.")
-            promoted_player.spellbook['Skills'][skill_gain().name] = skill_gain
-            if skill_gain().name == "Transform":
-                if skill_gain().t_creature == "Panther":
-                    promoted_player.transform.append(enemies.Panther())
-                elif skill_gain().t_creature == "Werewolf":
-                    promoted_player.transform.append(enemies.Werewolf())
-            time.sleep(0.5)
-        input("Press enter to continue")
-        if new_class.name == 'Warlock':
-            promoted_player.familiar = choose_familiar()
-            print(f"{promoted_player.familiar.name} the {promoted_player.familiar.typ} familiar has joined your team!")
-            input("Press enter to continue")
-        if new_class.name in ['Seeker', 'Wizard']:
-            promoted_player.teleport = (promoted_player.location_x,
-                                        promoted_player.location_y,
-                                        promoted_player.location_z)
-        time.sleep(0.5)
-    else:
-        print("If you change your mind, you know where to find us.")
-        time.sleep(1)
+    popup = utils.PromotionPopupMenu(game, pro_message, current_class)
+    promobox = utils.TextBox(game)
+    while True:
+        if game.player_char.level.pro_level == 1:
+            for cls in pro1_dict[current_class]:
+                if cls.name in game.player_char.race.cls_res['First']:   # TODO check if this still works
+                    class_options.append(cls.name)
+            class_options.append("Go Back")
+            popup.update_options(class_options, pro1_dict)
+            class_index = popup.navigate_popup()
+            if class_options[class_index] == "Go Back":
+                promo_str = "If you change your mind, you know where to find us.\n"
+                break
+            new_class = pro1_dict[current_class][class_index]
+            confirm_str = f"You have chosen to promote from {current_class} to {new_class.name}. Do you want to proceed?"
+        else:
+            class_options = [pro2_dict[current_class][0].name, "Go Back"]
+            popup.update_options(class_options, pro2_dict)
+            class_index = popup.navigate_popup()
+            if class_options[class_index] == "Go Back":
+                promo_str = "If you change your mind, you know where to find us.\n"
+                break
+            new_class = pro2_dict[current_class][0]
+            confirm_str = f"You have chosen to promote from {current_class} to {new_class.name}. Do you want to proceed?"
+        confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=9)
+        if confirm.navigate_popup():
+            import abilities
+            promo_str = f"Congratulations! {game.player_char.name} has been promoted from a {current_class} to a {new_class.name}!\n"
+            game.player_char.unequip(promo=True)
+            promoted_player = game.player_char
+            promoted_player.cls = new_class
+            promoted_player.level.pro_level = new_class.pro_level
+            promoted_player.level.level = 1
+            promoted_player.level.exp_to_gain = game.player_char.level_exp()
+            promoted_player.stats.strength += new_class.str_plus
+            promoted_player.stats.intel += new_class.int_plus
+            promoted_player.stats.wisdom += new_class.wis_plus
+            promoted_player.stats.con += new_class.con_plus
+            promoted_player.stats.charisma += new_class.cha_plus
+            promoted_player.stats.dex += new_class.dex_plus
+            promoted_player.equipment['Weapon'] = new_class.equipment['Weapon']
+            promoted_player.equipment['Armor'] = new_class.equipment['Armor']
+            promoted_player.equipment['OffHand'] = new_class.equipment['OffHand']
+            if new_class.name == 'Warlock':
+                promoted_player.spellbook['Spells'] = {"Enfeeble": abilities.Enfeeble()}
+                promo_str += "You lose all previously learned attack spells.\n"
+            elif new_class.name == 'Monk':
+                promoted_player.spellbook['Spells'] = {}
+                promo_str += "You lose all previously learned spells.\n"
+            elif new_class.name == 'Weapon Master':
+                del promoted_player.spellbook['Skills']['Shield Slam']
+                promo_str += "You lose the skill Shield Slam.\n"
+            elif new_class.name == 'Inquisitor':
+                del promoted_player.spellbook['Skills']['Backstab']
+                del promoted_player.spellbook['Skills']['Smoke Screen']
+                del promoted_player.spellbook['Skills']['Pocket Sand']
+                del promoted_player.spellbook['Skills']['Kidney Punch']
+                del promoted_player.spellbook['Skills']['Steal']
+                del promoted_player.spellbook['Skills']['Sleeping Powder']
+                promo_str += "You lose the all stealth skills.\n"
+            if str(promoted_player.level.level) in abilities.spell_dict[promoted_player.cls.name]:
+                spell_gain = abilities.spell_dict[promoted_player.cls.name][str(promoted_player.level.level)]()
+                if spell_gain.name in promoted_player.spellbook['Spells']:
+                    promo_str += f"{spell_gain.name} goes up a level.\n"
+                else:
+                    promo_str += f"You have gained the spell {spell_gain.name}.\n"
+                promoted_player.spellbook['Spells'][spell_gain.name] = spell_gain
+            if str(promoted_player.level.level) in abilities.skill_dict[promoted_player.cls.name]:
+                skill_gain = abilities.skill_dict[promoted_player.cls.name][str(promoted_player.level.level)]()
+                if skill_gain.name in promoted_player.spellbook['Skills']:
+                    promo_str += f"{skill_gain.name} goes up a level.\n"
+                else:
+                    promo_str += f"You have gained the skill {skill_gain.name}.\n"
+                promoted_player.spellbook['Skills'][skill_gain.name] = skill_gain
+                if skill_gain.name in ["Transform", "Reveal", "Purity of Body"]:
+                    skill_gain.use(promoted_player)
+            if new_class.name == 'Warlock':
+                promoted_player.familiar = choose_familiar(game)
+                promo_str += f"{promoted_player.familiar.name} the {promoted_player.familiar.spec} familiar has joined your team!\n"
+            if new_class.name in ['Seeker', 'Wizard']:
+                promoted_player.teleport = (promoted_player.location_x,
+                                            promoted_player.location_y,
+                                            promoted_player.location_z)
+            promo_str += "Make sure to check out the shops, you may find they have more items for purchase.\n"
+        else:
+            promo_str = "If you change your mind, you know where to find us.\n"
+        break
+    promobox.print_text_in_rectangle(promo_str)
+    game.stdscr.getch()
 
 
-# Class dataclasses
-@dataclass
+# Classes
 class Job:
     """
     Base definition for the class.
@@ -215,31 +159,21 @@ class Job:
     equipment lists the items the player_char starts out with for the selected class.
     restrictions list the allowable item types the class can equip.
     """
-    name: str
-    description: str
-    str_plus: int
-    int_plus: int
-    wis_plus: int
-    con_plus: int
-    cha_plus: int
-    dex_plus: int
-    equipment: Dict[str, str]
-    restrictions: Dict[str, List[str]]
-    pro_level: int
+    def __init__(self, name, description, str_plus, int_plus, wis_plus, con_plus, cha_plus, dex_plus,
+                 equipment, restrictions, pro_level):
+        self.name = name
+        self.description = "\n".join(wrap(description, 75))
+        self.str_plus = str_plus
+        self.int_plus = int_plus
+        self.wis_plus = wis_plus
+        self.con_plus = con_plus
+        self.cha_plus = cha_plus
+        self.dex_plus = dex_plus
+        self.equipment = equipment
+        self.restrictions = restrictions
+        self.pro_level = pro_level
 
-    def __str__(self):
-        return (f"\n===========Description=============\n"
-                f"{self.description}\n"
-                f"===========Stats Boost=============\n"
-                f"          Strength: +{self.str_plus}\n"
-                f"      Intelligence: +{self.int_plus}\n"
-                f"            Wisdom: +{self.wis_plus}\n"
-                f"      Constitution: +{self.con_plus}\n"
-                f"          Charisma: +{self.cha_plus}\n"
-                f"         Dexterity: +{self.dex_plus}\n"
-                f"===================================")
 
-@dataclass
 class Warrior(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
@@ -250,46 +184,43 @@ class Warrior(Job):
     """
 
     def __init__(self):
-        super().__init__(name="Warrior", description="Warriors are weapon specialists that \nrelies on strength and "
-                                                     "defense. \nWhile unable to cast spells, they \nhave access to a wide"
-                                                     " variety \nof combat skills that make them \ndeadly in combat. The "
-                                                     "most stout \nof the bass classes, this character \nis best for "
-                                                     "someone who wants \nto hack and slash their way through \nthe game.",
+        super().__init__(name="Warrior", description="Warriors are weapon specialists that rely on strength and "
+                                                     "defense. While unable to cast spells, they have access to a wide"
+                                                     " variety of combat skills that make them deadly in combat. The "
+                                                     "most stout of the bass classes, this character is best for "
+                                                     "someone who wants to hack and slash their way through the game.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=0, dex_plus=1,
-                         equipment={'Weapon': items.Rapier, 'OffHand': items.Aspis, 'Armor': items.HideArmor,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
-                         restrictions={'Weapon': ['Dagger', 'Sword', "Club", 'Longsword', "Battle Axe", 'Hammer',
-                                                  'Polearm'],
+                         equipment={'Weapon': items.Rapier(), 'OffHand': items.Aspis(), 'Armor': items.HideArmor(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Dagger', 'Sword', "Club", 'Longsword', "Battle Axe", 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium', 'Heavy']},
                          pro_level=1)
 
 
-@dataclass
 class WeaponMaster(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
-    Pros: Can dual wield and equip fists and staves; higher dexterity gain
+    Pros: Can dual wield some one handed weapons; higher dexterity gain
     Cons: Cannot use shields or heavy armor; lower constitution gain
     """
 
     def __init__(self):
         super().__init__(name="Weapon Master", description="Weapon Masters focus on the mastery of weapons and their"
-                                                           " skill with them. They can equip all weapons and learn the"
+                                                           " skill with them. They can equip many weapons and learn the"
                                                            " ability to dual wield one-handed weapons. Since Weapon "
                                                            "Masters really on dexterity, they lose the ability to wear"
                                                            " heavy armor and shields.",
                          str_plus=3, int_plus=0, wis_plus=0, con_plus=1, cha_plus=0, dex_plus=2,
-                         equipment={'Weapon': items.DoubleAxe, 'OffHand': items.NoOffHand, 'Armor': items.ScaleMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club", 'Longsword', "Battle Axe",
-                                                  'Hammer', 'Polearm', 'Staff'],
+                         equipment={'Weapon': items.DoubleAxe(), 'OffHand': items.NoOffHand(), 'Armor': items.ScaleMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club", 'Longsword', "Battle Axe", 'Hammer'],
                                        'OffHand': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
 
 
-@dataclass
+
 class Berserker(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
@@ -299,22 +230,20 @@ class Berserker(Job):
 
     def __init__(self):
         super().__init__(name="Berserker", description="Berserkers are combat masters, driven by pure rage and "
-                                                       "vengeance. They are so adept at using weapons, they gain the "
+                                                       "vengeance. Their strength is so great, they gain the "
                                                        "ability to dual wield two-handed weapons. Their further "
                                                        "reliance on maneuverability limits the type of armor to light "
                                                        "armor.",
                          str_plus=3, int_plus=0, wis_plus=0, con_plus=1, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.Parashu, 'OffHand': items.Changdao, 'Armor': items.StuddedLeather,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
-                         restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', 'Longsword', "Battle Axe", 'Hammer',
-                                                  'Polearm', 'Staff'],
-                                       'OffHand': ['Fist', 'Dagger', 'Sword', 'Longsword', "Battle Axe", 'Hammer',
-                                                   'Polearm', 'Staff'],
+                         equipment={'Weapon': items.Parashu(), 'OffHand': items.Changdao(), 'Armor': items.StuddedLeather(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Longsword', "Battle Axe", 'Hammer'],
+                                       'OffHand': ['Longsword', "Battle Axe", 'Hammer'],
                                        'Armor': ['Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Paladin(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
@@ -331,15 +260,15 @@ class Paladin(Job):
                                                      "defense\", and thus lose the ability to equip two-handed "
                                                      "weapons (except hammers).",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.WarHammer, 'OffHand': items.Targe, 'Armor': items.Splint,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
-                         restrictions={'Weapon': ['Sword', "Club", 'Hammer'],
+                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Targe(), 'Armor': items.Splint(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Sword', "Club", 'Longsword', 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=2)
 
 
-@dataclass
+
 class Crusader(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
@@ -352,15 +281,15 @@ class Crusader(Job):
                                                       "above all else. Crusaders continue the path of the paladin, "
                                                       "fully embracing all aspects that carry over.",
                          str_plus=2, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Pernach, 'OffHand': items.KiteShield, 'Armor': items.PlateMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
-                         restrictions={'Weapon': ['Sword', "Club", 'Hammer'],
+                         equipment={'Weapon': items.Pernach(), 'OffHand': items.KiteShield(), 'Armor': items.PlateMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Sword', "Club", 'Longsword', 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=3)
 
 
-@dataclass
+
 class Lancer(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
@@ -374,15 +303,15 @@ class Lancer(Job):
                                                     "while also using a shield. They are also adept at leaping high "
                                                     "into the air and driving that polearm into their enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Halberd, 'OffHand': items.Targe, 'Armor': items.Splint,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Halberd(), 'OffHand': items.Targe(), 'Armor': items.Splint(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=2)
 
 
-@dataclass
+
 class Dragoon(Job):
     """
     Promotion: Warrior -> Lancer -> Dragoon
@@ -398,15 +327,15 @@ class Dragoon(Job):
                                                      " leap unnaturally high into the air and strike their foes with "
                                                      "deadly force from above.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.Naginata, 'OffHand': items.KiteShield, 'Armor': items.PlateMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Naginata(), 'OffHand': items.KiteShield(), 'Armor': items.PlateMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Medium', 'Heavy']},
                          pro_level=3)
 
 
-@dataclass
+
 class Mage(Job):
     """
     Promotion: Mage -> Sorcerer   -> Wizard
@@ -417,24 +346,24 @@ class Mage(Job):
     """
 
     def __init__(self):
-        super().__init__(name="Mage", description="Mages possess exceptional aptitude \nfor spell casting, able to "
-                                                  "destroy an \nenemy with the wave of a finger. \nWeaker and more "
-                                                  "vulnerable than \nany other class, they more than make \nup for it "
+        super().__init__(name="Mage", description="Mages possess exceptional aptitude for spell casting, able to "
+                                                  "destroy an enemy with the wave of a finger. Weaker and more "
+                                                  "vulnerable than any other class, they more than make up for it "
                                                   "with powerful magics.",
                          str_plus=0, int_plus=3, wis_plus=1, con_plus=0, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Quarterstaff, 'OffHand': items.NoOffHand, 'Armor': items.Tunic,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Quarterstaff(), 'OffHand': items.NoOffHand(), 'Armor': items.Tunic(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=1)
 
 
-@dataclass
+
 class Sorcerer(Job):
     """
     Promotion: Mage -> Sorcerer -> Wizard
-    Pros: Higher charisma gain; earlier access to spells and access to higher level spells
+    Pros: Earlier access to spells and access to higher level spells
     Cons: None
     """
 
@@ -444,20 +373,20 @@ class Sorcerer(Job):
                                                       "their life reading massive tomes to expand their "
                                                       "knowledge and the rest of the time applying that knowledge at "
                                                       "the expense of anything in their path.",
-                         str_plus=0, int_plus=3, wis_plus=1, con_plus=0, cha_plus=2, dex_plus=0,
-                         equipment={'Weapon': items.IronshodStaff, 'OffHand': items.NoOffHand,
-                                    'Armor': items.SilverCloak, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=1, dex_plus=0,
+                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.SilverCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
 
 
-@dataclass
+
 class Wizard(Job):
     """
     Promotion: Mage -> Sorcerer -> Wizard
-    Additional Pros: Increased wisdom gain
+    Additional Pros: None
     Additional Cons: None
     """
 
@@ -466,16 +395,16 @@ class Wizard(Job):
                                                     "magical ability. Being able to cast the most powerful spells makes"
                                                     " the wizard an ideal class for anyone who prefers to live fast "
                                                     "and die hard if not properly prepared.",
-                         str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=2, dex_plus=0,
-                         equipment={'Weapon': items.SerpentStaff, 'OffHand': items.NoOffHand,
-                                    'Armor': items.CloakEnchantment, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=1, dex_plus=1,
+                         equipment={'Weapon': items.SerpentStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.CloakEnchantment(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
 
 
-@dataclass
+
 class Warlock(Job):
     """
     Promotion: Mage -> Warlock -> Shadowcaster
@@ -489,19 +418,19 @@ class Warlock(Job):
                                                      "abilities, including the ability to summon a familiar to aid "
                                                      "them.",
                          str_plus=0, int_plus=2, wis_plus=1, con_plus=1, cha_plus=2, dex_plus=0,
-                         equipment={'Weapon': items.Kris, 'OffHand': items.TomeKnowledge, 'Armor': items.SilverCloak,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.SilverCloak(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
 
 
-@dataclass
+
 class Shadowcaster(Job):
     """
     Promotion: Mage -> Warlock -> Shadowcaster
-    Additional Pros: additional wisdom gain
+    Additional Pros: None
     Additional Cons: None
     """
 
@@ -510,15 +439,15 @@ class Shadowcaster(Job):
                                                           "conjure the most demonic of powers, including the practicing"
                                                           " of forbidden blood magic.",
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=1, cha_plus=2, dex_plus=0,
-                         equipment={'Weapon': items.Rondel, 'OffHand': items.Necronomicon,
-                                    'Armor': items.CloakEnchantment, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Rondel(), 'OffHand': items.Necronomicon(),
+                                    'Armor': items.CloakEnchantment(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
 
 
-@dataclass
+
 class Spellblade(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
@@ -534,15 +463,15 @@ class Spellblade(Job):
                                                         " has unlocked the ability to channel the learned magical power"
                                                         " through their blade to devastate enemies.",
                          str_plus=2, int_plus=1, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Talwar, 'OffHand': items.TomeKnowledge, 'Armor': items.Cuirboulli,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Talwar(), 'OffHand': items.TomeKnowledge(), 'Armor': items.Cuirboulli(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Longsword'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=2)
 
 
-@dataclass
+
 class KnightEnchanter(Job):
     """
     Promotion: Mage -> Spellblade -> Knight Enchanter
@@ -555,15 +484,15 @@ class KnightEnchanter(Job):
                                                               " weapons and armor with magical enchantments that can "
                                                               "rival the most powerful fighter.",
                          str_plus=2, int_plus=1, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Shamshir, 'OffHand': items.BookShadows,
-                                    'Armor': items.StuddedLeather, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Shamshir(), 'OffHand': items.BookShadows(),
+                                    'Armor': items.StuddedLeather(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Sword', 'Longsword'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Footpad(Job):
     """
     Promotion: Footpad -> Thief      -> Rogue
@@ -574,21 +503,21 @@ class Footpad(Job):
     """
 
     def __init__(self):
-        super().__init__(name="Footpad", description="Footpads are agile and perceptive, \nwith an natural ability of "
-                                                     "deftness. \nWhile more than capable of holding \ntheir own in hand-"
-                                                     "to-hand combat, \nthey truly excel at subterfuge. Footpads \nare the"
-                                                     " only base class that can dual \nwield, albeit the offhand weapon "
-                                                     "must \nbe a dagger.",
+        super().__init__(name="Footpad", description="Footpads are agile and perceptive, with an natural ability of "
+                                                     "deftness. While more than capable of holding their own in hand-"
+                                                     "to-hand combat, they truly excel at subterfuge. Footpads are the"
+                                                     " only base class that can dual wield, albeit the offhand weapon "
+                                                     "must be a dagger.",
                          str_plus=0, int_plus=0, wis_plus=0, con_plus=1, cha_plus=2, dex_plus=2,
-                         equipment={'Weapon': items.Rapier, 'OffHand': items.Dirk, 'Armor': items.PaddedArmor,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Rapier(), 'OffHand': items.Dirk(), 'Armor': items.PaddedArmor(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'OffHand': ['Fist', 'Dagger'],
                                        'Armor': ['Light']},
                          pro_level=1)
 
 
-@dataclass
+
 class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue
@@ -603,15 +532,15 @@ class Thief(Job):
                                                    "more quickly than other classes and are typically more well-"
                                                    "balanced.",
                          str_plus=0, int_plus=1, wis_plus=0, con_plus=1, cha_plus=2, dex_plus=2,
-                         equipment={'Weapon': items.Talwar, 'OffHand': items.Kris, 'Armor': items.Cuirboulli,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Talwar(), 'OffHand': items.Kris(), 'Armor': items.Cuirboulli(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'OffHand': ['Fist', 'Dagger'],
                                        'Armor': ['Light']},
                          pro_level=2)
 
 
-@dataclass
+
 class Rogue(Job):
     """
     Promotion: Footpad -> Thief -> Rogue
@@ -626,65 +555,65 @@ class Rogue(Job):
                                                    "resourcefulness and versatility that has no rival. They gain the "
                                                    "ability to dual wield swords, maces, and fist weapons.",
                          str_plus=0, int_plus=1, wis_plus=0, con_plus=1, cha_plus=2, dex_plus=3,
-                         equipment={'Weapon': items.Shamshir, 'OffHand': items.Rondel, 'Armor': items.StuddedLeather,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Shamshir(), 'OffHand': items.Rondel(), 'Armor': items.StuddedLeather(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'OffHand': ['Fist', 'Dagger', 'Sword', "Club"],
                                        'Armor': ['Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Inquisitor(Job):
     """
     Promotion: Footpad -> Inquisitor -> Seeker
     Pros: Increased strength and constitution gain; ability to perceive enemy status and weaknesses; access to medium
-          armor, shields, and some spells
-    Cons: Lower dexterity and charisma; lose ability to dual wield
+          armor, shields, and some spells; increased resistance to shadow damage
+    Cons: Lower dexterity and charisma gain; lose ability to dual wield and stealth skills
     """
 
     def __init__(self):
-        super().__init__(name="Inquisitor", description="Inquisitors excel at rooting out hidden secrets and "
+        super().__init__(name="Inquisitor", description="Inquisitors exchange the stealth of the shadows for a pure"
+                                                        "distain. They excel at rooting out hidden secrets and "
                                                         "unraveling mysteries. They rely on a sharp eye for detail, "
                                                         "but also on a finely honed ability to read the words and "
                                                         "deeds of other creatures to determine their true intent. "
-                                                        "They excel at defeating creatures that hide among and prey "
-                                                        "upon ordinary folk, and their mastery of lore and sharp eye "
-                                                        "make them well-equipped to expose and end hidden evils.",
+                                                        "They excel at defeating creatures that hide in the shadows "
+                                                        " and their mastery of lore and sharp eye make them "
+                                                        "well-equipped to expose and end hidden evils.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Talwar, 'OffHand': items.Targe, 'Armor': items.ScaleMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Talwar(), 'OffHand': items.Targe(), 'Armor': items.ScaleMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Sword', "Club"],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
 
 
-@dataclass
+
 class Seeker(Job):
     """
     Promotion: Footpad -> Inquisitor -> Seeker
     Additional Pros: Additional intel gain
     Additional Cons: None
     """
-
     def __init__(self):
         super().__init__(name="Seeker", description="Seekers are very good at moving through the dungeon, being able to"
-                                                    " levitate, locate other characters, and teleport. They can’t "
+                                                    " levitate, locate other characters, and teleport. They can't "
                                                     "directly kill monsters with their magical abilities, but a Seeker "
                                                     "does well with a weapon in hand. They are also the best at "
-                                                    "mapping the dungeon and detecting any types of ‘anomalies’ they "
+                                                    "mapping the dungeon and detecting any types of 'anomalies' they "
                                                     "may encounter in the depths.",
                          str_plus=2, int_plus=1, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Shamshir, 'OffHand': items.KiteShield, 'Armor': items.Breastplate,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Shamshir(), 'OffHand': items.KiteShield(), 'Armor': items.Breastplate(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Sword', "Club"],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=3)
 
 
-@dataclass
+
 class Assassin(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
@@ -700,15 +629,15 @@ class Assassin(Job):
                                                       "exterminate  the enemies of their deity. Stealth, poison, and "
                                                       "disguise help you eliminate your foes with deadly efficiency.",
                          str_plus=0, int_plus=0, wis_plus=1, con_plus=0, cha_plus=2, dex_plus=3,
-                         equipment={'Weapon': items.Kris, 'OffHand': items.Kris, 'Armor': items.Cuirboulli,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Kris(), 'OffHand': items.Kris(), 'Armor': items.Cuirboulli(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger'],
                                        'OffHand': ['Fist', 'Dagger'],
                                        'Armor': ['Light']},
                          pro_level=2)
 
 
-@dataclass
+
 class Ninja(Job):
     """
     Promotion: Footpad -> Assassin -> Ninja
@@ -724,15 +653,15 @@ class Ninja(Job):
                                                    "and Backstabbing their opponents, along with moderate thieving "
                                                    "skills.",
                          str_plus=0, int_plus=0, wis_plus=2, con_plus=0, cha_plus=2, dex_plus=3,
-                         equipment={'Weapon': items.Tanto, 'OffHand': items.Rondel, 'Armor': items.StuddedLeather,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Tanto(), 'OffHand': items.Rondel(), 'Armor': items.StuddedLeather(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', 'Ninja Blade'],
                                        'OffHand': ['Fist', 'Dagger', 'Ninja Blade'],
                                        'Armor': ['Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Healer(Job):
     """
     Promotion: Healer -> Cleric -> Templar
@@ -744,19 +673,19 @@ class Healer(Job):
     """
 
     def __init__(self):
-        super().__init__(name="Healer", description="Healers primary role in battle is \nto preserve the party with "
-                                                    "healing \nand protective spells. Well, how \ndoes that work when "
-                                                    "they are alone? \nPretty much the same way!",
+        super().__init__(name="Healer", description="Healers primary role in battle is to preserve the party with "
+                                                    "healing and protective spells. Well, how does that work when "
+                                                    "they are alone? Pretty much the same way!",
                          str_plus=0, int_plus=1, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Quarterstaff, 'OffHand': items.NoOffHand, 'Armor': items.Tunic,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Quarterstaff(), 'OffHand': items.NoOffHand(), 'Armor': items.Tunic(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Shield', 'Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=1)
 
 
-@dataclass
+
 class Cleric(Job):
     """
     Promotion: Healer -> Cleric -> Templar
@@ -769,18 +698,18 @@ class Cleric(Job):
     def __init__(self):
         super().__init__(name="Cleric", description="Where the paladin is a warrior that can heal, a cleric is a "
                                                     "healer that can hold their own in combat. The biggest difference"
-                                                    "is that the cleric cannot equip heavy armor (that will come...)"
-                                                    " but gain additional protective abilities that paladins do not.",
+                                                    " is that the cleric cannot equip heavy armor (yet...) but gain "
+                                                    "additional protective abilities that paladins do not.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.WarHammer, 'OffHand': items.Targe, 'Armor': items.ScaleMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Targe(), 'Armor': items.ScaleMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium']},
                          pro_level=2)
 
 
-@dataclass
+
 class Templar(Job):
     """
     Promotion: Healer -> Cleric -> Templar
@@ -795,15 +724,15 @@ class Templar(Job):
                                                      " a shield, they have also trained in the art of the 2-handed "
                                                      "hammer.",
                          str_plus=2, int_plus=0, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Pernach, 'OffHand': items.KiteShield, 'Armor': items.PlateMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Pernach(), 'OffHand': items.KiteShield(), 'Armor': items.PlateMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Hammer'],
                                        'OffHand': ['Shield'],
                                        'Armor': ['Light', 'Medium', 'Heavy']},
                          pro_level=3)
 
 
-@dataclass
+
 class Priest(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
@@ -818,15 +747,15 @@ class Priest(Job):
                                                     "equip cloth armor, they gain the ability to increase their "
                                                     "defense at the expense of mana.",
                          str_plus=0, int_plus=2, wis_plus=3, con_plus=0, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.IronshodStaff, 'OffHand': items.NoOffHand,
-                                    'Armor': items.SilverCloak, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.SilverCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
 
 
-@dataclass
+
 class Archbishop(Job):
     """
     Promotion: Healer -> Priest -> Archbishop
@@ -838,15 +767,15 @@ class Archbishop(Job):
         super().__init__(name="Archbishop", description="An archbishop attunes with the holy light for the most "
                                                         "powerful healing, protective, and holy magics available.",
                          str_plus=0, int_plus=3, wis_plus=3, con_plus=0, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.HolyStaff, 'OffHand': items.NoOffHand,
-                                    'Armor': items.CloakEnchantment, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.HolyStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.CloakEnchantment(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
 
 
-@dataclass
+
 class Monk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
@@ -859,15 +788,15 @@ class Monk(Job):
                                                   "the inner power of the chi. Monks specialize in hand-to-hand combat,"
                                                   " adding both strength and wisdom to their melee damage.",
                          str_plus=2, int_plus=0, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Cestus, 'OffHand': items.Cestus, 'Armor': items.Cuirboulli,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Cestus(), 'OffHand': items.Cestus(), 'Armor': items.Cuirboulli(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Staff'],
                                        'OffHand': ['Fist'],
                                        'Armor': ['Light']},
                          pro_level=2)
 
 
-@dataclass
+
 class MasterMonk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
@@ -880,15 +809,15 @@ class MasterMonk(Job):
                                                          "becoming unparalleled at dealing damage with fists or a "
                                                          "staff.",
                          str_plus=2, int_plus=0, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.BattleGauntlet, 'OffHand': items.BattleGauntlet,
-                                    'Armor': items.StuddedLeather, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.BattleGauntlet(), 'OffHand': items.BattleGauntlet(),
+                                    'Armor': items.StuddedLeather(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Staff'],
                                        'OffHand': ['Fist'],
                                        'Armor': ['Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Pathfinder(Job):
     """
     Promotion: Pathfinder -> Druid   -> Lycan
@@ -899,21 +828,21 @@ class Pathfinder(Job):
     """
 
     def __init__(self):
-        super().__init__(name="Pathfinder", description="In philosophy, naturalism is the belief \nthat only natural laws"
-                                                        " and forces \noperate in the universe. A pathfinder \nembraces "
-                                                        "this idea by being attuned to \none or more of the various "
-                                                        "aspects \nof nature, including the 4 classical \nelements: Earth, "
+        super().__init__(name="Pathfinder", description="In philosophy, naturalism is the belief that only natural laws"
+                                                        " and forces operate in the universe. A pathfinder embraces "
+                                                        "this idea by being attuned to one or more of the various "
+                                                        "aspects of nature, mainly the 4 classical elements: Earth, "
                                                         "Wind, Water, and Fire.",
                          str_plus=0, int_plus=1, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Dirk, 'OffHand': items.Buckler, 'Armor': items.HideArmor,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Dirk(), 'OffHand': items.Buckler(), 'Armor': items.HideArmor(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Shield', 'Tome'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=1)
 
 
-@dataclass
+
 class Druid(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
@@ -930,15 +859,15 @@ class Druid(Job):
                                                    " lose the ability to wear medium armor and shields but gain "
                                                    "natural weapons and armor when transformed.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.IronshodStaff, 'OffHand': items.NoOffHand,
-                                    'Armor': items.Cuirboulli, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.Cuirboulli(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=2)
 
 
-@dataclass
+
 class Lycan(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
@@ -951,15 +880,15 @@ class Lycan(Job):
                                                    "into their animal form, these lycans have gained mastery over their"
                                                    " powers to become something truly terrifying.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=2, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.Maul, 'OffHand': items.NoOffHand, 'Armor': items.StuddedLeather,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Maul(), 'OffHand': items.NoOffHand(), 'Armor': items.StuddedLeather(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=3)
 
 
-@dataclass
+
 class Diviner(Job):
     """
     Promotion: Pathfinder -> Diviner -> Geomancer
@@ -974,15 +903,15 @@ class Diviner(Job):
                                                      "hyper aware of their surroundings, limiting the effect of traps "
                                                      "and magic effects.",
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Kris, 'OffHand': items.TomeKnowledge, 'Armor': items.SilverCloak,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.SilverCloak(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
 
 
-@dataclass
+
 class Geomancer(Job):
     """
     Promotion: Pathfinder -> Diviner -> Geomancer
@@ -997,15 +926,15 @@ class Geomancer(Job):
                                                        "magical effects allow geomancers to manipulate special tiles to"
                                                        " their advantage.",
                          str_plus=0, int_plus=3, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Rondel, 'OffHand': items.DragonRouge,
-                                    'Armor': items.CloakEnchantment, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Rondel(), 'OffHand': items.DragonRouge(),
+                                    'Armor': items.CloakEnchantment(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
 
 
-@dataclass
+
 class Shaman(Job):
     """
     Promotion: Pathfinder -> Shaman -> Soulcatcher
@@ -1019,15 +948,15 @@ class Shaman(Job):
                                                     "essence of the departed. They also commune with the chaotic "
                                                     "elements, gaining the ability to imbue their weapons.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.Cestus, 'OffHand': items.Cestus, 'Armor': items.ScaleMail,
-                                    'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.Cestus(), 'OffHand': items.Cestus(), 'Armor': items.ScaleMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', "Club", 'Staff'],
                                        'OffHand': ['Fist', 'Shield'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
                          pro_level=2)
 
 
-@dataclass
+
 class Soulcatcher(Job):
     """
     Promotion: Pathfinder -> Shaman -> Soulcatcher
@@ -1040,8 +969,8 @@ class Soulcatcher(Job):
                                                          " They are much more adept at absorbing the essence of the "
                                                          "dead, while mastering elemental fury.",
                          str_plus=2, int_plus=0, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.BattleGauntlet, 'OffHand': items.BattleGauntlet,
-                                    'Armor': items.Breastplate, 'Pendant': items.NoPendant, 'Ring': items.NoRing},
+                         equipment={'Weapon': items.BattleGauntlet(), 'OffHand': items.BattleGauntlet(),
+                                    'Armor': items.Breastplate(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Fist', 'Dagger', "Club", 'Staff'],
                                        'OffHand': ['Fist', 'Shields'],
                                        'Armor': ['Cloth', 'Light', 'Medium']},
