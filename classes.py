@@ -65,7 +65,7 @@ def promotion(game):
     while True:
         if game.player_char.level.pro_level == 1:
             for cls in pro1_dict[current_class]:
-                if cls.name in game.player_char.race.cls_res['First']:   # TODO check if this still works
+                if cls.name in game.player_char.race.cls_res['First']:
                     class_options.append(cls.name)
             class_options.append("Go Back")
             popup.update_options(class_options, pro1_dict)
@@ -143,7 +143,6 @@ def promotion(game):
                 promoted_player.teleport = (promoted_player.location_x,
                                             promoted_player.location_y,
                                             promoted_player.location_z)
-            promo_str += "Make sure to check out the shops, you may find they have more items for purchase.\n"
         else:
             promo_str = "If you change your mind, you know where to find us.\n"
         break
@@ -181,6 +180,8 @@ class Warrior(Job):
                        -> Paladin       -> Crusader
                        |
                        -> Lancer        -> Dragoon
+                       |
+                       -> Sentinel      -> Stalwart Defender
     """
 
     def __init__(self):
@@ -253,14 +254,11 @@ class Paladin(Job):
 
     def __init__(self):
         super().__init__(name="Paladin", description="The Paladin is a holy knight, crusading in the name of good and "
-                                                     "order, and is a divine spell caster. Gaining some healing and "
-                                                     "damage spells, paladins become a more balanced class and are "
-                                                     "ideal for players who always forget to restock health potions. "
-                                                     "Paladins hold to the adage that \"the best offense is a good "
-                                                     "defense\", and thus lose the ability to equip two-handed "
-                                                     "weapons (except hammers).",
+                                                     "order. Gaining some healing and damage spells, paladins become a"
+                                                     " more balanced class and are ideal for players who always forget"
+                                                     " to restock health potions.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Targe(), 'Armor': items.Splint(),
+                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Glagwa(), 'Armor': items.Splint(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Sword', "Club", 'Longsword', 'Hammer'],
                                        'OffHand': ['Shield'],
@@ -303,7 +301,7 @@ class Lancer(Job):
                                                     "while also using a shield. They are also adept at leaping high "
                                                     "into the air and driving that polearm into their enemies.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Halberd(), 'OffHand': items.Targe(), 'Armor': items.Splint(),
+                         equipment={'Weapon': items.Halberd(), 'OffHand': items.Glagwa(), 'Armor': items.Splint(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Sword', 'Polearm'],
                                        'OffHand': ['Shield'],
@@ -336,6 +334,54 @@ class Dragoon(Job):
 
 
 
+class Sentinel(Job):
+    """
+    Promotion: Warrior -> Sentinel -> Stalwart Defender
+    Pros: increased constitution gain
+    Cons: Can only wear heavy armor and cannot equip 2-handed weapons
+    """
+
+    def __init__(self):
+        super().__init__(name="Sentinel", description="Masters of defensive tactics, Sentinels excels at enduring "
+                                                      "heavy assaults. Equipped with impenetrable shields and an array"
+                                                      " of defensive skills, this class specializes in mitigating "
+                                                      "damage, taunting enemies, and bolstering the their resilience. "
+                                                      "Their unique abilities allow them to a reflect enemy strikes, "
+                                                      "and maintain a near-impervious stance against even the fiercest"
+                                                      " foes.",
+                         str_plus=2, int_plus=0, wis_plus=0, con_plus=3, cha_plus=0, dex_plus=1,
+                         equipment={'Weapon': items.Talwar(), 'OffHand': items.Glagwa(), 'Armor': items.Splint(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Fist', 'Sword', 'Club'],
+                                       'OffHand': ['Shield'],
+                                       'Armor': ['Heavy']},
+                         pro_level=2)
+
+
+
+class StalwartDefender(Job):
+    """
+    Promotion: Warrior -> Sentinel -> Stalwart Defender
+    Additional Pros: additional constitution gain
+    Additional Cons: None
+    """
+
+    def __init__(self):
+        super().__init__(name="Stalwart Defender", description="The Stalwart Defender embodies unyielding resilience "
+                                                               "and unmatched defensive mastery. These protectors are "
+                                                               "immovable bastions, capable of absorbing devastating "
+                                                               "blows and locking down enemies at will. With "
+                                                               "impenetrable defenses and a commanding presence, "
+                                                               "they are the epitome of strength and fortitude.",
+                         str_plus=2, int_plus=0, wis_plus=0, con_plus=4, cha_plus=0, dex_plus=1,
+                         equipment={'Weapon': items.Shamshir(), 'OffHand': items.KiteShield(), 'Armor': items.PlateMail(),
+                                    'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         restrictions={'Weapon': ['Fist', 'Sword', 'Club'],
+                                       'OffHand': ['Shield'],
+                                       'Armor': ['Heavy']},
+                         pro_level=3)
+
+
 class Mage(Job):
     """
     Promotion: Mage -> Sorcerer   -> Wizard
@@ -343,6 +389,8 @@ class Mage(Job):
                     -> Warlock    -> Shadowcaster
                     |
                     -> Spellblade -> Knight Enchanter
+                    |
+                    ->  
     """
 
     def __init__(self):
@@ -374,8 +422,8 @@ class Sorcerer(Job):
                                                       "knowledge and the rest of the time applying that knowledge at "
                                                       "the expense of anything in their path.",
                          str_plus=0, int_plus=3, wis_plus=2, con_plus=0, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
-                                    'Armor': items.SilverCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         equipment={'Weapon': items.SerpentStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.GoldCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
@@ -418,7 +466,7 @@ class Warlock(Job):
                                                      "abilities, including the ability to summon a familiar to aid "
                                                      "them.",
                          str_plus=0, int_plus=2, wis_plus=1, con_plus=1, cha_plus=2, dex_plus=0,
-                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.SilverCloak(),
+                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.GoldCloak(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
                                        'OffHand': ['Tome'],
@@ -490,7 +538,6 @@ class KnightEnchanter(Job):
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth', 'Light']},
                          pro_level=3)
-
 
 
 class Footpad(Job):
@@ -582,7 +629,7 @@ class Inquisitor(Job):
                                                         " and their mastery of lore and sharp eye make them "
                                                         "well-equipped to expose and end hidden evils.",
                          str_plus=2, int_plus=0, wis_plus=0, con_plus=2, cha_plus=1, dex_plus=1,
-                         equipment={'Weapon': items.Talwar(), 'OffHand': items.Targe(), 'Armor': items.ScaleMail(),
+                         equipment={'Weapon': items.Talwar(), 'OffHand': items.Glagwa(), 'Armor': items.ScaleMail(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Sword', "Club"],
                                        'OffHand': ['Shield'],
@@ -701,7 +748,7 @@ class Cleric(Job):
                                                     " is that the cleric cannot equip heavy armor (yet...) but gain "
                                                     "additional protective abilities that paladins do not.",
                          str_plus=1, int_plus=0, wis_plus=2, con_plus=2, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Targe(), 'Armor': items.ScaleMail(),
+                         equipment={'Weapon': items.WarHammer(), 'OffHand': items.Glagwa(), 'Armor': items.ScaleMail(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Shield'],
@@ -747,8 +794,8 @@ class Priest(Job):
                                                     "equip cloth armor, they gain the ability to increase their "
                                                     "defense at the expense of mana.",
                          str_plus=0, int_plus=2, wis_plus=3, con_plus=0, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
-                                    'Armor': items.SilverCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
+                         equipment={'Weapon': items.SerpentStaff(), 'OffHand': items.NoOffHand(),
+                                    'Armor': items.GoldCloak(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ["Club", 'Staff'],
                                        'OffHand': ['Tome'],
                                        'Armor': ['Cloth']},
@@ -859,7 +906,7 @@ class Druid(Job):
                                                    " lose the ability to wear medium armor and shields but gain "
                                                    "natural weapons and armor when transformed.",
                          str_plus=1, int_plus=0, wis_plus=1, con_plus=1, cha_plus=1, dex_plus=2,
-                         equipment={'Weapon': items.IronshodStaff(), 'OffHand': items.NoOffHand(),
+                         equipment={'Weapon': items.SerpentStaff(), 'OffHand': items.NoOffHand(),
                                     'Armor': items.Cuirboulli(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', "Club", 'Polearm', 'Hammer', 'Staff'],
                                        'OffHand': ['Tome'],
@@ -903,10 +950,10 @@ class Diviner(Job):
                                                      "hyper aware of their surroundings, limiting the effect of traps "
                                                      "and magic effects.",
                          str_plus=0, int_plus=2, wis_plus=2, con_plus=1, cha_plus=1, dex_plus=0,
-                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.SilverCloak(),
+                         equipment={'Weapon': items.Kris(), 'OffHand': items.TomeKnowledge(), 'Armor': items.GoldCloak(),
                                     'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
-                                       'OffHand': ['Tome'],
+                                       'OffHand': ['Tome', 'Rod'],
                                        'Armor': ['Cloth']},
                          pro_level=2)
 
@@ -929,7 +976,7 @@ class Geomancer(Job):
                          equipment={'Weapon': items.Rondel(), 'OffHand': items.DragonRouge(),
                                     'Armor': items.CloakEnchantment(), 'Pendant': items.NoPendant(), 'Ring': items.NoRing()},
                          restrictions={'Weapon': ['Dagger', 'Staff'],
-                                       'OffHand': ['Tome'],
+                                       'OffHand': ['Tome', 'Rod'],
                                        'Armor': ['Cloth']},
                          pro_level=3)
 
@@ -991,7 +1038,11 @@ classes_dict = {'Warrior':
                          'Lancer': 
                          {'class': Lancer,
                           'pro': {'Dragoon':
-                                  {'class': Dragoon}}}}},
+                                  {'class': Dragoon}}},
+                         'Sentinel':
+                         {'class': Sentinel,
+                          'pro': {'Stalwart Defender':
+                                  {'class': StalwartDefender}}}}},
                 'Mage':
                 {'class': Mage,
                 'pro': {'Sorcerer': 

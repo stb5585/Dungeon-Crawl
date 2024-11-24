@@ -103,7 +103,7 @@ class Weapon(Item):
                 f"Type: {self.subtyp}\n"
                 f"{self.handed}-handed\n"
                 f"Damage: {self.damage}\n"
-                f"Critical Chance: {self.crit * 100}%\n"
+                f"Critical Chance: {int(self.crit * 100)}%\n"
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 
@@ -241,7 +241,7 @@ class BrassKnuckles(Weapon):
     def __init__(self):
         super().__init__(name="Brass Knuckles", description="Brass knuckles are pieces of metal shaped to fit around "
                                                             "the knuckles to add weight during hand-to-hand combat.",
-                         value=2000, rarity=0.8, damage=4, crit=0.1, handed=1, subtyp='Fist', unequip=False,
+                         value=2000, rarity=0.8, damage=6, crit=0.1, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.weight = 1
 
@@ -251,7 +251,7 @@ class Cestus(Weapon):
     def __init__(self):
         super().__init__(name="Cestus", description="A cestus is a battle glove that is typically used in gladiatorial "
                                                     "events.",
-                         value=7500, rarity=0.7, damage=5, crit=0.15, handed=1, subtyp='Fist', unequip=False,
+                         value=7500, rarity=0.7, damage=8, crit=0.15, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.weight = 1
 
@@ -262,7 +262,7 @@ class BattleGauntlet(Weapon):
         super().__init__(name="Battle Gauntlet", description="A battle gauntlet is a type of glove that protects the "
                                                              "hand and wrist of a combatant, constructed with metal "
                                                              "platings to inflict additional damage.",
-                         value=10000, rarity=0.5, damage=8, crit=0.2, handed=1, subtyp='Fist', unequip=False,
+                         value=20000, rarity=0.5, damage=12, crit=0.2, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.weight = 3
 
@@ -273,7 +273,7 @@ class BaghNahk(Weapon):
         super().__init__(name="Bagh Nahk", description="The bagh nahk is a 'fist-load, claw-like' dagger designed to "
                                                        "fit over the knuckles or be concealed under and against the "
                                                        "palm.",
-                         value=30000, rarity=0.4, damage=10, crit=0.25, handed=1, subtyp='Fist', unequip=False,
+                         value=45000, rarity=0.4, damage=15, crit=0.25, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.weight = 1
 
@@ -289,14 +289,14 @@ class IndrasFist(Weapon):
                                                           "force and power of a thunderstorm. The weapon crackles with"
                                                           " electric energy, emitting a faint glow as if it holds the "
                                                           "essence of a storm within.",
-                         value=80000, rarity=0.2, damage=13, crit=0.3, handed=1, subtyp='Fist', unequip=False,
+                         value=80000, rarity=0.2, damage=20, crit=0.3, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.weight = 1
         self.element = "Electric"
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
-        resist = target.check_mod('resist', self.element)
+        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
         damage = int(random.randint(damage // 2, damage) * (1 - resist))
         target.health.current -= damage
         if damage > 0:
@@ -315,14 +315,14 @@ class GodsHand(Weapon):
     def __init__(self):
         super().__init__(name="God's Hand", description="With the appearance of an ordinary white glove, this weapon is"
                                                         " said to be imbued with the power of God.",
-                         value=0, rarity=0, damage=16, crit=0.33, handed=1, subtyp='Fist', unequip=False,
+                         value=0, rarity=0, damage=26, crit=0.33, handed=1, subtyp='Fist', unequip=False,
                          off=True)
         self.ultimate = True
         self.element = "Holy"
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
-        resist = target.check_mod('resist', self.element)
+        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
         damage = int(random.randint(damage // 2, damage) * (1 - resist))
         if damage > 0:
             special_str += f"Holy light burns {target.name}, dealing {damage} additional holy damage."
@@ -343,7 +343,7 @@ class Baselard(Weapon):
 
     def __init__(self):
         super().__init__(name="Baselard", description="A baselard is a short bladed weapon with an H-shaped hilt.",
-                         value=1500, rarity=0.8, damage=4, crit=0.2, handed=1, subtyp='Dagger', unequip=False,
+                         value=1500, rarity=0.8, damage=5, crit=0.2, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 3
 
@@ -354,7 +354,7 @@ class Kris(Weapon):
         super().__init__(name="Kris", description="A Kris is an asymmetrical dagger with distinctive blade-patterning "
                                                   "achieved through alternating laminations of iron and nickelous iron,"
                                                   " easily identified by its distinct wavy blade.",
-                         value=5000, rarity=0.7, damage=6, crit=0.25, handed=1, subtyp='Dagger', unequip=False,
+                         value=5000, rarity=0.7, damage=7, crit=0.25, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 3
 
@@ -364,7 +364,7 @@ class Rondel(Weapon):
     def __init__(self):
         super().__init__(name="Rondel", description="A type of dagger with a stiff-blade, named for the round hand "
                                                     "guard and round or spherical pommel.",
-                         value=8000, rarity=0.5, damage=8, crit=0.33, handed=1, subtyp='Dagger', unequip=False,
+                         value=17000, rarity=0.5, damage=11, crit=0.33, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 3
 
@@ -378,7 +378,7 @@ class Kukri(Weapon):
                                                    "ideal for combat, especially in close quarters. Its handle is "
                                                    "ergonomically designed for a secure grip, allowing the wielder "
                                                    "to utilize its weight for maximum impact.",
-                         value=20000, rarity=0.4, damage=10, crit=0.4, handed=1, subtyp='Dagger', unequip=False,
+                         value=42000, rarity=0.4, damage=13, crit=0.4, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 4
 
@@ -393,7 +393,7 @@ class Khanjar(Weapon):
                                                      "engravings or a decorated hilt. In combat, it is designed for "
                                                      "swift, precise strikes, making it ideal for close-quarters "
                                                      "encounters.",
-                         value=75000, rarity=0.2, damage=12, crit=0.45, handed=1, subtyp='Dagger', unequip=False,
+                         value=75000, rarity=0.2, damage=18, crit=0.45, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 3
 
@@ -406,7 +406,7 @@ class Carnwennan(Weapon):
     def __init__(self):
         super().__init__(name="Carnwennan", description="King Arthur's dagger, sometimes described to shroud the user "
                                                         "in shadow.",
-                         value=0, rarity=0, damage=15, crit=0.5, handed=1, subtyp='Dagger', unequip=False,
+                         value=0, rarity=0, damage=24, crit=0.5, handed=1, subtyp='Dagger', unequip=False,
                          off=True)
         self.weight = 2
         self.ultimate = True
@@ -438,7 +438,7 @@ class Jian(Weapon):
     def __init__(self):
         super().__init__(name="Jian", description="A jian is a double-edged straight sword with a guard that protects "
                                                   "the wielder from opposing blades,",
-                         value=2000, rarity=0.8, damage=5, crit=0.1, handed=1, subtyp='Sword', unequip=False,
+                         value=2000, rarity=0.8, damage=7, crit=0.1, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 6
 
@@ -448,7 +448,7 @@ class Talwar(Weapon):
     def __init__(self):
         super().__init__(name="Talwar", description="A talwar is curved, single-edged sword with an iron disc hilt and "
                                                     "knucklebow, and a fullered blade.",
-                         value=5500, rarity=0.7, damage=7, crit=0.15, handed=1, subtyp='Sword', unequip=False,
+                         value=5500, rarity=0.7, damage=10, crit=0.15, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 8
 
@@ -458,7 +458,7 @@ class Shamshir(Weapon):
     def __init__(self):
         super().__init__(name="Shamshir", description="A shamshir has a radically curved blade featuring a slim blade "
                                                       "with almost no taper until the very tip.",
-                         value=10000, rarity=0.5, damage=10, crit=0.2, handed=1, subtyp='Sword', unequip=False,
+                         value=21000, rarity=0.5, damage=14, crit=0.2, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -468,7 +468,7 @@ class Khopesh(Weapon):
     def __init__(self):
         super().__init__(name="Khopesh", description="A khopesh is a sickle-shaped sword that evolved from battle axes"
                                                      " and that can be used to disarm an opponent.",
-                         value=22000, rarity=0.4, damage=12, crit=0.25, handed=1, subtyp='Sword', unequip=False,
+                         value=47000, rarity=0.4, damage=18, crit=0.25, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -476,7 +476,7 @@ class Khopesh(Weapon):
         special_str = ""
         if not target.status_effects['Disarm'].active:
             if target.equipment['Weapon'].subtyp not in ["Natural", "None"]:
-                chance = target.check_mod('luck', luck_factor=10)
+                chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
                 if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
                         > random.randint(target.stats.dex // 2, target.stats.dex) + chance:
                     target.status_effects['Disarm'].active = True
@@ -493,7 +493,7 @@ class Falchion(Weapon):
                                                       "blows. Its slight curve and weight distribution make it capable"
                                                       " of delivering decisive strikes, while the sturdy design "
                                                       "provides balance for quick, fluid attacks.",
-                         value=90000, rarity=0.2, damage=15, crit=0.3, handed=1, subtyp='Sword', unequip=False,
+                         value=90000, rarity=0.2, damage=23, crit=0.3, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -506,7 +506,7 @@ class Excalibur(Weapon):
     def __init__(self):
         super().__init__(name="Excalibur", description="The legendary sword of King Arthur, bestowed upon him by the "
                                                        "Lady of the Lake.",
-                         value=0, rarity=0, damage=18, crit=0.33, handed=1, subtyp='Sword', unequip=False,
+                         value=0, rarity=0, damage=30, crit=0.35, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 8
         self.ultimate = True
@@ -534,7 +534,7 @@ class Mace(Weapon):
                                                   " head on the end of a handle to deliver powerful strikes. A mace "
                                                   "typically consists of a strong, heavy, wooden or metal shaft, often"
                                                   " reinforced with metal, featuring a head made of iron.",
-                         value=2000, rarity=0.8, damage=6, crit=0.025, handed=1, subtyp='Club', unequip=False,
+                         value=2000, rarity=0.8, damage=9, crit=0.025, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 6
 
@@ -544,7 +544,7 @@ class WarHammer(Weapon):
     def __init__(self):
         super().__init__(name="War Hammer", description="A war hammer is a club with a head featuring both a blunt end "
                                                         "and a spike on the other end.",
-                         value=4500, rarity=0.7, damage=8, crit=0.05, handed=1, subtyp='Club', unequip=False,
+                         value=4500, rarity=0.7, damage=13, crit=0.05, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -554,7 +554,7 @@ class Pernach(Weapon):
     def __init__(self):
         super().__init__(name="Pernach", description="A pernach is a type of flanged mace used to penetrate even heavy "
                                                      "armor plating.",
-                         value=10000, rarity=0.5, damage=12, crit=0.1, handed=1, subtyp='Club', unequip=False,
+                         value=18000, rarity=0.5, damage=18, crit=0.1, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -565,7 +565,7 @@ class Morgenstern(Weapon):
         super().__init__(name="Morgenstern", description="A morgenstern, or morning star, is a club-like weapon "
                                                          "consisting of a shaft with an attached ball adorned with "
                                                          "several spikes.",
-                         value=21000, rarity=0.4, damage=14, crit=0.15, handed=1, subtyp='Club', unequip=False,
+                         value=43500, rarity=0.4, damage=24, crit=0.15, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 10
 
@@ -580,7 +580,7 @@ class Shishpar(Weapon):
                                                       "breaking through defenses. Its intimidating appearance and "
                                                       "formidable effectiveness made it a favored weapon of cavalry "
                                                       "and infantry soldiers throughout the medieval era.",
-                         value=85000, rarity=0.2, damage=17, crit=0.2, handed=1, subtyp='Club', unequip=False,
+                         value=85000, rarity=0.2, damage=31, crit=0.2, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 9
 
@@ -594,7 +594,7 @@ class Mjolnir(Weapon):
         super().__init__(name="Mjolnir", description="Mjolnir, wielded by the Thunder god Thor, is depicted in Norse "
                                                      "mythology as one of the most fearsome and powerful weapons in "
                                                      "existence, capable of leveling mountains.",
-                         value=0, rarity=0, damage=20, crit=0.25, handed=1, subtyp='Club', unequip=False,
+                         value=0, rarity=0, damage=38, crit=0.25, handed=1, subtyp='Club', unequip=False,
                          off=True)
         self.weight = 8
         self.ultimate = True
@@ -617,7 +617,7 @@ class Tanto(Weapon):
     def __init__(self):
         super().__init__(name="Tanto", description="A tanto is a double-edged, straight blade, designed primarily as a "
                                                    "stabbing weapon, but the edge can be used for slashing as well.",
-                         value=15000, rarity=0.4, damage=12, crit=0.33, handed=1, subtyp='Ninja Blade', unequip=False,
+                         value=44000, rarity=0.4, damage=14, crit=0.33, handed=1, subtyp='Ninja Blade', unequip=False,
                          off=True)
         self.weight = 5
         self.restriction = ['Ninja']
@@ -628,7 +628,7 @@ class Wakizashi(Weapon):
     def __init__(self):
         super().__init__(name="Wakizashi", description="A wakizashi is a curved, single-edged blade with a narrow "
                                                        "cross-section, producing a deadly strike.",
-                         value=65000, rarity=0.2, damage=15, crit=0.4, handed=1, subtyp='Ninja Blade', unequip=False,
+                         value=87000, rarity=0.2, damage=19, crit=0.4, handed=1, subtyp='Ninja Blade', unequip=False,
                          off=True)
         self.weight = 7
         self.restriction = ['Ninja']
@@ -642,7 +642,7 @@ class Ninjato(Weapon):
     def __init__(self):
         super().__init__(name="Ninjato", description="A mythical blade used by ninjas said to be possessed by a demon "
                                                      "who steals the soul of those slain by the weapon.",
-                         value=0, rarity=0, damage=18, crit=0.5, handed=1, subtyp='Ninja Blade', unequip=False,
+                         value=0, rarity=0, damage=25, crit=0.5, handed=1, subtyp='Ninja Blade', unequip=False,
                          off=True)
         self.weight = 5
         self.restriction = ['Ninja']
@@ -651,10 +651,10 @@ class Ninjato(Weapon):
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
         if crit > 1:
-            resist = target.check_mod('resist', 'Death')
+            resist = target.check_mod('resist', enemy=wielder, typ='Death')
             if resist < 1:
-                w_chance = wielder.check_mod('luck', luck_factor=10)
-                t_chance = target.check_mod('luck', luck_factor=10)
+                w_chance = wielder.check_mod('luck', enemy=target, luck_factor=10)
+                t_chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
                 if random.randint(0, wielder.stats.dex) + w_chance > \
                         random.randint(target.stats.con // 2, target.stats.con) + t_chance:
                     special_str += f"The {self.name} blade rips the soul from {target.name} and they drop dead to the ground!"
@@ -663,9 +663,6 @@ class Ninjato(Weapon):
 
 # Two-handed weapons
 class Bastard(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Bastard Sword", description="The bastard sword, also referred to as a hand-and-a-half "
@@ -678,9 +675,6 @@ class Bastard(Weapon):
 
 
 class Claymore(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Claymore", description="Coming from the Gaelic meaning 'Great Sword', the claymore is a "
@@ -688,33 +682,27 @@ class Claymore(Weapon):
                                                       "hilt and the blade) are angled in towards the blade and end in "
                                                       "quatrefoils, and a tongue of metal protrudes down either side of"
                                                       " the blade.",
-                         value=4200, rarity=0.8, damage=9, crit=0.15, handed=2, subtyp='Longsword', unequip=False,
+                         value=4200, rarity=0.8, damage=14, crit=0.15, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 20
 
 
 class Zweihander(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Zweihander", description="German for 'two-handed', the zweihander is a double-edged, "
                                                         "straight blade with a cruciform hilt.",
-                         value=9500, rarity=0.7, damage=11, crit=0.2, handed=2, subtyp='Longsword', unequip=False,
+                         value=9500, rarity=0.7, damage=19, crit=0.2, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 18
 
 
 class Changdao(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Changdao", description="A single-edged two-hander over seven feet long, roughly "
                                                       "translates to 'long saber'.",
-                         value=16000, rarity=0.5, damage=13, crit=0.25, handed=2, subtyp='Longsword', unequip=False,
+                         value=28000, rarity=0.5, damage=25, crit=0.25, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 16
 
@@ -727,16 +715,13 @@ class Flamberge(Weapon):
     def __init__(self):
         super().__init__(name="Flamberge", description="The flamberge is a type of flame-bladed sword featuring a "
                                                        "signature wavy blade.",
-                         value=31000, rarity=0.4, damage=15, crit=0.33, handed=2, subtyp='Longsword', unequip=False,
+                         value=61000, rarity=0.4, damage=31, crit=0.33, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 18
         self.element = "Fire"
 
 
 class Katana(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Katana", description="A katana is a traditional Japanese sword characterized by its "
@@ -748,22 +733,19 @@ class Katana(Weapon):
                                                     "The sword is not only a weapon but also a symbol of the samurai's"
                                                     " honor, discipline, and spirit. Its elegant design and cutting "
                                                     "power made it an iconic blade, ideal for swift, precise strikes.",
-                         value=100000, rarity=0.2, damage=18, crit=0.4, handed=2, subtyp='Longsword', unequip=False,
+                         value=100000, rarity=0.2, damage=39, crit=0.4, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 18
 
 
 class Executioner(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Executioner's Blade", description="Designed specifically for decapitation, the "
                                                                  "Executioner's Blade is a large, two-handed sword "
                                                                  "with a broad blade that is highly efficient at "
                                                                  "killing.",
-                         value=0, rarity=0, damage=22, crit=0.4, handed=2, subtyp='Longsword', unequip=False,
+                         value=0, rarity=0, damage=50, crit=0.4, handed=2, subtyp='Longsword', unequip=False,
                          off=False)
         self.weight = 20
         self.ultimate = True
@@ -771,10 +753,10 @@ class Executioner(Weapon):
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
         if crit > 1:
-            resist = target.check_mod('resist', 'Death')
+            resist = target.check_mod('resist', enemy=wielder, typ='Death')
             if resist < 1:
-                w_chance = wielder.check_mod('luck', luck_factor=10)
-                t_chance = target.check_mod('luck', luck_factor=10)
+                w_chance = wielder.check_mod('luck', enemy=target, luck_factor=10)
+                t_chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
                 if random.randint(0, wielder.stats.strength) + w_chance > \
                         random.randint(target.stats.con // 2, target.stats.con) + t_chance:
                     special_str += f"The {self.name} decapitates {target.name} and they drop dead to the ground!"
@@ -782,9 +764,6 @@ class Executioner(Weapon):
 
 
 class Mattock(Weapon):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Mattock", description="A mattock is a hand tool used for digging, prying, and chopping, "
@@ -798,7 +777,7 @@ class Broadaxe(Weapon):
 
     def __init__(self):
         super().__init__(name="Broadaxe", description="A broadaxe is broad-headed axe with a large flared blade.",
-                         value=4500, rarity=0.8, damage=10, crit=0.15, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=4500, rarity=0.8, damage=15, crit=0.15, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 17
 
@@ -808,7 +787,7 @@ class DoubleAxe(Weapon):
     def __init__(self):
         super().__init__(name="Double Axe", description="The double axe is basically a broadaxe but with a blade on "
                                                         "each side of the axehead.",
-                         value=10000, rarity=0.7, damage=12, crit=0.2, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=10000, rarity=0.7, damage=21, crit=0.2, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 22
 
@@ -819,7 +798,7 @@ class Parashu(Weapon):
         super().__init__(name="Parashu", description="A parashu is a single-bladed battle axe with an arced edge "
                                                      "extending beyond 180 degrees and paired with a spike on the non-"
                                                      "cutting edge.",
-                         value=15000, rarity=0.5, damage=14, crit=0.25, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=27500, rarity=0.5, damage=28, crit=0.25, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 20
 
@@ -829,7 +808,7 @@ class Greataxe(Weapon):
     def __init__(self):
         super().__init__(name="Greataxe", description="A greataxe is a scaled up version of the double axe with greater"
                                                       " mass and killing power.",
-                         value=30000, rarity=0.4, damage=16, crit=0.3, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=59000, rarity=0.4, damage=34, crit=0.3, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 26
 
@@ -843,7 +822,7 @@ class Tabarzin(Weapon):
                                                       "tabarzin reflects the artistry of its time, blending practical "
                                                       "lethality with cultural craftsmanship. The weapon represents a "
                                                       "balance of beauty, utility, and heritage on the battlefield.",
-                         value=100000, rarity=0.2, damage=19, crit=0.33, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=100000, rarity=0.2, damage=43, crit=0.33, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 24
 
@@ -855,7 +834,7 @@ class Jarnbjorn(Weapon):
 
     def __init__(self):
         super().__init__(name="Jarnbjorn", description="Legendary axe of Thor Odinson. Old Norse for \"iron bear\".",
-                         value=0, rarity=0, damage=23, crit=0.33, handed=2, subtyp='Battle Axe', unequip=False,
+                         value=0, rarity=0, damage=55, crit=0.33, handed=2, subtyp='Battle Axe', unequip=False,
                          off=False)
         self.weight = 20
         self.ultimate = True
@@ -892,7 +871,7 @@ class Partisan(Weapon):
         super().__init__(name="Partisan", description="A partisan consists of a spearhead mounted on a long wooden "
                                                       "shaft, with protrusions on the sides which aid in parrying "
                                                       "sword thrusts.",
-                         value=3500, rarity=0.8, damage=9, crit=0.2, handed=2, subtyp='Polearm', unequip=False,
+                         value=3500, rarity=0.8, damage=13, crit=0.2, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 12
 
@@ -902,7 +881,7 @@ class Halberd(Weapon):
     def __init__(self):
         super().__init__(name="Halberd", description="A halberd is a two-handed pole weapon consisting of an axe blade "
                                                      "topped with a spike mounted on a long shaft.",
-                         value=9000, rarity=0.7, damage=11, crit=0.25, handed=2, subtyp='Polearm', unequip=False,
+                         value=9000, rarity=0.7, damage=18, crit=0.25, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 15
 
@@ -913,7 +892,7 @@ class Naginata(Weapon):
         super().__init__(name="Naginata", description="A naginata consists of a wooden or metal pole with a curved "
                                                       "single-edged blade on the end that has a round handguard between"
                                                       " the blade and shaft.",
-                         value=13000, rarity=0.5, damage=13, crit=0.3, handed=2, subtyp='Polearm', unequip=False,
+                         value=26500, rarity=0.5, damage=25, crit=0.3, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 14
 
@@ -926,7 +905,7 @@ class Trident(Weapon):
     def __init__(self):
         super().__init__(name="Trident", description="A trident is a 3-pronged spear, the preferred weapon of the Sea"
                                                      " god Poseidon.",
-                         value=26000, rarity=0.4, damage=15, crit=0.33, handed=2, subtyp='Polearm', unequip=False,
+                         value=57000, rarity=0.4, damage=31, crit=0.33, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 16
         self.element = "Water"
@@ -942,7 +921,7 @@ class Ranseur(Weapon):
                                                      "capability of a spear. This versatile design allowed for both "
                                                      "offensive strikes and effective defense, making it particularly "
                                                      "useful in disarming foes.",
-                         value=95000, rarity=0.2, damage=15, crit=0.35, handed=2, subtyp='Polearm', unequip=False,
+                         value=95000, rarity=0.2, damage=38, crit=0.35, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 15
 
@@ -950,7 +929,7 @@ class Ranseur(Weapon):
         special_str = ""
         if not target.status_effects['Disarm'].active:
             if target.equipment['Weapon'].subtyp not in ["Natural", "None"]:
-                chance = target.check_mod('luck', luck_factor=10)
+                chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
                 if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
                         > random.randint(target.stats.dex // 2, target.stats.dex) + chance:
                     target.status_effects['Disarm'].active = True
@@ -966,7 +945,7 @@ class Gungnir(Weapon):
 
     def __init__(self):
         super().__init__(name="Gungnir", description="Legendary spear of the god Odin. Old Norse for \"swaying one\".",
-                         value=0, rarity=0, damage=22, crit=0.4, handed=2, subtyp='Polearm', unequip=False,
+                         value=0, rarity=0, damage=48, crit=0.4, handed=2, subtyp='Polearm', unequip=False,
                          off=False)
         self.weight = 14
         self.ignore = True
@@ -988,7 +967,7 @@ class Baston(Weapon):
     def __init__(self):
         super().__init__(name="Baston", description="A baston is a long, light, and flexible staff weapon that is ideal"
                                                     " for speed and precision.",
-                         value=800, rarity=0.9, damage=3, crit=0.05, handed=2, subtyp='Staff', unequip=False,
+                         value=800, rarity=0.9, damage=4, crit=0.05, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 6
 
@@ -997,7 +976,7 @@ class IronshodStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="Ironshod Staff", description="An iron walking stick, making it ideal for striking.",
-                         value=4000, rarity=0.8, damage=6, crit=0.1, handed=2, subtyp='Staff', unequip=False,
+                         value=4000, rarity=0.8, damage=9, crit=0.1, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 10
 
@@ -1006,7 +985,7 @@ class SerpentStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="Serpent Staff", description="A magic staff, shaped to appear as a snake.",
-                         value=8000, rarity=0.7, damage=10, crit=0.12, handed=2, subtyp='Staff', unequip=False,
+                         value=8000, rarity=0.7, damage=13, crit=0.12, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 8
 
@@ -1016,7 +995,7 @@ class HolyStaff(Weapon):
     def __init__(self):
         super().__init__(name="Holy Staff", description="A staff that emits a holy light. Only equipable by priests"
                                                         " and archbishops.",
-                         value=10000, rarity=0.5, damage=11, crit=0.15, handed=2, subtyp='Staff', unequip=False,
+                         value=25000, rarity=0.5, damage=15, crit=0.15, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 6
         self.restriction = ['Priest', 'Archbishop']
@@ -1024,7 +1003,7 @@ class HolyStaff(Weapon):
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
-        resist = target.check_mod('resist', self.element)
+        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
         damage = int(damage * (1 - resist))
         if damage > 0:
             special_str += f"The {self.name} deals {damage} additional holy damage to {target.name}."
@@ -1038,7 +1017,7 @@ class RuneStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="Rune Staff", description="A wooden staff with a magical rune embedded in the handle.",
-                         value=15000, rarity=0.5, damage=12, crit=0.18, handed=2, subtyp='Staff', unequip=False,
+                         value=27500, rarity=0.5, damage=18, crit=0.18, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 7
 
@@ -1047,7 +1026,7 @@ class MithrilshodStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="Mithrilshod Staff", description="A mithril walking stick, making it ideal for striking.",
-                         value=30000, rarity=0.4, damage=14, crit=0.2, handed=2, subtyp='Staff', unequip=False,
+                         value=65000, rarity=0.4, damage=22, crit=0.2, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 8
 
@@ -1061,7 +1040,7 @@ class Khatvanga(Weapon):
                                                        "representing his ascetic power and transcendence. It embodies "
                                                        "spiritual authority, detachment, and the profound nature of "
                                                        "transformation in mystical practices.",
-                         value=100000, rarity=0.2, damage=17, crit=0.25, handed=2, subtyp='Staff', unequip=False,
+                         value=100000, rarity=0.2, damage=28, crit=0.25, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 7
 
@@ -1073,7 +1052,7 @@ class DragonStaff(Weapon):
 
     def __init__(self):
         super().__init__(name="Dragon Staff", description="A magic staff, shaped to appear as a dragon.",
-                         value=0, rarity=0, damage=20, crit=0.3, handed=2, subtyp='Staff', unequip=False,
+                         value=0, rarity=0, damage=35, crit=0.3, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 9
         self.restriction = ['Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
@@ -1097,7 +1076,7 @@ class PrincessGuard(Weapon):
 
     def __init__(self):
         super().__init__(name="Princess Guard", description="A mythical staff from another world.",
-                         value=0, rarity=0, damage=21, crit=0.25, handed=2, subtyp='Staff', unequip=False,
+                         value=0, rarity=0, damage=37, crit=0.25, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 4
         self.restriction = ['Archbishop']
@@ -1130,7 +1109,7 @@ class Maul(Weapon):
     def __init__(self):
         super().__init__(name="Spike Maul", description="A spike maul is similar to a sledgehammer except for having a"
                                                         " more narrow face for increased damage.",
-                         value=5000, rarity=0.7, damage=14, crit=0.12, handed=2, subtyp='Hammer', unequip=False,
+                         value=7500, rarity=0.7, damage=18, crit=0.12, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.weight = 22
 
@@ -1139,14 +1118,14 @@ class EarthHammer(Weapon):
 
     def __init__(self):
         super().__init__(name="Earth Hammer", description="A large, 2-handed hammer infused with the power of Gaia.",
-                         value=12000, rarity=0.5, damage=18, crit=0.15, handed=2, subtyp='Hammer', unequip=False,
+                         value=29000, rarity=0.5, damage=25, crit=0.15, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.weight = 20
         self.element = "Earth"
 
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = ""
-        resist = target.check_mod('resist', 'Earth')
+        resist = target.check_mod('resist', enemy=wielder, typ='Earth')
         damage = int(damage * (1 - resist))
         if damage > 0:
             special_str += f"The {self.name} deals {damage} additional earth damage to {target.name}."
@@ -1161,7 +1140,7 @@ class GreatMaul(Weapon):
     def __init__(self):
         super().__init__(name="Great Maul", description="A great maul looks similar to a sledgehammer but is "
                                                         "significantly larger in all aspects.",
-                         value=27000, rarity=0.4, damage=20, crit=0.2, handed=2, subtyp='Hammer', unequip=False,
+                         value=60000, rarity=0.4, damage=36, crit=0.2, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.weight = 30
 
@@ -1180,7 +1159,7 @@ class Streithammer(Weapon):
                                                           "warrior, it becomes a weapon of formidable destruction, "
                                                           "perfect for combat situations that require raw power and "
                                                           "decisive strikes.",
-                         value=98000, rarity=0.2, damage=22, crit=0.25, handed=2, subtyp='Hammer', unequip=False,
+                         value=98000, rarity=0.2, damage=47, crit=0.25, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.weight = 26
 
@@ -1193,7 +1172,7 @@ class Skullcrusher(Weapon):
     def __init__(self):
         super().__init__(name="Skullcrusher", description="A massive hammer with the power to pulverize an enemy's "
                                                           "skull to powder.",
-                         value=0, rarity=0, damage=26, crit=0.25, handed=2, subtyp='Hammer', unequip=False,
+                         value=0, rarity=0, damage=60, crit=0.25, handed=2, subtyp='Hammer', unequip=False,
                          off=False)
         self.weight = 25
         self.ultimate = True
@@ -1259,7 +1238,7 @@ class CloakEnchantment(Armor):
     def __init__(self):
         super().__init__(name="Cloak of Enchantment", description="A magical cloak that shields the wearer from all "
                                                                   "forms of attack.",
-                         value=15000, rarity=0.5, armor=7, subtyp='Cloth', unequip=False)
+                         value=22000, rarity=0.5, armor=7, subtyp='Cloth', unequip=False)
         self.weight = 3
 
 
@@ -1268,7 +1247,7 @@ class WizardRobe(Armor):
     def __init__(self):
         super().__init__(name="Wizard's Robe", description="A knee-length, long-sleeved robe with an impressive hood "
                                                            "designed to add a mysterious feel to magic users.",
-                         value=25000, rarity=0.4, armor=10, subtyp='Cloth', unequip=False)
+                         value=45000, rarity=0.4, armor=10, subtyp='Cloth', unequip=False)
         self.weight = 4
 
 
@@ -1332,7 +1311,7 @@ class StuddedLeather(Armor):
     def __init__(self):
         super().__init__(name="Studded Leather", description="Leather armor embedded with iron studs to improve "
                                                              "defensive capabilities.",
-                         value=12000, rarity=0.5, armor=8, subtyp='Light', unequip=False)
+                         value=20000, rarity=0.5, armor=8, subtyp='Light', unequip=False)
         self.weight = 7
 
 
@@ -1341,7 +1320,7 @@ class StuddedCuirboulli(Armor):
     def __init__(self):
         super().__init__(name="Studded Cuirboulli", description="Boiled leather armor embedded with iron studs to "
                                                                 "improve defensive capabilities.",
-                         value=28000, rarity=0.4, armor=12, subtyp='Light', unequip=False)
+                         value=42000, rarity=0.4, armor=12, subtyp='Light', unequip=False)
         self.weight = 8
 
 
@@ -1407,7 +1386,7 @@ class Breastplate(Armor):
                                                          "relatively unprotected, this armor provides good protection "
                                                          "for the wearer’s vital organs while leaving the wearer "
                                                          "relatively unencumbered.",
-                         value=14000, rarity=0.5, armor=9, subtyp='Medium', unequip=False)
+                         value=23500, rarity=0.5, armor=9, subtyp='Medium', unequip=False)
         self.weight = 15
 
 
@@ -1417,7 +1396,7 @@ class HalfPlate(Armor):
         super().__init__(name="Half Plate", description="Armor consisting of shaped metal plates that cover most of the"
                                                         " wearer’s body. It does not include leg Protection beyond "
                                                         "simple greaves that are attached with leather straps.",
-                         value=30000, rarity=0.4, armor=13, subtyp='Medium', unequip=False)
+                         value=46000, rarity=0.4, armor=13, subtyp='Medium', unequip=False)
         self.weight = 20
 
 
@@ -1479,7 +1458,7 @@ class PlateMail(Armor):
     def __init__(self):
         super().__init__(name="Plate Mail", description="Armor consisting of shaped, interlocking metal plates to "
                                                         "cover most of the body.",
-                         value=20000, rarity=0.5, armor=10, subtyp='Heavy', unequip=False)
+                         value=27500, rarity=0.5, armor=10, subtyp='Heavy', unequip=False)
         self.weight = 25
 
 
@@ -1491,7 +1470,7 @@ class FullPlate(Armor):
                                                         "heavy leather boots, a visored helmet, and thick layers of "
                                                         "padding underneath the armor. Buckles and straps distribute "
                                                         "the weight over the body.",
-                         value=40000, rarity=0.4, armor=15, subtyp='Heavy', unequip=False)
+                         value=55000, rarity=0.4, armor=15, subtyp='Heavy', unequip=False)
         self.weight = 30
 
 
@@ -1570,7 +1549,7 @@ class KiteShield(OffHand):
                                                          "bottom. The term \"kite shield\" is a reference to the "
                                                          "shield's unique shape, and is derived from its supposed "
                                                          "similarity to a flying kite.",
-                         value=10000, rarity=0.5, mod=0.25, subtyp='Shield', unequip=False)
+                         value=15000, rarity=0.5, mod=0.25, subtyp='Shield', unequip=False)
         self.weight = 15
 
 
@@ -1580,7 +1559,7 @@ class Pavise(OffHand):
         super().__init__(name="Pavise", description="A pavise is an oblong shield similar to a tower shield that "
                                                     "features a spike at the bottom to hold it in place to provide full"
                                                     " body protection.",
-                         value=25000, rarity=0.4, mod=0.3, subtyp='Shield', unequip=False)
+                         value=42000, rarity=0.4, mod=0.3, subtyp='Shield', unequip=False)
         self.weight = 20
 
 
@@ -1647,7 +1626,7 @@ class DragonRouge(OffHand):
     def __init__(self):
         super().__init__(name="Dragon Rouge", description="French for \"Red Dragon\", this mythical tome contains "
                                                           "ancient knowledge passed down through the ages.",
-                         value=15000, rarity=0.5, mod=18, subtyp='Tome', unequip=False)
+                         value=21000, rarity=0.5, mod=18, subtyp='Tome', unequip=False)
         self.weight = 4
 
 
@@ -1656,7 +1635,7 @@ class Vedas(OffHand):
     def __init__(self):
         super().__init__(name="Vedas", description="A large body of religious texts, consisting of some of the oldest "
                                                    "holy teachings.",
-                         value=35000, rarity=0.4, mod=27, subtyp='Tome', unequip=False)
+                         value=50000, rarity=0.4, mod=27, subtyp='Tome', unequip=False)
         self.weight = 4
 
 
@@ -1665,7 +1644,7 @@ class Necronomicon(OffHand):
     def __init__(self):
         super().__init__(name="Necronomicon", description="The Book of the Dead, a mystical grimoire written by an "
                                                           "unknown author.",
-                         value=40000, rarity=0.2, mod=30, subtyp='Tome', unequip=False)
+                         value=65000, rarity=0.2, mod=30, subtyp='Tome', unequip=False)
         self.weight = 6
         self.restriction = ['Warlock', 'Necromancer']
 
@@ -1674,14 +1653,79 @@ class Magus(OffHand):
 
     def __init__(self):
         super().__init__(name="Magus", description="A book of magical art written by a powerful wizard.",
-                         value=75000, rarity=0.05, mod=45, subtyp='Tome', unequip=False)
+                         value=90000, rarity=0.05, mod=45, subtyp='Tome', unequip=False)
         self.weight = 3
 
 
-class NoRing(Accessory):
-    """
+class DowsingRod(OffHand):
 
-    """
+    def __init__(self):
+        super().__init__(name="Dowsing Rod", description="Also known as a divining rod, this oak Y-shaped branch "
+                                                         "is thought to help locate natural sources of water. But "
+                                                         "this is no normal dowsing rod, enhanced by the power of "
+                                                         "Poseidon. All water-based spells gain double the bonus to "
+                                                         "spell damage.",
+                         value=75000, rarity=0.2, mod=20, subtyp='Rod', unequip=False)
+        self.weight = 2
+
+
+class ScepterIfrit(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Scepter of Ifrit", description="A flaming scepter imbued by the wrath of Ifrit. All "
+                                                              "fire-based spells gain double the bonus to spell "
+                                                              "damage.",
+                         value=75000, rarity=0.2, mod=20, subtyp='Rod', unequip=False)
+        self.weight = 3
+
+
+class GaiasBranch(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Gaia's Branch", description="Mother Earth embodies all the living things, including the"
+                                                           " tree of life. As a sacrifice to combat those who try to "
+                                                           "hurt her, a single branch was removed and infused with the "
+                                                           "power of her domain. All earth-based spells gain double "
+                                                           "the bonus to spell damage.",
+                         value=75000, rarity=0.2, mod=20, subtyp='Rod', unequip=False)
+        self.weight = 3
+
+
+class Zephyruswand(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Zephyruswand", description="As the God of the West Wind, Zephyrus lends his power to "
+                                                          "user. All wind-based spells gain double the bonus to spell "
+                                                          "damage.",
+                         value=75000, rarity=0.2, mod=20, subtyp='Rod', unequip=False)
+        self.weight = 1
+
+
+class RainbowRod(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Rainbow Rod", description="A radiant rod imbued with the essence of every elemental "
+                                                         "power, the Rainbow Rod amplifies the user's spells across"
+                                                         " all types, enhancing each with a vibrant, prismatic aura. "
+                                                         "All elemental spells gain double the bonus to spell damage.",
+                         value=200000, rarity=0.05, mod=40, subtyp='Rod', unequip=False)
+        self.weight = 3
+
+
+class UltimaScepter(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Ultima Scepter", description="Crafted to harness the pure, devastating power of the "
+                                                            "Ultima spell, this scepter is an artifact of forbidden "
+                                                            "magic and unparalleled potency. The Ultima Scepter "
+                                                            "channels immense energy directly into the spell, "
+                                                            "making it a weapon of unmatched finality in battle, "
+                                                            "doubling the bonus to spell damage.",
+                         value=250000, rarity=0.01, mod=60, subtyp='Rod', unequip=False)
+        self.weight = 5
+
+
+class NoRing(Accessory):
 
     def __init__(self):
         super().__init__(name="No Ring", description="No ring equipped.", value=0, rarity=0, mod="No Mod",
@@ -1689,9 +1733,6 @@ class NoRing(Accessory):
 
 
 class IronRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Iron Ring", description="A ring that improves the wearer's defense.",
@@ -1700,9 +1741,6 @@ class IronRing(Accessory):
 
 
 class PowerRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Power Ring", description="A ring that improves the wearer's attack damage.",
@@ -1723,9 +1761,6 @@ class BarrierRing(Accessory):
 
 
 class SteelRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Steel Ring", description="A ring that greatly improves the wearer's defense.",
@@ -1734,9 +1769,6 @@ class SteelRing(Accessory):
 
 
 class MightRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Might Ring", description="A ring that greatly improves the wearer's attack damage.",
@@ -1745,9 +1777,6 @@ class MightRing(Accessory):
 
 
 class AccuracyRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Accuracy Ring", description="A ring that improves the wearer's weapon accuracy by 10%.",
@@ -1767,9 +1796,6 @@ class EvasionRing(Accessory):
 
 
 class TitaniumRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Titanium Ring", description="A ring that massively improves the wearer's defense.",
@@ -1778,9 +1804,6 @@ class TitaniumRing(Accessory):
 
 
 class ForceRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Force Ring", description="A ring that massively improves the wearer's attack damage.",
@@ -1789,9 +1812,6 @@ class ForceRing(Accessory):
 
 
 class ClassRing(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Class Ring", description="A ring that changes depending on the wearer's specialty.",
@@ -1803,9 +1823,6 @@ class ClassRing(Accessory):
 
 
 class NoPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="No Pendant", description="No pendant equipped.", value=0, rarity=0, mod="No Mod",
@@ -1813,9 +1830,6 @@ class NoPendant(Accessory):
 
 
 class VisionPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Pendant of Vision", description="A pendant that that gives information about the enemy.",
@@ -1824,9 +1838,6 @@ class VisionPendant(Accessory):
 
 
 class RubyAmulet(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Ruby Amulet", description="A ruby necklace that improves the wearer's magic damage.",
@@ -1835,9 +1846,6 @@ class RubyAmulet(Accessory):
 
 
 class SilverPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Silver Pendant", description="A silver-chained necklace that improves the wearer's magic"
@@ -1847,9 +1855,6 @@ class SilverPendant(Accessory):
 
 
 class AntidotePendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Antidote Pendant", description="Protects the wearer against the effects of poison.",
@@ -1858,9 +1863,6 @@ class AntidotePendant(Accessory):
 
 
 class SapphireAmulet(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Sapphire Amulet", description="A sapphire necklace that greatly improves the wearer's "
@@ -1870,9 +1872,6 @@ class SapphireAmulet(Accessory):
 
 
 class GoldPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Gold Pendant", description="A gold-chained necklace that greatly improves the wearer's "
@@ -1882,9 +1881,6 @@ class GoldPendant(Accessory):
 
 
 class GorgonPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Gorgon Pendant", description="Made from the scale of a Gorgon, this ring protects the "
@@ -1894,9 +1890,6 @@ class GorgonPendant(Accessory):
 
 
 class DharmaPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Dharma Pendant", description="No need to fear the reaper while wearing this ring, giving"
@@ -1906,9 +1899,6 @@ class DharmaPendant(Accessory):
 
 
 class LevitationNecklace(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Levitation Necklace", description="Gives the wearer the ability to fly, making them "
@@ -1919,9 +1909,6 @@ class LevitationNecklace(Accessory):
 
 
 class InvisibilityAmulet(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Invisibility Amulet", description="Makes the wearer invisible and harder to hit.",
@@ -1930,9 +1917,6 @@ class InvisibilityAmulet(Accessory):
 
 
 class DiamondAmulet(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Diamond Amulet", description="A diamond necklace that massively improves the wearer's "
@@ -1942,9 +1926,6 @@ class DiamondAmulet(Accessory):
 
 
 class PlatinumPendant(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Platinum Pendant", description="A platinum-chained necklace that massively improves the "
@@ -1954,9 +1935,6 @@ class PlatinumPendant(Accessory):
 
 
 class ElementalAmulet(Accessory):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Elemental Amulet", description="Fashioned from the cores of elementals, this necklace "
@@ -2001,7 +1979,7 @@ class GreatHealthPotion(HealthPotion):
         self.name = "Great Health Potion"
         self.description = "\n".join(wrap("A potion that restores up to 50% of your health.", 35))
         self.value = 600
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.percent = 0.50
 
 
@@ -2031,7 +2009,7 @@ class ManaPotion(Potion):
 
     def __init__(self):
         super().__init__(name="Mana Potion", description="A potion that restores up to 25% of your mana.",
-                         value=250, rarity=0.75, subtyp='Mana')
+                         value=250, rarity=0.9, subtyp='Mana')
         self.percent = 0.25
 
     def use(self, user, target=None):
@@ -2134,7 +2112,7 @@ class HPPotion(Potion):
 
     def __init__(self):
         super().__init__(name="HP Potion", description="A potion that permanently increases your max health by 10.",
-                         value=10000, rarity=0.75, subtyp='Stat')
+                         value=10000, rarity=0.7, subtyp='Stat')
         self.mod = 10
 
     def use(self, user, target=None):
@@ -2262,9 +2240,6 @@ class AardBeing(Potion):
 
 
 class Status(Potion):
-    """
-    
-    """
 
     def __init__(self):
         super().__init__(name="Status", description="Base class for status items.",
@@ -2294,9 +2269,6 @@ class Status(Potion):
 
 
 class Antidote(Status):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2308,37 +2280,39 @@ class Antidote(Status):
 
 
 class EyeDrop(Status):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.name = "Eye Drop"
-        self.description = "\n".join(wrap("Eye drops that will cure blindness.", 35))
+        self.description = "\n".join(wrap("A potion that will cure blindness.", 35))
         self.value = 250
         self.rarity = 0.9
         self.status = 'Blind'
 
 
-class AntiCoagulant(Status):
-    """
+class EchoScreen(Status):
 
-    """
+    def __init__(self):
+        super().__init__()
+        self.name = "Echo Screen"
+        self.description = "\n".join(wrap("A potion that will cure silence.", 35))
+        self.value = 1000
+        self.rarity = 0.7
+        self.status = 'Silence'
+
+
+class AntiCoagulant(Status):
 
     def __init__(self):
         super().__init__()
         self.name = "Anti-Coagulant"
-        self.description = "\n".join(wrap("Anti-coagulants will cure bleeding.", 35))
+        self.description = "\n".join(wrap("A potion that will cure bleeding.", 35))
         self.value = 1000
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.status = 'Bleed'
 
 
 class PhoenixDown(Status):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
@@ -2350,17 +2324,14 @@ class PhoenixDown(Status):
 
 
 class Remedy(Status):
-    """
-
-    """
 
     def __init__(self):
         super().__init__()
         self.name = "Remedy"
         self.description = "\n".join(wrap("A potion that will cure all negative status effects.", 35))
         self.value = 15000
-        self.rarity = 0.5
-        self.status = ['Poison', 'Blind', 'Bleed', 'Doom']
+        self.rarity = 0.2
+        self.status = ['Poison', 'Blind', 'Silence', 'Bleed', 'Doom']
 
     def use(self, user, target=None):
         use_str = ""
@@ -2414,7 +2385,7 @@ class OldKey(Misc):
     def __init__(self):
         super().__init__(name="Old Key", description="Unlocks doors that may lead to either valuable treasure or to "
                                                      "powerful enemies.",
-                         value=50000, rarity=0.7, subtyp='Key')
+                         value=50000, rarity=0.5, subtyp='Key')
 
     def use(self, user, target=None):
         use_str = ""
@@ -2476,7 +2447,7 @@ class SleepScroll(Scroll):
                                           " can put the enemy to sleep. The scroll will be consumed when it is out of "
                                           "charges.", 35))
         self.value = 2000
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Sleep()
 
 
@@ -2491,7 +2462,7 @@ class FireScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the fire "
                                           "spell Firebolt. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Firebolt()
 
 
@@ -2506,7 +2477,7 @@ class IceScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the ice "
                                           "spell Ice Lance. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.IceLance()
 
 
@@ -2521,7 +2492,7 @@ class ElectricScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the electric"
                                           " spell Shock. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Shock()
 
 
@@ -2536,7 +2507,7 @@ class WaterScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the water "
                                           "spell Water Jet. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.WaterJet()
 
 
@@ -2551,7 +2522,7 @@ class EarthScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the earth "
                                           "spell Tremor. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Tremor()
 
 
@@ -2566,7 +2537,7 @@ class WindScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the wind "
                                           "spell Gust. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Gust()
 
 
@@ -2582,7 +2553,7 @@ class ShadowScroll(Scroll):
                                           "shadow spell Shadow Bolt. The scroll will be consumed when it is out of "
                                           "charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.ShadowBolt()
 
 
@@ -2597,7 +2568,7 @@ class HolyScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy "
                                           "spell Holy. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Holy()
 
 
@@ -2612,7 +2583,7 @@ class CleanseScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy"
                                           " spell Cleanse. The scroll will be consumed when it is out of charges.", 35))
         self.value = 2500
-        self.rarity = 0.75
+        self.rarity = 0.7
         self.spell = abilities.Cleanse()
 
 
@@ -2726,18 +2697,12 @@ class UltimaScroll(Scroll):
 
 
 class RatTail(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Rat Tail", description="The tail of a rat.", value=0, rarity=1, subtyp='Enemy')
 
 
 class MysteryMeat(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Mystery Meat", description="Unknown meat with a strange smell. Maybe you could do "
@@ -2746,9 +2711,6 @@ class MysteryMeat(Misc):
 
 
 class Leather(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Leather", description="The dried skin of an animal, used for various purposes.",
@@ -2756,9 +2718,6 @@ class Leather(Misc):
 
 
 class Feather(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Feather", description="The feather of a bird.",
@@ -2766,9 +2725,6 @@ class Feather(Misc):
 
 
 class SnakeSkin(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Snake Skin", description="The skin of a snake.",
@@ -2776,9 +2732,6 @@ class SnakeSkin(Misc):
 
 
 class ScrapMetal(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Scrap Metal", description="A chunk of metal.",
@@ -2786,9 +2739,6 @@ class ScrapMetal(Misc):
 
 
 class CursedHops(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Cursed Hops", description="Hops from a cursed tree, these flower are used primarily in"
@@ -2798,9 +2748,6 @@ class CursedHops(Misc):
 
 
 class ElementalMote(Misc):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Elemental Mote", description="The elemental core of a Myrmidon.",
@@ -2808,13 +2755,18 @@ class ElementalMote(Misc):
 
 
 class PowerCore(Misc):
-    """
-
-    """
 
     def __init__(self):
-        super().__init__(name="Power Core", description="The power source of the Golem guarding the stairs to level 5.",
+        super().__init__(name="Power Core", description="The power source of a Golem.",
                          value=0, rarity=1, subtyp='Enemy')
+
+
+class Phylactery(Misc):
+
+    def __init__(self):
+        super().__init__(name="Phylactery", description="The soul artifcat of a Lich, given up willingly to achieve "
+                                                        "immortality.",
+                         value=0, rarity=0.05, subtyp='Enemy')
 
 
 class LuckyLocket(Misc):
@@ -2956,7 +2908,8 @@ items_dict = {
             'Hammer': [Sledgehammer, Maul, EarthHammer, GreatMaul, Streithammer]}},
     'OffHand': {
         'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, Svalinn], 
-        'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon]},
+        'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon],
+        'Rod': [DowsingRod, ScepterIfrit, GaiasBranch, Zephyruswand]},
     'Armor': {
         'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe, Tarnkappe],
         'Light': [PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli, MithrilCoat],
@@ -2974,7 +2927,7 @@ items_dict = {
         'Elixir': [Elixir, Megalixir],
         'Stat': [HPPotion, MPPotion, StrengthPotion, IntelPotion, WisdomPotion, ConPotion,
                  CharismaPotion, DexterityPotion, AardBeing],
-        'Status': [Antidote, EyeDrop, AntiCoagulant, PhoenixDown]},
+        'Status': [Antidote, EyeDrop, EchoScreen, AntiCoagulant, PhoenixDown]},
     'Misc': {
         'Key': [Key, OldKey],
         'Scroll': [BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,

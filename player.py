@@ -7,7 +7,7 @@ import os
 import re
 import glob
 import random
-import pickle
+import dill
 
 import numpy
 
@@ -25,7 +25,7 @@ def load_char(char=None, player_dict=None):
     if char:
         load_file = "tmp_files/" + str(char.name).lower() + ".tmp"
         with open(load_file, "rb") as l_file:
-            player_dict = pickle.load(l_file)
+            player_dict = dill.load(l_file)
         os.system(f"rm {load_file}")
     player_char = Player(player_dict['location_x'], player_dict['location_y'], player_dict['location_z'],
                          player_dict['level'], player_dict['health'], player_dict['mana'], 
@@ -103,7 +103,7 @@ class Player(Character):
         for tile in self.world_dict:
             if self.location_z == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
-                if self.world_dict[tile].near:
+                if self.world_dict[tile].near or self.cls.name == "Seeker":
                     if 'Stairs' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25E3"
                     elif "Door" in str(self.world_dict[tile]):
@@ -114,6 +114,8 @@ class Player(Character):
                         map_array[tile_x][tile_y] = "\u25A1" if self.world_dict[tile].open else "\u25A0"
                     elif 'Relic' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25CB" if self.world_dict[tile].read else "\u25C9"
+                    elif 'Boss' in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = "\u2620" if not self.world_dict[tile].defeated else "."
                     else:
                         map_array[tile_x][tile_y] = "."
         map_array[self.location_y][self.location_x] = "\u002b"
@@ -151,15 +153,16 @@ class Player(Character):
         """
         Controls the listed options during combat
         """
-        if not self.transform_type:
-            if self.status_effects['Power Up'].duration < 5:
-                action_list.append("Untransform")
-            for action in ["Flee", "Use Item"]:
-                if action in action_list:
-                    action_list.pop(action_list.index(action))
-        else:
+        if self.transform_type:
             if self.cls.name in ["Druid", "Lycan"]:
                 action_list.append("Transform")
+            if self.transform_type == self.cls and self.status_effects['Power Up'].duration < 5:
+                action_list.append("Untransform")
+                for action in ["Flee", "Use Item"]:
+                    if action in action_list:
+                        action_list.pop(action_list.index(action))
+        if self.status_effects['Disarm'].active:
+            action_list.append("Pickup Weapon")
         return action_list
 
     def has_relics(self):
@@ -313,12 +316,12 @@ class Player(Character):
         """
         Returns a string containing the current resistances of the player
         """
-        return (f"{'Fire:':10}{self.resistance['Fire']:5}{' ':10}{'Ice:':10}{self.resistance['Ice']:5}\n"
-                f"{'Electric:':10}{self.resistance['Electric']:5}{' ':10}{'Water:':10}{self.resistance['Water']:5}\n"
-                f"{'Earth:':10}{self.resistance['Earth']:5}{' ':10}{'Wind:':10}{self.resistance['Wind']:5}\n"
-                f"{'Shadow:':10}{self.resistance['Shadow']:5}{' ':10}{'Death:':10}{self.resistance['Death']:5}\n"
-                f"{'Stone:':10}{self.resistance['Stone']:5}{' ':10}{'Holy:':10}{self.resistance['Holy']:5}\n"
-                f"{'Poison:':10}{self.resistance['Poison']:5}{' ':10}{'Physical:':10}{self.resistance['Physical']:5}\n")
+        return (f"{'Fire:':10}{self.resistance['Fire']:5}{' ':6}{'Ice:':10}{self.resistance['Ice']:5}\n"
+                f"{'Electric:':10}{self.resistance['Electric']:5}{' ':6}{'Water:':10}{self.resistance['Water']:5}\n"
+                f"{'Earth:':10}{self.resistance['Earth']:5}{' ':6}{'Wind:':10}{self.resistance['Wind']:5}\n"
+                f"{'Shadow:':10}{self.resistance['Shadow']:5}{' ':6}{'Death:':10}{self.resistance['Death']:5}\n"
+                f"{'Stone:':10}{self.resistance['Stone']:5}{' ':6}{'Holy:':10}{self.resistance['Holy']:5}\n"
+                f"{'Poison:':10}{self.resistance['Poison']:5}{' ':6}{'Physical:':10}{self.resistance['Physical']:5}\n")
 
     def buff_str(self):
         buffs = []
@@ -326,8 +329,7 @@ class Player(Character):
             buffs.append("Flying")
         if self.invisible:
             buffs.append("Invisible")
-        if "Vision" in self.equipment['Pendant'].mod:
-            self.sight = True
+        if "Vision" in self.equipment['Pendant'].mod or self.sight:
             buffs.append("Vision")
         if "Accuracy" in self.equipment['Ring'].mod:
             buffs.append("Accuracy")
@@ -413,9 +415,12 @@ class Player(Character):
             if skill_name == 'Health/Mana Drain':
                 del self.spellbook['Skills']['Health Drain']
                 del self.spellbook['Skills']['Mana Drain']
-            if skill_name == 'Familiar':
+            elif skill_name == "True Piercing Strike":
+                del self.spellbook['Skills']['Piercing Strike']
+                del self.spellbook['Skills']['True Strike']
+            elif skill_name == 'Familiar':
                 level_str += self.familiar.level_up()
-            if skill_name in ["Transform", "Purity of Body"]:
+            elif skill_name in ["Transform", "Purity of Body"]:
                 level_str += skill_gain.use(self)
         if not self.max_level():
             self.level.exp_to_gain += (self.exp_scale ** self.level.pro_level) * self.level.level
@@ -484,12 +489,14 @@ class Player(Character):
             raise AssertionError("Something is not working. Check code.")
         openupbox.clear_rectangle()
 
-    def loot(self, game, enemy, tile):
+    def loot(self, enemy, tile):
+        loot_message = ""
         items = sum(enemy.inventory.values(), [])
         rare = [False] * len(items)
         drop = [False] * len(items)
-        loot_message = f"{enemy.name} dropped {enemy.gold} gold.\n"
-        self.gold += enemy.gold
+        if enemy.gold > 0:
+            loot_message += f"{enemy.name} dropped {enemy.gold} gold.\n"
+            self.gold += enemy.gold
         for i, item in enumerate(items):
             if item.subtyp == 'Enemy':
                 for info in self.quest_dict['Side'].values():
@@ -506,7 +513,7 @@ class Player(Character):
                 drop[i] = True
                 rare[i] = True
             else:
-                chance = self.check_mod('luck', luck_factor=16) + self.level.pro_level
+                chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 if (item.rarity / 2) > (random.random() / chance):
                         drop[i] = True
             if drop[i]:
@@ -544,7 +551,7 @@ class Player(Character):
             tmp_dir = "tmp_files"
             save_file = tmp_dir + f"/{str(self.name)}.tmp"
             with open(save_file, "wb") as save_game:
-                pickle.dump(self.__dict__, save_game)
+                dill.dump(self.__dict__, save_game)
         else:
             savebox = utils.TextBox(game)
             while True:
@@ -559,13 +566,13 @@ class Player(Character):
                     game.stdscr.getch()
                     savebox.clear_rectangle()
                 with open(save_file, "wb") as save_game:
-                    pickle.dump(self.__dict__, save_game)
+                    dill.dump(self.__dict__, save_game)
                 break
 
     def equip(self, equip_slot, item):
         if self.equipment[equip_slot].subtyp != 'None':
             self.modify_inventory(self.equipment[equip_slot])
-        if self.equipment[equip_slot].name == "Pendant of Vision":
+        if self.equipment[equip_slot].name == "Pendant of Vision" and (self.cls.name not in ["Inquisitor", "Seeker"]):
             self.sight = False
         if self.equipment[equip_slot].name in ["Invisibility Amulet", "Tarnkappe"]:
             self.invisible = False
@@ -785,7 +792,7 @@ class Player(Character):
                     self.stats.dex -= 1
                 death_message += f"You have lost 1 {stat_name}.\n"
         self.state = 'normal'
-        self.statuses(game, end=True)
+        self.statuses(end=True)
         self.location_x, self.location_y, self.location_z = (5, 10, 0)
         death_message += "You wake up in town.\n"
         deathbox = utils.TextBox(game)
@@ -959,23 +966,22 @@ class Player(Character):
             if self.power_up:
                 self.status_effects['Power Up'].active = True
                 self.status_effects['Power Up'].duration = 1
-            self.transform_type = None
         return transform_str
 
     def end_combat(self, game, enemy, tile, flee=False):
         self.state = 'normal'
         endcombatbox = utils.TextBox(game)
         self.transform(back=True)
-        self.statuses(game, end=True)
+        self.statuses(end=True)
         if all([self.is_alive(), not flee]):
             endcombat_str = (f"{self.name} killed {enemy.name}.\n"
                              f"{self.name} gained {enemy.experience} experience.\n")
             if enemy.enemy_typ not in self.kill_dict:
-                self.kill_dict[enemy.enemy_typ]
+                self.kill_dict[enemy.enemy_typ] = {}
             if enemy.name not in self.kill_dict[enemy.enemy_typ]:
                 self.kill_dict[enemy.enemy_typ][enemy.name] = 0
             self.kill_dict[enemy.enemy_typ][enemy.name] += 1
-            endcombat_str += self.loot(game, enemy, tile)
+            endcombat_str += self.loot(enemy, tile)
             endcombat_str += self.quests(enemy=enemy)
             endcombatbox.print_text_in_rectangle(endcombat_str)
             game.stdscr.getch()
@@ -994,7 +1000,7 @@ class Player(Character):
         else:
             endcombatbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
             game.stdscr.getch()
-            enemy.statuses(game, end=True)
+            enemy.statuses(end=True)
             enemy.health.current = enemy.health.max
             enemy.mana.current = enemy.mana.max
             self.death(game)
@@ -1046,7 +1052,8 @@ class Player(Character):
             if enemy:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
         if mod == 'weapon':
-            weapon_mod = self.equipment['Weapon'].damage + max(self.stats.strength, self.stats.dex)
+            weapon_mod = (self.equipment['Weapon'].damage * int(not self.status_effects["Disarm"].active))
+            class_mod += (max(self.stats.strength, self.stats.dex) // 3)
             if 'Monk' in self.cls.name:
                 class_mod += (self.stats.wisdom // 2)
             if self.cls.name in ['Spellblade', 'Knight Enchanter']:
@@ -1080,7 +1087,7 @@ class Player(Character):
             if self.cls.name in ['Thief', 'Rogue', 'Assassin', 'Ninja', 'Druid', 'Lycan']:
                 class_mod += (self.stats.dex // 2)
             try:
-                off_mod = self.equipment['OffHand'].damage + self.stats.strength
+                off_mod = self.equipment['OffHand'].damage + (max(self.stats.strength, self.stats.dex) // 5)
                 if 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
                 off_mod += self.status_effects['Attack'].extra * self.status_effects['Attack'].active
@@ -1102,9 +1109,9 @@ class Player(Character):
             if 'Physical Defense' in self.equipment['Ring'].mod:
                 armor_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             armor_mod += self.status_effects['Defense'].extra * self.status_effects['Defense'].active
-            return armor_mod * int(not ignore) + class_mod
+            return (armor_mod + class_mod) * int(not ignore)
         if mod == 'magic':
-            magic_mod = int(self.stats.intel // 2) * self.level.pro_level
+            magic_mod = int(self.stats.intel // 4) * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':
                 magic_mod += self.equipment['OffHand'].mod
             if self.equipment['Weapon'].subtyp == 'Staff' or \
@@ -1134,7 +1141,7 @@ class Player(Character):
         if mod == 'resist':
             res_mod = 0
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
-                return -0.25
+                res_mod -= 1
             if typ in self.resistance:
                 res_mod = self.resistance[typ]
             if self.flying:

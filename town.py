@@ -226,9 +226,6 @@ def accept_quest(game, quest, typ):
 
 
 def check_quests(game, quest_giver, check=False):
-    """
-
-    """
 
     player_mains = list(game.player_char.quest_dict['Main'])
     player_sides = list(game.player_char.quest_dict['Side'])
@@ -265,6 +262,8 @@ def check_quests(game, quest_giver, check=False):
                 if not game.player_char.quest_dict['Side'][key]['Turned In']:
                     responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
             else:
+                if key == "Pandora's Box" and "Ultima" not in game.player_char.spellbook["Spells"]:
+                    continue
                 quest = accept_quest(game, side_quest, "Side")
             if quest:
                 break
@@ -285,7 +284,9 @@ def tavern_patrons(game):
                                 " button.",
                                 "Make sure to stop by from time to time. You never know who might show up.",
                                 "Equipment vendors will show you how an item can improve or hurt your fighting"
-                                " ability. If an item type doesn't show any change, your class can't use it."],
+                                " ability. If an item type doesn't show any change, your class can't use it.",
+                                "Heavier armor provides better protection but lowers your mobility in combat. "
+                                "Choose carefully."],
                            5: ["How did you like that stat bonus at level 4? You get another every 4th "
                                "level, so plan your promotions accordingly.",
                                "If you get a quest from someone, come back and talk with them after it is "
@@ -293,7 +294,9 @@ def tavern_patrons(game):
                           10: ["Locked chests contain more powerful items compared with unlocked ones, "
                                "however you need a key or a lockpick to get to the treasure.",
                                "Boss enemies have true sight, so that Invisibility Pendant is useless against "
-                               "them."]
+                               "them.",
+                               "Some status effects last until the end of combat or until healed. Make sure to "
+                               "stock up on potions!"]
                            },
                 'Waitress': {1: ["Entering the town will replenish your health and mana. Seems like you "
                                  "could take advantage of that.",
@@ -313,7 +316,8 @@ def tavern_patrons(game):
                                  "You can't open these with just any old key, you need an actual Old Key.",
                                  "Watch your carry weight in the Character Menu. If you try to carry more than"
                                  " you can manage, you will become encumbered, which affects your speed "
-                                 "in combat."],
+                                 "in combat.",
+                                 "Check the shops periodically, you may notice new items available to buy."],
                             25: ["I just finished my shift guarding the old warehouse behind the barracks. "
                                  "They won't tell us what's in there but I have seen several scientists "
                                  "come and go."],
@@ -327,7 +331,11 @@ def tavern_patrons(game):
                             },
                 # TODO Busboy replaces Waitress after conclusion of Joffrey quest
                 'Busboy': {1: ["The waitress left crying some time ago...sounds like her fiance was killed in the "
-                               "dungeons."],
+                               "dungeons.",
+                               "Entering the town will replenish your health and mana. Seems like you "
+                               "could take advantage of that.",
+                               "Some spells can be cast outside of battle. You can do so in the Character Menu "
+                               "after inspecting the spell."],
                     },
                 'Hooded Figure': {25: ["..."],
                                   35: ["Hmm...interesting..."],
@@ -842,9 +850,6 @@ def ultimate_armor_repo(game):
 
 
 def buy(game, menu, buy_choice, handed=None):
-    """
-
-    """
 
     if buy_choice == "Weapon":
         item_dict = items.items_dict[buy_choice][handed]
@@ -904,9 +909,6 @@ def buy(game, menu, buy_choice, handed=None):
 
 
 def sell(game, menu):
-    """
-
-    """
 
     sellbox = utils.TextBox(game)
     if len(game.player_char.inventory) == 0:
@@ -929,12 +931,13 @@ def sell(game, menu):
         item = sell_dict[name][0]
         popup = utils.ShopPopup(game, f"How many {name} do you want to sell?", max=total, box_height=8)
         num = popup.navigate_popup()
-        adj_cost = int(0.5 * num * item.value + (game.player_char.stats.charisma * 2))
-        sell_popup = utils.ConfirmPopupMenu(
-            game, f"Do you want to sell {num} {name} for {adj_cost} gold?", box_height=8)
-        if sell_popup.navigate_popup():
-            game.player_char.gold += int(adj_cost)
-            game.player_char.modify_inventory(item, num=num, subtract=True)
+        if num > 0:
+            adj_cost = int((0.025 * game.player_char.stats.charisma) * num * item.value)
+            sell_popup = utils.ConfirmPopupMenu(
+                game, f"Do you want to sell {num} {name} for {adj_cost} gold?", box_height=8)
+            if sell_popup.navigate_popup():
+                game.player_char.gold += int(adj_cost)
+                game.player_char.modify_inventory(item, num=num, subtract=True)
 
 
 def warp_point(game):
@@ -959,9 +962,6 @@ def warp_point(game):
 
 
 def town(game):
-    """
-
-    """
 
     locations = [barracks, tavern, church, blacksmith, alchemist, jeweler]
     town_options = ['Barracks', 'Tavern', 'Church',
@@ -1043,7 +1043,7 @@ quest_dict = {
     "Barkeep": {
         'Main': {10: 
                  {'The Butcher': 
-                  {'Who': 'Barkeep',
+                   {'Who': 'Barkeep',
                     'Type': 'Defeat',
                     'What': 'Minotaur',
                     'Total': 1,
@@ -1066,7 +1066,7 @@ quest_dict = {
                 },
         'Side': {1: 
                  {'Rat Trap': 
-                  {'Who': 'Barkeep',
+                   {'Who': 'Barkeep',
                     'Type': 'Collect',
                     'What': items.RatTail(),
                     'Total': 6,
@@ -1088,7 +1088,7 @@ quest_dict = {
                     },
                  40:
                  {'Knock Back a Couple Brewskis': 
-                  {'Who': 'Barkeep',
+                   {'Who': 'Barkeep',
                     'Type': 'Collect',
                     'What': items.CursedHops(),
                     'Total': 3,
@@ -1116,7 +1116,7 @@ quest_dict = {
     "Waitress": {
         'Main': {35: 
                  {"A Bad Dream": 
-                  {'Who': 'Waitress',
+                   {'Who': 'Waitress',
                     'Type': 'Locate',
                     'What': "Joffrey",
                     'Total': 1,
@@ -1137,341 +1137,316 @@ quest_dict = {
                     'Turned In': False}
                     }
                 },
-        'Side': {5: {"Where's the Beef?": 
-                     {'Who': 'Waitress',
-                        'Type': 'Collect',
-                        'What': items.MysteryMeat(),
-                        'Total': 12,
-                        'Start Text':
-                            "My wedding day is fast approaching and we are "
-                            "trying to save a few gold, so I am cooking the "
-                            "meal for the guests. If you could bring me back"
-                            " 12 pieces of mystery meat, I can reward you "
-                            "with this potion I received as a tip once.",
-                        'End Text':
-                            "Thank you, thank you, thank you! You have made "
-                            "my special day that much easier. Please take "
-                            "this as a token of my appreciation.",
-                        "Help Text":
-                            "The wedding guests aren't picky when it comes to "
-                            "the food, so any animal meat will do.",
-                        'Reward': [items.GreatHealthPotion()],
-                        'Reward Number': 1,
-                        'Experience': 150,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {5: 
+                 {"Where's the Beef?": 
+                   {'Who': 'Waitress',
+                    'Type': 'Collect',
+                    'What': items.MysteryMeat(),
+                    'Total': 12,
+                    'Start Text':
+                        "My wedding day is fast approaching and we are trying to save a few gold, so I am cooking "
+                        "the meal for the guests. If you could bring me back 12 pieces of mystery meat, I can "
+                        "reward you with this potion I received as a tip once.",
+                    'End Text':
+                        "Thank you, thank you, thank you! You have made my special day that much easier. Please "
+                        "take this as a token of my appreciation.",
+                    "Help Text":
+                        "The wedding guests aren't picky when it comes to the food, so any animal meat will do.",
+                    'Reward': [items.GreatHealthPotion()],
+                    'Reward Number': 1,
+                    'Experience': 150,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
 
     },
     "Soldier": {
-        'Main': {65: {'No Laughing Matter': 
-                      {'Who': 'Soldier',
-                        'Type': 'Defeat',
-                        'What': 'Jester',
-                        'Total': 1,
-                        'Start Text':
-                            "During my first week of training, a senior "
-                            "officer told us a story about a former recruit"
-                            " who went mad. He was a bit of an outcast and "
-                            "many of the other soldiers bullied him for his"
-                            " weirdness, as it was told. He had a fondness "
-                            "for card tricks and claimed he was an 'Agent "
-                            "of Chaos', whatever that means...anyway, he "
-                            "finally cracked one day and disappeared, never"
-                            " to be heard from again...that is until we "
-                            "started receiving the body parts...the freak "
-                            "has been sending back parts of adventurers "
-                            "with notes talking about revenge and signed by"
-                            " the Jester. Someone needs to take this sick "
-                            "bastard out before anyone else gets hurt. Be "
-                            "careful, you never truly know what you may get"
-                            " with this guy.",
-                        'End Text':
-                            "Excellent work! Hopefully the souls of those "
-                            "tortured by the Jester will be able to rest "
-                            "now. This magical ring was shipped back with "
-                            "one of the body parts, it increases your "
-                            "chance to evade attacks in combat. I'm sure "
-                            "the Jester thought he was being clever, since "
-                            "it took so long for someone to finally catch "
-                            "him. It's fitting that you would wear it now.",
-                        "Help Text":
-                            "The Jester has a bag full of tricks. Word is "
-                            "he even has the ability to change his "
-                            "resistances each round to keep you on your "
-                            "toes.",
-                        'Reward': [items.EvasionRing()],
-                        'Reward Number': 1,
-                        'Experience': 15000,
-                        'Completed': False,
-                        'Turned In': False}
+        'Main': {65: 
+                 {'No Laughing Matter': 
+                   {'Who': 'Soldier',
+                    'Type': 'Defeat',
+                    'What': 'Jester',
+                    'Total': 1,
+                    'Start Text':
+                        "During my first week of training, a senior officer told us a story about a former recruit"
+                        " who went mad. He was a bit of an outcast and many of the other soldiers bullied him for "
+                        "his weirdness, as it was told. He had a fondness for card tricks and claimed he was an "
+                        "'Agent of Chaos', whatever that means...anyway, he finally cracked one day and "
+                        "disappeared, never to be heard from again...that is until we started receiving the body "
+                        "parts...the freak has been sending back parts of adventurers with notes talking about "
+                        "revenge and signed by the Jester. Someone needs to take this sick bastard out before "
+                        "anyone else gets hurt. Be careful, you never truly know what you may get with this guy.",
+                    'End Text':
+                        "Excellent work! Hopefully the souls of those tortured by the Jester will be able to rest "
+                        "now. This magical ring was shipped back with one of the body parts, it increases your "
+                        "chance to evade attacks in combat. I'm sure the Jester thought he was being clever, since"
+                        " it took so long for someone to finally catch him. It's fitting that you would wear it "
+                        "now.",
+                    "Help Text":
+                        "The Jester has a bag full of tricks. Word is he even has the ability to change his "
+                        "resistances each round to keep you on your toes.",
+                    'Reward': [items.EvasionRing()],
+                    'Reward Number': 1,
+                    'Experience': 15000,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 },
-        'Side': {25: {'Metalingus': 
-                      {'Who': 'Soldier',
-                        'Type': 'Collect',
-                        'What': items.ScrapMetal(),
-                        'Total': 8,
-                        'Start Text':
-                            "The city guard are in desperate need of new equipment "
-                            "but we unfortunately are running short on the required"
-                            " materials. If you can bring back 8 pieces of scrap "
-                            "metal, I can use my connections with the alchemist "
-                            "shop and get you a really nice potion for your "
-                            "troubles.",
-                        'End Text':
-                            "You are a life saver, literally. This metal will help "
-                            "to fortify the town against the scum that patrols the "
-                            "dungeon. Take one of these potions as a token of my "
-                            "appreciation.",
-                        "Help Text":
-                            "There are a few sources of metal that would be usable, "
-                            "including broken equipment, metal constructs, and "
-                            "enemies that consume items.",
-                        'Reward': [items.StrengthPotion(),
-                                   items.IntelPotion(),
-                                   items.WisdomPotion(),
-                                   items.ConPotion(),
-                                   items.CharismaPotion(),
-                                   items.DexterityPotion()],
-                        'Reward Number': 1,
-                        'Experience': 750,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {25: 
+                 {'Metalingus': 
+                   {'Who': 'Soldier',
+                    'Type': 'Collect',
+                    'What': items.ScrapMetal(),
+                    'Total': 8,
+                    'Start Text':
+                        "The city guard are in desperate need of new equipment but we unfortunately are running short "
+                        "on the required materials. If you can bring back 8 pieces of scrap metal, I can use my "
+                        "connections with the alchemist shop and get you a really nice potion for your troubles.",
+                    'End Text':
+                        "You are a life saver, literally. This metal will help to fortify the town against the scum "
+                        "that patrols the dungeon. Take one of these potions as a token of my appreciation.",
+                    "Help Text":
+                        "There are a few sources of metal that would be usable, including broken equipment, metal "
+                        "constructs, and enemies that consume items.",
+                    'Reward': [items.StrengthPotion(),
+                                items.IntelPotion(),
+                                items.WisdomPotion(),
+                                items.ConPotion(),
+                                items.CharismaPotion(),
+                                items.DexterityPotion()],
+                    'Reward Number': 1,
+                    'Experience': 750,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
     },
     "Drunkard": {
-        'Main': {35: {"Lapidation": 
-                      {'Who': 'Drunkard',
-                        'Type': 'Defeat',
-                        'What': 'Cockatrice',
-                        'Total': 1,
-                        'Start Text':
-                            "Let me tell you a quick story...back in the day I "
-                            "used to be an adventurer. My friend and I had delved "
-                            "too deep into the dungeon below and were trapped with"
-                            " no escape. A giant bird-looking monstrosity had us "
-                            "pinned...we made a run for it...but we weren't fast "
-                            "enough. I still remember the look on Rutger's face as"
-                            " he turned to stone in front of me...this necklace is"
-                            " the only reason I am still here. If you come across "
-                            "the beast, make sure it's dead before you are. "
-                            "(hic)...hmmm...what was I sayin'?",
-                        'End Text':
-                            "Rutger can now be at peace...I can finally let go of "
-                            "the past (hic). Here, take this necklace, I don't "
-                            "need it anymore...",
-                        "Help Text":
-                            "Rutger and I were on the 3rd floor of the dungeon "
-                            "when we encountered the Cockatrice. Make sure you "
-                            "prepare for the powerful enemies on your way.",
-                        'Reward': [items.GorgonPendant()],
-                        'Reward Number': 1,
-                        'Experience': 3000,
-                        'Completed': False,
-                        'Turned In': False}
+        'Main': {35:
+                 {"Lapidation": 
+                   {'Who': 'Drunkard',
+                    'Type': 'Defeat',
+                    'What': 'Cockatrice',
+                    'Total': 1,
+                    'Start Text':
+                        "Let me tell you a quick story...back in the day I used to be an adventurer. My friend and I "
+                        "had delved too deep into the dungeon below and were trapped with no escape. A giant bird-"
+                        "looking monstrosity had us pinned...we made a run for it...but we weren't fast enough. I "
+                        "still remember the look on Rutger's face as he turned to stone in front of me...this necklace"
+                        " is the only reason I am still here. If you come across the beast, make sure it's dead before"
+                        " you are. (hic)...hmmm...what was I sayin'?",
+                    'End Text':
+                        "Rutger can now be at peace...I can finally let go of the past (hic). Here, take this "
+                        "necklace, I don't need it anymore...",
+                    "Help Text":
+                        "Rutger and I were on the 3rd floor of the dungeon when we encountered the Cockatrice. Make "
+                        "sure you prepare for the powerful enemies on your way.",
+                    'Reward': [items.GorgonPendant()],
+                    'Reward Number': 1,
+                    'Experience': 3000,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 },
-        'Side': {18: {"I'm Molting!": 
-                      {'Who': 'Drunkard',
-                        'Type': 'Collect',
-                        'What': items.SnakeSkin(),
-                        'Total': 8,
-                        'Start Text':
-                            "SNAKES! Oh my I hate those things... (hic) ..."
-                            "slithering about. It's unnatural...I think... (hic)"
-                            "...what was I saying?...Oh yeah, bring me some "
-                            "snake skins and I'll give you these poison curing "
-                            "thingies I found... (hic)",
-                        'End Text':
-                            "WHY WOULD YOU BRING...oh yeah I asked you to... "
-                            "(hic) ..thanks I guess. Here's those things..."
-                            "ANTIDOTES, that's what they're called. BARKEEP, "
-                            "another beer please... (hic).",
-                        "Help Text":
-                            "Watch out for the snake's venom, as it can drain "
-                            "your health quickly.",
-                        'Reward': [items.Antidote()],
-                        'Reward Number': 5,
-                        'Experience': 400,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {18: 
+                 {"I'm Molting!": 
+                   {'Who': 'Drunkard',
+                    'Type': 'Collect',
+                    'What': items.SnakeSkin(),
+                    'Total': 8,
+                    'Start Text':
+                        "SNAKES! Oh my I hate those things... (hic) ...slithering about. It's unnatural...I think... "
+                        "(hic)...what was I saying?...Oh yeah, bring me some snake skins and I'll give you these "
+                        "poison curing thingies I found... (hic)",
+                    'End Text':
+                        "WHY WOULD YOU BRING...oh yeah I asked you to... (hic) ..thanks I guess. Here's those "
+                        "things...ANTIDOTES, that's what they're called. BARKEEP, another beer please... (hic).",
+                    "Help Text":
+                        "Watch out for the snake's venom, as it can drain your health quickly.",
+                    'Reward': [items.Antidote()],
+                    'Reward Number': 5,
+                    'Experience': 400,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
     },
     "Hooded Figure": {
-        'Main': {30: {'Payback': 
-                      {'Who': 'Hooded Figure',
-                        'Type': 'Defeat',
-                        'What': 'Pseudodragon',
-                        'Total': 1,
-                        'Start Text':
-                            "My rival, a wizard known for unimaginable cruelty, "
-                            "is looking to increase her power by upgrading her "
-                            "familiar. She has her eyes set on a particular "
-                            "creature, a Pseudodragon, that dwells in the "
-                            "dungeon below. Destroy this creature before she can"
-                            " corrupt it and I will reward you.",
-                        'End Text':
-                            "You have done well in taking care of this threat. "
-                            "Take this reward and use it wisely.",
-                        "Help Text":
-                            "Do not mistake the Pseudodragon's miniature size, "
-                            "for its power is very potent. Beware of the deadly "
-                            "Fireball spell, as it can be devastating.",
-                        'Reward': [items.Elixir()],
-                        'Reward Number': 1,
-                        'Experience': 2000,
-                        'Completed': False,
-                        'Turned In': False}
+        'Main': {30:
+                 {'Payback': 
+                   {'Who': 'Hooded Figure',
+                    'Type': 'Defeat',
+                    'What': 'Pseudodragon',
+                    'Total': 1,
+                    'Start Text':
+                        "My rival, a wizard known for unimaginable cruelty, is looking to increase her power by "
+                        "upgrading her familiar. She has her eyes set on a particular creature, a Pseudodragon, that "
+                        "dwells in the dungeon below. Destroy this creature before she can corrupt it and I will "
+                        "reward you.",
+                    'End Text':
+                        "You have done well in taking care of this threat. Take this reward and use it wisely.",
+                    "Help Text":
+                        "Do not mistake the Pseudodragon's miniature size, for its power is very potent. Beware of the"
+                        " deadly Fireball spell, as it can be devastating.",
+                    'Reward': [items.Elixir()],
+                    'Reward Number': 1,
+                    'Experience': 2000,
+                    'Completed': False,
+                    'Turned In': False}
                     },
-                60: {'Dracarys': 
-                     {'Who': 'Hooded Figure',
-                        'Type': 'Defeat',
-                        'What': 'Red Dragon',
-                        'Total': 1,
-                        'Start Text':
-                            "The depths are home to a powerful Red Dragon. She "
-                            "is not to be taken lightly. If you are "
-                            "able to defeat her, the path to glory will be "
-                            "yours.",
-                        'End Text':
-                            "You have proven yourself worthy for the ultimate "
-                            "challenge...me. Take this as a reminder of the "
-                            "futility of being a hero...there will always be "
-                            "another evil to deal with and that evil will "
-                            "always pale in comparison to my wrath. Pursue me "
-                            "at your own peril.",
-                        "Help Text":
-                            "The Red Dragon is your toughest test yet, having "
-                            "access to some of the strongest abilities.",
-                        'Reward': [items.ClassRing()],
-                        'Reward Number': 1,
-                        'Experience': 25000,
-                        'Completed': False,
-                        'Turned In': False}
+                 60:
+                 {'Dracarys': 
+                   {'Who': 'Hooded Figure',
+                    'Type': 'Defeat',
+                    'What': 'Red Dragon',
+                    'Total': 1,
+                    'Start Text':
+                        "The depths are home to a powerful Red Dragon. She is not to be taken lightly. If you are "
+                        "able to defeat her, the path to glory will be yours.",
+                    'End Text':
+                        "You have proven yourself worthy for the ultimate challenge...me. Take this as a reminder of "
+                        "the futility of being a hero...there will always be another evil to deal with and that evil "
+                        "will always pale in comparison to my wrath. Pursue me at your own peril.",
+                    "Help Text":
+                        "The Red Dragon is your toughest test yet, having access to some of the strongest abilities.",
+                    'Reward': [items.ClassRing()],
+                    'Reward Number': 1,
+                    'Experience': 25000,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 },
-        'Side': 
-        {
-            
-        }
+        'Side':{1:
+                 {"Pandora's Box":
+                   {'Who': "Hooded Figure",
+                    'Type': "Collect",
+                    'What': items.Phylactery(),
+                    'Total': 1,
+                    'Start Text':
+                        "Oh impressive, you have obtained the powerful Ultima spell. Interested in making it more "
+                        "powerful? Of course you are, who wouldn't? Bring me the soul of a Lich and I will create an "
+                        "item on a scale hitherto undreamt of.",
+                    'End Text':
+                        "What a wonderful specimen you have brought me, this will do well in the ritual...oh right, "
+                        "here's that item I promised you.",
+                    "Help Text":
+                        "A Lich is a powerful foe, do not underestimate them!",
+                    'Reward': [items.UltimaScepter()],
+                    'Reward Number': 1,
+                    'Experience': 30000,
+                    'Completed': False,
+                    'Turned In': False}
+                    }
+                }
     },
     "Griswold": {
         'Main': {},
-        'Side': {15: {'Eight Is Enough': 
-                    {'Who': 'Griswold',
-                        'Type': 'Collect',
-                        'What': items.Leather(),
-                        'Total': 8,
-                        'Start Text':
-                            "The thieves guild has placed an order for several sets of leather "
-                            "armor but my supply of materials is getting short at the moment. "
-                            "Say, you look capable enough, do you think you could retrieve "
-                            "some for me? I'll pay top dollar for them.",
-                        'End Text':
-                            "I knew it when I first saw you that you were the person for the "
-                            "job. As promised here's some gold for your efforts.",
-                        "Help Text":
-                            "I am able to fashion leather armor out of either fresh animal "
-                            "hides or by using scraps from old armor pieces.",
-                        'Reward': ['Gold'],
-                        'Reward Number': 2500,
-                        'Experience': 250,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {15:
+                 {'Eight Is Enough': 
+                   {'Who': 'Griswold',
+                    'Type': 'Collect',
+                    'What': items.Leather(),
+                    'Total': 8,
+                    'Start Text':
+                        "The thieves guild has placed an order for several sets of leather armor but my supply of "
+                        "materials is getting short at the moment. Say, you look capable enough, do you think you "
+                        "could retrieve some for me? I'll pay top dollar for them.",
+                    'End Text':
+                        "I knew it when I first saw you that you were the person for the job. As promised here's some "
+                        "gold for your efforts.",
+                    "Help Text":
+                        "I am able to fashion leather armor out of either fresh animal hides or by using scraps from "
+                        "old armor pieces.",
+                    'Reward': ['Gold'],
+                    'Reward Number': 2500,
+                    'Experience': 250,
+                    'Completed': False,
+                    'Turned In': False}
                     },
-                60: {"This Thing's Nuclear": 
-                    {'Who': 'Griswold',
-                        'Type': 'Collect',
-                        'What': items.PowerCore(),
-                        'Total': 1,
-                        'Start Text':
-                            "I came across an old dusty tome while cleaning out the "
-                            "belongings of my mentor. Most of it contained random armor "
-                            "designs but there was a loose piece of parchment that "
-                            "contained a blueprint for a way to increase a person's "
-                            "defensive prowess, however it requires some hard to find "
-                            "items. The hardest to come by is a nuclear power core, "
-                            "which sounds fake and may actually be, who knows? If by "
-                            "some miracle you find one, bring it to me and you will "
-                            "reap the benefit.",
-                        'End Text':
-                            "So a power core is the secret to creating golems? This bit "
-                            "of information may prove to be more valuable than any "
-                            "thing I could give you. I do have an idea though. There may be "
-                            "a way to harness the power into you. If you're up for it of course."
-                            " Step into the back and we will start the process.",
-                        "Help Text":
-                            "I met an old wizard at the tavern who mentioned that power "
-                            "cores do indeed exist. I don't know how he knows this but "
-                            "he seems pretty credible. Maybe they are used to power "
-                            "something of incredible size?",
-                        'Reward': ['Power Up'],
-                        'Reward Number': 1,
-                        'Experience': 5000,
-                        'Completed': False,
-                        'Turned In': False}
+                 60: 
+                 {"This Thing's Nuclear": 
+                   {'Who': 'Griswold',
+                    'Type': 'Collect',
+                    'What': items.PowerCore(),
+                    'Total': 1,
+                    'Start Text':
+                        "I came across an old dusty tome while cleaning out the belongings of my mentor. Most of it "
+                        "contained random armor designs but there was a loose piece of parchment that contained a "
+                        "blueprint for a way to increase a person's defensive prowess, however it requires some hard "
+                        "to find items. The hardest to come by is a nuclear power core, which sounds fake and may "
+                        "actually be, who knows? If by some miracle you find one, bring it to me and you will reap the"
+                        " benefit.",
+                    'End Text':
+                        "So a power core is the secret to creating golems? This bit of information may prove to be "
+                        "more valuable than any thing I could give you. I do have an idea though. There may be a way "
+                        "to harness the power into you. If you're up for it of course. Step into the back and we will "
+                        "start the process.",
+                    "Help Text":
+                        "I met an old wizard at the tavern who mentioned that power cores do indeed exist. I don't "
+                        "know how he knows this but he seems pretty credible. Maybe they are used to power something "
+                        "of incredible size?",
+                    'Reward': ['Power Up'],
+                    'Reward Number': 1,
+                    'Experience': 5000,
+                    'Completed': False,
+                    'Turned In': False}
                     },
-                70: {"He Ain't Heavy": 
-                    {'Who': 'Griswold',
+                 70:
+                 {"He Ain't Heavy": 
+                   {'Who': 'Griswold',
                     'Type': 'Locate',
                     'Total': 1,
                     'Start Text':
-                        "I am so glad you stopped in, I really need your help. My baby "
-                        "brother, Chisolm, has been missing for far too long. He regularly "
-                        "goes into the dungeon but never for this long. Please help me find "
-                        "him and I will forever be indebted to you.",
+                        "I am so glad you stopped in, I really need your help. My baby brother, Chisolm, has been "
+                        "missing for far too long. He regularly goes into the dungeon but never for this long. Please "
+                        "help me find him and I will forever be indebted to you.",
                     'End Text':
-                        "By the light of Elysia, you have found him! I must admit I had "
-                        "given up hope. It comes at no surprise that he chose to stay in the"
-                        " depths to help those in need, perhaps he will choose to come home "
-                        "once the primal evil has been vanquished.",
+                        "By the light of Elysia, you have found him! I must admit I had given up hope. It comes at no "
+                        "surprise that he chose to stay in the depths to help those in need, perhaps he will choose to"
+                        " come home once the primal evil has been vanquished.",
                     "Help Text":
-                        "I haven't the faintest idea where Chisolm may be but he is a strong "
-                        "warrior and I have no doubt he is still alive. I have heard rumors "
-                        "of secret passageways in the depths but they have never been "
-                        "confirmed.",
+                        "I haven't the faintest idea where Chisolm may be but he is a strong warrior and I have no "
+                        "doubt he is still alive. I have heard rumors of secret passageways in the depths but they "
+                        "have never been confirmed.",
                     'Reward': ["Upgrade"],
                     'Reward Number': 1,
                     'Experience': 20000,
                     'Completed': False,
                     'Turned In': False}
+                    }
                 }
-            }
     },
     "Alchemist": {
         'Main': {},
-        'Side': {20: {'Put A Feather In It':
-                    {'Who': 'Alchemist',
-                        'Type': 'Collect',
-                        'What': items.Feather(),
-                        'Total': 12,
-                        'Start Text':
-                            "As you may or may not know, all of my tinctures are created "
-                            "here in my lab. I need some more ingredients to make more "
-                            "Phoenix Down potions, so any Feathers that you find I will pay"
-                            " you for them.",
-                        'End Text':
-                            "Excellent! Here's the gold I promised, spend it wisely.",
-                        "Help Text":
-                            "Birds have feathers, so try killing some birds. You may also "
-                            "find them on other enemies, as bird is a favorite dish to "
-                            "eat.",
-                        'Reward': ['Gold'],
-                        'Reward Number': 4000,
-                        'Experience': 500,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {20:
+                 {'Put A Feather In It':
+                   {'Who': 'Alchemist',
+                    'Type': 'Collect',
+                    'What': items.Feather(),
+                    'Total': 12,
+                    'Start Text':
+                        "As you may or may not know, all of my tinctures are created here in my lab. I need some more "
+                        "ingredients to make more Phoenix Down potions, so any Feathers that you find I will pay you "
+                        "for them.",
+                    'End Text':
+                        "Excellent! Here's the gold I promised, spend it wisely.",
+                    "Help Text":
+                        "Birds have feathers, so try killing some birds. You may also find them on other enemies, as "
+                        "bird is a favorite dish to eat.",
+                    'Reward': ['Gold'],
+                    'Reward Number': 4000,
+                    'Experience': 500,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
     },
     "Jeweler": {
         'Main': {},
-        'Side': {50: {'Earth, Wind, and Fire...and Water and...': 
-                    {'Who': 'Jeweler',
+        'Side': {50:
+                 {'Earth, Wind, and Fire...and Water and...': 
+                   {'Who': 'Jeweler',
                     'Type': 'Collect',
                     'What': items.ElementalMote(),
                     'Total': 6,
@@ -1496,191 +1471,183 @@ quest_dict = {
                 }
     },
     "Priest": {
-        'Main': {45: {'The Power of Elysia Compels You!': 
-                      {'Who': 'Priest',
-                        'Type': 'Defeat',
-                        'What': 'Wendigo',
-                        'Total': 1,
-                        'Start Text':
-                            "While the depths of the dungeon are home to many "
-                            "a horrible creature, the Wendigo is a curse to "
-                            "our very soul. Vanquish this monstrosity and "
-                            "Elysia will reward you with a boon.",
-                        'End Text':
-                            "Some order has been restored, although more work "
-                            "is to be done. Take this gift and use it to "
-                            "continue the good fight.",
-                        "Help Text":
-                            "As with many creatures of the night, your best option for cleansing the world "
-                            "of the Wendigo is Fire. Stay away from using Ice magic.",
-                        'Reward': [items.AardBeing()],
-                        'Reward Number': 1,
-                        'Experience': 6000,
-                        'Completed': False,
-                        'Turned In': False}
-                            }
-                       },
+        'Main': {45:
+                 {'The Power of Elysia Compels You!': 
+                   {'Who': 'Priest',
+                    'Type': 'Defeat',
+                    'What': 'Wendigo',
+                    'Total': 1,
+                    'Start Text':
+                        "While the depths of the dungeon are home to many a horrible creature, the Wendigo is a curse "
+                        "to our very soul. Vanquish this monstrosity and Elysia will reward you with a boon.",
+                    'End Text':
+                        "Some order has been restored, although more work is to be done. Take this gift and use it to "
+                        "continue the good fight.",
+                    "Help Text":
+                        "As with many creatures of the night, your best option for cleansing the world of the Wendigo "
+                        "is Fire. Stay away from using Ice magic.",
+                    'Reward': [items.AardBeing()],
+                    'Reward Number': 1,
+                    'Experience': 6000,
+                    'Completed': False,
+                    'Turned In': False}
+                    }
+                },
         'Side': {}
     },
     "Sergeant": {
-        'Main': {1: {'The Holy Relics': 
-                     {'Who': 'Sergeant',
-                        'Type': 'Collect',
-                        'What': 'Relics',
-                        'Total': 6,
-                        'Start Text':
-                            "So you think you have what it takes, huh? Some of my best men have "
-                            "died in that dungeon and here you are, barely old enough to wipe "
-                            "your own ass...very well, it's your funeral. Maybe you have "
-                            "something those men didn't have. We don't have all the details but "
-                            "we believe the key to vanquishing the prime evil is to collect all "
-                            "6 of the holy relics. Do that and you might just stand a chance. "
-                            "Don't blame me for not holding my breath...",
-                        'End Text':
-                            "Well I'll be, you crazy son of a bitch, you did it!...I shouldn't "
-                            "get to excited, there's still work to be done. But this is huge! "
-                            "Hopefully one of these will help in your quest to destroy what "
-                            "plagues this town.",
-                        "Help Text":
-                            "Each relic is protected by a powerful creature. Only the most "
-                            "determined champions will succeed in this quest.",
-                        'Reward': [items.MedusaShield(), items.Magus(), items.AardBeing()],
-                        'Reward Number': 1,
-                        'Experience': 500000,
-                        'Completed': False,
-                        'Turned In': False}
-                           },
-                20: {'Cry Havoc!': {'Who': 'Sergeant',
-                                    'Type': 'Defeat',
-                                    'What': 'Barghest',
-                                    'Total': 1,
-                                    'Start Text':
-                                        "We believe we've identified where the first relic is but it's guarded "
-                                        "by a nasty, dog-like beast, a Barghest. This thing can shapeshift and "
-                                        "can be fairly nasty if you are not prepared. Destroy it and find the "
-                                        "first of the 6 relics. I'll have something for you when you return.",
-                                    'End Text':
-                                        "Glad to hear you took care of that beast, soldier. Take this ring, it "
-                                        "will make your physical attacks more powerful.",
-                                    "Help Text":
-                                        "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid "
-                                        "form.",
-                                    'Reward': [items.PowerRing()],
-                                    'Reward Number': 1,
-                                    'Experience': 500,
-                                    'Completed': False,
-                                    'Turned In': False}
+        'Main': {1:
+                 {'The Holy Relics': 
+                   {'Who': 'Sergeant',
+                    'Type': 'Collect',
+                    'What': 'Relics',
+                    'Total': 6,
+                    'Start Text':
+                        "So you think you have what it takes, huh? Some of my best men have died in that dungeon and "
+                        "here you are, barely old enough to wipe your own ass...very well, it's your funeral. Maybe "
+                        "you have something those men didn't have. We don't have all the details but we believe the "
+                        "key to vanquishing the prime evil is to collect all 6 of the holy relics. Do that and you "
+                        "might just stand a chance. Don't blame me for not holding my breath...",
+                    'End Text':
+                        "Well I'll be, you crazy son of a bitch, you did it!...I shouldn't get to excited, there's "
+                        "still work to be done. But this is huge! Hopefully one of these will help in your quest to "
+                        "destroy what plagues this town.",
+                    "Help Text":
+                        "Each relic is protected by a powerful creature. Only the most determined champions will "
+                        "succeed in this quest.",
+                    'Reward': [items.MedusaShield(), items.Magus(), items.RainbowRod(), items.AardBeing()],
+                    'Reward Number': 1,
+                    'Experience': 500000,
+                    'Completed': False,
+                    'Turned In': False}
                     },
-                50: {'Immovable Object': {'Who': 'Sergeant',
-                                            'Type': 'Defeat',
-                                            'What': 'Iron Golem',
-                                            'Total': 1,
-                                            'Start Text':
-                                                "Only a powerful wizard is capable of creating a golem and a truly"
-                                                " powerful wizard must have created the Iron Golem. While we do "
-                                                "not know who created this monstrosity, the fact is you will not "
-                                                "be able to get to the 5th floor without taking it out.",
-                                            'End Text':
-                                                "I shouldn't be surprised at this point but again you've done what"
-                                                " was thought impossible. Choose your reward and good luck going "
-                                                "forward, although it doesn't seem that you need much luck...",
-                                            "Help Text":
-                                                "Do not let the Iron Golem get its hands on you, as it will "
-                                                "literally crush you to oblivion.",
-                                            'Reward': [items.DiamondAmulet(), items.PlatinumPendant()],
-                                            'Reward Number': 1,
-                                            'Experience': 20000,
-                                            'Completed': False,
-                                            'Turned In': False}
+                 20: 
+                 {'Cry Havoc!':
+                   {'Who': 'Sergeant',
+                    'Type': 'Defeat',
+                    'What': 'Barghest',
+                    'Total': 1,
+                    'Start Text':
+                        "We believe we've identified where the first relic is but it's guarded by a nasty, dog-like "
+                        "beast, a Barghest. This thing can shapeshift and can be fairly nasty if you are not prepared."
+                        " Destroy it and find the first of the 6 relics. I'll have something for you when you return.",
+                    'End Text':
+                        "Glad to hear you took care of that beast, soldier. Take this ring, it will make your physical"
+                        " attacks more powerful.",
+                    "Help Text":
+                        "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid form.",
+                    'Reward': [items.PowerRing()],
+                    'Reward Number': 1,
+                    'Experience': 500,
+                    'Completed': False,
+                    'Turned In': False}
                     },
-                60: {'In the Day of Our Lord': {'Who': 'Sergeant',
-                                                'Type': 'Defeat',
-                                                'What': 'Domingo',
-                                                'Total': 1,
-                                                'Start Text':
-                                                    "Many years ago, an explorer returned with a magical egg "
-                                                    "that was said to contain a powerful creature. Our "
-                                                    "scientists made many attempts to hatch the creature but "
-                                                    "were unsuccessful until recently when they had a "
-                                                    "breakthrough when they simple placed it in our chicken "
-                                                    "incubator. We had hoped to use this creature to protect the"
-                                                    " city from the monsters below but found out quickly that we"
-                                                    " could not hope to control it and had locked it away. "
-                                                    "However, someone inexplicably let the creature out. It "
-                                                    "killed 6 of my men before it disappeared into the dungeon. "
-                                                    "Find the creature and destroy it.",
-                                                'End Text':
-                                                    "It's a shame we had to kill it but there is no point trying"
-                                                    " to control the uncontrollable. The head scientist sends "
-                                                    "his thanks and as a reward, they have finished construction"
-                                                    " of a warp point that will allow you to teleport directly "
-                                                    "to the 5th dungeon level.",
-                                                "Help Text":
-                                                    "The magical creature excels at, you guessed it, magic. "
-                                                    "Look out for the powerful Ultima spell that it will "
-                                                    "undoubtably spam each turn.",
-                                                'Reward': ["Warp Point"],
-                                                'Reward Number': 1,
-                                                'Experience': 50000,
-                                                'Completed': False,
-                                                'Turned In': False}
+                 50:
+                 {'Immovable Object':
+                   {'Who': 'Sergeant',
+                    'Type': 'Defeat',
+                    'What': 'Iron Golem',
+                    'Total': 1,
+                    'Start Text':
+                        "Only a powerful wizard is capable of creating a golem and a truly powerful wizard must have "
+                        "created the Iron Golem. While we do not know who created this monstrosity, the fact is you "
+                        "will not be able to get to the 5th floor without taking it out.",
+                    'End Text':
+                        "I shouldn't be surprised at this point but again you've done what was thought impossible. "
+                        "Choose your reward and good luck going forward, although it doesn't seem that you need much "
+                        "luck...",
+                    "Help Text":
+                        "Do not let the Iron Golem get its hands on you, as it will literally crush you to oblivion.",
+                    'Reward': [items.DiamondAmulet(), items.PlatinumPendant()],
+                    'Reward Number': 1,
+                    'Experience': 20000,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                 60: 
+                 {'In the Day of Our Lord': 
+                   {'Who': 'Sergeant',
+                    'Type': 'Defeat',
+                    'What': 'Domingo',
+                    'Total': 1,
+                    'Start Text':
+                        "Many years ago, an explorer returned with a magical egg that was said to contain a powerful "
+                        "creature. Our scientists made many attempts to hatch the creature but were unsuccessful until"
+                        " recently when they had a breakthrough when they simple placed it in our chicken incubator. "
+                        "We had hoped to use this creature to protect the city from the monsters below but found out "
+                        "quickly that we could not hope to control it and had locked it away. However, someone "
+                        "inexplicably let the creature out. It killed 6 of my men before it disappeared into the "
+                        "dungeon. Find the creature and destroy it.",
+                    'End Text':
+                        "It's a shame we had to kill it but there is no point trying to control the uncontrollable. "
+                        "The head scientist sends his thanks and as a reward, they have finished construction of a "
+                        "warp point that will allow you to teleport directly to the 5th dungeon level.",
+                    "Help Text":
+                        "The magical creature excels at, you guessed it, magic. Look out for the powerful Ultima spell"
+                        " that it will undoubtably spam each turn.",
+                    'Reward': ["Warp Point"],
+                    'Reward Number': 1,
+                    'Experience': 50000,
+                    'Completed': False,
+                    'Turned In': False}
                     },
                 },
-        'Side': {3: {'Bring Him Home': 
-                     {'Who': 'Sergeant',
-                        'Type': 'Locate',
-                        'What': 'Timmy',
-                        'Total': 1,
-                        'Start Text':
-                            "We received a report about a small child named Timmy who somehow "
-                            "made it past my guards and into the dungeon. While my men have been "
-                            "punished accordingly, we still need to find the boy before something"
-                            " bad happens to him. Locate him (he shouldn't have gone far) and "
-                            "bring him home to his family.",
-                        'End Text':
-                            "You've found the boy, that's excellent news! I'm sure the family is "
-                            "very relieved. Here are some health potions to keep you alive as you"
-                            " explore.",
-                        "Help Text":
-                            "That kid must be an expert at hide-and-seek. I have sent several "
-                            "sentries to find him and haven't seen a trace. I guess there is "
-                            "an alternate outcome...let's not think that way.",
-                        'Reward': [items.HealthPotion()],
-                        'Reward Number': 5,
-                        'Experience': 150,
-                        'Completed': False,
-                        'Turned In': False}
+        'Side': {3: 
+                 {'Bring Him Home': 
+                   {'Who': 'Sergeant',
+                    'Type': 'Locate',
+                    'What': 'Timmy',
+                    'Total': 1,
+                    'Start Text':
+                        "We received a report about a small child named Timmy who somehow made it past my guards and "
+                        "into the dungeon. While my men have been punished accordingly, we still need to find the boy "
+                        "before something bad happens to him. Locate him (he shouldn't have gone far) and bring him "
+                        "home to his family.",
+                    'End Text':
+                        "You've found the boy, that's excellent news! I'm sure the family is very relieved. Here are "
+                        "some health potions to keep you alive as you explore.",
+                    "Help Text":
+                        "That kid must be an expert at hide-and-seek. I have sent several sentries to find him and "
+                        "haven't seen a trace. I guess there is an alternate outcome...let's not think that way.",
+                    'Reward': [items.HealthPotion()],
+                    'Reward Number': 5,
+                    'Experience': 150,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
     },
     "Busboy": {
         "Main": {},
-        "Side": {1: {'Something to Cry About':
-                     {'Who': 'Busboy',
-                        'Type': 'Locate',
-                        'What': 'Waitress',
-                        'Total': 1,
-                        'Start Text':
-                            "Oh man, I am so screwed...do you think you can help me? I let the waitress borrow"
-                            " my key to the tavern and the boss is gonna kill me if I don't get it back. Could you "
-                            "try and track her down for me and get the key back? This may be a long shot but I am "
-                            "desperate. People are saying she went crazy after her fiance died and she took off into"
-                            " the dungeon and hasn't been seen since. I know this sounds a bit heartless after what "
-                            "she's been through but she made her choice and now I have to pay for it. I don't have much"
-                            " but I can give you this potion my mom keeps on her mantle. She claims it makes her live "
-                            "longer but who knows whether that's true or not.",
-                        'End Text':
-                            "So she really did go crazy. It's sad what grief will do to a person...thanks for tracking"
-                            " her down but it turns out she left the tavern key in my locker before she left. Whatever"
-                            " this key is, it's not mine. You can keep it, maybe it'll unlock something useful. Here's "
-                            "that potion I promised you.",
-                        "Help Text":
-                            "Adventurers have told stories of hearing wailing on the second floor of the dungeon that"
-                            " sounds like a woman crying.",
-                        'Reward': [items.HPPotion()],
-                        'Reward Number': 1,
-                        'Experience': 5000,
-                        'Completed': False,
-                        'Turned In': False}}}
+        "Side": {1: 
+                 {'Something to Cry About':
+                   {'Who': 'Busboy',
+                    'Type': 'Locate',
+                    'What': 'Waitress',
+                    'Total': 1,
+                    'Start Text':
+                        "Oh man, I am so screwed...do you think you can help me? I let the waitress borrow my key to "
+                        "the tavern and the boss is gonna kill me if I don't get it back. Could you try and track her "
+                        "down for me and get the key back? This may be a long shot but I am desperate. People are "
+                        "saying she went crazy after her fiance died and she took off into the dungeon and hasn't been"
+                        " seen since. I know this sounds a bit heartless after what she's been through but she made "
+                        "her choice and now I have to pay for it. I don't have much but I can give you this potion my "
+                        "mom keeps on her mantle. She claims it makes her live longer but who knows whether that's "
+                        "true or not.",
+                    'End Text':
+                        "So she really did go crazy. It's sad what grief will do to a person...thanks for tracking"
+                        " her down but it turns out she left the tavern key in my locker before she left. Whatever"
+                        " this key is, it's not mine. You can keep it, maybe it'll unlock something useful. Here's "
+                        "that potion I promised you.",
+                    "Help Text":
+                        "Adventurers have told stories of hearing wailing on the second floor of the dungeon that"
+                        " sounds like a woman crying.",
+                    'Reward': [items.HPPotion()],
+                    'Reward Number': 1,
+                    'Experience': 5000,
+                    'Completed': False,
+                    'Turned In': False}
+                    }
+                }
     }
 }

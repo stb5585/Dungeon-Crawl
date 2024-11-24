@@ -11,6 +11,19 @@ import utils
 from player import actions_dict
 
 
+# functions
+def check_fake_wall(tile, game):
+    for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+        try:
+            if "FakeWall" in str(game.player_char.world_dict[(tile.x + dx, tile.y + dy, tile.z)]) and \
+                not game.player_char.world_dict[(tile.x + dx, tile.y + dy, tile.z)].visited:
+                return "Something seems off but you aren't quite sure what...\n"
+        except KeyError:
+            continue
+    return ""
+
+
+# objects
 class MapTile:
     def __init__(self, x, y, z):
         self.x = x
@@ -23,7 +36,10 @@ class MapTile:
         self.open = False
 
     def intro_text(self, game):
-        raise NotImplementedError()
+        intro_str = ""
+        if 'Keen Eye' in game.player_char.spellbook['Skills']:
+            intro_str += check_fake_wall(self, game)
+        return intro_str
 
     def modify_player(self, game):
         raise NotImplementedError()
@@ -33,26 +49,12 @@ class MapTile:
         if append_list is None:
             append_list = []
         moves = []
-        try:
-            if player_char.world_dict[(self.x + 1, self.y, self.z)].enter and blocked != "East":
-                moves.append(actions_dict['MoveEast'])
-        except KeyError:
-            pass
-        try:
-            if player_char.world_dict[(self.x - 1, self.y, self.z)].enter and blocked != "West":
-                moves.append(actions_dict['MoveWest'])
-        except KeyError:
-            pass
-        try:
-            if player_char.world_dict[(self.x, self.y - 1, self.z)].enter and blocked != "North":
-                moves.append(actions_dict['MoveNorth'])
-        except KeyError:
-            pass
-        try:
-            if player_char.world_dict[(self.x, self.y + 1, self.z)].enter and blocked != "South":
-                moves.append(actions_dict['MoveSouth'])
-        except KeyError:
-            pass
+        for dx, dy, direction in [(1, 0, "East"), (-1, 0, "West"), (0, 1, "South"), (0, -1, "North")]:
+            try:
+                if player_char.world_dict[(self.x + dx, self.y + dy, self.z)].enter and blocked != direction:
+                    moves.append(actions_dict[f'Move{direction}'])
+            except KeyError:
+                continue
         for item in append_list:
             moves.append(item)
         return moves
@@ -102,8 +104,10 @@ class MapTile:
 class StairsUp(MapTile):
 
     def intro_text(self, game):
-        return (f"{game.player_char.name} sees a flight of stairs going up.\n"
-                f"(Enter 'u' to use)")
+        intro_str = super().intro_text(game)
+        intro_str += (f"{game.player_char.name} sees a flight of stairs going up.\n"
+                      f"(Enter 'u' to use)\n")
+        return intro_str
 
     def modify_player(self, game):
         self.visited = True
@@ -116,8 +120,10 @@ class StairsUp(MapTile):
 class StairsDown(MapTile):
 
     def intro_text(self, game):
-        return (f"{game.player_char.name} sees a flight of stairs going down.\n"
-                f"(Enter 'j' to use)")
+        intro_str = super().intro_text(game)
+        intro_str += (f"{game.player_char.name} sees a flight of stairs going down.\n"
+                      f"(Enter 'j' to use)\n")
+        return intro_str
 
     def modify_player(self, game):
         self.visited = True
@@ -132,12 +138,6 @@ class SpecialTile(MapTile):
         super().__init__(x, y, z)
         self.special = True
         self.read = False
-
-    def intro_text(self, game):
-        return """
-        
-        
-        """
 
     def modify_player(self, game):
         self.visited = True
@@ -154,9 +154,6 @@ class Wall(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enter = False
-
-    def intro_text(self, game):
-        return ""
 
     def modify_player(self, game):
         self.visited = True
@@ -181,15 +178,6 @@ class CavePath(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = None
-
-    def intro_text(self, game):
-        if 'Keen Eye' in game.player_char.spellbook['Skills']:
-            if 'FakeWall' in [str(game.player_char.world_dict[(self.x + 1, self.y, 1)]),
-                              str(game.player_char.world_dict[(self.x - 1, self.y, 1)]),
-                              str(game.player_char.world_dict[(self.x, self.y + 1, 1)]),
-                              str(game.player_char.world_dict[(self.x, self.y - 1, 1)])]:
-                return "Something seems off but you aren't quite sure what..."
-        return ""
 
     def modify_player(self, game):
         self.visited = True
@@ -310,9 +298,7 @@ class BossRoom(SpecialTile):
         player_char.state = 'fight'
 
     def special_text(self, game):
-        if not self.read:
-            game.special_event("Boss")
-            self.read = True
+        raise NotImplementedError
 
     def generate_enemy(self):
         if self.visited:
@@ -324,11 +310,21 @@ class MinotaurBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Minotaur
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Minotaur")
+            self.read = True
+
 
 class BarghestBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Barghest
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Barghest")
+            self.read = True
 
 
 class PseudodragonBossRoom(BossRoom):
@@ -336,11 +332,21 @@ class PseudodragonBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Pseudodragon
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Pseudodragon")
+            self.read = True
+
 
 class NightmareBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Nightmare
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Nightmare")
+            self.read = True
 
 
 class CockatriceBossRoom(BossRoom):
@@ -348,11 +354,21 @@ class CockatriceBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Cockatrice
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Cockatrice")
+            self.read = True
+
 
 class WendigoBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Wendigo
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Wendigo")
+            self.read = True
 
 
 class IronGolemBossRoom(BossRoom):
@@ -360,11 +376,21 @@ class IronGolemBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.IronGolem
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Iron Golem")
+            self.read = True
+
 
 class GolemBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Golem
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Golem")
+            self.read = True
 
 
 class JesterBossRoom(BossRoom):
@@ -372,11 +398,21 @@ class JesterBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Jester
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Jester")
+            self.read = True
+
 
 class DomingoBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Domingo
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Domingo")
+            self.read = True
 
 
 class RedDragonBossRoom(BossRoom):
@@ -384,17 +420,32 @@ class RedDragonBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.RedDragon
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Red Dragon")
+            self.read = True
+
 
 class CerberusBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Cerberus
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Cerberus")
+            self.read = True
+
 
 class FinalBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Devil
+
+    def special_text(self, game):
+        if not self.read:
+            game.special_event("Final Boss")
+            self.read = True
 
 
 class ChestRoom(MapTile):
@@ -403,9 +454,6 @@ class ChestRoom(MapTile):
         self.open = False
         self.locked = False
         self.loot = None
-
-    def intro_text(self, game):
-        raise NotImplementedError
 
     def available_actions(self, player_char):
         raise NotImplementedError
@@ -427,9 +475,12 @@ class UnlockedChestRoom(ChestRoom):
         self.locked = False
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.open:
-            return f"{game.player_char.name} finds a chest. (Enter 'o' to open)"
-        return "This room has an open chest."
+            intro_str += f"{game.player_char.name} finds a chest. (Enter 'o' to open)\n"
+        else:
+            intro_str += "This room has an open chest.\n"
+        return intro_str
 
     def available_actions(self, player_char):
         if not self.open:
@@ -457,11 +508,15 @@ class LockedChestRoom(ChestRoom):
         self.locked = True
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.open:
             if self.locked:
-                return f"{game.player_char.name} finds a chest!!... but it is locked."
-            return f"{game.player_char.name} finds a chest. (Enter 'o' to open)"
-        return "This room has an open chest."
+                intro_str += f"{game.player_char.name} finds a chest!!... but it is locked.\n"
+            else:
+                intro_str += f"{game.player_char.name} finds a chest. (Enter 'o' to open)\n"
+        else:
+            intro_str += "This room has an open chest.\n"
+        return intro_str
 
     def available_actions(self, player_char):
         if not self.open:
@@ -509,13 +564,17 @@ class LockedDoor(MapTile):
         self.blocked = None
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.open:
             if self.locked:
-                return (f"{game.player_char.name} finds a locked door.\n"
-                        f"If only you could find the key...")
-            return (f"There is an unlocked door.\n"
-                    f"(Enter 'o' to open)")
-        return "There is an open door."
+                intro_str += (f"{game.player_char.name} finds a locked door.\n"
+                        f"If only you could find the key...\n")
+            else:
+                intro_str += (f"There is an unlocked door.\n"
+                    f"(Enter 'o' to open)\n")
+        else:
+            intro_str += "There is an open door.\n"
+        return intro_str
 
     def modify_player(self, game):
         self.visited = True
@@ -558,10 +617,11 @@ class WarningTile(CavePath):
         self.warning = False
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.warning:
-            return (f"Enemies beyond this point increase in difficulty.\n"
-                    f"Plan accordingly.")
-        return ""
+            intro_str += (f"Enemies beyond this point increase in difficulty.\n"
+                    f"Plan accordingly.\n")
+        return intro_str
 
     def enter_combat(self, player_char):
         pass
@@ -570,7 +630,9 @@ class WarningTile(CavePath):
 class UnobtainiumRoom(SpecialTile):
 
     def intro_text(self, game):
-        return "An empty pedestal stands in the center of the room."
+        intro_str = super().intro_text(game)
+        intro_str += "An empty pedestal stands in the center of the room.\n"
+        return intro_str
 
     def modify_player(self, game):
         self.adjacent_visited(game.player_char)
@@ -587,7 +649,9 @@ class UnobtainiumRoom(SpecialTile):
 class RelicRoom(SpecialTile):
 
     def intro_text(self, game):
-        return "An empty pedestal stands in the center of the room."
+        intro_str = super().intro_text(game)
+        intro_str += "An empty pedestal stands in the center of the room.\n"
+        return intro_str
 
     def modify_player(self, game):
         self.adjacent_visited(game.player_char)
@@ -610,14 +674,17 @@ class RelicRoom(SpecialTile):
 class DeadBody(SpecialTile):
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.read:
-            return "The body of a soldier lies in a heap on the floor."
-        if 'Something to Cry About' in game.player_char.quest_dict['Side']:
-            if game.player_char.quest_dict['Side']['Something to Cry About']['Completed']:
-                return (f"The two lovers have been reunited. May they rest in peace.")
-            return ""
-        return (f"'Here lies Joffrey, survived by his one true love.\n"
-                f"May he be a reminder of the horrors of combat.")
+            intro_str += "The body of a soldier lies in a heap on the floor.\n"
+        else:
+            if 'Something to Cry About' in game.player_char.quest_dict['Side']:
+                if game.player_char.quest_dict['Side']['Something to Cry About']['Completed']:
+                    intro_str += f"The two lovers have been reunited. May they rest in peace.\n"
+            else:
+                intro_str += (f"'Here lies Joffrey, survived by his one true love.\n"
+                              f"May he be a reminder of the horrors of combat.\n")
+        return intro_str
 
     def modify_player(self, game):
         self.adjacent_visited(game.player_char)
@@ -659,9 +726,12 @@ class FinalBlocker(SpecialTile):
         self.blocked = "North"
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not game.player_char.has_relics():
-            return "An invisible force blocks your path."
-        return "The way has opened. Destiny awaits!"
+            intro_str += "An invisible force blocks your path.\n"
+        else:
+            intro_str += "The way has opened. Destiny awaits!\n"
+        return intro_str
 
     def available_actions(self, player_char):
         if not player_char.has_relics():
@@ -706,9 +776,6 @@ class FinalRoom(SpecialTile):
 
 class SecretShop(SpecialTile):
 
-    def intro_text(self, game):
-        return ""
-
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
@@ -731,10 +798,13 @@ class UltimateArmorShop(MapTile):
         self.looted = False
 
     def intro_text(self, game):
+        intro_str = super().intro_text(game)
         if not self.looted:
-            return (f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
-                    f"A large man stands in front of you.")
-        return "A large empty room."
+            intro_str += (f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
+                    f"A large man stands in front of you.\n")
+        else:
+            intro_str += "A large empty room.\n"
+        return intro_str
 
     def modify_player(self, game):
         self.visited = True
@@ -751,9 +821,6 @@ class WarpPoint(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.warped = False
-
-    def intro_text(self, game):
-        return ""
 
     def modify_player(self, game):
         self.warped = False

@@ -27,9 +27,6 @@ class Race:
 
 
 class Human(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Human", description="Humans are something you can relate to. They are the most "
@@ -38,12 +35,12 @@ class Human(Race):
                                                    "weaknesses.",
                          strength=10, intel=10, wisdom=10, con=10, charisma=10, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer', 'Pathfinder'],
-                                  'First': ['Weapon Master', 'Paladin', 'Lancer',
+                                  'First': ['Weapon Master', 'Paladin', 'Lancer', 'Sentinel',
                                             'Sorcerer', 'Warlock', 'Spellblade',
                                             'Thief', 'Inquisitor', 'Assassin',
                                             'Cleric', 'Priest', 'Monk',
                                             'Druid', 'Diviner', 'Shaman'],
-                                  'Second': ['Berserker', 'Crusader', 'Dragoon',
+                                  'Second': ['Berserker', 'Crusader', 'Dragoon', 'Stalwart Defender',
                                              'Wizard', 'Necromancer', 'Knight Enchanter',
                                              'Rogue', 'Seeker', 'Ninja',
                                              'Templar', 'Archbishop', 'Master Monk',
@@ -64,9 +61,6 @@ class Human(Race):
 
 
 class Elf(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Elf", description="Elves are the magic users of the game. They are excellent spell "
@@ -99,9 +93,6 @@ class Elf(Race):
 
 
 class HalfElf(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Half Elf", description="Half elves are the result of the interbreeding between humans and "
@@ -137,9 +128,6 @@ class HalfElf(Race):
 
 
 class Giant(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Giant", description="A brutal race standing over eight feet tall, Giants make the best"
@@ -167,9 +155,6 @@ class Giant(Race):
 
 
 class Gnome(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Gnome", description="Gnomes are very charismatic, giving them a distinct advantage in "
@@ -180,10 +165,10 @@ class Gnome(Race):
                                                    " of Pathfinders.",
                          strength=8, intel=10, wisdom=12, con=8, charisma=12, dex=10,
                          cls_res={'Base': ['Warrior', 'Mage', 'Footpad', 'Healer'],
-                                  'First': ['Weapon Master', 'Paladin', 'Lancer',
+                                  'First': ['Weapon Master', 'Paladin',
                                             'Sorcerer', 'Spellblade',
                                             'Thief', 'Inquisitor', 'Assassin',
-                                            'Cleric', 'Priest', 'Monk'],
+                                            'Cleric', 'Priest'],
                                   'Second': ['Berserker', 'Crusader', 'Dragoon',
                                              'Wizard', 'Knight Enchanter',
                                              'Rogue', 'Seeker', 'Ninja',
@@ -204,9 +189,6 @@ class Gnome(Race):
 
 
 class Dwarf(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Dwarf", description="Dwarves are a versatile race, rivaled only by the human races. They are"
@@ -215,8 +197,8 @@ class Dwarf(Race):
                                                    " earth, poison, and physical damage but are weak against shadow magic.",
                          strength=12, intel=10, wisdom=10, con=12, charisma=8, dex=8,
                          cls_res={'Base': ['Warrior', 'Healer', 'Pathfinder'],
-                                  'First': ['Weapon Master', 'Paladin', 'Lancer',
-                                            'Cleric', 'Priest', 'Monk',
+                                  'First': ['Weapon Master', 'Paladin',
+                                            'Cleric', 'Priest',
                                             'Diviner', 'Shaman'],
                                   'Second': ['Berserker', 'Crusader', 'Dragoon',
                                              'Templar', 'Archbishop', 'Master Monk',
@@ -237,9 +219,6 @@ class Dwarf(Race):
 
 
 class HalfOrc(Race):
-    """
-
-    """
 
     def __init__(self):
         super().__init__(name="Half Orc", description="Half orcs are the result of interbreeding between humans and "
@@ -253,11 +232,11 @@ class HalfOrc(Race):
                                   'First': ['Weapon Master', 'Lancer',
                                             'Sorcerer', 'Warlock', 'Spellblade',
                                             'Thief', 'Inquisitor', 'Assassin',
-                                            'Druid', 'Diviner', 'Shaman'],
+                                            'Diviner', 'Shaman'],
                                   'Second': ['Berserker', 'Dragoon',
                                              'Wizard', 'Necromancer', 'Knight Enchanter',
                                              'Rogue', 'Seeker', 'Ninja',
-                                             'Lycan', 'Geomancer', 'Soulcatcher']},
+                                             'Geomancer', 'Soulcatcher']},
                          resistance={'Fire': 0.,
                                      'Ice': 0.,
                                      'Electric': 0.,

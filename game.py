@@ -8,7 +8,7 @@ import random
 import time
 import glob
 import curses
-import pickle
+import dill
 
 import utils
 import town
@@ -55,6 +55,11 @@ class Game:
                         done = True
                     menu.update_options(menu_options)
                 elif menu_options[selected_idx] == 'Settings':
+                    """
+                    Settings to include
+                    - special text print speed
+                    - 
+                    """
                     pass
                 else:
                     sys.exit(0)  # Exit the game
@@ -173,7 +178,7 @@ class Game:
         if load_options[selected_idx] == "Go Back":
             return
         with open(self.load_files[selected_idx], "rb") as save_file:
-            player_dict = pickle.load(save_file)
+            player_dict = dill.load(save_file)
         player_char = player.load_char(player_dict=player_dict)
         # player_char.load_tiles()  # uncomment for testing tile changes
 
@@ -188,11 +193,13 @@ class Game:
         except AttributeError:
             pass
         room.modify_player(self)
+        if self.player_char.in_town() or "Shop" in str(room):
+            return
         dmenu = utils.DungeonMenu(self)
         dmenu.draw_all()
         dmenu.refresh_all()
         while True:
-            if self.player_char.in_town() or "Shop" in str(room):
+            if self.player_char.in_town():
                 return
             available_actions = room.available_actions(self.player_char)
             if self.player_char.state == "normal":
@@ -233,8 +240,8 @@ class Game:
             if enemy.invisible:
                 if not player_char.sight:
                     return enemy, player_char
-            p_chance = player_char.stats.dex + player_char.check_mod('luck', luck_factor=10)
-            e_chance = enemy.stats.dex + enemy.check_mod('luck', luck_factor=10)
+            p_chance = player_char.stats.dex + player_char.check_mod('luck', enemy=enemy, luck_factor=10)
+            e_chance = enemy.stats.dex + enemy.check_mod('luck', enemy=player_char, luck_factor=10)
             total_chance = p_chance + e_chance
             chance_list = [p_chance / total_chance, e_chance / total_chance]
             attacker = random.choices([player_char, enemy], chance_list)[0]
@@ -248,7 +255,9 @@ class Game:
                 break
         flee = False
         first, second = initiative(self.player_char, enemy)
-        tile = self.player_char.world_dict[(self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)]
+        tile = self.player_char.world_dict[(self.player_char.location_x,
+                                            self.player_char.location_y,
+                                            self.player_char.location_z)]
         vision = self.player_char.sight and 'Boss' not in str(tile)
         combat = True
         cmenu = utils.CombatMenu(self)
@@ -259,106 +268,115 @@ class Game:
             cmenu.draw_options(available_actions)
             cmenu.draw_char()
             cmenu.refresh_all()
-            if not any([first.status_effects['Prone'].active,
-                        first.status_effects['Stun'].active,
-                        first.status_effects['Sleep'].active]):
+            if not first.incapacitated():
                 if first == self.player_char:
                     while True:
-                        cmenu.current_option = 0
-                        available_actions = tile.available_actions(self.player_char)
-                        cmenu.draw_enemy(enemy, vision=vision)
-                        cmenu.draw_options(available_actions)
-                        cmenu.draw_char()
-                        cmenu.refresh_all()
-                        action_idx = cmenu.navigate_menu()
-                        action = available_actions[action_idx]
-                        combat_text = ""
-                        valid_entry = False
-                        flee = False
-                        tile = first.world_dict[(first.location_x, first.location_y, first.location_z)]
-                        if action == 'Untransform':
-                            combat_text += first.transform(back=True)
-                            valid_entry = False
-                        elif action == "Transform":
-                            combat_text += first.transform()
-                            valid_entry = False
+                        if first.status_effects["Berserk"].active:
+                            wd_str, _, _ = first.weapon_damage(second)
+                            combat_text = wd_str
+                            valid_entry = True
                         else:
-                            if action == 'Open':
-                                first.open_up(self)
+                            cmenu.current_option = 0
+                            available_actions = tile.available_actions(self.player_char)
+                            cmenu.draw_enemy(enemy, vision=vision)
+                            cmenu.draw_options(available_actions)
+                            cmenu.draw_char()
+                            cmenu.refresh_all()
+                            action_idx = cmenu.navigate_menu()
+                            action = available_actions[action_idx]
+                            combat_text = ""
+                            valid_entry = False
+                            flee = False
+                            tile = first.world_dict[(first.location_x, first.location_y, first.location_z)]
+                            if action == 'Untransform':
+                                combat_text += first.transform(back=True)
+                                valid_entry = False
+                            elif action == "Transform":
+                                combat_text += first.transform()
+                                valid_entry = False
+                            elif action == "Pickup Weapon":
+                                combat_text += f"{first.name} picks up their weapon.\n"
+                                first.status_effects['Disarm'].active = False
                                 valid_entry = True
-                            elif action == 'Attack':
-                                wd_str, _, _ = first.weapon_damage(second)
-                                combat_text += wd_str
-                                valid_entry = True
-                            elif action == 'Use Item':
-                                use_str, valid_entry = first.use_item(self, second)
-                                combat_text += use_str
-                            elif action == 'Flee':
-                                flee, flee_str = first.flee(second)
-                                combat_text += flee_str
-                                valid_entry = True
-                            elif action == 'Cast Spell':
-                                spell_list = []
-                                for entry in first.spellbook['Spells']:
-                                    if first.spellbook['Spells'][entry].subtyp == "Movement":
-                                        continue
-                                    if first.spellbook['Spells'][entry].cost <= first.mana.current:
-                                        spell_list.append(str(entry) + '  ' + str(first.spellbook['Spells'][entry].cost))
-                                spell_list.append('Go Back')
-                                popup.update_options(spell_list, ["Spells"])
-                                spell_index = popup.navigate_popup()
-                                if spell_list[spell_index] == 'Go Back':
-                                    valid = False
-                                else:
-                                    spell = first.spellbook['Spells'][spell_list[spell_index].split('  ')[0]]
-                                    spell_str = f"{first.name} casts {spell.name}.\n"
-                                    spell_str += spell.cast(first, target=second)
-                                    combat_text += spell_str
+                            else:
+                                if action == 'Open':
+                                    first.open_up(self)
                                     valid_entry = True
-                            elif action == 'Use Skill':
-                                skill_list = []
-                                for entry in first.spellbook['Skills']:
-                                    if first.spellbook['Skills'][entry].cost <= first.mana.current:
-                                        if any([first.spellbook['Skills'][entry].passive,
-                                                first.spellbook['Skills'][entry].name == 'Smoke Screen' and 'Boss' in str(tile),
-                                                first.spellbook['Skills'][entry].name == 'Lockpick',
-                                                first.spellbook['Skills'][entry].name == 'Shield Slam' and \
-                                                first.equipment['OffHand'].subtyp != 'Shield',
-                                                first.spellbook['Skills'][entry].name == 'Mortal Strike' and \
-                                                first.equipment['Weapon'].handed == 1]):
+                                elif action == 'Attack':
+                                    wd_str, _, _ = first.weapon_damage(second)
+                                    combat_text += wd_str
+                                    valid_entry = True
+                                elif action == 'Use Item':
+                                    use_str, valid_entry = first.use_item(self, second)
+                                    combat_text += use_str
+                                elif action == 'Flee':
+                                    flee, flee_str = first.flee(second)
+                                    combat_text += flee_str
+                                    valid_entry = True
+                                elif action == 'Cast Spell':
+                                    spell_list = []
+                                    for entry in first.spellbook['Spells']:
+                                        if first.spellbook['Spells'][entry].subtyp == "Movement":
                                             continue
-                                        if entry == "Mana Shield" and first.status_effects['Mana Shield'].active:
-                                            skill_list.append('Remove Shield  ' + str(first.spellbook['Skills'][entry].cost))
-                                        else:
-                                            skill_list.append(str(entry) + '  ' + str(first.spellbook['Skills'][entry].cost))
-                                skill_list.append('Go Back')
-                                popup.update_options(skill_list, ["Skills"])
-                                skill_index = popup.navigate_popup()
-                                if skill_list[skill_index] == 'Go Back':
-                                    valid = False
-                                else:
-                                    skill_name = skill_list[skill_index].split('  ')[0]
-                                    if skill_name == "Remove Shield":
-                                        skill_name = "Mana Shield"
-                                    valid = True
-                                    skill = first.spellbook['Skills'][skill_name]
-                                    skill_str = f"{first.name} uses {skill.name}.\n"
-                                    if skill.name == 'Smoke Screen':
-                                        skill_str += skill.use(first, target=second)
-                                        flee, flee_str = first.flee(second, smoke=True)
-                                        skill_str += flee_str
-                                    # elif skill.name == 'Transform':
-                                    #     skill_str += first.transform()
-                                    #     valid = False
-                                    elif skill.name == "Slot Machine":
-                                        skill_str += skill.use(self, first, target=second)
-                                    elif skill.name in ["Doublecast", "Triplecast"]:
-                                        skill_str += skill.use(first, second, game=self)
+                                        if first.spellbook['Spells'][entry].cost <= first.mana.current:
+                                            spell_list.append(str(entry) + '  ' + str(first.spellbook['Spells'][entry].cost))
+                                    spell_list.append('Go Back')
+                                    popup.update_options(spell_list, ["Spells"])
+                                    spell_index = popup.navigate_popup()
+                                    if spell_list[spell_index] == 'Go Back':
+                                        valid = False
                                     else:
-                                        skill_str += skill.use(first, target=second)
-                                    combat_text += skill_str
-                                    valid_entry = valid
-                        combat_text += first.special_effects(second)
+                                        spell = first.spellbook['Spells'][spell_list[spell_index].split('  ')[0]]
+                                        spell_str = f"{first.name} casts {spell.name}.\n"
+                                        spell_str += spell.cast(first, target=second)
+                                        combat_text += spell_str
+                                        valid_entry = True
+                                elif action == 'Use Skill':
+                                    skill_list = []
+                                    for entry in first.spellbook['Skills']:
+                                        if first.spellbook['Skills'][entry].cost <= first.mana.current:
+                                            if any([first.spellbook['Skills'][entry].passive,
+                                                    first.spellbook['Skills'][entry].name == 'Smoke Screen' and \
+                                                        'Boss' in str(tile),
+                                                    first.spellbook['Skills'][entry].name == 'Lockpick',
+                                                    first.spellbook['Skills'][entry].name == 'Shield Slam' and \
+                                                        first.equipment['OffHand'].subtyp != 'Shield',
+                                                    first.spellbook['Skills'][entry].name == 'Mortal Strike' and \
+                                                        first.equipment['Weapon'].handed == 1,
+                                                    first.spellbook['Skills'][entry].name == " Backstab" and \
+                                                        not second.incapacitated(),
+                                                    first.spellbook["Skills"][entry].weapon and \
+                                                        first.status_effects["Disarm"].active]):
+                                                continue
+                                            if entry == "Mana Shield" and first.status_effects['Mana Shield'].active:
+                                                skill_list.append('Remove Shield  ' + str(first.spellbook['Skills'][entry].cost))
+                                            else:
+                                                skill_list.append(str(entry) + '  ' + str(first.spellbook['Skills'][entry].cost))
+                                    skill_list.append('Go Back')
+                                    popup.update_options(skill_list, ["Skills"])
+                                    skill_index = popup.navigate_popup()
+                                    if skill_list[skill_index] == 'Go Back':
+                                        valid = False
+                                    else:
+                                        skill_name = skill_list[skill_index].split('  ')[0]
+                                        if skill_name == "Remove Shield":
+                                            skill_name = "Mana Shield"
+                                        valid = True
+                                        skill = first.spellbook['Skills'][skill_name]
+                                        skill_str = f"{first.name} uses {skill.name}.\n"
+                                        if skill.name == 'Smoke Screen':
+                                            skill_str += skill.use(first, target=second)
+                                            flee, flee_str = first.flee(second, smoke=True)
+                                            skill_str += flee_str
+                                        elif skill.name == "Slot Machine":
+                                            skill_str += skill.use(self, first, target=second)
+                                        elif skill.name in ["Doublecast", "Triplecast"]:
+                                            skill_str += skill.use(first, second, game=self)
+                                        else:
+                                            skill_str += skill.use(first, target=second)
+                                        combat_text += skill_str
+                                        valid_entry = valid
+                            combat_text += first.special_effects(second)
                         if combat_text:
                             combatbox = utils.TextBox(self)
                             combatbox.print_text_in_rectangle(combat_text)
@@ -373,7 +391,7 @@ class Game:
                         if valid_entry:
                             break
                 else:
-                    action = first.options(action_list=available_actions)
+                    action = first.options(second, action_list=available_actions)
                     _, combat, flee = first.combat_turn(self, second, action, combat)
             else:
                 if first.status_effects['Stun'].active:
@@ -412,7 +430,7 @@ class Game:
                 break
 
             # resolve status effects
-            status_text = first.statuses(self)
+            status_text = first.statuses()
             if status_text:
                 if "damage" in status_text:
                     try:
@@ -546,9 +564,25 @@ special_event_dict = {
             "I have built up a cache of items that I can sell you if you're interested..."
         ]
     },
-    "Boss": {
+    "Minotaur": {
         "Text": [
-            "Ready yourself for combat, I will not yield easily!",
+            "As you enter the corridor, you are met with a horrific scene.",
+            "The carnage is almost as unbelievable as the monster you are confronted with.",
+            "You first notice the glint of a battle-worn axe, stained with the blood of countless foes.",
+            "The beast's fiery eyes lock onto you, letting out a deafening roar.",
+            "There is no mistaking the towering Minotaur, known to many as 'The Butcher'.",
+            "Chains and bone fragments litter the floor—a grim testament to those who dared to challenge him.",
+            "The Butcher snarls, 'You are next, little one!'",
+        ]
+    },
+    "Barghest": {
+        "Text": [
+            "The sacred chamber hums with an ominous energy as you step forward, the air growing cold with each breath.",
+            "A deep growl reverberates through the hall, and from the shadows emerges a large wolf-like beast.",
+            "This must be the Barghest, a tricky shapeshifter that also happens to be the guardian of the first Holy Relic.",
+            "Its spectral eyes burn with a ghostly light, and its jagged fangs gleam with menace.",
+            "The beast’s black fur bristles like shadowy flames, and its claws carve furrows into the stone floor as it prowls.",
+            "With a chilling snarl, it lunges, its voice echoing, “None shall desecrate the relics!”"
         ]
     }
 }

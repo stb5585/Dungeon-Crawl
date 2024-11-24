@@ -10,7 +10,7 @@ class Homunculus(Character):
     """
     Familiar - cast helpful defensive abilities; abilities upgrade when the familiar upgrades
     Level 1: Can use Disarm, Pocket Sand, and Stupefy
-    Level 2: Gains Cover and bonus to defense
+    Level 2: Gains Cover and Goad and bonus to defense
     Level 3: Gains Resurrection
     """
 
@@ -33,8 +33,10 @@ class Homunculus(Character):
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
-            self.spellbook['Skills']['Cover'] = abilities.Cover()
-            fam_level_str += f"{self.name} has gain the ability Cover.\n"
+            skill_list = [abilities.Cover(), abilities.Goad()]
+            for skill in skill_list:
+                self.spellbook['Skills'][skill.name] = skill
+                fam_level_str += f"{self.name} has gain the ability {skill.name}.\n"
             fam_level_str += f"{self.name} also increases your defense.\n"
         else:
             self.level.pro_level = 3
@@ -162,11 +164,10 @@ class Jinkin(Character):
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
-            skill_list = [abilities.Enfeeble(),
-                          abilities.Lockpick()]
-            for skill in skill_list:
-                self.spellbook['Spells'][skill.name] = skill
-                fam_level_str += f"{self.name} has gained the ability {skill.name}.\n"
+            self.spellbook['Spells']['Enfeeble'] = abilities.Enfeeble()
+            fam_level_str += f"{self.name} has gained the ability Enfeeble.\n"
+            self.spellbook['Skills']['Lockpick'] = abilities.Lockpick()
+            fam_level_str += f"{self.name} has gained the ability Lockpick.\n"
         else:
             self.level.pro_level = 3
             self.spellbook['Skills']['Slot Machine'] = abilities.SlotMachine()

@@ -50,6 +50,7 @@ class Skill(Ability):
     def __init__(self, name, description, cost):
         super().__init__(name, description, cost)
         self.typ = 'Skill'
+        self.weapon = False
 
     def use(self, user, target=None, cover=False):
         pass
@@ -78,6 +79,7 @@ class Offensive(Skill):
     def __init__(self, name, description, cost):
         super().__init__(name, description, cost)
         self.subtyp = 'Offensive'
+
 
 class Defensive(Skill):
     """
@@ -188,8 +190,17 @@ class ShieldSlam(Offensive):
         else:
             dam_red = target.check_mod('armor', enemy=user)
             damage = max(1, user.stats.strength + user.equipment['OffHand'].weight)
+            if hit and target.status_effects["Duplicates"].active:
+                if random.randint(0, target.status_effects["Duplicates"].duration):
+                    hit = False
+                    use_str += (f"{user.name} swings their shield but hits a mirror image of {target.name} and it "
+                                f"vanishes from existence.\n")
+                    target.status_effects["Duplicates"].duration -= 1
+                    if not target.status_effects["Duplicates"].duration:
+                        target.status_effects["Duplicates"].active = False
             if hit and cover:
-                use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
+                use_str += (f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
+                            f"{target.name}.\n")
             elif hit:
                 resist = target.check_mod('resist', enemy=user, typ='Physical')
                 damage = max(0, int((damage - dam_red) * (1 - resist)))
@@ -243,6 +254,7 @@ class DoubleStrike(Offensive):
         super().__init__(name='Double Strike', description='Perform two melee attacks at normal damage.',
                          cost=14)
         self.strikes = 2  # number of strikes performed
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         use_str = ""
@@ -257,7 +269,7 @@ class DoubleStrike(Offensive):
 
 class TripleStrike(DoubleStrike):
     """
-    Replaces DoubleStrike
+    Replaces Double Strike
     """
 
     def __init__(self):
@@ -268,44 +280,58 @@ class TripleStrike(DoubleStrike):
         self.cost = 26
 
 
-class QuadStrike(TripleStrike):
+class FlurryBlades(TripleStrike):
     """
-    Replaces TripleStrike
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Quad Strike"
-        self.description = "\n".join(wrap("Perform four melee attacks at normal damage.", 35))
-        self.strikes = 4
-        self.cost = 40
-
-
-class FlurryBlades(QuadStrike):
-    """
-    Replaces QuadStrike
+    Replaces Triple Strike
     """
 
     def __init__(self):
         super().__init__()
         self.name = "Flurry of Blades"
-        self.description = "\n".join(wrap("Perform five melee attacks at normal damage.", 35))
-        self.strikes = 5
-        self.cost = 50
+        self.description = "\n".join(wrap("Perform four melee attacks at normal damage.", 35))
+        self.strikes = 4
+        self.cost = 40
 
 
 class PiercingStrike(Offensive):
 
     def __init__(self):
-        super().__init__(name='Piercing Strike', description='Pierces the enemy\'s defenses, ignoring armor and '
-                                                             'striking true.',
+        super().__init__(name='Piercing Strike', description="Pierces the enemy\'s defenses, ignoring armor and "
+                                                             "defenses.",
                          cost=5)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(target, cover=cover, ignore=True, hit=True)
+        use_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=1.25, ignore=True)
         return use_str
 
+
+class TrueStrike(Offensive):
+
+    def __init__(self):
+        super().__init__(name='True Strike', description="Attack that is guaranteed to hit.",
+                         cost=12)
+        self.weapon = True
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        use_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=1.25, hit=True)
+        return use_str
+
+
+class TruePiercingStrike(Offensive):
+
+    def __init__(self):
+        super().__init__(name='True Piercing Strike', description="Attack that is guaranteed to hit and that pierces "
+                                                                  "the enemy\'s defenses, ignoring armor and defenses.",
+                         cost=15)
+        self.weapon = True
+
+    def use(self, user, target=None, cover=False):
+        user.mana.current -= self.cost
+        use_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=1.25, ignore=True, hit=True)
+        return use_str
 
 
 class Jump(Offensive):
@@ -316,6 +342,7 @@ class Jump(Offensive):
                          cost=10)
         self.strikes = 1
         self.crit = 2
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         use_str = ""
@@ -416,6 +443,7 @@ class MortalStrike(Offensive):
                                                            'weapon.',
                          cost=10)
         self.crit = 2
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
@@ -468,12 +496,15 @@ class Charge(Offensive):
         super().__init__(name="Charge", description="Charge the enemy, possibly stunning them for the turn and doing "
                                                     "weapon damage.",
                          cost=10)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         use_str = ""
         user.mana.current -= self.cost
         if random.randint(user.stats.strength // 2, user.stats.strength) > \
-                random.randint(target.stats.con // 2, target.stats.con) and not target.status_effects['Stun'].active:
+                random.randint(target.stats.con // 2, target.stats.con) and \
+                    not target.status_effects['Stun'].active and \
+                        not target.status_effects['Mana Shield'].active:
             target.status_effects["Stun"].active = True
             target.status_effects["Stun"].duration = 1
             use_str += f"{user.name} stunned {target.name}.\n"
@@ -511,8 +542,9 @@ class Parry(Defensive):
 class Disarm(Defensive):
 
     def __init__(self):
-        super().__init__(name='Disarm', description='Surprise the enemy by attacking their weapon, knocking it out of '
-                                                    'their grasp.',
+        super().__init__(name='Disarm', description="Surprise the enemy by attacking their weapon, knocking it out of "
+                                                    "their grasp. Disarmed characters have lower chance to hit and "
+                                                    "can't use certain abilities.",
                          cost=4)
 
     def use(self, user, target=None, fam=False, cover=False):
@@ -520,13 +552,12 @@ class Disarm(Defensive):
             user.mana.current -= self.cost
         if target.equipment["Weapon"].subtyp not in ["Natural", "None"]:
             if not target.status_effects["Disarm"].active:
-                chance = target.check_mod("luck", luck_factor=10)
+                chance = target.check_mod("luck", enemy=user, luck_factor=10)
                 max_stat = max(user.stats.strength, user.stats.dex)
                 if random.randint(max_stat // 2, max_stat) \
                         > random.randint(0, target.stats.dex) + chance:
-                    turns = random.randint(2, 5)
                     target.status_effects['Disarm'].active = True
-                    target.status_effects['Disarm'].duration = turns
+                    target.status_effects['Disarm'].duration = -1
                     return f"{target.name} is disarmed.\n"
                 return f"{user.name} fails to disarm the {target.name}.\n"
             return f"{target.name} is already disarmed.\n"
@@ -545,17 +576,36 @@ class Cover(Defensive):
         self.passive = True
 
 
+class Goad(Defensive):
+
+    def __init__(self):
+        super().__init__(name='Goad', description="Insult the enemy, sending them into a blind rage.",
+                         cost=12)
+
+    def use(self, user, target=None, fam=False, cover=False):
+        if not fam:
+            user.mana.current -= self.cost
+        if random.randint(0, user.stats.strength // 2) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+            target.status_effects['Berserk'].active = True
+            target.status_effects['Berserk'].duration = max(5, user.stats.strength // 5)
+            use_str = f"{target.name} is enraged.\n"
+        else:
+            use_str = f"{target.name} is not so easily provoked.\n"
+        return use_str
+
+
 # Stealth skills
 class Backstab(Stealth):
 
     def __init__(self):
-        super().__init__(name='Backstab', description='Strike the opponent in the back, guaranteeing a hit and ignoring'
-                                                      ' any resistance or armor.',
+        super().__init__(name='Backstab', description="Strike a stunned opponent in the back, ignoring any defense or "
+                                                      "armor and dealing devastating damage.",
                          cost=6)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(target, cover=cover, ignore=True, hit=True)
+        use_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=2.0, ignore=True)
         return use_str
 
 
@@ -569,11 +619,11 @@ class PocketSand(Stealth):
     def use(self, user, target=None, fam=False, cover=False):
         if not fam:
             user.mana.current -= self.cost
-        if not target.status_effects['Disarm'].active:
+        if not target.status_effects['Blind'].active:
             if random.randint(user.stats.dex // 2, user.stats.dex) \
                     > random.randint(0, target.stats.dex):
                 target.status_effects['Blind'].active = True
-                target.status_effects['Blind'].duration = max(5, user.stats.dex // 10)
+                target.status_effects['Blind'].duration = -1
                 return f"{target.name} is blinded.\n"
             return f"{user.name} fails to blind {target.name}.\n"
         return f"{target.name} is already blinded.\n"
@@ -608,12 +658,12 @@ class KidneyPunch(Stealth):
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(target, cover=cover)
         if not target.status_effects['Stun'].active:
-            if hit and target.is_alive() and not target.status_effects['Mana Shield'].active and \
+            if hit and target.is_alive() and \
                 not (target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active):
                 if random.randint(0, int(user.stats.dex * crit)) \
                         > random.randint(target.stats.con // 2, target.stats.con):
                     target.status_effects['Stun'].active = True
-                    target.status_effects['Stun'].duration = max(2, user.stats.dex // 10)
+                    target.status_effects['Stun'].duration = max(2, user.stats.dex // 8)
                     use_str += f"{target.name} is stunned.\n"
                 else:
                     use_str += f"{user.name} fails to stun {target.name}.\n"
@@ -645,7 +695,7 @@ class Steal(Stealth):
         gold_or_item = random.choice(["Gold", "Item"])
         if gold_or_item == "Item":
             if len(target.inventory) != 0:
-                chance = user.check_mod('luck', luck_factor=16)
+                chance = user.check_mod('luck', enemy=target, luck_factor=16)
                 if random.randint(int(user.stats.dex * crit) // 2, int(user.stats.dex * crit)) + chance > \
                         random.randint(target.stats.dex // 2, target.stats.dex):
                     item_key = random.choice(list(target.inventory))
@@ -692,18 +742,19 @@ class PoisonStrike(Stealth):
         super().__init__(name='Poison Strike', description='Attack the enemy with a chance to poison.',
                          cost=14)
         self.damage = 0.05  # 5% of target's max health per turn
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(target, cover=cover)
         if not target.status_effects['Poison'].active:
             if hit and target.is_alive():
-                resist = target.check_mod('resist', 'Poison')
+                resist = target.check_mod('resist', enemy=user, typ='Poison')
                 if resist < 1:
                     if random.randint(user.stats.dex // 2, user.stats.dex) * crit * (1 - resist) \
                             > random.randint(target.stats.con // 2, target.stats.con):
                         turns = max(5, user.stats.dex // 5)
-                        pois_dmg = int(target.health.max * self.damage * (1- resist))
+                        pois_dmg = int(target.health.max * self.damage * (1 - resist))
                         target.status_effects['Poison'].active = True
                         target.status_effects['Poison'].duration = max(turns, target.status_effects["Poison"].duration)
                         target.status_effects['Poison'].extra = max(pois_dmg, target.status_effects["Poison"].extra)
@@ -721,13 +772,14 @@ class SneakAttack(Stealth):
     """
 
     def __init__(self):
-        super().__init__(name="Sneak Attack", description="", cost=15)
+        super().__init__(name="Sneak Attack", description="If the target is incapacitated, unleash a devastating "
+                                                          "attack.",
+                         cost=15)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        if any([target.status_effects['Prone'].active,
-                target.status_effects['Stun'].active,
-                target.status_effects['Sleep'].active]):
+        if target.incapacitated():
             use_str, _, _ = user.weapon_damage(target, dmg_mod=2.0, crit=2, ignore=True, cover=cover)
         else:
             use_str = f"{self.name} is ineffective against {target.name}."
@@ -741,6 +793,7 @@ class ImbueWeapon(Enhance):
         super().__init__(name='Imbue Weapon', description='Imbue your weapon with magical energy to enhance the '
                                                           'weapon\'s damage.',
                          cost=12)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         use_str = ""
@@ -813,6 +866,7 @@ class ElementalStrike(Enhance):
         super().__init__(name="Elemental Strike", description='Attack the enemy with your weapon and a random '
                                                               'elemental spell.',
                          cost=15)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
@@ -842,7 +896,7 @@ class HealthDrain(Drain):
             user.mana.current -= self.cost
         drain = random.randint((user.health.current + user.stats.charisma) // 5,
                                (user.health.current + user.stats.charisma) // 1.5)
-        chance = target.check_mod('luck', luck_factor=1)
+        chance = target.check_mod('luck', enemy=user, luck_factor=1)
         if not random.randint(user.stats.wisdom // 2, user.stats.wisdom) > random.randint(0, target.stats.wisdom // 2) + chance:
             drain = drain // 2
         drain = min(drain, target.health.current)
@@ -863,7 +917,7 @@ class ManaDrain(Drain):
             user.mana.current -= self.cost
         drain = random.randint((user.mana.current + user.stats.charisma) // 5,
                                (user.mana.current + user.stats.charisma) // 1.5)
-        chance = target.check_mod('luck', luck_factor=10)
+        chance = target.check_mod('luck', enemy=user, luck_factor=10)
         if not random.randint(user.stats.wisdom // 2, user.stats.wisdom) > random.randint(0, target.stats.wisdom // 2) + chance:
             drain = drain // 2
         drain = min(drain, target.mana.current)
@@ -1053,13 +1107,15 @@ class Inspect(Truth):
 
 class ExploitWeakness(Truth):
     """
-    Adds damage multiplier to melee attack equal to the lowest resistance
+    Adds damage multiplier to melee attack equal to the lowest resistance; if no weakness to exploit, a random status
+      effect may be applied
     """
 
     def __init__(self):
         super().__init__(name="Exploit Weakness", description="Inspect and identify the enemy's greatest weakness and "
                                                               "exploit it.",
                          cost=10)
+        self.weapon = True
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
@@ -1071,7 +1127,18 @@ class ExploitWeakness(Truth):
             use_str = f"{user.name} targets {target.name}'s weakness to {types[resists.index(weak)].lower()} to increase their attack!\n"
         else:
             mod = 1
-            use_str = f"{target.name} has no identifiable weakness. The skill is ineffective.\n"
+            effects = ["Disarm", "Blind", "Silence", "None"]
+            chance = user.check_mod("luck", enemy=target, luck_factor=10)
+            effect = random.choices(effects, weights=[chance, chance, chance, target.con // 5])[0]
+            if effect == "None":
+                use_str = f"{target.name} has no identifiable weakness. The skill is ineffective.\n"
+            else:
+                if effect == "Disarm":
+                    use_str = f"{target.name} drops their weapon.\n"
+                else:
+                    use_str = f"{target.name} is affected by {effect.lower()}.\n"
+                target.status_effects[effect].active = True
+                target.status_effects[effect].duration = -1
         wd_str, _, _ = user.weapon_damage(target, dmg_mod=mod)
         return use_str + wd_str
 
@@ -1083,6 +1150,19 @@ class KeenEye(Truth):
 
     def __init__(self):
         super().__init__(name="Keen Eye", description="As an Inquisitor, you can gain insights into your surroundings.",
+                         cost=0)
+        self.passive = True
+
+
+class Cartography(Truth):
+    """
+    Reveals minimap to Seeker, regardless of whether they have visited an area
+    """
+
+    def __init__(self):
+        super().__init__(name="Cartography", description="Seekers are masters at map making and gain the ability to "
+                                                         "see all of the dungeon, regardless of whether an area has "
+                                                         "been visited.",
                          cost=0)
         self.passive = True
 
@@ -1177,7 +1257,7 @@ class GoldToss(Luck):
         max_thrown = min(target.health.current, user.gold)
         if user.gold == 0:
             return "Nothing happens.\n"
-        d_chance = target.check_mod('luck', luck_factor=10)
+        d_chance = target.check_mod('luck', enemy=user, luck_factor=10)
         damage = random.randint(1, max_thrown)
         user.gold -= damage
         use_str = f"{user.name} throws {damage} gold at {target.name}.\n"
@@ -1240,8 +1320,8 @@ class SlotMachine(Luck):
                                 '707', '717', '727', '737', '747', '757', '767', '787', '797',
                                 '808', '818', '828', '838', '848', '858', '868', '878', '898',
                                 '909', '919', '929', '939', '949', '959', '969', '979', '989']}
-        user_chance = user.check_mod('luck', luck_factor=10)
-        target_chance = target.check_mod('luck', luck_factor=10)
+        user_chance = user.check_mod('luck', enemy=target, luck_factor=10)
+        target_chance = target.check_mod('luck', enemy=user, luck_factor=10)
         success = False
         retries = 0
         while not success:
@@ -1251,7 +1331,7 @@ class SlotMachine(Luck):
                 success = True
                 if target_chance > user_chance + 1:
                     target = user
-                resist = target.check_mod('resist', typ='Death')
+                resist = target.check_mod('resist', enemy=user, typ='Death')
                 if resist < 1:
                     target.health.current = 0
                     use_str += f"Death has come for {target.name}!\n"
@@ -1312,7 +1392,10 @@ class SlotMachine(Luck):
                 effect = random.choice(effects)
                 use_str += f"{effect} has been randomly selected to affect {target.name}.\n"
                 target.status_effects[effect].active = True
-                target.status_effects[effect].duration = max(duration, target.status_effects[effect].duration)
+                if effect in ["Blind", "Silence", "Disarm"]:
+                    target.status_effects[effect].duration = -1
+                else:
+                    target.status_effects[effect].duration = max(duration, target.status_effects[effect].duration)
                 if effect == "Poison":
                     amount *= int(target.health.max * 0.01)
                 target.status_effects[effect].extra = amount
@@ -1496,8 +1579,22 @@ class ArcaneBlast(PowerUp):
         user.mana.current = 0
         user.status_effects['Power Up'].active = True
         user.status_effects['Power Up'].duration = 4
-        target.health.current -= damage
-        use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
+        if target.status_effects["Mana Shield"].active:
+            mana_loss = damage // target.status_effects['Mana Shield'].duration
+            if mana_loss > target.mana.current:
+                abs_dam = target.mana.current * target.status_effects['Mana Shield'].duration
+                use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
+                damage -= abs_dam
+                target.mana.current = 0
+                target.status_effects['Mana Shield'].active = False
+                use_str += f"The mana shield dissolves around {target.name}.\n"
+            else:
+                use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
+                target.mana.current -= mana_loss
+                damage = 0
+        if damage > 0:
+            target.health.current -= damage
+            use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
         return use_str
 
 
@@ -1613,15 +1710,15 @@ class DimMak(PowerUp):
     def use(self, user, target=None, cover=False):
         use_str = ""
         user.mana.current -= self.cost
-        wd_str, _, _ = user.weapon_damage(target, crit=3, ignore=True, hit=True)
+        wd_str, _, _ = user.weapon_damage(target, crit=3, dmg_mod=1.5, ignore=True, hit=True)
         use_str += wd_str
         if target.is_alive():
-            if not (random.randint(0, target.con) + target.check_mod("luck", luck_factor=5)) and \
-                target.check_mod("resist", user, "Death") < 1:
+            if not (random.randint(0, target.con) + target.check_mod("luck", enemy=user, luck_factor=5)) and \
+                target.check_mod("resist", enemy=user, typ="Death") < 1:
                     use_str += f"{target.name} sustains a lethal blow and collapses to the ground.\n"
                     target.health.current = 0
             else:
-                if random.random() > target.check_mod("resist", "Physical"):
+                if random.random() > target.check_mod("resist", enemy=user, typ="Physical"):
                     use_str += f"{target.name} is stunned.\n"
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = user.stats.wisdom // 10
@@ -1686,7 +1783,10 @@ class SoulHarvest(PowerUp):
     """
 
     def __init__(self):
-        super().__init__(name="Soul Harvest", description="",
+        super().__init__(name="Soul Harvest", description="The souls of the dead contain traces of its host's power. "
+                                                          "The Soulcatcher knows this and uses it to their advantage. "
+                                                          "Each enemy killed of a particular type increases the combat "
+                                                          "effectiveness against that enemy type.",
                          cost=0)
         self.passive = True
 
@@ -1701,7 +1801,7 @@ class Lick(Skill):
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        use_str, hit, _ = user.weapon_damage(target, cover=cover)
+        use_str, hit, _ = user.weapon_damage(target, cover=cover, dmg_mod=1.25)
         if hit:
             status_effects = ['Prone', 'Silence', 'Stun', 'Blind', 'Sleep']
             if random.randint(user.stats.strength // 2, user.stats.strength) > \
@@ -1709,7 +1809,10 @@ class Lick(Skill):
                 random_effect = random.choice(status_effects)
                 if not target.status_effects[random_effect].active:
                     target.status_effects[random_effect].active = True
-                    target.status_effects[random_effect].duration = random.randint(2, max(3, user.stats.strength // 8))
+                    if random_effect in ["Silence", "Blind"]:
+                        target.status_effects[random_effect].duration = -1
+                    else:
+                        target.status_effects[random_effect].duration = random.randint(2, max(3, user.stats.strength // 8))
                     use_str += f"{target.name} is affected by {random_effect.lower()}.\n"
         return use_str
 
@@ -1731,10 +1834,8 @@ class AcidSpit(Skill):
         dmg = self.damage * max(1, user.level.pro_level) + (user.stats.intel // 2)
         dam_red = target.check_mod('magic def', enemy=user)
         damage = random.randint(dmg // 2, dmg) - dam_red
-        hit = user.hit_chance(target)
-        dodge = target.dodge_chance(user) > random.random()
-        if hit:
-            if dodge:
+        if user.hit_chance(target, typ='magic'):
+            if target.dodge_chance(user) > random.random():
                 use_str += f"{target.name} partially dodges the attack, only taking half damage.\n"
                 damage //= 2
             if damage > 0:
@@ -1802,7 +1903,7 @@ class Shapeshift(Skill):
     def use(self, user, target=None, cover=False):
         while True:
             s_creature = random.choice(user.transform)()
-            if user.cls != s_creature.cls:
+            if user.cls.name != s_creature.cls.name:
                 break
         user.cls = s_creature.cls
         user.stats = s_creature.stats
@@ -1811,6 +1912,7 @@ class Shapeshift(Skill):
         user.resistance = s_creature.resistance
         user.flying = s_creature.flying
         user.invisible = s_creature.invisible
+        user.sight = s_creature.sight
         user.spellbook['Skills']['Shapeshift'] = Shapeshift()
         return f"{user.name} changes shape, becoming a {s_creature.name}.\n"
 
@@ -1908,23 +2010,31 @@ class ThrowRock(Skill):
         size = random.randint(0, 4)  # size of rock thrown
         sizes = ['tiny', 'small', 'medium', 'large', 'massive']
         use_str = f"{user.name} throws a {sizes[size]} rock at {target.name}.\n"
-        a_chance = user.check_mod('luck', luck_factor=10)
-        d_chance = target.check_mod('luck', luck_factor=15)
+        a_chance = user.check_mod('luck', enemy=target, luck_factor=10)
+        d_chance = target.check_mod('luck', enemy=user, luck_factor=15)
         dodge = (random.randint(0, target.stats.dex // 2) + d_chance >
                  random.randint(user.stats.dex // 2, user.stats.dex) + a_chance)
-        stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
         dam_red = target.check_mod('armor', enemy=user)
-        resist = target.check_mod('resist', 'Physical')
+        resist = target.check_mod('resist', enemy=user, typ='Physical')
         hit_per = user.hit_chance(target, typ='weapon')
         hit = hit_per > random.random()
-        if stun:
+        if target.incapacitated():
             dodge = False
             hit = True
         if dodge:
             use_str += f"{target.name} evades the attack.\n"
         else:
-            if cover:
-                use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
+            if hit and target.status_effects["Duplicates"].active:
+                if random.randint(0, target.status_effects["Duplicates"].duration):
+                    hit = False
+                    use_str += (f"{user.name} throws a rock but hits a mirror image of {target.name} and it vanishes "
+                                f"from existence.\n")
+                    target.status_effects["Duplicates"].duration -= 1
+                    if not target.status_effects["Duplicates"].duration:
+                        target.status_effects["Duplicates"].active = False
+            if hit and cover:
+                use_str += (f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
+                            f"{target.name}.\n")
             elif hit:
                 crit = 1
                 if (a_chance - d_chance) * 0.1 > random.random():
@@ -1981,9 +2091,9 @@ class Stomp(Skill):
     def use(self, user, target=None, cover=False):
         use_str = ""
         user.mana.current -= self.cost
-        resist = target.check_mod('resist', 'Physical')
-        a_chance = user.check_mod('luck', luck_factor=10)
-        d_chance = target.check_mod('luck', luck_factor=15)
+        resist = target.check_mod('resist', enemy=user, typ='Physical')
+        a_chance = user.check_mod('luck', enemy=target, luck_factor=10)
+        d_chance = target.check_mod('luck', enemy=user, luck_factor=15)
         dodge = (random.randint(0, target.stats.dex // 2) + d_chance >
                  random.randint(user.stats.dex // 2, user.stats.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
@@ -1995,8 +2105,17 @@ class Stomp(Skill):
             hit = hit_per > random.random()
         if dodge:
             return f"{target.name} evades the attack.\n"
+        if hit and target.status_effects["Duplicates"].active:
+            if random.randint(0, target.status_effects["Duplicates"].duration):
+                hit = False
+                use_str += (f"{user.name} stomps but hits a mirror image of {target.name} and it vanishes from "
+                            f"existence.\n")
+                target.status_effects["Duplicates"].duration -= 1
+                if not target.status_effects["Duplicates"].duration:
+                    target.status_effects["Duplicates"].active = False
         if cover and hit:
-            use_str += f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at {target.name}.\n"
+            use_str += (f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
+                        f"{target.name}.\n")
         elif hit:
             crit = 1
             if (a_chance - d_chance) * 0.1 > random.random():
@@ -2038,7 +2157,7 @@ class Stomp(Skill):
                         target.status_effects['Stun'].duration = turns
                         use_str += f"{user.name} stunned {target.name}.\n"
             else:
-                use_str += "{} stomps {} but deals no damage.\n"
+                use_str += f"{user.name} stomps {target.name} but deals no damage.\n"
         else:
             use_str += f"{user.name} misses {target.name}.\n"
         return use_str
@@ -2060,15 +2179,14 @@ class Screech(Skill):
         damage = 0
         if random.randint(user.stats.dex // 2, user.stats.dex) + user.stats.intel > \
                 random.randint(target.stats.con // 2, target.stats.con) + target.stats.wisdom:
-            resist = target.check_mod('resist', 'Physical')
+            resist = target.check_mod('resist', enemy=user, typ='Physical')
             damage = int(user.stats.intel * (1 - resist))
             if damage > 0:
                 target.health.current -= damage
                 use_str += f"The deafening screech hurts {target.name} for {damage} damage.\n"
                 if not target.status_effects["Silence"].active:
-                    duration = random.randint(1, max(2, user.stats.intel // 10))
                     target.status_effects['Silence'].active = True
-                    target.status_effects['Silence'].duration = duration
+                    target.status_effects['Silence'].duration = -1
                     use_str += f"{target.name} has been silenced.\n"
         if damage <= 0:
             use_str += "The spell is ineffective.\n"
@@ -2088,7 +2206,7 @@ class Detonate(Skill):
 
     def use(self, user, target=None, cover=False):
         use_str = (f"{user.name} explodes, sending shrapnel in all directions.")
-        resist = target.check_mod('resist', 'Physical')
+        resist = target.check_mod('resist', enemy=user, typ='Physical')
         damage = max(user.health.current // 2, int(user.health.current * (1 - resist))) * random.randint(1, 4)
         if target.status_effects['Mana Shield'].active:
             mana_loss = damage // target.status_effects['Mana Shield'].duration
@@ -2115,7 +2233,7 @@ class Detonate(Skill):
                 target.status_effects['Power Up'].extra -= damage
                 damage = 0
         if damage > 0:
-            t_chance = target.check_mod('luck', luck_factor=20)
+            t_chance = target.check_mod('luck', enemy=user, luck_factor=20)
             if random.randint(0, target.stats.dex // 15) + t_chance:
                 damage = max(1, damage // 2)
                 use_str += f"{target.name} dodges the shrapnel, only taking half damage.\n"
@@ -2138,9 +2256,9 @@ class Crush(Skill):
 
     def use(self, user, target=None, cover=False):
         user.mana.current -= self.cost
-        resist = target.check_mod('resist', 'Physical')
-        a_chance = user.check_mod('luck', luck_factor=15)
-        d_chance = target.check_mod('luck', luck_factor=10)
+        resist = target.check_mod('resist', enemy=user, typ='Physical')
+        a_chance = user.check_mod('luck', enemy=target, luck_factor=15)
+        d_chance = target.check_mod('luck', enemy=user, luck_factor=10)
         dodge = (random.randint(0, target.stats.dex // 2) + d_chance >
                  random.randint(user.stats.dex // 2, user.stats.dex) + a_chance)
         stun = any(target.status_effects[x] for x in ['Stun', 'Sleep', 'Prone'])
@@ -2154,6 +2272,14 @@ class Crush(Skill):
                    random.randint(d_hit // 2, d_hit) + d_chance)
         if dodge:
             return f"{target.name} evades the attack.\n"
+        if hit and target.status_effects["Duplicates"].active:
+            if random.randint(0, target.status_effects["Duplicates"].duration):
+                hit = False
+                use_str += (f"{user.name} grabs for {target.name} but gets a mirror image instead and it vanishes "
+                            f"from existence.\n")
+                target.status_effects["Duplicates"].duration -= 1
+                if not target.status_effects["Duplicates"].duration:
+                    target.status_effects["Duplicates"].active = False
         if hit:
             use_str = f"{user.name} grabs {target.name}.\n"
             crit = 1
@@ -2186,8 +2312,8 @@ class ConsumeItem(Skill):
     def use(self, user, target=None, cover=False):
         use_str = ""
         user.mana.current -= self.cost
-        u_chance = user.check_mod('luck', luck_factor=10)
-        t_chance = target.check_mod('luck', luck_factor=10)
+        u_chance = user.check_mod('luck', enemy=target, luck_factor=10)
+        t_chance = target.check_mod('luck', enemy=user, luck_factor=10)
         if random.randint(0, user.stats.dex) + u_chance > random.randint(target.stats.dex // 2, target.stats.dex) + t_chance:
             if len(target.inventory) != 0 and random.randint(0, u_chance):
                 item_key = random.choice(list(target.inventory))
@@ -2226,11 +2352,11 @@ class ConsumeItem(Skill):
                     stat = random.choice(['Silence', 'Stun', 'Blind', 'Sleep'])
                     use_str += f'{user.name} is affected by {stat.lower()}.\n'
                 user.status_effects[stat].active = True
-                user.status_effects[stat].duration = duration + 1
-                try:
+                if stat in ["Blind", "Silence"]:
+                    user.status_effects[stat].duration = -1
+                else:
+                    user.status_effects[stat].duration = duration + 1
                     user.status_effects[stat].extra = amount
-                except IndexError:
-                    pass
             else:
                 gold = random.randint(target.gold // 100, target.gold // 50) * u_chance
                 regen = gold // 10
@@ -2267,7 +2393,7 @@ class DestroyMetal(Skill):
                     destroy_list.append(item)
         try:
             destroy_item = random.choice(destroy_list)
-            t_chance = target.check_mod('luck', luck_factor=5)
+            t_chance = target.check_mod('luck', enemy=user, luck_factor=5)
             if not random.randint(0, int(2 / destroy_item.rarity) + t_chance):
                 from items import remove_equipment
                 if destroy_loc == 'inv':
@@ -2323,7 +2449,7 @@ class GoblinPunch(Skill):
         num_attacks = max(1, random.randint(user.level.pro_level, self.max_punches))
         str_diff = max(1 + user.level.pro_level, (target.stats.strength - user.stats.strength) // 2)
         for _ in range(num_attacks):
-            if user.hit_chance(target) > random.random():
+            if user.hit_chance(target, typ='unarmed') > random.random():
                 target.health.current -= str_diff
                 use_str += f"{user.name} punches {target.name} for {str_diff} damage.\n"
             else:
@@ -2342,17 +2468,15 @@ class BrainGorge(Skill):
                          cost=30)
 
     def use(self, user, target=None, cover=False):
-        use_str = ""
         user.mana.current -= self.cost
-        wd_str, hit, crit = user.weapon_damage(target)
-        use_str += wd_str
+        use_str, hit, crit = user.weapon_damage(target)
         if hit:
-            t_chance = target.check_mod('luck', luck_factor=15)
+            t_chance = target.check_mod('luck', enemy=user, luck_factor=15)
             use_str += f"{user.name} latches onto {target.name}.\n"
-            if any([target.status_effects['Stun'].active, target.status_effects["Sleep"].active]) or \
+            if target.incapacitated() or \
                 (random.randint(user.stats.strength // 2, user.stats.strength) >
                  random.randint(target.stats.con // 2, target.stats.con) + t_chance):
-                resist = target.check_mod('resist', 'Physical')
+                resist = target.check_mod('resist', enemy=user, typ='Physical')
                 damage = int(random.randint(user.stats.strength // 4, user.stats.strength) * (1 - resist) * crit)
                 target.health.current -= damage
                 if damage > 0:
@@ -2376,6 +2500,8 @@ class Counterspell(Skill):
 
     def use(self, user, target=None, cover=False):
         spell = random.choice(user.spellbook['Spells'].values())
+        if spell.subtyp == "Heal":
+            target = user
         return spell.cast(user, target=target, cover=cover)
 
 
@@ -2410,7 +2536,7 @@ class ChooseFate(Skill):
         option_index = popup.navigate_popup()
         mod_up = random.randint(10, 25)
         if options[option_index] == 'Attack':
-            wd_str, _, _ = user.weapon_damage(target)
+            wd_str, _, _ = user.weapon_damage(target, dmg_mod=1.5)
             use_str += wd_str
             user.damage_mod += mod_up
             use_str += "Hahaha, my power increases!\n"
@@ -2447,13 +2573,12 @@ class Attack(Spell):
         cast_message = ""
         if not (special or fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
             caster.mana.current -= self.cost
-        stun = target.status_effects['Stun'].active
         reflect = target.status_effects['Reflect'].active
         spell_mod = caster.check_mod('magic', enemy=target)
         dodge = target.dodge_chance(caster) > random.random()
-        hit_per = caster.hit_chance(target, typ='spell')
+        hit_per = caster.hit_chance(target, typ='magic')
         hit = hit_per > random.random()
-        if stun:
+        if target.incapacitated():
             dodge = False
             hit = True
         if dodge and not reflect:
@@ -2462,12 +2587,19 @@ class Attack(Spell):
             cast_message += (f"{target.familiar.name} steps in front of the attack,"
                              f" absorbing the damage directed at {target.name}.\n")
         else:
+            if hit and target.status_effects["Duplicates"].active:
+                if random.randint(0, target.status_effects["Duplicates"].duration):
+                    hit = False
+                    use_str += f"{self.name} hits a mirror image of {target.name} and it vanishes from existence.\n"
+                    target.status_effects["Duplicates"].duration -= 1
+                    if not target.status_effects["Duplicates"].duration:
+                        target.status_effects["Duplicates"].active = False
             if hit:
                 damage = int(self.damage + spell_mod)
                 if reflect:
                     target = caster
                     cast_message += f"{self.name} is reflected back at {caster.name}!\n"
-                resist = target.check_mod('resist', typ=self.subtyp)
+                resist = target.check_mod('resist', enemy=caster, typ=self.subtyp)
                 dam_red = target.check_mod('magic def', enemy=caster)
                 crit = 1
                 if not random.randint(0, self.crit):
@@ -2605,6 +2737,15 @@ class MovementSpell(Spell):
         self.subtyp = 'Movement'
 
 
+class IllusionSpell(Spell):
+    """
+    subtyp: the subtype of these abilities is 'Illusion', meaning they rely on deception
+    """
+    def __init__(self, name, description, cost):
+        super().__init__(name, description, cost)
+        self.subtyp = 'Illusion'
+
+
 # Spells
 class MagicMissile(Attack):
     """
@@ -2622,15 +2763,14 @@ class MagicMissile(Attack):
         cast_message = ""
         if not (special or fam or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
             caster.mana.current -= self.cost
-        stun = any(target.status_effects[x].active for x in ['Sleep', 'Stun', 'Prone'])
         spell_mod = caster.check_mod('magic', enemy=target)
         hits = []
         for i in range(self.missiles):
             hits.append(False)
             dodge = target.dodge_chance(caster) > random.random()
-            hit_per = caster.hit_chance(target, typ='spell')
+            hit_per = caster.hit_chance(target, typ='magic')
             hits[i] = hit_per > random.random()
-            if stun:
+            if target.incapacitated():
                 dodge = False
                 hits[i] = True
             damage = self.damage + spell_mod
@@ -2646,6 +2786,13 @@ class MagicMissile(Attack):
                 cast_message += (f"{target.familiar.name} steps in front of the attack, "
                                  f"absorbing the damage directed at {target.name}.\n")
             else:
+                if hits[i] and target.status_effects["Duplicates"].active:
+                    if random.randint(0, target.status_effects["Duplicates"].duration):
+                        hits[i] = False
+                        use_str += f"{self.name} hits a mirror image of {target.name} and it vanishes from existence.\n"
+                        target.status_effects["Duplicates"].duration -= 1
+                        if not target.status_effects["Duplicates"].duration:
+                            target.status_effects["Duplicates"].active = False
                 if hits[i]:
                     if target.status_effects['Mana Shield'].active:
                         mana_loss = damage // target.status_effects['Mana Shield'].duration
@@ -2730,6 +2877,31 @@ class Ultima(Attack):
                          cost=35, damage=50, crit=4)
         self.subtyp = 'Non-elemental'
         self.rank = 2
+
+
+class Maelstrom(Attack):
+    """
+    Enemy Spell - Behemoth
+    """
+
+    def __init__(self):
+        super().__init__(name='Maelstrom', description="A massive maelstrom engulfs the target, reducing target HP to "
+                                                       "10% of max or 25% on a successful save.",
+                         cost=40, damage=0, crit=1)
+        self.subtyp = 'Non-elemental'
+
+    def cast(self, caster, target=None, special=False, fam=False, cover=False):
+        caster.mana.current -= self.cost
+        if random.randint(0, caster.intel) > random.randint(target.wisdom // 2, target.wisdom):
+            hp_per = int(target.health.max * 0.10)
+        else:
+            hp_per = int(target.health.max * 0.25)
+        target.health.current = min(target.health.current, hp_per)
+        if hp_per > target.health.current:
+            cast_message = f"{target.name} has their health reduced to 25%.\n"
+        else:
+            cast_message = f"The spell is ineffective.\n"
+        return cast_message
 
 
 class Meteor(Attack):
@@ -3029,7 +3201,7 @@ class Sandstorm(EarthSpell):
             if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
                     random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects['Blind'].active = True
-                target.status_effects['Blind'].duration = max(2, caster.stats.intel // 10)
+                target.status_effects['Blind'].duration = -1
                 special_str += f"{target.name} is blinded by the {self.name}.\n"
         return special_str
 
@@ -3080,6 +3252,7 @@ class Tornado(Hurricane):
         self.rank = 2
 
 
+# Shadow spells
 class ShadowSpell(Attack):
     def __init__(self, name, description, cost, damage, crit):
         super().__init__(name, description, cost, damage, crit)
@@ -3154,6 +3327,7 @@ class Terrify(ShadowSpell):
         return special_str
 
 
+# Death spells
 class Doom(DeathSpell):
     """
     Can't be reflected
@@ -3169,8 +3343,8 @@ class Doom(DeathSpell):
         cast_message = ""
         if not special:
             caster.mana.current -= self.cost
-        resist = target.check_mod('resist', typ=self.subtyp)
-        chance = target.check_mod('luck', luck_factor=10)
+        resist = target.check_mod('resist', enemy=caster, typ=self.subtyp)
+        chance = target.check_mod('luck', enemy=caster, luck_factor=10)
         if resist < 1:
             if not target.status_effects["Doom"].active:
                 if random.randint(caster.stats.charisma // 4, caster.stats.charisma) * (1 - resist) \
@@ -3200,8 +3374,8 @@ class Desoul(DeathSpell):
         cast_message = ""
         if not special:
             caster.mana.current -= self.cost
-        resist = target.check_mod('resist', typ=self.subtyp)
-        chance = target.check_mod('luck', luck_factor=10)
+        resist = target.check_mod('resist', enemy=caster, typ=self.subtyp)
+        chance = target.check_mod('luck', enemy=caster, luck_factor=10)
         if resist < 1:
             if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
@@ -3233,8 +3407,8 @@ class Petrify(DeathSpell):
         if target.equipment['OffHand'].name == 'MEDUSA SHIELD':
             cast_message += f"{target.name} uses the Medusa Shield to reflect {self.name} back at {caster.name}!"
             target = caster
-        resist = target.check_mod('resist', typ="Stone")
-        chance = target.check_mod('luck', luck_factor=1)
+        resist = target.check_mod('resist', enemy=caster, typ="Stone")
+        chance = target.check_mod('luck', enemy=caster, luck_factor=1)
         if resist < 1:
             if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
@@ -3262,8 +3436,8 @@ class Disintegrate(DeathSpell):
     def cast(self, caster, target=None, cover=False):
         cast_message = ""
         caster.mana.current -= self.cost
-        resist = target.check_mod('resist', typ=self.subtyp)
-        chance = target.check_mod('luck', luck_factor=15)
+        resist = target.check_mod('resist', enemy=caster, typ=self.subtyp)
+        chance = target.check_mod('luck', enemy=caster, luck_factor=15)
         if resist < 1:
             if random.randint(0, caster.stats.charisma) * (1 - resist) \
                     > random.randint(target.stats.con // 2, target.stats.con) + chance:
@@ -3279,6 +3453,7 @@ class Disintegrate(DeathSpell):
         return cast_message
 
 
+# Holy spells
 class Smite(HolySpell):
     """
     Can't be reflected; holy damage crit based on melee crit and can be absorbed by mana shield TODO
@@ -3291,14 +3466,12 @@ class Smite(HolySpell):
         self.school = 'Holy'
 
     def cast(self, caster, target=None, cover=False):
-        cast_message = ""
         caster.mana.current -= self.cost
-        wd_str, hit, crit = caster.weapon_damage(target, cover=cover)
-        cast_message += wd_str
+        cast_message, hit, crit = caster.weapon_damage(target, cover=cover)
         if hit and target.is_alive():
             spell_mod = caster.check_mod('magic', enemy=target)
             dam_red = target.check_mod('magic def', enemy=caster)
-            resist = target.check_mod('resist', 'Holy')
+            resist = target.check_mod('resist', enemy=caster, typ='Holy')
             damage = int(self.damage + spell_mod)
             damage *= crit
             if target.status_effects['Mana Shield'].active:
@@ -3369,9 +3542,19 @@ class Smite3(Smite):
 class Holy(Attack):
 
     def __init__(self):
-        super().__init__(name='Holy', description='The enemy is bathed in a holy light, cleansing it of evil.',
+        super().__init__(name='Holy', description="The enemy is bathed in a holy light, cleansing it of evil. There "
+                                                  "is a chance on critical hit that the target will be blinded for a "
+                                                  "duration.",
                          cost=4, damage=10, crit=10)
         self.subtyp = 'Holy'
+
+    def special_effect(self, caster, target, damage, crit):
+        special_str = ""
+        if crit:
+            special_str += f"{target.name} is blinded by the light!\n"
+            target.status_effects["Blind"].active = True
+            target.status_effects["Blind"].duration = 2
+        return special_str
 
 
 class Holy2(Holy):
@@ -3401,14 +3584,14 @@ class TurnUndead(HolySpell):
     def __init__(self):
         super().__init__(name="Turn Undead", description="A holy chant is recited with a chance to banish any nearby "
                                                          "undead from existence.",
-                         cost=12, damage=5, crit=5)
+                         cost=8, damage=5, crit=5)
 
     def cast(self, caster, target=None, cover=False):
         cast_message = ""
         caster.mana.current -= self.cost
         if target.enemy_typ == "Undead":
             crit = 1
-            chance = max(2, target.check_mod('luck', luck_factor=6))
+            chance = max(2, target.check_mod('luck', enemy=caster, luck_factor=6))
             if not random.randint(0, self.crit):
                 cast_message += "Critical hit!\n"
                 crit = 2
@@ -3419,7 +3602,7 @@ class TurnUndead(HolySpell):
             else:
                 spell_mod = caster.check_mod('magic', enemy=target)
                 dam_red = target.check_mod('magic def', enemy=caster)
-                resist = target.check_mod('resist', 'Holy')
+                resist = target.check_mod('resist', enemy=caster, typ='Holy')
                 damage = int(self.damage + spell_mod)
                 damage *= crit
                 damage = int(damage * (1 - resist))
@@ -3440,6 +3623,7 @@ class TurnUndead2(TurnUndead):
         self.crit = 3
 
 
+# Heal spells
 class Heal(HealSpell):
     """
     Critical heal will double healing amount
@@ -3520,6 +3704,7 @@ class Regen3(Regen):
         self.heal = 0.75
 
 
+# Support spells
 class Bless(SupportSpell):
 
     def __init__(self):
@@ -3652,12 +3837,32 @@ class Cleanse(SupportSpell):
 class ResistAll(SupportSpell):
 
     def __init__(self):
-        super().__init__(name="Resist All", description="", cost=25)
+        super().__init__(name="Resist All", description="",
+                         cost=25)
 
     def cast(self, caster, target=None, special=False):
         return f"All spell resistances are increased by 50% for {target.name}.\n"
 
 
+class DivineProtection(SupportSpell):
+
+    def __init__(self):
+        super().__init__(name="Divine Protection", description="A shimmering aura envelops the user, shielding them "
+                                                               "with the celestial power of the Divine. While active, "
+                                                               "Divine Protection fortifies defenses, significantly "
+                                                               "reducing incoming physical damage.",
+                         cost=12)
+
+    def cast(self, caster, target=None, cover=False):
+        caster.mana.current -= self.cost
+        def_plus = random.randint(5, 10) + (caster.stats.wisdom // 5)
+        caster.status_effects["Defense"].active = True
+        caster.status_effects["Defense"].duration = max(5, caster.status_effects["Defense"].duration)
+        caster.status_effects["Defense"].extra += def_plus
+        return f"A golden aura protects {target.name}, increasing defense by {def_plus}.\n"
+
+
+# Movement spells
 class Sanctuary(MovementSpell):
 
     def __init__(self):
@@ -3698,6 +3903,32 @@ class Teleport(MovementSpell):
         return cast_message
 
 
+# Illusion spells
+class MirrorImage(IllusionSpell):
+
+    def __init__(self):
+        super().__init__(name="Mirror Image", description="Create an illusion to fool the enemy into seeing multiple "
+                                                          "of the user, sometimes causing the enemy to target the "
+                                                          "wrong one. The illusion lasts until until the user is hit.",
+                         cost=8)
+        self.duplicates = 2
+
+    def cast(self, caster, target=None, cover=False):
+        cast_message = f"{caster.name} creates duplicates of themself to fool {target.name}."
+        caster.status_effects["Duplicates"].active = True
+        caster.status_effects["Duplicates"].duration = self.duplicates
+        return cast_message
+
+
+class MirrorImage2(MirrorImage):
+
+    def __init__(self):
+        super().__init__()
+        self.cost = 20
+        self.duplicates = 4
+
+
+# Status spells
 class BlindingFog(StatusSpell):
     """
     Rank 1 Enemy Spell
@@ -3717,7 +3948,7 @@ class BlindingFog(StatusSpell):
             if random.randint(caster.stats.intel // 2, caster.stats.intel) \
                     > random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects['Blind'].active = True
-                target.status_effects['Blind'].duration = self.turns
+                target.status_effects['Blind'].duration = -1
                 return f"{target.name} is blinded.\n"
             return "The spell had no effect.\n"
         return f"{target.name} is already blinded.\n"
@@ -3743,7 +3974,7 @@ class PoisonBreath(Attack):
                     not target.status_effects['Mana Shield'].active and \
                         not (target.cls.name == "Crusader" and target.power_up and target.status_effects['Power Up'].active):
             turns = max(2, caster.stats.intel // 10)
-            damage *= (target.health.max * 0.005)  # 0.5% of max health times the damage
+            damage = int(damage * (target.health.max * 0.005))  # 0.5% of max health times the damage
             target.status_effects['Poison'].active = True
             target.status_effects['Poison'].duration = max(turns, target.status_effects["Poison"].duration)
             target.status_effects['Poison'].extra = max(damage, target.status_effects["Poison"].extra)
@@ -3765,10 +3996,9 @@ class DiseaseBreath(StatusSpell):
     def cast(self, caster, target=None, cover=False):
         cast_message = "The spell does nothing.\n"
         caster.mana.current -= self.cost
-        t_chance = target.check_mod('luck', luck_factor=10)
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
-                random.randint(target.stats.con // 2, target.stats.con):
-            if not random.randint(0, 9 + t_chance):
+        t_chance = target.check_mod('luck', enemy=caster, luck_factor=10)
+        if random.randint(0, caster.stats.intel) > random.randint(target.stats.con // 2, target.stats.con):
+            if not random.randint(0, target.stats.con + t_chance):
                 cast_message = f"The disease cripples {target.name}, lowering their constitution by 1.\n"
                 target.stats.con -= 1
         return cast_message
@@ -3869,8 +4099,9 @@ class Dispel(StatusSpell):
         if not (special or (caster.cls.name == "Wizard" and caster.status_effects['Power Up'].active)):
             caster.mana.current -= self.cost
         if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
-            random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+            random.randint(0, target.stats.wisdom):
             target.status_effects["Regen"].active = False
+            target.status_effects["Reflect"].active = False
             target.status_effects["Attack"].active = False
             target.status_effects["Defense"].active = False
             target.status_effects["Magic"].active = False
@@ -3892,10 +4123,30 @@ class Silence(StatusSpell):
             if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
                 random.randint(target.stats.wisdom // 2, target.stats.wisdom):
                 target.status_effects['Silence'].active = True
-                target.status_effects['Silence'].duration = random.randint(1, max(2, caster.stats.intel // 10))
+                target.status_effects['Silence'].duration = -1
                 return f"{target.name} has been silenced.\n"
             return "The spell is ineffective.\n"
         return f"{target.name} is already silenced.\n"
+
+
+class Berserk(StatusSpell):
+
+    def __init__(self):
+        super().__init__(name="Berserk", description="Enrage the enemy, increasing damage but lowering accuracy and "
+                                                     "making them only attack.",
+                         cost=15)
+
+    def cast(self, caster, target=None, special=False, cover=False):
+        if not special:
+            caster.mana.current -= self.cost
+        if not target.status_effects["Berserk"].active:
+            if random.randint(caster.stats.intel // 2, caster.stats.intel) > \
+                random.randint(target.stats.wisdom // 2, target.stats.wisdom):
+                target.status_effects['Berserk'].active = True
+                target.status_effects['Berserk'].duration = random.randint(1, max(2, caster.stats.intel // 10))
+                return f"{target.name} is enraged.\n"
+            return "The spell is ineffective.\n"
+        return f"{target.name} is already enraged.\n"
 
 
 # Enemy spells
@@ -3923,205 +4174,228 @@ class Hellfire(Attack):
 
 
 # Parameters
-skill_dict = {'Warrior': {'3': ShieldSlam,
-                          '8': PiercingStrike,
-                          '10': Disarm,
-                          '15': Charge,
-                          '23': Parry,
-                          '28': BattleCry},
-              'Weapon Master': {'1': MortalStrike,
-                                '6': DoubleStrike},
-              'Berserker': {'5': MortalStrike2,
-                            '20': TripleStrike},
-              'Paladin': {'6': ShieldBlock,
-                          '18': DoubleStrike},
-              'Crusader': {'5': MortalStrike,
-                           '22': TripleStrike},
-              'Lancer': {'2': Jump,
-                         '15': DoubleJump},
-              'Dragoon': {'10': ShieldBlock,
-                          '20': TripleJump},
-              'Mage': {'25': ManaShield},
-              'Sorcerer': {'10': DoubleCast},
-              'Wizard': {'5': ManaShield2,
-                         '15': TripleCast},
-              'Warlock': {'1': Familiar,
-                          '5': HealthDrain,
-                          '15': ManaDrain,
-                          '20': Familiar2},
-              'Shadowcaster': {'10': HealthManaDrain,
-                               '20': Familiar3},
-              'Spellblade': {'1': EnhanceBlade,
-                             '10': ImbueWeapon,
-                             '15': Parry},
-              'Knight Enchanter': {'1': EnhanceArmor,
-                                   '10': DoubleStrike},
-              'Footpad': {'3': Disarm,
-                          '5': SmokeScreen,
-                          '6': PocketSand,
-                          '8': Backstab,
-                          '10': Steal,
-                          '12': KidneyPunch,
-                          '16': DoubleStrike,
-                          '19': SleepingPowder,
-                          '25': Parry},
-              'Thief': {'5': Lockpick,
-                        '8': TripleStrike,
-                        '12': GoldToss,
-                        '15': Mug,
-                        '20': PoisonStrike},
-              'Rogue': {'5': SneakAttack,
-                        '10': SlotMachine,
-                        '20': QuadStrike},
-              'Inquisitor': {'1': Reveal,
-                             '2': PiercingStrike,
-                             '5': Inspect,
-                             '10': ExploitWeakness,
-                             '12': TripleStrike,
-                             '14': KeenEye,
-                             '15': ShieldBlock},
-              'Seeker': {'30': QuadStrike},
-              'Assassin': {'5': TripleStrike,
-                           '8': PoisonStrike,
-                           '15': Lockpick,
-                           '20': QuadStrike},
-              'Ninja': {'8': Mug,
-                        '25': FlurryBlades},
-              'Healer': {},
-              'Cleric': {'6': ShieldSlam,
-                         '12': ShieldBlock},
-              'Templar': {'1': Parry,
-                          '4': PiercingStrike,
-                          '14': Charge,
-                          '22': DoubleStrike},
-              'Priest': {'10': ManaShield},
-              'Archbishop': {'5': DoubleCast,
-                             '15': ManaShield2},
-              'Monk': {'1': ChiHeal,
-                       '3': DoubleStrike,
-                       '5': LegSweep,
-                       '10': PurityBody,
-                       '19': TripleStrike,
-                       '25': Parry},
-              'Master Monk': {'1': Evasion,
-                              '10': QuadStrike,
-                              '15': PurityBody2},
-              'Pathfinder': {},
-              'Druid': {'2': Transform,
-                        '10': Transform2,
-                        '15': MortalStrike},
-              'Lycan': {'1': Transform3,
-                        '11': Charge,
-                        '15': BattleCry,
-                        '25': MortalStrike2},
-              'Diviner': {'1': LearnSpell,
-                          '18': DoubleCast},
-              'Geomancer': {'1': LearnSpell2,
-                            '25': TripleCast},
-              'Shaman': {'1': ElementalStrike,
-                         '6': PiercingStrike,
-                         '14': DoubleStrike},
-              'Soulcatcher': {'1': AbsorbEssence,
-                              '2': Parry,
-                              '9': TripleStrike},
+skill_dict = {"Warrior": {"3": ShieldSlam,
+                          "8": PiercingStrike,
+                          "10": Disarm,
+                          "15": Charge,
+                          "23": Parry,
+                          "25": TrueStrike,
+                          "28": BattleCry},
+              "Weapon Master": {"1": MortalStrike,
+                                "6": DoubleStrike,
+                                "21": TruePiercingStrike},
+              "Berserker": {"5": MortalStrike2,
+                            "20": TripleStrike},
+              "Paladin": {"6": ShieldBlock,
+                          "13": Goad,
+                          "18": DoubleStrike},
+              "Crusader": {"5": MortalStrike,
+                           "22": TripleStrike,
+                           "40": TruePiercingStrike},
+              "Lancer": {"2": Jump,
+                         "15": DoubleJump},
+              "Dragoon": {"1": TruePiercingStrike,
+                          "10": ShieldBlock,
+                          "20": TripleJump},
+              "Sentinel": {"1": ShieldBlock,
+                                  "3": Goad},
+              "Stalwart Defender": {},
+              "Mage": {"25": ManaShield},
+              "Sorcerer": {"10": DoubleCast,
+                           "18": MirrorImage},
+              "Wizard": {"5": ManaShield2,
+                         "15": TripleCast,
+                         "30": MirrorImage2},
+              "Warlock": {"1": Familiar,
+                          "5": HealthDrain,
+                          "15": ManaDrain,
+                          "20": Familiar2},
+              "Shadowcaster": {"10": HealthManaDrain,
+                               "20": Familiar3},
+              "Spellblade": {"1": EnhanceBlade,
+                             "10": ImbueWeapon,
+                             "15": Parry,
+                             "28": TrueStrike},
+              "Knight Enchanter": {"1": EnhanceArmor,
+                                   "10": DoubleStrike},
+              "Footpad": {"3": Disarm,
+                          "5": SmokeScreen,
+                          "6": PocketSand,
+                          "8": Backstab,
+                          "10": Steal,
+                          "12": KidneyPunch,
+                          "16": DoubleStrike,
+                          "19": SleepingPowder,
+                          "25": Parry},
+              "Thief": {"5": Lockpick,
+                        "12": GoldToss,
+                        "15": Mug,
+                        "20": PoisonStrike},
+              "Rogue": {"5": SneakAttack,
+                        "10": SlotMachine,
+                        "12": TripleStrike},
+              "Inquisitor": {"1": Reveal,
+                             "2": PiercingStrike,
+                             "5": Inspect,
+                             "10": ExploitWeakness,
+                             "14": KeenEye,
+                             "15": ShieldBlock,
+                             "22": TrueStrike},
+              "Seeker": {"1": Cartography,
+                         "16": TripleStrike,
+                         "25": TruePiercingStrike},
+              "Assassin": {"8": PoisonStrike,
+                           "15": Lockpick,
+                           "18": TripleStrike},
+              "Ninja": {"8": Mug,
+                        "25": FlurryBlades},
+              "Healer": {},
+              "Cleric": {"6": ShieldSlam,
+                         "12": ShieldBlock,
+                         "27": TrueStrike},
+              "Templar": {"1": Parry,
+                          "4": PiercingStrike,
+                          "6": Goad,
+                          "14": Charge,
+                          "22": DoubleStrike,
+                          "45": TruePiercingStrike},
+              "Priest": {"10": ManaShield},
+              "Archbishop": {"5": DoubleCast,
+                             "15": ManaShield2},
+              "Monk": {"1": ChiHeal,
+                       "3": DoubleStrike,
+                       "5": LegSweep,
+                       "7": TrueStrike,
+                       "10": PurityBody,
+                       "25": Parry},
+              "Master Monk": {"1": Evasion,
+                              "10": TripleStrike,
+                              "15": PurityBody2},
+              "Pathfinder": {},
+              "Druid": {"2": Transform,
+                        "10": Transform2,
+                        "15": MortalStrike},
+              "Lycan": {"1": Transform3,
+                        "11": Charge,
+                        "15": BattleCry,
+                        "25": MortalStrike2},
+              "Diviner": {"1": LearnSpell,
+                          "18": DoubleCast},
+              "Geomancer": {"1": LearnSpell2,
+                            "25": TripleCast},
+              "Shaman": {"1": ElementalStrike,
+                         "6": PiercingStrike,
+                         "14": DoubleStrike,
+                         "19": TrueStrike},
+              "Soulcatcher": {"1": AbsorbEssence,
+                              "2": Parry,
+                              "9": TripleStrike,
+                              "29": TruePiercingStrike},
               }
 
-spell_dict = {'Warrior': {},
-              'Weapon Master': {},
-              'Berserker': {},
-              'Paladin': {'1': Heal,
-                          '4': Smite,
-                          '16': Heal2},
-              'Crusader': {'3': Smite2,
-                           '8': Heal3,
-                           '16': Cleanse,
-                           '18': Smite3,
-                           '20': Dispel},
-              'Lancer': {},
-              'Dragoon': {},
-              'Mage': {'2': Firebolt,
-                       '6': MagicMissile,
-                       '8': IceLance,
-                       '13': Shock,
-                       '16': Enfeeble},
-              'Sorcerer': {'2': Icicle,
-                           '6': Reflect,
-                           '8': Lightning,
-                           '10': Sleep,
-                           '15': Fireball,
-                           '16': Dispel,
-                           '18': MagicMissile2,
-                           '20': WeakenMind},
-              'Wizard': {'4': Firestorm,
-                         '7': Boost,
-                         '10': IceBlizzard,
-                         '15': Electrocution,
-                         '20': Teleport,
-                         '25': MagicMissile3},
-              'Warlock': {'1': ShadowBolt,
-                          '4': Corruption,
-                          '10': Terrify,
-                          '12': ShadowBolt2,
-                          '15': Doom,
-                          '19': Dispel},
-              'Shadowcaster': {'8': ShadowBolt3,
-                               '18': Desoul},
-              'Spellblade': {'20': Reflect},
-              'Knight Enchanter': {'1': EnhanceArmor,
-                                   '3': Fireball,
-                                   '9': Icicle,
-                                   '12': Lightning,
-                                   '20': Dispel},
-              'Footpad': {},
-              'Thief': {},
-              'Rogue': {},
-              'Inquisitor': {'3': Dispel,
-                             '12': Enfeeble,
-                             '15': Reflect},
-              'Seeker': {'1': Teleport,
-                         '4': ResistAll,
-                         '10': Sanctuary},
-              'Assassin': {},
-              'Ninja': {'20': Desoul},
-              'Healer': {'2': Heal,
-                         '8': Regen,
-                         '10': Holy,
-                         '26': Heal2},
-              'Cleric': {'1': Smite,
-                         '3': TurnUndead,
-                         '5': Bless,
-                         '14': Cleanse,
-                         '15': Silence,
-                         '16': Smite2,
-                         '19': TurnUndead2},
-              'Templar': {'6': Regen2,
-                          '10': Smite3,
-                          '18': Dispel},
-              'Priest': {'1': Regen2,
-                         '3': Holy2,
-                         '6': Shell,
-                         '11': Cleanse,
-                         '15': Bless,
-                         '17': Dispel,
-                         '30': Heal3},
-              'Archbishop': {'4': Holy3,
-                             '6': Silence,
-                             '7': Regen3,
-                             '20': Resurrection},
-              'Monk': {'15': Shell},
-              'Master Monk': {'2': Reflect,
-                              '12': Dispel},
-              'Pathfinder': {'5': Tremor,
-                             '11': WaterJet,
-                             '14': Gust,
-                             '19': Scorch},
-              'Druid': {'5': Regen},
-              'Lycan': {'8': Dispel},
-              'Diviner': {'3': Enfeeble,
-                          '14': Dispel},
-              'Geomancer': {'10': WeakenMind,
-                            '15': Boost},
-              'Shaman': {'9': Regen},
-              'Soulcatcher': {'6': Dispel,
-                              '12': Desoul},
+spell_dict = {"Warrior": {},
+              "Weapon Master": {},
+              "Berserker": {},
+              "Paladin": {"1": Heal,
+                          "4": Smite,
+                          "16": Heal2,
+                          "24": DivineProtection},
+              "Crusader": {"3": Smite2,
+                           "8": Heal3,
+                           "16": Cleanse,
+                           "18": Smite3,
+                           "20": Dispel},
+              "Lancer": {},
+              "Dragoon": {},
+              "Sentinel": {},
+              "Stalwart Defender": {},
+              "Mage": {"2": Firebolt,
+                       "6": MagicMissile,
+                       "8": IceLance,
+                       "13": Shock,
+                       "16": Enfeeble},
+              "Sorcerer": {"2": Icicle,
+                           "6": Reflect,
+                           "8": Lightning,
+                           "10": Sleep,
+                           "15": Fireball,
+                           "16": Dispel,
+                           "18": MagicMissile2,
+                           "20": WeakenMind},
+              "Wizard": {"4": Firestorm,
+                         "7": Boost,
+                         "10": IceBlizzard,
+                         "15": Electrocution,
+                         "20": Teleport,
+                         "25": MagicMissile3},
+              "Warlock": {"1": ShadowBolt,
+                          "4": Corruption,
+                          "10": Terrify,
+                          "12": ShadowBolt2,
+                          "15": Doom,
+                          "19": Dispel},
+              "Shadowcaster": {"8": ShadowBolt3,
+                               "18": Desoul},
+              "Spellblade": {"20": Reflect},
+              "Knight Enchanter": {"1": EnhanceArmor,
+                                   "3": Fireball,
+                                   "9": Icicle,
+                                   "12": Lightning,
+                                   "20": Dispel},
+              "Footpad": {},
+              "Thief": {},
+              "Rogue": {},
+              "Inquisitor": {"3": Dispel,
+                             "8": Silence,
+                             "12": Enfeeble,
+                             "15": Reflect},
+              "Seeker": {"1": Teleport,
+                         "4": ResistAll,
+                         "10": Sanctuary,
+                         "16": WeakenMind},
+              "Assassin": {},
+              "Ninja": {"20": Desoul},
+              "Healer": {"2": Heal,
+                         "3": TurnUndead,
+                         "8": Regen,
+                         "10": Holy,
+                         "26": Heal2},
+              "Cleric": {"1": Smite,
+                         "5": Bless,
+                         "14": Cleanse,
+                         "15": Silence,
+                         "16": Smite2,
+                         "19": TurnUndead2},
+              "Templar": {"6": Regen2,
+                          "10": Smite3,
+                          "18": Dispel},
+              "Priest": {"1": Regen2,
+                         "3": Holy2,
+                         "6": Shell,
+                         "11": Cleanse,
+                         "15": Bless,
+                         "17": Dispel,
+                         "21": Berserk,
+                         "30": Heal3},
+              "Archbishop": {"4": Holy3,
+                             "6": Silence,
+                             "7": Regen3,
+                             "20": Resurrection},
+              "Monk": {"15": Shell},
+              "Master Monk": {"2": Reflect,
+                              "12": Dispel},
+              "Pathfinder": {"5": Tremor,
+                             "11": WaterJet,
+                             "14": Gust,
+                             "19": Scorch},
+              "Druid": {"5": Regen},
+              "Lycan": {"8": Dispel},
+              "Diviner": {"3": Enfeeble,
+                          "14": Dispel,
+                          "23": Berserk},
+              "Geomancer": {"10": WeakenMind,
+                            "15": Boost},
+              "Shaman": {"9": Regen},
+              "Soulcatcher": {"6": Dispel,
+                              "12": Desoul},
               }

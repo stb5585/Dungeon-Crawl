@@ -13,7 +13,7 @@ Standard
 - glob
 - math
 - os
-- pickle
+- dill
 - random
 - re
 - sys

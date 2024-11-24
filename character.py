@@ -81,7 +81,7 @@ class Character:
         __init__():
             Initializes a Character object.
         
-        statuses(game, end=False):
+        statuses(end=False):
             Manages and updates the character's status effects, applying their respective consequences
             and handling the end of combat.
     """
@@ -109,13 +109,16 @@ class Character:
                              "Poison": StatusEffect(False, 0, 0),
                              "DOT": StatusEffect(False, 0, 0),
                              "Bleed": StatusEffect(False, 0, 0),
+                             "Berserk": StatusEffect(False, 0),
                              "Attack": StatusEffect(False, 0, 0),
                              "Defense": StatusEffect(False, 0, 0),
                              "Magic": StatusEffect(False, 0, 0),
                              "Magic Defense": StatusEffect(False, 0, 0),
+                            #  "Resist": StatusEffect(False, 0, 0),
                              "Regen": StatusEffect(False, 0, 0),
                              "Reflect": StatusEffect(False, 0),
                              "Mana Shield": StatusEffect(False, 0),
+                             "Duplicates": StatusEffect(False, 0),
                              "Power Up": StatusEffect(False, 0, 0)}
         self.resistance = {'Fire': 0.,
                            'Ice': 0.,
@@ -133,6 +136,11 @@ class Character:
         self.invisible = False
         self.sight = False
 
+    def incapacitated(self):
+        return any([self.status_effects["Sleep"].active,
+                    self.status_effects["Prone"].active,
+                    self.status_effects["Stun"].active])
+
     def hit_chance(self, defender, typ='weapon'):
         """
         Calculate hit chance based on various factors.
@@ -144,14 +152,13 @@ class Character:
         """
 
         hit_mod = sigmoid(random.randint(self.stats.dex // 2, self.stats.dex) /
-                          random.randint(defender.stats.dex // 4, defender.stats.dex))  # base hit percentage
+                          random.randint(defender.stats.dex // 4, defender.stats.dex // 2))  # base hit percentage
         if typ == 'weapon':
-            hit_mod *= 1 + 0.25 * ('Accuracy' in self.equipment['Ring'].mod)  # accuracy adds 25% chance to hit
-            hit_mod *= 1 - 0.5 * self.status_effects['Blind'].active  # blind lowers accuracy by 50%
+            hit_mod *= 1 + (0.25 * ('Accuracy' in self.equipment['Ring'].mod))  # accuracy adds 25% chance to hit
+            hit_mod *= 1 - (0.5 * self.status_effects['Blind'].active)  # blind lowers accuracy by 50%
             hit_mod *= 1 - (1 / 10) * defender.flying  # flying lowers accuracy by 10%
-            hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
-        else:
-            hit_mod = 1
+            hit_mod *= 1 - (0.25 * (self.status_effects['Disarm'].active))
+        hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
         hit_mod *= 1 - (1 / 3) * defender.invisible  # invisible lowers accuracy by 33.3%
         if hasattr(self, "encumbered"):
             if self.encumbered:
@@ -162,7 +169,7 @@ class Character:
         armor_factor = {"None": 1, "Natural": 1, "Cloth": 1, "Light": 2, "Medium": 3, "Heavy": 4}
         a_chance = random.randint(attacker.stats.dex // 4, attacker.stats.dex) + \
             attacker.check_mod('luck', enemy=self, luck_factor=10)
-        d_chance = random.randint(0, self.stats.dex) + self.check_mod('luck', luck_factor=15)
+        d_chance = random.randint(0, self.stats.dex) + self.check_mod('luck', enemy=attacker, luck_factor=15)
         chance = (d_chance - a_chance) / (a_chance + d_chance) / armor_factor[self.equipment['Armor'].subtyp]
         chance += 0.1 * ('Dodge' in self.equipment['Ring'].mod + "Evasion" in self.spellbook['Skills'])
         if self.cls.name == "Seeker" or (self.cls.name == "Templar" and self.status_effects['Power Up'].active):
@@ -179,7 +186,7 @@ class Character:
             crit_chance += (0.1 * self.power_up)
         return crit_chance
 
-    def weapon_damage(self, defender, dmg_mod=1., crit=1, ignore=False, cover=False, hit=False):
+    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False):
         """
         Function that controls melee attacks during combat
         defender(Character): the target of the attack
@@ -200,6 +207,7 @@ class Character:
             hits.append(hit)
             crits.append(1)
             ignore = ignore or self.equipment[att].ignore
+            dodge = False
             # attacker variables
             typ = 'attacks'
             if self.equipment[att].subtyp == 'Natural':
@@ -210,20 +218,16 @@ class Character:
                     break
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
+            dmg = random.randint(dmg // 2, dmg)
             crit_per = random.uniform(1, crits[i])
-            damage = max(0, int(random.randint(dmg // 2, dmg) * crit_per))
+            damage = max(0, dmg * crit_per)
 
             # defender variables
-            prone = defender.status_effects['Prone'].active
-            stun = defender.status_effects['Stun'].active
-            sleep = defender.status_effects['Sleep'].active
-            dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
-            resist = defender.check_mod('resist', typ='Physical', ultimate=self.equipment[att].ultimate)
-            dodge = defender.dodge_chance(self) > random.random()
             if not hit:
+                dodge = defender.dodge_chance(self) > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
                 hits[i] = hit_per > random.random()
-            if any([prone, stun, sleep]):
+            if defender.incapacitated():
                 dodge = False
                 hits[i] = True
 
@@ -239,6 +243,14 @@ class Character:
                 else:
                     weapon_dam_str += f"{defender.name} evades {self.name}'s attack.\n"
             else:
+                if hits[i] and defender.status_effects["Duplicates"].active:
+                    if random.randint(0, defender.status_effects["Duplicates"].duration):
+                        hits[i] = False
+                        use_str += (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
+                                    f"vanishes from existence.\n")
+                        defender.status_effects["Duplicates"].duration -= 1
+                        if not defender.status_effects["Duplicates"].duration:
+                            defender.status_effects["Duplicates"].active = False
                 if hits[i]:
                     if crits[i] > 1:
                         weapon_dam_str += "Critical hit!\n"
@@ -250,17 +262,18 @@ class Character:
                            'Dodge' in defender.equipment['Ring'].mod) and
                           not defender.status_effects['Mana Shield'].active and \
                             not (defender.cls.name == "Crusader" and defender.power_up and 
-                                 defender.status_effects['Power Up'].active)) and (not stun and not sleep):
+                                 defender.status_effects['Power Up'].active)) and not defender.incapacitated():
                         blk_chance = defender.check_mod('shield', enemy=self) / 100
                         if blk_chance > random.random():
                             blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage)
                             if 'Shield Block' in defender.spellbook['Skills']:
                                 blk_per *= 1.25
-                            blk_per = min(1, blk_per)
-                            damage *= (1 - blk_per)
-                            damage = int(damage)
-                            weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
-                                               f"{int(blk_per * 100)} percent of the damage.\n")
+                            if blk_per > 0:
+                                blk_per = min(1, blk_per)
+                                damage *= (1 - blk_per)
+                                damage = int(damage)
+                                weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
+                                                f"{round(blk_per * 100)} percent of the damage.\n")
                     elif defender.status_effects['Mana Shield'].active:
                         mana_loss = damage // defender.status_effects['Mana Shield'].duration
                         if mana_loss > defender.mana.current:
@@ -293,11 +306,18 @@ class Character:
                         self.health.current -= ref_dam
                         weapon_dam_str += f"{ref_dam} is reflected back at {self.name}.\n"
                     if damage > 0:
-                        damage = max(0, int((damage - dam_red) * (1 - resist)))
+                        e_resist = 0
+                        if self.equipment[att].element:
+                            e_resist = defender.check_mod('resist', enemy=self, typ=self.equipment[att].element)
+                        p_resist = defender.check_mod('resist', enemy=self, typ='Physical', ultimate=self.equipment[att].ultimate)
+                        dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
+                        dam_red = random.randint(dam_red // 2, dam_red)
+                        damage = max(0, int((damage - dam_red) * (1 - p_resist) * (1 - e_resist)))
                         defender.health.current -= damage
                         if damage > 0:
                             weapon_dam_str += f"{self.name} {typ} {defender.name} for {damage} damage.\n"
-                            if sleep and not random.randint(0, 1):
+                            if defender.status_effects["Sleep"].active and \
+                                not random.randint(0, defender.status_effects['Sleep'].duration):
                                     weapon_dam_str += f"The attack awakens {defender.name}!\n"
                                     defender.status_effects['Sleep'].active = False
                                     defender.status_effects['Sleep'].duration = 0
@@ -320,7 +340,7 @@ class Character:
                     weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
             if hits[i]:
                 weapon_dam_str += defender.equipment['Armor'].special_effect(defender, self)
-                if defender.is_alive():
+                if defender.is_alive() and damage > 0 and not defender.status_effects["Mana Shield"].active:
                     weapon_dam_str += self.equipment[att].special_effect(self, defender, damage=damage, crit=crits[i])
                 if self.cls.name == "Dragoon" and self.power_up:
                     self.status_effects['Power Up'].active = True
@@ -337,10 +357,13 @@ class Character:
         success = False
         flee_message = f"{self.name} couldn't escape from the {enemy.name}."
         if smoke:
-            flee_message = f"{self.name} disappears in a cloud of smoke."
-            self.state = 'normal'
-            success = True
-        chance = self.check_mod('luck', luck_factor=10)
+            if not enemy.sight or self.invisible:
+                flee_message = f"{self.name} disappears in a cloud of smoke."
+                self.state = 'normal'
+                success = True
+            else:
+                flee_message = f"{enemy.name} is not fooled by cheap parlor tricks."
+        chance = self.check_mod('luck', enemy=enemy, luck_factor=10)
         if random.randint(self.stats.dex // 2, self.stats.dex) + chance > \
                 random.randint(enemy.stats.dex // 2, enemy.stats.dex) or stun:
             flee_message = f"{self.name} flees from the {enemy.name}."
@@ -375,7 +398,10 @@ class Character:
         if quest:
             self.quests(item=item)
 
-    def statuses(self, game, end=False):
+    def statuses(self, end=False):
+        """
+        Silence, Blind, and Disarm are indefinite unless cured
+        """
 
         def default(status=None, end_combat=False):
             if end_combat:
@@ -400,21 +426,10 @@ class Character:
                 else:
                     self.status_effects['Prone'].duration -= 1
                     status_text += f"{self.name} is still prone.\n"
-            if self.status_effects['Disarm'].active and all([not self.status_effects['Stun'].active,
-                                                            not self.status_effects['Sleep'].active]):
-                self.status_effects['Disarm'].duration -= 1
-                if self.status_effects['Disarm'].duration == 0:
-                    status_text += f"{self.name} picks up their weapon.\n"
-                    default(status='Disarm')
-            if self.status_effects['Silence'].active:
-                self.status_effects['Silence'].duration -= 1
-                if self.status_effects['Silence'].duration == 0:
-                    status_text += f"{self.name} is no longer silenced.\n"
-                    default(status='Silence')
             if self.status_effects['Poison'].active:
                 self.status_effects['Poison'].duration -= 1
                 poison_damage = self.status_effects['Poison'].extra
-                poison_damage -= random.randint(0, self.stats.con)
+                poison_damage -= random.randint(0, self.stats.con // 4)
                 if poison_damage > 0:
                     self.health.current -= poison_damage
                     status_text += f"The poison damages {self.name} for {poison_damage} health points.\n"
@@ -503,6 +518,11 @@ class Character:
                         status_text += (f"The shield around {self.name} explodes, dealing "
                                         f"{self.status_effects['Power Up'].extra} damage to the enemy.\n")
                     default(status='Power Up')
+            if self.status_effects['Berserk'].active:
+                self.status_effects['Berserk'].duration -= 1
+                if self.status_effects['Berserk'].duration == 0:
+                    status_text += f"{self.name} has regained their composure.\n"
+                    default(status="Berserk")
             if self.status_effects['Doom'].active:
                 self.status_effects['Doom'].duration -= 1
                 if self.status_effects['Doom'].duration == 0:
