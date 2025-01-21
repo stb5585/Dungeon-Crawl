@@ -7,7 +7,7 @@ Wall	CavePath1	CavePath1	Wall	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	
 CavePath1	CavePath1	Wall	CavePath1	Wall	Wall	Wall	Wall	CavePath1	Wall	Wall	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	CavePath2
 Wall	CavePath1	CavePath1	LockedDoor	EmptyCavePath	Wall	CavePath1	Wall	CavePath1	Wall	Wall	LockedChestRoom2	CavePath2	LockedDoor	UnlockedChestRoom2	LockedDoor	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	CavePath1	Wall	Wall	EmptyCavePath	Wall	CavePath1	CavePath1	CavePath1	FakeWall	FakeWall	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	CavePath2
-CavePath1	CavePath1	Wall	Wall	LockedChestRoom2	Wall	Wall	Wall	CavePath1	Wall	UnlockedChestRoom	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall
+CavePath1	CavePath1	Wall	Wall	UndergroundSpring	Wall	Wall	Wall	CavePath1	Wall	UnlockedChestRoom	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall
 Wall	CavePath1	Wall	UnlockedChestRoom	Wall	CavePath1	CavePath1	CavePath1	CavePath1	Wall	Wall	Wall	CavePath2	Wall	LockedChestRoom2	Wall	CavePath2	Wall	CavePath2	CavePath2
 Wall	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	Wall	FakeWall	Wall	CavePath2	CavePath2	Wall	Wall	Wall	CavePath2	CavePath2	Wall	CavePath2
 StairsUp	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	Wall	FakeWall	EmptyCavePath	Wall	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	Wall	CavePath2	CavePath2

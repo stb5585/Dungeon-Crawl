@@ -84,8 +84,53 @@ def scaled_decay_function(x, rate=0.1):
     return 0.5 + decay_value * 0.75  # Scale and shift to fit [0.5, 1.25]
 
 
+def save_game_popup(game):
+    curses.curs_set(0)  # Hide cursor
+    height, width = game.stdscr.getmaxyx()
+    popup_height, popup_width = 9, 50
+    popup_y, popup_x = (height - popup_height) // 2, (width - popup_width) // 2
+
+    # Create popup window
+    popup = curses.newwin(popup_height, popup_width, popup_y, popup_x)
+    popup.box()
+    popup.addstr(1, (popup_width - 9) // 2, "Save Game", curses.A_BOLD)
+    popup.addstr(3, (popup_width - 36) // 2, "Saving your progress, please wait...")
+
+    # Progress bar variables
+    bar_width = popup_width - 4
+    progress = 0
+    steps = 20
+    delay = 3 / steps  # Total delay split across steps
+
+    # Draw initial progress bar
+    popup.addstr(5, 2, "[" + " " * (bar_width - 2) + "]")
+    popup.refresh()
+
+    # Simulate progress
+    for i in range(steps + 1):
+        progress = int(i * (bar_width - 2) / steps)
+        popup.addstr(5, 3, "#" * progress)
+        popup.refresh()
+        if not game.debug_mode:
+            time.sleep(delay)
+
+    # Completion message
+    popup.addstr(7, (popup_width - 24) // 2, "Game saved successfully!", curses.A_BOLD)
+    popup.refresh()
+    if not game.debug_mode:
+        time.sleep(2)
+
+    # Cleanup
+    popup.clear()
+    game.stdscr.refresh()
+
+
 # objects
 class MainMenu:
+    """
+    
+    """
+
     def __init__(self, game):
         self.game = game
         self.height, self.width = game.stdscr.getmaxyx()
@@ -154,6 +199,10 @@ class MainMenu:
 
 
 class NewGameMenu:
+    """
+    
+    """
+
     def __init__(self, game):
         self.game = game
         self.height, self.width = game.stdscr.getmaxyx()
@@ -201,27 +250,31 @@ class NewGameMenu:
                 for i, line in enumerate(lines):
                     self.desc_win.addstr(i + 3, 3, line)
                 self.desc_win.addstr(9, self.width // 3 - 5, "Base Stats", curses.A_BOLD)
-                stats_str = ["{:15}{:>4}".format("Strength:", f"{self.race.strength}"),
-                            "{:15}{:>4}".format("Intelligence:", f"{self.race.intel}"),
-                            "{:15}{:>4}".format("Wisdom:", f"{self.race.wisdom}"),
-                            "{:15}{:>4}".format("Constitution:", f"{self.race.con}"),
-                            "{:15}{:>4}".format("Charisma:", f"{self.race.charisma}"),
-                            "{:15}{:>4}".format("Dexterity:", f"{self.race.dex}")]
+                stats_str = ["{:14}{:>4}    {:14}{:>4}".format(
+                                "Strength:", f"{self.race.strength}", "Health:", f"{self.race.con * 2}"),
+                            "{:14}{:>4}    {:14}{:>4}".format(
+                                "Intelligence:", f"{self.race.intel}", "Mana:", f"{self.race.intel + self.race.wisdom // 2}"),
+                            "{:14}{:>4}    {:14}{:>4}".format(
+                                "Wisdom:", f"{self.race.wisdom}", "Attack:", f"{self.race.base_attack}"),
+                            "{:14}{:>4}    {:14}{:>4}".format(
+                                "Constitution:", f"{self.race.con}", "Defense:", f"{self.race.base_defense}"),
+                            "{:14}{:>4}    {:14}{:>4}".format(
+                                "Charisma:", f"{self.race.charisma}", "Magic:", f"{self.race.base_magic}"),
+                            "{:14}{:>4}    {:14}{:>4}".format(
+                                "Dexterity:", f"{self.race.dex}", "Magic Defense:", f"{self.race.base_magic_def}")]
                 for j, line in enumerate(stats_str):
                     self.desc_win.addstr(j + 11, (self.width // 3) - (len(line) // 2), line)
                 self.desc_win.addstr(j + 13, self.width // 3 - 6, "Resistances", curses.A_BOLD)
-                resist_str = ["{:12}{:>6}  {:12}{:>6}".format(
-                                "Fire:", f"{self.race.resistance['Fire']}", "Shadow:", f"{self.race.resistance['Shadow']}"),
-                            "{:12}{:>6}  {:12}{:>6}".format(
-                                "Ice:", f"{self.race.resistance['Ice']}", "Death:", f"{self.race.resistance['Death']}"),
-                            "{:12}{:>6}  {:12}{:>6}".format(
-                                "Electric:", f"{self.race.resistance['Electric']}", "Stone:", f"{self.race.resistance['Stone']}"),
-                            "{:12}{:>6}  {:12}{:>6}".format(
-                                "Water:", f"{self.race.resistance['Water']}", "Holy:", f"{self.race.resistance['Holy']}"),
-                            "{:12}{:>6}  {:12}{:>6}".format(
-                                "Earth:", f"{self.race.resistance['Earth']}", "Poison:", f"{self.race.resistance['Poison']}"),
-                            "{:12}{:>6}  {:12}{:>6}".format(
-                                "Wind:", f"{self.race.resistance['Wind']}", "Physical:", f"{self.race.resistance['Physical']}")]
+                resist_str = ["{:12}{:>6}    {:12}{:>6}".format(
+                                  "Fire:", f"{self.race.resistance['Fire']}", "Ice:", f"{self.race.resistance['Ice']}"),
+                              "{:12}{:>6}    {:12}{:>6}".format(
+                                  "Electric:", f"{self.race.resistance['Electric']}", "Water:", f"{self.race.resistance['Water']}"),
+                              "{:12}{:>6}    {:12}{:>6}".format(
+                                  "Earth:", f"{self.race.resistance['Earth']}", "Wind:", f"{self.race.resistance['Wind']}"),
+                              "{:12}{:>6}    {:12}{:>6}".format(
+                                  "Shadow:", f"{self.race.resistance['Shadow']}", "Holy:", f"{self.race.resistance['Holy']}"),
+                              "{:12}{:>6}    {:12}{:>6}".format(
+                                  "Poison:", f"{self.race.resistance['Poison']}", "Physical:", f"{self.race.resistance['Physical']}")]
                 for k, line in enumerate(resist_str):
                     self.desc_win.addstr(j + k + 15, (self.width // 3) - (len(line) // 2), line)
                 self.desc_win.addstr(j + k + 17, self.width // 3 - 9, "Available Classes", curses.A_BOLD)
@@ -234,18 +287,25 @@ class NewGameMenu:
                 for i, line in enumerate(lines):
                     self.desc_win.addstr(i + 3, 3, line)
                 self.desc_win.addstr(9, self.width // 3 - 7, "Starting Stats", curses.A_BOLD)
-                stat_plus_str = ["{:15}{:>4}({:>2})".format(
-                                    "Strength:", f"{self.race.strength+self.cls.str_plus}", f"+{self.cls.str_plus}"),
-                                "{:15}{:>4}({:>2})".format(
-                                    "Intelligence:", f"{self.race.intel+self.cls.int_plus}", f"+{self.cls.int_plus}"),
-                                "{:15}{:>4}({:>2})".format(
-                                    "Wisdom:", f"{self.race.wisdom+self.cls.wis_plus}", f"+{self.cls.wis_plus}"),
-                                "{:15}{:>4}({:>2})".format(
-                                    "Constitution:",  f"{self.race.con+self.cls.con_plus}", f"+{self.cls.con_plus}"),
-                                "{:15}{:>4}({:>2})".format(
-                                    "Charisma:", f"{self.race.charisma+self.cls.cha_plus}", f"+{self.cls.cha_plus}"),
-                                "{:15}{:>4}({:>2})".format(
-                                    "Dexterity:", f"{self.race.dex+self.cls.dex_plus}", f"+{self.cls.dex_plus}")]
+                stat_plus_str = ["{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Strength:", f"{self.race.strength+self.cls.str_plus}", f"+{self.cls.str_plus}",
+                                    "Health:", f"{(self.race.con+self.cls.con_plus)*2}", f"+{(self.cls.con_plus*2)}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Intelligence:", f"{self.race.intel+self.cls.int_plus}", f"+{self.cls.int_plus}",
+                                    "Mana:", f"{(self.race.intel+self.cls.int_plus)*2}", f"+{self.cls.int_plus*2}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Wisdom:", f"{self.race.wisdom+self.cls.wis_plus}", f"+{self.cls.wis_plus}",
+                                    "Attack:", f"{self.race.base_attack+self.cls.att_plus}", f"+{self.cls.att_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Constitution:",  f"{self.race.con+self.cls.con_plus}", f"+{self.cls.con_plus}",
+                                    "Defense:", f"{self.race.base_defense+self.cls.def_plus}", f"+{self.cls.def_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Charisma:", f"{self.race.charisma+self.cls.cha_plus}", f"+{self.cls.cha_plus}",
+                                    "Magic:", f"{self.race.base_magic+self.cls.magic_plus}", f"+{self.cls.magic_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Dexterity:", f"{self.race.dex+self.cls.dex_plus}", f"+{self.cls.dex_plus}",
+                                    "Magic Defense:", f"{self.race.base_magic_def+self.cls.magic_def_plus}", 
+                                    f"+{self.cls.magic_def_plus}")]
                 for j, line in enumerate(stat_plus_str):
                     self.desc_win.addstr(j + 11, (self.width // 3) - (len(line) // 2), line)
                 self.desc_win.addstr(j + 14, self.width // 3 - 11, "Equipment Restrictions", curses.A_BOLD)
@@ -484,23 +544,25 @@ class CombatMenu:
                 (self.height // 3) - (len(enemy_picture) // 2) + i, (self.width // 2) - len(line) // 2, line)
         self.enemy_win.box()
 
-    def draw_char(self):
+    def draw_char(self, char=None):
+        if not char:
+            char = self.game.player_char
         self.char_win.clear()
-        self.char_win.addstr(1, (self.width // 4) - (len(self.game.player_char.name) // 2), self.game.player_char.name)
+        self.char_win.addstr(1, (self.width // 4) - (len(char.name) // 2), char.name)
 
         # Health bar calculation
-        hp_percentage = self.game.player_char.health.current / self.game.player_char.health.max
+        hp_percentage = char.health.current / char.health.max
         hp_bar_width = self.width // 4  # Bar takes up 50% of the screen width
         filled_hp = int(hp_bar_width * hp_percentage)
         hp_bar = "[" + "#" * filled_hp + " " * (hp_bar_width - filled_hp) + "]"
-        hp_text = f"HP: {self.game.player_char.health.current}/{self.game.player_char.health.max}"
+        hp_text = f"HP: {char.health.current}/{char.health.max}"
 
         # Mana bar calculation
-        mana_percentage = self.game.player_char.mana.current / self.game.player_char.mana.max
+        mana_percentage = char.mana.current / char.mana.max
         mana_bar_width = self.width // 4  # Bar takes up 50% of the screen width
         filled_mana = int(mana_bar_width * mana_percentage)
         mana_bar = "[" + "#" * filled_mana + " " * (mana_bar_width - filled_mana) + "]"
-        mana_text = f"MP: {self.game.player_char.mana.current}/{self.game.player_char.mana.max}"
+        mana_text = f"MP: {char.mana.current}/{char.mana.max}"
 
         # Display HP bar at the top
         self.char_win.addstr(2, (self.width // 4) - (len(hp_bar) // 2), hp_bar)
@@ -674,6 +736,7 @@ class LocationMenu:
 
 
 class ShopMenu:
+
     def __init__(self, game, shop_message):
         self.game = game
         self.height, self.width = game.stdscr.getmaxyx()
@@ -706,7 +769,8 @@ class ShopMenu:
         for idx, option in enumerate(self.options_list):
             if idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
-            self.options_win.addstr(3 + idx, self.width // 6 - (len(option) // 2), option)
+            self.options_win.addstr(
+                (3 * self.height // 24) - (len(self.options_list) // 2) + idx + 1, self.width // 6 - (len(option) // 2), option)
             if idx == self.current_option:
                 self.options_win.attroff(curses.A_REVERSE)
         self.options_win.box()
@@ -718,15 +782,17 @@ class ShopMenu:
             if item_str not in ["Go Back", "Next Page"]:
                 if self.buy_or_sell == "Buy":
                     typ, name, _, _ = [x.strip() for x in list(filter(None, item_str.split('  ')))]
-                    item = [x for x in self.itemdict[typ] if x().name == name][0]
-                    lines = wrap(item().description, 75)
+                    item = [x for x in self.itemdict[typ] if x().name == name][0]()
+                    lines = wrap(item.description, 75, break_on_hyphens=False)
                 elif self.buy_or_sell == "Sell":
                     typ, name, _ = [x.strip() for x in list(filter(None, item_str.split('  ')))]
                     item = self.itemdict[name][0]
-                    lines = wrap(item.description, 75)
+                    lines = wrap(item.description, 75, break_on_hyphens=False)
                 for i, line in enumerate(lines):
                     self.item_desc_win.addstr(self.height // 8 + i - (len(lines) // 2),
                                             (self.width // 3) - (len(line) // 2), line)
+                if item.typ == "Weapon" and item.element:  # TODO change to include armor
+                    pass
         self.item_desc_win.box()
 
     def draw_shop_list(self):
@@ -808,7 +874,7 @@ class ShopMenu:
                 for item in lst:
                     adj_scale = scaled_decay_function(self.game.player_char.stats.charisma // 2)
                     if self.game.player_char.in_town():
-                        if item().rarity >= max(0.4, (1.0 - (0.01 * self.game.player_char.player_level()))):
+                        if item().rarity >= max(0.4, (1.0 - (0.02 * self.game.player_char.player_level()))):
                             adj_cost = max(1, int(item().value * adj_scale))
                             num = 0
                             if item().name in self.game.player_char.inventory:
@@ -898,12 +964,16 @@ class ShopMenu:
 
 
 class CharacterMenu:
+    """
+    
+    """
+
     def __init__(self, game, options_list):
         self.game = game
         self.height, self.width = game.stdscr.getmaxyx()
         self.options_list = options_list
         self.current_option = 0
-        self.rows, self.cols = (3, 2)
+        self.rows, self.cols = (4, 2)
         self.create_windows()
 
     def create_windows(self):
@@ -1009,10 +1079,11 @@ class CharacterMenu:
 
 
 class PopupMenu:
+
     def __init__(self, game, header_message, box_height=20, box_width=30):
         self.game = game
         self.screen_height, self.screen_width = game.stdscr.getmaxyx()
-        self.header_message = wrap(header_message, box_width - 2)
+        self.header_message = wrap(header_message, box_width - 2, break_on_hyphens=False)
         self.box_height, self.box_width = (box_height, box_width)
         self.options_list = []
         self.current_option = 0
@@ -1063,6 +1134,7 @@ class PopupMenu:
 
 
 class PromotionPopupMenu(PopupMenu):
+
     def __init__(self, game, header_message, current_class, familiar=False, box_height=30, box_width=120):
         super().__init__(game, header_message, box_height, box_width)
         self.current_class = current_class
@@ -1074,10 +1146,10 @@ class PromotionPopupMenu(PopupMenu):
         self.popup_win.clear()
         if self.options_list[self.current_option] != "Go Back":
             if self.familiar:
-                self.popup_win.addstr(1, (self.box_width // 2) - 5, "Promotion", curses.A_BOLD)
-                fam = self.cls_dict[self.options_list[self.current_option]]
+                # self.popup_win.addstr(1, (self.box_width // 2) - 5, "Promotion", curses.A_BOLD)
+                fam = self.cls_dict[self.options_list[self.current_option]]()
                 self.popup_win.addstr(7, (2 * self.box_width // 5) - (len(fam.race) // 2), fam.race, curses.A_BOLD)
-                lines = wrap(fam.inspect(), 75)
+                lines = wrap(fam.inspect(), 75, break_on_hyphens=False)
                 for i, line in enumerate(lines):
                     self.popup_win.addstr(i + 9, 14, line)
                 self.popup_win.addstr(16, (2 * self.box_width // 5) - 5, "Abilities", curses.A_BOLD)
@@ -1100,31 +1172,38 @@ class PromotionPopupMenu(PopupMenu):
                 for i, line in enumerate(lines):
                     self.popup_win.addstr(i + 5, 14, line)
                 # promo stats
-                self.popup_win.addstr(12, (self.box_width // 5) - 7, "Promotion Stats", curses.A_BOLD)
-                stat_plus_str = ["{:15}{:>4}({:>2})".format(
-                                        "Strength:", f"{self.game.player_char.stats.strength+cls.str_plus}", f"+{cls.str_plus}"),
-                                    "{:15}{:>4}({:>2})".format(
-                                        "Intelligence:", f"{self.game.player_char.stats.intel+cls.int_plus}", f"+{cls.int_plus}"),
-                                    "{:15}{:>4}({:>2})".format(
-                                        "Wisdom:", f"{self.game.player_char.stats.wisdom+cls.wis_plus}", f"+{cls.wis_plus}"),
-                                    "{:15}{:>4}({:>2})".format(
-                                        "Constitution:",  f"{self.game.player_char.stats.con+cls.con_plus}", f"+{cls.con_plus}"),
-                                    "{:15}{:>4}({:>2})".format(
-                                        "Charisma:", f"{self.game.player_char.stats.charisma+cls.cha_plus}", f"+{cls.cha_plus}"),
-                                    "{:15}{:>4}({:>2})".format(
-                                        "Dexterity:", f"{self.game.player_char.stats.dex+cls.dex_plus}", f"+{cls.dex_plus}")]
+                self.popup_win.addstr(13, (self.box_width // 5) - 7, "Promotion Stats", curses.A_BOLD)
+                stat_plus_str = ["{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Strength:", f"{self.game.player_char.stats.strength+cls.str_plus}", f"+{cls.str_plus}",
+                                    "Health:", f"{self.game.player_char.health.max+(cls.con_plus*2)}", f"+{cls.con_plus*2}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Intelligence:", f"{self.game.player_char.stats.intel+cls.int_plus}", f"+{cls.int_plus}",
+                                    "Mana:", f"{self.game.player_char.mana.max+(cls.int_plus*2)}", f"+{cls.int_plus*2}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Wisdom:", f"{self.game.player_char.stats.wisdom+cls.wis_plus}", f"+{cls.wis_plus}",
+                                    "Attack:", f"{self.game.player_char.combat.attack+cls.att_plus}", f"+{cls.att_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Constitution:",  f"{self.game.player_char.stats.con+cls.con_plus}", f"+{cls.con_plus}",
+                                    "Defense:", f"{self.game.player_char.combat.defense+cls.def_plus}", f"+{cls.def_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Charisma:", f"{self.game.player_char.stats.charisma+cls.cha_plus}", f"+{cls.cha_plus}",
+                                    "Magic:", f"{self.game.player_char.combat.magic+cls.magic_plus}", f"+{cls.magic_plus}"),
+                                 "{:14}{:>3}({:>2})  {:14}{:>4}({:>2})".format(
+                                    "Dexterity:", f"{self.game.player_char.stats.dex+cls.dex_plus}", f"+{cls.dex_plus}",
+                                    "Magic Defense:", f"{self.game.player_char.combat.magic_def+cls.magic_def_plus}", 
+                                    f"+{cls.magic_def_plus}")]
                 for j, line in enumerate(stat_plus_str):
-                    self.popup_win.addstr(j + 13, (self.box_width // 5) - (len(line) // 2), line)
+                    self.popup_win.addstr(j + 14, (self.box_width // 5) - (len(line) // 2), line)
                 # new equipment
-                self.popup_win.addstr(12, (3 * self.box_width // 5) - 6, "New Equipment", curses.A_BOLD)
-                self.popup_win.addstr(13, (3 * self.box_width // 5) - 15, f"{'Weapon:':8} {cls.equipment['Weapon'].name:>20}")
-                self.popup_win.addstr(15, (3 * self.box_width // 5) - 15, f"{'OffHand:':8} {cls.equipment['OffHand'].name:>20}")
-                self.popup_win.addstr(17, (3 * self.box_width // 5) - 15, f"{'Armor:':8} {cls.equipment['Armor'].name:>20}")
+                self.popup_win.addstr(13, (3 * self.box_width // 5) - 6, "New Equipment", curses.A_BOLD)
+                self.popup_win.addstr(14, (3 * self.box_width // 5) - 15, f"{'Weapon:':8} {cls.equipment['Weapon'].name:>20}")
+                self.popup_win.addstr(16, (3 * self.box_width // 5) - 15, f"{'OffHand:':8} {cls.equipment['OffHand'].name:>20}")
+                self.popup_win.addstr(18, (3 * self.box_width // 5) - 15, f"{'Armor:':8} {cls.equipment['Armor'].name:>20}")
                 # equipment restrictions
-                self.popup_win.addstr(j + 16, (2 * self.box_width // 5) - 11, "Equipment Restrictions", curses.A_BOLD)
+                self.popup_win.addstr(j + 17, (2 * self.box_width // 5) - 11, "Equipment Restrictions", curses.A_BOLD)
                 for k, (typ, lst) in enumerate(cls.restrictions.items()):
                     line = f"{typ}: " + ", ".join(lst)
-                    self.popup_win.addstr(j + k + 18, (2 * self.box_width // 5) - (len(line) // 2), line)
+                    self.popup_win.addstr(j + k + 19, (2 * self.box_width // 5) - (len(line) // 2), line)
         # header message and options
         if not isinstance(self.header_message, list):
             self.header_message = [self.header_message]
@@ -1182,6 +1261,7 @@ class SlotMachinePopupMenu(PopupMenu):
 
 
 class BlackjackPopupMenu(PopupMenu):
+
     def __init__(self, game, header_message, box_height=10, box_width=30):
         super().__init__(game, header_message, box_height, box_width)
         self.numbers = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -1261,12 +1341,53 @@ class BlackjackPopupMenu(PopupMenu):
 
 
 class SelectionPopupMenu(PopupMenu):
-    def __init__(self, game, header_message, stat_options, box_height=10):
+
+    def __init__(self, game, header_message, stat_options, box_height=10, rewards=None, confirm=True):
         super().__init__(game, header_message, box_height=box_height)
         self.options_list = stat_options
+        self.rewards = rewards
+        self.confirm = confirm
+
+    def navigate_popup(self):
+        self.draw_popup()
+        while True:
+            self.draw_popup()
+            self.popup_win.refresh()
+            key = self.game.stdscr.getch()
+
+            # Navigate the item list
+            if key == curses.KEY_UP:
+                self.current_option -= 1
+                if self.current_option < 0:
+                    self.current_option = len(self.options_list) - 1
+            elif key == curses.KEY_DOWN:
+                self.current_option += 1
+                if self.current_option > len(self.options_list) - 1:
+                    self.current_option = 0
+            elif key == ord("i") or key == ord("I") and self.rewards:
+                try:
+                    self.inspect_item(self.rewards[self.current_option])
+                except TypeError:
+                    pass
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                if self.confirm:
+                    choice_str = self.options_list[self.current_option]
+                    confirm_str = f"Are you sure you want to choose: {choice_str}?"
+                    confirm_popup = ConfirmPopupMenu(self.game, confirm_str, box_height=7)
+                    if confirm_popup.navigate_popup():
+                        return self.current_option
+                else:
+                    return self.current_option
+
+    def inspect_item(self, item):
+        itembox = TextBox(self.game)
+        itembox.print_text_in_rectangle(str(item()))
+        self.game.stdscr.getch()
+        itembox.clear_rectangle()
 
 
 class ShopPopup(PopupMenu):
+
     def __init__(self, game, header_message, max="01", box_height=20, box_width=30):
         super().__init__(game, header_message, box_height, box_width)
         self.current_option = 1
@@ -1384,11 +1505,20 @@ class InventoryPopupMenu(PopupMenu):
     def update_itemlist(self):
         self.options_list = []
         start_item_idx = self.pages[self.page] * 14
-        inv_len = len(self.game.player_char.inventory)
-        if inv_len > 0:
-            inventory_keys = list(self.game.player_char.inventory.keys())[start_item_idx:start_item_idx+14]
-            for key in inventory_keys:
-                self.options_list.append((key, self.game.player_char.inventory[key]))
+        if self.header_message[0] == "Inventory":
+            inv_len = len(self.game.player_char.inventory)
+            if inv_len > 0:
+                inventory_keys = list(self.game.player_char.inventory.keys())[start_item_idx:start_item_idx+14]
+                for key in inventory_keys:
+                    self.options_list.append((key, self.game.player_char.inventory[key]))
+        elif self.header_message[0] == "Key Items":
+            inv_len = len(self.game.player_char.special_inventory)
+            if inv_len > 0:
+                inventory_keys = list(self.game.player_char.special_inventory.keys())[start_item_idx:start_item_idx+14]
+                for key in inventory_keys:
+                    self.options_list.append((key, self.game.player_char.special_inventory[key]))
+        else:
+            raise NotImplementedError
         if inv_len > 14:
             self.options_list.append(("Next Page", []))
             for i in range(inv_len // 14):
@@ -1441,6 +1571,7 @@ class InventoryPopupMenu(PopupMenu):
 
 
 class EquipPopupMenu(PopupMenu):
+
     def __init__(self, game, header_message, box_height):
         super().__init__(game, header_message, box_height=box_height)
         self.options_list = ["Weapon", "OffHand", "Armor", "Ring", "Pendant", "Go Back"]
@@ -1467,21 +1598,29 @@ class EquipPopupMenu(PopupMenu):
             # Confirm selection
             if key == ord('\n'):  # Enter key
                 if self.options_list[self.current_option] == "Go Back":
-                    self.page -= 1
-                    if not self.page:
+                    if self.page > 1:
+                        self.page -= 1
+                        self.update_options()
+                    else:
                         return
                 else:
-                    self.page += 1
-                if self.page == 3:
-                    self.diffbox()
-                    return
-                self.update_options()
+                    if self.page < 3:
+                        self.page += 1
+                    if self.page == 3:
+                        equip = self.diffbox()
+                        if equip:
+                            return
+                    self.update_options()
 
     def update_options(self):
         if self.page == 1:
             self.options_list = ["Weapon", "OffHand", "Armor", "Ring", "Pendant", "Go Back"]
-        else:
+        elif self.page == 2:
             self.equip_type = self.options_list[self.current_option]
+            if self.equip_type == "Go Back":
+                self.page = 1
+                self.update_options()
+                return
             self.options_list = []
             for item in self.game.player_char.inventory.values():
                 if self.game.player_char.equipable(item[0], self.equip_type):
@@ -1489,6 +1628,8 @@ class EquipPopupMenu(PopupMenu):
             if self.game.player_char.equipment[self.equip_type] != self.game.player_char.unequip(self.equip_type):
                 self.options_list.append("Unequip")
             self.options_list.append("Go Back")
+        else:
+            pass
         self.current_option = 0
 
     def diffbox(self):
@@ -1505,9 +1646,12 @@ class EquipPopupMenu(PopupMenu):
         itembox = TextBox(self.game)
         itembox.print_text_in_rectangle(diff_str)
         self.game.stdscr.getch()
+        itembox.clear_rectangle()
         confirm = ConfirmPopupMenu(self.game, confirm_str, box_height=7)
         if confirm.navigate_popup():
             self.game.player_char.equip(self.equip_type, item)
+            return True
+        return False
 
 
 class AbilitiesPopupMenu(PopupMenu):
@@ -1572,6 +1716,7 @@ class AbilitiesPopupMenu(PopupMenu):
         abilitybox = TextBox(self.game)
         abilitybox.print_text_in_rectangle(str(ability))
         self.game.stdscr.getch()
+        abilitybox.clear_rectangle()
         if hasattr(ability, "cast_out") and ability.cost <= self.game.player_char.mana.current and \
             not self.game.player_char.in_town():
             confirm_str = f"Do you want to cast {ability.name}?"
@@ -1580,6 +1725,7 @@ class AbilitiesPopupMenu(PopupMenu):
                 cast_message = ability.cast_out(self.game)
                 abilitybox.print_text_in_rectangle(cast_message)
                 self.game.stdscr.getch()
+                abilitybox.clear_rectangle()
 
 
 class QuestPopupMenu(PopupMenu):
@@ -1589,11 +1735,12 @@ class QuestPopupMenu(PopupMenu):
     def draw_popup(self, content):
         self.popup_win.clear()
         self.popup_win.box()
+        delay = 0 if self.game.debug_mode else 0.075
         for i, line in enumerate(content):
             for j, char in enumerate(line):
                 self.popup_win.addch(i + 1, j + 2, char)
                 self.popup_win.refresh()
-                time.sleep(0.075)
+                time.sleep(delay)
         self.game.stdscr.getch()
 
     def navigate_popup(self):
@@ -1601,33 +1748,55 @@ class QuestPopupMenu(PopupMenu):
 
 
 class QuestListPopupMenu(PopupMenu):
+
     def __init__(self, game, header_message):
         super().__init__(game, header_message, box_height=20, box_width=50)
+        self.scroll_offset = 0  # Tracks the starting index of visible quests
+        self.max_visible_options = self.box_height - 10  # Adjusted for header, bounties, and gap
 
     def draw_popup(self):
         self.update_options()
         h_adjust = 1
         self.popup_win.clear()
+
+        # Draw header
         for i, line in enumerate(self.header_message):
             self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
         h_adjust += 2
-        # Display bounties
+
+        # Display up to 4 bounty quests
         self.popup_win.addstr(h_adjust, 13, "Bounties: Remaining/Total")
         h_adjust += 1
         for quest, info in self.game.player_char.quest_dict["Bounty"].items():
             if info[2]:
-                self.popup_win.addstr(h_adjust, 16, f"{quest}: Completed\n")
+                self.popup_win.addstr(h_adjust, 16, f"{quest}: Completed")
             else:
-                self.popup_win.addstr(h_adjust, 16, f"{quest}: {info[1]}/{info[0]['num']}\n")
+                self.popup_win.addstr(h_adjust, 16, f"{quest}: {info[1]}/{info[0]['num']}")
             h_adjust += 1
-        # Display quest list
-        for idx, option in enumerate(self.options_list):
-            if idx == self.current_option:
+
+        # Add a gap
+        h_adjust += 1
+
+        # Remaining space for quest list
+        remaining_space = self.box_height - h_adjust - 2
+        visible_options = self.options_list[self.scroll_offset:self.scroll_offset + remaining_space]
+        for idx, option in enumerate(visible_options):
+            display_idx = idx + h_adjust
+            if display_idx >= self.box_height - 1:
+                break  # Prevent drawing outside the box
+            if idx + self.scroll_offset == self.current_option:
                 self.popup_win.attron(curses.A_REVERSE)
-            self.popup_win.addstr(1 + idx + h_adjust, 2, option)
-            if idx == self.current_option:
+            self.popup_win.addstr(display_idx, 2, option)
+            if idx + self.scroll_offset == self.current_option:
                 self.popup_win.attroff(curses.A_REVERSE)
-        self.popup_win.box()   
+
+        # Draw scroll indicators
+        if self.scroll_offset > 0:
+            self.popup_win.addstr(h_adjust - 1, self.box_width // 2 - 3, "↑", curses.A_BOLD)
+        if self.scroll_offset + remaining_space < len(self.options_list):
+            self.popup_win.addstr(self.box_height - 2, self.box_width // 2 - 3, "↓", curses.A_BOLD)
+
+        self.popup_win.box()
 
     def navigate_popup(self):
         self.draw_popup()
@@ -1639,12 +1808,19 @@ class QuestListPopupMenu(PopupMenu):
             # Navigate the item list
             if key == curses.KEY_UP:
                 self.current_option -= 1
-                if self.current_option < 0:
+                if self.current_option < 0:  # Wrap around to the bottom
                     self.current_option = len(self.options_list) - 1
+                    self.scroll_offset = max(0, self.current_option - self.max_visible_options + 1)
+                elif self.current_option < self.scroll_offset:
+                    self.scroll_offset -= 1
+
             elif key == curses.KEY_DOWN:
                 self.current_option += 1
-                if self.current_option > len(self.options_list) - 1:
+                if self.current_option >= len(self.options_list):  # Wrap around to the top
                     self.current_option = 0
+                    self.scroll_offset = 0
+                elif self.current_option >= self.scroll_offset + self.max_visible_options:
+                    self.scroll_offset += 1
 
             # Confirm selection
             if key == ord('\n'):  # Enter key
@@ -1680,17 +1856,17 @@ class QuestListPopupMenu(PopupMenu):
 
     def quest_str_config(self, quest):
         completed = "Yes" if quest["Completed"] else "No"
-        what_str = quest["What"] if isinstance(quest["What"], str) else quest["What"].name
+        what_str = quest["What"] if isinstance(quest["What"], str) else quest["What"]().name
         quest_str =  (f"{self.options_list[self.current_option]}\n\n"
-                    f"{quest['Type']} {what_str}\n"
-                    f"Questgiver: {quest['Who']}\n")
+                      f"{quest['Type']} {what_str}\n"
+                      f"Questgiver: {quest['Who']}\n")
         if quest['Type'] == 'Collect':
             if quest['What'] == 'Relics':
                 relics = ["Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas"]
                 current = sum([item in self.game.player_char.special_inventory for item in relics])
             else:
                 try:
-                    current = len(self.game.player_char.special_inventory[quest['What'].name])
+                    current = len(self.game.player_char.special_inventory[quest['What']().name])
                 except KeyError:
                     current = 0
             quest_str += f"Collected: {current}/{quest['Total']}\n"
@@ -1715,7 +1891,7 @@ class TextBox:
         if "\n" in text:
             lines = text.splitlines()
         else:
-            lines = wrap(text, 48)
+            lines = wrap(text, 48, break_on_hyphens=False)
         rect_width = max(50, len(max(lines, key=len))+2)
         rect_height = len(lines) + 2
         start_y = (self.height - rect_height) // 2

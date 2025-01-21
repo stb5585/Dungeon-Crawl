@@ -30,15 +30,15 @@ def ultimate(game):
     ]
     ultimate_pad = utils.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
     ultimate_pad.draw_popup(texts)
-    weapon_list = {'Dagger': items.Carnwennan(),
-                   'Sword': items.Excalibur(),
-                   'Mace': items.Mjolnir(),
-                   'Fist': items.GodsHand(),
-                   'Axe': items.Jarnbjorn(),
-                   'Polearm': items.Gungnir(),
-                   'Staff': [items.PrincessGuard(), items.DragonStaff()],
-                   'Hammer': items.Skullcrusher(),
-                   'Ninja Blade': items.Ninjato()}
+    weapon_list = {'Dagger': items.Carnwennan,
+                   'Sword': items.Excalibur,
+                   'Mace': items.Mjolnir,
+                   'Fist': items.GodsHand,
+                   'Axe': items.Jarnbjorn,
+                   'Polearm': items.Gungnir,
+                   'Staff': [items.PrincessGuard, items.DragonStaff],
+                   'Hammer': items.Skullcrusher,
+                   'Ninja Blade': items.Ninjato}
     make_options = []
     i = 0
     for typ, weapon in weapon_list.items():
@@ -60,55 +60,70 @@ def ultimate(game):
             ultimatebox.print_text_in_rectangle(
                 "I am sorry to hear that...please come back if you change your mind.")
             game.stdscr.getch()
+            ultimatebox.clear_rectangle()
             return
         else:
             weapon = weapon_list[make_options[make_idx]]
             if isinstance(weapon, list):
                 if 'Archbishop' == game.player_char.cls.name:
-                    weapon = weapon[0]
+                    weapon = weapon[0]()
                 else:
-                    weapon = weapon[1]
+                    weapon = weapon[1]()
+            else:
+                weapon = weapon()
             ultimatebox.print_text_in_rectangle(
                 "Give me a moment and I will make you an ultimate weapon...")
             time.sleep(5)
+            ultimatebox.clear_rectangle()
             ultimatebox.print_text_in_rectangle(
                 f"I present to you, {game.player_char.name}, the mighty {weapon.name}!")
-            time.sleep(2)
+            game.stdscr.getch()
+            ultimatebox.clear_rectangle()
             game.player_char.modify_inventory(weapon)
             del game.player_char.inventory['Unobtainium']
             if "He Ain't Heavy" in game.player_char.quest_dict['Side']:
                 if game.player_char.quest_dict['Side']["He Ain't Heavy"]['Turned In']:
-                    # TODO
-                    print("I still have a bit of ore left if you want me to upgrade another weapon or I may even be able to"
-                          " improve the one I just made.")
+                    message = ("I still have a bit of ore left if you want me to upgrade another weapon or I may even "
+                               "be able to improve the one I just made.")
+                    ultimatebox.print_text_in_rectangle(message)
+                    game.stdscr.getch()
+                    ultimatebox.clear_rectangle()
 
 
 def turn_in_quest(game, quest, typ):
-    quest_desc = wrap(game.player_char.quest_dict[typ][quest]['End Text'], 50)
+    quest_desc = wrap(game.player_char.quest_dict[typ][quest]['End Text'], 50, break_on_hyphens=False)
     quest_pad = utils.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
     quest_pad.draw_popup(quest_desc)
     quest_pad.clear_popup()
     game.player_char.quest_dict[typ][quest]['Turned In'] = True
     reward = game.player_char.quest_dict[typ][quest]['Reward']
     if len(reward) == 1:
-        reward = reward[0]
+        reward = reward[0] if isinstance(reward[0], str) else reward[0]()
     else:
-        reward_options = [x.name for x in reward]
-        popup = utils.SelectionPopupMenu(game, "Choose your reward", reward_options)
+        reward_options = [x().name for x in reward]
+        popup = utils.SelectionPopupMenu(
+            game, f"Choose your reward{' ':10}(press i for info)",
+            reward_options, box_height=6+len(reward), rewards=reward, confirm=True)
         reward_idx = popup.navigate_popup()
-        reward = reward[reward_idx]
+        reward = reward[reward_idx]()
     exp = game.player_char.quest_dict[typ][quest]['Experience'] * game.player_char.level.pro_level
     if reward == 'Gold':
         game.player_char.gold += game.player_char.quest_dict[typ][quest]['Reward Number']
         reward_message = f"You received {game.player_char.quest_dict[typ][quest]['Reward Number']} gold and {exp} experience.\n"
     elif reward == 'Upgrade':
         reward_message = upgrade(game)
-    elif reward == 'Power Up':
+    elif reward == "Power Up":
         reward_message = game.player_char.special_power(game)
         reward_message += f"You received {exp} experience.\n"
     elif reward == 'Warp Point':
         game.player_char.warp = True
         reward_message = f"You received {exp} experience and gain access to the Warp Point.\n"
+    elif reward == "Izulu":
+        from companions import Izulu
+        summon = Izulu()
+        summon.initialize_stats(game.player_char)
+        game.player_char.summons[summon.name] = summon
+        reward_message = f"You received {exp} experience and have gained the summon Izulu.\n"
     else:
         num = game.player_char.quest_dict[typ][quest]['Reward Number']
         game.player_char.modify_inventory(reward, num=num)
@@ -125,12 +140,28 @@ def turn_in_quest(game, quest, typ):
     turninbox.clear_rectangle()
     if game.player_char.quest_dict[typ][quest]['Type'] == 'Collect':
         item = game.player_char.quest_dict[typ][quest]['What']
-        del game.player_char.special_inventory[item.name]
+        del game.player_char.special_inventory[item().name]
     if not game.player_char.max_level():
         while game.player_char.level.exp_to_gain <= 0:
             game.player_char.level_up(game)
             if game.player_char.level.exp_to_gain == "MAX":
                 break
+    if game.debug_mode and quest == "Debug":
+        del game.player_char.quest_dict[typ][quest]
+    if quest == "A Bad Dream":
+        game.special_event("Busboy")
+        if "Where's the Beef?" in game.player_char.quest_dict["Side"]:
+            if not game.player_char.quest_dict["Side"]["Where's the Beef?"]["Turned In"]:
+                turninbox.print_text_in_rectangle(("I know the waitress asked you to get her some meat for her wedding.\n"
+                                                   "She obviously doesn't need them anymore, so I can take them if you get them.\n"))
+                game.stdscr.getch()
+                turninbox.clear_rectangle()
+                game.player_char.quest_dict["Side"]["Where's the Beef?"]["Who"] = "Busboy"
+                end_text = "Thanks, this will help feed a lot of people. Here's something for your time."
+                game.player_char.quest_dict["Side"]["Where's the Beef?"]["End Text"] = end_text
+                help_text = "You can get meat from pretty much any animal. Not really a time to be picky..."
+                game.player_char.quest_dict["Side"]["Where's the Beef?"]["Help Text"] = help_text
+                
 
 
 def accept_quest(game, quest, typ):
@@ -204,7 +235,7 @@ def accept_quest(game, quest, typ):
                     }
     quest_key = list(quest)[0]
     who = quest[quest_key]['Who']
-    quest_desc = wrap(quest[quest_key]['Start Text'], 50)
+    quest_desc = wrap(quest[quest_key]['Start Text'], 50, break_on_hyphens=False)
     menu = utils.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
     accepted = False
     acceptquestbox = utils.TextBox(game)
@@ -212,9 +243,13 @@ def accept_quest(game, quest, typ):
     confirm_str = "Do you accept this quest?"
     confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=6)
     if confirm.navigate_popup():
-        game.player_char.quest_dict[typ][quest_key] = quest[quest_key]
-        acceptquestbox.print_text_in_rectangle(response_map[who][0])
+        game.player_char.quest_dict[typ][quest_key] = quest[quest_key].copy()
+        message = response_map[who][0] + "\n"
+        if who == "Sergeant" and quest_key == "The Holy Relics":
+            message += "Make sure to grab the health potions out of your storage locker if you haven't already.\n"
+        acceptquestbox.print_text_in_rectangle(message)
         game.stdscr.getch()
+        acceptquestbox.clear_rectangle()
         if quest[quest_key]['Type'] == 'Defeat':
             if quest_key in game.player_char.kill_dict:
                 game.player_char.quest_dict[typ][quest_key]['Completed'] = True
@@ -222,19 +257,20 @@ def accept_quest(game, quest, typ):
     else:
         acceptquestbox.print_text_in_rectangle(response_map[who][1])
         game.stdscr.getch()
+        acceptquestbox.clear_rectangle()
+    confirm.clear_popup()
+    menu.clear_popup()
     return accepted
 
 
-def check_quests(game, quest_giver, check=False):
+def check_quests(game, quest_giver):
 
     player_mains = list(game.player_char.quest_dict['Main'])
     player_sides = list(game.player_char.quest_dict['Side'])
     mains = quest_dict[quest_giver]['Main']
-    main_quests = [mains[x] for x in mains if game.player_char.player_level() >= x]
     sides = quest_dict[quest_giver]['Side']
+    main_quests = [mains[x] for x in mains if game.player_char.player_level() >= x]
     side_quests = [sides[x] for x in sides if game.player_char.player_level() >= x]
-    if check:
-        return bool(main_quests or side_quests)
     quest = False
     responses = [["I have no new quests for you at this time."]]
     if len(main_quests) > 0:
@@ -250,7 +286,7 @@ def check_quests(game, quest_giver, check=False):
             else:
                 quest = accept_quest(game, main_quest, "Main")
             if quest:
-                break
+                return quest, responses
     if len(side_quests) > 0:
         for side_quest in side_quests:
             key = list(side_quest)[0]
@@ -259,14 +295,19 @@ def check_quests(game, quest_giver, check=False):
                         not game.player_char.quest_dict['Side'][key]['Turned In']:
                     turn_in_quest(game, key, "Side")
                     quest = True
-                if not game.player_char.quest_dict['Side'][key]['Turned In']:
-                    responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
+                if not any([game.debug_mode, key == "Debug"]):
+                    if not game.player_char.quest_dict['Side'][key]['Turned In']:
+                        responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
             else:
                 if key == "Pandora's Box" and "Ultima" not in game.player_char.spellbook["Spells"]:
                     continue
+                if key == "Debug" and not game.debug_mode:
+                    continue
+                if key == "The Shocker" and "Summoner" not in game.player_char.cls.name:
+                    continue
                 quest = accept_quest(game, side_quest, "Side")
             if quest:
-                break
+                return quest, responses
     return quest, responses
 
 
@@ -329,19 +370,19 @@ def tavern_patrons(game):
                                  "HOOD OFF ALREADY!...ah whatever..."],
                             30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."]
                             },
-                # TODO Busboy replaces Waitress after conclusion of Joffrey quest
-                'Busboy': {1: ["The waitress left crying some time ago...sounds like her fiance was killed in the "
-                               "dungeons.",
-                               "Entering the town will replenish your health and mana. Seems like you "
-                               "could take advantage of that.",
-                               "Some spells can be cast outside of battle. You can do so in the Character Menu "
-                               "after inspecting the spell."],
-                    },
+                'Busboy':   {1: ["The waitress left crying some time ago...sounds like her fiance was killed in the "
+                                 "dungeons.",
+                                 "Entering the town will replenish your health and mana. Seems like you "
+                                 "could take advantage of that.",
+                                 "Some spells can be cast outside of battle. You can do so in the Character Menu "
+                                 "after inspecting the spell.",
+                                 "The guy in the corner gives me the creeps...tips well though."],
+                            },
                 'Hooded Figure': {25: ["..."],
                                   35: ["Hmm...interesting..."],
                                   50: ["Your power has grown...I am impressed."],
                                   60: ["Have you defeated the Red Dragon yet?"],
-                }
+                            }
             }
 
     def patron_list(game):
@@ -373,15 +414,15 @@ def tavern_patrons(game):
         patron_idx = menu.navigate_menu()
         if patron_options[patron_idx] == 'Go Back':
             return
-        quest, responses = check_quests(game, patron_options[patron_idx])
+        quest, _ = check_quests(game, patron_options[patron_idx])
         if not quest:
             talks = patrons[patron_options[patron_idx]]
             level_talks = [talks[x] for x in talks if game.player_char.player_level() >= x]
-            responses += level_talks
-            response = random.choice(random.choice(responses))
+            response = random.choice(random.choice(level_talks))
             textbox = utils.TextBox(game)
             textbox.print_text_in_rectangle(response)
             game.stdscr.getch()
+            textbox.clear_rectangle()
         patron_options = patron_list(game)
         menu.update_options(patron_options, options_message=patron_message, reset_current=False)
 
@@ -439,6 +480,7 @@ def tavern(game):
                             tavernbox.print_text_in_rectangle(
                                 "Return here when the job is done and you will be rewarded.")
                             game.stdscr.getch()
+                            tavernbox.clear_rectangle()
                             game.delete_bounty(selection)
                             bounty_idx = bounty_options.index(selection["enemy"].name)
                             bounty_list.pop(bounty_idx)
@@ -469,6 +511,7 @@ def tavern(game):
                     bounty_gain += f"And you have been rewarded with a {reward.name}."
                 tavernbox.print_text_in_rectangle(bounty_gain)
                 game.stdscr.getch()
+                tavernbox.clear_rectangle()
                 del game.player_char.quest_dict['Bounty'][turn_in_choice]
                 if not game.player_char.max_level():
                     while game.player_char.level.exp_to_gain <= 0:
@@ -481,6 +524,7 @@ def tavern(game):
             elif tavern_options[tavern_idx] == "Leave":
                 tavernbox.print_text_in_rectangle("Come back whenever you'd like.")
                 game.stdscr.getch()
+                tavernbox.clear_rectangle()
                 return
             else:
                 raise AssertionError("You shouldn't reach here.")
@@ -514,6 +558,7 @@ def barracks(game):
                 message = "Take care, soldier."
                 barracksbox.print_text_in_rectangle(message)
                 game.stdscr.getch()
+                barracksbox.clear_rectangle()
                 return
             if barracks_options[barrack_idx] == 'Storage':
                 storage_message = "What would you like to do?"
@@ -533,7 +578,8 @@ def barracks(game):
                             barracksbox.print_text_in_rectangle(
                                 "You do not have anything to store at the moment.")
                             game.stdscr.getch()
-                            break
+                            barracksbox.clear_rectangle()
+                            continue
                         store_items.append('Go Back')
                         menu.update_options(store_items, options_message=store_message)
                         while True:
@@ -581,18 +627,21 @@ def barracks(game):
                             total = len(itemlist)
                             while True:
                                 num_message = (f"You have {total} {name}s in storage.\n"
-                                            f"How many would you like to retrieve? ")
+                                               f"How many would you like to retrieve? ")
                                 popup = utils.ShopPopup(game, num_message, box_height=9)
                                 num = popup.navigate_popup()
                                 if num <= total:
                                     game.player_char.modify_inventory(game.player_char.storage[name][0], num, storage=True)
                                     if name not in game.player_char.storage:
                                         retrieve_items.pop(retrieve_idx)
+                                    else:
+                                        retrieve_items[retrieve_idx] = f"{itemlist[0].name:20}{' ':2}{len(itemlist):>2}"
                                     break
                                 else:
                                     barracksbox.print_text_in_rectangle(
                                         "You do not have that many, please enter a valid quantity.")
                                     game.stdscr.getch()
+                                    barracksbox.clear_rectangle()
                             menu.update_options(retrieve_items, options_message=retrieve_message)
                             if len(game.player_char.storage) == 0 and "Retrieve" in storage_options:
                                 storage_options.pop(1)
@@ -606,6 +655,7 @@ def barracks(game):
                     response = random.choice(random.choice(responses))
                     barracksbox.print_text_in_rectangle(response)
                     game.stdscr.getch()
+                    barracksbox.clear_rectangle()
 
 
 def blacksmith(game):
@@ -626,6 +676,17 @@ def blacksmith(game):
     blacksmith_message = "Welcome to Griswold's! What can I do you for?"
     menu = utils.ShopMenu(game, blacksmith_message)
     blacksmithbox = utils.TextBox(game)
+    if all(["Summoner" in game.player_char.cls.name,
+            "Triangulus" in game.player_char.special_inventory,
+            "Quadrata" in game.player_char.special_inventory]):
+        game.player_char.modify_inventory(items.VulcansHammer(), rare=True)
+        message = ("Ah, I see you have made great progress in collecting the relics.\n"
+                   "A while back, I had someone sell me a blacksmith's hammer but it's too nice to use!\n"
+                   "I am not sure if it will help you or not but I have an odd feeling you need this...\n"
+                   "You gain Vulcan's Hammer.\n")
+        blacksmithbox.print_text_in_rectangle(message)
+        game.stdscr.getch()
+        blacksmithbox.clear_rectangle()
     while True:
         menu.update_itemdict(None)
         blacksmith_choice = menu.navigate_options()
@@ -633,6 +694,7 @@ def blacksmith(game):
             leave_message = "We're sorry to see you go. Come back anytime!"
             blacksmithbox.print_text_in_rectangle(leave_message)
             game.stdscr.getch()
+            blacksmithbox.clear_rectangle()
             return
         done = False
         while not done:
@@ -679,6 +741,7 @@ def alchemist(game):
             leave_message = "We're sorry to see you go. Come back anytime!"
             alchemistbox.print_text_in_rectangle(leave_message)
             game.stdscr.getch()
+            alchemistbox.clear_rectangle()
             return
         done = False
         while not done:
@@ -714,6 +777,7 @@ def jeweler(game):
             leave_message = "We're sorry to see you go. Come back anytime!"
             jewelerbox.print_text_in_rectangle(leave_message)
             game.stdscr.getch()
+            jewelerbox.clear_rectangle()
             return
         done = False
         while not done:
@@ -751,6 +815,7 @@ def church(game):
                     churchbox.print_text_in_rectangle(
                         "You need to be level 30 before you can promote your character.\n")
                 game.stdscr.getch()
+                churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Save':
             game.player_char.save(game=game)  # Can only save at church in town
         elif church_options[church_idx] == 'Quests':
@@ -766,6 +831,7 @@ def church(game):
         elif church_options[church_idx] == 'Leave':
             churchbox.print_text_in_rectangle("Let the light of Elysia guide you.")
             game.stdscr.getch()
+            churchbox.clear_rectangle()
             return
         else:
             raise AssertionError("You shouldn't reach here.")
@@ -786,13 +852,25 @@ def secret_shop(game):
         if secret_choice == 'Leave':
             secretshopbox.print_text_in_rectangle("We're sorry to see you go. Come back anytime!")
             game.stdscr.getch()
+            secretshopbox.clear_rectangle()
             game.player_char.move_south(game)
             return
         done = False
         while not done:
-            if secret_choice == 'Buy':
-                done = buy(game, menu, "Secret")
-            elif secret_choice == 'Sell':
+            if secret_choice == "Buy":
+                buy_options = ["Weapon", "OffHand", "Armor", "Accessories", "Miscellaneous", "Go Back"]
+                menu.update_options(buy_options)
+                buy_choice = menu.navigate_options()
+                if buy_choice == "Go Back":
+                    menu.reset_options(quests=True)
+                    break
+                if buy_choice == "Weapon":
+                    menu.update_options(["1-Handed", "2-Handed"])
+                    handed = menu.navigate_options()
+                    done = buy(game, menu, buy_choice, handed=handed)
+                else:
+                    done = buy(game, menu, buy_choice)
+            elif secret_choice == "Sell":
                 done = sell(game, menu)
             else:
                 raise Exception("Something went wrong.")
@@ -819,18 +897,20 @@ def ultimate_armor_repo(game):
         ultimate_pad = utils.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
         ultimate_pad.draw_popup(texts)
         ultimatebox = utils.TextBox(game)
-        ultimate_message = "Which type of armor do you choose?"
+        ultimate_message = f"Which type of armor do you choose?{' ':5}(press i for info)"
         ultimate_options = ['Cloth', 'Light', 'Medium', 'Heavy', "Leave"]
         no_message = "You need time to consider you choice, I respect that. Come back when you have made your choice."
         armor_list = [items.MerlinRobe(), items.DragonHide(), items.Aegis(), items.Genji()]
-        popup = utils.SelectionPopupMenu(game, ultimate_message, ultimate_options)
+        popup = utils.SelectionPopupMenu(game, ultimate_message, ultimate_options, confirm=True)
         ultimate_idx = popup.navigate_popup()
         if ultimate_options[ultimate_idx] == "Leave":
             ultimatebox.print_text_in_rectangle(no_message)
             game.stdscr.getch()
+            ultimatebox.clear_rectangle()
         else:
             ultimatebox.print_text_in_rectangle(armor_list[ultimate_idx].description)
             game.stdscr.getch()
+            ultimatebox.clear_rectangle()
             confirm_str = f"You have chosen an immaculate {ultimate_options[ultimate_idx].lower()} armor. Is this correct?"
             confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
             if confirm.navigate_popup():
@@ -843,9 +923,11 @@ def ultimate_armor_repo(game):
                 game.player_char.modify_inventory(chosen, 1)
                 tile.looted = True
                 game.stdscr.getch()
+                ultimatebox.clear_rectangle()
             else:
                 ultimatebox.print_text_in_rectangle(no_message)
                 game.stdscr.getch()
+                ultimatebox.clear_rectangle()
     game.player_char.move_south(game)
 
 
@@ -853,30 +935,18 @@ def buy(game, menu, buy_choice, handed=None):
 
     if buy_choice == "Weapon":
         item_dict = items.items_dict[buy_choice][handed]
-    elif buy_choice == "Alchemist":
+    elif buy_choice in ["Alchemist", "Miscellaneous"]:
         item_dict = {}
         alc_dict = items.items_dict["Potion"].copy()
         alc_dict.update(items.items_dict["Misc"])
         for key, value in alc_dict.items():
             item_dict[key] = value
-    elif buy_choice == "Jeweler":
+    elif buy_choice in ["Jeweler", "Accessories"]:
         item_dict = {}
         je_dict = {"Ring": items.items_dict["Accessory"]["Ring"],
                    "Pendant": items.items_dict["Accessory"]["Pendant"]}
         for key, value in je_dict.items():
             item_dict[key] = value
-    elif buy_choice == "Secret":
-        item_dict = {}
-        for typ, typ_dict in items.items_dict.items():
-            if typ == "Weapon":
-                for handed in ["1-Handed", "2-Handed"]:
-                    item_dict.update(items.items_dict[typ][handed])
-            elif typ == "Accessory":
-                for acc in ["Ring", "Pendant"]:
-                    item_dict[acc] = items.items_dict[typ][acc]
-            else:
-                for key, value in typ_dict.items():
-                    item_dict[key] = value
     else:
         item_dict = items.items_dict[buy_choice]
     while True:
@@ -914,6 +984,7 @@ def sell(game, menu):
     if len(game.player_char.inventory) == 0:
         sellbox.print_text_in_rectangle("You don't have anything to sell.")
         game.stdscr.getch()
+        sellbox.clear_rectangle()
         return True
     while True:
         sell_dict = {}
@@ -953,12 +1024,14 @@ def warp_point(game):
         message = "You step into the warp point, taking you deep into the dungeon."
         warpbox.print_text_in_rectangle(message)
         game.stdscr.getch()
+        warpbox.clear_rectangle()
         game.player_char.world_dict[(3, 0, 5)].warped = True
         game.player_char.change_location(3, 0, 5)
         return True
     message = "Not a problem, come back when you change your mind."
     warpbox.print_text_in_rectangle(message)
     game.stdscr.getch()
+    warpbox.clear_rectangle()
 
 
 def town(game):
@@ -974,30 +1047,49 @@ def town(game):
     game.player_char.mana.current = game.player_char.mana.max
     menu = utils.TownMenu(game, town_options)
     townbox = utils.TextBox(game)
+    if "Dead Body" in game.player_char.special_inventory and \
+        not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
+        game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
+        game.player_char.modify_inventory(items.DeadBody(), subtract=True, rare=True)
+        townbox.print_text_in_rectangle("You have completed the quest Rookie Mistake.")
+        game.stdscr.getch()
+        townbox.clear_rectangle()
     while True:
         game.player_char.encumbered = game.player_char.current_weight() > game.player_char.max_weight()
         town_idx = menu.navigate_menu()
         if town_options[town_idx] == 'Dungeon':
             townbox.print_text_in_rectangle("You descend into the dungeon.")
-            game.player_char.change_location(5, 10, 1)
             game.stdscr.getch()
+            townbox.clear_rectangle()
+            game.player_char.change_location(5, 10, 1)
             break
         if town_options[town_idx] == 'Character Menu':
             game.player_char.character_menu(game)
         elif town_options[town_idx] == 'Old Warehouse':
             townbox.print_text_in_rectangle("Authorized personnel only. Please leave.")
             game.stdscr.getch()
+            townbox.clear_rectangle()
         elif town_options[town_idx] == 'Warp Point':
             if warp_point(game):
                 return
         else:
-            locations[town_idx](game)
+            if game.player_char.player_level() < 5 and town_options[town_idx] == "Blacksmith":
+                townbox.print_text_in_rectangle("Sorry but the blacksmith is currently closed. Try again later.")
+                game.stdscr.getch()
+                townbox.clear_rectangle()
+            elif game.player_char.player_level() < 10 and town_options[town_idx] == "Jeweler":
+                townbox.print_text_in_rectangle("Sorry but the jeweler is currently closed.    Try again later.")
+                game.stdscr.getch()
+                townbox.clear_rectangle()
+            else:
+                locations[town_idx](game)
         if game.player_char.quit:
             break
 
 
 # classes
 class BountyBoard:
+
     def __init__(self):
         self.bounties = []
 
@@ -1057,7 +1149,7 @@ quest_dict = {
                     "Help Text":
                         "If you are having trouble finding the Minotaur, he is located north of the entrance to the "
                         "town.",
-                    'Reward': [items.OldKey()],
+                    'Reward': [items.OldKey],
                     'Reward Number': 1,
                     'Experience': 200,
                     'Completed': False,
@@ -1068,7 +1160,7 @@ quest_dict = {
                  {'Rat Trap': 
                    {'Who': 'Barkeep',
                     'Type': 'Collect',
-                    'What': items.RatTail(),
+                    'What': items.RatTail,
                     'Total': 6,
                     'Start Text':
                         "Darn pesky rats keep getting into my food supply and I'd bet anything they come up from that "
@@ -1090,7 +1182,7 @@ quest_dict = {
                  {'Knock Back a Couple Brewskis': 
                    {'Who': 'Barkeep',
                     'Type': 'Collect',
-                    'What': items.CursedHops(),
+                    'What': items.CursedHops,
                     'Total': 3,
                     'Start Text':
                         "My stock of beer is running low and my supplier says the reason is a shortage of the hops"
@@ -1128,9 +1220,9 @@ quest_dict = {
                         "My pendant...Elysia take me...he left me these keys last I saw of him...please avenge my "
                         "love...(the waitress runs out sobbing...)",
                     "Help Text":
-                        "Joffrey was last spotted entering a locked door in the northeast corner on the second floor "
-                        "of the dungeon.",
-                    'Reward': [items.OldKey()],
+                        "An adventurer came in earlier. He said he saw Joffrey on the second floor of the dungeon. "
+                        "Joffrey had just unlocked a door in the northeast corner.",
+                    'Reward': [items.OldKey],
                     'Reward Number': 2,
                     'Experience': 3500,
                     'Completed': False,
@@ -1141,7 +1233,7 @@ quest_dict = {
                  {"Where's the Beef?": 
                    {'Who': 'Waitress',
                     'Type': 'Collect',
-                    'What': items.MysteryMeat(),
+                    'What': items.MysteryMeat,
                     'Total': 12,
                     'Start Text':
                         "My wedding day is fast approaching and we are trying to save a few gold, so I am cooking "
@@ -1152,7 +1244,7 @@ quest_dict = {
                         "take this as a token of my appreciation.",
                     "Help Text":
                         "The wedding guests aren't picky when it comes to the food, so any animal meat will do.",
-                    'Reward': [items.GreatHealthPotion()],
+                    'Reward': [items.GreatHealthPotion],
                     'Reward Number': 1,
                     'Experience': 150,
                     'Completed': False,
@@ -1186,7 +1278,7 @@ quest_dict = {
                     "Help Text":
                         "The Jester has a bag full of tricks. Word is he even has the ability to change his "
                         "resistances each round to keep you on your toes.",
-                    'Reward': [items.EvasionRing()],
+                    'Reward': [items.EvasionRing],
                     'Reward Number': 1,
                     'Experience': 15000,
                     'Completed': False,
@@ -1197,7 +1289,7 @@ quest_dict = {
                  {'Metalingus': 
                    {'Who': 'Soldier',
                     'Type': 'Collect',
-                    'What': items.ScrapMetal(),
+                    'What': items.ScrapMetal,
                     'Total': 8,
                     'Start Text':
                         "The city guard are in desperate need of new equipment but we unfortunately are running short "
@@ -1209,12 +1301,8 @@ quest_dict = {
                     "Help Text":
                         "There are a few sources of metal that would be usable, including broken equipment, metal "
                         "constructs, and enemies that consume items.",
-                    'Reward': [items.StrengthPotion(),
-                                items.IntelPotion(),
-                                items.WisdomPotion(),
-                                items.ConPotion(),
-                                items.CharismaPotion(),
-                                items.DexterityPotion()],
+                    'Reward': [items.StrengthPotion, items.IntelPotion, items.WisdomPotion,
+                               items.ConPotion, items.CharismaPotion, items.DexterityPotion],
                     'Reward Number': 1,
                     'Experience': 750,
                     'Completed': False,
@@ -1242,18 +1330,40 @@ quest_dict = {
                     "Help Text":
                         "Rutger and I were on the 3rd floor of the dungeon when we encountered the Cockatrice. Make "
                         "sure you prepare for the powerful enemies on your way.",
-                    'Reward': [items.GorgonPendant()],
+                    'Reward': [items.GorgonPendant],
                     'Reward Number': 1,
                     'Experience': 3000,
                     'Completed': False,
                     'Turned In': False}
                     }
                 },
-        'Side': {18: 
+        'Side': {8:
+                 {"Ticket to Ride": 
+                   {'Who': 'Drunkard',
+                    'Type': "Collect",
+                    'What': items.TicketPiece,
+                    'Total': 3,
+                    'Start Text':
+                        "Hey, HEY, you! Can you...help me (hic)? I swear I had my ticket for the ra..raff...raffle "
+                        "in my left...no right pocket but it's no..(hic) nowhere to be found. I must have d...DROPPED "
+                        "it when I went down into the dungeon. It should be (hic) close to the stairs, I didn't go too"
+                        " far. Please find it for ME!",
+                    'End Text':
+                        "That's it! Ah man...(hic), oh shoot, I didn't win...DAMN!!! Well...(hic) thanks anyways...OH "
+                        "yeah here's something for the ef..effort.",
+                    "Help Text":
+                        "They've got to be somewhere around here...WHERE IS IT!!!",
+                    'Reward': ["Gold"],
+                    'Reward Number': 1000,
+                    'Experience': 175,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                 18: 
                  {"I'm Molting!": 
                    {'Who': 'Drunkard',
                     'Type': 'Collect',
-                    'What': items.SnakeSkin(),
+                    'What': items.SnakeSkin,
                     'Total': 8,
                     'Start Text':
                         "SNAKES! Oh my I hate those things... (hic) ...slithering about. It's unnatural...I think... "
@@ -1264,7 +1374,7 @@ quest_dict = {
                         "things...ANTIDOTES, that's what they're called. BARKEEP, another beer please... (hic).",
                     "Help Text":
                         "Watch out for the snake's venom, as it can drain your health quickly.",
-                    'Reward': [items.Antidote()],
+                    'Reward': [items.Antidote],
                     'Reward Number': 5,
                     'Experience': 400,
                     'Completed': False,
@@ -1289,7 +1399,7 @@ quest_dict = {
                     "Help Text":
                         "Do not mistake the Pseudodragon's miniature size, for its power is very potent. Beware of the"
                         " deadly Fireball spell, as it can be devastating.",
-                    'Reward': [items.Elixir()],
+                    'Reward': [items.Elixir],
                     'Reward Number': 1,
                     'Experience': 2000,
                     'Completed': False,
@@ -1309,8 +1419,9 @@ quest_dict = {
                         "the futility of being a hero...there will always be another evil to deal with and that evil "
                         "will always pale in comparison to my wrath. Pursue me at your own peril.",
                     "Help Text":
-                        "The Red Dragon is your toughest test yet, having access to some of the strongest abilities.",
-                    'Reward': [items.ClassRing()],
+                        "The Red Dragon is your toughest test yet, having access to some of the strongest abilities. "
+                        "You must defeat the Red Dragon to get to the 6th floor of the dungeon.",
+                    'Reward': [items.ClassRing],
                     'Reward Number': 1,
                     'Experience': 25000,
                     'Completed': False,
@@ -1321,7 +1432,7 @@ quest_dict = {
                  {"Pandora's Box":
                    {'Who': "Hooded Figure",
                     'Type': "Collect",
-                    'What': items.Phylactery(),
+                    'What': items.Phylactery,
                     'Total': 1,
                     'Start Text':
                         "Oh impressive, you have obtained the powerful Ultima spell. Interested in making it more "
@@ -1332,7 +1443,7 @@ quest_dict = {
                         "here's that item I promised you.",
                     "Help Text":
                         "A Lich is a powerful foe, do not underestimate them!",
-                    'Reward': [items.UltimaScepter()],
+                    'Reward': [items.UltimaScepter],
                     'Reward Number': 1,
                     'Experience': 30000,
                     'Completed': False,
@@ -1346,7 +1457,7 @@ quest_dict = {
                  {'Eight Is Enough': 
                    {'Who': 'Griswold',
                     'Type': 'Collect',
-                    'What': items.Leather(),
+                    'What': items.Leather,
                     'Total': 8,
                     'Start Text':
                         "The thieves guild has placed an order for several sets of leather armor but my supply of "
@@ -1368,7 +1479,7 @@ quest_dict = {
                  {"This Thing's Nuclear": 
                    {'Who': 'Griswold',
                     'Type': 'Collect',
-                    'What': items.PowerCore(),
+                    'What': items.PowerCore,
                     'Total': 1,
                     'Start Text':
                         "I came across an old dusty tome while cleaning out the belongings of my mentor. Most of it "
@@ -1386,7 +1497,7 @@ quest_dict = {
                         "I met an old wizard at the tavern who mentioned that power cores do indeed exist. I don't "
                         "know how he knows this but he seems pretty credible. Maybe they are used to power something "
                         "of incredible size?",
-                    'Reward': ['Power Up'],
+                    'Reward': ["Power Up"],
                     'Reward Number': 1,
                     'Experience': 5000,
                     'Completed': False,
@@ -1396,6 +1507,7 @@ quest_dict = {
                  {"He Ain't Heavy": 
                    {'Who': 'Griswold',
                     'Type': 'Locate',
+                    "What": "Chisolm",
                     'Total': 1,
                     'Start Text':
                         "I am so glad you stopped in, I really need your help. My baby brother, Chisolm, has been "
@@ -1423,7 +1535,7 @@ quest_dict = {
                  {'Put A Feather In It':
                    {'Who': 'Alchemist',
                     'Type': 'Collect',
-                    'What': items.Feather(),
+                    'What': items.Feather,
                     'Total': 12,
                     'Start Text':
                         "As you may or may not know, all of my tinctures are created here in my lab. I need some more "
@@ -1448,7 +1560,7 @@ quest_dict = {
                  {'Earth, Wind, and Fire...and Water and...': 
                    {'Who': 'Jeweler',
                     'Type': 'Collect',
-                    'What': items.ElementalMote(),
+                    'What': items.ElementalMote,
                     'Total': 6,
                     'Start Text':
                         "Long before I owned this shop, I was apprentice to a master craftsman. He taught me how to "
@@ -1462,7 +1574,7 @@ quest_dict = {
                     "Help Text":
                         "The elemental beasts known as Myrmidons come in many variations. Unfortunately the only way "
                         "to know what type you are fighting is to see what elements work or don't work against them.",
-                    'Reward': [items.ElementalAmulet()],
+                    'Reward': [items.ElementalChain],
                     'Reward Number': 1,
                     'Experience': 6000,
                     'Completed': False,
@@ -1486,14 +1598,56 @@ quest_dict = {
                     "Help Text":
                         "As with many creatures of the night, your best option for cleansing the world of the Wendigo "
                         "is Fire. Stay away from using Ice magic.",
-                    'Reward': [items.AardBeing()],
+                    'Reward': [items.AardBeing],
                     'Reward Number': 1,
                     'Experience': 6000,
                     'Completed': False,
                     'Turned In': False}
                     }
                 },
-        'Side': {}
+        'Side': {1:
+                 {'Debug': 
+                   {'Who': 'Priest',
+                    'Type': 'Debug',
+                    'What': 'Debug',
+                    'Total': 1,
+                    'Start Text':
+                        "Ah, you must be a developer. Take this quest and turn it back in for a lot of exp.",
+                    'End Text':
+                        "Looks like you know how to listen. Here's your promotion.",
+                    "Help Text":
+                        "",
+                    'Reward': ["Gold"],
+                    'Reward Number': 0,
+                    'Experience': 99999999999,
+                    'Completed': True,
+                    'Turned In': False}
+                    },
+                 40:
+                 {"The Shocker": 
+                   {'Who': 'Priest',
+                    'Type': "Collect",
+                    'What': items.BirdFat,
+                    'Total': 1,
+                    'Start Text':
+                        "I need fat..no not for eating. We have many lamps throughout the church that require fuel "
+                        "and one of the primary sources is a special type of fat from a Golden Eagle. Three should be "
+                        "enough to last for quite some time. I can't offer you payment but I can offer you information"
+                        " that may be specifically interesting to you. I look forward to your return.",
+                    'End Text':
+                        "Excellent work! This will keep us going and help us continue to do our good work. Now for "
+                        "your reward...while I do not condone the art of witchcraft, we sometimes must ally with some "
+                        "less than savory characters to defeat a greater evil. Follow me...",
+                    "Help Text":
+                        "The Golden Eagle can be found on the third floor of the dungeon. Be careful of it piercing "
+                        "call, for it can deafen you.",
+                    'Reward': ["Izulu", "Gold"],
+                    'Reward Number': 1,
+                    'Experience': 3000,
+                    'Completed': True,
+                    'Turned In': False}
+                    }
+                },
     },
     "Sergeant": {
         'Main': {1:
@@ -1515,7 +1669,7 @@ quest_dict = {
                     "Help Text":
                         "Each relic is protected by a powerful creature. Only the most determined champions will "
                         "succeed in this quest.",
-                    'Reward': [items.MedusaShield(), items.Magus(), items.RainbowRod(), items.AardBeing()],
+                    'Reward': [items.MedusaShield, items.Magus, items.RainbowRod, items.AardBeing],
                     'Reward Number': 1,
                     'Experience': 500000,
                     'Completed': False,
@@ -1535,10 +1689,35 @@ quest_dict = {
                         "Glad to hear you took care of that beast, soldier. Take this ring, it will make your physical"
                         " attacks more powerful.",
                     "Help Text":
-                        "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid form.",
-                    'Reward': [items.PowerRing()],
+                        "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid form. Search for it "
+                        "behind the locked door to the south of town.",
+                    'Reward': [items.PowerRing],
                     'Reward Number': 1,
                     'Experience': 500,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                 35:
+                 {"Ignis Equus":
+                   {'Who': 'Sergeant',
+                    'Type': 'Defeat',
+                    'What': 'Nightmare',
+                    'Total': 1,
+                    'Start Text':
+                        "I've heard many tales about the creatures that reside in the depths of the dungeon but the "
+                        "story I will tell you may take the cake. Evil and malice are bad enough but there may be "
+                        "nothing more vile than torture and fear. One such legend of the cruel Nightmare tells of "
+                        "a callous disregard for the sanctity of the mercy, toying with its food with panic and "
+                        "terror, leaving nothing but an empty statue before finishing them off. ",
+                    'End Text':
+                        "Good to see you returned intact, both physically and mentally. Not everyone has been as "
+                        "lucky...take this gold as a reward.",
+                    "Help Text":
+                        "Subterfuge will not work on this steed, who sees and hears all. That and the whole 'made of "
+                        "fire' thing. Oh and it can fly, unreal.",
+                    'Reward': ["Gold"],
+                    'Reward Number': 8500,
+                    'Experience': 4200,
                     'Completed': False,
                     'Turned In': False}
                     },
@@ -1558,7 +1737,8 @@ quest_dict = {
                         "luck...",
                     "Help Text":
                         "Do not let the Iron Golem get its hands on you, as it will literally crush you to oblivion.",
-                    'Reward': [items.DiamondAmulet(), items.PlatinumPendant()],
+                    'Reward': [items.FireAmulet, items.IceAmulet, items.ElectricAmulet,
+                               items.WaterAmulet, items.EarthAmulet, items.WindAmulet],
                     'Reward Number': 1,
                     'Experience': 20000,
                     'Completed': False,
@@ -1609,12 +1789,35 @@ quest_dict = {
                     "Help Text":
                         "That kid must be an expert at hide-and-seek. I have sent several sentries to find him and "
                         "haven't seen a trace. I guess there is an alternate outcome...let's not think that way.",
-                    'Reward': [items.HealthPotion()],
+                    'Reward': [items.HealthPotion],
                     'Reward Number': 5,
                     'Experience': 150,
                     'Completed': False,
                     'Turned In': False}
-                    }
+                    },
+                 12:
+                 {"Rookie Mistake": 
+                   {'Who': 'Sergeant',
+                    'Type': 'Locate',
+                    'What': "Rookie",
+                    'Total': 1,
+                    'Start Text':
+                        "I need your help finding someone in the dungeon. One of the new recruits got too big for his "
+                        "britches and decided he was ready to do some killing. Well he hasn't come back and it's been "
+                        "too long. When you do find him, dead or alive, make sure he gets back here.",
+                    'End Text':
+                        "Damn shame what happened to him. Unfortunately his story is not that uncommon, some people "
+                        "just don't have enough sense...here's something to help you out. Thanks for bringing him "
+                        "back so he can at least have a proper burial.",
+                    "Help Text":
+                        "I'd be surprised if he made it out of the first level of the dungeon, so I'd start by "
+                        "searching there.",
+                    'Reward': [items.ManaPotion],
+                    'Reward Number': 4,
+                    'Experience': 300,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
                 }
     },
     "Busboy": {
@@ -1642,9 +1845,30 @@ quest_dict = {
                     "Help Text":
                         "Adventurers have told stories of hearing wailing on the second floor of the dungeon that"
                         " sounds like a woman crying.",
-                    'Reward': [items.HPPotion()],
+                    'Reward': [items.HPPotion, items.MPPotion],
                     'Reward Number': 1,
                     'Experience': 5000,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                5: 
+                 {"Where's the Beef?": 
+                   {'Who': 'Waitress',
+                    'Type': 'Collect',
+                    'What': items.MysteryMeat,
+                    'Total': 12,
+                    'Start Text':
+                        "My wedding day is fast approaching and we are trying to save a few gold, so I am cooking "
+                        "the meal for the guests. If you could bring me back 12 pieces of mystery meat, I can "
+                        "reward you with this potion I received as a tip once.",
+                    'End Text':
+                        "Thank you, thank you, thank you! You have made my special day that much easier. Please "
+                        "take this as a token of my appreciation.",
+                    "Help Text":
+                        "The wedding guests aren't picky when it comes to the food, so any animal meat will do.",
+                    'Reward': [items.GreatHealthPotion],
+                    'Reward Number': 1,
+                    'Experience': 150,
                     'Completed': False,
                     'Turned In': False}
                     }

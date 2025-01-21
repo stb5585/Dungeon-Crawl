@@ -5,6 +5,7 @@ This module defines the player character and its attributes and actions.
 # Imports
 import os
 import re
+import time
 import glob
 import random
 import dill
@@ -29,7 +30,8 @@ def load_char(char=None, player_dict=None):
         os.system(f"rm {load_file}")
     player_char = Player(player_dict['location_x'], player_dict['location_y'], player_dict['location_z'],
                          player_dict['level'], player_dict['health'], player_dict['mana'], 
-                         player_dict['stats'], player_dict['gold'], player_dict['resistance'])
+                         player_dict['stats'], player_dict["combat"],
+                         player_dict['gold'], player_dict['resistance'])
     player_char.name = player_dict['name']
     player_char.race = player_dict['race']
     player_char.cls = player_dict['cls']
@@ -38,6 +40,7 @@ def load_char(char=None, player_dict=None):
     player_char.special_inventory = player_dict['special_inventory']
     player_char.spellbook = player_dict['spellbook']
     player_char.familiar = player_dict['familiar']
+    player_char.summons = player_dict["summons"]
     player_char.transform_type = player_dict['transform_type']
     player_char.teleport = player_dict['teleport']
     player_char.world_dict = player_dict['world_dict']
@@ -54,15 +57,15 @@ def load_char(char=None, player_dict=None):
 class Player(Character):
     """
     Player character class
-    Health is defined based on initial value and is modified by the constitution parameter
-    Mana is defined based on the initial value and is modified by the intelligence and half the wisdom parameters
+    Health is defined based on initial value and is modified by the constitution stat
+    Mana is defined based on the initial value and is modified by the intelligence stat
 
     encumbered(bool): signifies whether player is over carry weight
     power_up(bool): switch for power-up for retrieving Power Core
     """
 
-    def __init__(self, location_x, location_y, location_z, level, health, mana, stats, gold, resistance):
-        super().__init__(name="", health=health, mana=mana, stats=stats)
+    def __init__(self, location_x, location_y, location_z, level, health, mana, stats, combat, gold, resistance):
+        super().__init__(name="", health=health, mana=mana, stats=stats, combat=combat)
         self.location_x = location_x
         self.location_y = location_y
         self.location_z = location_z
@@ -82,6 +85,7 @@ class Player(Character):
         self.quit = False
         self.teleport = None
         self.familiar = None
+        self.summons = {}
         self.transform_type = self.cls
         self.encumbered = False
         self.power_up = False
@@ -116,6 +120,8 @@ class Player(Character):
                         map_array[tile_x][tile_y] = "\u25CB" if self.world_dict[tile].read else "\u25C9"
                     elif 'Boss' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2620" if not self.world_dict[tile].defeated else "."
+                    elif "SecretShop" in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = "\u2302"
                     else:
                         map_array[tile_x][tile_y] = "."
         map_array[self.location_y][self.location_x] = "\u002b"
@@ -155,14 +161,20 @@ class Player(Character):
         """
         if self.transform_type:
             if self.cls.name in ["Druid", "Lycan"]:
-                action_list.append("Transform")
-            if self.transform_type == self.cls and self.status_effects['Power Up'].duration < 5:
+                action_list.insert(1, "Transform")
+            if self.transform_type == self.cls and self.class_effects["Power Up"].duration < 5:
                 action_list.append("Untransform")
                 for action in ["Flee", "Use Item"]:
                     if action in action_list:
                         action_list.pop(action_list.index(action))
-        if self.status_effects['Disarm'].active:
-            action_list.append("Pickup Weapon")
+        if self.physical_effects["Disarm"].active:
+            action_list.insert(1, "Pickup Weapon")
+        if "Summon" in self.spellbook["Skills"] and \
+            any([x.is_alive() for x in self.summons.values()]) and \
+                not self.status_effects["Silence"].active:
+            action_list.insert(1, "Summon")
+        if self.cls.name in ["Shaman", "Soulcatcher"]:
+            action_list.insert(1, "Totem")
         return action_list
 
     def has_relics(self):
@@ -188,6 +200,14 @@ class Player(Character):
     def in_town(self):
         return (self.location_x, self.location_y, self.location_z) == (5, 10, 0)
 
+    def town_heal(self):
+        self.state = 'normal'
+        self.health.current = self.health.max
+        self.mana.current = self.mana.max
+        for summon in self.summons.values():
+            summon.health.current = summon.health.max
+            summon.mana.current = summon.mana.max
+
     def equipable(self, item, equip_slot):
         return equip_check(item, self.cls, equip_slot)
 
@@ -209,8 +229,8 @@ class Player(Character):
                 return True
         # should only reach if not enough mana to cast spells; lasts for 4 turns
         if self.cls.name == "Wizard" and self.power_up and typ == "Spells":
-            self.special_effects['Power Up'].active = True
-            self.special_effects['Power Up'].duration = 4
+            self.class_effects["Power Up"].active = True
+            self.class_effects["Power Up"].duration = 4
             return True
         return False
     
@@ -222,6 +242,8 @@ class Player(Character):
         for item in self.equipment.values():
             weight += item.weight
         for item in self.inventory.values():
+            weight += item[0].weight * len(item)
+        for item in self.special_inventory.values():
             weight += item[0].weight * len(item)
         return round(weight, 1)
 
@@ -235,6 +257,7 @@ class Player(Character):
             gamequitbox = utils.TextBox(game)
             gamequitbox.print_text_in_rectangle(f"Goodbye, {self.name}!")
             game.stdscr.getch()
+            gamequitbox.clear_rectangle()
             self.quit = True
             return True
 
@@ -242,9 +265,14 @@ class Player(Character):
         """
         Lists character options
         """
-        character_options = [actions_dict['ViewInventory'], actions_dict["Equipment"], actions_dict['Specials'],
-                             actions_dict['ViewQuests'], actions_dict['Quit'], "Exit Menu"]
-        options = ["Inventory", "Equipment", "Specials", "Quests", "Quit Game", "Exit Menu"]
+        class_option = "Class Menu"
+        class_action = None
+        if "Summoner" in self.cls.name:
+            class_option = "Summons"
+            class_action = actions_dict["Summons"]
+        character_options = [actions_dict['ViewInventory'], actions_dict["ViewKeyItems"], actions_dict["Equipment"],
+                             actions_dict['Specials'], actions_dict['ViewQuests'], class_action, "Exit Menu", actions_dict['Quit']]
+        options = ["Inventory", "Key Items", "Equipment", "Specials", "Quests", class_option, "Exit Menu", "Quit Game"]
         menu = utils.CharacterMenu(game, options)
         menu.draw_all()
         while True:
@@ -252,6 +280,12 @@ class Player(Character):
             action = character_options[character_idx]
             if action == "Exit Menu":
                 break
+            if action is None:
+                textbox = utils.TextBox(game)
+                textbox.print_text_in_rectangle("Your class does not have a special menu.\n")
+                game.stdscr.getch()
+                textbox.clear_rectangle()
+                continue
             action['method'](self, game)
             if self.quit:
                 return True
@@ -275,26 +309,20 @@ class Player(Character):
     def combat_str(self):
         combat_message = ""
         main_dmg = self.check_mod('weapon')
-        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.stats.dex)) * 100)
+        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
         if self.equipment['OffHand'].typ == 'Weapon':
             off_dmg = self.check_mod('offhand')
-            off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.stats.dex)) * 100)
+            off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
             combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>3}/{str(off_dmg):>3}\n"
             combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):2}%/{str(off_crit):>2}%\n"
         else:
             combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>7}\n"
             combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):>6}%\n"
-        combat_message += f"{'Armor:':16}{' ':2}{self.check_mod('armor'):>7}\n"
-        block = 0
-        if self.equipment['OffHand'].subtyp == 'Shield':
-            block = round(self.equipment['OffHand'].mod * 100)
-        combat_message += f"{'Block Chance:':16}{' ':2}{block:>6}%\n"
+        combat_message += f"{'Defense:':16}{' ':2}{self.check_mod('armor'):>7}\n"
+        combat_message += f"{'Block Chance:':16}{' ':2}{self.check_mod('shield'):>6}%\n"
         combat_message += f"{'Spell Defense:':16}{' ':2}{str(self.check_mod('magic def')):>7}\n"
-        spell_mod, heal_mod = 0, 0
-        if len(self.spellbook['Spells']) > 0:
-            spell_mod = self.check_mod('magic')
-            if any(x.subtyp == 'Heal' for x in self.spellbook['Spells'].values()):
-                heal_mod = self.check_mod('heal')
+        spell_mod = self.check_mod('magic')
+        heal_mod = self.check_mod('heal')
         combat_message += f"{'Spell Modifier:':16}{' ':2}{str(spell_mod):>7}\n"
         combat_message += f"{'Heal Modifier:':16}{' ':2}{str(heal_mod):>7}\n"
         buff_str = self.buff_str()
@@ -316,28 +344,15 @@ class Player(Character):
         """
         Returns a string containing the current resistances of the player
         """
-        return (f"{'Fire:':10}{self.resistance['Fire']:5}{' ':6}{'Ice:':10}{self.resistance['Ice']:5}\n"
-                f"{'Electric:':10}{self.resistance['Electric']:5}{' ':6}{'Water:':10}{self.resistance['Water']:5}\n"
-                f"{'Earth:':10}{self.resistance['Earth']:5}{' ':6}{'Wind:':10}{self.resistance['Wind']:5}\n"
-                f"{'Shadow:':10}{self.resistance['Shadow']:5}{' ':6}{'Death:':10}{self.resistance['Death']:5}\n"
-                f"{'Stone:':10}{self.resistance['Stone']:5}{' ':6}{'Holy:':10}{self.resistance['Holy']:5}\n"
-                f"{'Poison:':10}{self.resistance['Poison']:5}{' ':6}{'Physical:':10}{self.resistance['Physical']:5}\n")
 
-    def buff_str(self):
-        buffs = []
-        if self.flying:
-            buffs.append("Flying")
-        if self.invisible:
-            buffs.append("Invisible")
-        if "Vision" in self.equipment['Pendant'].mod or self.sight:
-            buffs.append("Vision")
-        if "Accuracy" in self.equipment['Ring'].mod:
-            buffs.append("Accuracy")
-        if "Poison" in self.equipment['Pendant'].mod:
-            buffs.append("Poison")
-        if not buffs:
-            buffs.append("None")
-        return ", ".join(buffs)
+        rest_dict = {}
+        for typ in self.resistance:
+            rest_dict[typ] = self.check_mod("resist", typ=typ)
+        return (f"{'Fire:':10}{rest_dict['Fire']:5}{' ':6}{'Ice:':10}{rest_dict['Ice']:5}\n"
+                f"{'Electric:':10}{rest_dict['Electric']:5}{' ':6}{'Water:':10}{rest_dict['Water']:5}\n"
+                f"{'Earth:':10}{rest_dict['Earth']:5}{' ':6}{'Wind:':10}{rest_dict['Wind']:5}\n"
+                f"{'Shadow:':10}{rest_dict['Shadow']:5}{' ':6}{'Holy:':10}{rest_dict['Holy']:5}\n"
+                f"{'Poison:':10}{rest_dict['Poison']:5}{' ':6}{'Physical:':10}{rest_dict['Physical']:5}\n")
 
     def use_item(self, game, enemy):
         item_message = "Items"
@@ -366,10 +381,10 @@ class Player(Character):
         return itm.use(self, target=target)
 
     def level_up(self, game):
-        health_gain = random.randint(self.stats.con // 3, self.stats.con) * max(1, self.check_mod('luck', luck_factor=12))
+        dv = max(1, 5 - self.check_mod('luck', luck_factor=8))
+        health_gain = random.randint(self.stats.con // dv, self.stats.con)
         self.health.max += health_gain
-        mana_gain = int((self.stats.intel // 2 + self.stats.wisdom // 3))
-        mana_gain = random.randint(mana_gain // 3, mana_gain) * max(1, self.check_mod('luck', luck_factor=12))
+        mana_gain = random.randint(self.stats.intel // dv, self.stats.intel)
         self.mana.max += mana_gain
         if self.in_town():
             self.health.current = self.health.max
@@ -378,6 +393,26 @@ class Player(Character):
         level_str = (f"You have gained a level.\n"
                      f"You are now level {self.level.level}.\n"
                      f"You have gained {health_gain} health points and {mana_gain} mana points.\n")
+        attack_gain = random.randint(0, self.check_mod("luck", luck_factor=12) +
+                                    (self.stats.strength // 12) + max(1, self.cls.att_plus // 2))
+        self.combat.attack += attack_gain
+        defense_gain = random.randint(0, self.check_mod("luck", luck_factor=15) + 
+                                    (self.stats.con // 12) + max(1, self.cls.def_plus // 2))
+        self.combat.defense += defense_gain
+        magic_gain = random.randint(0, self.check_mod("luck", luck_factor=12) +
+                                    (self.stats.intel // 12) + max(1, self.cls.int_plus // 2))
+        self.combat.magic += magic_gain
+        magic_def_gain = random.randint(0, self.check_mod("luck", luck_factor=15) +
+                                    (self.stats.wisdom // 12) + max(1, self.cls.wis_plus // 2))
+        self.combat.magic_def += magic_def_gain
+        if attack_gain > 0:
+            level_str += f"You have gained {attack_gain} attack.\n"
+        if defense_gain > 0:
+            level_str += f"You have gained {defense_gain} defense.\n"
+        if magic_gain > 0:
+            level_str += f"You have gained {magic_gain} magic.\n"
+        if magic_def_gain > 0:
+            level_str += f"You have gained {magic_def_gain} magic defense.\n"
         if str(self.level.level) in abilities.spell_dict[self.cls.name]:
             spell = abilities.spell_dict[self.cls.name][str(self.level.level)]
             spell_gain = spell()
@@ -413,11 +448,13 @@ class Player(Character):
                     level_str += f"You have gained the ability to use {skill_name}.\n"
             self.spellbook['Skills'][skill_name] = skill_gain
             if skill_name == 'Health/Mana Drain':
-                del self.spellbook['Skills']['Health Drain']
-                del self.spellbook['Skills']['Mana Drain']
+                for skill in ["Health Drain", "Mana Drain"]:
+                    if skill in self.spellbook["Skills"]:
+                        del self.spellbook['Skills'][skill]
             elif skill_name == "True Piercing Strike":
-                del self.spellbook['Skills']['Piercing Strike']
-                del self.spellbook['Skills']['True Strike']
+                for skill in ["Piercing Strike", "True Strike"]:
+                    if skill in self.spellbook["Skills"]:
+                        del self.spellbook['Skills'][skill]
             elif skill_name == 'Familiar':
                 level_str += self.familiar.level_up()
             elif skill_name in ["Transform", "Purity of Body"]:
@@ -438,7 +475,7 @@ class Player(Character):
                             f'Constitution - {self.stats.con}',
                             f'Charisma - {self.stats.charisma}',
                             f'Dexterity - {self.stats.dex}']
-            menu = utils.SelectionPopupMenu(game, stat_message, stat_options, box_height=11)
+            menu = utils.SelectionPopupMenu(game, stat_message, stat_options, box_height=12, confirm=False)
             stat_idx = menu.navigate_popup()
             if 'Strength' in stat_options[stat_idx]:
                 self.stats.strength += 1
@@ -468,7 +505,8 @@ class Player(Character):
         if 'Chest' in str(tile):
             locked = int('Locked' in str(tile))
             plus = int('ChestRoom2' in str(tile))
-            if not random.randint(0, 4 + self.check_mod('luck', luck_factor=10)) and self.level.level >= 10:
+            gold = random.randint(5, 50) * (self.location_z + locked + plus) * self.stats.charisma
+            if not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10:
                 import enemies
                 enemy = enemies.Mimic(self.location_z + locked + plus)
                 tile.enemy = enemy
@@ -477,14 +515,18 @@ class Player(Character):
                 game.battle(enemy)
             if self.is_alive():
                 tile.open = True
+                loot = tile.loot()
                 openupbox.print_text_in_rectangle(
-                    f"{self.name} opens the chest, containing a {tile.loot.name}.")
+                    f"{self.name} opens the chest, containing {gold} gold and a {loot.name}.")
                 game.stdscr.getch()
-                self.modify_inventory(tile.loot, 1)
+                openupbox.clear_rectangle()
+                self.modify_inventory(loot, 1)
+                self.gold += gold
         elif 'Door' in str(tile):
             tile.open = True
             openupbox.print_text_in_rectangle(f"{self.name} opens the door.")
             game.stdscr.getch()
+            openupbox.clear_rectangle()
         else:
             raise AssertionError("Something is not working. Check code.")
         openupbox.clear_rectangle()
@@ -497,15 +539,16 @@ class Player(Character):
         if enemy.gold > 0:
             loot_message += f"{enemy.name} dropped {enemy.gold} gold.\n"
             self.gold += enemy.gold
-        for i, item in enumerate(items):
-            if item.subtyp == 'Enemy':
+        for i, item_typ in enumerate(items):
+            item = item_typ()
+            if item.subtyp == "Quest":
                 for info in self.quest_dict['Side'].values():
                     try:
-                        if info['What'].name == item.name and not info['Completed']:
+                        if info['What']().name == item.name and not info['Completed']:
                             rare[i] = True
                             drop[i] = True if item.rarity > random.random() else False
                             break
-                    except AttributeError:
+                    except (AttributeError, TypeError):
                         pass
             elif 'Boss' in str(tile):
                 drop[i] = True  # all non-quest items will drop from bosses
@@ -515,7 +558,16 @@ class Player(Character):
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 if (item.rarity / 2) > (random.random() / chance):
-                        drop[i] = True
+                        try:
+                            summon, name = item.subtyp.split(" - ")
+                            summon_drop = item.name in self.special_inventory
+                        except ValueError:
+                            summon, name = None, None
+                            summon_drop = False
+                        if summon and "Summoner" not in self.cls.name:
+                            continue
+                        drop[i] = True if not summon_drop else False
+                        rare[i] = True if summon else False
             if drop[i]:
                 loot_message += f"{enemy.name} dropped a {item.name}.\n"
                 self.modify_inventory(item, rare=rare[i])
@@ -537,6 +589,15 @@ class Player(Character):
                         useitembox.print_text_in_rectangle(use_str)
                         game.stdscr.getch()
                         useitembox.clear_rectangle()
+                    if "Sanctuary" in item.name:
+                        return
+
+    def key_item_screen(self, game):
+        inv_popup = utils.InventoryPopupMenu(game, "Key Items")
+        while True:
+            item = inv_popup.navigate_popup()
+            if item == "Go Back":
+                return
 
     def equipment_screen(self, game):
         e_popup = utils.EquipPopupMenu(game, "Select Equipment", 15)
@@ -550,27 +611,49 @@ class Player(Character):
         if tmp:
             tmp_dir = "tmp_files"
             save_file = tmp_dir + f"/{str(self.name)}.tmp"
+            if not os.path.isdir(tmp_dir):
+                os.mkdir(tmp_dir)
             with open(save_file, "wb") as save_game:
                 dill.dump(self.__dict__, save_game)
         else:
-            savebox = utils.TextBox(game)
             while True:
+                if not os.path.isdir("save_files"):
+                    os.mkdir("save_files")
                 save_file = f"save_files/{str(self.name).lower()}.save"
                 if os.path.exists(save_file):
                     confirm_str = "A save file under this name already exists. Are you sure you want to overwrite it?"
                     confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
                     if not confirm.navigate_popup():
                         break
-                else:
-                    savebox.print_text_in_rectangle("Your game is now saved.")
-                    game.stdscr.getch()
-                    savebox.clear_rectangle()
+                utils.save_game_popup(game)
                 with open(save_file, "wb") as save_game:
                     dill.dump(self.__dict__, save_game)
                 break
 
-    def equip(self, equip_slot, item):
-        if self.equipment[equip_slot].subtyp != 'None':
+    def equip(self, equip_slot, item, check=False):
+        """
+        Handles equiping and character modification effects of equipment
+
+        Args:
+            equip_slot(str): Equipment slot where item is to be equipped. Must be one of the following: "Weapon",
+                "OffHand", "Armor", "Ring", "Pendant"
+            item(Equipment): Equipment object to be equipped
+            check(bool, optional): A flag signifying whether this is an equipment check or an actual equipment change.
+                Default is False.
+
+        Returns:
+            None: This function does not return a value.
+
+        Example:
+            >>> equip("Weapon", Dirk)
+            >>> equip("Armor", LeatherArmor, check=True)
+
+        """
+        equip_slots = {"Weapon", "OffHand", "Armor", "Ring", "Pendant"}
+        if equip_slot not in equip_slots:
+            raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")
+
+        if self.equipment[equip_slot].subtyp != 'None' and not check:
             self.modify_inventory(self.equipment[equip_slot])
         if self.equipment[equip_slot].name == "Pendant of Vision" and (self.cls.name not in ["Inquisitor", "Seeker"]):
             self.sight = False
@@ -581,14 +664,16 @@ class Player(Character):
         if self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
             if equip_slot == "Weapon":
                 if item.handed == 2:
-                    if self.equipment["OffHand"].subtyp != 'None':
+                    if self.equipment["OffHand"].subtyp != 'None' and not check:
                         self.modify_inventory(self.equipment["OffHand"])
-                    self.equipment["OffHand"] = remove_equipment("OffHand")
+                    if not check:
+                        self.equipment["OffHand"] = remove_equipment("OffHand")
             if equip_slot == "OffHand":
                 if self.equipment["Weapon"].handed == 2:
-                    if self.equipment["Weapon"].subtyp != 'None':
+                    if self.equipment["Weapon"].subtyp != 'None' and not check:
                         self.modify_inventory(self.equipment["Weapon"])
-                    self.equipment["Weapon"] = remove_equipment("Weapon")
+                    if not check:
+                        self.equipment["Weapon"] = remove_equipment("Weapon")
         self.equipment[equip_slot] = item
         if item.name == "Pendant of Vision":
             self.sight = True
@@ -596,10 +681,8 @@ class Player(Character):
             self.invisible = True
         if item.name == 'Levitation Necklace':
             self.flying = True
-        try:
+        if not check and item.subtyp != "None":
             self.modify_inventory(item, subtract=True)
-        except KeyError:
-            pass
 
     def equip_diff(self, item, equip_slot, buy=False):
         """
@@ -609,12 +692,12 @@ class Player(Character):
             equip_slot = item.subtyp
         current_equipment = self.equipment.copy()  # copy old equipment to use at end
         main_dmg = self.check_mod('weapon')
-        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.stats.dex)) * 100)
+        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
         attack = f"{str(main_dmg)}"
         crit = f"{str(main_crit)}%"
         if self.equipment['OffHand'].typ == 'Weapon':
             off_dmg = self.check_mod('offhand')
-            off_crit = int((self.equipment['OffHand'].crit  + (0.005 * self.stats.dex)) * 100)
+            off_crit = int((self.equipment['OffHand'].crit  + (0.005 * self.check_mod("speed"))) * 100)
             attack = f"{str(main_dmg)}/{str(off_dmg)}"
             crit = f"{str(main_crit)}%/{str(off_crit)}%"
         armor = self.check_mod('armor')
@@ -639,23 +722,15 @@ class Player(Character):
             return ""
 
         # equip new item
-        self.equipment[equip_slot] = item
+        self.equip(equip_slot, item, check=True)
         if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
-            self.equipment["OffHand"] = item
+            self.equip("OffHand", item)
         new_main_dmg = self.check_mod('weapon')
         if new_main_dmg != main_dmg:
             diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}"
-        new_main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.stats.dex)) * 100)
+        new_main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
         if new_main_crit != main_crit:
             diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%"
-         # 2-hander will unequip offhand for other classes and vice versa
-        if self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
-            if equip_slot == "Weapon":
-                if item.handed == 2:
-                    self.equipment["OffHand"] = self.unequip("OffHand")
-            if equip_slot == "OffHand":
-                if self.equipment["Weapon"].handed == 2:
-                    self.equipment["Weapon"] = self.unequip("Weapon")
         if equip_slot == 'Weapon':
             if current_equipment['OffHand'].typ == 'Weapon':
                 if item.handed == 2 and self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
@@ -663,14 +738,14 @@ class Player(Character):
                     diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%"
                 else:
                     new_off_dmg = self.check_mod('offhand')
-                    new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.stats.dex)) * 100)
+                    new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
                     if new_main_dmg != main_dmg or new_off_dmg != off_dmg:
                         diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
                     if new_main_crit != main_crit or new_off_crit != off_crit:
                         diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"                    
             elif item.subtyp in self.cls.restrictions["OffHand"] and buy:
                 new_off_dmg = self.check_mod('offhand')
-                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.stats.dex)) * 100)
+                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
                 if current_equipment["OffHand"].typ == "Weapon":
                     diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
                     diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
@@ -682,7 +757,7 @@ class Player(Character):
         if equip_slot == 'OffHand':
             if item.typ == "Weapon":
                 new_off_dmg = self.check_mod('offhand')
-                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.stats.dex)) * 100)
+                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
                 diff_dict["Attack"] = f"{main_dmg} -> {main_dmg}/{new_off_dmg}"
                 diff_dict["Critical Chance"] = f"{main_crit}% -> {main_crit}%/{new_off_crit}%"
                 if current_equipment["OffHand"].typ == 'Weapon':
@@ -701,20 +776,12 @@ class Player(Character):
             diff_dict["Spell Modifier"] = f"{spell_mod} -> {self.check_mod('magic')}"
         if self.check_mod('heal') != heal_mod:
             diff_dict["Heal Modifier"] = f"{heal_mod} -> {self.check_mod('heal')}"
-        if self.buff_str() != buffs:
-            diff_dict['Buffs'] = self.buff_str()
+        diff_dict['Buffs'] = self.buff_str()
 
         # revert equipment to before
-        self.equipment[equip_slot] = current_equipment[equip_slot]
+        self.equip(equip_slot, current_equipment[equip_slot], check=True)
         if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
-            self.equipment["OffHand"] = current_equipment["OffHand"]
-        if self.cls not in ["Lancer", "Dragoon", "Berserker"]:
-            if equip_slot == "Weapon":
-                if item.handed == 2:
-                    self.equipment["OffHand"] = current_equipment["OffHand"]
-            if equip_slot == "OffHand":
-                if current_equipment["Weapon"].handed == 2:
-                    self.equipment["Weapon"] = current_equipment["Weapon"]
+            self.equip("OffHand", current_equipment[equip_slot])
         return "\n".join([f"{x:16}{' ':2}{y:>6}" for x, y in diff_dict.items()])
 
     def unequip(self, typ=None, promo=False):
@@ -792,17 +859,15 @@ class Player(Character):
                     self.stats.dex -= 1
                 death_message += f"You have lost 1 {stat_name}.\n"
         self.state = 'normal'
-        self.statuses(end=True)
+        self.effects(end=True)
         self.location_x, self.location_y, self.location_z = (5, 10, 0)
         death_message += "You wake up in town.\n"
         deathbox = utils.TextBox(game)
         deathbox.print_text_in_rectangle(death_message)
         game.stdscr.getch()
+        deathbox.clear_rectangle()
 
     def class_upgrades(self, game, enemy):
-        """
-
-        """
         upgrade_str = ""
         if self.cls.name == "Soulcatcher":
             limiter = 1  # TODO 
@@ -880,22 +945,22 @@ class Player(Character):
                             if random.randint(0, 1):
                                 special = self.familiar.spellbook['Spells']['Heal']
                             else:
-                                special = self.familiar.spellbook['Spells']['Regen']
-                        elif not self.status_effects['Attack'].active:
+                                special = self.familiar.spellbook['Spells']["Regen"]
+                        elif not self.stat_effects["Attack"].active:
                             special = self.familiar.spellbook['Spells']['Bless']
-                        elif self.familiar.level.level > 1 and not self.status_effects['Reflect'].active:
-                            special = self.familiar.spellbook['Spells']['Reflect']
+                        elif self.familiar.level.level > 1 and not self.magic_effects["Reflect"].active:
+                            special = self.familiar.spellbook['Spells']["Reflect"]
                         elif self.familiar.level.level == 3 and random.randint(0, 1):
                             special = self.familiar.spellbook['Spells']['Cleanse']
                         else:
                             if random.randint(0, 1):
                                 special = self.familiar.spellbook['Spells']['Heal']
                             else:
-                                special = self.familiar.spellbook['Spells']['Regen']
+                                special = self.familiar.spellbook['Spells']["Regen"]
                 if self.familiar.spec == "Arcane":  # just spells
                     spell_list = list(self.familiar.spellbook['Spells'])
                     choice = random.choice(spell_list)
-                    if choice == "Boost" and not random.randint(0, 1) and not self.status_effects['Magic'].active:
+                    if choice == "Boost" and not random.randint(0, 1) and not self.stat_effects["Magic"].active:
                         special = self.familiar.spellbook['Spells']['Boost']
                         target = self
                     else:
@@ -964,18 +1029,28 @@ class Player(Character):
             self.spellbook = self.transform_type.spellbook
             self.resistance = self.transform_type.resistance
             if self.power_up:
-                self.status_effects['Power Up'].active = True
-                self.status_effects['Power Up'].duration = 1
+                self.class_effects["Power Up"].active = True
+                self.class_effects["Power Up"].duration = 1
         return transform_str
 
-    def end_combat(self, game, enemy, tile, flee=False):
+    def end_combat(self, game, enemy, tile, flee=False, summon=None):
         self.state = 'normal'
         endcombatbox = utils.TextBox(game)
         self.transform(back=True)
-        self.statuses(end=True)
+        self.effects(end=True)
         if all([self.is_alive(), not flee]):
             endcombat_str = (f"{self.name} killed {enemy.name}.\n"
                              f"{self.name} gained {enemy.experience} experience.\n")
+            if summon:
+                summon.effects(end=True)
+                endcombat_str += f"{summon.name} gained {enemy.experience} experience.\n"
+                summon.level.exp += enemy.experience
+                if summon.level.level < 10:
+                    summon.level.exp_to_gain -= enemy.experience
+                    while summon.level.exp_to_gain <= 0:
+                        endcombat_str += summon.level_up(self)
+                        if summon.level.level == 10:
+                            break
             if enemy.enemy_typ not in self.kill_dict:
                 self.kill_dict[enemy.enemy_typ] = {}
             if enemy.name not in self.kill_dict[enemy.enemy_typ]:
@@ -984,13 +1059,13 @@ class Player(Character):
             endcombat_str += self.loot(enemy, tile)
             endcombat_str += self.quests(enemy=enemy)
             endcombatbox.print_text_in_rectangle(endcombat_str)
+            time.sleep(0.25)
             game.stdscr.getch()
             endcombatbox.clear_rectangle()
             self.level.exp += enemy.experience
-            if not self.max_level():
-                self.level.exp_to_gain -= enemy.experience
             self.class_upgrades(game, enemy)
             if not self.max_level():
+                self.level.exp_to_gain -= enemy.experience
                 while self.level.exp_to_gain <= 0:
                     self.level_up(game)
                     if self.max_level():
@@ -999,8 +1074,10 @@ class Player(Character):
             pass
         else:
             endcombatbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
+            time.sleep(0.5)
             game.stdscr.getch()
-            enemy.statuses(end=True)
+            endcombatbox.clear_rectangle()
+            enemy.effects(end=True)
             enemy.health.current = enemy.health.max
             enemy.mana.current = enemy.mana.max
             self.death(game)
@@ -1026,14 +1103,14 @@ class Player(Character):
         elif item is not None:
             for quest in self.quest_dict['Side']:
                 try:
-                    if self.quest_dict['Side'][quest]['What'].name == item.name:
+                    if self.quest_dict['Side'][quest]['What']().name == item.name:
                         if item.name in self.special_inventory:
                             if len(self.special_inventory[item.name]) >= self.quest_dict['Side'][quest]['Total'] and \
                                     not self.quest_dict['Side'][quest]['Completed']:
                                 self.quest_dict['Side'][quest]['Completed'] = True
                                 quest_message += f"You have completed the quest {quest}.\n"
                         break
-                except AttributeError:
+                except (AttributeError, TypeError):
                     pass
         else:
             if self.has_relics():
@@ -1052,33 +1129,34 @@ class Player(Character):
             if enemy:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
         if mod == 'weapon':
-            weapon_mod = (self.equipment['Weapon'].damage * int(not self.status_effects["Disarm"].active))
-            class_mod += (max(self.stats.strength, self.stats.dex) // 3)
+            weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
             if 'Monk' in self.cls.name:
-                class_mod += (self.stats.wisdom // 2)
+                class_mod += self.stats.wisdom
+            if self.cls.name in ["Thief", "Rogue", "Assassin", "Ninja"]:
+                class_mod += self.stats.dex
             if self.cls.name in ['Spellblade', 'Knight Enchanter']:
-                class_mod += (self.level.level + ((self.level.pro_level - 1) * 20)) * (self.mana.current / self.mana.max)
+                class_mod += weapon_mod * int(2 * (self.mana.current / self.mana.max))
             if self.cls.name == "Berserker" and self.power_up:
                 class_mod += int(min(self.health.max / self.health.current, 10) * (self.player_level() // 11))
             if self.cls.name in ['Dragoon', "Shadowcaster"] and self.power_up:
-                class_mod += weapon_mod * self.status_effects['Power Up'].active * self.status_effects['Power Up'].duration
+                class_mod += weapon_mod * self.class_effects["Power Up"].active * self.class_effects["Power Up"].duration
             if self.cls.name == "Ninja" and self.power_up:
-                class_mod += self.status_effects['Power Up'].active * self.status_effects['Power Up'].extra
-            if self.cls.name == "Templar" and self.power_up and self.status_effects['Power Up'].active:
+                class_mod += self.class_effects["Power Up"].active * self.class_effects["Power Up"].extra
+            if self.cls.name == "Templar" and self.power_up and self.class_effects["Power Up"].active:
                 class_mod += (self.player_level() // 5)
             if self.cls.name == "Lycan" and self.power_up:
-                class_mod += ((self.player_level() // 10) * self.status_effects['Power Up'].duration)
+                class_mod += ((self.player_level() // 10) * self.class_effects["Power Up"].duration)
             if 'Physical Damage' in self.equipment['Ring'].mod:
                 weapon_mod += int(self.equipment['Ring'].mod.split(' ')[0])
-            weapon_mod += self.status_effects['Attack'].extra * self.status_effects['Attack'].active
-            return weapon_mod + class_mod
+            weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
+            return max(0, weapon_mod + class_mod + self.combat.attack)
         if mod == 'shield':
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
                 block_mod = round(self.equipment['OffHand'].mod * 100)
             if self.equipment['Ring'].mod == "Block":
                 block_mod += 25
-            return block_mod
+            return max(0, block_mod)
         if mod == 'offhand':
             if 'Monk' in self.cls.name:
                 class_mod += self.stats.wisdom
@@ -1087,17 +1165,17 @@ class Player(Character):
             if self.cls.name in ['Thief', 'Rogue', 'Assassin', 'Ninja', 'Druid', 'Lycan']:
                 class_mod += (self.stats.dex // 2)
             try:
-                off_mod = self.equipment['OffHand'].damage + (max(self.stats.strength, self.stats.dex) // 5)
+                off_mod = self.equipment['OffHand'].damage
                 if 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
-                off_mod += self.status_effects['Attack'].extra * self.status_effects['Attack'].active
-                return int((off_mod + class_mod) * 0.75)
+                off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
+                return max(0, int((off_mod + class_mod + self.combat.attack) * 0.75))
             except AttributeError:
                 return 0
         if mod == 'armor':
             armor_mod = self.equipment['Armor'].armor
             if self.cls.name == 'Knight Enchanter':
-                class_mod += self.stats.intel * (self.mana.current / self.mana.max)
+                class_mod += int(armor_mod * max(0, min(5, self.mana.max / (self.mana.current + 1))))
             if self.cls.name in ['Warlock', 'Shadowcaster']:
                 if self.familiar.spec == 'Homunculus' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = random.randint(0, 3) ** self.familiar.level.pro_level
@@ -1105,39 +1183,37 @@ class Player(Character):
             if self.cls.name == "Berserker" and self.power_up and (self.health.current / self.health.max) < 0.3:
                 class_mod += (self.player_level() // 11)
             if self.cls.name == 'Dragoon' and self.power_up:
-                class_mod = armor_mod * self.status_effects['Power Up'].active * self.status_effects['Power Up'].duration
+                class_mod = armor_mod * self.class_effects["Power Up"].active * self.class_effects["Power Up"].duration
             if 'Physical Defense' in self.equipment['Ring'].mod:
                 armor_mod += int(self.equipment['Ring'].mod.split(' ')[0])
-            armor_mod += self.status_effects['Defense'].extra * self.status_effects['Defense'].active
-            return (armor_mod + class_mod) * int(not ignore)
+            armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
+            return max(0, (armor_mod * int(not ignore)) + class_mod + self.combat.defense)
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':
                 magic_mod += self.equipment['OffHand'].mod
-            if self.equipment['Weapon'].subtyp == 'Staff' or \
-                    (self.cls.name in ['Spellblade', 'Knight Enchanter'] and
-                     self.equipment['Weapon'].subtyp == 'Longsword'):
-                magic_mod += int(self.equipment['Weapon'].damage * 1.5)
+            if self.equipment['Weapon'].subtyp == 'Staff':
+                magic_mod += int(self.equipment['Weapon'].damage * 0.75)
             if 'Magic Damage' in self.equipment['Pendant'].mod:
                 magic_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
-            magic_mod += self.status_effects['Magic'].extra * self.status_effects['Magic'].active
-            if self.cls.name == "Shadowcaster" and self.status_effects['Power Up'].active:
+            magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
+            if self.cls.name == "Shadowcaster" and self.class_effects["Power Up"].active:
                 class_mod += magic_mod
-            return magic_mod + class_mod
+            return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
-            m_def_mod = self.stats.wisdom
-            if 'Magic Defense' in self.equipment['Pendant'].mod:
+            m_def_mod = self.stats.wisdom * self.level.pro_level
+            if "Magic Defense" in self.equipment['Pendant'].mod:
                 m_def_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
-            m_def_mod += self.status_effects['Magic Defense'].extra * self.status_effects['Magic Defense'].active
-            return m_def_mod + class_mod
+            m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
+            return max(0, m_def_mod + class_mod + self.combat.magic_def)
         if mod == 'heal':
             heal_mod = self.stats.wisdom * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':
                 heal_mod += self.equipment['OffHand'].mod
             elif self.equipment['Weapon'].subtyp == 'Staff':
-                heal_mod += int(self.equipment['Weapon'].damage * 1.5)
-            heal_mod += self.status_effects['Magic'].extra * self.status_effects['Magic'].active
-            return heal_mod + class_mod
+                heal_mod += self.equipment['Weapon'].damage
+            heal_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
+            return max(0, heal_mod + class_mod + self.combat.magic)
         if mod == 'resist':
             res_mod = 0
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
@@ -1153,16 +1229,17 @@ class Player(Character):
                 if self.familiar.spec == 'Mephit' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = 0.25 * random.randint(1, max(1, self.stats.charisma // 10))
                     res_mod += fam_mod
-            if self.equipment['Pendant'].mod == typ:
-                res_mod = 1
-            elif self.equipment['Pendant'].mod == "Elemental" and \
-                    typ in ['Fire', 'Ice', 'Electric', 'Water', 'Earth', 'Wind']:
-                res_mod += 0.5
+            if self.equipment['Pendant'].mod.split("-")[-1] in [typ, "Elemental"] and \
+                typ in ["Fire", "Ice", "Electric", "Water", "Earth", "Wind"]:
+                if "Immune" in self.equipment['Pendant'].mod:
+                    res_mod += 1
+                elif "Resist" in self.equipment["Pendant"].mod:
+                    res_mod += 0.5
             if self.equipment['OffHand'].name == "Svalinn" and typ == "Fire":
                 res_mod += 0.25
-            if self.cls.name == "Archbishop" and self.status_effects['Power Up'].active:
+            if self.cls.name == "Archbishop" and self.class_effects["Power Up"].active:
                 res_mod += 0.25
-            if self.cls.name == "Geomancer" and self.status_effects["Power Up"].active and \
+            if self.cls.name == "Geomancer" and self.class_effects["Power Up"].active and \
                     typ in ["Fire", "Water", "Wind", "Earth"]:
                 res_mod += 0.5
             return res_mod
@@ -1171,6 +1248,10 @@ class Player(Character):
                 luck_factor = max(1, luck_factor // 2)
             luck_mod = self.stats.charisma // luck_factor
             return luck_mod
+        if mod == "speed":
+            speed_mod = self.stats.dex
+            speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
+            return speed_mod
         return 0
 
     def special_power(self, game):
@@ -1182,18 +1263,21 @@ class Player(Character):
         *Crusader - Divine Aegis: create shell that absorbs damage and increases healing; if the shield survives
           the full duration, it will explode and deal holy damage to the enemy
         *Dragoon - Dragon's Fury(passive): attack and defense double for each successive hit; a miss resets this buff
+        Stalwart Defender - 
         *Wizard - Spell Mastery(passive): automatically triggers when no spells can be cast due to low mana; all spells
           become free for a short time and mana regens based on damage dealt
         *Shadowcaster - Veil of Shadows(passive): become one with the darkness, making the player invisible to most enemies
           and making them harder to hit; increases damage of initial attack if first
         *Knight Enchanter - Arcane Blast: blast the enemy with a powerful attack, draining all remaining mana points; mana
           will regen in full over the next 4 turns (25% per turn)
+        Summoner - 
         *Rogue - Stroke of Luck(passive): the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, including
           dodge and critical chance
         *Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as 
           well as chance to dodge/parry attacks
         *Ninja - Blade of Fatalities: sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing
           damage dealt and absorbing it into the user
+        Arcane Trickster - 
         *Templar - Holy Retribution: a radiant shield envelopes the Templar, reflecting damage back at the attacker; while
           the shield is active, attack damage and chance to dodge/parry increase
         *Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and 
@@ -1201,6 +1285,7 @@ class Player(Character):
         *Master Monk - Dim Mak: unleash a powerful attack that deals heavy damage and can either stun or in some cases 
           kill the target; if the target is killed, the user will absorb the enemy's essence and will be regenerated by
           its max health and mana
+        Troubadour - 
         *Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
           damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
           will be unable to transform back until after the battle
@@ -1208,6 +1293,7 @@ class Player(Character):
           of caster to the 4 elements by 50%
         *Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
           that enemy type
+        Beast Master - 
         """
 
         powerup_dict = {
@@ -1234,6 +1320,16 @@ class Player(Character):
         if self.cls.name == "Shadowcaster":
             self.invisible = True
         return f"You gain the skill {skill.name}.\n"
+
+    def summon_menu(self, game):
+        summon_names = list(self.summons)
+        summonpopup = utils.SelectionPopupMenu(game, "Summons", summon_names, confirm=False)
+        summon_idx = summonpopup.navigate_popup()
+        summon = self.summons[summon_names[summon_idx]]
+        summonbox = utils.TextBox(game)
+        summonbox.print_text_in_rectangle(summon.inspect())
+        game.stdscr.getch()
+        summonbox.clear_rectangle()
 
 
 actions_dict = {
@@ -1272,6 +1368,11 @@ actions_dict = {
         'name': 'Inventory',
         'hotkey': None
     },
+    'ViewKeyItems': {
+        'method': Player.key_item_screen,
+        'name': 'Inventory',
+        'hotkey': None
+    },
     'Equipment': {
         'method': Player.equipment_screen,
         'name': 'Equipment',
@@ -1285,6 +1386,11 @@ actions_dict = {
     'ViewQuests': {
         'method': Player.quests_screen,
         'name': 'Quests',
+        'hotkey': None
+    },
+    'Summons': {
+        'method': Player.summon_menu,
+        'name': 'Summons',
         'hotkey': None
     },
     'Flee': {

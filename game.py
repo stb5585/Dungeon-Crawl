@@ -15,18 +15,23 @@ import town
 import player
 from races import races_dict
 from classes import classes_dict
-from character import Stats, Resource, Level
+from character import Stats, Resource, Level, Combat
 
 
 # objects
 class Game:
+    """
+    Game object that contains all of the necessary details
+    """
 
-    def __init__(self, stdscr):
+    def __init__(self, stdscr, debug_mode=False):
         self.stdscr = stdscr
+        self.debug_mode = debug_mode
         self.load_files = glob.glob('save_files/*')
         self.races_dict = races_dict
         self.classes_dict = classes_dict
         self.player_char = None
+        self.debug_mode = debug_mode
         self.time = time.time()
         self.bounties = {}
         curses.curs_set(0)  # Hide cursor
@@ -58,6 +63,8 @@ class Game:
                     """
                     Settings to include
                     - special text print speed
+                    - difficulty level
+                    - hardcore mode (perma-death)
                     - 
                     """
                     pass
@@ -66,7 +73,13 @@ class Game:
                 menu.update_options(menu_options)
             menu.clear()
             self.run()
+            self.update_loadfiles()
+            if self.load_files and "Load Game" not in menu_options:
+                menu_options.insert(1, "Load Game")
             menu.update_options(menu_options)
+
+    def update_loadfiles(self):
+        self.load_files = glob.glob('save_files/*')
 
     def run(self):
         self.update_bounties()
@@ -75,9 +88,7 @@ class Game:
             if time.time() - self.time > (900 * self.player_char.level.pro_level):
                 self.update_bounties()
             if self.player_char.in_town():
-                self.player_char.state = 'normal'
-                self.player_char.health.current = self.player_char.health.max
-                self.player_char.mana.current = self.player_char.mana.max
+                self.player_char.town_heal()
                 town.town(self)
             else:
                 self.navigate()
@@ -91,10 +102,10 @@ class Game:
             "What you didn't know was that all who had attempted this feat have never been heard from again.",
             "Will you be different or just another lost soul?",
         ]
-        # TODO uncomment
-        # texts_pad = utils.QuestPopupMenu(self, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
-        # texts_pad.draw_popup(texts)
-        # self.stdscr.getch()
+        if not self.debug_mode:
+            texts_pad = utils.QuestPopupMenu(self, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
+            texts_pad.draw_popup(texts)
+            self.stdscr.getch()
 
         # Select the race of the character
         menu = utils.NewGameMenu(self)
@@ -131,9 +142,13 @@ class Game:
             name_message = "What is your character's name?"
             name = utils.player_input(self, name_message).capitalize()
             if not name:
-                enternamebox.print_text_in_rectangle("Name cannot be empty.")
-                self.stdscr.getch()
-                enternamebox.clear_rectangle()
+                if not self.debug_mode:
+                    enternamebox.print_text_in_rectangle("Name cannot be empty.")
+                    self.stdscr.getch()
+                    enternamebox.clear_rectangle()
+                else:
+                    name = "Test"
+                    break
             else:
                 menu.clear()
                 confirm_str = f"Are you sure you want to name your character {name}?"
@@ -148,20 +163,30 @@ class Game:
         enternamebox.clear_rectangle()
 
         # Define the player character
+        import abilities, items
         location_x, location_y, location_z = (5, 10, 0)
         stats = tuple(map(lambda x, y: x + y, (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
                         (cls.str_plus, cls.int_plus, cls.wis_plus, cls.con_plus, cls.cha_plus, cls.dex_plus)))
         hp = stats[3] * 2  # starting HP equal to constitution x 2
-        mp = stats[1] + int(stats[2] * 0.5)  # starting MP equal to intel and wis x 0.5
+        mp = stats[1] * 2  # starting MP equal to intel x 2
+        attack = race.base_attack + cls.att_plus
+        defense = race.base_defense + cls.def_plus
+        magic = race.base_magic + cls.magic_plus
+        magic_def = race.base_magic_def + cls.magic_def_plus
         gold = stats[4] * 25  # starting gold equal to charisma x 25
         player_char = player.Player(location_x, location_y, location_z, level=Level(),
                             health=Resource(hp, hp), mana=Resource(mp, mp),
                             stats=Stats(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5]),
+                            combat=Combat(attack=attack, defense=defense, magic=magic, magic_def=magic_def),
                             gold=gold, resistance=race.resistance)
         player_char.name = name
         player_char.race = race
         player_char.cls = cls
         player_char.equipment = cls.equipment
+        if "1" in abilities.spell_dict[cls.name]:
+            spell_gain = abilities.spell_dict[cls.name]["1"]()
+            player_char.spellbook['Spells'][spell_gain.name] = spell_gain
+        player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]  # care package
         player_char.load_tiles()
 
         return player_char
@@ -208,21 +233,24 @@ class Game:
                 for action in available_actions:
                     available_hotkeys = [x['hotkey'] for x in available_actions]
                     try:
-                        if chr(action_input) == action['hotkey']:
+                        if chr(action_input).lower() == action['hotkey']:
                             action['method'](self.player_char, self)
-                            if chr(action_input) in available_hotkeys and \
+                            if chr(action_input).lower() in available_hotkeys and \
                                 ("Move" in action['name'] or "Open" in action['name'] or "stairs" in action['name']):
                                 return
                     except TypeError:
                         pass
             else:
-                self.battle(room.enemy)
+                flee = self.battle(room.enemy)
+                if flee:
+                    return
             dmenu.draw_all()
             dmenu.refresh_all()
 
     def battle(self, enemy):
         """
         Function that controls combat
+        TODO needs to be optimized
         """
 
         def initiative(player_char, enemy):
@@ -234,14 +262,16 @@ class Game:
             if player_char.invisible:
                 if not enemy.sight:
                     if player_char.cls.name == "Shadowcaster" and player_char.power_up:
-                        player_char.status_effects['Power Up'].active = True
-                        player_char.status_effects['Power Up'].duration = 1
+                        player_char.class_effects["Power Up"].active = True
+                        player_char.class_effects["Power Up"].duration = 1
                     return player_char, enemy
             if enemy.invisible:
                 if not player_char.sight:
                     return enemy, player_char
-            p_chance = player_char.stats.dex + player_char.check_mod('luck', enemy=enemy, luck_factor=10)
-            e_chance = enemy.stats.dex + enemy.check_mod('luck', enemy=player_char, luck_factor=10)
+            p_chance = player_char.check_mod("speed", enemy=enemy) + \
+                player_char.check_mod('luck', enemy=enemy, luck_factor=10)
+            e_chance = enemy.check_mod("speed", enemy=player_char) + \
+                enemy.check_mod('luck', enemy=player_char, luck_factor=10)
             total_chance = p_chance + e_chance
             chance_list = [p_chance / total_chance, e_chance / total_chance]
             attacker = random.choices([player_char, enemy], chance_list)[0]
@@ -255,18 +285,22 @@ class Game:
                 break
         flee = False
         first, second = initiative(self.player_char, enemy)
+        other = None
         tile = self.player_char.world_dict[(self.player_char.location_x,
                                             self.player_char.location_y,
                                             self.player_char.location_z)]
-        vision = self.player_char.sight and 'Boss' not in str(tile)
+        vision = self.player_char.sight and 'Boss' not in str(tile) and enemy.name != "Waitress"
         combat = True
         cmenu = utils.CombatMenu(self)
         popup = utils.CombatPopupMenu(self, "Test")
+        available_actions = tile.available_actions(self.player_char)
         while combat:
-            available_actions = tile.available_actions(self.player_char)
             cmenu.draw_enemy(enemy, vision=vision)
             cmenu.draw_options(available_actions)
-            cmenu.draw_char()
+            if other:
+                cmenu.draw_char(char=other)
+            else:
+                cmenu.draw_char()
             cmenu.refresh_all()
             if not first.incapacitated():
                 if first == self.player_char:
@@ -275,6 +309,10 @@ class Game:
                             wd_str, _, _ = first.weapon_damage(second)
                             combat_text = wd_str
                             valid_entry = True
+                        elif first.class_effects["Jump"].active:
+                            jump_name = [x for x in first.spellbook['Skills'] if "Jump" in x][0]
+                            combat_text = first.spellbook['Skills'][jump_name].use(first, target=second)
+                            first.class_effects["Jump"].active = False
                         else:
                             cmenu.current_option = 0
                             available_actions = tile.available_actions(self.player_char)
@@ -287,7 +325,9 @@ class Game:
                             combat_text = ""
                             valid_entry = False
                             flee = False
-                            tile = first.world_dict[(first.location_x, first.location_y, first.location_z)]
+                            tile = self.player_char.world_dict[
+                                (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)
+                                ]
                             if action == 'Untransform':
                                 combat_text += first.transform(back=True)
                                 valid_entry = False
@@ -296,13 +336,15 @@ class Game:
                                 valid_entry = False
                             elif action == "Pickup Weapon":
                                 combat_text += f"{first.name} picks up their weapon.\n"
-                                first.status_effects['Disarm'].active = False
+                                first.physical_effects["Disarm"].active = False
+                                valid_entry = True
+                            elif action == "Totem":  # TODO
                                 valid_entry = True
                             else:
                                 if action == 'Open':
                                     first.open_up(self)
                                     valid_entry = True
-                                elif action == 'Attack':
+                                elif action == "Attack":
                                     wd_str, _, _ = first.weapon_damage(second)
                                     combat_text += wd_str
                                     valid_entry = True
@@ -343,12 +385,12 @@ class Game:
                                                         first.equipment['OffHand'].subtyp != 'Shield',
                                                     first.spellbook['Skills'][entry].name == 'Mortal Strike' and \
                                                         first.equipment['Weapon'].handed == 1,
-                                                    first.spellbook['Skills'][entry].name == " Backstab" and \
+                                                    first.spellbook['Skills'][entry].name == "Backstab" and \
                                                         not second.incapacitated(),
                                                     first.spellbook["Skills"][entry].weapon and \
-                                                        first.status_effects["Disarm"].active]):
+                                                        first.physical_effects["Disarm"].active]):
                                                 continue
-                                            if entry == "Mana Shield" and first.status_effects['Mana Shield'].active:
+                                            if entry == "Mana Shield" and first.magic_effects["Mana Shield"].active:
                                                 skill_list.append('Remove Shield  ' + str(first.spellbook['Skills'][entry].cost))
                                             else:
                                                 skill_list.append(str(entry) + '  ' + str(first.spellbook['Skills'][entry].cost))
@@ -372,10 +414,21 @@ class Game:
                                             skill_str += skill.use(self, first, target=second)
                                         elif skill.name in ["Doublecast", "Triplecast"]:
                                             skill_str += skill.use(first, second, game=self)
+                                        elif "Jump" in skill.name:
+                                            first.class_effects["Jump"].active = True
+                                            combat_text += f"{first.name} prepares to leap into the air.\n"
                                         else:
                                             skill_str += skill.use(first, target=second)
                                         combat_text += skill_str
                                         valid_entry = valid
+                                elif action == "Summon":
+                                    summon_names = list(self.player_char.summons)
+                                    popup.update_options(summon_names, ["Summons"])
+                                    skill_index = popup.navigate_popup()
+                                    other = first.summons[summon_names[skill_index]]
+                                    first = first.summons[summon_names[skill_index]]
+                                    combat_text += f"{self.player_char.name} summons {other.name} to aid them in combat.\n"
+                                    valid_entry = True
                             combat_text += first.special_effects(second)
                         if combat_text:
                             combatbox = utils.TextBox(self)
@@ -390,20 +443,94 @@ class Game:
                             r['method'](first, self)
                         if valid_entry:
                             break
-                else:
+                elif first == enemy:
                     action = first.options(second, action_list=available_actions)
                     _, combat, flee = first.combat_turn(self, second, action, combat)
-            else:
-                if first.status_effects['Stun'].active:
-                    combat_text = "stunned"
-                elif first.status_effects['Sleep'].active:
-                    combat_text = "asleep"
                 else:
-                    combat_text = "prone"
-                combat_text = f"{first.name} is {combat_text}."
-                battlebox.print_text_in_rectangle(combat_text)
-                self.stdscr.getch()
-                battlebox.clear_rectangle()
+                    cmenu.current_option = 0
+                    available_actions = first.options()
+                    cmenu.draw_enemy(enemy, vision=vision)
+                    cmenu.draw_options(available_actions)
+                    cmenu.draw_char(char=first)
+                    cmenu.refresh_all()
+                    action_idx = cmenu.navigate_menu()
+                    action = available_actions[action_idx]
+                    combat_text = ""
+                    valid_entry = False
+                    if action == "Recall":
+                        other = None
+                        first = self.player_char
+                        valid_entry = True
+                    elif action == "Attack":
+                        wd_str, _, _ = first.weapon_damage(second)
+                        combat_text += wd_str
+                        valid_entry = True
+                    elif action == 'Cast Spell':
+                        spell_list = []
+                        for entry in first.spellbook['Spells']:
+                            if first.spellbook['Spells'][entry].subtyp == "Movement":
+                                continue
+                            if first.spellbook['Spells'][entry].cost <= first.mana.current:
+                                spell_list.append(str(entry) + '  ' + str(first.spellbook['Spells'][entry].cost))
+                        spell_list.append('Go Back')
+                        popup.update_options(spell_list, ["Spells"])
+                        spell_index = popup.navigate_popup()
+                        if spell_list[spell_index] == 'Go Back':
+                            valid = False
+                        else:
+                            spell = first.spellbook['Spells'][spell_list[spell_index].split('  ')[0]]
+                            spell_str = f"{first.name} casts {spell.name}.\n"
+                            spell_str += spell.cast(first, target=second)
+                            combat_text += spell_str
+                            valid_entry = True
+                    elif action == 'Use Skill':
+                        skill_list = []
+                        for entry in first.spellbook['Skills']:
+                            if first.spellbook['Skills'][entry].cost <= first.mana.current:
+                                if any([first.spellbook['Skills'][entry].passive,
+                                        first.spellbook["Skills"][entry].weapon and \
+                                            first.physical_effects["Disarm"].active]):
+                                    continue
+                                if entry == "Mana Shield" and first.magic_effects["Mana Shield"].active:
+                                    skill_list.append('Remove Shield  ' + str(first.spellbook['Skills'][entry].cost))
+                                else:
+                                    skill_list.append(str(entry) + '  ' + str(first.spellbook['Skills'][entry].cost))
+                        skill_list.append('Go Back')
+                        popup.update_options(skill_list, ["Skills"])
+                        skill_index = popup.navigate_popup()
+                        if skill_list[skill_index] == 'Go Back':
+                            valid = False
+                        else:
+                            skill_name = skill_list[skill_index].split('  ')[0]
+                            if skill_name == "Remove Shield":
+                                skill_name = "Mana Shield"
+                            valid = True
+                            skill = first.spellbook['Skills'][skill_name]
+                            skill_str = f"{first.name} uses {skill.name}.\n"
+                            if skill.name == 'Smoke Screen':
+                                skill_str += skill.use(first, target=second)
+                                flee, flee_str = first.flee(second, smoke=True)
+                                skill_str += flee_str
+                            elif skill.name == "Slot Machine":
+                                skill_str += skill.use(self, first, target=second)
+                            elif skill.name in ["Doublecast", "Triplecast"]:
+                                skill_str += skill.use(first, second, game=self)
+                            else:
+                                skill_str += skill.use(first, target=second)
+                            combat_text += skill_str
+                            valid_entry = valid
+
+                    if combat_text:
+                        combatbox = utils.TextBox(self)
+                        combatbox.print_text_in_rectangle(combat_text)
+                        self.stdscr.getch()
+                        combatbox.clear_rectangle()
+            else:
+                if first.incapacitated():
+                    combat_text = f"{first.name} is incapacitated."
+                    battlebox.print_text_in_rectangle(combat_text)
+                    self.stdscr.getch()
+                    battlebox.clear_rectangle()
             if not combat:
                 break
 
@@ -416,23 +543,36 @@ class Game:
                     battlebox.clear_rectangle()
 
             if not second.is_alive():
-                if 'Resurrection' in first.spellbook['Spells'] and \
-                        abs(first.health.current) <= first.mana.current:
-                    res_text = second.spellbook['Spells']['Resurrection'].cast(second, target=first)
+                if second == other:
+                    battlebox.print_text_in_rectangle(f"{other.name} is killed.")
+                    self.stdscr.getch()
+                    battlebox.clear_rectangle()
+                    second = self.player_char
+                    other = None
+                elif 'Resurrection' in second.spellbook['Spells'] and \
+                        abs(second.health.current) <= second.mana.current:
+                    res_text = second.spellbook['Spells']['Resurrection'].cast(second)
                     battlebox.print_text_in_rectangle(res_text)
                     self.stdscr.getch()
                     battlebox.clear_rectangle()
-                    combat = True
                 else:
+                    if second.name == "Behemoth":
+                        final_text = second.special_effects(first)
+                        battlebox.print_text_in_rectangle(final_text)
+                        self.stdscr.getch()
+                        battlebox.clear_rectangle()
                     combat = False
 
             if not combat:
                 break
 
             # resolve status effects
-            status_text = first.statuses()
+            status_text = first.effects()
+            if first == other:
+                status_text += self.player_char.effects()
             if status_text:
                 if "damage" in status_text:
+                    # handles exploding shield for Crusader
                     try:
                         second.health.current -= int(status_text.split(" damage")[0].split(" ")[-1])
                     except ValueError:
@@ -447,14 +587,21 @@ class Game:
             if first == self.player_char:
                 first = enemy
                 second = self.player_char
+            elif first == enemy:
+                if second == other:
+                    first = other
+                    second = enemy
+                else:
+                    first = self.player_char
+                    second = enemy
             else:
-                first = self.player_char
-                second = enemy
+                first = enemy
+                second = other
 
-        self.player_char.end_combat(self, enemy, tile, flee=flee)
+        self.player_char.end_combat(self, enemy, tile, flee=flee, summon=other)
         if self.player_char.is_alive() and "Boss" in str(tile):
             tile.defeated = True
-        # return self.player_char.is_alive()
+        return flee
 
     def update_bounties(self):
         self.bounties = {}
@@ -470,6 +617,7 @@ class Game:
         text = special_event_dict[name]["Text"]
         pad = utils.QuestPopupMenu(self, box_height=len(text)+2, box_width=len(max(text, key=len))+4)
         pad.draw_popup(text)
+        pad.clear_popup()
         
 
 special_event_dict = {
@@ -498,6 +646,15 @@ special_event_dict = {
             "You should return this to its rightful owner..."
             ]
     },
+    "Busboy": {
+        "Text": [
+            "The door to the tavern swings shut and you can no longer hear the waitress fleeing",
+            "Just then you hear the bartender from behind the bar. 'Hey, where are you going?!'",
+            "'Damn, now whose gonna get this food and drink out to my patrons?!'",
+            "You shrug your shoulders, not wanting to get caught up in all of the chaos.",
+            "'BUSBOY! Get out here, you've gotta take over these tables.'"
+        ]
+    },
     "Waitress": {
         "Text" : [
             "(cry)...why, why did you have to leave me, Joffrey...",
@@ -516,7 +673,7 @@ special_event_dict = {
             "'My love, I know you have questions but the answers will not be to your liking...",
             "forgive me but I could not resist his will. If you are reading this, it means I am dead...",
             "please remember that above all, I love you.' -Joffrey",
-            "Not sure what he is referring to when he said he could not resist his will. Something doesn't seem right...",
+            "What did he mean by he couldn't resist his will? Something doesn't seem right...",
             "Keep you wits about you, there's evil afoot.", 
             "Since there is no one left to claim his things, you can have what's left. Put them to good use."
         ]
@@ -526,7 +683,7 @@ special_event_dict = {
             "You enter into the back of the blacksmith shop and see what looks like a metal coffin glowing green.",
             "'Climb on in, we have some work to do.' You enter the machine against your better judgment.",
             "Griswold stands behind a panel and after a few button presses, you see the green glow around you grow.",
-            "You are suddenly overwhelmed with a pain you've never felt. You stifle a scream but it is becoming unbearable.",
+            "You are suddenly overwhelmed by an searing pain. You stifle a scream but it is becoming unbearable.",
             "Just as you think you can't take more, the whir of the machine begins to wane.",
             "Your whole body hurts but strangely you feel a power inside of you that you have never experienced.",
             "'How do you feel? Any different?' You exit the chamber more powerful than you entered it."
@@ -541,12 +698,13 @@ special_event_dict = {
     },
     "Final Boss": {
         "Text": [
-            "You enter a massive room. A great beast greets you.",
-            "\"Hello again. You have done well to reach me, many have tried and failed.",
-            "The bones of those that came before you litter this sanctum. Will your bones join them?",
-            "It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel,",
-            "knowing that one of us will not leave here alive.",
-            "I give you but one chance to reconsider, after which I will not go easy on you.\""
+            "You enter a massive room. A booming voice greets you.",
+            "'Hello again. You have done well to reach me, many have tried and failed.'",
+            "The voice talks to you as if you should recognize them...it must the be hooded figure from the tavern.",
+            "'It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel,",
+            "knowing that one of us will not leave here alive.'",
+            "You know this is what you were working toward but the threat of death has left you wavering.",
+            "'I give you but one chance to reconsider, after which I will not go easy on you.'"
             ]
     },
     "Relic Room": {
@@ -564,6 +722,16 @@ special_event_dict = {
             "I have built up a cache of items that I can sell you if you're interested..."
         ]
     },
+    "Drink": {
+        "Text": {
+            "You drank water from the underground spring...nothing seems to have changed."  # TODO
+        }
+    },
+    "Nimue": {
+        "Text": {
+            "This is not the legendary Excalibur, you fool!"  # TODO
+        }
+    },
     "Minotaur": {
         "Text": [
             "As you enter the corridor, you are met with a horrific scene.",
@@ -579,14 +747,231 @@ special_event_dict = {
         "Text": [
             "The sacred chamber hums with an ominous energy as you step forward, the air growing cold with each breath.",
             "A deep growl reverberates through the hall, and from the shadows emerges a large wolf-like beast.",
-            "This must be the Barghest, a tricky shapeshifter that also happens to be the guardian of the first Holy Relic.",
+            "This must be the Barghest, a tricky shapeshifter that is also the guardian of the first Holy Relic.",
             "Its spectral eyes burn with a ghostly light, and its jagged fangs gleam with menace.",
-            "The beast’s black fur bristles like shadowy flames, and its claws carve furrows into the stone floor as it prowls.",
+            "Its black fur bristles like shadowy flames and its claws carve furrows into the stone floor as it prowls.",
             "With a chilling snarl, it lunges, its voice echoing, “None shall desecrate the relics!”"
+        ]
+    },
+    "Pseudodragon": {
+        "Text": [
+            "The dungeon narrows as you round the corner and you are met by a faint, red light.",
+            "A warmth meets your body and the sweet smell of jasmine permeates around you.",
+            "'Oh please, enter my chamber without permission.' You see nothing but a lavish lair and a crackling fireplace.",
+            "You step forward in defiance, spotting the creature perched upon the hearth, no larger than a house cat.",
+            "'So, you thought you would make a name for yourself by slaying a mighty dragon? Sorry to disappoint...'",
+            "It is true, you did expect something more. However, your experience tells you not to take it lightly.",
+            "'Oh, still a bit frisky, are we? Well, I should warn you that short doesn't always mean sweet.'",
+            "'But that is enough foreplay, let us proceed to the main course!' The beast takes flight and attacks!"
+        ]
+    },
+    "Nightmare": {
+        "Text": [
+            "You travel a great hall, expecting something monstrous to attack. What you find is much worse.",
+            "The hair on the back of your neck stands at attention and suddenly feel fear grab ahold of you.",
+            "Your will is steadfast but you know that will only last for so long as the sight you feared emerges.",
+            "A massive stallion with a mane and tail of flames, the rest as black as the deepest depths.",
+            "It says no words but has no need, for silence is much more frightening.",
+            "You catch a glimpse of a relic perched atop a glowing pedestal but the Nightmare stands in your way.",
+            "With a flare of its nostrils, the beast charges right at you, filled with malice aforethought."
+        ]
+    },
+    "Cockatrice": {
+        "Text": [
+            "As you step into the dimly lit cavern, the air grows thick and heavy.",
+            "A low, menacing hiss reverberates off the stone walls, sending shivers down your spine.",
+            "A monstrosity emerges from the shadows, its leathery wings unfurling, and its beady eyes locked onto you.",
+            "With every movement, its claws scrape against the floor, and its serpentine tail lashes out.",
+            "The beast lets out a bone-chilling screech, its petrifying aura threatening to halt your advance."
+        ]
+    },
+    "Wendigo": {
+        "Text": [
+            "The stagnant isolation of the dungeon is suddenly disturbed, replaced by a bone-chilling cold.",
+            "The icy winds howl as you approach the sacred grounds of the third relic.",
+            "Emerging from the darkness, a beast towers above, its gaunt frame shrouded in frost and shadows.",
+            "Its hollow eyes burn with a ravenous hunger, and its clawed hands twitch with restless energy.",
+            "The air grows colder, biting at your skin, as the creature lets out an unearthly wail.",
+            "The guardian of the relic stands ready, an embodiment of hunger and despair, the Wendigo."
+        ]
+    },
+    "Golem": {
+        "Text": [
+            "The ground trembles as a towering figure of stone and metal lumbers into view.",
+            "Its massive frame glints in the dim light, its eyes dead and lifeless.",
+            "You stand still waiting for something to happen and notice a low hum build as the construct comes online.",
+            "The golem's glowing eyes fixate on you, while the hum of ancient magic reverberates through the air.",
+            "Cracks in its surface reveal faint pulsations of energy, hinting at the immense power contained within.",
+            "The guardian moves with deliberate purpose, its heavy footsteps echoing like a drumbeat of inevitability.",
+            "Another trial stands before you, as implacable as the earth itself."
+        ]
+    },
+    "Iron Golem": {
+        "Text": [
+            "The Iron Golem stands motionless at the threshold, its massive form forged from enchanted steel.",
+            "Etched with ancient runes of power, the massive statue is a formidable sight.",
+            "Sparks crackle from its joints as it animates, each movement deliberate and heavy with menace.",
+            "Its glowing core pulses like a molten heart, radiating an oppressive heat that fills the chamber.",
+            "The ground shudders under its iron steps, and its piercing gaze locks onto you, assessing your worth.",
+            "The path forward lies in proving yourself against this unyielding sentinel of the dungeon depths."
+        ]
+    },
+    "Jester": {
+        "Text": [
+            "You pass through the open door into a small chamber and you are met with a horrifying sight.",
+            "A disfigured man is shackled against the wall, upside down and covered with blood.",
+            "The man struggles to breathe but manages to muster a weak 'Help me!'.",
+            "The Jester steps into view with an unsettling gait, his face painted in a macabre grin.",
+            "His ragged outfit jingles with the sound of bells, each step punctuated by a spine-chilling laugh.",
+            "His eyes glint with wild, unrestrained madness as he deftly twirls a knife between his fingers.",
+            "Without looking away from you, he steps towards the chained man and thrusts the knife deep into his chest.",
+            "You hear nothing but a meager gasp, his body slumping down. 'We were playing a game. He lost...hehe.'",
+            "The Jester turns and walks towards a table in the corner of the room, covered with the tools of his trade.",
+            "'Care to play?' he asks, his voice dripping with mockery.",
+            "'The stakes? Oh, just your sanity—or maybe your life. Let's see where the chips fall!'"
+        ]
+    },
+    "Domingo": {
+        "Text": [
+            "Your search for another one of the mystical relics leads you down a dark flight of stairs.",
+            "As you descend into the dungeon, you notice the air grow heavy, and a gurgling sound echoing from beyond.",
+            "A cartoonish creature emerges, its writhing tentacles glowing faintly with an unearthly, pulsating light.",
+            "Its bulbous body quivers, and its eyes...far too many eyes...unnervingly fixate on you.",
+            "'You dare face the perfection of creation?' a voice reverberates in your mind. How?!",
+            "The creature's tentacles twitch, ready to unleash its magical fury. 'Prepare to witness true power!'"
+        ]
+    },
+    "Red Dragon": {
+        "Text": [
+            "After several minutes exploring an empty corridor, you exit into a massive sanctum riddled with fissures."
+            "The cavern trembles as the ground beneath you grows unbearably hot.",
+            "A deafening roar erupts from the shadows, and the Red Dragon steps forward.",
+            "Its scales gleam like molten metal and its eyes burn with a primal fury.",
+            "'You've come this far,' it growls, its voice reverberating like thunder.",
+            "'But you will go no further. Prove your worth... or be reduced to ashes where you stand.'",
+            "Its wings spread wide, blocking your path as your next trial begins."
+        ]
+    },
+    "Cerberus": {
+        "Text": [
+            "You step out from the hidden passage and expect a moment to gather yourself. You were mistaken.",
+            "The ground quakes, and an ominous growl fills the air as the three-headed Cerberus emerges before you.",
+            "Each head snarls and gnashes in unison, its glowing eyes locking onto you with predatory intent.",
+            "'You dare to disturb the sanctity of the final relic?' the voices echo, a guttural chorus of menace.",
+            "'No one passes. No one escapes.' The beast's claws dig into the ground, its teeth gleaming in the faint light.",
+            "This is your pentultimate test-face the guardian or perish in its jaws."
+        ]
+    },
+    "Devil": {
+        "Text": [
+            "You feel your body lifted in the air, riding an invisible path toward the far side of the sanctum.",
+            "The ride comes to an immediate end, leaving you reeling from the abrupt stop.",
+            "The bones of those who have faced the prime evil surround you. Will you join them?",
+            "Your thoughts are interrupted by the shaking of the ground as an incomprehesible sight approaches you.",
+            "Before you stands the Devil—a towering figure of malice, wreathed in flame and shadow.",
+            "Its horns scrape the heavens, and its crimson eyes burn with the fury of eons.",
+            "'You may not recognize me in my current form. Let me refresh your memory.'",
+            "From the shadows appears the hooded figure from the town tavern.",
+            "'You probably expected my appearance but the surprises are just beginning.'",
+            "You were certain of their duplicity but your suspicion was only partially correct.",
+            "The Devil begins to transform, replacing the monstrosity with a familiar sight-the busboy!",
+            "'Not who you expected? I guess you weren't actually paying attention then.'",
+            "Your mind races, combing over everything that has happened, certain you have missed some clue.",
+            "'I have been lurking, with my trusted acolyte by my side. I knew eventually a worthy opponent would appear.'",
+            "A fury rises within you at the thought of all the lives ruined. You clench as he continues to speak.",
+            "'I stayed away at first but your success piqued my curiosity. You have earned a mighty reward.'",
+            "Reward?! This must be a joke, surely there is nothing left but a battle to the death.",
+            "'Join my army and I will make you one of my chosen. You will lead droves of my minions into battle.'",
+            "You cry out for silence, insulted by the implication. You would never join him!",
+            "'I thought it was a fair offer but so be it. Instead your soul will be used for my amusement.'",
+            "The Devil transforms back into his real form and a battle for the ages commences."
+        ]
+    },
+    "Dilong": {
+        "Text": [
+            "The ground feels different here, almost like sand.",
+            "Suddenly your whole body starts to shake and the ground starts to open underneath you.",
+            "You stumble back just in time and out of the floor a massive earthworm-like creature appears.",
+            "'Who dares disturb my home! Give me one reason I shouldn't swallow you right up?'",
+            "The game piece you found begins to glows and levitates up into the air.",
+            "'Oh look, that will complete my set. Maybe instead of violence, we could help each other out.'",
+            "'Give it to me and I will lend you my services when needed.'",
+            "You have gained the summon Dilong."
+        ]
+    },
+    "Agloolik": {
+        "Text": [
+            "The wails of anguish have settled and the Wendigo lays at your feet.",
+            "After a long fight, you take a moment to catch your breath and feel an icy chill creep over you.",
+            "A mist has fallen upon the room with an icy film caked over every surface, including you.",
+            "A massive shiver runs through your bones and you buckle at your knees in pain.",
+            "'I expected more from the one who defeated this beast. Hahaha...pathetic.'",
+            "You regain your composure and return to your feet, defiant in the face of the unseen.",
+            "An entity forms in front of you with a crooked smile, 'Maybe you are worth something. We shall see...'",
+            "You have gained the summon Agloolik."
+        ]
+    },
+    "Cacus": {
+        "Text": [
+            "The searing pain continues as you traverse the blazing hallway, unsure if the reward is worth the pain.",
+            "You encounter what appears to be a dead end but notice a pool of lava, bubbling and spitting molten rock.",
+            "This must be the place...perhaps there is a way to awaken what dwells here.",
+            "You cast the blacksmith's hammer into the lava...and nothing...for a time.",
+            "Suddenly a large figure emerges, a man over nine feet tall, engulfed in fire and brimstone.",
+            "'I have slumbered for too long. What is this that returns me to the realm of the living?'",
+            "'A summoner? Of course, I should have known...the downfalls of my curse. Shall we leave?'"
+            "You have gained the summon Cacus."
+        ]
+    },
+    "Fuath": {
+        "Text": [
+            "You have gained the summon Fuath."
+        ]
+    },
+    "Izulu": {
+        "Text": [
+            "You have gained the summon Izulu."
+        ]
+    },
+    "Hala": {
+        "Text": [
+            "You have gained the summon Hala."
+        ]
+    },
+    "Grigori": {
+        "Text": [
+            "You have gained the summon Grigori."
+        ]
+    },
+    "Bardi": {
+        "Text": [
+            "You have gained the summon Bardi."
+        ]
+    },
+    "Kobalos": {
+        "Text": [
+            "You have gained the summon Kobalos."
+        ]
+    },
+    "Zahhak": {
+        "Text": [
+            "You have gained the summon Zahhak."
+        ]
+    },
+    "Rookie": {
+        "Text": [
+            "You come to the end of a long corridor and realize the dungeon smells just a little worse than normal.",
+            "You spot a mass against the wall and quickly identify the insignia of the town guard.",
+            "The body is partially eaten but you believe this must be the recruit the Sergeant told you about.",
+            "You retrieve the body that even though is missing parts, still weighs quite a bit.",
+            "As you turn to leave you come face to face with an enemy and it attacks!"
         ]
     }
 }
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "debug":
+            curses.wrapper(Game, **{'debug_mode': True})
     curses.wrapper(Game)

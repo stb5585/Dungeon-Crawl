@@ -8,6 +8,8 @@ __pycache__/*
 test_suite.py
 modify_save.py
 fixes.txt
+notes.txt
+launch_debug.sh
 
 # ignore save_files
 save_files/*

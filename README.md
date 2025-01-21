@@ -36,7 +36,6 @@ FUTURE DEVELOPMENT:
 - Planned development
     - Make item comparison easier for the shop
     - Add special item(s) for each final class
-    - implement a TUI for better gameplay
     - add logic to enemies to make them smarter
 
 - Possible development
@@ -74,7 +73,7 @@ FILE DESCRIPTIONS:
 - combat.py
     - Controls the combat system between the player and enemy
 - companions.py
-    - File that defines class companions (currently only Warlock familiars) 
+    - File that defines class companions, Warlock familiars and Summon creatures 
 - enemies.py
     - Main file for controlling enemies, including the statistics and unique aspects of each enemy
 - game.py
@@ -93,3 +92,5 @@ FILE DESCRIPTIONS:
     - Controls the interactions of the character while in town
 - tutorial.py
     - File that controls the tutorial; not yet implemented
+- utils.py
+    - FIle that contains utility functions and classes, including the TUI instances
