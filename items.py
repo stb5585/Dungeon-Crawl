@@ -1,9 +1,9 @@
 ###########################################
 """ item manager """
 
-# Imports
 import random
 from textwrap import wrap
+
 import numpy as np
 
 import abilities
@@ -539,6 +539,22 @@ class Excalibur(Weapon):
                 else:
                     special_str += f"{target.name} continues to bleed.\n"
         return special_str
+
+
+class Excalibur2(Excalibur):
+    """
+    TODO Upgraded version of the sword; obtained by bringing Excalibur to the UndergroundSpring
+    Ideas for upgrade
+    - increased damage and/or crit chance
+    - different/additional status effect
+    - 
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.description = "\n".join(wrap("An upgraded version of the legendary sword of King Arthur, bestowed upon "
+                                          "him by the Lady of the Lake.", 35, break_on_hyphens=False))
+
 
 class Mace(Weapon):
 
@@ -1202,7 +1218,7 @@ class EarthMaw(NaturalWeapon):
     def special_effect(self, wielder, target, damage=0, crit=1):
         special_str = "Out of the maw flies a massive sand storm!\n"
         if crit > 1:
-            special_str += abilities.Sandstorm(wielder, target=target, special=True)
+            special_str += abilities.Sandstorm.cast(wielder, target=target, special=True)
         return special_str
 
 
@@ -1657,7 +1673,7 @@ class DragonClaw2(DragonClaw):
         special_str = ""
         resist = target.check_mod('resist', enemy=wielder, typ='Physical')
         if resist < 1:
-            if random.randint((wielder.stats.strength // 2) * crit, wielder.stats.strength * crit) \
+            if random.randint(0, wielder.stats.strength * crit) \
                     > random.randint(target.stats.con // 2, target.stats.con):
                 if not target.physical_effects["Bleed"].active:
                     special_str += f"{target.name} is bleeding.\n"
@@ -1696,7 +1712,7 @@ class DragonTail2(DragonTail):
                 resist = target.check_mod('resist', enemy=wielder, typ='Physical')
                 if resist < 1:
                     if crit > 1:
-                        if random.randint(wielder.stats.strength // 2, wielder.stats.strength) * (1 - resist) \
+                        if random.randint(0, wielder.stats.strength * crit) * (1 - resist) \
                                 > random.randint(target.stats.con // 2, target.stats.con):
                             duration = max(1, wielder.stats.strength // 10)
                             target.status_effects["Stun"] = StatusEffect(True, duration)
@@ -2318,7 +2334,7 @@ class DemonArmor2(DemonArmor):
         super().__init__()
         self.armor = 20
         self.special = True
-        self.shadow_damage = 100
+        self.shadow_damage = 25
 
     def special_effect(self, wearer, attacker):
         special_str = ""
@@ -2530,22 +2546,33 @@ class TomeKnowledge(OffHand):
         self.weight = 3
 
 
-class Grimoire(OffHand):
+class InfernalGrimoire(OffHand):
 
     def __init__(self):
-        super().__init__(name="Grimoire", description="A book of magic and invocations.",
+        super().__init__(name="Infernal Grimoire", description="A blackened, flame-wreathed book that burns to the "
+                                                                "touch but never turns to ash.",
                          value=2500, rarity=0.85, mod=22, subtyp='Tome', unequip=False)
         self.weight = 3
 
 
-class BookShadows(OffHand):
+class ElementalPrimer(OffHand):
 
     def __init__(self):
-        super().__init__(name="Book of Shadows", description="The Book of Shadows is a book containing religious text "
-                                                             "and instructions for magical rituals found within the "
-                                                             "Neopagan religion of Wicca, and in many pagan practices.",
+        super().__init__(name="Elemental Primer", description="A multi-colored tome that shifts between elemental "
+                                                              "motifs depending on the wielder's surroundings.",
                          value=10000, rarity=0.75, mod=30, subtyp='Tome', unequip=False)
         self.weight = 2
+
+
+class TreatiseBalance(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Treatise of Balance", description="A weathered tome, marked with a taijitu, better "
+                                                                 "known as the yin and yang symbol. The pages are "
+                                                                 "filled with intricate diagrams illustrating the "
+                                                                 "harmony of opposing forces.",
+                         value=16000, rarity=0.6, mod=36, subtyp='Tome', unequip=False)
+        self.weight = 3
 
 
 class DragonRouge(OffHand):
@@ -2553,7 +2580,7 @@ class DragonRouge(OffHand):
     def __init__(self):
         super().__init__(name="Dragon Rouge", description="French for \"Red Dragon\", this mythical tome contains "
                                                           "ancient knowledge passed down through the ages.",
-                         value=21000, rarity=0.5, mod=36, subtyp='Tome', unequip=False)
+                         value=21000, rarity=0.5, mod=42, subtyp='Tome', unequip=False)
         self.weight = 4
 
 
@@ -2566,12 +2593,22 @@ class Vedas(OffHand):
         self.weight = 4
 
 
+class CompendiumAncients(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Compendium of the Ancients", description="A colossal tome filled with records of "
+                                                                        "forgotten civilizations, written in a "
+                                                                        "language lost to time.",
+                         value=65000, rarity=0.2, mod=65, subtyp='Tome', unequip=False)
+        self.weight = 5
+
+
 class Necronomicon(OffHand):
 
     def __init__(self):
         super().__init__(name="Necronomicon", description="The Book of the Dead, a mystical grimoire written by an "
                                                           "unknown author.",
-                         value=65000, rarity=0.2, mod=60, subtyp='Tome', unequip=False)
+                         value=72000, rarity=0.2, mod=75, subtyp='Tome', unequip=False)
         self.weight = 6
         self.restriction = ['Warlock', 'Necromancer']
 
@@ -2582,6 +2619,17 @@ class Magus(OffHand):
         super().__init__(name="Magus", description="A book of magical art written by a powerful wizard.",
                          value=90000, rarity=0.05, mod=90, subtyp='Tome', unequip=False)
         self.weight = 3
+
+
+class CodexEternity(OffHand):
+    """
+    Rare drop from Merzhin in Realm of Cambion
+    """
+
+    def __init__(self):
+        super().__init__(name="Codex of Eternity", description="A shimmering tome bound in starlight, with pages that "
+                                                               "shift and reform endlessly.",
+                         value=150000, rarity=0.01, mod=130, subtyp='Tome', unequip=False)
 
 
 # Rod items
@@ -3486,17 +3534,6 @@ class Key(Misc):
         super().__init__(name="Key", description="Unlocks a locked chest but is consumed.", value=500, rarity=0.9,
                          subtyp='Key')
 
-    def use(self, user, target=None):
-        use_str = ""
-        tile = user.world_dict[(user.location_x, user.location_y, user.location_z)]
-        if 'Chest' in str(tile):
-            user.modify_inventory(self, subtract=True)
-            tile.locked = False
-            use_str += f"{user.name} unlocks the chest.\n"
-        else:
-            use_str += "The key does not fit in the door.\n"
-        return use_str, True
-
 
 class OldKey(Misc):
     """
@@ -3508,16 +3545,16 @@ class OldKey(Misc):
                                                      "powerful enemies.",
                          value=50000, rarity=0.5, subtyp='Key')
 
-    def use(self, user, target=None):
-        use_str = ""
-        tile = user.world_dict[(user.location_x, user.location_y, user.location_z)]
-        if 'Door' in str(tile):
-            user.modify_inventory(self, subtract=True)
-            tile.locked = False
-            use_str += f"{user.name} unlocks the door.\n"
-        else:
-            use_str += "The key does not fit in the chest.\n"
-        return use_str, True
+
+class MasterKey(Misc):
+    """
+    Special item; Opens locked chest and doors; is not consumed upon use
+    """
+
+    def __init__(self):
+        super().__init__(name="Master Key", description="Unlocks doors that may lead to either valuable treasure or to "
+                                                     "powerful enemies.",
+                         value=0, rarity=0, subtyp='Key')
 
 
 class Scroll(Misc):
@@ -3581,7 +3618,7 @@ class FireScroll(Scroll):
         self.name = "Fire Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the fire "
                                           "spell Firebolt. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Firebolt()
 
@@ -3596,7 +3633,7 @@ class IceScroll(Scroll):
         self.name = "Ice Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the ice "
                                           "spell Ice Lance. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.IceLance()
 
@@ -3611,7 +3648,7 @@ class ElectricScroll(Scroll):
         self.name = "Electric Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the electric"
                                           " spell Shock. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Shock()
 
@@ -3626,7 +3663,7 @@ class WaterScroll(Scroll):
         self.name = "Water Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the water "
                                           "spell Water Jet. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.WaterJet()
 
@@ -3641,7 +3678,7 @@ class EarthScroll(Scroll):
         self.name = "Earth Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the earth "
                                           "spell Tremor. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Tremor()
 
@@ -3656,7 +3693,7 @@ class WindScroll(Scroll):
         self.name = "Wind Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the wind "
                                           "spell Gust. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Gust()
 
@@ -3672,7 +3709,7 @@ class ShadowScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the "
                                           "shadow spell Shadow Bolt. The scroll will be consumed when it is out of "
                                           "charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.ShadowBolt()
 
@@ -3687,7 +3724,7 @@ class HolyScroll(Scroll):
         self.name = "Holy Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy "
                                           "spell Holy. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.Holy()
 
@@ -3702,7 +3739,7 @@ class CleanseScroll(Scroll):
         self.name = "Cleanse Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy"
                                           " spell Cleanse. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 2500
+        self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.Cleanse()
 
@@ -3717,7 +3754,7 @@ class BoostScroll(Scroll):
         self.name = "Boost Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the heal "
                                           "spell Boost. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 5000
+        self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Boost()
 
@@ -3732,7 +3769,7 @@ class ShellScroll(Scroll):
         self.name = "Shell Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the heal "
                                           "spell Shell. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 5000
+        self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Shell()
 
@@ -3748,7 +3785,7 @@ class SilenceScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Silence, "
                                           "which can prevent an target from casting spell for a time. The scroll will"
                                           " be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 5000
+        self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Silence()
 
@@ -3764,7 +3801,7 @@ class DispelScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Dispel, "
                                           "which can remove all positive status effects from the target. The scroll"
                                           " will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 7500
+        self.value = 10000
         self.rarity = 0.5
         self.spell = abilities.Dispel()
 
@@ -3780,7 +3817,7 @@ class DeathScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Desoul, "
                                           "which can kill the target. The scroll will be consumed when it is out "
                                           "of charges.", 35, break_on_hyphens=False))
-        self.value = 10000
+        self.value = 15000
         self.rarity = 0.4
         self.spell = abilities.Desoul()
 
@@ -3796,7 +3833,7 @@ class SanctuaryScroll(Scroll):
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Sanctuary,"
                                           " which can return the user to town. The scroll will be consumed when it is"
                                           " out of charges.", 35, break_on_hyphens=False))
-        self.value = 25000
+        self.value = 50000
         self.rarity = 0.25
         self.spell = abilities.Sanctuary()
 
@@ -3820,11 +3857,31 @@ class UltimaScroll(Scroll):
         self.name = "Ultima Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the powerful"
                                           " Ultima. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
-        self.value = 50000
+        self.value = 100000
         self.rarity = 0.01
         self.spell = abilities.Ultima()
 
 
+# Reagents
+class SheetMusic(Misc):
+    """
+    Base sheet music item  TODO
+    """
+
+    def __init__(self, name, description, value, rarity, subtyp):
+        super().__init__(name, description, value, rarity, subtyp)
+
+
+class BlankScroll(Misc):
+    """
+    Base scroll item; used by Spell Stealer/Arcane Trickster to store spells for use
+    """
+
+    def __init__(self, name, description, value, rarity, subtyp):
+        super().__init__(name, description, value, rarity, subtyp)
+
+
+# Enemy quest items
 class RatTail(Misc):
 
     def __init__(self):
@@ -3922,6 +3979,7 @@ class Phylactery(Misc):
                          value=0, rarity=0.05, subtyp="Quest")
 
 
+# Special quest items
 class LuckyLocket(Misc):
     """
     Momento given to the warrior Joffrey by the waitress, his betrothed
@@ -3933,14 +3991,14 @@ class LuckyLocket(Misc):
                          value=0, rarity=0, subtyp="Special")
 
 
-class OrnateKey(Misc):
+class BrassKey(Misc):
     """
     Special key believed to be for opening the tavern but actually opens Joffrey's locker in barracks
     """
 
     def __init__(self):
-        super().__init__(name="Ornate Key", description="A brass key with an ornate head, similar to the key for"
-                                                        " your storage locker in the barracks.",
+        super().__init__(name="Brass Key", description="A brass key, similar to the key for your storage locker in the"
+                                                       " barracks.",
                          value=0, rarity=0, subtyp="Special")
 
 
@@ -3953,6 +4011,27 @@ class JoffreysLetter(Misc):
         super().__init__(name="Joffrey's Letter", description="A letter written from Joffrey to the waitress; maybe "
                                                               "there is some use of this.",
                          value=0, rarity=0, subtyp="Special")
+
+
+class EmptyVial(Misc):
+    """
+    Given by Alchemist; used to collect Spring Water from Underground Spring
+    """
+
+    def __init__(self):
+        super().__init__(name="Empty Vial", description="An empty vial, perfect for storing liquids and other "
+                                                        "tinctures.",
+                         value=0, rarity=0, subtyp='Special')
+
+
+class SpringWater(Misc):
+    """
+    Obtained when you visit the Underground Spring during quest Naivete from Alchemist
+    """
+
+    def __init__(self):
+        super().__init__(name="Spring Water", description="A vial of the finest spring water.",
+                         value=0, rarity=0, subtyp='Special')
 
 
 class Joker(Misc):
@@ -4049,8 +4128,9 @@ class Excaliper(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Excaliper", description="An old brake caliper reforged into the legendary Excalibur. It"
-                                                       " did not go as planned...",
+        super().__init__(name="Excaliper", description="The broken fragments of a failed experiment. It appears "
+                                                       "someone tried to forge the legendary sword Excalibur using "
+                                                       "a caliper tool. It did not go well...",
                         value=0, rarity=0, subtyp="Special")
 
 
@@ -4076,15 +4156,6 @@ class BlacksmithsHammer(Misc):
                          value=0, rarity=0, subtyp="Summon - Cacus")
 
 
-class SheetMusic(Misc):
-    """
-    Base sheet music item  TODO
-    """
-
-    def __init__(self, name, description, value, rarity, subtyp):
-        super().__init__(name, description, value, rarity, subtyp)
-
-
 # items_dict used by shops
 items_dict = {
     'Weapon': {
@@ -4103,7 +4174,8 @@ items_dict = {
             'Hammer': [Sledgehammer, Maul, EarthHammer, GreatMaul, Streithammer]}},
     'OffHand': {
         'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, Svalinn], 
-        'Tome': [Book, TomeKnowledge, Grimoire, BookShadows, DragonRouge, Vedas, Necronomicon],
+        'Tome': [Book, TomeKnowledge, InfernalGrimoire, ElementalPrimer, TreatiseBalance, DragonRouge,
+                 Vedas, CompendiumAncients, Necronomicon],
         'Rod': [DowsingRod, ScepterIfrit, GaiasBranch, Zephyruswand]},
     'Armor': {
         'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe, Tarnkappe],
@@ -4130,5 +4202,6 @@ items_dict = {
         'Key': [Key, OldKey],
         'Scroll': [BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
                    EarthScroll, WindScroll, ShadowScroll, HolyScroll, CleanseScroll, BoostScroll,
-                   ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll]}
+                   ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll],
+        'Reagents': []}
 }

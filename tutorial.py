@@ -1,7 +1,6 @@
 ###########################################
-""" tutorial manager """
+"""tutorial manager"""
 
-# Imports
 import sys
 
 

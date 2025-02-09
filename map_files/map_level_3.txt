@@ -12,8 +12,8 @@ Wall	CavePath1	Wall	UnlockedChestRoom	Wall	CavePath1	CavePath1	CavePath1	CavePat
 Wall	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	Wall	FakeWall	Wall	CavePath2	CavePath2	Wall	Wall	Wall	CavePath2	CavePath2	Wall	CavePath2
 StairsUp	Wall	Wall	CavePath1	Wall	CavePath1	Wall	Wall	Wall	FakeWall	EmptyCavePath	Wall	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	Wall	CavePath2	CavePath2
 CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	CavePath1	UnlockedChestRoom	FakeWall	Wall	Wall	Wall	LockedChestRoom2	Wall	Wall	Wall	CavePath2	Wall
-CavePath1	Wall	Wall	CavePath1	Wall	CavePath1	StairsUp	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	EmptyCavePath	Wall	BarghestBossRoom	NightmareBossRoom	Wall	CavePath2	CavePath2
-CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	FakeWall	EmptyCavePath	EmptyCavePath	EmptyCavePath	MinotaurBossRoom	PseudodragonBossRoom	Wall	Wall	CavePath2
+CavePath1	Wall	Wall	CavePath1	Wall	CavePath1	StairsUp	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	EmptyCavePath	Wall	EmptyCavePath	BossPath	Wall	CavePath2	CavePath2
+CavePath1	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	EmptyCavePath	FakeWall	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall	Wall	CavePath2
 LockedDoor	Wall	UnlockedChestRoom2	Wall	UnlockedChestRoom2	Wall	WendigoBossRoom	RelicRoom	Wall	CavePath2	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2	CavePath2
 CavePath2	Wall	LockedDoor	Wall	LockedDoor	Wall	LockedDoor	Wall	CavePath2	CavePath2	CavePath2	Wall	CavePath2	CavePath2	CavePath2	Wall	CavePath2	CavePath2	CavePath2	Wall
 CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall	CavePath2	Wall

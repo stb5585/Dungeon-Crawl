@@ -16,5 +16,5 @@ Wall	Wall	Wall	LockedDoor	Wall	Wall	StairsDown	Wall	Wall	Wall	Wall	CavePath2	Wal
 Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	StairsUp	UnlockedChestRoom2	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
 UnlockedChestRoom2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	UnlockedChestRoom2	LockedChestRoom2	Wall	CavePath2	CavePath2	Wall	UnlockedChestRoom2	CavePath2	Wall	CavePath2	UnlockedChestRoom2	Wall	CavePath2
 Wall	Wall	Wall	CavePath2	Wall	Wall	Wall	UnlockedChestRoom2	UnlockedChestRoom2	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
-Wall	LockedChestRoom2	Wall	CavePath2	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
-StairsDown	FakeWall	Wall	UnlockedChestRoom2	FakeWall	FakeWall	StairsDown	Wall	Wall	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2
+EmptyCavePath	Boulder	Wall	CavePath2	Wall	Wall	Wall	Wall	Wall	Wall	CavePath2	CavePath2	Wall	Wall	CavePath2	Wall	CavePath2	Wall	Wall	CavePath2
+StairsDown	EmptyCavePath	Wall	UnlockedChestRoom2	FakeWall	FakeWall	StairsDown	Wall	Wall	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2	CavePath2

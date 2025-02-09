@@ -1,9 +1,8 @@
 ###########################################
 """ map manager """
 
-# Imports
-import time
 import random
+import time
 
 import companions
 import enemies
@@ -199,7 +198,9 @@ class CavePath(MapTile):
                     time.sleep(0.5)
                     game.stdscr.getch()
                     findbox.clear_rectangle()
-        if not random.randint(0, 4) and self.enemy is None:
+        if all([not random.randint(0, 4),
+                self.enemy is None,
+                game.random_combat]):
             self.enter_combat(game.player_char)
 
     def available_actions(self, player_char):
@@ -236,7 +237,7 @@ class CavePath0(CavePath):
                 if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=10)):
                     game.special_event("Timmy")
                     game.player_char.quest_dict['Side']['Bring Him Home']['Completed'] = True
-                    game.player_char.change_location(5, 10, 0)
+                    game.player_char.to_town()
         if "Ticket to Ride" in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Ticket to Ride']['Completed']:
                 if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=5)):
@@ -277,6 +278,16 @@ class CavePath2(CavePath):
         player_char.state = 'fight'
 
 
+class BossPath(CavePath):
+
+    def enter_combat(self, player_char):
+        self.enemy = random.choice([enemies.Minotaur(),
+                                    enemies.Barghest(),
+                                    enemies.Pseudodragon(),
+                                    enemies.Nightmare()])
+        player_char.state = "fight"
+
+
 class SandwormLair(EmptyCavePath):
 
     def modify_player(self, game):
@@ -295,17 +306,18 @@ class FirePath(EmptyCavePath):
 
     def modify_player(self, game):
         super().modify_player(game)
-        resist = game.player_char.check_mod("resist", "Fire")
-        health_10per = max(0, int(game.player_char.health.max * 0.1 * (1 - resist)))
-        damage = random.randint(health_10per // 2, health_10per)
-        game.player_char.health.current -= damage
-        if damage > 0:
-            lava_message = f"{game.player_char.name} takes {damage} damage from the fire."
-            lavabox = utils.TextBox(game)
-            lavabox.print_text_in_rectangle(lava_message)
-            time.sleep(0.5)
-            game.stdscr.getch()
-            lavabox.clear_rectangle()  
+        if not game.player_char.flying:
+            resist = game.player_char.check_mod("resist", "Fire")
+            health_10per = max(0, int(game.player_char.health.max * 0.1 * (1 - resist)))
+            damage = random.randint(health_10per // 2, health_10per)
+            game.player_char.health.current -= damage
+            if damage > 0:
+                lava_message = f"{game.player_char.name} takes {damage} damage from the fire."
+                lavabox = utils.TextBox(game)
+                lavabox.print_text_in_rectangle(lava_message)
+                time.sleep(0.5)
+                game.stdscr.getch()
+                lavabox.clear_rectangle()
 
 
 class FirePathSpecial(FirePath):
@@ -324,50 +336,133 @@ class FirePathSpecial(FirePath):
             super().modify_player(game)
 
 
-class UndergroundSpring(EmptyCavePath):
+class UndergroundSpring(SpecialTile):
     """
+    Drinking from the spring unlocks the sword Excaliper 2:B19
     Fuath summon can be obtained by Summoner class after defeating enemy
     Retrieve Excaliper item to summon Maid of the Spring, Nimue (quest giver)
-    TODO additional benefit TBD (quest rewards?)
-    - increase in stat(s)
-    - full health and mana
-    - random item
+    Special interaction (maybe reward?) if you craft Excalibur and return
     """
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.drink = False
         self.nimue = False
+        self.enemy = None
+        self.defeated = False
 
     def modify_player(self, game):
-        if not self.nimue:
-            confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
-            confirm = utils.ConfirmPopupMenu(game, header_message=confirm_message, box_height=8)
-            if confirm.navigate_popup():
-                if all(["Summoner" in game.player_char.cls.name,
-                        "Fuath" not in game.player_char.summons]):
-                    self.enter_combat(game.player_char)
-                    if game.player_char.is_alive():
-                        game.special_event("Fuath")
+        self.visited = True
+        player_char = game.player_char
+        confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
+        confirm = utils.ConfirmPopupMenu(game, header_message=confirm_message, box_height=8)
+        springbox = utils.TextBox(game)
+        if "Naivete" in player_char.quest_dict["Side"] and \
+            not player_char.quest_dict["Side"]["Naivete"]["Completed"]:
+            player_char.modify_inventory(items.EmptyVial(), subtract=True, rare=True)
+            player_char.modify_inventory(items.SpringWater(), rare=True)
+            player_char.quest_dict["Side"]["Naivete"]["Completed"] = True
+            message = ("You fill the empty vial with some of the spring water.\n"
+                       "You have completed the quest Naivete.\n")
+            springbox.print_text_in_rectangle(message)
+            game.stdscr.getch()
+            springbox.clear_rectangle()
+        if confirm.navigate_popup():
+            if player_char.level.pro_level > 1 and not random.randint(0, 1):
+                if not self.defeated:
+                    self.generate_enemy()
+                    if self.enemy.is_alive():
+                        game.special_event("Fuath1")
+                        self.enter_combat(player_char)
+                        game.battle(self.enemy, pause=False)
+                    if all(["Summoner" in player_char.cls.name,
+                            "Fuath" not in player_char.summons,
+                            player_char.is_alive()]):
+                        game.special_event("Fuath2")
                         summon = companions.Fuath()
-                        summon.initialize_stats(game.player_char)
-                        game.player_char.summons[summon.name] = summon
-                if not self.drink:
-                    game.special_event("Drink")  # TODO
-                    self.drink = True
-                if not self.nimue and "Excaliper" in game.player_char.special_inventory:
-                    game.special_event("Nimue")
-                    game.player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
-                    self.nimue = True
-        else:
-            pass  # TODO
+                        summon.initialize_stats(player_char)
+                        player_char.summons[summon.name] = summon
+                if not player_char.is_alive():
+                    return
+                self.defeated = True
+            if not self.drink:
+                message = "You drank water from the underground spring...nothing seems to have changed."
+                springbox.print_text_in_rectangle(message)
+                game.stdscr.getch()
+                springbox.clear_rectangle()
+                self.drink = True
+            if not self.nimue and "Excaliper" in player_char.special_inventory:
+                game.special_event("Nimue")
+                player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
+                self.nimue = True
+            if self.nimue:
+                if "Excalibur" in player_char.inventory or \
+                    "Excalibur" == player_char.equipment['Weapon'].name:
+                    game.special_event("Excalibur")
+                    if "Excalibur" in player_char.inventory:
+                        player_char.modify_inventory(items.Excalibur2())
+                        player_char.modify_inventory(items.Excalibur(), subtract=True)
+                    else:
+                        player_char.equipment['Weapon'] = items.Excalibur2()
+                """ TODO
+                quest, responses = town.check_quests(game, "Nimue")
+                if not quest:
+                    response = random.choice(random.choice(responses))
+                    springbox.print_text_in_rectangle(response)
+                    game.stdscr.getch()
+                    springbox.clear_rectangle()
+                confirm.header_message = "Do you wish to enter the Realm of Cambion?\n"
+                if confirm.navigate_popup():
+                    player_char.location_x, player_char.location_y, player_char.location_z = (4, 9, 7)
+                """
 
     def enter_combat(self, player_char):
-        self.enemy = enemies
         player_char.state = "fight"
 
+    def special_text(self, game):
+        pass
 
-class Portal(SpecialTile):
+    def generate_enemy(self):
+        if self.visited:
+            self.enemy = enemies.Fuath()
+
+    def available_actions(self, player_char):
+        if player_char.state == 'fight':
+            action_list = ["Attack", "Use Item"]
+            if not player_char.status_effects["Silence"].active:
+                if player_char.usable_abilities("Spells"):
+                    action_list.insert(1, "Cast Spell")
+                if player_char.usable_abilities("Skills"):
+                    action_list.insert(1, "Use Skill")
+            action_list = player_char.additional_actions(action_list)
+            return action_list
+        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+
+class Boulder(SpecialTile):
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        if not self.read:
+            intro_str += "You see a boulder that seems very out of place.\n"
+        else:
+            intro_str += "There's that boulder where you found that sword...and broke it.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        pass
+
+    def special_text(self, game):
+        if game.player_char.world_dict[(4, 9, 3)].drink and not self.read:
+            game.special_event("Boulder")
+            game.player_char.modify_inventory(items.Excaliper(), rare=True)
+            self.read = True
+
+
+class Portal(EmptyCavePath):
     """
     Returns player from the Realm of Cambion to the Underground Spring
     """
@@ -376,7 +471,7 @@ class Portal(SpecialTile):
         super().__init__(x, y, z)
 
 
-class Rotator(SpecialTile):
+class Rotator(EmptyCavePath):
     """
     Spins the player around and pushes them into one of the adjacent enterable spaces
     """
@@ -480,7 +575,8 @@ class CockatriceBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ""
+            return ("Nothing but bones and feathers are left to mark the spot where \n"
+                    "the Cockatrice was defeated.")
         return super().intro_text(game)
 
 
@@ -491,7 +587,7 @@ class WendigoBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ""
+            return "The air feels cold here...but no sign of the slain Wendigo."
         return super().intro_text(game)
 
     def special_text(self, game):
@@ -509,11 +605,21 @@ class IronGolemBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.IronGolem
 
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
+
 
 class GolemBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Golem
+
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
 
 
 class JesterBossRoom(BossRoom):
@@ -521,11 +627,21 @@ class JesterBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.Jester
 
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
+
 
 class DomingoBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Domingo
+
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
 
 
 class RedDragonBossRoom(BossRoom):
@@ -533,17 +649,32 @@ class RedDragonBossRoom(BossRoom):
         super().__init__(x, y, z)
         self.enemy = enemies.RedDragon
 
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
+
 
 class CerberusBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Cerberus
 
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
+
 
 class FinalBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Devil
+
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
 
 
 class ChestRoom(MapTile):
@@ -640,17 +771,23 @@ class LockedChestRoom(ChestRoom):
         self.adjacent_visited(game.player_char)
         self.generate_loot()
         if self.locked:
-            if 'Lockpick' in game.player_char.spellbook['Skills']:
-                unlockbox = utils.TextBox(game)
+            unlockbox = utils.TextBox(game)
+            if "Master Key" in game.player_char.special_inventory:
+                self.locked = False
+                unlockbox.print_text_in_rectangle("You open the chest with the Master key.\n")
+                game.stdscr.getch()
+                unlockbox.clear_rectangle()
+            elif any(["Lockpick" in game.player_char.spellbook["Skills"],
+                      "Master Lockpick" in game.player_char.spellbook["Skills"]]):
                 unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
                 self.locked = False
                 game.stdscr.getch()
                 unlockbox.clear_rectangle()
             elif "Key" in game.player_char.inventory:
-                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the chest with a Key?", box_height=7)
+                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the chest with a Key?", box_height=8)
                 if popup.navigate_popup():
                     self.locked = False
-                    game.player_char.modify_inventory(game.player_char.inventory['Key'][0], subtract=True)
+                    game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
 
 
 class LockedChestRoom2(LockedChestRoom):
@@ -686,8 +823,19 @@ class LockedDoor(MapTile):
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
         if self.locked:
-            if "Old Key" in game.player_char.inventory:
-                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the door with an Old Key?", box_height=7)
+            if "Master Key" in game.player_char.special_inventory:
+                self.locked = False
+                unlockbox = utils.TextBox(game)
+                unlockbox.print_text_in_rectangle("You open the door with the Master key.\n")
+                game.stdscr.getch()
+                unlockbox.clear_rectangle()
+            elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
+                unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
+                self.locked = False
+                game.stdscr.getch()
+                unlockbox.clear_rectangle()
+            elif "Old Key" in game.player_char.inventory:
+                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the door with an Old Key?", box_height=8)
                 if popup.navigate_popup():
                     self.locked = False
                     game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
@@ -726,7 +874,7 @@ class WarningTile(CavePath):
         intro_str = super().intro_text(game)
         if not self.warning:
             intro_str += (f"Enemies beyond this point increase in difficulty.\n"
-                    f"Plan accordingly.\n")
+                          f"Plan accordingly.\n")
         return intro_str
 
     def enter_combat(self, player_char):
@@ -899,7 +1047,7 @@ class SecretShop(SpecialTile):
         pass
 
 
-class UltimateArmorShop(MapTile):
+class UltimateArmorShop(SpecialTile):
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -907,11 +1055,8 @@ class UltimateArmorShop(MapTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        if not self.looted:
-            intro_str += (f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
-                    f"A large man stands in front of you.\n")
-        else:
-            intro_str += "A large empty room.\n"
+        intro_str += (f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
+                        f"A large man stands in front of you.\n")
         return intro_str
 
     def modify_player(self, game):
@@ -923,6 +1068,11 @@ class UltimateArmorShop(MapTile):
     def available_actions(self, player_char):
         pass
 
+    def special_text(self, game):
+        if not self.read:
+            game.special_text("Ultimate Armor")
+            self.read = True
+
 
 class WarpPoint(MapTile):
 
@@ -931,6 +1081,12 @@ class WarpPoint(MapTile):
         self.warped = False
 
     def modify_player(self, game):
+        if not self.warped:
+            popup = utils.ConfirmPopupMenu(game, "Do you want to return to town?", box_height=7)
+            if popup.navigate_popup():
+                game.player_char.to_town()
+                town.town(game)
+                return
         self.warped = False
         self.visited = True
         self.adjacent_visited(game.player_char)

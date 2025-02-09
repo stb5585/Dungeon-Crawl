@@ -1,10 +1,13 @@
-# Imports
-import time
-import dill
-import random
+###########################################
+""" utils manager """
+
 import curses
 import curses.textpad
+import random
+import time
 from textwrap import wrap
+
+import dill
 
 
 # functions
@@ -21,7 +24,7 @@ def player_input(game, prompt):
     """
 
     curses.curs_set(1)  # Show the cursor
-    game.stdscr.clear()
+    game.stdscr.erase()
     game.stdscr.refresh()
     height, width = game.stdscr.getmaxyx()
     
@@ -84,7 +87,12 @@ def scaled_decay_function(x, rate=0.1):
     return 0.5 + decay_value * 0.75  # Scale and shift to fit [0.5, 1.25]
 
 
-def save_game_popup(game):
+def save_file_popup(game, load=False):
+    header = "Save Game"
+    message = "Saving your progress, please wait..."
+    if load:
+        header = "Load Game"
+        message = "Loading game file..."
     curses.curs_set(0)  # Hide cursor
     height, width = game.stdscr.getmaxyx()
     popup_height, popup_width = 9, 50
@@ -93,8 +101,8 @@ def save_game_popup(game):
     # Create popup window
     popup = curses.newwin(popup_height, popup_width, popup_y, popup_x)
     popup.box()
-    popup.addstr(1, (popup_width - 9) // 2, "Save Game", curses.A_BOLD)
-    popup.addstr(3, (popup_width - 36) // 2, "Saving your progress, please wait...")
+    popup.addstr(1, (popup_width - len(header)) // 2, header, curses.A_BOLD)
+    popup.addstr(3, (popup_width - len(message)) // 2, message)
 
     # Progress bar variables
     bar_width = popup_width - 4
@@ -115,13 +123,14 @@ def save_game_popup(game):
             time.sleep(delay)
 
     # Completion message
-    popup.addstr(7, (popup_width - 24) // 2, "Game saved successfully!", curses.A_BOLD)
-    popup.refresh()
-    if not game.debug_mode:
-        time.sleep(2)
+    if not load:
+        popup.addstr(7, (popup_width - 24) // 2, "Game saved successfully!", curses.A_BOLD)
+        popup.refresh()
+        if not game.debug_mode:
+            time.sleep(2)
 
     # Cleanup
-    popup.clear()
+    popup.erase()
     game.stdscr.refresh()
 
 
@@ -147,7 +156,7 @@ class MainMenu:
         self.options_win.refresh()
 
     def draw_title(self):
-        self.title_win.clear()
+        self.title_win.erase()
         title = ["     ____  __  ___   __________________  _   __   __________  ___ _       ____ \n",
                 "   / __ \\/ / / / | / / ____/ ____/ __ \\/ | / /  / ____/ __ \\/   | |     / / / \n",
                 "  / / / / / / /  |/ / / __/ __/ / / / /  |/ /  / /   / /_/ / /| | | /| / / /  \n",
@@ -158,7 +167,7 @@ class MainMenu:
         self.title_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         for idx, option in enumerate(self.options_list):
             if idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
@@ -171,8 +180,8 @@ class MainMenu:
         self.draw_title()
         self.draw_options()
 
-    def clear(self):
-        self.game.stdscr.clear()
+    def erase(self):
+        self.game.stdscr.erase()
         self.game.stdscr.refresh()
 
     def update_options(self, options):
@@ -225,12 +234,12 @@ class NewGameMenu:
         self.desc_win.refresh()
 
     def draw_top(self):
-        self.top_win.clear()
+        self.top_win.erase()
         self.top_win.addstr(1, self.width // 2 - 17, self.top_text, curses.A_BOLD)
         self.top_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         for idx, line in enumerate(self.options_list):
             if idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
@@ -241,7 +250,7 @@ class NewGameMenu:
         self.options_win.box()
 
     def draw_desc(self):
-        self.desc_win.clear()
+        self.desc_win.erase()
         if self.options_list[self.current_option] != "Go Back":
             if self.page == 1:
                 self.race = self.game.races_dict[self.options_list[self.current_option]]()
@@ -324,8 +333,8 @@ class NewGameMenu:
         self.draw_options()
         self.draw_desc()
 
-    def clear(self):
-        self.game.stdscr.clear()
+    def erase(self):
+        self.game.stdscr.erase()
         self.game.stdscr.refresh()
 
     def update_options(self):
@@ -389,12 +398,12 @@ class LoadGameMenu:
         self.desc_win.refresh()
 
     def draw_top(self):
-        self.top_win.clear()
+        self.top_win.erase()
         self.top_win.addstr(1, self.width // 2 - 17, self.top_text, curses.A_BOLD)
         self.top_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         for idx, line in enumerate(self.options_list):
             if idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
@@ -405,7 +414,7 @@ class LoadGameMenu:
         self.options_win.box()
 
     def draw_desc(self):
-        self.desc_win.clear()
+        self.desc_win.erase()
         if self.options_list[self.current_option] != "Go Back":
             loadfile = f"save_files/{self.options_list[self.current_option].lower()}.save"
             with open(loadfile, "rb") as save_file:
@@ -420,8 +429,8 @@ class LoadGameMenu:
         self.draw_options()
         self.draw_desc()
 
-    def clear(self):
-        self.game.stdscr.clear()
+    def erase(self):
+        self.game.stdscr.erase()
         self.game.stdscr.refresh()
 
     def config_desc_str(self, player_dict):
@@ -480,7 +489,7 @@ class DungeonMenu:
         map_str = self.game.player_char.minimap()
         if self.game.player_char.state == 'fight':
             map_str += f"\n\n{self.game.player_char.name} is attacked by a {self.room.enemy.name}."
-        self.top_win.clear()
+        self.top_win.erase()
         dungeon_message = f"Dungeon Level {level}\n"
         self.top_win.addstr(1, (self.width // 2) - (len(dungeon_message) // 2), dungeon_message)
         rows = map_str.splitlines()
@@ -491,7 +500,7 @@ class DungeonMenu:
     def draw_bottomleft(self):
         room_str = self.room.intro_text(self.game)
         player_str = f"{str(self.game.player_char)}\n\n"
-        self.bottomleft_win.clear()
+        self.bottomleft_win.erase()
         self.bottomleft_win.addstr(1, (self.width // 3) - (len(player_str) // 2), player_str)
         detail_text = room_str.splitlines()
         for i, line in enumerate(detail_text):
@@ -501,7 +510,7 @@ class DungeonMenu:
 
     def draw_bottomright(self):
         options = f"Move North (w)\n\nMove West (a)\tMove East (d)\n\nMove South (s)"
-        self.bottomright_win.clear()
+        self.bottomright_win.erase()
         options = options.splitlines()
         for i, line in enumerate(options):
             self.bottomright_win.addstr(
@@ -533,7 +542,7 @@ class CombatMenu:
         self.options_win.refresh()
 
     def draw_enemy(self, enemy, vision=False):
-        self.enemy_win.clear()
+        self.enemy_win.erase()
         enemy_text = str(enemy)
         if not vision:
             enemy_text = enemy_text.split("|")[0].strip()
@@ -547,7 +556,7 @@ class CombatMenu:
     def draw_char(self, char=None):
         if not char:
             char = self.game.player_char
-        self.char_win.clear()
+        self.char_win.erase()
         self.char_win.addstr(1, (self.width // 4) - (len(char.name) // 2), char.name)
 
         # Health bar calculation
@@ -574,7 +583,7 @@ class CombatMenu:
         self.char_win.box()
 
     def draw_options(self, options):
-        self.options_win.clear()
+        self.options_win.erase()
         self.options_list = options
         for idx, option in enumerate(self.options_list):
             if idx == self.current_option:
@@ -620,12 +629,12 @@ class TownMenu:
 
     def draw_title(self):
         title_message = "Welcome to the town of Silvana!"
-        self.title_win.clear()
+        self.title_win.erase()
         self.title_win.addstr(1, (self.width // 2) - (len(title_message) // 2), title_message, curses.A_BOLD)
         self.title_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         grid_width = self.width // self.cols
         grid_height = (11 * self.height // 12) // self.rows
         self.options_win.addstr(self.height // 4, 0, "-" * self.width)
@@ -686,12 +695,12 @@ class LocationMenu:
         self.options_win = curses.newwin(11 * self.height // 12, self.width, self.height // 12, 0)
 
     def draw_top(self):
-        self.top_win.clear()
+        self.top_win.erase()
         self.top_win.addstr(1, (self.width // 2) - (len(self.message) // 2), self.message, curses.A_BOLD)
         self.top_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         if self.options_message:
             self.options_win.addstr((3 * self.height // 8) - (len(self.options_list) // 2) - 2,
                                     (self.width // 2) - (len(self.options_message) // 2), self.options_message, curses.A_BOLD)
@@ -760,12 +769,12 @@ class ShopMenu:
         self.gold_win = curses.newwin(self.height // 12, self.width // 3, 11 * self.height // 12, 2 * self.width // 3)
 
     def draw_top(self):
-        self.top_win.clear()
+        self.top_win.erase()
         self.top_win.addstr(1, (self.width // 2) - (len(self.shop_message) // 2), self.shop_message, curses.A_BOLD)
         self.top_win.box()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         for idx, option in enumerate(self.options_list):
             if idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
@@ -776,7 +785,7 @@ class ShopMenu:
         self.options_win.box()
 
     def draw_item_desc(self):
-        self.item_desc_win.clear()
+        self.item_desc_win.erase()
         if self.itemdict:
             item_str = self.item_str_list[self.current_item]
             if item_str not in ["Go Back", "Next Page"]:
@@ -796,7 +805,7 @@ class ShopMenu:
         self.item_desc_win.box()
 
     def draw_shop_list(self):
-        self.shop_list_win.clear()
+        self.shop_list_win.erase()
         if self.itemdict:
             if self.buy_or_sell == "Buy":
                 shop_str = f"{'Type':16}{' ':2}{'Item':33}{'Cost':5}{' ':9}{'Owned':>13}"
@@ -812,7 +821,7 @@ class ShopMenu:
         self.shop_list_win.box()
 
     def draw_mod(self):
-        self.mod_win.clear()
+        self.mod_win.erase()
         if self.itemdict:
             combat_str_dict = self.config_mod_str()
             if combat_str_dict:
@@ -825,7 +834,7 @@ class ShopMenu:
 
     def draw_gold(self):
         gold = str(self.game.player_char.gold) + "G"
-        self.gold_win.clear()
+        self.gold_win.erase()
         self.gold_win.addstr(1, self.width // 3 - (len(gold) + 1), gold, curses.A_BOLD)
         self.gold_win.box()
 
@@ -881,7 +890,8 @@ class ShopMenu:
                                 num = len(self.game.player_char.inventory[item().name])
                             self.item_str_list.append(f"{typ:16}{' ':2}{item().name:31}{adj_cost:6}{' ':20}x{num:>2}")
                     else:
-                        if 0.1 <= item().rarity < 0.4:
+                        exception_list = ["Old Key"]
+                        if 0.1 <= item().rarity < 0.4 or item().name in exception_list:
                             adj_cost = max(1, int(item().value * adj_scale))
                             num = 0
                             if item().name in self.game.player_char.inventory:
@@ -973,7 +983,7 @@ class CharacterMenu:
         self.height, self.width = game.stdscr.getmaxyx()
         self.options_list = options_list
         self.current_option = 0
-        self.rows, self.cols = (4, 2)
+        self.rows, self.cols = (3, 2)
         self.create_windows()
 
     def create_windows(self):
@@ -995,7 +1005,7 @@ class CharacterMenu:
         self.draw_status()
 
     def draw_options(self):
-        self.options_win.clear()
+        self.options_win.erase()
         grid_width = (self.width // 3) // self.cols
         grid_height = (self.height // 8) // self.rows
         for idx, option in enumerate(self.options_list):
@@ -1013,7 +1023,7 @@ class CharacterMenu:
     def draw_player_loc(self):
         gold_str = f"{self.game.player_char.gold}G"
         weight_str = f"{self.game.player_char.current_weight()}/{self.game.player_char.max_weight()}"
-        self.player_loc_win.clear()
+        self.player_loc_win.erase()
         self.player_loc_win.addstr(1, 1, f"{self.game.player_char.name}", curses.A_BOLD)
         self.player_loc_win.addstr(3, 1,
                                    (f"Level {self.game.player_char.level.level} "
@@ -1034,7 +1044,7 @@ class CharacterMenu:
     def draw_info(self):
         exp = f"{self.game.player_char.level.exp}"
         to_level = f"{self.game.player_char.level.exp_to_gain}"
-        self.info_win.clear()
+        self.info_win.erase()
         self.info_win.addstr(1, 1, "Experience:", curses.A_BOLD)
         self.info_win.addstr(1, 2 * self.width // 5 - len(exp) - 1, exp)
         self.info_win.addstr(2, 1, "To Next Level:", curses.A_BOLD)
@@ -1042,23 +1052,23 @@ class CharacterMenu:
         self.info_win.box()
 
     def draw_status(self):
-        self.status_win.clear()
+        self.status_win.erase()
         status_lines = self.game.player_char.status_str().splitlines()
         for i, line in enumerate(status_lines):
-            self.status_win.addstr((2 * i) + 2, 10, line)
+            self.status_win.addstr((2 * i) + 2, self.width // 12, line)
         combat_lines = self.game.player_char.combat_str().splitlines()
         for i, line in enumerate(combat_lines):
-            self.status_win.addstr((2 * i) + 2, 38, line)
-        resist_lines = self.game.player_char.resist_str().splitlines()
-        self.status_win.addstr(2, 84, "Resistances", curses.A_BOLD)
-        for i, line in enumerate(resist_lines):
-            self.status_win.addstr((2 * i) + 4, 72, line)       
+            self.status_win.addstr((2 * i) + 2, self.width // 3, line)
         equip_lines = self.game.player_char.equipment_str().splitlines()
-        self.status_win.addstr((5 * self.height // 8), 10, "Equipped Gear", curses.A_BOLD)
+        self.status_win.addstr(2, 84, "Equipped Gear", curses.A_BOLD)
         for i, line in enumerate(equip_lines):
-            row = (i + 1) // self.cols
-            col = (i + 1) % self.cols
-            self.status_win.addstr((5 * self.height // 8) + (2 * col), 10 + row * self.width // 3, line)
+            self.status_win.addstr((2 * i) + 4, 3 * self.width // 5, line)
+        resist_lines = self.game.player_char.resist_str().splitlines()
+        self.status_win.addstr((5 * self.height // 8) - 2, (self.width // 2) - 6, "Resistances", curses.A_BOLD)
+        for i, line in enumerate(resist_lines):
+            row = i // 2
+            col = i % 2
+            self.status_win.addstr((5 * self.height // 8) + (2 * col), 10 + row * self.width // 4, line)
         self.status_win.box()
 
     def navigate_menu(self):
@@ -1096,7 +1106,7 @@ class PopupMenu:
         self.popup_win = curses.newwin(self.box_height, self.box_width, start_y, start_x)
 
     def draw_popup(self):
-        self.popup_win.clear()
+        self.popup_win.erase()
         if not isinstance(self.header_message, list):
             self.header_message = [self.header_message]
         for i, line in enumerate(self.header_message):
@@ -1110,7 +1120,7 @@ class PopupMenu:
         self.popup_win.box()
 
     def clear_popup(self):
-        self.popup_win.clear()
+        self.popup_win.erase()
         self.popup_win.refresh()
 
     def navigate_popup(self):
@@ -1143,7 +1153,7 @@ class PromotionPopupMenu(PopupMenu):
         self.familiar = familiar
 
     def draw_popup(self):
-        self.popup_win.clear()
+        self.popup_win.erase()
         if self.options_list[self.current_option] != "Go Back":
             if self.familiar:
                 # self.popup_win.addstr(1, (self.box_width // 2) - 5, "Promotion", curses.A_BOLD)
@@ -1241,7 +1251,7 @@ class SlotMachinePopupMenu(PopupMenu):
         self.result = ['*', '*', '*']
 
     def draw_popup(self):
-        self.popup_win.clear()
+        self.popup_win.erase()
         self.popup_win.box()
         self.popup_win.addstr(2, 2, "".join(self.result))
         for i, _ in enumerate(self.result):
@@ -1274,7 +1284,7 @@ class BlackjackPopupMenu(PopupMenu):
 
     def draw_popup(self):
         user_name, target_name = self.header_message[0].split('  ')
-        self.popup_win.clear()
+        self.popup_win.erase()
         self.popup_win.addstr(1, 2, user_name)
         self.popup_win.addstr(1, 27 - len(target_name), target_name)
         for i, card in enumerate(self.user_hand):
@@ -1396,7 +1406,7 @@ class ShopPopup(PopupMenu):
         self.ones = self.max[1]
 
     def draw_popup(self):
-        self.popup_win.clear()
+        self.popup_win.erase()
         for i, line in enumerate(self.header_message):
             self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
         for idx, option in enumerate([self.tens, self.ones]):
@@ -1488,7 +1498,7 @@ class InventoryPopupMenu(PopupMenu):
 
     def draw_popup(self):
         self.update_itemlist()
-        self.popup_win.clear()
+        self.popup_win.erase()
         for i, line in enumerate(self.header_message):
             self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
         # Display item list
@@ -1623,7 +1633,7 @@ class EquipPopupMenu(PopupMenu):
                 return
             self.options_list = []
             for item in self.game.player_char.inventory.values():
-                if self.game.player_char.equipable(item[0], self.equip_type):
+                if self.game.player_char.cls.equip_check(item[0], self.equip_type):
                     self.options_list.append(item[0].name)
             if self.game.player_char.equipment[self.equip_type] != self.game.player_char.unequip(self.equip_type):
                 self.options_list.append("Unequip")
@@ -1646,7 +1656,6 @@ class EquipPopupMenu(PopupMenu):
         itembox = TextBox(self.game)
         itembox.print_text_in_rectangle(diff_str)
         self.game.stdscr.getch()
-        itembox.clear_rectangle()
         confirm = ConfirmPopupMenu(self.game, confirm_str, box_height=7)
         if confirm.navigate_popup():
             self.game.player_char.equip(self.equip_type, item)
@@ -1717,13 +1726,17 @@ class AbilitiesPopupMenu(PopupMenu):
         abilitybox.print_text_in_rectangle(str(ability))
         self.game.stdscr.getch()
         abilitybox.clear_rectangle()
-        if hasattr(ability, "cast_out") and ability.cost <= self.game.player_char.mana.current and \
-            not self.game.player_char.in_town():
-            confirm_str = f"Do you want to cast {ability.name}?"
+        if (hasattr(ability, "cast_out") or hasattr(ability, "use_out")) and \
+            ability.cost <= self.game.player_char.mana.current and not self.game.player_char.in_town():
+            use_or_cast = "cast" if self.ability_type == "Spells" else "use"
+            confirm_str = f"Do you want to {use_or_cast} {ability.name}?"
             confirm = ConfirmPopupMenu(self.game, confirm_str, box_height=6)
             if confirm.navigate_popup():
-                cast_message = ability.cast_out(self.game)
-                abilitybox.print_text_in_rectangle(cast_message)
+                if hasattr(ability, "cast_out"):
+                    message = ability.cast_out(self.game)
+                else:
+                    message = ability.use_out(self.game)
+                abilitybox.print_text_in_rectangle(message)
                 self.game.stdscr.getch()
                 abilitybox.clear_rectangle()
 
@@ -1733,7 +1746,7 @@ class QuestPopupMenu(PopupMenu):
         super().__init__(game, "", box_height=box_height, box_width=box_width)
 
     def draw_popup(self, content):
-        self.popup_win.clear()
+        self.popup_win.erase()
         self.popup_win.box()
         delay = 0 if self.game.debug_mode else 0.075
         for i, line in enumerate(content):
@@ -1757,7 +1770,7 @@ class QuestListPopupMenu(PopupMenu):
     def draw_popup(self):
         self.update_options()
         h_adjust = 1
-        self.popup_win.clear()
+        self.popup_win.erase()
 
         # Draw header
         for i, line in enumerate(self.header_message):
@@ -1909,5 +1922,5 @@ class TextBox:
         self.win.refresh()
 
     def clear_rectangle(self):
-        self.win.clear()
+        self.win.erase()
         self.win.refresh()

@@ -2,20 +2,20 @@
 The main module to run the Dungeon Crawl game.
 """
 
-# Imports
-import sys
-import random
-import time
-import glob
 import curses
+import glob
+import random
+import sys
+import time
+
 import dill
 
-import utils
-import town
 import player
-from races import races_dict
+import town
+import utils
+from character import Combat, Level, Resource, Stats
 from classes import classes_dict
-from character import Stats, Resource, Level, Combat
+from races import races_dict
 
 
 # objects
@@ -32,6 +32,7 @@ class Game:
         self.classes_dict = classes_dict
         self.player_char = None
         self.debug_mode = debug_mode
+        self.random_combat = True
         self.time = time.time()
         self.bounties = {}
         curses.curs_set(0)  # Hide cursor
@@ -39,26 +40,24 @@ class Game:
 
     def main_menu(self):
         menu = utils.MainMenu(self)
-        menu.clear()
+        menu.erase()
+        if self.debug_mode:
+            confirm_str = "You are in debug mode. Do you want to turn off random encounters?"
+            confirm = utils.ConfirmPopupMenu(self, confirm_str, box_height=8)
+            if confirm.navigate_popup():
+                self.random_combat = False
         menu_options = ['New Game', 'Settings', 'Exit']
         if self.load_files:
             menu_options.insert(1, "Load Game")
         menu.update_options(menu_options)
         while True:
-            done = False
-            while not done:
+            while True:
                 selected_idx = menu.navigate_menu()
+                menu.erase()
                 if menu_options[selected_idx] == 'New Game':
-                    menu.clear()
                     self.player_char = self.new_game()
-                    if self.player_char:
-                        done = True
-                        break
                 elif menu_options[selected_idx] == 'Load Game':
                     self.player_char = self.load_game(menu)
-                    if self.player_char:
-                        done = True
-                    menu.update_options(menu_options)
                 elif menu_options[selected_idx] == 'Settings':
                     """
                     Settings to include
@@ -70,8 +69,8 @@ class Game:
                     pass
                 else:
                     sys.exit(0)  # Exit the game
-                menu.update_options(menu_options)
-            menu.clear()
+                if self.player_char:
+                    break
             self.run()
             self.update_loadfiles()
             if self.load_files and "Load Game" not in menu_options:
@@ -150,12 +149,12 @@ class Game:
                     name = "Test"
                     break
             else:
-                menu.clear()
+                menu.erase()
                 confirm_str = f"Are you sure you want to name your character {name}?"
                 confirm = utils.ConfirmPopupMenu(self, confirm_str, box_height=7)
                 if confirm.navigate_popup():
                     break
-        menu.clear()
+        menu.erase()
 
         created = f"Welcome {name}, the {race.name} {cls.name}.\nReport to the barracks for your orders."
         enternamebox.print_text_in_rectangle(created)
@@ -163,7 +162,8 @@ class Game:
         enternamebox.clear_rectangle()
 
         # Define the player character
-        import abilities, items
+        import abilities
+        import items
         location_x, location_y, location_z = (5, 10, 0)
         stats = tuple(map(lambda x, y: x + y, (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
                         (cls.str_plus, cls.int_plus, cls.wis_plus, cls.con_plus, cls.cha_plus, cls.dex_plus)))
@@ -191,7 +191,6 @@ class Game:
 
         return player_char
 
-
     def load_game(self, menu):
         player_char = None
         load_options = []
@@ -202,6 +201,7 @@ class Game:
         selected_idx = menu.navigate_menu()
         if load_options[selected_idx] == "Go Back":
             return
+        utils.save_file_popup(self, load=True)
         with open(self.load_files[selected_idx], "rb") as save_file:
             player_dict = dill.load(save_file)
         player_char = player.load_char(player_dict=player_dict)
@@ -224,7 +224,7 @@ class Game:
         dmenu.draw_all()
         dmenu.refresh_all()
         while True:
-            if self.player_char.in_town():
+            if self.player_char.in_town() or self.player_char.quit:
                 return
             available_actions = room.available_actions(self.player_char)
             if self.player_char.state == "normal":
@@ -247,7 +247,7 @@ class Game:
             dmenu.draw_all()
             dmenu.refresh_all()
 
-    def battle(self, enemy):
+    def battle(self, enemy, pause=True):
         """
         Function that controls combat
         TODO needs to be optimized
@@ -279,10 +279,11 @@ class Game:
             return attacker, defender
 
         battlebox = utils.TextBox(self)
-        while True:
-            key = self.stdscr.getch()
-            if key == curses.KEY_ENTER or key in [10, 13]:
-                break
+        if pause:
+            while True:
+                key = self.stdscr.getch()
+                if key == curses.KEY_ENTER or key in [10, 13]:
+                    break
         flee = False
         first, second = initiative(self.player_char, enemy)
         other = None
@@ -302,10 +303,34 @@ class Game:
             else:
                 cmenu.draw_char()
             cmenu.refresh_all()
+
+            # resolve status effects
+            status_text = first.effects()
+            if first == other:
+                status_text += self.player_char.effects()
+            if status_text:
+                if "damage" in status_text:
+                    # handles exploding shield for Crusader
+                    try:
+                        second.health.current -= int(status_text.split(" damage")[0].split(" ")[-1])
+                    except ValueError:
+                        pass
+                battlebox.print_text_in_rectangle(status_text)
+                self.stdscr.getch()
+                battlebox.clear_rectangle()
+
+            if any([not self.player_char.is_alive(),
+                    not enemy.is_alive()]):
+                break
+
             if not first.incapacitated():
+                
                 if first == self.player_char:
                     while True:
-                        if first.status_effects["Berserk"].active:
+                        if first.magic_effects["Ice Block"].active:
+                            combat_text = f"{first.name} is encased in ice and does nothing.\n"
+                            valid_entry = True
+                        elif first.status_effects["Berserk"].active:
                             wd_str, _, _ = first.weapon_damage(second)
                             combat_text = wd_str
                             valid_entry = True
@@ -345,8 +370,14 @@ class Game:
                                     first.open_up(self)
                                     valid_entry = True
                                 elif action == "Attack":
-                                    wd_str, _, _ = first.weapon_damage(second)
-                                    combat_text += wd_str
+                                    special_str = ""
+                                    if not random.randint(0, 9 - self.check_mod("luck", luck_factor=20)):
+                                        special_str = self.special_attack(target=second)
+                                    if not special_str:
+                                        wd_str, _, _ = first.weapon_damage(second)
+                                        combat_text += wd_str
+                                    else:
+                                        combat_text += special_str
                                     valid_entry = True
                                 elif action == 'Use Item':
                                     use_str, valid_entry = first.use_item(self, second)
@@ -457,13 +488,23 @@ class Game:
                     action = available_actions[action_idx]
                     combat_text = ""
                     valid_entry = False
+                    if first.magic_effects["Ice Block"].active:
+                        combat_text += f"{first.name} is encased in ice and does nothing.\n"
+                        valid_entry = True
                     if action == "Recall":
+                        combat_text += f"{self.player_char.name} recalls {first.name}.\n"
                         other = None
                         first = self.player_char
                         valid_entry = True
                     elif action == "Attack":
-                        wd_str, _, _ = first.weapon_damage(second)
-                        combat_text += wd_str
+                        special_str = ""
+                        if not random.randint(0, 9 - self.check_mod("luck", luck_factor=20)):
+                            special_str = self.special_attack(target=second)
+                        if not special_str:
+                            wd_str, _, _ = first.weapon_damage(second)
+                            combat_text += wd_str
+                        else:
+                            combat_text += special_str
                         valid_entry = True
                     elif action == 'Cast Spell':
                         spell_list = []
@@ -566,22 +607,7 @@ class Game:
             if not combat:
                 break
 
-            # resolve status effects
-            status_text = first.effects()
-            if first == other:
-                status_text += self.player_char.effects()
-            if status_text:
-                if "damage" in status_text:
-                    # handles exploding shield for Crusader
-                    try:
-                        second.health.current -= int(status_text.split(" damage")[0].split(" ")[-1])
-                    except ValueError:
-                        pass
-                battlebox.print_text_in_rectangle(status_text)
-                self.stdscr.getch()
-                battlebox.clear_rectangle()
-
-            if not first.is_alive():
+            if not first.is_alive() or not self.player_char.is_alive():
                 break
 
             if first == self.player_char:
@@ -722,15 +748,43 @@ special_event_dict = {
             "I have built up a cache of items that I can sell you if you're interested..."
         ]
     },
-    "Drink": {
-        "Text": {
-            "You drank water from the underground spring...nothing seems to have changed."  # TODO
-        }
+    "Ultimate Armor":{
+        "Text": [
+            "Hello, my name is Chisolm, Griswold's brother.",
+            "I tried to defeat the ultimate evil but could not even damage it.",
+            "I barely escaped, camping here to lick my wounds.",
+            "I decided I would instead use my blacksmith skills to help those who look to do what I could not.",
+            "Choose the type of armor you would prefer and I will make you the finest set you could imagine."
+        ]
+    },
+    "Boulder": {
+        "Text": [
+            "Before you sits a decent sized boulder, although you are not sure what it is doing in the dungeon.",
+            "You look closer and notice the hilt of a sword sticking out from behind it.",
+            "You grab the sword and try to dislodge it but it seems pretty stuck.",
+            "With one final yank, the sword comes free...or part of it at least.",
+            "You gain the not-so-legendary Excaliper...whomp whomp..."
+        ]
     },
     "Nimue": {
-        "Text": {
-            "This is not the legendary Excalibur, you fool!"  # TODO
-        }
+        "Text": [
+            "Before your eyes appears the most beautiful creature you have ever seen.",
+            "'Greeting, my name is Nimue. I am the Maid of this spring.'",
+            "You notice a faint aura resonating from your bag, as if you carry something of value to her.",
+            "'Finally, a worthy champion...you have brought me the sword of legend. May I see it?'",
+            "Sword of legend?...you are uncertain what she could be referring to...perhaps the broken sword?",
+            "You take out what's left of Excaliper and hand it over. Her joyous expression quickly changes.",
+            "'Oh pity, this is not but a cheap knock-off...and it's broken...curses.'",
+            "'Whoever forged this weapon was not much of a blacksmith, yet possessed the magical acumen to trick me.'",
+            "'I'd bet anything Merzhin was involved. Ever since I spurred his advances, he has been a very naughty boy.'",
+            "The remains of Excaliper vanish from her hands. 'Oh well, you can still be of use to me.'",
+            "Her words are somewhat unsettling as you ponder what she means. You thoughts are quickly disturbed.",
+            "'I see you seek to end the blight of this land, perhaps we can be of assistance to each other.'",
+            "'Merzhin is a powerful wizard and he has become a thorn in my side. I would like you to deal with him.'",
+            "'His domain is not of this plane, residing in the Realm of Cambion. Luckily I can teleport you there.'",
+            "You are uncertain if you want to get involved. 'I can make it worth your time. Think on it for a bit.'",
+            "'If you wish to summon me, just drink from the spring and I will appear. Until then...'. She disappears.",
+        ]
     },
     "Minotaur": {
         "Text": [
@@ -843,7 +897,7 @@ special_event_dict = {
     },
     "Red Dragon": {
         "Text": [
-            "After several minutes exploring an empty corridor, you exit into a massive sanctum riddled with fissures."
+            "After several minutes exploring an empty corridor, you exit into a massive sanctum riddled with fissures.",
             "The cavern trembles as the ground beneath you grows unbearably hot.",
             "A deafening roar erupts from the shadows, and the Red Dragon steps forward.",
             "Its scales gleam like molten metal and its eyes burn with a primal fury.",
@@ -923,13 +977,46 @@ special_event_dict = {
             "You have gained the summon Cacus."
         ]
     },
-    "Fuath": {
+    "Fuath1": {
         "Text": [
+            "You drank water from the underground spring...nothing seems to have changed...at first.",
+            "Suddenly an eddy forms and out from the vortex emerges a blond-haired maiden in a green silk dress.",
+            "A haunting voice echoes around you, even though her mouth does not move.",
+            "You start to feel a strange calm, as if you are being lulled to sleep. Is this some kind of trick?",
+            "Your question is immediately answered, when the figure changes into something out of the horrors.",
+            "An ugly creature, with giant teeth and webbed hands and feet, let's out a shriek and falls to all fours.",
+            "As if by some godly power, the creature crawls along the top of the water, heading right toward you.",
+            "You are overcome with an almost mystical level of fear, frozen in place even against your will.",
+            "Giant claws reach out for you, no doubt to pull you under. Your resolve finally returns.",
+            "You prepare for combat, sure of a fight to ensue."
+        ]
+    },
+    "Fuath2": {
+        "Text": [
+            "The Fuath relents slumping to the ground. The creature returns to its original form.",
+            "After a moment, you hear a raspy voice coming from inside your head.",
+            "'It's been some time since anyone could hold their own against me. Many have tried but none have succeeded.'",
+            "Exhaustion is replaced by an expression of hatred. 'I will not submit to your will!'",
+            "The Fuath tries to slip back into the waters but is held back by an invisible force.",
+            "'NO, I WON'T GO WITH THEM!!!', as if pleading with the universe. The struggle ends quickly.",
+            "'CURSES!...I must fulfill the covenant and aid you in your quest...'",
             "You have gained the summon Fuath."
         ]
     },
     "Izulu": {
         "Text": [
+            "You follow the priest down a dark alley, passing several homeless people before arriving at a tent.",
+            "'Go inside and tell her I sent you.' The priest turns around and heads back toward the church.",
+            "You enter the tent and are instantly hit by a strange odor, not bad but also not good.",
+            "A figure emerges from behind a bookshelf. 'Come in, I've been expecting you.'",
+            "A masked figure stands before you, minimally clothed in rags and adorned in shells and bones.",
+            "'The priest told me you helped the church out immensely. I owe him my life.'",
+            "'Perhaps I can help you. You possess the power to summon creatures, a gift not many have mastered.'",
+            "From a back room, you hear a bird shriek, followed by a bright flash and the crack of thunder.",
+            "'Right on cue, come out Izulu.' To your surprise, a young man emerges from the darkness.",
+            "'This is Izulu, my familiar. Don't let this form fool you, my pet is a powerful force.'",
+            "At the snap of a finger, the young man transforms into a giant bird. Electricity crackles around him.",
+            "'I grant you permission to summon him and do your bidding, until the day the evil is purged.'",
             "You have gained the summon Izulu."
         ]
     },
@@ -965,6 +1052,22 @@ special_event_dict = {
             "The body is partially eaten but you believe this must be the recruit the Sergeant told you about.",
             "You retrieve the body that even though is missing parts, still weighs quite a bit.",
             "As you turn to leave you come face to face with an enemy and it attacks!"
+        ]
+    },
+    "Remedy": {
+        "Text": [
+            "You follow the priest down a dark alley, passing several homeless people before arriving at a tent.",
+            "'Go inside and tell her I sent you.' The priest turns around and heads back toward the church.",
+            "You enter the tent and are instantly hit by a strange odor, not bad but also not good.",
+            "A figure emerges from behind a bookshelf. 'Come in, I've been expecting you.'",
+            "A masked figure stands before you, minimally clothed in rags and adorned in shells and bones.",
+            "'The priest told me you helped the church out immensely. I owe him my life.'",
+            "'As you likely have guessed, I am a shaman. Some would call me a witch doctor...'",
+            "'I believe I can help you in your quest to purge this land of evil. Wait here...'",
+            "The shaman exits the room through a flap in the back. You wait for some time...",
+            "Suddenly a flash of light and a series of bangs exit the back room, followed by a trail of smoke.",
+            "The shaman reemerges. 'Here, take these potions. They will cure all status effects.'",
+            "'Good luck. I will do what I can from the shadows to help you.'"
         ]
     }
 }

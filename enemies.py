@@ -1,14 +1,13 @@
 ###########################################
 """ enemy manager """
 
-# Imports
-import time
 import random
+import time
 from textwrap import wrap
 
-from character import Character, Resource, Stats, Combat, StatusEffect
-import items
 import abilities
+import items
+from character import Character, Combat, Resource, Stats, StatusEffect
 
 
 # Functions
@@ -115,9 +114,9 @@ class Enemy(Character):
     def options(self, target, action_list):
         if self.status_effects["Berserk"].active:
             return "Attack"
-        if self.turtle:
+        if self.turtle or self.magic_effects["Ice Block"].active:
             return "Nothing"
-        if self.name != 'Test':
+        if self.name != 'Test' and not self.tunnel:
             action_list = ["Attack"]
         else:
             action_list = []
@@ -182,8 +181,14 @@ class Enemy(Character):
                         fail_flee = True
             if not flee and not fail_flee:
                 if action == "Attack":
-                    wd_str, _, _ = self.weapon_damage(target, cover=cover)
-                    combat_text += wd_str
+                    special_str = ""
+                    if not random.randint(0, 9 - self.check_mod("luck", luck_factor=20)):
+                        special_str = self.special_attack(target=target)
+                    if not special_str:
+                        wd_str, _, _ = self.weapon_damage(target, cover=cover)
+                        combat_text += wd_str
+                    else:
+                        combat_text += special_str
                 elif action == "Pickup Weapon":
                     combat_text += f"{self.name} picks up their weapon.\n"
                     self.physical_effects["Disarm"].active = False
@@ -433,12 +438,12 @@ class Test(Misc):
                          exp=5000)
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
-        self.spellbook = {"Spells": {},
-                          "Skills": {'Exploit Weakness': abilities.ExploitWeakness()}}
+        self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt()},
+                          "Skills": {'Doublecast': abilities.Doublecast()}}
         self.level.pro_level = 99  # test for enemies running away
 
     def special_attack(self, target):
-        return abilities.BreatheFire().use(self, target)
+        return abilities.BreatheFire().use(self, target=target)
 
 
 class Mimic(Aberration):
@@ -1475,7 +1480,7 @@ class NightHag(Fey):
         super().__init__(name="Night Hag", health=random.randint(30, 48), mana=105, strength=16, intel=22, wisdom=26,
                          con=12, charisma=14, dex=19, attack=20, defense=26, magic=41, magic_def=40,
                          exp=random.randint(215, 312))
-        self.equipment = {'Weapon': items.Kris(), 'Armor': items.SilverCloak(), 'OffHand': items.Grimoire(),
+        self.equipment = {'Weapon': items.Kris(), 'Armor': items.SilverCloak(), 'OffHand': items.InfernalGrimoire(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(70, 99)
         self.spellbook = {"Spells": {"Sleep": abilities.Sleep(),
@@ -1503,7 +1508,7 @@ class NightHag2(NightHag):
         self.combat = Combat(40, 51, 72, 68)
         self.experience = 2500
         self.gold = 1000
-        self.inventory['Ornate Key'] = [items.OrnateKey]
+        self.inventory['Brass Key'] = [items.BrassKey]
         self.spellbook['Skills']["Widow's Wail"] = abilities.WidowsWail()
         self.status_immunity = ["Death", "Stone"]
 
@@ -1519,7 +1524,7 @@ class Treant(Fey):
         self.gold = random.randint(60, 85)
         self.inventory['Cursed Hops'] = [items.CursedHops]
         self.spellbook = {"Spells": {"Regen": abilities.Regen()},
-                          "Skills": {'Multi-Attack': abilities.DoubleStrike(),
+                          "Skills": {'Double Strike': abilities.DoubleStrike(),
                                      'Throw Rock': abilities.ThrowRock()}}
         self.resistance['Fire'] = -1.
         self.resistance['Water'] = 1.5
@@ -1558,11 +1563,12 @@ class Fuath(Monster):
     def __init__(self):
         super().__init__(name="Fuath", health=340, mana=147, strength=19, intel=14, wisdom=18, con=14, charisma=11,
                          dex=15, attack=65, defense=46, magic=75, magic_def=82,
-                         exp=0)
+                         exp=3000)
         self.equipment = {'Weapon': items.Pincers2(), 'Armor': items.NoArmor(), 'OffHand': items.Pincers2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
-        self.spellbook["Spells"] = abilities.WaterJet()
-        self.spellbook["Skills"] = abilities.Screech()
+        self.spellbook = {"Spells": {"Water Jet": abilities.WaterJet(),
+                                     "Sleep": abilities.Sleep()},
+                          "Skills": {"Screech": abilities.Screech()}}
         self.resistance["Electric"] = -0.75
         self.resistance["Water"] = 1.25
         self.resistance["Shadow"] = 0.25
@@ -1672,7 +1678,7 @@ class Conjurer(Humanoid):
                                      'Lightning': abilities.Lightning(),
                                      'Aqualung': abilities.Aqualung(),
                                      'Boost': abilities.Boost()},
-                          "Skills": {'Mana Drain': abilities.ManaDrain()}}
+                          "Skills": {"Mana Shield": abilities.ManaShield()}}
         self.level.pro_level = 4
         self.picture = "disciple.txt"
 
@@ -1777,7 +1783,7 @@ class Cyborg(Construct):
     def special_effects(self, target):
         special_str = ""
         if self.health.current < int(self.health.current * 0.25):
-            special_str += abilities.Detonate.use(self, target=target)
+            special_str += abilities.Detonate().use(self, target=target)
         return special_str
 
 
@@ -1933,7 +1939,7 @@ class Golem(Construct):
         self.spellbook = {"Spells": {'Enfeeble': abilities.Enfeeble()},
                           "Skills": {'Crush': abilities.Crush(),
                                      "Goad": abilities.Goad()}}
-        self.resistance['Fire'] = 0.25
+        self.resistance['Fire'] = 0.5
         self.resistance['Ice'] = -0.25
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.25
@@ -1961,13 +1967,18 @@ class IronGolem(Golem):
         self.inventory['Aard of Being'] = [items.AardBeing]
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
         self.spellbook["Skills"]["Triple Strike"] = abilities.TripleStrike()
+        self.resistance['Fire'] = 1.0
+        self.resistance['Electric'] = -0.25
+        self.resistance['Water'] = -0.5
+        self.turtled = False  # signifies if enemy has used turtle or not; limited to once a battle
 
 
     def special_effects(self, target):
         special_str = ""
         if not self.incapacitated():
-            if self.health.current < int(self.health.max * 0.1) and not self.turtle:
+            if self.health.current < int(self.health.max * 0.1) and not self.turtle and not self.turtled:
                 self.turtle = True
+                self.turtled = True
                 special_str += f"{self.name} curls up into a ball for protection.\n"
             if self.health.current > int(self.health.max * 0.5) and self.turtle:
                 self.turtle = False
@@ -2049,7 +2060,7 @@ class ShadowSerpent(Elemental):
     def __init__(self):
         super().__init__(name='Shadow Serpent', health=random.randint(130, 180), mana=100, strength=28, intel=18,
                          wisdom=15, con=22, charisma=16, dex=23, attack=46, defense=41, magic=46, magic_def=40,
-                                                  exp=random.randint(780, 1090))
+                         exp=random.randint(780, 1090))
         self.equipment = {'Weapon': items.SnakeFang2(), 'Armor': items.SnakeScales2(), 'OffHand': items.SnakeFang2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(280, 485)
@@ -2128,7 +2139,8 @@ class Behemoth(Aberration):
     def special_effects(self, target):
         special_str = ""
         if not self.is_alive():
-            special_str += abilities.FinalAttack.use(self, target=target)
+            special_str += f"{self.name} unleashes a powerful attack as it dies.\n"
+            special_str += abilities.Meteor().cast(self, target=target, special=True)
         return special_str
 
 
@@ -2343,7 +2355,8 @@ class BrainGorger(Aberration):
         self.gold = random.randint(320, 515)
         self.spellbook = {"Spells": {'Terrify': abilities.Terrify(),
                                      'Weaken Mind': abilities.WeakenMind()},
-                          "Skills": {'Brain Gorge': abilities.BrainGorge()}}
+                          "Skills": {'Brain Gorge': abilities.BrainGorge(),
+                                     "Mana Shield": abilities.ManaShield()}}
         self.resistance['Fire'] = 0.25
         self.resistance['Ice'] = 0.25
         self.resistance['Electric'] = 0.25
@@ -2362,7 +2375,7 @@ class Domingo(Aberration):
     """
 
     def __init__(self):
-        super().__init__(name='Domingo', health=1500, mana=999, strength=0, intel=50, wisdom=40, con=45, charisma=60,
+        super().__init__(name='Domingo', health=1500, mana=999, strength=20, intel=50, wisdom=40, con=45, charisma=60,
                          dex=50, attack=92, defense=123, magic=135, magic_def=119,
                          exp=40000)
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
@@ -2372,7 +2385,8 @@ class Domingo(Aberration):
                                      'Desoul': abilities.Desoul(),
                                      'Boost': abilities.Boost(),
                                      "Ice Block": abilities.IceBlock()},
-                          "Skills": {'Multi-Cast': abilities.DoubleCast()}}
+                          "Skills": {'Doublecast': abilities.Doublecast(),
+                                     "Mana Shield": abilities.ManaShield2()}}
         self.flying = True
         self.resistance = {'Fire': 0.25,
                            'Ice': 0.25,
@@ -2398,17 +2412,17 @@ class RedDragon(Dragon):
 
     def __init__(self):
         super().__init__(name='Red Dragon', health=2000, mana=500, strength=50, intel=38, wisdom=45, con=55,
-                         charisma=40, dex=35, attack=155, defense=148, magic=195, magic_def=211,
+                         charisma=40, dex=35, attack=135, defense=138, magic=115, magic_def=161,
                          exp=80000)
         self.equipment = {'Weapon': items.DragonTail2(), 'Armor': items.DragonScale(), 'OffHand': items.DragonClaw2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = 50000
         self.inventory['Item'] = [items.random_item(7)]
-        self.spellbook = {"Spells": {'Heal': abilities.Heal3(),
+        self.spellbook = {"Spells": {'Heal': abilities.Regen2(),
                                      'Volcano': abilities.Volcano(),
                                      'Ultima': abilities.Ultima()},
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
-                                     'Multi-Cast': abilities.TripleCast()}}
+                                     'Doublecast': abilities.Doublecast()}}
         self.flying = True
         self.resistance = {'Fire': 1.5,
                            'Ice': 0.5,
@@ -2452,11 +2466,13 @@ class Merzhin(Humanoid):
 
     def __init__(self):
         super().__init__(name="Merzhin", health=1500, mana=2000, strength=24, intel=61, wisdom=58, con=28, charisma=35,
-                         dex=32, attack=123, defense=121, magic=230, magic_def=225,
+                         dex=32, attack=103, defense=101, magic=140, magic_def=164,
                          exp=90000)
         self.equipment = {"Weapon": items.Khatvanga(), "Armor": items.MerlinRobe(), "OffHand": items.Vedas(),
                           "Ring": items.NoRing(), "Pendant": items.NoPendant()}
         self.gold = 125000
+        self.inventory['Codex of Eternity'] = [items.CodexEternity]
+        self.inventory['Master Key'] = [items.MasterKey]
         self.spellbook = {"Spells": {"Mirror Image": abilities.MirrorImage2(),
                                      "Magic Missile": abilities.MagicMissile3(),
                                      "Ultima": abilities.Ultima(),
@@ -2476,7 +2492,7 @@ class Cerberus(Fiend):
 
     def __init__(self):
         super().__init__(name='Cerberus', health=2500, mana=500, strength=65, intel=28, wisdom=45, con=60, charisma=40,
-                         dex=38, attack=226, defense=205, magic=190, magic_def=286,
+                         dex=38, attack=151, defense=142, magic=108, magic_def=132,
                          exp=120000)
         self.equipment = {'Weapon': items.CerberusBite(), 'Armor': items.CerberusHide(), 'OffHand': items.CerberusClaw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -2510,7 +2526,7 @@ class Devil(Fiend):
 
     def __init__(self):
         super().__init__(name='The Devil', health=5000, mana=1000, strength=75, intel=55, wisdom=70, con=85,
-                         charisma=80, dex=45, attack=350, defense=205, magic=375, magic_def=404,
+                         charisma=80, dex=45, attack=208, defense=205, magic=194, magic_def=156,
                          exp=0)
         self.equipment = {'Weapon': items.DevilBlade(), 'Armor': items.DevilSkin(), 'OffHand': items.DevilBlade(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -2539,15 +2555,17 @@ class Devil(Fiend):
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
+        berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            return max(0, weapon_mod + class_mod + self.combat.attack)
+            total_mod = weapon_mod + class_mod + self.combat.attack
+            return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'offhand':
             off_mod = self.equipment['OffHand'].damage
             class_mod += self.damage_mod
             off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            return max(0, int((off_mod + class_mod + self.combat.attack) * 0.75))
+            return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
         if mod == 'armor':
             class_mod += self.damage_mod
             armor_mod = self.equipment['Armor'].armor

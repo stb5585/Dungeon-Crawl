@@ -1,12 +1,11 @@
 ###########################################
 """ companion manager """
 
-# Imports
 import random
 
 import abilities
 import items
-from character import Character, Resource, Stats, Combat
+from character import Character, Combat, Resource, Stats
 
 
 # familiars
@@ -566,7 +565,7 @@ class Grigori(Summons):
 class Bardi(Summons):
     """
     Summon creature
-    death spirit
+    death spirit, perhaps modeled after Anima from FFX
 
     Abilities:
     Level 1 (start)
@@ -583,7 +582,7 @@ class Bardi(Summons):
     Level 9
     - Shadow Bolt 3
     Level 10
-    - Ultimate attack TODO
+    - Ultimate attack (Anguish or Oblivion)  TODO
     """
 
     def __init__(self):
@@ -703,7 +702,7 @@ class Zahhak(Summons):
         self.description = ""  # TODO
 
     def special_attack(self, target):
-        return abilities.BreatheFire().use(self, target)
+        return abilities.BreatheFire().use(self, target=target)
 
 
 summon_abilities = {

@@ -2,21 +2,19 @@
 This module defines the player character and its attributes and actions.
 """
 
-# Imports
+import glob
 import os
+import random
 import re
 import time
-import glob
-import random
-import dill
 
+import dill
 import numpy
 
 import abilities
 import utils
-from classes import equip_check
-from items import remove_equipment
 from character import Character
+from items import remove_equipment
 
 
 def load_char(char=None, player_dict=None):
@@ -51,6 +49,7 @@ def load_char(char=None, player_dict=None):
     player_char.storage = player_dict['storage']
     player_char.power_up = player_dict['power_up']
     player_char.sight = player_dict['sight']
+    player_char.warp_point = player_dict['warp_point']
     return player_char
 
 
@@ -113,12 +112,15 @@ class Player(Character):
                     elif "Door" in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2593" if not self.world_dict[tile].open else "."
                     elif 'Wall' in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "#"
+                        if "FakeWall" in str(self.world_dict[tile]) and self.world_dict[tile].visited:
+                            map_array[tile_x][tile_y] = ":"
+                        else:
+                            map_array[tile_x][tile_y] = "#"
                     elif 'Chest' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25A1" if self.world_dict[tile].open else "\u25A0"
                     elif 'Relic' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25CB" if self.world_dict[tile].read else "\u25C9"
-                    elif 'Boss' in str(self.world_dict[tile]):
+                    elif 'BossRoom' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2620" if not self.world_dict[tile].defeated else "."
                     elif "SecretShop" in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2302"
@@ -200,6 +202,9 @@ class Player(Character):
     def in_town(self):
         return (self.location_x, self.location_y, self.location_z) == (5, 10, 0)
 
+    def to_town(self):
+        (self.location_x, self.location_y, self.location_z) = (5, 10, 0)
+
     def town_heal(self):
         self.state = 'normal'
         self.health.current = self.health.max
@@ -207,9 +212,6 @@ class Player(Character):
         for summon in self.summons.values():
             summon.health.current = summon.health.max
             summon.mana.current = summon.mana.max
-
-    def equipable(self, item, equip_slot):
-        return equip_check(item, self.cls, equip_slot)
 
     def usable_item(self, item):
         if self.in_town():
@@ -285,10 +287,10 @@ class Player(Character):
                 textbox.print_text_in_rectangle("Your class does not have a special menu.\n")
                 game.stdscr.getch()
                 textbox.clear_rectangle()
-                continue
-            action['method'](self, game)
-            if self.quit:
-                return True
+            else:
+                action['method'](self, game)
+                if self.quit:
+                    return True
             menu.draw_all()
             menu.refresh_all()
 
@@ -325,20 +327,20 @@ class Player(Character):
         heal_mod = self.check_mod('heal')
         combat_message += f"{'Spell Modifier:':16}{' ':2}{str(spell_mod):>7}\n"
         combat_message += f"{'Heal Modifier:':16}{' ':2}{str(heal_mod):>7}\n"
-        buff_str = self.buff_str()
-        combat_message += f"{'Buffs:'}{' ':2}{buff_str:>17}\n"
         return combat_message
     
     def equipment_str(self):
         """
         Returns a string containing the current equipment of the player
         """
-        
-        return (f"Armor - {self.equipment['Armor'].name}\n"
-                f"Weapon - {self.equipment['Weapon'].name}\n"
-                f"Ring - {self.equipment['Ring'].name}\n"
-                f"OffHand - {self.equipment['OffHand'].name}\n"
-                f"Pendant - {self.equipment['Pendant'].name}\n")
+
+        buff_str = self.buff_str()
+        return (f"{'Armor'}:     {self.equipment['Armor'].name:<30}\n"
+                f"{'Weapon'}:    {self.equipment['Weapon'].name:<30}\n"
+                f"{'Ring'}:      {self.equipment['Ring'].name:<30}\n"
+                f"{'OffHand'}:   {self.equipment['OffHand'].name:<30}\n"
+                f"{'Pendant'}:   {self.equipment['Pendant'].name:<30}\n"
+                f"{'Buffs'}:     {buff_str:<30}\n")
 
     def resist_str(self):
         """
@@ -348,11 +350,16 @@ class Player(Character):
         rest_dict = {}
         for typ in self.resistance:
             rest_dict[typ] = self.check_mod("resist", typ=typ)
-        return (f"{'Fire:':10}{rest_dict['Fire']:5}{' ':6}{'Ice:':10}{rest_dict['Ice']:5}\n"
-                f"{'Electric:':10}{rest_dict['Electric']:5}{' ':6}{'Water:':10}{rest_dict['Water']:5}\n"
-                f"{'Earth:':10}{rest_dict['Earth']:5}{' ':6}{'Wind:':10}{rest_dict['Wind']:5}\n"
-                f"{'Shadow:':10}{rest_dict['Shadow']:5}{' ':6}{'Holy:':10}{rest_dict['Holy']:5}\n"
-                f"{'Poison:':10}{rest_dict['Poison']:5}{' ':6}{'Physical:':10}{rest_dict['Physical']:5}\n")
+        return (f"{'Fire:'}     {rest_dict['Fire']:>5}       "
+                f"{'Electric:'} {rest_dict['Electric']:>5}       "
+                f"{'Earth:'}    {rest_dict['Earth']:>5}       "
+                f"{'Shadow:'}   {rest_dict['Shadow']:>5}       "
+                f"{'Poison:'}   {rest_dict['Poison']:>5}       \n"
+                f"{'Ice:'}      {rest_dict['Ice']:>5}       "
+                f"{'Water:'}    {rest_dict['Water']:>5}       "
+                f"{'Wind:'}     {rest_dict['Wind']:>5}       "
+                f"{'Holy:'}     {rest_dict['Holy']:>5}       "
+                f"{'Physical:'} {rest_dict['Physical']:>5}       ")
 
     def use_item(self, game, enemy):
         item_message = "Items"
@@ -540,24 +547,29 @@ class Player(Character):
             loot_message += f"{enemy.name} dropped {enemy.gold} gold.\n"
             self.gold += enemy.gold
         for i, item_typ in enumerate(items):
-            item = item_typ()
+            try:
+                item = item_typ()
+            except TypeError:
+                item = item_typ
+            drop[i] = item.subtyp == "Special"
+            rare[i] = item.subtyp == "Special"
             if item.subtyp == "Quest":
                 for info in self.quest_dict['Side'].values():
                     try:
                         if info['What']().name == item.name and not info['Completed']:
+                            rarity = item.rarity
+                            if item.name == "Bird Fat" and "Summoner" not in self.cls.name:
+                                rarity = 0.75
                             rare[i] = True
-                            drop[i] = True if item.rarity > random.random() else False
+                            drop[i] = True if rarity > random.random() else False
                             break
                     except (AttributeError, TypeError):
                         pass
             elif 'Boss' in str(tile):
                 drop[i] = True  # all non-quest items will drop from bosses
-            elif item.subtyp == "Special":
-                drop[i] = True
-                rare[i] = True
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
-                if (item.rarity / 2) > (random.random() / chance):
+                if item.rarity > (random.random() / chance):
                         try:
                             summon, name = item.subtyp.split(" - ")
                             summon_drop = item.name in self.special_inventory
@@ -625,7 +637,7 @@ class Player(Character):
                     confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
                     if not confirm.navigate_popup():
                         break
-                utils.save_game_popup(game)
+                utils.save_file_popup(game)
                 with open(save_file, "wb") as save_game:
                     dill.dump(self.__dict__, save_game)
                 break
@@ -718,7 +730,7 @@ class Player(Character):
         }
 
         # return empty if item is not equipable by player
-        if not equip_check(item, self.cls, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
+        if not self.cls.equip_check(item, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
             return ""
 
         # equip new item
@@ -860,7 +872,7 @@ class Player(Character):
                 death_message += f"You have lost 1 {stat_name}.\n"
         self.state = 'normal'
         self.effects(end=True)
-        self.location_x, self.location_y, self.location_z = (5, 10, 0)
+        self.to_town()
         death_message += "You wake up in town.\n"
         deathbox = utils.TextBox(game)
         deathbox.print_text_in_rectangle(death_message)
@@ -1125,6 +1137,7 @@ class Player(Character):
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
+        berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         if self.cls.name == "Soulcatcher" and self.power_up:
             if enemy:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
@@ -1149,7 +1162,8 @@ class Player(Character):
             if 'Physical Damage' in self.equipment['Ring'].mod:
                 weapon_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            return max(0, weapon_mod + class_mod + self.combat.attack)
+            total_mod = weapon_mod + class_mod + self.combat.attack
+            return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
@@ -1169,7 +1183,7 @@ class Player(Character):
                 if 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-                return max(0, int((off_mod + class_mod + self.combat.attack) * 0.75))
+                return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
             except AttributeError:
                 return 0
         if mod == 'armor':

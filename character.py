@@ -1,10 +1,9 @@
 ##########################################
 """ character manager """
 
-# Imports
 import random
-from math import exp
 from dataclasses import dataclass
+from math import exp
 from typing import Tuple
 
 
@@ -171,14 +170,14 @@ class Character:
                     self.status_effects["Stun"].active])
 
     def effect_handler(self, effect):
-        if effect in self.status_effects:
-            return self.status_effects
-        if effect in self.physical_effects:
-            return self.physical_effects
-        if effect in self.stat_effects:
-            return self.stat_effects
-        if effect in self.magic_effects:
-            return self.magic_effects
+        effect_dicts = [self.status_effects,
+                        self.physical_effects,
+                        self.stat_effects,
+                        self.magic_effects,
+                        self.class_effects]
+        for effect_dict in effect_dicts:
+            if effect in effect_dict:
+                return effect_dict
         raise NotImplementedError(f"{effect} does not exist in character attributes.")
 
     def hit_chance(self, defender, typ='weapon'):
@@ -200,6 +199,7 @@ class Character:
             hit_mod *= 1 - (0.5 * self.status_effects["Blind"].active)  # blind lowers accuracy by 50%
             hit_mod *= 1 - (1 / 10) * defender.flying  # flying lowers accuracy by 10%
             hit_mod *= 1 - (0.25 * (self.physical_effects["Disarm"].active))
+            hit_mod *= 1- (0.15 * (self.status_effects['Berserk'].active))  # berserk status lowers hit chance by 15%
         hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
         hit_mod *= 1 - (1 / 3) * defender.invisible  # invisible lowers accuracy by 33.3%
         if hasattr(self, "encumbered"):
@@ -245,8 +245,8 @@ class Character:
         hit(bool): guarantees hit if target doesn't dodge
         """
 
-        if defender.magic_effects["Ice Block"].active:
-            return "Your attack has no effect.\n", False, crit
+        if defender.magic_effects["Ice Block"].active or defender.tunnel:
+            return f"{self.name}'s attack has no effect.\n", False, crit
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
         attacks = ['Weapon']
@@ -293,7 +293,8 @@ class Character:
                     weapon_dam_str += f"{defender.name} evades {self.name}'s attack.\n"
             else:
                 if hits[i] and defender.magic_effects["Duplicates"].active:
-                    if random.randint(0, defender.magic_effects["Duplicates"].duration):
+                    chance = defender.magic_effects["Duplicates"].duration - self.check_mod("luck", luck_factor=15)
+                    if random.randint(0, max(0, chance)):
                         hits[i] = False
                         weapon_dam_str += (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
                                            f"vanishes from existence.\n")
@@ -462,7 +463,11 @@ class Character:
         Silence, Blind, and Disarm can be indefinite unless cured (duration=-1)
         """
 
-        effect_dicts = [self.status_effects, self.physical_effects, self.stat_effects, self.magic_effects]
+        effect_dicts = [self.status_effects,
+                        self.physical_effects,
+                        self.stat_effects,
+                        self.magic_effects,
+                        self.class_effects]
 
         def default(effect=None, end_combat=False):
             if end_combat:
@@ -490,13 +495,13 @@ class Character:
             if self.magic_effects["Ice Block"].active:
                 self.magic_effects["Ice Block"].duration -= 1
                 gain_perc = 0.10 * (1 + (self.stats.intel / 30))
-                health_gain = min(self.health.max - self.health.current, int(self.health.current * gain_perc))
+                health_gain = min(self.health.max - self.health.current, int(self.health.max * gain_perc))
                 self.health.current += health_gain
-                mana_gain = min(self.mana.max - self.mana.current, int(self.mana.current * gain_perc))
+                mana_gain = min(self.mana.max - self.mana.current, int(self.mana.max * gain_perc))
                 self.mana.current += mana_gain 
-                status_text += f"{self.name} regens {health_gain} health and {mana_gain} mana."
+                status_text += f"{self.name} regens {health_gain} health and {mana_gain} mana.\n"
                 if not self.magic_effects["Ice Block"].duration:
-                    status_text += f"The ice block around {self.name} melts."
+                    status_text += f"The ice block around {self.name} melts.\n"
                     default(effect="Ice Block")
                 else:
                     return status_text
@@ -590,15 +595,15 @@ class Character:
                 else:
                     self.class_effects["Power Up"].duration -= 1
                 if self.cls.name == "Knight Enchanter" and self.power_up:
-                    mana_regen = int(self.mana.max * 0.25)
+                    mana_regen = min(int(self.mana.max * 0.15), self.mana.max - self.mana.current)
                     self.mana.current += mana_regen
-                    status_text += f"{self.name} regens 25% of mana.\n"
+                    status_text += f"{self.name} regens {mana_regen} mana.\n"
                 if self.cls.name == "Archbishop" and self.power_up:
-                    health_regen = int(self.health.max * 0.10)
-                    mana_regen = int(self.mana.max * 0.10)
+                    health_regen = min(int(self.health.max * 0.10), self.health.max - self.health.current)
+                    mana_regen = min(int(self.mana.max * 0.10), self.mana.max - self.mana.current)
                     self.health.current += health_regen
                     self.mana.current += mana_regen
-                    status_text += f"{self.name} regens 10% of health and mana.\n"
+                    status_text += f"{self.name} regens {health_regen} health and {mana_gain} mana.\n"
                 if not self.class_effects["Power Up"].duration:
                     if self.cls.name == "Crusader" and self.power_up:
                         status_text += (f"The shield around {self.name} explodes, dealing "
@@ -616,10 +621,12 @@ class Character:
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
+        berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            return max(0, weapon_mod + class_mod + self.combat.attack)
+            total_mod = weapon_mod + class_mod + self.combat.attack
+            return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
@@ -631,7 +638,7 @@ class Character:
             try:
                 off_mod = self.equipment['OffHand'].damage
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-                return max(0, int((off_mod + class_mod + self.combat.attack) * 0.75))
+                return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
             except AttributeError:
                 return 0
         if mod == 'armor':

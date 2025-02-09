@@ -1,13 +1,12 @@
 ###########################################
 """ Town manager """
 
-# Imports
 import random
 import time
 from textwrap import wrap
 
-import items
 import classes
+import items
 import utils
 
 
@@ -47,7 +46,7 @@ def ultimate(game):
                 weapon = weapon[0]
             else:
                 weapon = weapon[1]
-        if classes.equip_check(weapon, game.player_char.cls, "Weapon"):
+        if game.player_char.cls.equip_check(weapon, "Weapon"):
             make_options.append(typ)
             i += 1
     make_options.append('Not Yet')
@@ -99,6 +98,10 @@ def turn_in_quest(game, quest, typ):
     reward = game.player_char.quest_dict[typ][quest]['Reward']
     if len(reward) == 1:
         reward = reward[0] if isinstance(reward[0], str) else reward[0]()
+    elif "Izulu" in reward:
+        reward = reward[0] if "Summoner" in game.player_char.cls.name else reward[1]()
+        if "Summoner" not in game.player_char.cls.name:
+            game.special_event("Remedy")
     else:
         reward_options = [x().name for x in reward]
         popup = utils.SelectionPopupMenu(
@@ -116,9 +119,10 @@ def turn_in_quest(game, quest, typ):
         reward_message = game.player_char.special_power(game)
         reward_message += f"You received {exp} experience.\n"
     elif reward == 'Warp Point':
-        game.player_char.warp = True
+        game.player_char.warp_point = True
         reward_message = f"You received {exp} experience and gain access to the Warp Point.\n"
     elif reward == "Izulu":
+        game.special_event("Izulu")
         from companions import Izulu
         summon = Izulu()
         summon.initialize_stats(game.player_char)
@@ -235,6 +239,11 @@ def accept_quest(game, quest, typ):
                     }
     quest_key = list(quest)[0]
     who = quest[quest_key]['Who']
+    if who == "Drunkard" and game.player_char.player_level() >= 65:
+        response_map["Drunkard"] = [
+            "I knew I could count on you!",
+            "I understand your hesitation but I hope you reconsider."
+        ]
     quest_desc = wrap(quest[quest_key]['Start Text'], 50, break_on_hyphens=False)
     menu = utils.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
     accepted = False
@@ -243,16 +252,20 @@ def accept_quest(game, quest, typ):
     confirm_str = "Do you accept this quest?"
     confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=6)
     if confirm.navigate_popup():
-        game.player_char.quest_dict[typ][quest_key] = quest[quest_key].copy()
+        player_char = game.player_char
+        player_char.quest_dict[typ][quest_key] = quest[quest_key].copy()
         message = response_map[who][0] + "\n"
         if who == "Sergeant" and quest_key == "The Holy Relics":
             message += "Make sure to grab the health potions out of your storage locker if you haven't already.\n"
+        if quest_key == "Naivete":
+            player_char.modify_inventory(items.EmptyVial(), rare=True)
         acceptquestbox.print_text_in_rectangle(message)
         game.stdscr.getch()
         acceptquestbox.clear_rectangle()
         if quest[quest_key]['Type'] == 'Defeat':
-            if quest_key in game.player_char.kill_dict:
-                game.player_char.quest_dict[typ][quest_key]['Completed'] = True
+            kill_list = [name for typ_dict in player_char.kill_dict.values() for name in typ_dict]
+            if quest[quest_key]["What"] in kill_list:
+                player_char.quest_dict[typ][quest_key]['Completed'] = True
         accepted = True
     else:
         acceptquestbox.print_text_in_rectangle(response_map[who][1])
@@ -301,9 +314,7 @@ def check_quests(game, quest_giver):
             else:
                 if key == "Pandora's Box" and "Ultima" not in game.player_char.spellbook["Spells"]:
                     continue
-                if key == "Debug" and not game.debug_mode:
-                    continue
-                if key == "The Shocker" and "Summoner" not in game.player_char.cls.name:
+                if key == "Debug" and any([not game.debug_mode, game.player_char.max_level()]):
                     continue
                 quest = accept_quest(game, side_quest, "Side")
             if quest:
@@ -368,7 +379,10 @@ def tavern_patrons(game):
                 'Drunkard': {8: ["(hic)...I am not as think as you drunk I am...(hic)"],
                             25: ["Do you see (hic) that person in the corner? What's their deal, TAKE THE "
                                  "HOOD OFF ALREADY!...ah whatever..."],
-                            30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."]
+                            30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."],
+                            65: ["We are all praying for your success and survival!",
+                                 "Rutger used to talk about a so-called Master key, that could open any lock. I wonder"
+                                 " how much truth was in that."]
                             },
                 'Busboy':   {1: ["The waitress left crying some time ago...sounds like her fiance was killed in the "
                                  "dungeons.",
@@ -418,6 +432,8 @@ def tavern_patrons(game):
         if not quest:
             talks = patrons[patron_options[patron_idx]]
             level_talks = [talks[x] for x in talks if game.player_char.player_level() >= x]
+            if patron_options[patron_idx] == "Drunkard" and game.player_char.player_level() >= 65:
+                level_talks = [talks[65]]
             response = random.choice(random.choice(level_talks))
             textbox = utils.TextBox(game)
             textbox.print_text_in_rectangle(response)
@@ -506,7 +522,7 @@ def tavern(game):
                 bounty_gain = (f"You have completed a bounty on {turn_in_choice}s.\n"
                                 f"You gain {gold} gold and {exp} experience.\n")
                 if bounty["reward"]:
-                    reward = bounty["reward"]
+                    reward = bounty["reward"]()
                     game.player_char.modify_inventory(reward)
                     bounty_gain += f"And you have been rewarded with a {reward.name}."
                 tavernbox.print_text_in_rectangle(bounty_gain)
@@ -541,9 +557,9 @@ def barracks(game):
     barracksbox = utils.TextBox(game)
     menu.draw_all()
     menu.refresh_all()
-    if "Ornate Key" in game.player_char.special_inventory:
+    if "Brass Key" in game.player_char.special_inventory:
         game.special_event("Joffrey's Key")
-        game.player_char.modify_inventory(items.OrnateKey(), subtract=True, rare=True)
+        game.player_char.modify_inventory(items.BrassKey(), subtract=True, rare=True)
         game.player_char.modify_inventory(items.JoffreysLetter(), rare=True)
         game.player_char.modify_inventory(items.GreatHealthPotion(), num=5)
         barracksbox.print_text_in_rectangle("You gain 5 Great Health Potions and Joffrey's Letter.")
@@ -881,23 +897,15 @@ def ultimate_armor_repo(game):
         if not game.player_char.quest_dict['Side']["He Ain't Heavy"]['Completed']:
             game.player_char.quest_dict['Side']["He Ain't Heavy"]['Completed'] = True
             quest_texts = ["Hmmm, I see my big brother sent you to look for me.", 
-                    "Tell him do not worry about me and that I will not return until the ultimate evil has been vanquished."]
+                           "Tell him do not worry about me and that I will not return",
+                           " until the ultimate evil has been vanquished."]
             ultimate_pad = utils.QuestPopupMenu(game, box_height=len(quest_texts)+2, box_width=len(max(quest_texts, key=len))+4)
             ultimate_pad.draw_popup(quest_texts)
     loc = (game.player_char.location_x, game.player_char.location_y, game.player_char.location_z)
     tile = game.player_char.world_dict[loc]
-    texts = [
-        "Hello, my name is Chisolm, Griswold's brother.",
-        "I tried to defeat the ultimate evil but could not even damage it.",
-        "I barely escaped, camping here to lick my wounds.",
-        "I decided I would instead use my blacksmith skills to help those who look to do what I could not.",
-        "Choose the type of armor you would prefer and I will make you the finest set you could imagine."
-    ]
+    ultimatebox = utils.TextBox(game)
     if not tile.looted:
-        ultimate_pad = utils.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
-        ultimate_pad.draw_popup(texts)
-        ultimatebox = utils.TextBox(game)
-        ultimate_message = f"Which type of armor do you choose?{' ':5}(press i for info)"
+        ultimate_message = f"Which type of armor do you choose?"
         ultimate_options = ['Cloth', 'Light', 'Medium', 'Heavy', "Leave"]
         no_message = "You need time to consider you choice, I respect that. Come back when you have made your choice."
         armor_list = [items.MerlinRobe(), items.DragonHide(), items.Aegis(), items.Genji()]
@@ -928,6 +936,10 @@ def ultimate_armor_repo(game):
                 ultimatebox.print_text_in_rectangle(no_message)
                 game.stdscr.getch()
                 ultimatebox.clear_rectangle()
+    else:
+        ultimatebox.print_text_in_rectangle("Please, defeat him before it's too late...do not worry about me.")
+        game.stdscr.getch()
+        ultimatebox.clear_rectangle()
     game.player_char.move_south(game)
 
 
@@ -1034,18 +1046,22 @@ def warp_point(game):
     warpbox.clear_rectangle()
 
 
-def town(game):
-
-    locations = [barracks, tavern, church, blacksmith, alchemist, jeweler]
+def town_options(game):
     town_options = ['Barracks', 'Tavern', 'Church',
                     'Blacksmith', 'Alchemist', 'Jeweler',
                     'Dungeon', 'Character Menu', "Old Warehouse"]
     if game.player_char.warp_point:
         town_options.pop(-1)
         town_options.append("Warp Point")
+    return town_options
+
+def town(game):
+
+    locations = [barracks, tavern, church, blacksmith, alchemist, jeweler]
+    options = town_options(game)
     game.player_char.health.current = game.player_char.health.max
     game.player_char.mana.current = game.player_char.mana.max
-    menu = utils.TownMenu(game, town_options)
+    menu = utils.TownMenu(game, options)
     townbox = utils.TextBox(game)
     if "Dead Body" in game.player_char.special_inventory and \
         not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
@@ -1057,19 +1073,19 @@ def town(game):
     while True:
         game.player_char.encumbered = game.player_char.current_weight() > game.player_char.max_weight()
         town_idx = menu.navigate_menu()
-        if town_options[town_idx] == 'Dungeon':
+        if options[town_idx] == 'Dungeon':
             townbox.print_text_in_rectangle("You descend into the dungeon.")
             game.stdscr.getch()
             townbox.clear_rectangle()
             game.player_char.change_location(5, 10, 1)
             break
-        if town_options[town_idx] == 'Character Menu':
+        if options[town_idx] == 'Character Menu':
             game.player_char.character_menu(game)
-        elif town_options[town_idx] == 'Old Warehouse':
+        elif options[town_idx] == 'Old Warehouse':
             townbox.print_text_in_rectangle("Authorized personnel only. Please leave.")
             game.stdscr.getch()
             townbox.clear_rectangle()
-        elif town_options[town_idx] == 'Warp Point':
+        elif options[town_idx] == 'Warp Point':
             if warp_point(game):
                 return
         else:
@@ -1085,6 +1101,8 @@ def town(game):
                 locations[town_idx](game)
         if game.player_char.quit:
             break
+        options = town_options(game)
+        menu.options_list = options
 
 
 # classes
@@ -1335,6 +1353,34 @@ quest_dict = {
                     'Experience': 3000,
                     'Completed': False,
                     'Turned In': False}
+                    },
+                 65:
+                 {"Hotter Than Hades":
+                  {'Who': 'Drunkard',
+                    'Type': 'Defeat',
+                    'What': 'Cerberus',
+                    'Total': 1,
+                    'Start Text':
+                        "Hey...it's been rough recently. So much death and misery. Oh yes, this is a water, I chose to"
+                        " give up drinking. It didn't seem right to get blasted when people like you are sacrificing "
+                        "everything for us. One of the doctor's came in earlier, telling us a story about one of the "
+                        "bodies returned from the dungeon. The body was badly charred with giant chunks missing. I "
+                        "can't even fathom what that does to a person to see that much carnage. Rumor has it the beast"
+                        " that is to blame is the three-headed hellhound called Cerberus, the guardian of the final "
+                        "relic. I know you're looking for that anyways and you will have to take it out to get it, "
+                        "so hopefully we can sweeten the pot a bit. Take care of yourself.",
+                    'End Text':
+                        "This is a huge step towards saving us from the blight that has infected this land. We all owe"
+                        " you a debt of gratitude. Everyone in the town pitched in to get this for you. Please finish "
+                        "what you started before it's too late.",
+                    "Help Text":
+                        "Cerberus is no joke. Obviously fire is a no go but I'd imagine dispel is also very useful. "
+                        "Hit 'em hard and hit 'em fast.",
+                    'Reward': [items.Megalixir],
+                    'Reward Number': 5,
+                    'Experience': 150000,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 },
         'Side': {8:
@@ -1551,6 +1597,32 @@ quest_dict = {
                     'Experience': 500,
                     'Completed': False,
                     'Turned In': False}
+                    },
+                 45:
+                 {'Naivete':
+                   {'Who': 'Alchemist',
+                    'Type': 'Collect',
+                    'What': items.SpringWater,
+                    'Total': 1,
+                    'Start Text':
+                        "An adventurer brought me this magical potion the other day, asking me to make more for them. "
+                        "He offered to pay me a small fortune, as these Elixirs are very powerful and very rare. "
+                        "Unfortunately I need some pure spring water, as the water here in town is much too polluted. "
+                        "Take this empty vial and fill it with some if you happen to come across one and I will give "
+                        "you any extras I make.",
+                    'End Text':
+                        "Hmmm...how do I know that this isn't regular water...well for one, it's not dark brown! "
+                        "I honestly wasn't even sure if there was a spring in the dungeon or if the water was as "
+                        "pure as needed. Give me just a sec, this won't take long....................................."
+                        "............................................................................................."
+                        "that about does it. Here you go, thanks for your help!",
+                    "Help Text":
+                        "I've heard that the spring is somewhere on the 3rd floor but I cannot confirm that.",
+                    'Reward': [items.Elixir],
+                    'Reward Number': 3,
+                    'Experience': 7500,
+                    'Completed': False,
+                    'Turned In': False}
                     }
                 }
     },
@@ -1628,7 +1700,7 @@ quest_dict = {
                    {'Who': 'Priest',
                     'Type': "Collect",
                     'What': items.BirdFat,
-                    'Total': 1,
+                    'Total': 3,
                     'Start Text':
                         "I need fat..no not for eating. We have many lamps throughout the church that require fuel "
                         "and one of the primary sources is a special type of fat from a Golden Eagle. Three should be "
@@ -1641,10 +1713,10 @@ quest_dict = {
                     "Help Text":
                         "The Golden Eagle can be found on the third floor of the dungeon. Be careful of it piercing "
                         "call, for it can deafen you.",
-                    'Reward': ["Izulu", "Gold"],
-                    'Reward Number': 1,
+                    'Reward': ["Izulu", items.Remedy],
+                    'Reward Number': 5,
                     'Experience': 3000,
-                    'Completed': True,
+                    'Completed': False,
                     'Turned In': False}
                     }
                 },
@@ -1770,7 +1842,7 @@ quest_dict = {
                     'Experience': 50000,
                     'Completed': False,
                     'Turned In': False}
-                    },
+                    }
                 },
         'Side': {3: 
                  {'Bring Him Home': 
@@ -1872,6 +1944,67 @@ quest_dict = {
                     'Completed': False,
                     'Turned In': False}
                     }
+                }
+    },
+    "Nimue": {
+        "Main": {1: 
+                 {"":
+                   {'Who': 'Nimue',
+                    'Type': 'Defeat',
+                    'What': 'Merzhin',
+                    'Total': 1,
+                    'Start Text':
+                        "As I mentioned previously, Merzhin is a powerful wizard and I have grown tired of his games."
+                        "I would like you to enter the Realm of Cambion, locate him, and deal with him once and for all."
+                        "Be warned, he is a master of the illusion and the path to him is filled with tricks and deception."
+                        "",
+                    'End Text':
+                        "",
+                    "Help Text":
+                        "",
+                    'Reward': [],
+                    'Reward Number': 1,
+                    'Experience': 5000,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                },
+        "Side": {1: 
+                 {"": 
+                   {'Who': 'Nimue',
+                    'Type': 'Collect',
+                    'What': "",
+                    'Total': 1,
+                    'Start Text':
+                        "",
+                    'End Text':
+                        "",
+                    "Help Text":
+                        "",
+                    'Reward': [],
+                    'Reward Number': 1,
+                    'Experience': 150,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
+                 60: 
+                 {"":
+                   {'Who': 'Nimue',
+                    'Type': 'Locate',
+                    'What': '',
+                    'Total': 1,
+                    'Start Text':
+                        "",
+                    'End Text':
+                        "",
+                    "Help Text":
+                        "",
+                    'Reward': ["Spell Upgrade"],
+                    'Reward Number': 1,
+                    'Experience': 5000,
+                    'Completed': False,
+                    'Turned In': False}
+                    },
                 }
     }
 }
