@@ -1,0 +1,21 @@
+name: Fireball
+type: Spell
+subtype: Offensive
+description: Launches a ball of fire at the enemy, dealing damage and potentially burning them
+cost: 15
+damage_mod: 1.5
+effects:
+- type: damage
+  base: 25
+  scaling:
+    stat: intelligence
+    ratio: 1.5
+  element: Fire
+- type: chance
+  chance: 0.3
+  effect:
+    type: dot
+    dot_type: Burn
+    damage_per_tick: 5
+    duration: 3
+    element: Fire

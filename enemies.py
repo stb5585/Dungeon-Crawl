@@ -2,7 +2,6 @@
 """ enemy manager """
 
 import random
-import time
 from textwrap import wrap
 
 import abilities
@@ -111,16 +110,17 @@ class Enemy(Character):
         )
         return text
 
-    def options(self, target, action_list):
+    def options(self, target, action_list, tile):
         if self.status_effects["Berserk"].active:
-            return "Attack"
+            return "Attack", None
         if self.turtle or self.magic_effects["Ice Block"].active:
-            return "Nothing"
+            return "Nothing", None
         if self.name != 'Test' and not self.tunnel:
             action_list = ["Attack"]
         else:
             action_list = []
         if not self.status_effects["Silence"].active:
+            spell_list = []
             for spell_name, spell in self.spellbook['Spells'].items():
                 if self.spellbook['Spells'][spell_name].passive:
                     continue
@@ -128,130 +128,42 @@ class Enemy(Character):
                     if spell.subtyp not in ["Heal", "Support"]:
                         continue
                 if self.spellbook['Spells'][spell_name].cost <= self.mana.current:
-                    action_list.append(spell)
-        for skill_name, skill in self.spellbook['Skills'].items():
-            if any([self.spellbook['Skills'][skill_name].passive,
-                    self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
-                    self.spellbook["Skills"][skill_name].weapon and self.physical_effects["Disarm"].active,
-                    self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
-                        self.health.current > self.health.max * 0.25,
-                    self.tunnel]):
-                continue
-            if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
-                action_list.append(skill)
+                    spell_list.append(spell_name)
+            if spell_list:
+                action_list.append("Cast Spell")
+            skill_list = []
+            for skill_name, _ in self.spellbook['Skills'].items():
+                if any([self.spellbook['Skills'][skill_name].passive,
+                        self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
+                        self.spellbook["Skills"][skill_name].weapon and self.physical_effects["Disarm"].active,
+                        self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
+                            self.health.current > self.health.max * 0.25,
+                        self.tunnel]):
+                    continue
+                if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
+                    skill_list.append(skill_name)
+            if skill_list:
+                action_list.append("Use Skill")
         if self.physical_effects["Disarm"].active:
             action_list.append("Pickup Weapon")
         if self.tunnel:
             action_list.extend(["Surface", "Nothing"])
+        if all([target.level.pro_level * target.level.level >= 10,
+                target.level.pro_level > self.level.pro_level,
+                random.randint(0, max(0, target.level.pro_level - self.level.pro_level)),
+                'Boss' not in str(tile),
+                self.name != 'Mimic']):
+            action_list.append("Flee")
         action = random.choice(action_list)
+        if action == "Cast Spell":
+            ability = random.choice(spell_list)
+        elif action == "Use Skill":
+            ability = random.choice(skill_list)
+        else:
+            ability = None
         if self.action_stack:
             pass  # TODO make responses dictionary for status effects and such
-        return action
-
-    def combat_turn(self, game, target, action, in_combat):
-        combat_text = ""
-        valid_entry = True
-        cover = False
-        flee = False
-        fail_flee = False
-        tile = game.player_char.world_dict[
-            (game.player_char.location_x, game.player_char.location_y, game.player_char.location_z)]
-        if self.incapacitated():
-            in_combat = True
-        elif action == "Nothing":
-            combat_text += f"{self.name} does nothing.\n"
-        elif action == "Surface":
-            self.tunnel = False
-            combat_text += f"{self.name} resurfaces.\n"
-        else:
-            if target.cls.name in ['Warlock', 'Shadowcaster']:
-                if 'Cover' in target.familiar.spellbook['Skills'] and not random.randint(0, 3):
-                    cover = True
-            if (target.level.pro_level * target.level.level) >= 10 and target.level.pro_level > self.level.pro_level and \
-                    random.randint(0, target.level.pro_level - self.level.pro_level) and 'Boss' not in str(tile) and \
-                    self.name != 'Mimic':
-                if not random.randint(0, 1):
-                    if random.randint(0, self.check_mod("speed", enemy=target)) > \
-                        random.randint(0, target.check_mod("speed", enemy=self)):
-                        in_combat = False
-                        flee = True
-                        combat_text += f"{self.name} runs away!\n"
-                    else:
-                        combat_text += f"{self.name} tries to run away...but fails.\n"
-                        fail_flee = True
-            if not flee and not fail_flee:
-                if action == "Attack":
-                    special_str = ""
-                    if not random.randint(0, 9 - self.check_mod("luck", luck_factor=20)):
-                        special_str = self.special_attack(target=target)
-                    if not special_str:
-                        wd_str, _, _ = self.weapon_damage(target, cover=cover)
-                        combat_text += wd_str
-                    else:
-                        combat_text += special_str
-                elif action == "Pickup Weapon":
-                    combat_text += f"{self.name} picks up their weapon.\n"
-                    self.physical_effects["Disarm"].active = False
-                elif action.typ == "Skill":
-                    skill_str = f"{self.name} uses {action.name}.\n"
-                    if action.name in ["Slot Machine", "Choose Fate", "Blackjack"]:
-                        skill_str += action.use(game, self, target=target)
-                    elif action.name == "Smoke Screen":
-                        skill_str += action.use(self, target=target)
-                        flee, flee_str = self.flee(target, smoke=True)
-                        skill_str += flee_str
-                        if flee:
-                            in_combat = False
-                    else:
-                        skill_str += action.use(self, target=target, cover=cover)
-                    combat_text += skill_str
-                    if action.name == "Shapeshift":
-                        wd_str, _, _ = self.weapon_damage(defender=target, cover=cover)
-                        combat_text += wd_str
-                    try:
-                        if action.rank == 1:
-                            if (target.cls in ["Diviner", "Geomancer"]) and \
-                                    action.name not in target.spellbook['Skills']:
-                                target.spellbook['Skills'][action.name] = action
-                                combat_text += action
-                                combat_text += f"You have gained the ability to cast {action.name}.\n"
-                        elif action.rank == 2:
-                            if target.cls == "Geomancer" and action.name not in target.spellbook['Skills']:
-                                target.spellbook['Skills'][action.name] = action
-                                combat_text += action
-                                combat_text == f"You have gained the ability to cast {action.name}.\n"
-                    except AttributeError:
-                        pass
-                elif action.typ == "Spell":
-                    spell_str = f"{self.name} casts {action.name}.\n"
-                    spell_str += action.cast(self, target=target, cover=cover)
-                    combat_text += spell_str
-                    try:
-                        if action.rank == 1:
-                            if target.cls in ["Diviner", "Geomancer"] and action.name not in target.spellbook['Spells']:
-                                target.spellbook['Spells'][action.name] = action
-                                combat_text += action
-                                combat_text += f"You have gained the ability to cast {action.name}.\n"
-                        elif action.rank == 2:
-                            if target.cls == "Geomancer" and action.name not in target.spellbook['Spells']:
-                                target.spellbook['Spells'][action.name] = action
-                                combat_text += action
-                                combat_text += f"You have gained the ability to cast {action.name}.\n"
-                    except AttributeError:
-                        pass
-                else:
-                    combat_text += f"{self.name} doesn't do anything.\n"
-        combat_text += self.special_effects(target=target)
-        if combat_text:
-            import utils
-            battlebox = utils.TextBox(game)
-            battlebox.print_text_in_rectangle(combat_text)
-            time.sleep(0.1)
-            game.stdscr.getch()
-            battlebox.clear_rectangle()
-        if not self.is_alive():
-            in_combat = False
-        return valid_entry, in_combat, flee
+        return action, ability
 
 
 class Misc(Enemy):
@@ -1781,8 +1693,9 @@ class Cyborg(Construct):
         self.picture = "cyborg.txt"
 
     def special_effects(self, target):
+        """25% chance to detonate if health below 25%"""
         special_str = ""
-        if self.health.current < int(self.health.current * 0.25):
+        if self.health.current < int(self.health.current * 0.25) and not random.randint(0, 3):
             special_str += abilities.Detonate().use(self, target=target)
         return special_str
 
@@ -1974,6 +1887,7 @@ class IronGolem(Golem):
 
 
     def special_effects(self, target):
+        """If health below 10%, turtle and heal for 25% of max health"""
         special_str = ""
         if not self.incapacitated():
             if self.health.current < int(self.health.max * 0.1) and not self.turtle and not self.turtled:
@@ -2029,6 +1943,7 @@ class Jester(Humanoid):
         self.picture = "jester.txt"
 
     def special_effects(self, target):
+        """Randomizes stats and resistances"""
         special_str = "Jester: The wheel of time stops for no one! HAHA!\n"
         special_str += "The Jester's stats and resistances have been randomized.\n"
         self.stats = Stats(strength=random.randint(10, 50),
@@ -2137,6 +2052,7 @@ class Behemoth(Aberration):
         self.picture = "behemoth.txt"
 
     def special_effects(self, target):
+        """Casts Meteor on death"""
         special_str = ""
         if not self.is_alive():
             special_str += f"{self.name} unleashes a powerful attack as it dies.\n"
@@ -2247,6 +2163,7 @@ class Warforged(Construct):
         self.picture = "golem.txt"
 
     def special_effects(self, target):
+        """if health is below 10%, turtle and heal for 25% of max health"""
         special_str = ""
         if not self.incapacitated():
             if self.health.current < int(self.health.max * 0.1) and not self.turtle:

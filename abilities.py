@@ -1,36 +1,114 @@
 ###########################################
 """ability manager"""
+from __future__ import annotations
 
 import random
 import time
 from textwrap import wrap
+from typing import TYPE_CHECKING, Any
+
+from effects import (
+    DamageEffect,
+    HealEffect,
+    RegenEffect,
+    StatusEffect,
+)
+from combat_result import CombatResult
+
+if TYPE_CHECKING:
+    from character import Character
+    from game import Game
 
 
 class Ability:
     """
-    name: name of the ability
-    description: description of the ability that explains what it does in so many words
-    cost: amount of mana required to cast spell
-    combat: boolean indicating whether the ability can only be cast in combat
-    passive: boolean indicating whether the ability is passively active
-    typ: the type of the ability
-    subtyp: the subtype of the ability
+    Base class for all abilities
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of the ability
+        subtyp: the subtype of the ability
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+    -----------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
     """
 
-    def __init__(self, name, description, cost):
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            cost: int = 0,
+            combat: bool = True,
+            passive: bool = False,
+            typ: str = "",
+            subtyp: str = "",
+            dmg_mod: float = 1.0,
+            ):
+        """
+        Args:
+            name (str): name of the ability
+            description (str): description of the ability that explains what it does in so many words
+            cost (int): amount of mana required to cast spell; default is 0
+            combat (bool): boolean indicating whether the ability can only be cast in combat
+            passive (bool): boolean indicating whether the ability is passively active
+            typ (str): the type of the ability
+            subtyp (str): the subtype of the ability
+            dmg_mod (float): damage modifier for the ability
+            result (CombatResult): the result of the ability
+        """
         self.name = name
-        self.description = "\n".join(wrap(description, 35, break_on_hyphens=False))
+        self.description = description
         self.cost = cost
-        self.combat = True
-        self.passive = False
-        self.typ = ""
-        self.subtyp = ""
-        self.dmg_mod = 1.0
+        self.combat = combat
+        self.passive = passive
+        self.typ = typ
+        self.subtyp = subtyp
+        self.dmg_mod = dmg_mod
+        self.result = CombatResult(
+            action=name,
+            extra={'cost': cost, "type": self.typ, "subtype": self.subtyp}
+            )
 
-    def __str__(self):
+    def _ensure_result(self) -> None:
+        """
+        Ensure self.result exists (for backward compatibility with old save files).
+        Creates a new CombatResult if the attribute is missing.
+        """
+        if not hasattr(self, 'result'):
+            self.result = CombatResult(
+                action=self.name,
+                extra={'cost': self.cost, "type": self.typ, "subtype": self.subtyp}
+            )
+
+    def __str__(self) -> str:
+        """
+        Returns:
+            str: string representation of the ability
+
+        Example:
+            >>> ability = Ability("Fireball", "A powerful fire spell.")
+            >>> print(ability)
+            ================================
+            Fireball
+            A powerful fire spell.
+            -----------------------------------
+            Type: Spell
+            Sub-Type: Offensive
+            Mana Cost: 10
+            ===================================
+        """
+        wrapped_description = wrap(self.description, 35, break_on_hyphens=False)
         str_text = (
             f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-            f"{self.description}\n"
+            f"{wrapped_description}\n"
             f"{35*'-'}\n"
             f"Type: {self.typ}\n"
             f"Sub-Type: {self.subtyp}\n"
@@ -42,36 +120,170 @@ class Ability:
         str_text += f"==================================="
         return str_text
 
-    def special_effect(self, *args):
-        return ""
+    def special_effect(self, *args: Any, **kwargs: Any) -> CombatResult:
+        """
+        Applies a special effect to the ability.
+        Args:
+            *args: variable length argument list
+            **kwargs: variable length keyword argument list
+        Returns:
+            CombatResult: the result of the special effect
+        Raises:
+            NotImplementedError: if the special effect is not implemented
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement special_effect method."
+        )
 
 
 class Skill(Ability):
     """
-    typ: the type of these abilities is 'Skill'
+    Child class of Ability that handles skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of the ability; the options are: 
+            'Offensive', 'Defensive', 'Stealth', 'Enhance', 'Drain', 'Class', 'Truth',
+            'Martial Arts', 'Luck', or 'PowerUp'
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
+    ------------------------------------------------------------
+    Example:
+        >>> skill = Skill("Double Strike", "Perform two melee attacks at normal damage.")
+        >>> print(skill)
+        ================================
+        Double Strike
+        Perform two melee attacks at normal damage.
+        -----------------------------------
+        Type: Skill
+        Sub-Type: Offensive
+        Mana Cost: 10
+        ===================================
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            weapon: bool = False
+            ):
+        """
+        Args:
+            name (str): name of the ability
+            description (str): description of the ability that explains what it does in so many words
+            weapon (bool): boolean indicating whether the ability is a weapon skill
+        """
+        super().__init__(name, description)
         self.typ = "Skill"
-        self.weapon = False
+        self.weapon = weapon
 
-    def use(self, *args, **kwargs):
-        pass
+    def use(self, user: Character, target: Character = None, **kwargs) -> CombatResult:
+        """
+        Applies the skill to the target.
+        Ensures self.result exists and sets up basic properties.
+        Subclasses should call super().use(user, target, **kwargs) first,
+        then add their specific logic.
+        
+        Args:
+            user: The character using the skill
+            target: The target of the skill (optional)
+            **kwargs: Additional keyword arguments
+        Returns:
+            CombatResult: the result of the skill
+        """
+        self._ensure_result()
+        self.result.actor = user
+        self.result.target = target
+        self.result.damage = 0
+        self.result.extra['cost'] = self.cost
+        return self.result
 
 
 class Spell(Ability):
     """
-    typ: the type of these abilities is 'Spell'
+    Child class of Ability that handles spell casting
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of the abilities is 'Spell'
+        subtyp: the subtype of the ability; the options are:
+            'Fire', 'Ice', 'Lightning', 'Earth', 'Water', 'Wind', 'Holy', 'Shadow', 'Poison',
+            'Heal', 'Death', 'Support', 'Status', 'Movement', 'Illusion', or 'Non-elemental'
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        school: the school of magic to which this spell belongs
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        cast: applies the spell to the target
+    ------------------------------------------------------------
+    Example:
+        >>> spell = Spell("Fireball", "A powerful fire spell.")
+        >>> print(spell)
+        ================================
+        Fireball
+        A powerful fire spell.
+        -----------------------------------
+        Type: Spell
+        Sub-Type: Fire
+        Mana Cost: 10
+        ===================================
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
-        self.typ = "Spell"
-        self.school = None
+    def __init__(
+            self,
+            name,
+            description,
+            school: str | None = None,
+            ):
+        """
+        Args:
+            name (str): name of the ability
+            description (str): description of the ability that explains what it does in so many words
+            school (str | None): the school of magic to which this spell belongs
+        """
+        super().__init__(name, description)
+        self.typ: str = "Spell"
+        self.school = school
 
-    def cast(self, *args, **kwargs):
-        pass
+    def cast(self, user: Character, target: Character = None, **kwargs: Any) -> CombatResult:
+        """
+        Applies the spell to the target.
+        Ensures self.result exists and sets up basic properties.
+        Subclasses should call super().cast(user, target, **kwargs) first,
+        then add their specific logic.
+        
+        Args:
+            user: The character casting the spell
+            target: The target of the spell (optional)
+            **kwargs: Additional keyword arguments
+        Returns:
+            CombatResult: the result of the spell
+        """
+        self._ensure_result()
+        self.result.actor = user
+        self.result.target = target
+        self.result.damage = 0
+        self.result.extra['cost'] = self.cost
+        return self.result
 
 
 """
@@ -81,102 +293,321 @@ Skill section
 
 class Offensive(Skill):
     """
-    subtyp: the subtype of these abilities is 'Offensive', meaning they either inflict damage or some other status
-        effect
+    Child class of Skill that handles offensive skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Offensive', meaning they work to damage the enemy
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Offensive"
 
 
 class Defensive(Skill):
     """
-    subtyp: the subtype of these abilities is 'Defensive', meaning they work to protect the user
+    Child class of Skill that handles defensive skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Defensive', meaning they work to protect the user
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Defensive"
 
 
 class Stealth(Skill):
     """
-    subtyp: the subtype of these abilities is 'Stealth', meaning they work through subterfuge of some kind
+    Child class of Skill that handles stealth skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Stealth', meaning they use subterfuge to surprise the enemy
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Stealth"
 
 
 class Enhance(Skill):
     """
-    subtyp: the subtype of these abilities is 'Enhance', meaning they enhance the user
+    Child class of Skill that handles enhance skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Enhance', meaning they enhance the user's abilities or equipment
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Enhance"
 
 
 class Drain(Skill):
     """
-    subtyp: the subtype of these abilities is 'Drain', meaning they drain health and/or mana from the enemy
+    Child class of Skill that handles drain skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Drain', meaning they drain the enemy's health or mana
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Drain"
 
 
 class Class(Skill):
     """
-    subtyp: the subtype of these abilities is 'Class', meaning they are specific to a particular class
+    Child class of Skill that handles class skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Class', meaning they are specific to a class
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Class"
 
 
 class Truth(Skill):
     """
-    subtyp: the subtype of these abilities is 'Truth', specific to Inquisitor/Seeker classes
+    Child class of Skill that handles truth skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Truth', meaning they reveal secrets or hidden truths
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Truth"
 
 
 class MartialArts(Skill):
     """
-    subtyp: the subtype of these abilities is 'Martial Arts', specific to Monk/Master Monk classes
+    Child class of Skill that handles martial arts skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Martial Arts', meaning they are specific to hand-to-hand combat
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Martial Arts"
 
 
 class Luck(Skill):
     """
-    subtyp: the subtype of these abilities is 'Luck', meaning they rely mostly on luck (charisma)
+    Child class of Skill that handles luck skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Luck', meaning they are based on chance
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Luck"
 
 
 class PowerUp(Skill):
     """
-    subtyp: the subtype of these abilities is "Power Up", special abilities given for retrieving the Power Core
+    Child class of Skill that handles power-up skills
+
+    Attributes:
+        name: name of the ability
+        description: description of the ability that explains what it does in so many words
+        cost: amount of mana required to cast spell; default is 0
+        combat: boolean indicating whether the ability can only be cast in combat
+        passive: boolean indicating whether the ability is passively active
+        typ: the type of these abilities is 'Skill'
+        subtyp: the subtype of these abilities is 'Power Up', meaning they are obtained through training
+        dmg_mod: damage modifier for the ability
+        result: the result of the ability
+        weapon: boolean indicating whether the ability is a weapon skill
+    ------------------------------------------------------------
+    Methods:
+        __init__: initializes the ability with the given attributes
+        __str__: returns a string representation of the ability
+        special_effect: applies a special effect to the ability
+        use: applies the skill to the target
     """
 
-    def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            ):
+        super().__init__(name, description)
         self.subtyp = "Power Up"
 
 
@@ -184,162 +615,97 @@ class PowerUp(Skill):
 # Offensive
 class ShieldSlam(Offensive):
     """
-    Cannot crit with Shield Slam
-    multiplier indicates the factor by which the damage is calculated
+    Slam the enemy with your shield, damaging with a chance to stun for several turns.
+    - Requires a shield to use
     """
 
     def __init__(self):
         super().__init__(
             name="Shield Slam",
-            description="Slam the enemy with your shield, damaging with a chance to "
-            "stun for several turns.",
-            cost=8,
+            description="Slam the enemy with your shield, damaging with a chance to stun for several turns.",
         )
+        self.cost = 8
 
-    def use(self, user, target=None, cover=False):
-        use_str = ""
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
+        
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return f"{user.name}'s attack has no effect.\n"
+            return f"{user.name} attempts to use {self.name} but {target.name} is unreachable!\n"
+        
+        # Shield slam requires an offhand shield
+        if user.equipment["OffHand"].subtyp != 'Shield':
+            return f"{user.name} has no shield to slam with!\n"
+        
+        use_str = ""
         dodge = target.dodge_chance(user) > random.random()
-        if target.incapacitated():
-            hit = True
-            dodge = False
-        else:
-            hit_per = user.hit_chance(target, typ="weapon")
-            hit = hit_per > random.random()
+        
         if dodge:
-            use_str += f"{target.name} evades {user.name}'s attack.\n"
+            use_str += f"{target.name} dodges {user.name}'s shield slam!\n"
         else:
-            dam_red = target.check_mod("armor", enemy=user)
+            # Calculate damage based on strength and shield weight
             damage = max(1, user.stats.strength + user.equipment["OffHand"].weight)
-            if hit and target.magic_effects["Duplicates"].active:
-                chance = target.magic_effects["Duplicates"].duration - self.check_mod(
-                    "luck", luck_factor=15
-                )
-                if random.randint(0, max(0, chance)):
-                    hit = False
-                    use_str += (
-                        f"{user.name} swings their shield but hits a mirror image of {target.name} and it "
-                        f"vanishes from existence.\n"
-                    )
-                    target.magic_effects["Duplicates"].duration -= 1
-                    if not target.magic_effects["Duplicates"].duration:
-                        target.magic_effects["Duplicates"].active = False
-            if hit and cover:
-                use_str += (
-                    f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                    f"{target.name}.\n"
-                )
-            elif hit:
-                resist = target.check_mod("resist", enemy=user, typ="Physical")
-                damage = int(damage * (1 - resist) * (1 - (dam_red / (dam_red + 50))))
-                variance = random.uniform(0.85, 1.15)
-                damage = int(damage * variance)
-                if hit and damage > 0:
-                    if target.magic_effects["Mana Shield"].active:
-                        mana_loss = (
-                            damage // target.magic_effects["Mana Shield"].duration
-                        )
-                        if mana_loss > target.mana.current:
-                            abs_dam = (
-                                target.mana.current
-                                * target.magic_effects["Mana Shield"].duration
-                            )
-                            use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                            damage -= abs_dam
-                            target.mana.current = 0
-                            target.magic_effects["Mana Shield"].active = False
-                            use_str += (
-                                f"The mana shield dissolves around {target.name}.\n"
-                            )
-                        else:
-                            use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                            target.mana.current -= mana_loss
-                            damage = 0
-                    elif (
-                        target.cls.name == "Crusader"
-                        and target.power_up
-                        and target.class_effects["Power Up"].active
+            variance = random.uniform(0.85, 1.15)
+            damage = int(damage * variance)
+            
+            target.health.current -= damage
+            use_str += f"{user.name} slams {target.name} with their shield for {damage} damage!\n"
+            
+            # Check for stun effect
+            if target.is_alive():
+                if not any([
+                    "Stun" in target.status_immunity,
+                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]):
+                    if random.randint(0, user.stats.strength) > random.randint(
+                        target.stats.strength // 2, target.stats.strength
                     ):
-                        if damage >= target.class_effects["Power Up"].extra:
-                            use_str += (
-                                f"The shield around {target.name} absorbs "
-                                f"{target.class_effects['Power Up'].extra} damage.\n"
-                            )
-                            damage -= target.class_effects["Power Up"].extra
-                            target.class_effects["Power Up"].active = False
-                            use_str += f"The shield dissolves around {target.name}.\n"
-                        else:
-                            use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
-                            target.class_effects["Power Up"].extra -= damage
-                            damage = 0
-                if damage == 0:
-                    use_str += f"{user.name} hits {target.name} with their shield but it does no damage.\n"
-                else:
-                    target.health.current -= damage
-                    use_str += f"{user.name} damages {target.name} with Shield Slam for {damage} hit points.\n"
-                    if target.is_alive():
-                        if not any(
-                            [
-                                "Stun" in target.status_immunity,
-                                f"Status-Stun" in target.equipment["Pendant"].mod,
-                                "Status-All" in target.equipment["Pendant"].mod,
-                            ]
-                        ):
-                            if random.randint(0, user.stats.strength) > random.randint(
-                                target.stats.strength // 2, target.stats.strength
-                            ):
-                                turns = max(1, user.stats.strength // 8)
-                                target.status_effects["Stun"].active = True
-                                target.status_effects["Stun"].duration = turns
-                                use_str += f"{target.name} is stunned.\n"
-                            else:
-                                use_str += f"{user.name} fails to stun {target.name}.\n"
-                        else:
-                            use_str += f"{target.name} is immune to stun effect.\n"
-            else:
-                use_str += f"{user.name} swings their shield at {target.name} but miss entirely.\n"
+                        turns = max(1, user.stats.strength // 8)
+                        target.status_effects["Stun"].active = True
+                        target.status_effects["Stun"].duration = turns
+                        use_str += f"{target.name} is stunned for {turns} turn(s)!\n"
+        
         return use_str
 
 
 class DoubleStrike(Offensive):
+    """
+    Attack with your weapon twice, dealing normal damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
             name="Double Strike",
             description="Perform two melee attacks at normal damage.",
-            cost=14,
         )
+        self.cost = 14
         self.strikes = 2  # number of strikes performed
         self.weapon = True
 
-    def use(self, user, target=None, cover=False):
-        use_str = ""
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
-        for _ in range(self.strikes):
-            wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
-            use_str += wd_str
+        use_str = ""
+        
+        for i in range(self.strikes):
+            strike_str, hit, crit = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
+            use_str += strike_str
             if not target.is_alive():
                 break
+        
         return use_str
 
 
 class TripleStrike(DoubleStrike):
     """
-    Replaces Double Strike
+    Replaces Double Strike; attack with your weapon three times, dealing 90% of normal damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
     """
 
     def __init__(self):
         super().__init__()
         self.name = "Triple Strike"
-        self.description = "\n".join(
-            wrap(
-                "Perform three melee attacks at normal damage.",
-                35,
-                break_on_hyphens=False,
-            )
-        )
+        self.description = "Perform three melee attacks at 90% of normal damage."
         self.strikes = 3
         self.cost = 26
         self.dmg_mod = 0.9
@@ -347,36 +713,35 @@ class TripleStrike(DoubleStrike):
 
 class FlurryBlades(TripleStrike):
     """
-    Replaces Triple Strike
+    Replaces Triple Strike; attack with your weapon four times, dealing 75% of normal damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
     """
 
     def __init__(self):
         super().__init__()
         self.name = "Flurry of Blades"
-        self.description = "\n".join(
-            wrap(
-                "Perform four melee attacks at normal damage.",
-                35,
-                break_on_hyphens=False,
-            )
-        )
+        self.description = "Perform four melee attacks at 75% of normal damage."
         self.strikes = 4
         self.cost = 40
         self.dmg_mod = 0.75
 
 
 class PiercingStrike(Offensive):
+    """
+    Attack that pierces the enemy's defenses, ignoring armor and defenses.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
             name="Piercing Strike",
-            description="Pierces the enemy's defenses, ignoring armor and " "defenses.",
-            cost=5,
+            description="Pierces the enemy's defenses, ignoring armor and defenses.",
         )
+        self.cost = 5
         self.weapon = True
         self.dmg_mod = 1.25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, _, _ = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, ignore=True
@@ -385,14 +750,20 @@ class PiercingStrike(Offensive):
 
 
 class TrueStrike(Offensive):
+    """
+    Attack that is guaranteed to hit.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
-            name="True Strike", description="Attack that is guaranteed to hit.", cost=12
+            name="True Strike",
+            description="Attack that is guaranteed to hit.",
         )
+        self.cost = 12
         self.weapon = True
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, _, _ = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, hit=True
@@ -401,18 +772,22 @@ class TrueStrike(Offensive):
 
 
 class TruePiercingStrike(Offensive):
+    """
+    Attack that is guaranteed to hit and that pierces the enemy's defenses, ignoring armor and defenses.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
             name="True Piercing Strike",
             description="Attack that is guaranteed to hit and that pierces "
             "the enemy's defenses, ignoring armor and defenses.",
-            cost=15,
         )
+        self.cost = 15
         self.weapon = True
         self.dmg_mod = 1.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, _, _ = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, ignore=True, hit=True
@@ -422,6 +797,7 @@ class TruePiercingStrike(Offensive):
 
 class Jump(Offensive):
     """
+    Jump into the air and bring down your weapon onto the enemy, delivering critical damage.
     Takes a turn to complete; user is prone while charging
     Add modifications to Jump to customize it to your liking
     - Thrust: after landing the Jump, if enemy is still alive, thrust your spear into them at 3/4 weapon damage
@@ -435,14 +811,14 @@ class Jump(Offensive):
             name="Jump",
             description="Leap into the air and bring down your weapon onto the enemy, "
             "delivering critical damage.",
-            cost=10,
         )
+        self.cost = 10
         self.strikes = 1
         self.crit = 2
         self.weapon = True
         self.dmg_mod = 2.0
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = f"{user.name} leaps into the air, driving their weapon toward {target.name}.\n"
         user.mana.current -= self.cost
         for _ in range(self.strikes):
@@ -456,16 +832,19 @@ class Jump(Offensive):
 
 
 class Doublecast(Offensive):
+    """
+    Cast two spells in a single turn. Cannot select Magic Missile.
+    """
 
     def __init__(self):
         super().__init__(
             name="Doublecast",
             description="Cast multiple spells in a single turn.",
-            cost=10,
         )
+        self.cost = 10
         self.cast = 2
 
-    def use(self, user, target=None, cover=False, game=None):
+    def use(self, user: Character, target: Character=None, cover=False, game: Game=None) -> str:
         import utils
 
         use_str = ""
@@ -510,34 +889,35 @@ class Doublecast(Offensive):
 
 class Triplecast(Doublecast):
     """
-    Replaces Doublecast
+    Replaces Doublecast; cast three spells in a single turn. Cannot select Magic Missile.
     """
 
     def __init__(self):
         super().__init__()
         self.name = "Triplecast"
-        self.cast = 3
         self.cost = 20
+        self.cast = 3
 
 
 class MortalStrike(Offensive):
     """
-    Critical strike plus bleed; duration and damage determined by the player's strength
+    Assault the enemy, striking them with a critical hit and placing a bleed effect that deals damage.
+    - requires a 2-handed weapon
+    - duration and damage determined by the player's strength
     """
 
     def __init__(self):
         super().__init__(
             name="Mortal Strike",
-            description="Assault the enemy, striking them with a critical hit and "
-            "placing a bleed effect that deals damage. Requires a 2-handed "
-            "weapon.",
-            cost=10,
+            description="Assault the enemy, striking them with a critical hit and placing a bleed effect that deals "
+                        "damage. Requires a 2-handed weapon.",
         )
+        self.cost = 10
         self.crit = 2
         self.weapon = True
         self.dmg_mod = 1.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
@@ -562,6 +942,8 @@ class MortalStrike(Offensive):
 class MortalStrike2(MortalStrike):
     """
     Devastating critical strike plus bleed; duration and damage determined by the player's strength
+    - requires a 2-handed weapon
+    - duration and damage determined by the player's strength
     """
 
     def __init__(self):
@@ -571,16 +953,18 @@ class MortalStrike2(MortalStrike):
 
 
 class BattleCry(Offensive):
+    """
+    Unleash a furious scream, increasing your attack damage for several turns.
+    """
 
     def __init__(self):
         super().__init__(
             name="Battle Cry",
-            description="Unleash a furious scream, increasing your attack damage for "
-            "several turns.",
-            cost=16,
+            description="Unleash a furious scream, increasing your attack damage for several turns.",
         )
+        self.cost = 16
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         turns = max(5, user.stats.strength // 5)
         dmg_mod = random.randint(target.combat.attack // 10, target.combat.attack // 5)
@@ -595,6 +979,7 @@ class BattleCry(Offensive):
 class Charge(Offensive):
     """
     Can stun then attacks at 3/4 damage, as opposed to other abilities that attack then stun
+    - requires a weapon to use (unless Monk or Master Monk)
     """
 
     def __init__(self):
@@ -602,12 +987,12 @@ class Charge(Offensive):
             name="Charge",
             description="Charge the enemy, possibly stunning them for the turn and doing "
             "weapon damage.",
-            cost=10,
         )
+        self.cost = 10
         self.weapon = True
         self.dmg_mod = 0.75
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover:bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if not any(
@@ -635,7 +1020,7 @@ class Charge(Offensive):
 # Defensive skills
 class ShieldBlock(Defensive):
     """
-    Passive ability
+    Passive ability; increases damage blocked by 25% when using a shield
     """
 
     def __init__(self):
@@ -644,14 +1029,13 @@ class ShieldBlock(Defensive):
             description="You are much more proficient with a shield than most, "
             "increasing the amount of damage blocked by 25% when using "
             "a shield.",
-            cost=0,
         )
         self.passive = True
 
 
 class Parry(Defensive):
     """
-    Passive ability
+    Passive ability; chance to counterattack if an attack is successfully dodged
     """
 
     def __init__(self):
@@ -659,12 +1043,15 @@ class Parry(Defensive):
             name="Parry",
             description="Passive chance to counterattack if an attack is successfully "
             "dodged.",
-            cost=0,
         )
         self.passive = True
 
 
 class Disarm(Defensive):
+    """
+    Disarm the enemy, knocking their weapon out of their grasp. Disarmed characters have lower chance to hit and 
+    can't use certain abilities.
+    """
 
     def __init__(self):
         super().__init__(
@@ -672,10 +1059,10 @@ class Disarm(Defensive):
             description="Surprise the enemy by attacking their weapon, knocking it out of "
             "their grasp. Disarmed characters have lower chance to hit and "
             "can't use certain abilities.",
-            cost=4,
         )
+        self.cost = 4
 
-    def use(self, user, target=None, cover=False, fam=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         if not fam:
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -698,7 +1085,7 @@ class Disarm(Defensive):
 
 class Cover(Defensive):
     """
-    Familiar only skill
+    Familiar only skill; stand in the way of an attack, protecting your master from harm.
     """
 
     def __init__(self):
@@ -706,21 +1093,24 @@ class Cover(Defensive):
             name="Cover",
             description="You stand in the way in the face of attack, protecting your master"
             " from harm.",
-            cost=0,
         )
         self.passive = True
 
 
 class Goad(Defensive):
+    """
+    Insult the enemy, sending them into a blind rage. The enemy will only use attack for several turns. Berserk status
+    increases damage dealt but reduces chance to hit.
+    """
 
     def __init__(self):
         super().__init__(
             name="Goad",
             description="Insult the enemy, sending them into a blind rage.",
-            cost=12,
         )
+        self.cost = 12
 
-    def use(self, user, target=None, cover=False, fam=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         if not fam:
             user.mana.current -= self.cost
         if any(
@@ -748,18 +1138,22 @@ class Goad(Defensive):
 
 # Stealth skills
 class Backstab(Stealth):
+    """
+    Attack a stunned enemy from behind, dealing devastating damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
             name="Backstab",
             description="Strike a stunned opponent in the back, ignoring any defense or "
             "armor and dealing devastating damage.",
-            cost=6,
         )
+        self.cost = 6
         self.weapon = True
         self.dmg_mod = 2.0
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, _, _ = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, ignore=True
@@ -768,16 +1162,19 @@ class Backstab(Stealth):
 
 
 class PocketSand(Stealth):
+    """
+    Throw sand in the eyes of your enemy, blinding them and reducing their chance to hit on a melee attack.
+    """
 
     def __init__(self):
         super().__init__(
             name="Pocket Sand",
             description="Throw sand in the eyes of your enemy, blinding them and "
             "reducing their chance to hit on a melee attack.",
-            cost=8,
         )
+        self.cost = 8
 
-    def use(self, user, target=None, cover=False, fam=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         if not fam:
             user.mana.current -= self.cost
         if any(
@@ -802,16 +1199,19 @@ class PocketSand(Stealth):
 
 
 class SleepingPowder(Stealth):
+    """
+    Put the enemy to sleep, preventing them from acting for several turns.
+    """
 
     def __init__(self):
         super().__init__(
             name="Sleeping Powder",
             description="Releases a powerful toxin that puts the target to sleep.",
-            cost=11,
         )
+        self.cost = 11
         self.turns = 2
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -836,15 +1236,18 @@ class SleepingPowder(Stealth):
 
 
 class KidneyPunch(Stealth):
+    """
+    Punch the enemy in the kidney, rendering them stunned.
+    """
 
     def __init__(self):
         super().__init__(
             name="Kidney Punch",
             description="Punch the enemy in the kidney, rendering them stunned.",
-            cost=12,
         )
+        self.cost = 12
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
@@ -881,31 +1284,47 @@ class KidneyPunch(Stealth):
 
 
 class SmokeScreen(Stealth):
+    """
+    Surround the player in a cloud of smoke, allowing them to flee without fail.
+    """
 
     def __init__(self):
         super().__init__(
             name="Smoke Screen",
             description="Obscure the player in a puff of smoke, allowing the "
             "player to flee without fail.",
-            cost=5,
         )
+        self.cost = 5
 
-    def use(self, user):
+    def use(self, user: Character) -> str:
         user.mana.current -= self.cost
         use_str = ""
         return use_str
 
 
 class Steal(Stealth):
+    """
+    Steal an item or gold from the enemy.
+    - cap of 5% of the enemy's gold
+    - if the enemy has no items or gold, the ability fails
+    """
 
     def __init__(self):
         super().__init__(
             name="Steal",
             description="Relieve the enemy of their items or gold.",
-            cost=6,
         )
+        self.cost = 6
 
-    def use(self, user, target=None, cover=False, crit=1, mug=False, fam=False):
+    def use(
+            self,
+            user: Character,
+            target: Character=None,
+            cover: bool=False,
+            crit: int=1,
+            mug: bool=False,
+            fam: bool=False
+            ) -> str:
         if not (mug and fam):
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -938,15 +1357,22 @@ class Steal(Stealth):
 
 
 class Mug(Stealth):
+    """
+    Attack the enemy with a chance to steal their items.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - cap of 5% of the enemy's gold
+    - if the enemy has no items or gold, the Steal method will fail
+    """
 
     def __init__(self):
         super().__init__(
             name="Mug",
             description="Attack the enemy with a chance to steal their items.",
-            cost=20,
         )
+        self.cost = 20
+        self.weapon = True
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
@@ -957,37 +1383,45 @@ class Mug(Stealth):
 
 
 class Lockpick(Stealth):
+    """
+    Pick the lock on a chest, allowing you to open it.
+    """
 
     def __init__(self):
-        super().__init__(name="Lockpick", description="Unlock a locked chest.", cost=0)
+        super().__init__(name="Lockpick", description="Unlock a locked chest.")
         self.passive = True
 
 
 class MasterLockpick(Lockpick):
     """
-    Replaces Lockpick
+    Replaces Lockpick; pick the lock on a chest or door, allowing you to open it.
     """
 
     def __init__(self):
-        super().__init__(
-            name="Master Lockpick", description="Unlock a locked chest or door.", cost=0
-        )
+        super().__init__()
+        self.name = "Master Lockpick"
+        self.description = "Unlock a locked chest or door."
         self.passive = True
 
 
 class PoisonStrike(Stealth):
+    """
+    Attack the enemy with a chance to poison.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - poison damage is 5% of the target's max health per turn
+    """
 
     def __init__(self):
         super().__init__(
             name="Poison Strike",
             description="Attack the enemy with a chance to poison.",
-            cost=14,
         )
+        self.cost = 14
         self.damage = 0.05  # 5% of target's max health per turn
         self.weapon = True
         self.dmg_mod = 1.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
@@ -1023,20 +1457,21 @@ class PoisonStrike(Stealth):
 
 class SneakAttack(Stealth):
     """
-    only usable when target is prone, stunned, or asleep
+    Attack the target with a devastating blow, dealing double damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - can only be used when target is incapacitated
     """
 
     def __init__(self):
         super().__init__(
             name="Sneak Attack",
-            description="If the target is incapacitated, unleash a devastating "
-            "attack.",
-            cost=15,
+            description="If the target is incapacitated, unleash a devastating attack.",
         )
+        self.cost = 15
         self.weapon = True
         self.dmg_mod = 2.0
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         if target.incapacitated():
             use_str, _, _ = user.weapon_damage(
@@ -1049,18 +1484,22 @@ class SneakAttack(Stealth):
 
 # Enhance skills
 class ImbueWeapon(Enhance):
+    """
+    Imbue your weapon with magical energy to enhance the weapon's damage.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - damage modifier is 1.25x
+    """
 
     def __init__(self):
         super().__init__(
             name="Imbue Weapon",
-            description="Imbue your weapon with magical energy to enhance the "
-            "weapon's damage.",
-            cost=12,
+            description="Imbue your weapon with magical energy to enhance the weapon's damage.",
         )
+        self.cost = 12
         self.weapon = True
         self.dmg_mod = 1.25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         dmg_mod = max(self.dmg_mod, user.stats.intel / 15)
@@ -1071,18 +1510,21 @@ class ImbueWeapon(Enhance):
 
 
 class ManaSlice(Enhance):
+    """
+    Attack the target with a melee attack at half damage and steal mana from the target.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - damage modifier is 0.5x
+    """
 
     def __init__(self):
         super().__init__(
             name="Mana Slice",
-            description="Perform a melee attack at half damage and steal mana from "
-            "the target.",
-            cost=0,
+            description="Perform a melee attack at half damage and steal mana from the target.",
         )
         self.weapon = True
         self.dmg_mod = 0.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         dmg_str, hit, crit = user.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod
@@ -1099,6 +1541,11 @@ class ManaSlice(Enhance):
 
 
 class ManaSlice2(ManaSlice):
+    """
+    Replaces ManaSlice; attack the target with a melee attack at damage and a half and steal mana from the target.
+    - Requires a weapon to use unless Monk or Master Monk)
+    - damage modifier is 1.5x
+    """
 
     def __init__(self):
         super().__init__()
@@ -1106,17 +1553,20 @@ class ManaSlice2(ManaSlice):
 
 
 class DispelSlash(Enhance):
+    """
+    Attack the target with a critical hit, dispelling any positive status effects.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    """
 
     def __init__(self):
         super().__init__(
             name="Dispel Slash",
-            description="Attack the target with a critical hit, dispelling any "
-            "positive status effects.",
-            cost=20,
+            description="Attack the target with a critical hit, dispelling any positive status effects.",
         )
+        self.cost = 20
         self.weapon = True
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         dmg_str, hit, _ = user.weapon_damage(target, cover=cover, crit=2)
         use_str += dmg_str
@@ -1128,7 +1578,8 @@ class DispelSlash(Enhance):
 
 class EnhanceBlade(Enhance):
     """
-    mod = weapon damage * int(4 * (mana.current / mana.max))
+    Enhance your weapon with arcane energy, amplifying its strength in proportion to your mana reserves.
+    - mod = weapon damage * int(4 * (mana.current / mana.max))
     """
 
     def __init__(self):
@@ -1140,14 +1591,14 @@ class EnhanceBlade(Enhance):
             "bonus damage equal to your weapon's base damage multiplied"
             " by your mana percentage. The greater your mana, the more "
             "devastating your attacks.",
-            cost=0,
         )
         self.passive = True
 
 
 class EnhanceArmor(Enhance):
     """
-    mod = armor rating * max(5, health.max / health.current)
+    Enhance your armor with arcane energy, fortifying its strength in proportion to your health.
+    - mod = armor rating * max(5, health.max / health.current)
     """
 
     def __init__(self):
@@ -1158,14 +1609,14 @@ class EnhanceArmor(Enhance):
             "you have, the greater your ' defense rating becomes. "
             "This protective enchantment ensures you can endure even "
             "when your magic is nearly exhausted.",
-            cost=0,
         )
         self.passive = True
 
 
 class ManaShield(Enhance):
     """
-    Reduction indicates how much damage a single mana point reduces
+    A protective shield envelopes the caster, absorbing damage at the expense of mana.
+    - reduction indicates how much damage a single mana point reduces
     """
 
     def __init__(self):
@@ -1173,11 +1624,11 @@ class ManaShield(Enhance):
             name="Mana Shield",
             description="A protective shield envelopes the caster, absorbing 2 damage "
             "at the expense of every 1 mana.",
-            cost=4,
         )
+        self.cost = 4
         self.reduction = 2
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         if not user.magic_effects["Mana Shield"].active:
             user.mana.current -= self.cost
@@ -1191,6 +1642,9 @@ class ManaShield(Enhance):
 
 
 class ManaShield2(ManaShield):
+    """
+    Replaces ManaShield; a protective shield envelopes the caster, absorbing 4 damage at the expense of every 1 mana.
+    """
 
     def __init__(self):
         super().__init__()
@@ -1202,7 +1656,10 @@ class ManaShield2(ManaShield):
 
 class ElementalStrike(Enhance):
     """
-    Spellblade, Spell Stealer, and Shaman ability
+    Attack the enemy with your weapon and a random elemental spell.
+    - Requires a weapon to use (unless Monk or Master Monk)
+    - damage modifier is 1.25x
+    - Spellblade, Spell Stealer, and Shaman ability
     """
 
     def __init__(self):
@@ -1210,12 +1667,12 @@ class ElementalStrike(Enhance):
             name="Elemental Strike",
             description="Attack the enemy with your weapon and a random "
             "elemental spell.",
-            cost=15,
         )
+        self.cost = 15
         self.weapon = True
         self.dmg_mod = 1.25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
@@ -1246,15 +1703,18 @@ class ElementalStrike(Enhance):
 
 # Drain skills
 class HealthDrain(Drain):
+    """
+    Drain the enemy, absorbing their health.
+    """
 
     def __init__(self):
         super().__init__(
             name="Health Drain",
             description="Drain the enemy, absorbing their health.",
-            cost=10,
         )
+        self.cost = 10
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -1277,15 +1737,17 @@ class HealthDrain(Drain):
 
 
 class ManaDrain(Drain):
+    """
+    Drain the enemy, absorbing their mana.
+    """
 
     def __init__(self):
         super().__init__(
             name="Mana Drain",
             description="Drain the enemy, absorbing their mana.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -1309,17 +1771,17 @@ class ManaDrain(Drain):
 
 class HealthManaDrain(Drain):
     """
-    Replaces Health Drain
+    Drain the enemy, absorbing their health and mana.
+    - replaces Health Drain in spellbook
     """
 
     def __init__(self):
         super().__init__(
             name="Health/Mana Drain",
             description="Drain the enemy, absorbing the health and mana in " "return.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -1329,15 +1791,17 @@ class HealthManaDrain(Drain):
 
 
 class LifeTap(Drain):
+    """
+    Sacrifice 10% health and convert it into mana.
+    """
 
     def __init__(self):
         super().__init__(
             name="Life Tap",
             description="Sacrifice 10% health and convert it into mana.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         if user.mana.current == user.mana.max:
             return f"You are already at full mana.\n"
         health_loss = int(user.health.max * 0.1)
@@ -1352,13 +1816,16 @@ class LifeTap(Drain):
 
 
 class ManaTap(Drain):
+    """
+    Sacrifice 10% mana and convert it into health.
+    """
 
     def __init__(self):
         super().__init__(
             name="Mana Tap", description="Convert 10% of your mana into health.", cost=0
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         if user.health.current == user.health.max:
             return f"You are already at full health.\n"
         mana_loss = int(min(user.mana.max * 0.1, user.mana.current))
@@ -1372,35 +1839,33 @@ class ManaTap(Drain):
 
 # Class skills
 class LearnSpell(Class):
+    """
+    Enables a diviner to learn rank 1 enemy spells.
+    """
 
     def __init__(self):
         super().__init__(
             name="Learn Spell",
             description="Enables a diviner to learn rank 1 enemy spells.",
-            cost=0,
         )
         self.passive = True
 
 
 class LearnSpell2(LearnSpell):
     """
-    Replaces Learn Spell
+    Enables a diviner to learn rank 2 enemy spells.
+    - replaces Learn Spell
     """
 
     def __init__(self):
         super().__init__()
-        self.description = "\n".join(
-            wrap(
-                "Enables a diviner to learn rank 2 enemy spells.",
-                35,
-                break_on_hyphens=False,
-            )
-        )
+        self.description = "Enables a diviner to learn rank 2 enemy spells."
 
 
 class Transform(Class):
     """
-    Panther
+    Transform into a creature, assuming the spells and abilities inherent to the creature.
+    - Panther
     """
 
     def __init__(self):
@@ -1408,7 +1873,6 @@ class Transform(Class):
             name="Transform",
             description="Transforms the druid into a Panther, assuming the spells and "
             "abilities inherent to the creature.",
-            cost=0,
         )
 
     def use(self, user):
@@ -1420,7 +1884,9 @@ class Transform(Class):
 
 class Transform2(Transform):
     """
-    Direbear
+    Transform into a creature, assuming the spells and abilities inherent to the creature.
+    - Direbear
+    - replaces Transform
     """
 
     def __init__(self):
@@ -1436,7 +1902,9 @@ class Transform2(Transform):
 
 class Transform3(Transform):
     """
-    Werewolf
+    Transform into a creature, assuming the spells and abilities inherent to the creature.
+    - replaces Transform2
+    - Werewolf
     """
 
     def __init__(self):
@@ -1452,7 +1920,10 @@ class Transform3(Transform):
 
 class Transform4(Transform):
     """
-    Red Dragon; learned only from defeating the Red Dragon
+    Transform into a creature, assuming the spells and abilities inherent to the creature.
+    - replaces Transform3
+    - Red Dragon
+    - requires the player to defeat the Red Dragon
     """
 
     def __init__(self):
@@ -1471,6 +1942,7 @@ class Transform4(Transform):
 
 class Totem(Class):
     """
+    Summon a totem, a sacred symbol of your clan, that performs various functions depending on its design and enchantments.
     TODO
     Totem designs/enhancements
     - increase/decrease stat(s)/attribute(s)
@@ -1487,12 +1959,14 @@ class Totem(Class):
             name="Totem",
             description="Summon a totem, a sacred symbol of your clan, that performs "
             "various functions depending on its design and enchantments.",
-            cost=0,
         )
         self.passive = True
 
 
 class Familiar(Class):
+    """
+    Summon a familiar, a magic creature that serves as both a pet and a helper.
+    """
 
     def __init__(self):
         super().__init__(
@@ -1500,7 +1974,6 @@ class Familiar(Class):
             description="The warlock gains the assistance of a familiar, a magic serving "
             "as both a pet and a helper. The familiar's abilities rely on its"
             " master's statistics and resources.",
-            cost=0,
         )
         self.passive = True
 
@@ -1509,27 +1982,14 @@ class Familiar2(Familiar):
 
     def __init__(self):
         super().__init__()
-        self.description = "\n".join(
-            wrap(
-                "The warlock's familiar gains strength, unlocking additional abilities.",
-                35,
-                break_on_hyphens=False,
-            )
-        )
+        self.description = "The warlock's familiar gains strength, unlocking additional abilities."
 
 
 class Familiar3(Familiar):
 
     def __init__(self):
         super().__init__()
-        self.description = "\n".join(
-            wrap(
-                "The warlock's familiar gains additional strength, unlocking even more "
-                "abilities.",
-                35,
-                break_on_hyphens=False,
-            )
-        )
+        self.description = "The warlock's familiar gains additional strength, unlocking even more abilities."
 
 
 class Summon(Class):
@@ -1540,7 +2000,6 @@ class Summon(Class):
             description="Call forth powerful allies to fight for you in combat. These "
             "creatures learn a variety of abilities and increase in power "
             "based on the Summoner's intel and charisma.",
-            cost=0,
         )
         self.passive = True
 
@@ -1558,7 +2017,6 @@ class Tame(Class):
             name="Tame",
             description="Attempt to bring a wild beast over to your side. You cannot "
             "perform any actions while channeling this ability.",
-            cost=0,
         )
         self.passive = True
 
@@ -1585,7 +2043,6 @@ class AbsorbEssence(Class):
             description="When a Soulcatcher kills an enemy, there is a chance that "
             "they may absorb part of the enemy's essence, increasing "
             "a random statistic.",
-            cost=0,
         )
         self.passive = True
 
@@ -1600,7 +2057,6 @@ class Reveal(Truth):
             name="Reveal",
             description="An Inquisitor is a champion of truth, exposing secrets and "
             "gaining protection from shadow.",
-            cost=0,
         )
         self.passive = True
 
@@ -1619,10 +2075,10 @@ class Inspect(Truth):
             name="Inspect",
             description="Your attention to detail allows you to inspect aspects of the "
             "enemy, possibly revealing a tender spot.",
-            cost=5,
         )
+        self.cost = 5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         inspect_text = target.inspect() + "\n"
         return inspect_text
@@ -1639,11 +2095,11 @@ class ExploitWeakness(Truth):
             name="Exploit Weakness",
             description="Inspect and identify the enemy's greatest weakness and "
             "exploit it.",
-            cost=10,
         )
+        self.cost = 10
         self.weapon = True
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         types = list(target.resistance)
         resists = list(target.resistance.values())
@@ -1689,7 +2145,6 @@ class KeenEye(Truth):
         super().__init__(
             name="Keen Eye",
             description="As an Inquisitor, you can gain insights into your surroundings.",
-            cost=0,
         )
         self.passive = True
 
@@ -1705,7 +2160,6 @@ class Cartography(Truth):
             description="Seekers are masters at map making and gain the ability to "
             "see all of the dungeon, regardless of whether an area has "
             "been visited.",
-            cost=0,
         )
         self.passive = True
 
@@ -1717,11 +2171,11 @@ class LegSweep(MartialArts):
         super().__init__(
             name="Leg Sweep",
             description="Sweep the leg, tripping the enemy and leaving them prone.",
-            cost=8,
         )
+        self.cost = 8
         self.dmg_mod = 0.75
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, _ = user.weapon_damage(target, dmg_mod=self.dmg_mod, cover=cover)
         if hit and target.is_alive():
@@ -1746,10 +2200,10 @@ class ChiHeal(MartialArts):
             name="Chi Heal",
             description="The monk channels his chi energy, healing 25% of their health"
             " and removing all negative status effects.",
-            cost=16,
         )
+        self.cost = 16
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         target = user
         user.mana.current -= self.cost
         use_str = Heal().cast(user, target=target, special=True)
@@ -1766,11 +2220,10 @@ class PurityBody(MartialArts):
             "control over their body, increasing resistance against "
             "poison magic to 50% and gaining immunity to poison "
             "status.",
-            cost=0,
         )
         self.passive = True
 
-    def use(self, user):
+    def use(self, user: Character) -> None:
         user.resistance["Poison"] = max(0.5, user.resistance["Poison"])
         user.status_immunity.append("Poison")
 
@@ -1784,11 +2237,10 @@ class PurityBody2(MartialArts):
             "control over their body, increasing resistance against "
             "poison magic by 100% and gaining immunity to stone "
             "status.",
-            cost=0,
         )
         self.passive = True
 
-    def use(self, user):
+    def use(self, user: Character) -> None:
         user.resistance["Poison"] = max(1.0, user.resistance["Poison"])
         user.status_immunity.append("Stone")
 
@@ -1800,7 +2252,6 @@ class Evasion(MartialArts):
             name="Evasion",
             description="You have become highly attuned at your surroundings, anticipating "
             "other's actions and increasing your chance to dodge attacks.",
-            cost=0,
         )
         self.passive = True
 
@@ -1818,11 +2269,10 @@ class GoldToss(Luck):
             name="Gold Toss",
             description="Toss a handful of gold at the enemy, dealing damage equal to "
             "the amount of gold thrown.",
-            cost=0,
         )
         self.rank = 1
 
-    def use(self, user, target=None, cover=False, fam=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         max_thrown = min(target.health.current, user.gold)
         if user.gold == 0:
             return "Nothing happens.\n"
@@ -1878,11 +2328,11 @@ class SlotMachine(Luck):
             name="Slot Machine",
             description="Pull the handle and see what comes up! Depending on the "
             "results, different possible outcomes can occur.",
-            cost=15,
         )
+        self.cost = 15
         self.rank = 2
 
-    def use(self, game, user, target=None, cover=False, fam=False):
+    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         import utils
 
         use_str = ""
@@ -2077,10 +2527,10 @@ class Blackjack(Luck):
             name="Blackjack",
             description="Play a round of blackjack with the Jester; different things "
             "happen depending on the result.",
-            cost=7,
         )
+        self.cost = 7
 
-    def use(self, game, user, target=None, cover=False):
+    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False):
         import utils
 
         user.mana.current -= self.cost
@@ -2116,7 +2566,6 @@ class BloodRage(PowerUp):
             description="A berserker's rage knows no bounds, their power growing as "
             "their blood is spilled. Attack power increases as health "
             "decreases and gains an increase to defense below 30%.",
-            cost=0,
         )
         self.passive = True
 
@@ -2136,10 +2585,10 @@ class DivineAegis(PowerUp):
             "while active. If the shield survives the duration, it will"
             " explode in a brilliant light, dealing holy damage equal "
             "to the remaining damage absorption.",
-            cost=20,
         )
+        self.cost = 20
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         dam_abs = random.randint(user.health.max // 4, user.health.max // 2)
         user.class_effects["Power Up"].active = True
@@ -2160,7 +2609,6 @@ class DragonsFury(PowerUp):
             description="The power up unleashed the dragon within, a power that "
             "continues to grow. With each successive hit, your attack "
             "and defense increase. A miss will reset this buff.",
-            cost=0,
         )
         self.passive = True
 
@@ -2169,7 +2617,7 @@ class SpellMastery(PowerUp):
     """
     Wizard Power Up
     automatically triggers when no spells can be cast due to low mana; all spells
-          become free for a short time and mana regens based on damage dealt
+        become free for a short time and mana regens based on damage dealt
     """
 
     def __init__(self):
@@ -2180,7 +2628,6 @@ class SpellMastery(PowerUp):
             " when no spells can be cast due to low mana, making spells "
             "free for a time. While active mana is regenerated based on "
             "damage dealt.",
-            cost=0,
         )
         self.passive = True
 
@@ -2189,7 +2636,7 @@ class VeilShadows(PowerUp):
     """
     Shadowcaster Power Up
     become one with the darkness, making the player invisible to most enemies and making them harder to hit; increases
-         damage of initial attack if first
+        damage of initial attack if first
     """
 
     def __init__(self):
@@ -2199,7 +2646,6 @@ class VeilShadows(PowerUp):
             "concealing the Shadowcaster from all but the most keen "
             "eyes. The player gains invisibility and a bonus to damage"
             " at the beginning of battle if they have initiative.",
-            cost=0,
         )
         self.passive = True
 
@@ -2208,7 +2654,7 @@ class ArcaneBlast(PowerUp):
     """
     Knight Enchanter Power Up
     blast the enemy with a powerful attack, draining all remaining mana points; mana
-          will regen the next 4 turns (10% per turn)
+        will regen the next 4 turns (10% per turn)
     """
 
     def __init__(self):
@@ -2219,40 +2665,21 @@ class ArcaneBlast(PowerUp):
             "can expend its remaining energy in a powerful blast, at the"
             " expense of all remaining mana. If the enemy remains, mana "
             "will regenerate over the next 4 turns.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
-        dam_red = target.check_mod("magic def", enemy=user)
-        damage = int(user.mana.current * (1 - (dam_red / (dam_red + 50))))
+        hit, message, damage = target.handle_defenses(user, user.mana.current, cover, typ="Magic")
+        use_str += message
+        hit, message, damage = target.damage_reduction(damage, user, typ=self.subtyp)
+        use_str += message
         user.mana.current = 0
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return f"{user.name} blasts {target.name}...but it does no damage.\n"
-        variance = random.uniform(0.85, 1.15)
-        damage = int(damage * variance)
-        if target.magic_effects["Mana Shield"].active:
-            mana_loss = damage // target.magic_effects["Mana Shield"].duration
-            if mana_loss > target.mana.current:
-                abs_dam = (
-                    target.mana.current * target.magic_effects["Mana Shield"].duration
-                )
-                use_str += (
-                    f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                )
-                damage -= abs_dam
-                target.mana.current = 0
-                target.magic_effects["Mana Shield"].active = False
-                use_str += f"The mana shield dissolves around {target.name}.\n"
-            else:
-                use_str += (
-                    f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                )
-                target.mana.current -= mana_loss
-                damage = 0
-        if damage > 0:
-            target.health.current -= damage
-            use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
+        if hit:
+            variance = random.uniform(0.85, 1.15)
+            damage = int(damage * variance)
+            if damage > 0:
+                target.health.current -= damage
+                use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
         if target.is_alive():
             user.class_effects["Power Up"].active = True
             user.class_effects["Power Up"].duration = 4
@@ -2270,7 +2697,6 @@ class StrokeLuck(PowerUp):
             name="Stroke of Luck",
             description="The master of tricks and subterfuge also has Lady Luck on "
             "its side, gaining a bonus to all luck-based rolls.",
-            cost=0,
         )
         self.passive = True
 
@@ -2288,7 +2714,6 @@ class EyesUnseen(PowerUp):
             "in the shadows. Studying these enemies has improved "
             "their own game, improving battle awareness and increasing"
             " both critical and dodge chance.",
-            cost=0,
         )
         self.passive = True
 
@@ -2297,7 +2722,7 @@ class BladeFatalities(PowerUp):
     """
     Ninja Power Up
     sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing damage dealt and absorbing
-         it into the user
+        it into the user
     """
 
     def __init__(self):
@@ -2307,10 +2732,9 @@ class BladeFatalities(PowerUp):
             " grant ultimate power. The user will give up 25% of "
             "their health for increased damage and draining health"
             " into the user.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         per_health = int(0.25 * user.health.current)
         use_str = f"{user.name} sacrifices {per_health} health to imbue their blades with the spirit of Muramasa!\n"
         user.class_effects["Power Up"].active = True
@@ -2322,8 +2746,8 @@ class BladeFatalities(PowerUp):
 class HolyRetribution(PowerUp):
     """
     Templar Power Up
-    the Templar is surrounded by holy swords, reflecting 25% percent of damage back at the attacker; while
-          the shield is active, attack damage is increased
+    the Templar is surrounded by holy swords, reflecting 25% percent of weapon damage back at the attacker; while
+        the shield is active, attack damage is increased
     """
 
     def __init__(self):
@@ -2333,10 +2757,10 @@ class HolyRetribution(PowerUp):
             " in this case. Holy blades reflect 25% of weapon damage"
             " back to the attacker. While active, the player also "
             "receives a boost to attack damage.",
-            cost=25,
         )
+        self.cost = 25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         user.class_effects["Power Up"].active = True
         user.class_effects["Power Up"].duration = 5
@@ -2356,10 +2780,10 @@ class GreatGospel(PowerUp):
             " you character with a benevolent aura. This aura removes all"
             " status effects and regens both health and mana of the user. "
             "While active, resistance and holy damage are increased.",
-            cost=35,
         )
+        self.cost = 35
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = f"{user.name} gains a holy aura.\n"
         user.mana.current -= self.cost
         user.class_effects["Power Up"].active = True
@@ -2383,11 +2807,11 @@ class DimMak(PowerUp):
             " This ability has a chance to either stun or kill its target, with"
             " death allowing the user to absorb the essence of the enemy, "
             "gaining health and mana.",
-            cost=50,
         )
+        self.cost = 50
         self.dmg_mod = 1.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         wd_str, _, _ = user.weapon_damage(
@@ -2446,7 +2870,6 @@ class LunarFrenzy(PowerUp):
             "critical hits the longer you are changed. This does come at "
             "a cost, as you will reach a point where you can no longer "
             "change back until after combat.",
-            cost=0,
         )
         self.passive = True
 
@@ -2465,10 +2888,10 @@ class TetraDisaster(PowerUp):
             "own but together they can wreak an incredible level of "
             "destruction. Unleash them all at once with this powerful "
             "spell, increasing resistance of each by 50%.",
-            cost=20,
         )
+        self.cost = 20
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -2496,7 +2919,6 @@ class SoulHarvest(PowerUp):
             "The Soulcatcher knows this and uses it to their advantage. "
             "Each enemy killed of a particular type increases the combat "
             "effectiveness against that enemy type.",
-            cost=0,
         )
         self.passive = True
 
@@ -2509,11 +2931,11 @@ class Lick(Skill):
             name="Lick",
             description="Lick the target, dealing damage and inflicting random status "
             "effect(s).",
-            cost=10,
         )
+        self.cost = 10
         self.dmg_mod = 1.25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
         if hit:
@@ -2556,10 +2978,10 @@ class AcidSpit(Skill):
             name="Acid Spit",
             description="Spit a corrosive substance on the target, dealing initial "
             "damage plus damage over time.",
-            cost=6,
         )
+        self.cost = 6
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost * user.level.pro_level
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -2570,7 +2992,7 @@ class AcidSpit(Skill):
         variance = random.uniform(0.85, 1.15)
         damage = int(damage * variance)
         if user.hit_chance(target, typ="magic"):
-            if target.dodge_chance(user, spell=True) > random.random():
+            if target.dodge_chance(user, spell=True):
                 use_str += f"{target.name} partially dodges the attack, only taking half damage.\n"
                 damage //= 2
             if damage > 0:
@@ -2595,10 +3017,10 @@ class Web(Skill):
         super().__init__(
             name="Web",
             description="Expel a thick, sticky substance onto the enemy, leaving them prone.",
-            cost=6,
         )
+        self.cost = 6
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -2622,10 +3044,10 @@ class Howl(Skill):
         super().__init__(
             name="Howl",
             description="The wolf howls at the moon, terrifying the enemy.",
-            cost=10,
         )
+        self.cost = 10
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         turns = max(1, user.stats.strength // 10)
         use_str = f"{user.name} howls at the moon.\n"
         user.mana.current -= self.cost
@@ -2661,10 +3083,9 @@ class Shapeshift(Skill):
             name="Shapeshift",
             description="Some enemies can change their appearance and type. This is the"
             " skill they use to do so.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         while True:
             s_creature = random.choice(user.transform)()
             if user.cls.name != s_creature.cls.name:
@@ -2688,10 +3109,10 @@ class Trip(Skill):
             name="Trip",
             description="Grab the enemy's leg and trip them to the ground, leaving them "
             "prone.",
-            cost=6,
         )
+        self.cost = 6
 
-    def use(self, user, target=None, cover=False, special=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -2722,10 +3143,10 @@ class NightmareFuel(Skill):
             name="Nightmare Fuel",
             description="Invade the enemy's dreams, messing with their mind and "
             "dealing damage.",
-            cost=20,
         )
+        self.cost = 20
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -2765,12 +3186,12 @@ class WidowsWail(Skill):
             description="The agony of loss is released, affecting both the target "
             "and user. Both will take non-elemental damage based on the "
             "current health of the user.",
-            cost=12,
         )
+        self.cost = 12
         self.damage = 20
         self.max_damage = 200
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         dmg = int((user.health.max / user.health.current) * self.damage)
@@ -2797,10 +3218,10 @@ class ThrowRock(Skill):
             name="Throw Rock",
             description="Grab the nearest rock or stone and chuck it at the enemy, with"
             " a chance to knock the target prone.",
-            cost=7,
         )
+        self.cost = 7
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         size = random.randint(0, 4)  # size of rock thrown
         sizes = ["tiny", "small", "medium", "large", "massive"]
@@ -2813,8 +3234,7 @@ class ThrowRock(Skill):
         )
         dam_red = target.check_mod("armor", enemy=user)
         resist = target.check_mod("resist", enemy=user, typ="Physical")
-        hit_per = user.hit_chance(target, typ="weapon")
-        hit = hit_per > random.random()
+        hit = user.hit_chance(target, typ="weapon")
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         if target.incapacitated():
@@ -2853,38 +3273,15 @@ class ThrowRock(Skill):
                 )
                 damage = max(0, int((damage - dam_red) * (1 - resist)))
                 if target.magic_effects["Mana Shield"].active:
-                    mana_loss = damage // target.magic_effects["Mana Shield"].duration
-                    if mana_loss > target.mana.current:
-                        abs_dam = (
-                            target.mana.current
-                            * target.magic_effects["Mana Shield"].duration
-                        )
-                        use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                        damage -= abs_dam
-                        target.mana.current = 0
-                        target.magic_effects["Mana Shield"].active = False
-                        use_str += f"The mana shield dissolves around {target.name}.\n"
-                    else:
-                        use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                        target.mana.current -= mana_loss
-                        damage = 0
+                    hit, message, damage = target.handle_mana_shield(damage)
+                    use_str += message
                 elif (
                     target.cls.name == "Crusader"
                     and target.power_up
                     and target.class_effects["Power Up"].active
                 ):
-                    if damage >= target.class_effects["Power Up"].extra:
-                        use_str += (
-                            f"The shield around {target.name} absorbs "
-                            f"{target.class_effects['Power Up'].extra} damage.\n"
-                        )
-                        damage -= target.class_effects["Power Up"].extra
-                        target.class_effects["Power Up"].active = False
-                        use_str += f"The shield dissolves around {target.name}.\n"
-                    else:
-                        use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
-                        target.class_effects["Power Up"].extra -= damage
-                        damage = 0
+                    hit, message, damage = target.handle_crusader_shield(damage)
+                    use_str += message
                 if damage > 0:
                     target.health.current -= damage
                     use_str += (
@@ -2914,10 +3311,10 @@ class Stomp(Skill):
         super().__init__(
             name="Stomp",
             description="Stomp on the enemy, dealing damage with a chance to stun.",
-            cost=8,
         )
+        self.cost = 8
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -2933,8 +3330,7 @@ class Stomp(Skill):
             dodge = False
             hit = True
         else:
-            hit_per = user.hit_chance(target, typ="weapon")
-            hit = hit_per > random.random()
+            hit = user.hit_chance(target, typ="weapon")
         if dodge:
             return f"{target.name} evades the attack.\n"
         if hit and target.magic_effects["Duplicates"].active:
@@ -2966,40 +3362,15 @@ class Stomp(Skill):
                 * crit
             )
             if target.magic_effects["Mana Shield"].active:
-                mana_loss = damage // target.magic_effects["Mana Shield"].duration
-                if mana_loss > target.mana.current:
-                    abs_dam = (
-                        target.mana.current
-                        * target.magic_effects["Mana Shield"].duration
-                    )
-                    use_str += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                    damage -= abs_dam
-                    target.mana.current = 0
-                    target.magic_effects["Mana Shield"].active = False
-                    use_str += f"The mana shield dissolves around {target.name}.\n"
-                else:
-                    use_str += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                    target.mana.current -= mana_loss
-                    damage = 0
+                hit, message, damage = target.handle_mana_shield(damage)
+                use_str += message
             elif (
                 target.cls.name == "Crusader"
                 and target.power_up
                 and target.class_effects["Power Up"].active
             ):
-                if damage >= target.class_effects["Power Up"].extra:
-                    use_str += (
-                        f"The shield around {target.name} absorbs "
-                        f"{target.class_effects['Power Up'].extra} damage.\n"
-                    )
-                    damage -= target.class_effects["Power Up"].extra
-                    target.class_effects["Power Up"].active = False
-                    use_str += f"The shield dissolves around {target.name}.\n"
-                else:
-                    use_str += (
-                        f"The shield around {target.name} absorbs {damage} damage.\n"
-                    )
-                    target.class_effects["Power Up"].extra -= damage
-                    damage = 0
+                hit, message, damage = target.handle_crusader_shield(damage)
+                use_str += message
             if damage > 0:
                 target.health.current -= damage
                 use_str += (
@@ -3036,11 +3407,11 @@ class Slam(Skill):
         super().__init__(
             name="Slam",
             description="Slam into the enemy, dealing great damage with a chance for prone.",
-            cost=12,
         )
+        self.cost = 12
         self.dmg_mod = 1.5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(target, dmg_mod=self.dmg_mod)
         if hit and crit > 1:
@@ -3061,10 +3432,10 @@ class Screech(Skill):
             name="Screech",
             description="Let out an ear-piercing screech, damaging the foe and silencing"
             " them.",
-            cost=15,
         )
+        self.cost = 15
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -3108,51 +3479,24 @@ class Detonate(Skill):
             description="Systems are failing and retreat is not an option. Protocol "
             "states the prime directive is destruction of the enemy by any "
             "means necessary. Self-destruct sequence initiated.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = f"{user.name} explodes, sending shrapnel in all directions."
         resist = target.check_mod("resist", enemy=user, typ="Physical")
         damage = max(
             user.health.current // 2, int(user.health.current * (1 - resist))
         ) * random.randint(1, 4)
         if target.magic_effects["Mana Shield"].active:
-            mana_loss = damage // target.magic_effects["Mana Shield"].duration
-            if mana_loss > target.mana.current:
-                abs_dam = (
-                    target.mana.current * target.magic_effects["Mana Shield"].duration
-                )
-                use_str += (
-                    f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                )
-                damage -= abs_dam
-                target.mana.current = 0
-                target.magic_effects["Mana Shield"].active = False
-                use_str += f"The mana shield dissolves around {target.name}.\n"
-            else:
-                use_str += (
-                    f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                )
-                target.mana.current -= mana_loss
-                damage = 0
+            _, message, damage = target.handle_mana_shield(damage)
+            use_str += message
         elif (
             target.cls.name == "Crusader"
             and target.power_up
             and target.class_effects["Power Up"].active
         ):
-            if damage >= target.class_effects["Power Up"].extra:
-                use_str += (
-                    f"The shield around {target.name} absorbs "
-                    f"{target.class_effects['Power Up'].extra} damage.\n"
-                )
-                damage -= target.class_effects["Power Up"].extra
-                target.class_effects["Power Up"].active = False
-                use_str += f"The shield dissolves around {target.name}.\n"
-            else:
-                use_str += f"The shield around {target.name} absorbs {damage} damage.\n"
-                target.class_effects["Power Up"].extra -= damage
-                damage = 0
+            _, message, damage = target.handle_crusader_shield(damage)
+            use_str += message
         if damage > 0:
             if any([target.magic_effects["Ice Block"].active, target.tunnel]):
                 use_str += "It has no effect.\n"
@@ -3183,10 +3527,10 @@ class Crush(Skill):
             name="Crush",
             description="Take the enemy into your clutches and attempt to squeeze the life "
             "from them.",
-            cost=25,
         )
+        self.cost = 25
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -3262,10 +3606,10 @@ class ConsumeItem(Skill):
             description="You enjoy the finer things in life, which includes metal, "
             "wood, and leather. Steal an item from the enemy and consume"
             " it, absorbing the power of the item.",
-            cost=14,
         )
+        self.cost = 14
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -3364,10 +3708,10 @@ class DestroyMetal(Skill):
         super().__init__(
             name="Destroy Metal",
             description="Target metal items and destroy them.",
-            cost=27,
         )
+        self.cost = 27
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         user.mana.current -= self.cost
         metal_items = ['Fist', 'Dagger', 'Club', 'Sword', 'Ninja Blade', 'Longsword', 'Battle Axe', 'Polearm',
@@ -3427,7 +3771,6 @@ class Turtle(Skill):
             name="Turtle",
             description="Hunker down into a ball, reducing all damage to 0 and regenerating"
             " health.",
-            cost=0,
         )
         self.passive = True
 
@@ -3440,10 +3783,10 @@ class Tunnel(Skill):
             description="Tunnel into the ground indefinitely, making user untargetable. "
             "Self-targeting abilities can be used but offensive abilities "
             "require user to surface.",
-            cost=3,
         )
+        self.cost = 3
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         user.tunnel = True
         return f"{user.name} tunnels into the ground.\n"
@@ -3461,11 +3804,10 @@ class GoblinPunch(Skill):
             description="Attack the target multiple times with a flurry of punches, "
             "dealing damage based on the strength difference between the "
             "user and target.",
-            cost=0,
         )
         self.max_punches = 5
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         use_str = ""
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -3474,7 +3816,7 @@ class GoblinPunch(Skill):
             1 + user.level.pro_level, (target.stats.strength - user.stats.strength) // 2
         )
         for _ in range(num_attacks):
-            if user.hit_chance(target, typ="unarmed") > random.random():
+            if user.hit_chance(target, typ="weapon"):
                 target.health.current -= str_diff
                 use_str += f"{user.name} punches {target.name} for {str_diff} damage.\n"
             else:
@@ -3492,11 +3834,11 @@ class BrainGorge(Skill):
             name="Brain Gorge",
             description="Attack the enemy and attempt to latch on and eat its brain; a"
             " successful attack can lower intelligence.",
-            cost=30,
         )
+        self.cost = 30
         self.dmg_mod = 0.75
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(target, dmg_mod=self.dmg_mod)
         if hit:
@@ -3532,11 +3874,10 @@ class Counterspell(Skill):
             name="Counterspell",
             description="If the Behemoth is the target of an attack spell, it will "
             "counter with a spell of its own.",
-            cost=0,
         )
         self.passive = True
 
-    def use(self, user, target=None, cover=False):
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         spell = random.choice(user.spellbook["Spells"].values())
         if spell.subtyp == "Heal":
             target = user
@@ -3556,11 +3897,10 @@ class ChooseFate(Skill):
             name="Choose Fate",
             description="The Devil likes to toy with his food, letting the player "
             "decide what he will do for that turn.",
-            cost=0,
         )
         self.dmg_mod = 1.5
 
-    def use(self, game, user, target=None, cover=False):
+    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False) -> str:
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         import utils
@@ -3603,10 +3943,9 @@ class BreatheFire(Skill):
             name="Breathe Fire",
             description="Special attack used randomly when attack is selected. Only "
             "used by dragon-like creatures.",
-            cost=0,
         )
 
-    def use(self, user, target=None, cover=False, typ="Non-elemental"):
+    def use(self, user: Character, target: Character=None, cover: bool=False, typ: str="Non-elemental") -> str:
         return super().use(user, target, cover)
 
 
@@ -3618,58 +3957,50 @@ Spell section
 # Spell types
 class Attack(Spell):
 
-    def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost)
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            cost: int,
+            dmg_mod: float,
+            crit: int,
+            ):
+        super().__init__(name, description)
+        self.cost = cost
         self.dmg_mod = dmg_mod
         self.crit = crit
         self.turns = None
 
-    def cast(self, caster, target=None, cover=True, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         cast_message = ""
-        if not (
-            special
-            or fam
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
+        if not (special or fam 
+                or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
         ):
             caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         reflect = target.magic_effects["Reflect"].active
         spell_mod = caster.check_mod("magic", enemy=target)
-        dodge = target.dodge_chance(caster, spell=True) > random.random()
-        hit_per = caster.hit_chance(target, typ="magic")
-        hit = hit_per > random.random()
+        dodge = target.dodge_chance(caster, spell=True)
+        hit = caster.hit_chance(target, typ="magic")
         if target.incapacitated():
             dodge = False
             hit = True
         if dodge and not reflect:
             cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
-        elif cover:
-            cast_message += (
-                f"{target.familiar.name} steps in front of the attack,"
-                f" absorbing the damage directed at {target.name}.\n"
-            )
         else:
-            crit = 1
-            if not random.randint(0, self.crit):
-                crit = 2
-                cast_message += "Critical Hit!\n"
-            if hit and target.magic_effects["Duplicates"].active:
-                chance = target.magic_effects["Duplicates"].duration - self.check_mod(
-                    "luck", luck_factor=15
-                )
-                if random.randint(0, max(0, chance)):
-                    hit = False
-                    cast_message += f"{self.name} hits a mirror image of {target.name} and it vanishes from existence.\n"
-                    target.magic_effects["Duplicates"].duration -= 1
-                    if not target.magic_effects["Duplicates"].duration:
-                        target.magic_effects["Duplicates"].active = False
+            if reflect:
+                target = caster
+                cast_message += f"{self.name} is reflected back at {caster.name}!\n"
+            hit, message, damage = target.handle_defenses(caster, damage, cover, typ="Magic")
+            cast_message += message
+            hit, message, damage = target.damage_reduction(damage, caster, typ=self.subtyp)
+            cast_message += message
             if hit:
-                if reflect:
-                    target = caster
-                    cast_message += f"{self.name} is reflected back at {caster.name}!\n"
-                resist = target.check_mod("resist", enemy=caster, typ=self.subtyp)
-                dam_red = target.check_mod("magic def", enemy=caster)
+                crit = 1
+                if not random.randint(0, self.crit):
+                    crit = 2
+                    cast_message += "Critical Hit!\n"
                 crit_per = random.uniform(1, crit)
                 damage = int(self.dmg_mod * spell_mod * crit_per)
                 if (
@@ -3678,48 +4009,10 @@ class Attack(Spell):
                     and self.subtyp == "Holy"
                 ):
                     damage = int(damage * 1.25)
-                if target.magic_effects["Mana Shield"].active:
-                    mana_loss = damage // target.magic_effects["Mana Shield"].duration
-                    if mana_loss > target.mana.current:
-                        abs_dam = (
-                            target.mana.current
-                            * target.magic_effects["Mana Shield"].duration
-                        )
-                        cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                        damage -= abs_dam
-                        target.mana.current = 0
-                        target.magic_effects["Mana Shield"].active = False
-                        cast_message += (
-                            f"The mana shield dissolves around {target.name}.\n"
-                        )
-                    else:
-                        cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                        target.mana.current -= mana_loss
-                        damage = 0
-                elif (
-                    target.cls.name == "Crusader"
-                    and target.power_up
-                    and target.class_effects["Power Up"].active
-                ):
-                    if damage >= target.class_effects["Power Up"].extra:
-                        cast_message += (
-                            f"The shield around {target.name} absorbs "
-                            f"{target.class_effects['Power Up'].extra} damage.\n"
-                        )
-                        damage -= target.class_effects["Power Up"].extra
-                        target.class_effects["Power Up"].active = False
-                        cast_message += f"The shield dissolves around {target.name}.\n"
-                    else:
-                        cast_message += f"The shield around {target.name} absorbs {damage} damage.\n"
-                        target.class_effects["Power Up"].extra -= damage
-                        damage = 0
                 if damage < 0:
                     target.health.current -= damage
                     cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
                 else:
-                    damage = int(
-                        damage * (1 - resist) * (1 - (dam_red / (dam_red + 50)))
-                    )
                     variance = random.uniform(0.85, 1.15)
                     damage = int(damage * variance)
                     if damage <= 0:
@@ -3771,7 +4064,8 @@ class Attack(Spell):
 class HolySpell(Spell):
 
     def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.dmg_mod = dmg_mod
         self.crit = crit
         self.subtyp = "Holy"
@@ -3779,19 +4073,22 @@ class HolySpell(Spell):
 
 class SupportSpell(Spell):
     def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.subtyp = "Support"
 
 
 class DeathSpell(Spell):
     def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.subtyp = "Death"
 
 
 class StatusSpell(Spell):
     def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.subtyp = "Status"
 
 
@@ -3811,14 +4108,15 @@ class HealSpell(Spell):
     """
 
     def __init__(self, name, description, cost, heal, crit):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.heal = heal
         self.crit = crit
         self.turns = 0
         self.subtyp = "Heal"
         self.combat = False
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         """Heal calculation while in combat"""
         cast_message = ""
         if not fam:
@@ -3852,7 +4150,8 @@ class HealSpell(Spell):
 
 class MovementSpell(Spell):
     def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.subtyp = "Movement"
 
 
@@ -3862,7 +4161,8 @@ class IllusionSpell(Spell):
     """
 
     def __init__(self, name, description, cost):
-        super().__init__(name, description, cost)
+        super().__init__(name, description)
+        self.cost = cost
         self.subtyp = "Illusion"
 
 
@@ -3884,7 +4184,7 @@ class MagicMissile(Attack):
         self.subtyp = "Non-elemental"
         self.missiles = 1
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         cast_message = ""
         if not (
             special
@@ -3898,9 +4198,8 @@ class MagicMissile(Attack):
         hits = []
         for i in range(self.missiles):
             hits.append(False)
-            dodge = target.dodge_chance(caster, spell=True) > random.random()
-            hit_per = caster.hit_chance(target, typ="magic")
-            hits[i] = hit_per > random.random()
+            dodge = target.dodge_chance(caster, spell=True)
+            hits[i] = caster.hit_chance(target, typ="magic")
             if target.incapacitated():
                 dodge = False
                 hits[i] = True
@@ -3932,44 +4231,15 @@ class MagicMissile(Attack):
                     crit_per = random.uniform(1, crit)
                     damage = int(self.dmg_mod * spell_mod * crit_per)
                     if target.magic_effects["Mana Shield"].active:
-                        mana_loss = (
-                            damage // target.magic_effects["Mana Shield"].duration
-                        )
-                        if mana_loss > target.mana.current:
-                            abs_dam = (
-                                target.mana.current
-                                * target.magic_effects["Mana Shield"].duration
-                            )
-                            cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                            damage -= abs_dam
-                            target.mana.current = 0
-                            target.magic_effects["Mana Shield"].active = False
-                            cast_message += (
-                                f"The mana shield dissolves around {target.name}.\n"
-                            )
-                        else:
-                            cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                            target.mana.current -= mana_loss
-                            damage = 0
+                        hits[i], message, damage = target.handle_mana_shield(damage)
+                        cast_message += message
                     elif (
                         target.cls.name == "Crusader"
                         and target.power_up
                         and target.class_effects["Power Up"].active
                     ):
-                        if damage >= target.class_effects["Power Up"].extra:
-                            cast_message += (
-                                f"The shield around {target.name} absorbs "
-                                f"{target.class_effects['Power Up'].extra} damage.\n"
-                            )
-                            damage -= target.class_effects["Power Up"].extra
-                            target.class_effects["Power Up"].active = False
-                            cast_message += (
-                                f"The shield dissolves around {target.name}.\n"
-                            )
-                        else:
-                            cast_message += f"The shield around {target.name} absorbs {damage} damage.\n"
-                            target.class_effects["Power Up"].extra -= damage
-                            damage = 0
+                        _, message, damage = target.handle_crusader_shield(damage)
+                        cast_message += message
                     dam_red = target.check_mod("magic def", enemy=caster)
                     damage = int(damage * (1 - (dam_red / (dam_red + 50))))
                     variance = random.uniform(0.85, 1.15)
@@ -4065,7 +4335,7 @@ class Maelstrom(Attack):
         )
         self.subtyp = "Non-elemental"
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -4109,7 +4379,7 @@ class FireSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Fire"
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if random.randint(0, caster.stats.intel // 2) > random.randint(
             target.stats.wisdom // 4, target.stats.wisdom
@@ -4211,7 +4481,7 @@ class IceSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Ice"
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if random.randint(0, caster.stats.intel // 2) > random.randint(
             target.stats.wisdom // 4, target.stats.wisdom
@@ -4268,7 +4538,7 @@ class ElectricSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Electric"
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if not any(
             [
@@ -4330,7 +4600,7 @@ class WaterSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Water"
 
-    def special_effect(self, caster, target, damage, crit):  # TODO add doom status
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO add doom status
         special_str = ""
         return special_str
 
@@ -4399,7 +4669,7 @@ class EarthSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Earth"
 
-    def special_effect(self, caster, target, damage, crit):  # TODO
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO
         special_str = ""
         return special_str
 
@@ -4465,7 +4735,7 @@ class Sandstorm(EarthSpell):
             crit=6,
         )
 
-    def special_effect(self, caster, target):
+    def special_effect(self, caster: Character, target: Character) -> str:
         special_str = ""
         if not any(
             [
@@ -4493,9 +4763,7 @@ class WindSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Wind"
 
-    def special_effect(
-        self, caster, target, damage, crit
-    ):  # TODO add eject enemy effect
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO add eject enemy effect
         special_str = ""
         return special_str
 
@@ -4550,7 +4818,7 @@ class ShadowSpell(Attack):
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Shadow"
 
-    def special_effect(self, caster, target, damage, crit):  # TODO special effect
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO special effect
         special_str = ""
         return special_str
 
@@ -4598,7 +4866,7 @@ class Corruption(ShadowSpell):
             crit=5,
         )
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if random.randint(
             (caster.stats.charisma * crit) // 2, (caster.stats.charisma * crit)
@@ -4629,7 +4897,7 @@ class Terrify(ShadowSpell):
             crit=4,
         )
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if not any(
             [
@@ -4664,7 +4932,7 @@ class Doom(DeathSpell):
         )
         self.timer = 5
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         cast_message = ""
         if not special:
             caster.mana.current -= self.cost
@@ -4710,7 +4978,7 @@ class Desoul(DeathSpell):
             cost=50,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         cast_message = ""
         if not special:
             caster.mana.current -= self.cost
@@ -4747,7 +5015,7 @@ class Petrify(DeathSpell):
         )
         self.rank = 2
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         cast_message = ""
         if not special:
             caster.mana.current -= self.cost
@@ -4786,7 +5054,7 @@ class Disintegrate(DeathSpell):
             cost=65,
         )
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = ""
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -4827,7 +5095,7 @@ class Smite(HolySpell):
         )
         self.school = "Holy"
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         caster.mana.current -= self.cost
         cast_message, hit, crit = caster.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
@@ -4840,40 +5108,15 @@ class Smite(HolySpell):
             damage = int(self.dmg_mod * spell_mod)
             damage *= crit
             if target.magic_effects["Mana Shield"].active:
-                mana_loss = damage // target.magic_effects["Mana Shield"].duration
-                if mana_loss > target.mana.current:
-                    abs_dam = (
-                        target.mana.current
-                        * target.magic_effects["Mana Shield"].duration
-                    )
-                    cast_message += f"The mana shield around {target.name} absorbs {abs_dam} damage.\n"
-                    damage -= abs_dam
-                    target.mana.current = 0
-                    target.magic_effects["Mana Shield"].active = False
-                    cast_message += f"The mana shield dissolves around {target.name}.\n"
-                else:
-                    cast_message += f"The mana shield around {target.name} absorbs {damage} damage.\n"
-                    target.mana.current -= mana_loss
-                    damage = 0
+                hit, message, damage = target.handle_mana_shield(damage)
+                cast_message += message
             elif (
                 target.cls.name == "Crusader"
                 and target.power_up
                 and target.class_effects["Power Up"].active
             ):
-                if damage >= target.class_effects["Power Up"].extra:
-                    use_str += (
-                        f"The shield around {target.name} absorbs "
-                        f"{target.class_effects['Power Up'].extra} damage.\n"
-                    )
-                    damage -= target.class_effects["Power Up"].extra
-                    target.class_effects["Power Up"].active = False
-                    use_str += f"The shield dissolves around {target.name}.\n"
-                else:
-                    use_str += (
-                        f"The shield around {target.name} absorbs {damage} damage.\n"
-                    )
-                    target.class_effects["Power Up"].extra -= damage
-                    damage = 0
+                hit, message, damage = target.handle_crusader_shield(damage)
+                cast_message += message
             damage = int(damage * (1 - resist))
             if damage < 0:
                 target.health.current -= damage
@@ -4936,7 +5179,7 @@ class Holy(Attack):
         )
         self.subtyp = "Holy"
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if not any(
             [
@@ -4986,7 +5229,7 @@ class TurnUndead(HolySpell):
             crit=5,
         )
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = ""
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5045,7 +5288,7 @@ class Heal(HealSpell):
             crit=5,
         )
 
-    def cast_out(self, game):
+    def cast_out(self, game: Game) -> str:
         cast_message = f"{game.player_char.name} casts {self.name}.\n"
         if game.player_char.health.current == game.player_char.health.max:
             cast_message += f"You are already at full health.\n"
@@ -5098,7 +5341,7 @@ class Regen(HealSpell):
         self.combat = True
         self.turns = 3
 
-    def hot(self, caster, heal):
+    def hot(self, caster: Character, heal: int) -> None:
         caster.magic_effects["Regen"].active = True
         caster.magic_effects["Regen"].duration = max(
             self.turns, caster.magic_effects["Regen"].duration
@@ -5135,7 +5378,7 @@ class Bless(SupportSpell):
             cost=8,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         if not fam:
             target = caster
         if not (fam or special):
@@ -5160,7 +5403,7 @@ class Boost(SupportSpell):
             cost=22,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         if not fam:
             target = caster
         if not (
@@ -5189,7 +5432,7 @@ class Shell(SupportSpell):
             cost=26,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if target is None:
             target = caster
         if not special:
@@ -5213,7 +5456,7 @@ class Reflect(SupportSpell):
             cost=14,
         )
 
-    def cast(self, caster, target=None, cover=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         if not fam:
             target = caster
             if (
@@ -5237,7 +5480,7 @@ class Resurrection(SupportSpell):
         )
         self.passive = True
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = ""
         if target is None:
             target = caster
@@ -5269,7 +5512,7 @@ class Cleanse(SupportSpell):
             cost=20,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         if target is None:
             target = caster
         if not (special or fam):
@@ -5300,7 +5543,7 @@ class DivineProtection(SupportSpell):
             cost=12,
         )
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         caster.mana.current -= self.cost
         amount = random.randint(target.combat.defense // 4, target.combat.defense // 2)
         caster.stat_effects["Defense"].active = True
@@ -5325,7 +5568,7 @@ class IceBlock(SupportSpell):
         )
         self.school = "Ice"
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         target = caster
         caster.mana.current -= self.cost
         caster.magic_effects["Ice Block"].active = True
@@ -5345,7 +5588,7 @@ class Vulcanize(SupportSpell):
         )
         self.school = "Fire"
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = ""
         target = caster
         caster.mana.current -= self.cost
@@ -5379,7 +5622,7 @@ class WindSpeed(SupportSpell):
             cost=12,
         )
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         target = caster
         caster.mana.current -= self.cost
         amount = random.randint(caster.stats.intel // 4, caster.stats.intel // 2)
@@ -5462,7 +5705,7 @@ class MirrorImage(IllusionSpell):
         )
         self.duplicates = 2
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = (
             f"{caster.name} creates duplicates of themself to fool {target.name}.\n"
         )
@@ -5496,7 +5739,7 @@ class BlindingFog(StatusSpell):
         self.turns = 3
         self.rank = 1
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
@@ -5537,7 +5780,7 @@ class PoisonBreath(Attack):
         self.school = "Poison"
         self.rank = 2
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if not any(
             [
@@ -5589,7 +5832,7 @@ class DiseaseBreath(StatusSpell):
         )
         self.school = "Disease"
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = "The spell does nothing.\n"
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5614,7 +5857,7 @@ class Sleep(StatusSpell):
         )
         self.turns = 3
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not (
             special
             or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
@@ -5651,7 +5894,7 @@ class Stupefy(StatusSpell):
         )
         self.turns = 2
 
-    def cast(self, caster, target=None, cover=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
         if not fam:
             caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5685,7 +5928,7 @@ class WeakenMind(StatusSpell):
             cost=20,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         cast_message = ""
         if not (
             special
@@ -5723,7 +5966,7 @@ class Enfeeble(StatusSpell):
             cost=12,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         cast_message = ""
         if not (
             fam
@@ -5763,7 +6006,7 @@ class Ruin(StatusSpell):
             cost=28,
         )
 
-    def cast(self, caster, target=None, cover=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
         cast_message = ""
         caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5783,7 +6026,7 @@ class Dispel(StatusSpell):
             cost=20,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not (
             special
             or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
@@ -5814,7 +6057,7 @@ class Silence(StatusSpell):
             cost=20,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5846,7 +6089,7 @@ class Berserk(StatusSpell):
             cost=15,
         )
 
-    def cast(self, caster, target=None, cover=False, special=False):
+    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -5889,7 +6132,7 @@ class Hellfire(Attack):
         )
         self.subtyp = "Non-elemental"
 
-    def special_effect(self, caster, target, damage, crit):
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if random.randint(
             (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)

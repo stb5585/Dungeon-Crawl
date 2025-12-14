@@ -5,7 +5,6 @@ This module defines the player character and its attributes and actions.
 import glob
 import os
 import random
-import re
 import time
 
 import dill
@@ -13,8 +12,32 @@ import numpy
 
 import abilities
 import utils
+from battle import BattleManager
+from combat.enhanced_manager import EnhancedBattleManager
 from character import Character
 from items import remove_equipment
+
+# Feature flag: Set to True to use enhanced combat with action queue
+USE_ENHANCED_COMBAT = True
+
+
+DIRECTIONS = {
+    "north": {
+        "move": (0, -1),
+        "char": "\u2191"
+        },
+    "south": {
+        "move": (0, 1),
+        "char": "\u2193"
+        },
+    "east": {
+        "move": (1, 0),
+        "char": "\u2192"
+        },
+    "west": {"move": (-1, 0),
+             "char": "\u2190"
+             }
+    }
 
 
 def load_char(char=None, player_dict=None):
@@ -68,6 +91,7 @@ class Player(Character):
         self.location_x = location_x
         self.location_y = location_y
         self.location_z = location_z
+        self.facing = "east"
         self.previous_location = (5, 10, 0)  # starts at town location
         self.state = "normal"
         self.exp_scale = 25
@@ -126,7 +150,7 @@ class Player(Character):
                         map_array[tile_x][tile_y] = "\u2302"
                     else:
                         map_array[tile_x][tile_y] = "."
-        map_array[self.location_y][self.location_x] = "\u002b"
+        map_array[self.location_y][self.location_x] = DIRECTIONS[self.facing]["char"]
         map_array[map_array == "0.0"] = " "
         map_array = numpy.insert(map_array, 0, numpy.zeros(map_array.shape[1]), 0)
         map_array[map_array == "0.0"] = "#"
@@ -335,8 +359,8 @@ class Player(Character):
         """
 
         buff_str = self.buff_str()
-        return (f"{'Armor'}:     {self.equipment['Armor'].name:<30}\n"
-                f"{'Weapon'}:    {self.equipment['Weapon'].name:<30}\n"
+        return (f"{'Weapon'}:    {self.equipment['Weapon'].name:<30}\n"
+                f"{'Armor'}:     {self.equipment['Armor'].name:<30}\n"
                 f"{'Ring'}:      {self.equipment['Ring'].name:<30}\n"
                 f"{'OffHand'}:   {self.equipment['OffHand'].name:<30}\n"
                 f"{'Pendant'}:   {self.equipment['Pendant'].name:<30}\n"
@@ -360,32 +384,6 @@ class Player(Character):
                 f"{'Wind:'}     {rest_dict['Wind']:>5}       "
                 f"{'Holy:'}     {rest_dict['Holy']:>5}       "
                 f"{'Physical:'} {rest_dict['Physical']:>5}       ")
-
-    def use_item(self, game, enemy):
-        item_message = "Items"
-        popup = utils.CombatPopupMenu(game, item_message)
-        useitembox = utils.TextBox(game)
-        item_options = []
-        cat_options = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
-        for itm in self.inventory:
-            if str(self.inventory[itm][0].subtyp) in cat_options:
-                item_options.append(str(self.inventory[itm][0].name) + '  ' + str(len(self.inventory[itm])))
-        if len(item_options) == 0:
-            useitembox.print_text_in_rectangle("You do not have any items to use.")
-            game.stdscr.getch()
-            useitembox.clear_rectangle()
-            return "", False
-        item_options.append('Go Back')
-        popup.update_options(item_options, item_message)
-        item_idx = popup.navigate_popup()
-        if item_options[item_idx] == 'Go Back':
-            return "", False
-        itm = self.inventory[re.split(r"\s{2,}", item_options[item_idx])[0]][0]
-        target = None
-        if itm.subtyp == "Scroll":
-            if itm.spell.subtyp != "Support":
-                target = enemy
-        return itm.use(self, target=target)
 
     def level_up(self, game):
         dv = max(1, 5 - self.check_mod('luck', luck_factor=8))
@@ -519,7 +517,11 @@ class Player(Character):
                 tile.enemy = enemy
                 openupbox.print_text_in_rectangle("There is a Mimic in the chest!")
                 self.state = 'fight'
-                game.battle(enemy)
+                if USE_ENHANCED_COMBAT:
+                    battle = EnhancedBattleManager(game, enemy, use_queue=True)
+                else:
+                    battle = BattleManager(game, enemy)
+                battle.execute_battle()
             if self.is_alive():
                 tile.open = True
                 loot = tile.loot()
@@ -807,28 +809,47 @@ class Player(Character):
             raise NotImplementedError
 
     def move(self, dx, dy):
+        """Moves the character by dx, dy if the target tile allows entry."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
-        new_x = self.location_x + dx
-        new_y = self.location_y + dy
-        if self.world_dict[(new_x, new_y, self.location_z)].enter:
-            self.location_x += dx
-            self.location_y += dy
+        new_x, new_y = self.location_x + dx, self.location_y + dy
+
+        if getattr(self.world_dict.get((new_x, new_y, self.location_z), {}), "enter"):
+            self.location_x, self.location_y = new_x, new_y
+
+    def move_forward(self, game):
+        """Moves the character in the direction they are facing."""
+        dx, dy = DIRECTIONS[self.facing]["move"]
+        self.move(dx, dy)
+
+    def turn(self, direction):
+        """Turns the character left, right, or around (180 degrees)."""
+        directions = ["north", "east", "south", "west"]
+        current_idx = directions.index(self.facing)
+
+        if direction == "right":
+            new_idx = (current_idx + 1) % 4
+        elif direction == "left":
+            new_idx = (current_idx - 1) % 4
+        elif direction == "around":
+            new_idx = (current_idx + 2) % 4  # Move 2 steps forward in the list (180-degree turn)
+        else:
+            raise ValueError(f"Invalid turn direction: {direction}")
+
+        self.facing = directions[new_idx]
+
+    def turn_left(self, game):
+        self.turn("left")
+
+    def turn_right(self, game):
+        self.turn("right")
+
+    def turn_around(self, game):
+        self.turn("around")
 
     def stairs(self, dz):
+        """Moves the character up or down a floor."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
         self.location_z += dz
-
-    def move_north(self, game):
-        self.move(dx=0, dy=-1)
-
-    def move_south(self, game):
-        self.move(dx=0, dy=1)
-
-    def move_east(self, game):
-        self.move(dx=1, dy=0)
-
-    def move_west(self, game):
-        self.move(dx=-1, dy=0)
 
     def stairs_up(self, game):
         self.stairs(dz=-1)
@@ -1347,24 +1368,24 @@ class Player(Character):
 
 
 actions_dict = {
-    'MoveNorth': {
-        'method': Player.move_north,
-        'name': 'Move north (w)',
+    'MoveForward': {
+        'method': Player.move_forward,
+        'name': 'Move forward (w)',
         'hotkey': 'w'
     },
-    'MoveSouth': {
-        'method': Player.move_south,
-        'name': 'Move south (s)',
+    'TurnAround': {
+        'method': Player.turn_around,
+        'name': 'Turn around (s)',
         'hotkey': 's'
     },
-    'MoveEast': {
-        'method': Player.move_east,
-        'name': 'Move east (d)',
+    'TurnRight': {
+        'method': Player.turn_right,
+        'name': 'Turn right (d)',
         'hotkey': 'd'
     },
-    'MoveWest': {
-        'method': Player.move_west,
-        'name': 'Move west (a)',
+    'TurnLeft': {
+        'method': Player.turn_left,
+        'name': 'Turn left (a)',
         'hotkey': 'a'
     },
     'StairsUp': {
@@ -1410,11 +1431,6 @@ actions_dict = {
     'Flee': {
         'method': Player.flee,
         'name': 'Flee',
-        'hotkey': None
-    },
-    'UseItem': {
-        'method': Player.use_item,
-        'name': 'Use Item',
         'hotkey': None
     },
     'Open': {

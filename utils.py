@@ -509,7 +509,7 @@ class DungeonMenu:
         self.bottomleft_win.box()
 
     def draw_bottomright(self):
-        options = f"Move North (w)\n\nMove West (a)\tMove East (d)\n\nMove South (s)"
+        options = f"Move Forward (w)\n\nTurn Left (a)\tTurn Right (d)\n\nMove Backward (s)"
         self.bottomright_win.erase()
         options = options.splitlines()
         for i, line in enumerate(options):
@@ -611,7 +611,7 @@ class CombatMenu:
                 if self.current_option > len(self.options_list) - 1:
                     self.current_option = 0
             elif key == curses.KEY_ENTER or key in [10, 13]:
-                return self.current_option
+                return self.options_list[self.current_option]
 
 
 class TownMenu:
@@ -1090,10 +1090,10 @@ class CharacterMenu:
 
 class PopupMenu:
 
-    def __init__(self, game, header_message, box_height=20, box_width=30):
+    def __init__(self, game, header_message=None, box_height=20, box_width=30):
         self.game = game
         self.screen_height, self.screen_width = game.stdscr.getmaxyx()
-        self.header_message = wrap(header_message, box_width - 2, break_on_hyphens=False)
+        self.header_message = wrap(header_message, box_width - 2, break_on_hyphens=False) if header_message else header_message
         self.box_height, self.box_width = (box_height, box_width)
         self.options_list = []
         self.current_option = 0
@@ -1109,8 +1109,9 @@ class PopupMenu:
         self.popup_win.erase()
         if not isinstance(self.header_message, list):
             self.header_message = [self.header_message]
-        for i, line in enumerate(self.header_message):
-            self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
+        if self.header_message:
+            for i, line in enumerate(self.header_message):
+                self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
         for idx, option in enumerate(self.options_list):
             if idx == self.current_option:
                 self.popup_win.attron(curses.A_REVERSE)
@@ -1236,13 +1237,75 @@ class PromotionPopupMenu(PopupMenu):
 
 
 class CombatPopupMenu(PopupMenu):
-    def __init__(self, game, header_message):
+    def __init__(self, game, header_message=None):
         super().__init__(game, header_message)
 
-    def update_options(self, options_list, header_message):
+    def update_options(self, action, tile=None, options=None):
         self.current_option = 0
-        self.options_list = options_list
-        self.header_message = header_message
+        self.options_list = []
+        if options:
+            self.options_list = options
+        if action == "Cast Spell":
+            for entry in self.game.player_char.spellbook['Spells']:
+                if self.game.player_char.spellbook['Spells'][entry].subtyp == "Movement":
+                    continue
+                if self.game.player_char.spellbook['Spells'][entry].cost <= self.game.player_char.mana.current:
+                    self.options_list.append(
+                        f"{str(entry)}  {str(self.game.player_char.spellbook['Spells'][entry].cost)}"
+                        )
+        elif action == 'Use Skill':
+            for entry in self.game.player_char.spellbook['Skills']:
+                if self.game.player_char.spellbook['Skills'][entry].cost <= self.game.player_char.mana.current:
+                    if any([self.game.player_char.spellbook['Skills'][entry].passive,
+                            self.game.player_char.spellbook['Skills'][entry].name == 'Smoke Screen' and \
+                                'Boss' in str(tile),
+                            self.game.player_char.spellbook['Skills'][entry].name == 'Lockpick',
+                            self.game.player_char.spellbook['Skills'][entry].name == 'Shield Slam' and \
+                                self.game.player_char.equipment['OffHand'].subtyp != 'Shield',
+                            self.game.player_char.spellbook['Skills'][entry].name == 'Mortal Strike' and \
+                                self.game.player_char.equipment['Weapon'].handed == 1,
+                            self.game.player_char.spellbook['Skills'][entry].name == "Backstab" and \
+                                not tile.enemy.incapacitated(),
+                            self.game.player_char.spellbook["Skills"][entry].weapon and \
+                                self.game.player_char.physical_effects["Disarm"].active]):
+                        continue
+                    if entry == "Mana Shield" and self.game.player_char.magic_effects["Mana Shield"].active:
+                        self.options_list.append(
+                            f"Remove Shield  {str(self.game.player_char.spellbook['Skills'][entry].cost)}"
+                            )
+                    else:
+                        self.options_list.append(
+                            f"{str(entry)}  {str(self.game.player_char.spellbook['Skills'][entry].cost)}"
+                            )
+        elif action == "Use Item":
+            cat_options = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
+            for itm in self.game.player_char.inventory:
+                if str(self.game.player_char.inventory[itm][0].subtyp) in cat_options:
+                    item_list = self.game.player_char.inventory[itm]
+                    self.options_list.append(
+                        f"{str(item_list[0].name)}  {str(len(item_list))}"
+                        )
+        self.options_list.append('Go Back')
+        self.header_message = action
+
+    def navigate_popup(self):
+        self.draw_popup()
+        while True:
+            self.draw_popup()
+            self.popup_win.refresh()
+            key = self.game.stdscr.getch()
+
+            # Navigate the item list
+            if key == curses.KEY_UP:
+                self.current_option -= 1
+                if self.current_option < 0:
+                    self.current_option = len(self.options_list) - 1
+            elif key == curses.KEY_DOWN:
+                self.current_option += 1
+                if self.current_option > len(self.options_list) - 1:
+                    self.current_option = 0
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                return self.options_list[self.current_option]
 
 
 class SlotMachinePopupMenu(PopupMenu):

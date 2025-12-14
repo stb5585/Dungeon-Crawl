@@ -10,12 +10,23 @@ import items
 import utils
 
 
+ULTIMATE_WEAPONS = {'Dagger': items.Carnwennan,
+                   'Sword': items.Excalibur,
+                   'Mace': items.Mjolnir,
+                   'Fist': items.GodsHand,
+                   'Axe': items.Jarnbjorn,
+                   'Polearm': items.Gungnir,
+                   'Staff': [items.PrincessGuard, items.DragonStaff],
+                   'Hammer': items.Skullcrusher,
+                   'Ninja Blade': items.Ninjato}
+
+
 # Functions
 def upgrade(game):
     """
-    function handles weapon upgrade for Find Chisolm quest
-    upgrades non-ultimate weapon to be an ultimate weapon (for damaging the final boss) or further upgrade an existing
-      ultimate weapon (increase damage, crit chance, etc.) TODO
+    function handles special attack upgrade for Find Chisolm quest
+
+    
     """
     message = ""
     return message
@@ -29,18 +40,10 @@ def ultimate(game):
     ]
     ultimate_pad = utils.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
     ultimate_pad.draw_popup(texts)
-    weapon_list = {'Dagger': items.Carnwennan,
-                   'Sword': items.Excalibur,
-                   'Mace': items.Mjolnir,
-                   'Fist': items.GodsHand,
-                   'Axe': items.Jarnbjorn,
-                   'Polearm': items.Gungnir,
-                   'Staff': [items.PrincessGuard, items.DragonStaff],
-                   'Hammer': items.Skullcrusher,
-                   'Ninja Blade': items.Ninjato}
     make_options = []
+    weapon_list = []
     i = 0
-    for typ, weapon in weapon_list.items():
+    for typ, weapon in ULTIMATE_WEAPONS.items():
         if typ == 'Staff':
             if 'Archbishop' == game.player_char.cls.name:
                 weapon = weapon[0]
@@ -48,28 +51,27 @@ def ultimate(game):
                 weapon = weapon[1]
         if game.player_char.cls.equip_check(weapon, "Weapon"):
             make_options.append(typ)
+            weapon_list.append(weapon)
             i += 1
     make_options.append('Not Yet')
     make_message = "What type of weapon would you like me to make?"
-    menu = utils.MainMenu(make_options, top_text=make_message)  # TODO
+    menu = utils.SelectionPopupMenu(game=game,
+                                    header_message=make_message,
+                                    stat_options=make_options,
+                                    box_height=len(make_options)+5,
+                                    rewards=weapon_list,
+                                    confirm=False)
     ultimatebox = utils.TextBox(game)
     while True:
-        make_idx = menu.navigate_menu()
-        if make_options[make_idx][0] == 'Not yet':
+        make_idx = menu.navigate_popup()
+        if make_options[make_idx] == 'Not Yet':
             ultimatebox.print_text_in_rectangle(
                 "I am sorry to hear that...please come back if you change your mind.")
             game.stdscr.getch()
             ultimatebox.clear_rectangle()
             return
         else:
-            weapon = weapon_list[make_options[make_idx]]
-            if isinstance(weapon, list):
-                if 'Archbishop' == game.player_char.cls.name:
-                    weapon = weapon[0]()
-                else:
-                    weapon = weapon[1]()
-            else:
-                weapon = weapon()
+            weapon = weapon_list[make_idx]()
             ultimatebox.print_text_in_rectangle(
                 "Give me a moment and I will make you an ultimate weapon...")
             time.sleep(5)
@@ -79,14 +81,8 @@ def ultimate(game):
             game.stdscr.getch()
             ultimatebox.clear_rectangle()
             game.player_char.modify_inventory(weapon)
-            del game.player_char.inventory['Unobtainium']
-            if "He Ain't Heavy" in game.player_char.quest_dict['Side']:
-                if game.player_char.quest_dict['Side']["He Ain't Heavy"]['Turned In']:
-                    message = ("I still have a bit of ore left if you want me to upgrade another weapon or I may even "
-                               "be able to improve the one I just made.")
-                    ultimatebox.print_text_in_rectangle(message)
-                    game.stdscr.getch()
-                    ultimatebox.clear_rectangle()
+            del game.player_char.special_inventory['Unobtainium']
+            break
 
 
 def turn_in_quest(game, quest, typ):
@@ -1001,7 +997,8 @@ def sell(game, menu):
     while True:
         sell_dict = {}
         for name, item in game.player_char.inventory.items():
-            sell_dict[name] = item
+            if not item[0].ultimate:
+                sell_dict[name] = item
         if len(sell_dict) == 0:
             return True
         menu.update_itemdict(sell_dict, reset_current=False)
@@ -1089,11 +1086,11 @@ def town(game):
             if warp_point(game):
                 return
         else:
-            if game.player_char.player_level() < 5 and town_options[town_idx] == "Blacksmith":
+            if game.player_char.player_level() < 5 and options[town_idx] == "Blacksmith":
                 townbox.print_text_in_rectangle("Sorry but the blacksmith is currently closed. Try again later.")
                 game.stdscr.getch()
                 townbox.clear_rectangle()
-            elif game.player_char.player_level() < 10 and town_options[town_idx] == "Jeweler":
+            elif game.player_char.player_level() < 10 and options[town_idx] == "Jeweler":
                 townbox.print_text_in_rectangle("Sorry but the jeweler is currently closed.    Try again later.")
                 game.stdscr.getch()
                 townbox.clear_rectangle()

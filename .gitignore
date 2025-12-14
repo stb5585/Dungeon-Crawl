@@ -9,7 +9,9 @@ test_suite.py
 modify_save.py
 fixes.txt
 notes.txt
+launch.sh
 launch_debug.sh
+composition_patterns.py
 
 # ignore save_files
 save_files/*

@@ -1,6 +1,8 @@
 ##########################################
 """ character manager """
 
+from __future__ import annotations
+
 import random
 from dataclasses import dataclass
 from math import exp
@@ -169,6 +171,21 @@ class Character:
                     self.physical_effects["Prone"].active,
                     self.status_effects["Stun"].active])
 
+    def check_active(self):
+        """
+        Check if the character can act in combat this turn.
+        
+        Returns:
+            tuple: (is_active: bool, message: str)
+                  - (True, "") if character can act
+                  - (False, reason) if character cannot act
+        """
+        if self.incapacitated():
+            return False, f"{self.name} is incapacitated."
+        if self.magic_effects["Ice Block"].active:
+            return False, f"{self.name} is encased in ice and does nothing.\n"
+        return True, ""
+
     def effect_handler(self, effect):
         effect_dicts = [self.status_effects,
                         self.physical_effects,
@@ -264,7 +281,9 @@ class Character:
                 typ = self.equipment[att].att_name
                 if typ == 'leers':
                     hits[i] = True
-                    weapon_dam_str += self.equipment[att].special_effect(self, defender)
+                    # TODO: special_effect call disabled - incomplete refactor to CombatResultGroup API
+                    # weapon_dam_str += self.equipment[att].special_effect(self, defender)
+                    weapon_dam_str += f"{self.name} leers at {defender.name}.\n"  # Temporary fallback text
                     break
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
@@ -393,9 +412,10 @@ class Character:
                 else:
                     weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
             if hits[i]:
-                weapon_dam_str += defender.equipment['Armor'].special_effect(defender, self)
-                if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
-                    weapon_dam_str += self.equipment[att].special_effect(self, defender, damage=damage, crit=crits[i])
+                # TODO: special_effect calls disabled - incomplete refactor to CombatResultGroup API
+                # weapon_dam_str += defender.equipment['Armor'].special_effect(defender, self)
+                # if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
+                #     weapon_dam_str += self.equipment[att].special_effect(self, defender, damage=damage, crit=crits[i])
                 if self.cls.name == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1

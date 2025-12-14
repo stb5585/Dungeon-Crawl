@@ -9,7 +9,12 @@ import enemies
 import items
 import town
 import utils
-from player import actions_dict
+from battle import BattleManager
+from combat.enhanced_manager import EnhancedBattleManager
+from player import DIRECTIONS, actions_dict
+
+# Feature flag: Set to True to use enhanced combat with action queue
+USE_ENHANCED_COMBAT = True
 
 
 # functions
@@ -47,18 +52,23 @@ class MapTile:
         raise NotImplementedError()
 
     def adjacent_moves(self, player_char, append_list: list = None, blocked=None):
-        """Returns all move actions for adjacent tiles."""
+        """Returns available move actions: moving forward and turning around."""
         if append_list is None:
             append_list = []
-        moves = []
-        for dx, dy, direction in [(1, 0, "East"), (-1, 0, "West"), (0, 1, "South"), (0, -1, "North")]:
-            try:
-                if player_char.world_dict[(self.x + dx, self.y + dy, self.z)].enter and blocked != direction:
-                    moves.append(actions_dict[f'Move{direction}'])
-            except KeyError:
-                continue
-        for item in append_list:
-            moves.append(item)
+
+        moves = [actions_dict["TurnLeft"], actions_dict["TurnRight"], actions_dict["TurnAround"]]
+
+        # Forward movement based on player's facing direction
+        facing = player_char.facing
+        dx, dy = DIRECTIONS[facing]["move"]
+        new_pos = (self.x + dx, self.y + dy, self.z)
+
+        # If moving forward is possible, add it
+        tile = player_char.world_dict.get(new_pos)
+        if tile and getattr(tile, "enter", False) and blocked != facing:
+            moves.append(actions_dict["MoveForward"])
+
+        moves.extend(append_list)
         return moves
 
     def available_actions(self, player_char):
@@ -200,7 +210,7 @@ class CavePath(MapTile):
                     findbox.clear_rectangle()
         if all([not random.randint(0, 4),
                 self.enemy is None,
-                game.random_combat]):
+                game._random_combat]):
             self.enter_combat(game.player_char)
 
     def available_actions(self, player_char):
@@ -374,7 +384,11 @@ class UndergroundSpring(SpecialTile):
                     if self.enemy.is_alive():
                         game.special_event("Fuath1")
                         self.enter_combat(player_char)
-                        game.battle(self.enemy, pause=False)
+                        if USE_ENHANCED_COMBAT:
+                            battle = EnhancedBattleManager(game, self.enemy, use_queue=True)
+                        else:
+                            battle = BattleManager(game, self.enemy)
+                        battle.execute_battle()
                     if all(["Summoner" in player_char.cls.name,
                             "Fuath" not in player_char.summons,
                             player_char.is_alive()]):

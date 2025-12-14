@@ -1,0 +1,36 @@
+name: Game CI
+
+on: [push, pull_request]  # Runs when you push code or make a PR
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Pulls the latest code
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11.11"  # Adjust based on your game
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt  # Install game dependencies
+          pip install pytest  # Install testing framework
+
+      - name: Run Tests
+        run: pytest tests/  # Runs your tests (if you have any)
+
+      - name: Check for syntax errors
+        run: python -m compileall .  # Catches syntax issues
+
+      - name: Package Game
+        run: tar -czf dungeon_crawl.tar.gz .  # Creates a compressed archive
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dungeon_crawl_build
+          path: dungeon_crawl.tar.gz

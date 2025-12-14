@@ -1,13 +1,18 @@
 ###########################################
 """ item manager """
+from __future__ import annotations
 
 import random
 from textwrap import wrap
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 import abilities
 from character import StatusEffect
+
+if TYPE_CHECKING:
+    from combat_result import CombatResultGroup
 
 
 # Functions
@@ -71,7 +76,10 @@ class Item:
                 f"{35*'='}")
 
     def use(self, user, target=None, tile=None):
-        return "", True
+        return ""
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        return
 
 
 class Weapon(Item):
@@ -110,9 +118,8 @@ class Weapon(Item):
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        return
 
 
 class Armor(Item):
@@ -137,9 +144,8 @@ class Armor(Item):
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 
-    def special_effect(self, wearer, attacker):
-        special_str = ""
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        return
 
 
 class OffHand(Item):
@@ -305,19 +311,18 @@ class IndrasFist(Weapon):
         self.weight = 1
         self.element = "Electric"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if crit > 1:
-                if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
-                        > random.randint(target.stats.con // 2, target.stats.con):
-                    duration = max(1, wielder.stats.strength // 10)
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = duration
-                    special_str += f"{target.name} is stunned for {duration} turns."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if result.crit[-1] > 1:
+                if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
+                        > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                    duration = max(1, result.actor.stats.strength // 10)
+                    result.target.status_effects["Stun"].active = True
+                    result.target.status_effects["Stun"].duration = duration
+                    result.status_applied['Stun'] = True
 
 
 class GodsHand(Weapon):
@@ -334,14 +339,15 @@ class GodsHand(Weapon):
         self.ultimate = True
         self.element = "Holy"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
-        damage = int(random.randint(damage // 2, damage) * (1 - resist))
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
+        damage = int(random.randint(result.damage // 2, result.damage) * (1 - resist))
         if damage > 0:
-            special_str += f"Holy light burns {target.name}, dealing {damage} additional holy damage."
-            target.health.current -= damage
-        return special_str
+            special_str += f"Holy light burns {result.target.name}, dealing {damage} additional holy damage."
+            result.target.health.current -= damage
+            result.damage += damage
+            result.extra["Holy Damage"] = True
 
 
 class Dirk(Weapon):
@@ -420,19 +426,21 @@ class Carnwennan(Weapon):
         self.weight = 2
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if crit > 1:
-                if random.randint(wielder.check_mod("speed", enemy=target) // 2, wielder.check_mod("speed", enemy=target)) \
-                        > random.randint(target.stats.con // 2, target.stats.con):
-                    duration = max(1, wielder.check_mod("speed", enemy=target) // 10)
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = duration
-                    special_str += f"{target.name} is stunned for {duration} turns."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if result.crit > 1:
+                if random.randint(
+                    result.actor.check_mod("speed", enemy=result.target) // 2, 
+                    result.actor.check_mod("speed", enemy=result.target)) \
+                        > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                    duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
+                    result.target.status_effects["Stun"].active = True
+                    result.target.status_effects["Stun"].duration = duration
+                    result.status_applied['Stun'] = True
+        return results
 
 
 class Rapier(Weapon):
@@ -449,7 +457,7 @@ class Jian(Weapon):
 
     def __init__(self):
         super().__init__(name="Jian", description="A jian is a double-edged straight sword with a guard that protects "
-                                                  "the wielder from opposing blades,",
+                                                  "the result.actor from opposing blades,",
                          value=2000, rarity=0.85, damage=14, crit=0.1, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 6
@@ -484,18 +492,18 @@ class Khopesh(Weapon):
                          off=True)
         self.weight = 10
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not target.physical_effects["Disarm"].active:
-            if target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
-                chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
-                if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
-                        > random.randint(target.check_mod("speed", enemy=wielder) // 2, 
-                                         target.check_mod("speed", enemy=wielder)) + chance:
-                    target.physical_effects["Disarm"].active = True
-                    target.physical_effects["Disarm"].duration = wielder.stats.strength // 10
-                    special_str += f"{target.name} is disarmed."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not result.target.physical_effects["Disarm"].active:
+            if result.target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
+                chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
+                if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
+                        > random.randint(result.target.check_mod("speed", enemy=result.actor) // 2, 
+                                         result.target.check_mod("speed", enemy=result.actor)) + chance:
+                    result.target.physical_effects["Disarm"].active = True
+                    result.target.physical_effects["Disarm"].duration = result.actor.stats.strength // 10
+                    result.effects_applied['Physical'].append('Disarm')
+        return results
 
 
 class Falchion(Weapon):
@@ -524,21 +532,21 @@ class Excalibur(Weapon):
         self.weight = 8
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if crit > 1:
-            if random.randint((wielder.stats.strength // 2), wielder.stats.strength) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                duration = max(1, wielder.stats.strength // 10)
-                bleed_dmg = max(wielder.stats.strength // 2, damage)
-                target.physical_effects["Bleed"].active = True
-                target.physical_effects["Bleed"].duration = max(duration, target.physical_effects["Bleed"].duration)
-                target.physical_effects["Bleed"].extra = max(bleed_dmg, target.physical_effects["Bleed"].extra)
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
+            if random.randint((result.actor.stats.strength // 2), result.actor.stats.strength) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                duration = max(1, result.actor.stats.strength // 10)
+                bleed_dmg = max(result.actor.stats.strength // 2, result.damage)
+                if not result.target.physical_effects["Bleed"].active:
+                    result.target.physical_effects["Bleed"].active = True
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-        return special_str
+                    result.effects_applied['Physical'].append('Bleed+')
+                result.target.physical_effects["Bleed"].duration = max(duration, result.target.physical_effects["Bleed"].duration)
+                result.target.physical_effects["Bleed"].extra = max(bleed_dmg, result.target.physical_effects["Bleed"].extra)
+        return results
 
 
 class Excalibur2(Excalibur):
@@ -626,20 +634,20 @@ class Mjolnir(Weapon):
         self.weight = 8
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                if crit > 1:
-                    if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
-                            > random.randint(target.stats.con // 2, target.stats.con):
-                        duration = max(1, wielder.stats.strength // 10)
-                        target.status_effects["Stun"].active = True
-                        target.status_effects["Stun"].duration = duration
-                        special_str += f"{target.name} is stunned for {duration} turns."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                if result.crit > 1:
+                    if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
+                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        duration = max(1, result.actor.stats.strength // 10)
+                        result.target.status_effects["Stun"].active = True
+                        result.target.status_effects["Stun"].duration = duration
+                    result.effects_applied['Status'].append('Stun')
+        return results
 
 
 class Tanto(Weapon):
@@ -678,16 +686,16 @@ class Ninjato(Weapon):
         self.restriction = ['Ninja']
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if crit > 1:
-            if not "Death" in target.status_immunity:
-                w_chance = wielder.check_mod('luck', enemy=target, luck_factor=10)
-                t_chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
-                if random.randint(0, wielder.check_mod("speed", enemy=target)) + w_chance > \
-                        random.randint(target.stats.con // 2, target.stats.con) + t_chance:
-                    special_str += f"The {self.name} blade rips the soul from {target.name} and they drop dead to the ground!"
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
+            if not "Death" in result.target.status_immunity:
+                w_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
+                t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
+                if random.randint(0, result.actor.check_mod("speed", enemy=result.target)) + w_chance > \
+                        random.randint(result.target.stats.con // 2, result.target.stats.con) + t_chance:
+                    result.extra['Instant Death'] = True
+        return results
 
 
 # Two-handed weapons
@@ -775,16 +783,16 @@ class Executioner(Weapon):
         self.weight = 20
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if crit > 1:
-            if not "Death" in target.status_immunity:
-                w_chance = wielder.check_mod('luck', enemy=target, luck_factor=10)
-                t_chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
-                if random.randint(0, wielder.stats.strength) + w_chance > \
-                        random.randint(target.stats.con // 2, target.stats.con) + t_chance:
-                    special_str += f"The {self.name} decapitates {target.name} and they drop dead to the ground!"
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
+            if not "Death" in result.target.status_immunity:
+                w_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
+                t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
+                if random.randint(0, result.actor.stats.strength) + w_chance > \
+                        random.randint(result.target.stats.con // 2, result.target.stats.con) + t_chance:
+                    result.extra['Instant Death'] = True
+        return results
 
 
 class Mattock(Weapon):
@@ -862,21 +870,21 @@ class Jarnbjorn(Weapon):
         self.weight = 20
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if crit > 1:
-            if random.randint((wielder.stats.strength // 2), wielder.stats.strength) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                duration = max(1, wielder.stats.strength // 10)
-                bleed_dmg = max(wielder.stats.strength // 2, damage)
-                target.physical_effects["Bleed"].active = True
-                target.physical_effects["Bleed"].duration = max(duration, target.physical_effects["Bleed"].duration)
-                target.physical_effects["Bleed"].extra = max(bleed_dmg, target.physical_effects["Bleed"].extra)
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit[-1] > 1:
+            if random.randint((result.actor.stats.strength // 2), result.actor.stats.strength) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                duration = max(1, result.actor.stats.strength // 10)
+                bleed_dmg = max(result.actor.stats.strength // 2, result.damage[-1])
+                if not result.target.physical_effects["Bleed"].active:
+                    result.target.physical_effects["Bleed"].active = True
+                    result.status_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-        return special_str
+                    result.status_applied['Physical'].append('Bleed+')
+                result.target.physical_effects["Bleed"].duration = max(duration, result.target.physical_effects["Bleed"].duration)
+                result.target.physical_effects["Bleed"].extra = max(bleed_dmg, result.target.physical_effects["Bleed"].extra)
+        return results
 
 class Framea(Weapon):
 
@@ -946,18 +954,18 @@ class Ranseur(Weapon):
                          off=False)
         self.weight = 15
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not target.physical_effects["Disarm"].active:
-            if target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
-                chance = target.check_mod('luck', enemy=wielder, luck_factor=10)
-                if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
-                        > random.randint(target.check_mod("speed", enemy=wielder) // 2,
-                                         target.check_mod("speed", enemy=wielder)) + chance:
-                    target.physical_effects["Disarm"].active = True
-                    target.physical_effects["Disarm"].duration = wielder.stats.strength // 10
-                    special_str += f"{target.name} is disarmed."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not result.target.physical_effects["Disarm"].active:
+            if result.target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
+                chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
+                if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
+                        > random.randint(result.target.check_mod("speed", enemy=result.actor) // 2,
+                                         result.target.check_mod("speed", enemy=result.actor)) + chance:
+                    result.target.physical_effects["Disarm"].active = True
+                    result.target.physical_effects["Disarm"].duration = result.actor.stats.strength // 10
+                    result.status_applied['Physical'].append('Disarm')
+        return results
 
 
 class Gungnir(Weapon):
@@ -1023,14 +1031,14 @@ class HolyStaff(Weapon):
         self.restriction = ['Priest', 'Archbishop']
         self.element = "Holy"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        t_chance = target.check_mod('luck', enemy=target, luck_factor=5) / 100
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        t_chance = result.target.check_mod('luck', enemy=result.target, luck_factor=5) / 100
         if 0.05 + t_chance > random.random():  # 5% chance plus charisma // 5
-            heal = min(wielder.health.max - wielder.health.current, damage)
-            wielder.health.current += heal
-            special_str += f"The Holy Staff heals {wielder.name} for {heal} health.\n"
-        return special_str
+            heal = min(result.actor.health.max - result.actor.health.current, result.damage)
+            result.actor.health.current += heal
+            result.healing += heal
+        return results
 
 
 class RuneStaff(Weapon):
@@ -1075,15 +1083,15 @@ class DragonStaff(Weapon):
         self.restriction = ['Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        mana_heal = random.randint(damage // 2, damage)
-        if wielder.mana.current + mana_heal > wielder.mana.max:
-            mana_heal = wielder.mana.max - wielder.mana.current
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        mana_heal = random.randint(result.damage // 2, result.damage)
+        if result.actor.mana.current + mana_heal > result.actor.mana.max:
+            mana_heal = result.actor.mana.max - result.actor.mana.current
         if mana_heal > 0:
-            wielder.mana.current += mana_heal
-            special_str += f"{wielder.name}'s mana is regenerated by {mana_heal}."
-        return special_str
+            result.actor.mana.current += mana_heal
+            result.extra['Mana'] = mana_heal
+        return results
 
 
 class PrincessGuard(Weapon):
@@ -1099,15 +1107,15 @@ class PrincessGuard(Weapon):
         self.restriction = ['Archbishop']
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        heal = random.randint(damage // 2, damage)
-        if wielder.health.current + heal > wielder.health.max:
-            heal = wielder.health.max - wielder.health.current
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        heal = random.randint(result.damage // 2, result.damage)
+        if result.actor.health.current + heal > result.actor.health.max:
+            heal = result.actor.health.max - result.actor.health.current
         if heal > 0:
-            wielder.mana.current += heal
-            special_str += f"{wielder.name}'s health is regenerated by {heal}."
-        return special_str
+            result.actor.mana.current += heal
+            result.healing += heal
+        return results
 
 
 class Sledgehammer(Weapon):
@@ -1177,20 +1185,20 @@ class Skullcrusher(Weapon):
         self.weight = 25
         self.ultimate = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                if crit > 1:
-                    if random.randint(wielder.stats.strength // 2, wielder.stats.strength) \
-                            > random.randint(target.stats.con // 2, target.stats.con):
-                        duration = max(1, wielder.stats.strength // 10)
-                        target.status_effects["Stun"].active = True
-                        target.status_effects["Stun"].duration = duration
-                        special_str += f"{target.name} is stunned."
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                if result.crit > 1:
+                    if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
+                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        duration = max(1, result.actor.stats.strength // 10)
+                        result.target.status_effects["Stun"].active = True
+                        result.target.status_effects["Stun"].duration = duration
+                        result.status_applied['Status'].append('Stun')
+        return results
 
 
 # Summon weapons
@@ -1215,11 +1223,11 @@ class EarthMaw(NaturalWeapon):
         self.att_name = "bites"
         self.element = "Earth"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = "Out of the maw flies a massive sand storm!\n"
-        if crit > 1:
-            special_str += abilities.Sandstorm.cast(wielder, target=target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
+            result = abilities.Sandstorm.cast(result, special=True)
+        return results
 
 
 class IceShard(NaturalWeapon):
@@ -1232,14 +1240,16 @@ class IceShard(NaturalWeapon):
         self.att_name = "throws ice shards at"
         self.element = "Ice"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        shards = random.randint(0, wielder.intel // 8) * round(1 + crit)
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        shards = random.randint(0, result.actor.intel // 8) * round(1 + result.crit)
+        if 'Shards' not in result.extra:
+            result.extra['Shards'] = shards
+        else:
+            result.extra['Shards'] += shards
         for _ in range(shards):
-            damage += int(random.randint(1, wielder.intel) * random.uniform(-1, 1))
-            if damage != 0:
-                special_str += f"An ice shard hits {target.name} for {damage} damage.\n"
-        return special_str
+            result.damage += int(random.randint(1, result.actor.intel) * random.uniform(-1, 1))
+        return results
 
 
 class VulcansHammer(Weapon):
@@ -1261,10 +1271,11 @@ class Scythe(Weapon):
         super().__init__(name="Scythe", description="",
                          value=0, rarity=0, damage=80, crit=0.3, handed=2, subtyp="Summon", unequip=False, off=False)
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        if crit > 1:
-            special_str = abilities.Desoul(wielder, target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
+            result = abilities.Desoul(result, special=True)
+        return results
 
 
 class KoboldDagger(Weapon):
@@ -1276,11 +1287,11 @@ class KoboldDagger(Weapon):
         super().__init__(name="Kobold Dagger", description="",
                          value=0, rarity=0, damage=50, crit=0.4, handed=1, subtyp="Summon", unequip=False, off=False)
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if crit > 1:
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if result.crit > 1:
             effects = []
-        return special_str
+        return results
 
 
 # Natural weapons
@@ -1291,16 +1302,14 @@ class Bite(NaturalWeapon):
         self.special = True
         self.att_name = 'bites'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
         if self.crit > random.random():
-            special_str += "The bite is diseased.\n"
-            if not random.randint(0, 39 // crit):
-                special_str += f"The bite is diseased, crippling {target.name} and lowering their constitution by 1.\n"
-                target.stats.con -= 1
-            else:
-                special_str += f"{target.name} resists the disease.\n"
-        return special_str
+            result.extra['Disease'] = False
+            if not random.randint(0, 39 // result.crit):
+                result.target.stats.con -= 1
+                result.extra['Disease'] = True
+        return results
 
 
 class Bite2(Bite):
@@ -1310,16 +1319,14 @@ class Bite2(Bite):
         self.damage = 30
         self.crit = 0.2
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
         if self.crit > random.random():
-            special_str += "The bite is diseased.\n"
-            if not random.randint(0, 19 // crit):
-                special_str += f"The disease cripples {target.name}, lowering their constitution by 1.\n"
-                target.stats.con -= 1
-            else:
-                special_str += f"{target.name} resists the disease.\n"
-        return special_str
+            result.extra['Disease'] = False
+            if not random.randint(0, 19 // result.crit):
+                result.extra['Disease'] = True
+                result.target.stats.con -= 1
+        return results
 
 
 class VampireBite(Bite):
@@ -1329,13 +1336,13 @@ class VampireBite(Bite):
         self.damage = 20
         self.crit = 0.15
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
         if self.crit > random.random():
-            wielder.health.current += damage
-            wielder.health.current = min(wielder.health.current, wielder.health.max)
-            special_str += f"{wielder.name} drains {target.name} and gains {damage} life.\n"
-        return special_str
+            result.actor.health.current += result.damage
+            result.actor.health.current = min(result.actor.health.current, result.actor.health.max)
+            result.extra['Drain'] = True
+        return results
 
 
 class Claw(NaturalWeapon):
@@ -1361,24 +1368,25 @@ class Claw3(Claw):
         self.damage = 36
         self.crit = 0.33
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint((wielder.check_mod("speed", enemy=target) // 2) * crit,
-                              wielder.check_mod("speed", enemy=target) * crit) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+            if random.randint((result.actor.check_mod("speed", enemy=result.target) // 2) * result.crit,
+                              result.actor.check_mod("speed", enemy=result.target) * result.crit) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Bleed"].active:
+                    result.target.physical_effects["Bleed"].active = True
+                    result.status_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-                duration = max(1, wielder.check_mod("speed", enemy=target) // 10)
-                bleed_dmg = int(max(wielder.check_mod("speed", enemy=target) // 2, damage) * (1 - resist))
+                    result.status_applied['Physical'].append('Bleed+')
+                duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
+                bleed_dmg = int(max(result.actor.check_mod("speed", enemy=result.target) // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
-                target.physical_effects["Bleed"] = StatusEffect(True,
-                                                              max(duration, target.physical_effects["Bleed"].duration),
-                                                              max(bleed_dmg, target.physical_effects["Bleed"].extra))
-        return special_str
+                result.target.physical_effects["Bleed"] = StatusEffect(True,
+                                                              max(duration, result.target.physical_effects["Bleed"].duration),
+                                                              max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
+        return results
 
 
 class BearClaw(NaturalWeapon):
@@ -1388,23 +1396,24 @@ class BearClaw(NaturalWeapon):
         self.special = True
         self.att_name = 'mauls'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint((wielder.stats.strength // 2) * crit, wielder.stats.strength * crit) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+            if random.randint((result.actor.stats.strength // 2) * result.crit, result.actor.stats.strength * result.crit) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Bleed"].active:
+                    result.target.physical_effects["Bleed"].active = True
+                    result.status_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-                duration = max(1, wielder.stats.strength // 10)
-                bleed_dmg = int(max(wielder.stats.strength // 2, damage) * (1 - resist))
+                    result.status_applied['Physical'].append('Bleed+')
+                duration = max(1, result.actor.stats.strength // 10)
+                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
-                target.physical_effects["Bleed"] = StatusEffect(True,
-                                                              max(duration, target.physical_effects["Bleed"].duration),
-                                                              max(bleed_dmg, target.physical_effects["Bleed"].extra))
-        return special_str
+                result.target.physical_effects["Bleed"] = StatusEffect(True,
+                                                              max(duration, result.target.physical_effects["Bleed"].duration),
+                                                              max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
+        return results
 
 
 class Stinger(NaturalWeapon):
@@ -1414,24 +1423,25 @@ class Stinger(NaturalWeapon):
         self.special = True
         self.att_name = 'stings'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ="Poison")
-        if resist < 1 and not any(["Status-Poison" in target.status_immunity, "Status-All" in target.status_immunity]):
-            if random.randint((wielder.check_mod("speed", enemy=target) * crit) // 2,
-                              (wielder.check_mod("speed", enemy=target) * crit)) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.status_effects["Poison"].active:
-                    special_str += f"{target.name} is poisoned.\n"
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
+        if resist < 1 and not any(["Status-Poison" in result.target.status_immunity, "Status-All" in result.target.status_immunity]):
+            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit[-1]) // 2,
+                              (result.actor.check_mod("speed", enemy=result.target) * result.crit[-1])) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Poison"].active:
+                    result.target.physical_effects["Poison"].active = True
+                    result.status_applied['Status'].append('Poison')
                 else:
-                    special_str += "The poison persists.\n"
-                duration = max(1, wielder.check_mod("speed", enemy=target) // 10)
-                damage = int(target.health.max * 0.005)
+                    result.status_applied['Status'].append('Poison+')
+                duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
+                damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
-                target.status_effects["Poison"] = StatusEffect(True,
-                                                               max(duration, target.status_effects["Poison"].duration),
-                                                               max(pois_dmg, target.status_effects["Poison"].extra))
-        return special_str
+                result.target.status_effects["Poison"] = StatusEffect(True,
+                                                               max(duration, result.target.status_effects["Poison"].duration),
+                                                               max(pois_dmg, result.target.status_effects["Poison"].extra))
+        return results
 
 
 class Pincers(NaturalWeapon):
@@ -1441,35 +1451,36 @@ class Pincers(NaturalWeapon):
         self.special = True
         self.att_name = 'bites'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if random.randint(wielder.check_mod("speed", enemy=target) // 2, wielder.check_mod("speed", enemy=target)) \
-            > random.randint(target.stats.con // 2, target.stats.con):
-            resist = target.check_mod('resist', enemy=wielder, typ="Poison")
-            if resist < 1 and not any(["Status-Poison" in target.status_immunity,
-                                       "Status-All" in target.status_immunity]):
-                if not target.status_effects["Poison"].active:
-                    special_str += f"{target.name} is poisoned.\n"
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if random.randint(result.actor.check_mod("speed", enemy=result.target) // 2, result.actor.check_mod("speed", enemy=result.target)) \
+            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+            resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
+            if resist < 1 and not any(["Status-Poison" in result.target.status_immunity,
+                                       "Status-All" in result.target.status_immunity]):
+                if not result.target.physical_effects["Poison"].active:
+                    result.target.physical_effects["Poison"].active = True
+                    result.status_applied['Status'].append('Poison')
                 else:
-                    special_str += "The poison persists.\n"
-                duration = max(1, wielder.check_mod("speed", enemy=target) // 10)
-                damage = int(target.health.max * 0.005)
+                    result.status_applied['Status'].append('Poison+')
+                duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
+                damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
-                target.status_effects["Poison"] = StatusEffect(True,
-                                                               max(duration, target.status_effects["Poison"].duration),
-                                                               max(pois_dmg, target.status_effects["Poison"].extra))
-            if not any(["Stun" in target.status_immunity,
-                        f"Status-Stun" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod]):
-                if not target.status_effects["Stun"].active:
-                    p_resist = target.check_mod('resist', enemy=wielder, typ='Physical')
-                    if crit > 1:
-                        if random.randint(wielder.stats.strength // 2, wielder.stats.strength) * (1 - p_resist) \
-                                > random.randint(target.stats.con // 2, target.stats.con):
-                            s_duration = max(1, wielder.stats.strength // 10)
-                            target.status_effects["Stun"] = StatusEffect(True, s_duration)
-                            special_str += f"{target.name} is stunned.\n"
-        return special_str
+                result.target.status_effects["Poison"] = StatusEffect(True,
+                                                               max(duration, result.target.status_effects["Poison"].duration),
+                                                               max(pois_dmg, result.target.status_effects["Poison"].extra))
+            if not any(["Stun" in result.target.status_immunity,
+                        f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                        "Status-All" in result.target.equipment["Pendant"].mod]):
+                if not result.target.status_effects["Stun"].active:
+                    p_resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
+                    if result.crit > 1:
+                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - p_resist) \
+                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                            s_duration = max(1, result.actor.stats.strength // 10)
+                            result.target.status_effects["Stun"] = StatusEffect(True, s_duration)
+                            result.status_applied['Status'].append('Stun')
+        return results
 
 
 class Pincers2(Pincers):
@@ -1487,10 +1498,9 @@ class DemonClaw(NaturalWeapon):
         self.special = True
         self.att_name = 'claws'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        special_str += abilities.Doom().cast(wielder, target=target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = abilities.Doom().cast(result, special=True)
+        return results
 
 
 class DemonClaw2(DemonClaw):
@@ -1501,10 +1511,9 @@ class DemonClaw2(DemonClaw):
         self.crit = 0.33
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        special_str += abilities.Desoul().cast(wielder, target=target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = abilities.Desoul().cast(result, special=True)
+        return results
 
 
 class SnakeFang(NaturalWeapon):
@@ -1514,24 +1523,25 @@ class SnakeFang(NaturalWeapon):
         self.special = True
         self.att_name = 'strikes'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ="Poison")
-        if resist < 1 and not any(["Status-Poison" in target.status_immunity, "Status-All" in target.status_immunity]):
-            if random.randint((wielder.check_mod("speed", enemy=target) * crit) // 2,
-                              (wielder.check_mod("speed", enemy=target) * crit)) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.status_effects["Poison"].active:
-                    special_str += f"{target.name} is poisoned.\n"
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
+        if resist < 1 and not any(["Status-Poison" in result.target.status_immunity, "Status-All" in result.target.status_immunity]):
+            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit[-1]) // 2,
+                              (result.actor.check_mod("speed", enemy=result.target) * result.crit[-1])) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Poison"].active:
+                    result.target.physical_effects["Poison"].active = True
+                    result.status_applied['Status'].append('Poison')
                 else:
-                    special_str += "The poison persists.\n"
-                duration = max(1, wielder.check_mod("speed", enemy=target) // 10)
-                damage = int(target.health.max * 0.005)
+                    result.status_applied['Status'].append('Poison+')
+                duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
+                damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
-                target.status_effects["Poison"] = StatusEffect(True,
-                                                               max(duration, target.status_effects["Poison"].duration),
-                                                               max(pois_dmg, target.status_effects["Poison"].extra))
-        return special_str
+                result.target.status_effects["Poison"] = StatusEffect(True,
+                                                               max(duration, result.target.status_effects["Poison"].duration),
+                                                               max(pois_dmg, result.target.status_effects["Poison"].extra))
+        return results
 
 
 class SnakeFang2(SnakeFang):
@@ -1549,21 +1559,21 @@ class AlligatorTail(NaturalWeapon):
         self.special = True
         self.att_name = 'swipes'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if crit > 1:
-                        if random.randint(wielder.stats.strength // 2, wielder.stats.strength) * (1 - resist) \
-                                > random.randint(target.stats.con // 2, target.stats.con):
-                            duration = max(1, wielder.stats.strength // 10)
-                            target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{target.name} is stunned.\n"
-        return special_str
+                    if result.crit > 1:
+                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist) \
+                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                            duration = max(1, result.actor.stats.strength // 10)
+                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            result.status_applied['Status'].append('Stun')
+        return results
 
 
 class LionPaw(NaturalWeapon):
@@ -1575,18 +1585,18 @@ class LionPaw(NaturalWeapon):
         super().__init__(name="Lion Paw", damage=34, crit=0.15, description="", off=True)
         self.att_name = 'swipes'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Berserk" in target.status_immunity,
-                "Status-Berserk" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Berserk"].active:
-                if crit > 1:
-                    if random.randint(0, wielder.stats.strength) > random.randint(target.stats.con // 2, target.stats.con):
-                        duration = max(3, wielder.stats.strength // 10)
-                        target.status_effects["Berserk"] = StatusEffect(True, duration)
-                        special_str += f"{target.name} is enraged.\n"
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Berserk" in result.target.status_immunity,
+                "Status-Berserk" in result.target.equipment["Pendant"].mod,
+                "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Berserk"].active:
+                if result.crit > 1:
+                    if random.randint(0, result.actor.stats.strength) > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        duration = max(3, result.actor.stats.strength // 10)
+                        result.target.status_effects["Berserk"] = StatusEffect(True, duration)
+                        result.status_applied['Status'].append('Berserk')
+        return results
 
 
 class Laser(NaturalWeapon):
@@ -1611,27 +1621,27 @@ class Laser2(Laser):
         self.crit = 0.4
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        t_chance = target.check_mod('luck', enemy=wielder, luck_factor=5) / 100
-        if crit > 1:
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=5) / 100
+        if result.crit[-1] > 1:
             if random.random() > 0.95 + t_chance:  # 5% chance minus charisma // 5
                 stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
                 stat_name = random.choice(stat_list)
+                result.status_applied('Stat').append(stat_name.capitalize())
                 if stat_name == 'strength':
-                    target.stats.strength -= 1
+                    result.target.stats.strength -= 1
                 if stat_name == 'intelligence':
-                    target.stats.intel -= 1
+                    result.target.stats.intel -= 1
                 if stat_name == 'wisdom':
-                    target.stats.wisdom -= 1
+                    result.target.stats.wisdom -= 1
                 if stat_name == 'constitution':
-                    target.stats.con -= 1
+                    result.target.stats.con -= 1
                 if stat_name == 'charisma':
-                    target.stats.charisma -= 1
+                    result.target.stats.charisma -= 1
                 if stat_name == 'dexterity':
-                    target.stats.dex -= 1
-                special_str += (f"The attack is devastating, causing {target.name} to lose 1 {stat_name}.\n")
-        return special_str
+                    result.target.stats.dex -= 1
+        return results
 
 
 class Gaze(NaturalWeapon):
@@ -1644,10 +1654,10 @@ class Gaze(NaturalWeapon):
         self.special = True
         self.att_name = 'leers'
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = f"{wielder.name} {self.name} at {target.name}.\n"
-        special_str += abilities.Petrify().cast(wielder, target=target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result.extra[self.att_name] = True
+        result = abilities.Petrify().cast(result, special=True)
+        return results
 
 
 class DragonClaw(NaturalWeapon):
@@ -1669,23 +1679,23 @@ class DragonClaw2(DragonClaw):
         self.crit = 0.33
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint(0, wielder.stats.strength * crit) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+            if random.randint(0, result.actor.stats.strength * result.crit[-1]) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Bleed"].active:
+                    special_str += f"{result.target.name} is bleeding.\n"
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-                duration = max(1, wielder.stats.strength // 10)
-                bleed_dmg = int(max(wielder.stats.strength // 2, damage) * (1 - resist))
+                    special_str += f"{result.target.name} continues to bleed.\n"
+                duration = max(1, result.actor.stats.strength // 10)
+                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage[-1]) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
-                target.physical_effects["Bleed"] = StatusEffect(True,
-                                                              max(duration, target.physical_effects["Bleed"].duration),
-                                                              max(bleed_dmg, target.physical_effects["Bleed"].extra))
-        return special_str
+                result.target.physical_effects["Bleed"] = StatusEffect(True,
+                                                              max(duration, result.target.physical_effects["Bleed"].duration),
+                                                              max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
+        return results
 
 
 class DragonTail(NaturalWeapon):
@@ -1703,21 +1713,21 @@ class DragonTail2(DragonTail):
         self.crit = 0.3
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if crit > 1:
-                        if random.randint(0, wielder.stats.strength * crit) * (1 - resist) \
-                                > random.randint(target.stats.con // 2, target.stats.con):
-                            duration = max(1, wielder.stats.strength // 10)
-                            target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{target.name} is stunned.\n"
-        return special_str
+                    if result.crit[-1] > 1:
+                        if random.randint(0, result.actor.stats.strength * result.crit[-1]) * (1 - resist) \
+                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                            duration = max(1, result.actor.stats.strength // 10)
+                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            special_str += f"{result.target.name} is stunned.\n"
+        return results
 
 
 class NightmareHoof(NaturalWeapon):
@@ -1731,18 +1741,18 @@ class NightmareHoof(NaturalWeapon):
         self.att_name = 'attacks'
         self.element = "Fire"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
-        damage = int(random.randint(wielder.stats.intel // 2, wielder.stats.intel) * (1 - resist))
-        target.health.current -= damage
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
+        damage = int(random.randint(result.actor.stats.intel // 2, result.actor.stats.intel) * (1 - resist))
+        result.target.health.current -= damage
         if damage > 0:
-            special_str += f"The fire from {wielder.name}'s attack burns {target.name} for {damage} damage.\n"
+            special_str += f"The fire from {result.actor.name}'s attack burns {result.target.name} for {damage} damage.\n"
         elif damage < 0:
-            special_str += f"{target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
+            special_str += f"{result.target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
         else:
             special_str += "The fire is ineffective, dealing no damage.\n"
-        return special_str
+        return results
 
 
 class ElementalBlade(NaturalWeapon):
@@ -1754,24 +1764,26 @@ class ElementalBlade(NaturalWeapon):
         super().__init__(name="Elemental Blade", damage=30, crit=0.25, description="", off=True)
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        elemental_type = max(wielder.resistance, key=wielder.resistance.get)
-        resist = target.check_mod('resist', enemy=wielder, typ=elemental_type)
-        damage = int(damage * (1 - resist))
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        elemental_type = max(result.actor.resistance, key=result.actor.resistance.get)
+        resist = result.target.check_mod('resist', enemy=result.actor, typ=elemental_type)
+        damage = int(result.damage[-1] * (1 - resist))
         if damage < 0:
-            special_str += f"{target.name} absorbs the {elemental_type.lower()} damage, gaining {abs(damage)} hit points.\n"
+            result.healing[-1] = abs(damage)
+            special_str += f"{result.target.name} absorbs the {elemental_type.lower()} damage, gaining {abs(damage)} hit points.\n"
         elif damage > 0:
-            special_str += f"{wielder.name}'s blade deals {damage} additional {elemental_type.lower()} damage to {target.name}.\n"
+            result.damage[-1] += damage
+            special_str += f"{result.actor.name}'s blade deals {damage} additional {elemental_type.lower()} damage to {result.target.name}.\n"
         else:
-            special_str += f"{elemental_type} damage was not effective against {target.name}.\n"
-        target.health.current -= damage
-        if damage > 0 and elemental_type == "Fire" and target.is_alive():
-            if not target.magic_effects["DOT"].active:
-                special_str += f"{target.name} is on fire.\n"
-            target.magic_effects["DOT"] = StatusEffect(True, 3, 
-                                                        max(int(damage // 2), target.magic_effects["DOT"].extra))
-        return special_str
+            special_str += f"{elemental_type} damage was not effective against {result.target.name}.\n"
+        result.target.health.current -= damage
+        if damage > 0 and elemental_type == "Fire" and result.target.is_alive():
+            if not result.target.magic_effects["DOT"].active:
+                special_str += f"{result.target.name} is on fire.\n"
+            result.target.magic_effects["DOT"] = StatusEffect(True, 3, 
+                                                        max(int(damage // 2), result.target.magic_effects["DOT"].extra))
+        return results
 
 
 class Tentacle(NaturalWeapon):
@@ -1787,10 +1799,9 @@ class Tentacle(NaturalWeapon):
                          off=True)
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        special_str += abilities.Trip().use(wielder, target, special=True)
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = abilities.Trip().use(result, special=True)
+        return results
 
 
 class Tentacle2(Tentacle):
@@ -1804,21 +1815,21 @@ class Tentacle2(Tentacle):
         self.crit = 0.3
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if crit > 1:
-                        if random.randint(wielder.stats.strength // 2, wielder.stats.strength) * (1 - resist) \
-                                > random.randint(target.stats.con // 2, target.stats.con):
-                            duration = max(1, wielder.stats.strength // 10)
-                            target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{target.name} is stunned.\n"
-        return special_str
+                    if result.crit[-1] > 1:
+                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist) \
+                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                            duration = max(1, result.actor.stats.strength // 10)
+                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            special_str += f"{result.target.name} is stunned.\n"
+        return results
 
 
 class InvisibleBlade(NaturalWeapon):
@@ -1832,21 +1843,21 @@ class InvisibleBlade(NaturalWeapon):
         self.special = True
         self.element = "Shadow"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if crit > 1:
-                        if random.randint(0, wielder.check_mod("speed", enemy=target) // 2) * (1 - resist) \
-                                > random.randint(target.stats.con // 2, target.stats.con):
+                    if result.crit[-1] > 1:
+                        if random.randint(0, result.actor.check_mod("speed", enemy=result.target) // 2) * (1 - resist) \
+                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             duration = 1
-                            target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{target.name} is stunned.\n"
-        return special_str
+                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            special_str += f"{result.target.name} is stunned.\n"
+        return results
 
 
 class CerberusClaw(NaturalWeapon):
@@ -1855,23 +1866,23 @@ class CerberusClaw(NaturalWeapon):
         super().__init__(name='claws', damage=40, crit=0.25, description="", off=True)
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ='Physical')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint((wielder.stats.strength // 2) * crit, wielder.stats.strength * crit) \
-                    > random.randint(target.stats.con // 2, target.stats.con):
-                if not target.physical_effects["Bleed"].active:
-                    special_str += f"{target.name} is bleeding.\n"
+            if random.randint((result.actor.stats.strength // 2) * result.crit[-1], result.actor.stats.strength * result.crit[-1]) \
+                    > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                if not result.target.physical_effects["Bleed"].active:
+                    special_str += f"{result.target.name} is bleeding.\n"
                 else:
-                    special_str += f"{target.name} continues to bleed.\n"
-                duration = max(1, wielder.stats.strength // 10)
-                bleed_dmg = int(max(wielder.stats.strength // 2, damage) * (1 - resist))
+                    special_str += f"{result.target.name} continues to bleed.\n"
+                duration = max(1, result.actor.stats.strength // 10)
+                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage[-1]) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
-                target.physical_effects["Bleed"] = StatusEffect(
-                    True, max(duration, target.physical_effects["Bleed"].duration),
-                    max(bleed_dmg, target.physical_effects["Bleed"].extra))
-        return special_str
+                result.target.physical_effects["Bleed"] = StatusEffect(
+                    True, max(duration, result.target.physical_effects["Bleed"].duration),
+                    max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
+        return results
 
 
 class CerberusBite(NaturalWeapon):
@@ -1881,18 +1892,20 @@ class CerberusBite(NaturalWeapon):
         self.special = True
         self.element = "Fire"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        resist = target.check_mod('resist', enemy=wielder, typ=self.element)
-        damage = int(random.randint(damage // 2, damage) * (1 - resist))
-        target.health.current -= damage
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
+        damage = int(random.randint(result.damage[-1] // 2, result.damage[-1]) * (1 - resist))
+        result.target.health.current -= damage
         if damage > 0:
-            special_str += f"The fire from {wielder.name}'s bite burns {target.name} for {damage} damage.\n"
+            result.damage[-1] += damage
+            special_str += f"The fire from {result.actor.name}'s bite burns {result.target.name} for {damage} damage.\n"
         elif damage < 0:
-            special_str += f"{target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
+            result.healing[-1] = abs(damage)
+            special_str += f"{result.target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
         else:
             special_str += f"The fire is ineffective, dealing {damage} damage.\n"
-        return special_str
+        return results
 
 
 class LichHand(NaturalWeapon):
@@ -1905,19 +1918,19 @@ class LichHand(NaturalWeapon):
         self.special = True
         self.element = "Ice"
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                if crit > 1:
-                    if random.randint(wielder.stats.intel // 4, wielder.stats.intel) \
-                            > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-                        duration = max(1, wielder.stats.intel // 10)
-                        target.status_effects["Stun"] = StatusEffect(True, duration)
-                        special_str += f"{target.name} is stunned.\n"
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                if result.crit[-1] > 1:
+                    if random.randint(result.actor.stats.intel // 4, result.actor.stats.intel) \
+                            > random.randint(result.target.stats.wisdom // 2, result.target.stats.wisdom):
+                        duration = max(1, result.actor.stats.intel // 10)
+                        result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                        special_str += f"{result.target.name} is stunned.\n"
+        return results
 
 
 class Cannon(NaturalWeapon):
@@ -1929,19 +1942,19 @@ class Cannon(NaturalWeapon):
         super().__init__(name="attacks", damage=80, crit=0.15, description="", off=True)
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        if not any(["Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod]):
-            if not target.status_effects["Stun"].active:
-                if crit > 1:
-                    if random.randint(wielder.stats.strength // 4, wielder.stats.strength) \
-                            > random.randint(target.stats.con // 2, target.stats.con):
-                        duration = max(1, wielder.stats.strength // 10)
-                        target.status_effects["Stun"] = StatusEffect(True, duration)
-                        special_str += f"{target.name} is stunned.\n"
-        return special_str
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not any(["Stun" in result.target.status_immunity,
+                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-All" in result.target.equipment["Pendant"].mod]):
+            if not result.target.status_effects["Stun"].active:
+                if result.crit[-1] > 1:
+                    if random.randint(result.actor.stats.strength // 4, result.actor.stats.strength) \
+                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        duration = max(1, result.actor.stats.strength // 10)
+                        result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                        special_str += f"{result.target.name} is stunned.\n"
+        return results
 
 
 class DevilBlade(NaturalWeapon):
@@ -1953,24 +1966,24 @@ class DevilBlade(NaturalWeapon):
         super().__init__(name='attacks', damage=100, crit=0.33, description="", off=True)
         self.special = True
 
-    def special_effect(self, wielder, target, damage=0, crit=1):
-        special_str = ""
-        w_chance = wielder.check_mod('luck', enemy=target, luck_factor=10)
-        t_chance = target.check_mod('luck', enemy=wielder, luck_factor=20)
-        if crit > 1:
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        w_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
+        t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=20)
+        if result.crit[-1] > 1:
             if random.randint(0, w_chance) > random.randint(0, t_chance):
-                effect = random.choice(target.status_effects)
-                if any([effect in target.status_immunity,
-                        f"Status-{effect}" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod]):
-                    return special_str
-                target.status_effects[effect] = StatusEffect(
-                    True, max(random.randint(1, 5), target.status_effects[effect].duration))
+                effect = random.choice(result.target.status_effects)
+                if any([effect in result.target.status_immunity,
+                        f"Status-{effect}" in result.target.equipment["Pendant"].mod,
+                        "Status-All" in result.target.equipment["Pendant"].mod]):
+                    return results
+                result.target.status_effects[effect] = StatusEffect(
+                    True, max(random.randint(1, 5), result.target.status_effects[effect].duration))
                 if effect == "Poison":
-                    damage = int(target.health.max * 0.005)
-                    target.status_effects["Poison"].extra += damage  # damage builds over time
-                special_str += f"The attack inflicts {effect.lower()} on {target.name}.\n"
-        return special_str
+                    damage = int(result.target.health.max * 0.005)
+                    result.target.status_effects["Poison"].extra += damage  # damage builds over time
+                special_str += f"The attack inflicts {effect.lower()} on {result.target.name}.\n"
+        return results
 
 
 # Armor items
@@ -2053,8 +2066,8 @@ class MerlinRobe(Armor):
                          value=0, rarity=0., armor=30, subtyp='Cloth', unequip=False)
         self.weight = 2
 
-    def special_effect(self, wearer, attacker):
-        return super().special_effect(wearer, attacker)
+    def special_effect(self, results: CombatResultGroup) -> None:  # TODO
+        return results
 
 
 class PaddedArmor(Armor):
@@ -2336,20 +2349,22 @@ class DemonArmor2(DemonArmor):
         self.special = True
         self.shadow_damage = 25
 
-    def special_effect(self, wearer, attacker):
-        special_str = ""
-        resist = attacker.check_mod('resist', enemy=wearer, typ='Shadow')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.actor.check_mod('resist', enemy=result.target, typ='Shadow')
         damage = int(random.randint(self.shadow_damage // 2, self.shadow_damage) * (1 - resist))
-        attacker.health.current -= damage
+        result.actor.health.current -= damage
         if damage > 0:
-            special_str += f"An aura of shadow emanates from {wearer.name}, dealing {damage} damage to {attacker.name}.\n"
+            result.damage[-1] += damage
+            special_str += f"An aura of shadow emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
         elif damage < 0:
+            result.healing[-1] = abs(damage)
             special_str += (
-                f"{attacker.name} absorbs the shadow damage emanating from {wearer.name} and is healed for "
+                f"{result.actor.name} absorbs the shadow damage emanating from {result.target.name} and is healed for "
                 f"{abs(damage)} hit points.\n")
         else:
             special_str += f"The shadow aura is ineffective, dealing {damage} damage.\n"
-        return special_str
+        return results
 
 
 class MetalPlating(NaturalArmor):
@@ -2374,20 +2389,20 @@ class CerberusHide(NaturalArmor):
         self.special = True
         self.fire_damage = 50
 
-    def special_effect(self, wearer, attacker):
-        special_str = ""
-        resist = attacker.check_mod('resist', enemy=wearer, typ='Fire')
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.actor.check_mod('resist', enemy=result.target, typ='Fire')
         damage = int(random.randint(self.fire_damage // 2, self.fire_damage) * (1 - resist))
-        attacker.health.current -= damage
+        result.actor.health.current -= damage
         if damage > 0:
-            special_str += f"An aura of fire emanates from {wearer.name}, dealing {damage} damage to {attacker.name}.\n"
+            special_str += f"An aura of fire emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
         elif damage < 0:
             special_str += (
-                f"{attacker.name} absorbs the fire damage emanating from {wearer.name} and is healed for {abs(damage)} "
+                f"{result.actor.name} absorbs the fire damage emanating from {result.target.name} and is healed for {abs(damage)} "
                 f"hit points.\n")
         else:
             special_str += f"The fire is ineffective, dealing {damage} damage.\n"
-        return special_str
+        return results
 
 
 class DevilSkin(NaturalArmor):
@@ -2400,16 +2415,16 @@ class DevilSkin(NaturalArmor):
         self.special = True
         self.damage = 100
 
-    def special_effect(self, wearer, attacker):
-        special_str = ""
-        a_chance = attacker.check_mod('luck', enemy=wearer, luck_factor=10)
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        a_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
         damage = random.randint(self.damage // (1 + a_chance), self.damage)
-        attacker.health.current -= damage
+        result.actor.health.current -= damage
         if damage > 0:
-            special_str += f"An aura emanates from {wearer.name}, dealing {damage} damage to {attacker.name}.\n"
+            special_str += f"An aura emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
         else:
             special_str += f"The aura is ineffective, dealing {damage} damage.\n"
-        return special_str
+        return results
 
 
 # OffHand items
@@ -2559,7 +2574,7 @@ class ElementalPrimer(OffHand):
 
     def __init__(self):
         super().__init__(name="Elemental Primer", description="A multi-colored tome that shifts between elemental "
-                                                              "motifs depending on the wielder's surroundings.",
+                                                              "motifs depending on the result.actor's surroundings.",
                          value=10000, rarity=0.75, mod=30, subtyp='Tome', unequip=False)
         self.weight = 2
 
@@ -3107,7 +3122,7 @@ class HealthPotion(Potion):
         use_str = ""
         if user.health.current == user.health.max:
             use_str += "You are already at full health.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         if user.state != 'fight':
             heal = int(user.health.max * self.percent)
@@ -3120,7 +3135,7 @@ class HealthPotion(Potion):
         if user.health.current >= user.health.max:
             user.health.current = user.health.max
             use_str += "You are at max health.\n"
-        return use_str, True
+        return use_str
 
 
 class GreatHealthPotion(HealthPotion):
@@ -3167,7 +3182,7 @@ class ManaPotion(Potion):
         use_str = ""
         if user.mana.current == user.mana.max:
             use_str += "You are already at full mana.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         if user.state != 'fight':
             heal = int(user.mana.max * self.percent)
@@ -3179,7 +3194,7 @@ class ManaPotion(Potion):
         if user.mana.current >= user.mana.max:
             user.mana.current = user.mana.max
             use_str += "You are at full mana.\n"
-        return use_str, True
+        return use_str
 
 
 class GreatManaPotion(ManaPotion):
@@ -3226,7 +3241,7 @@ class Elixir(Potion):
         use_str = ""
         if user.health.current == user.health.max and user.mana.current == user.mana.max:
             use_str += "You are already at full health and mana.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         if user.state != 'fight':
             health_heal = int(user.health.max * self.percent)
@@ -3245,7 +3260,7 @@ class Elixir(Potion):
         if user.mana.current >= user.mana.max:
             user.mana.current = user.mana.max
             use_str += "You are at full mana.\n"
-        return use_str, True
+        return use_str
 
 
 class Megalixir(Elixir):
@@ -3272,7 +3287,7 @@ class HPPotion(Potion):
         if user.in_town():
             user.health.current = user.health.max
         use_str = f"{user.name}'s HP has increased by {self.mod}!\n"
-        return use_str, True
+        return use_str
 
 
 class MPPotion(Potion):
@@ -3288,7 +3303,7 @@ class MPPotion(Potion):
         if user.in_town():
             user.mana.current = user.mana.max
         use_str = f"{user.name}'s MP has increased by {self.mod}!\n"
-        return use_str, True
+        return use_str
 
 
 class StrengthPotion(Potion):
@@ -3301,7 +3316,7 @@ class StrengthPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.strength += 1
         use_str = f"{user.name}'s strength has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class IntelPotion(Potion):
@@ -3315,7 +3330,7 @@ class IntelPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.intel += 1
         use_str = f"{user.name}'s intelligence has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class WisdomPotion(Potion):
@@ -3328,7 +3343,7 @@ class WisdomPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.wisdom += 1
         use_str = f"{user.name}'s wisdom has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class ConPotion(Potion):
@@ -3342,7 +3357,7 @@ class ConPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.con += 1
         use_str = f"{user.name}'s constitution has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class CharismaPotion(Potion):
@@ -3355,7 +3370,7 @@ class CharismaPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.charisma += 1
         use_str = f"{user.name}'s charisma has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class DexterityPotion(Potion):
@@ -3369,7 +3384,7 @@ class DexterityPotion(Potion):
         user.modify_inventory(self, subtract=True)
         user.stats.dex += 1
         use_str = f"{user.name}'s dexterity has increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class AardBeing(Potion):
@@ -3387,7 +3402,7 @@ class AardBeing(Potion):
         user.stats.charisma += 1
         user.stats.dex += 1
         use_str = f"All of {user.name}'s stats have been increased by 1!\n"
-        return use_str, True
+        return use_str
 
 
 class Status(Potion):
@@ -3401,7 +3416,7 @@ class Status(Potion):
         use_str = ""
         if not user.status_effects[self.status].active:
             use_str += f"You are not affected by {self.status.lower()}.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         user.status_effects[self.status].active = False
         user.status_effects[self.status].duration = 0
@@ -3416,7 +3431,7 @@ class Status(Potion):
             heal = min(heal, user.health.max - user.health.current)
             user.health.current += heal
             use_str += f"You have been healed for {heal} health.\n"
-        return use_str, True
+        return use_str
 
 
 class Antidote(Status):
@@ -3466,7 +3481,7 @@ class Bandage(Status):
         use_str = ""
         if not user.physical_effects[self.status].active:
             use_str += f"You are not affected by {self.status.lower()}.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         user.physical_effects[self.status].active = False
         user.physical_effects[self.status].duration = 0
@@ -3478,7 +3493,7 @@ class Bandage(Status):
             heal = min(heal, user.health.max - user.health.current)
             user.health.current += heal
             use_str += f"You have been healed for {heal} health.\n"
-        return use_str, True
+        return use_str
 
 class PhoenixDown(Status):
 
@@ -3506,7 +3521,7 @@ class Remedy(Status):
         use_str = ""
         if not any([user.status_effects[x].active for x in self.status]):
             use_str += f"You are not affected by any negative status effects.\n"
-            return use_str, False
+            return use_str
         user.modify_inventory(self, subtract=True)
         for status in self.status:
             user.status_effects[status].active = False
@@ -3522,7 +3537,7 @@ class Remedy(Status):
             heal = min(heal, user.health.max - user.health.current)
             user.health.current += heal
             use_str += f"You have been healed for {heal} health.\n"
-        return use_str, True
+        return use_str
 
 
 class Key(Misc):
@@ -3574,7 +3589,7 @@ class Scroll(Misc):
         if not self.charges:
             use_str += "The scroll crumbles to dust in your hands!\n"
             user.modify_inventory(self, subtract=True)
-        return use_str, True
+        return use_str
 
 
 class BlessScroll(Scroll):
@@ -3844,7 +3859,7 @@ class SanctuaryScroll(Scroll):
         if not self.charges:
             use_str += "The scroll crumbles to dust in your hands!\n"
             user.modify_inventory(self, subtract=True)
-        return use_str, True
+        return use_str
 
 
 class UltimaScroll(Scroll):
