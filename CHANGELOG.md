@@ -2,6 +2,41 @@
 
 ## [Unreleased] - 2025-12-14
 
+### Phase 3 Started - GUI Development with Pygame 🎮
+
+#### Pygame Integration
+- **Pygame 2.6.1 Installed**: Modern 2D graphics library for Python
+- **PygamePresenter**: Complete presenter implementation with event subscriptions
+- **Combat UI**: Character sprites, health/mana bars, status effects, turn display
+
+#### Visual Features
+- **Floating Damage Numbers**: Animated text showing damage/healing with color-coded types
+- **Screen Shake**: Dynamic camera shake for critical hits and big damage
+- **Combat Log**: Scrolling text log at bottom of screen
+- **Telegraph Display**: Warning messages for charging abilities (Seeker/Inquisitor)
+- **Status Icons**: Visual indicators for active status effects
+
+#### Event Integration
+- **COMBAT_START/END**: Initialize combat UI, display victory/defeat
+- **DAMAGE_DEALT**: Create floating damage text with type-specific colors
+- **HEALING_DONE**: Green floating text for healing
+- **CRITICAL_HIT**: Enhanced visual feedback with extra screen shake
+- **STATUS_APPLIED**: Add status to character display
+- **TURN_START**: Update turn counter
+
+#### Damage Type Colors
+- Physical (White), Fire (Red), Ice (Light Blue), Lightning (Yellow)
+- Poison (Green), Holy (Gold), Shadow/Arcane (Purple), Drain (Dark Red)
+
+#### Next Steps
+- Create sprite assets for characters and enemies
+- Add spell effect animations
+- Implement particle systems
+- Create main menu and game over screens
+- Add sound effects and music
+
+---
+
 ### Phase 2 Complete - Enhanced Combat System ✅
 
 #### Major Features Added
