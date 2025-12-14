@@ -7,12 +7,6 @@ import time
 from textwrap import wrap
 from typing import TYPE_CHECKING, Any
 
-from effects import (
-    DamageEffect,
-    HealEffect,
-    RegenEffect,
-    StatusEffect,
-)
 from combat_result import CombatResult
 
 if TYPE_CHECKING:
@@ -663,6 +657,7 @@ class ShieldSlam(Offensive):
                         turns = max(1, user.stats.strength // 8)
                         target.status_effects["Stun"].active = True
                         target.status_effects["Stun"].duration = turns
+                        user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Shield Bash")
                         use_str += f"{target.name} is stunned for {turns} turn(s)!\n"
         
         return use_str
@@ -935,6 +930,7 @@ class MortalStrike(Offensive):
                 target.physical_effects["Bleed"].extra = max(
                     bleed_dmg, target.physical_effects["Bleed"].extra
                 )
+                user._emit_status_event(target, "Bleed", applied=True, duration=target.physical_effects["Bleed"].duration, source="Mortal Strike")
                 use_str += f"{target.name} is bleeding.\n"
         return use_str
 
@@ -1011,6 +1007,7 @@ class Charge(Offensive):
             ):
                 target.status_effects["Stun"].active = True
                 target.status_effects["Stun"].duration = 1
+                user._emit_status_event(target, "Stun", applied=True, duration=1, source="Head Butt")
                 use_str += f"{user.name} stunned {target.name}.\n"
         wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
         use_str += wd_str
@@ -1077,6 +1074,7 @@ class Disarm(Defensive):
                 ):
                     target.physical_effects["Disarm"].active = True
                     target.physical_effects["Disarm"].duration = -1
+                    user._emit_status_event(target, "Disarm", applied=True, duration=-1, source="Disarm")
                     return f"{target.name} is disarmed.\n"
                 return f"{user.name} fails to disarm the {target.name}.\n"
             return f"{target.name} is already disarmed.\n"
@@ -1131,6 +1129,7 @@ class Goad(Defensive):
                 target.status_effects["Berserk"].duration = max(
                     5, user.stats.strength // 5
                 )
+                user._emit_status_event(target, "Berserk", applied=True, duration=target.status_effects["Berserk"].duration, source="Enrage")
                 return f"{target.name} is enraged.\n"
             return f"{target.name} is not so easily provoked.\n"
         return f"{target.name} is already enraged.\n"
@@ -1193,6 +1192,7 @@ class PocketSand(Stealth):
             ):
                 target.status_effects["Blind"].active = True
                 target.status_effects["Blind"].duration = 3
+                user._emit_status_event(target, "Blind", applied=True, duration=3, source="Blinding Powder")
                 return f"{target.name} is blinded.\n"
             return f"{user.name} fails to blind {target.name}.\n"
         return f"{target.name} is already blinded.\n"
@@ -1229,6 +1229,7 @@ class SleepingPowder(Stealth):
                 ) > random.randint(0, mag_def):
                     target.status_effects["Sleep"].active = True
                     target.status_effects["Sleep"].duration = self.turns
+                    user._emit_status_event(target, "Sleep", applied=True, duration=self.turns, source="Sleep")
                     return f"{target.name} is asleep.\n"
                 return f"{user.name} fails to put {target.name} to sleep.\n"
             return f"{target.name} is already asleep.\n"
@@ -1252,15 +1253,16 @@ class KidneyPunch(Stealth):
         use_str, hit, crit = user.weapon_damage(
             target, dmg_mod=self.dmg_mod, cover=cover
         )
-        if (
-            hit
-            and target.is_alive()
-            and not (
-                target.cls.name == "Crusader"
-                and target.power_up
-                and target.class_effects["Power Up"].active
-            )
-        ):
+        # Check if target is a Crusader with Divine Aegis active (prevents stun)
+        crusader_aegis_active = (
+            hasattr(target, 'cls') and
+            hasattr(target, 'class_effects') and
+            target.cls.name == "Crusader" and
+            getattr(target, 'power_up', False) and
+            "Power Up" in target.class_effects and
+            target.class_effects["Power Up"].active
+        )
+        if hit and target.is_alive() and not crusader_aegis_active:
             if not any(
                 [
                     "Stun" in target.status_immunity,
@@ -1275,6 +1277,7 @@ class KidneyPunch(Stealth):
                     target.status_effects["Stun"].duration = max(
                         2, user.check_mod("speed", enemy=user) // 8
                     )
+                    user._emit_status_event(target, "Stun", applied=True, duration=target.status_effects["Stun"].duration, source="Kidney Punch")
                     use_str += f"{target.name} is stunned.\n"
                 else:
                     use_str += f"{user.name} fails to stun {target.name}.\n"
@@ -1447,6 +1450,7 @@ class PoisonStrike(Stealth):
                     target.status_effects["Poison"].extra = max(
                         pois_dmg, target.status_effects["Poison"].extra
                     )
+                    user._emit_status_event(target, "Poison", applied=True, duration=target.status_effects["Poison"].duration, source="Poison Blade")
                     use_str += f"{target.name} is poisoned.\n"
                 else:
                     use_str += f"{target.name} resists the poison.\n"
@@ -1634,6 +1638,7 @@ class ManaShield(Enhance):
             user.mana.current -= self.cost
             user.magic_effects["Mana Shield"].active = True
             user.magic_effects["Mana Shield"].duration = self.reduction
+            user._emit_status_event(user, "Mana Shield", applied=True, duration=self.reduction, source="Enhance Armor")
             use_str += f"A mana shield envelopes {user.name}.\n"
         else:
             use_str += f"The mana shield dissolves around {user.name}.\n"
@@ -1733,6 +1738,8 @@ class HealthDrain(Drain):
         target.health.current -= drain
         user.health.current += drain
         user.health.current = min(user.health.current, user.health.max)
+        user._emit_damage_event(target, drain, damage_type="Drain", is_critical=False)
+        user._emit_healing_event(drain, source="Life Drain")
         return f"{user.name} drains {drain} health from {target.name}.\n"
 
 
@@ -2189,6 +2196,7 @@ class LegSweep(MartialArts):
                     target.physical_effects["Prone"].duration = max(
                         1, user.stats.strength // 20
                     )
+                    user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Leg Sweep")
                     use_str += f"{user.name} trips {target.name} and they fall prone.\n"
         return use_str
 
@@ -2298,6 +2306,7 @@ class GoldToss(Luck):
                 // (2 + target.check_mod("luck", enemy=user, luck_factor=10)),
             )
             target.health.current -= damage
+            user._emit_damage_event(target, damage, damage_type="Gold", is_critical=False)
             use_str += f"{user.name} does {damage} damage to {target.name}.\n"
         return use_str
 
@@ -2591,9 +2600,10 @@ class DivineAegis(PowerUp):
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
         dam_abs = random.randint(user.health.max // 4, user.health.max // 2)
-        user.class_effects["Power Up"].active = True
-        user.class_effects["Power Up"].duration = 5
-        user.class_effects["Power Up"].extra = dam_abs
+        if hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
+            user.class_effects["Power Up"].active = True
+            user.class_effects["Power Up"].duration = 5
+            user.class_effects["Power Up"].extra = dam_abs
         return f"A shield envelopes {user.name}.\n"
 
 
@@ -2680,7 +2690,7 @@ class ArcaneBlast(PowerUp):
             if damage > 0:
                 target.health.current -= damage
                 use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
-        if target.is_alive():
+        if target.is_alive() and hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
             user.class_effects["Power Up"].active = True
             user.class_effects["Power Up"].duration = 4
         return use_str
@@ -2737,9 +2747,10 @@ class BladeFatalities(PowerUp):
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         per_health = int(0.25 * user.health.current)
         use_str = f"{user.name} sacrifices {per_health} health to imbue their blades with the spirit of Muramasa!\n"
-        user.class_effects["Power Up"].active = True
-        user.class_effects["Power Up"].duration = 5
-        user.class_effects["Power Up"].extra = max(per_health // 5, 5)
+        if hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
+            user.class_effects["Power Up"].active = True
+            user.class_effects["Power Up"].duration = 5
+            user.class_effects["Power Up"].extra = max(per_health // 5, 5)
         return use_str
 
 
@@ -2843,6 +2854,7 @@ class DimMak(PowerUp):
                     use_str += f"{target.name} is stunned.\n"
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = user.stats.wisdom // 10
+                    user._emit_status_event(target, "Stun", applied=True, duration=user.stats.wisdom // 10, source="Devour")
             if target.is_alive():
                 return use_str
         user.health.current = min(
@@ -3003,6 +3015,7 @@ class AcidSpit(Skill):
                 target.magic_effects["DOT"].extra = max(
                     damage, target.magic_effects["DOT"].extra
                 )
+                user._emit_status_event(target, "DOT", applied=True, duration=2, source="Acid Splash")
                 use_str += f"{target.name} is covered in a corrosive substance.\n"
             else:
                 use_str += "The acid is ineffective.\n"
@@ -3032,6 +3045,7 @@ class Web(Skill):
                 target.physical_effects["Prone"].duration = max(
                     1, user.stats.strength // 20
                 )
+                user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Web")
             else:
                 target.physical_effects["Prone"].duration += 1
             return f"{target.name} is trapped in a web and is prone.\n"
@@ -3066,6 +3080,7 @@ class Howl(Skill):
                 ):
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = turns
+                    user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Concussion")
                     use_str += f"{user.name} stunned {target.name}.\n"
                 else:
                     use_str += f"{target.name}'s resolve is steadfast.\n"
@@ -3127,6 +3142,7 @@ class Trip(Skill):
                 target.physical_effects["Prone"].duration = max(
                     1, user.stats.strength // 20
                 )
+                user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Trip")
                 return f"{user.name} trips {target.name} and they fall prone.\n"
             if not special:
                 return f"{user.name} fails to trip {target.name}.\n"
@@ -3295,6 +3311,7 @@ class ThrowRock(Skill):
                         ):
                             target.physical_effects["Prone"].active = True
                             target.physical_effects["Prone"].duration = max(1, size)
+                            user._emit_status_event(target, "Prone", applied=True, duration=max(1, size), source="Throw Rock")
                             use_str += (
                                 f"{target.name} is knocked over and falls prone.\n"
                             )
@@ -3390,6 +3407,7 @@ class Stomp(Skill):
                             turns = max(2, user.stats.strength // 10)
                             target.status_effects["Stun"].active = True
                             target.status_effects["Stun"].duration = turns
+                            user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Stomp")
                             use_str += f"{user.name} stunned {target.name}.\n"
             else:
                 use_str += f"{user.name} stomps {target.name} but deals no damage.\n"
@@ -3418,6 +3436,7 @@ class Slam(Skill):
             turns = max(2, user.stats.strength // 10)
             target.physical_effects["Prone"].active = True
             target.physical_effects["Prone"].duration = turns
+            user._emit_status_event(target, "Prone", applied=True, duration=turns, source="Slam")
             use_str += f"{target.name} is knocked prone.\n"
         return use_str
 
@@ -3462,6 +3481,7 @@ class Screech(Skill):
                 ):
                     target.status_effects["Silence"].active = True
                     target.status_effects["Silence"].duration = -1
+                    user._emit_status_event(target, "Silence", applied=True, duration=-1, source="Screech")
                     use_str += f"{target.name} has been silenced.\n"
         if damage <= 0:
             use_str += "The spell is ineffective.\n"
@@ -3935,7 +3955,8 @@ class ChooseFate(Skill):
 
 class BreatheFire(Skill):
     """
-    Enemy spell - used by dragon-like enemies as special attack; can be various elemental types  TODO
+    Enemy skill - used by dragon-like enemies as special attack; can be various elemental types
+    Deals damage based on the user's stats and applies elemental damage reduction
     """
 
     def __init__(self):
@@ -3946,7 +3967,40 @@ class BreatheFire(Skill):
         )
 
     def use(self, user: Character, target: Character=None, cover: bool=False, typ: str="Non-elemental") -> str:
-        return super().use(user, target, cover)
+        """
+        Dragon breath weapon attack
+        
+        Args:
+            user: The dragon using the breath weapon
+            target: The target of the breath
+            cover: Whether the attack can be blocked
+            typ: Element type - "Fire", "Wind", "Non-elemental", etc.
+        """
+        if target is None:
+            return "No target specified.\n"
+        
+        # Calculate base damage from user's strength and intelligence
+        base_damage = int((user.stats.strength + user.stats.intel) * 1.5)
+        
+        # Add some variance
+        import random
+        variance = random.uniform(0.85, 1.15)
+        damage = int(base_damage * variance)
+        
+        # Apply target's damage reduction for this element type
+        _, reduction_msg, damage = target.damage_reduction(damage, user, typ=typ)
+        
+        result_msg = f"{user.name} unleashes a breath of {typ} energy!\n"
+        result_msg += reduction_msg
+        
+        if damage > 0:
+            target.health.current -= damage
+            user._emit_damage_event(target, damage, damage_type=typ, is_critical=False)
+            result_msg += f"{target.name} takes {damage} damage from the breath weapon.\n"
+        else:
+            result_msg += f"The breath weapon has no effect on {target.name}.\n"
+        
+        return result_msg
 
 
 """
@@ -3992,17 +4046,19 @@ class Attack(Spell):
             if reflect:
                 target = caster
                 cast_message += f"{self.name} is reflected back at {caster.name}!\n"
+            # Calculate base damage first
+            crit = 1
+            if not random.randint(0, self.crit):
+                crit = 2
+                cast_message += "Critical Hit!\n"
+            crit_per = random.uniform(1, crit)
+            damage = int(self.dmg_mod * spell_mod * crit_per)
+            # Apply defenses and reductions
             hit, message, damage = target.handle_defenses(caster, damage, cover, typ="Magic")
             cast_message += message
             hit, message, damage = target.damage_reduction(damage, caster, typ=self.subtyp)
             cast_message += message
             if hit:
-                crit = 1
-                if not random.randint(0, self.crit):
-                    crit = 2
-                    cast_message += "Critical Hit!\n"
-                crit_per = random.uniform(1, crit)
-                damage = int(self.dmg_mod * spell_mod * crit_per)
                 if (
                     caster.cls.name == "Archbishop"
                     and caster.class_effects["Power Up"].active
@@ -4139,6 +4195,7 @@ class HealSpell(Spell):
             crit_per = random.uniform(1, crit)
             heal = int(heal * crit_per)
             target.health.current += heal
+            caster._emit_healing_event(heal, source=self.name)
             cast_message += (
                 f"{caster.name} heals {target.name} for {heal} hit points.\n"
             )
@@ -4369,6 +4426,10 @@ class Meteor(Attack):
         )
         self.subtyp = "Non-elemental"
 
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
+        """Meteor has no special secondary effects - just massive damage"""
+        return ""
+
 
 class FireSpell(Attack):
     """
@@ -4393,6 +4454,7 @@ class FireSpell(Attack):
             target.magic_effects["DOT"].extra = max(
                 dmg, target.magic_effects["DOT"].extra
             )
+            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source=self.name)
         return special_str
 
 
@@ -4555,6 +4617,7 @@ class ElectricSpell(Attack):
                 target.status_effects["Stun"].duration = max(
                     1 + crit, target.status_effects["Stun"].duration
                 )
+                caster._emit_status_event(target, "Stun", applied=True, duration=target.status_effects["Stun"].duration, source=self.name)
         return special_str
 
 
@@ -4735,7 +4798,7 @@ class Sandstorm(EarthSpell):
             crit=6,
         )
 
-    def special_effect(self, caster: Character, target: Character) -> str:
+    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
         special_str = ""
         if not any(
             [
@@ -4750,6 +4813,7 @@ class Sandstorm(EarthSpell):
                 ) > random.randint(target.stats.con // 2, target.stats.con):
                     target.status_effects["Blind"].active = True
                     target.status_effects["Blind"].duration = 3
+                    caster._emit_status_event(target, "Blind", applied=True, duration=3, source=self.name)
                     return f"{target.name} is blinded by the {self.name}.\n"
         return special_str
 
@@ -4879,6 +4943,7 @@ class Corruption(ShadowSpell):
             target.magic_effects["DOT"].extra = max(
                 damage, target.magic_effects["DOT"].extra
             )
+            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source="Corruption")
             special_str += (
                 f"{caster.name}'s magic penetrates {target.name}'s defenses.\n"
             )
@@ -4913,6 +4978,7 @@ class Terrify(ShadowSpell):
                     turns = max(crit, caster.stats.charisma // 10)
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = turns
+                    caster._emit_status_event(target, "Stun", applied=True, duration=turns, source="Terrify")
                     special_str += f"{caster.name} stunned {target.name}.\n"
         return special_str
 
@@ -4954,6 +5020,7 @@ class Doom(DeathSpell):
                 ):
                     target.status_effects["Doom"].active = True
                     target.status_effects["Doom"].duration = self.timer
+                    caster._emit_status_event(target, "Doom", applied=True, duration=self.timer, source="Doom")
                     cast_message += (
                         f"A timer has been placed on {target.name}'s life.\n"
                     )
@@ -5192,6 +5259,7 @@ class Holy(Attack):
                 special_str += f"{target.name} is blinded by the light!\n"
                 target.status_effects["Blind"].active = True
                 target.status_effects["Blind"].duration = 2
+                caster._emit_status_event(target, "Blind", applied=True, duration=2, source="Holy")
         return special_str
 
 
@@ -5302,6 +5370,7 @@ class Heal(HealSpell):
             crit = 2
         heal *= crit
         game.player_char.health.current += heal
+        game.player_char._emit_healing_event(heal, source=self.name)
         cast_message += (
             f"{game.player_char.name} heals themself for {heal} hit points.\n"
         )
@@ -5349,6 +5418,7 @@ class Regen(HealSpell):
         caster.magic_effects["Regen"].extra = max(
             heal, caster.magic_effects["Regen"].extra
         )
+        caster._emit_status_event(caster, "Regen", applied=True, duration=caster.magic_effects["Regen"].duration, source="Heal")
 
 
 class Regen2(Regen):
@@ -5466,6 +5536,7 @@ class Reflect(SupportSpell):
                 caster.mana.current -= self.cost
         target.magic_effects["Reflect"].active = True
         target.magic_effects["Reflect"].duration = max(4, caster.stats.intel // 10)
+        caster._emit_status_event(target, "Reflect", applied=True, duration=target.magic_effects["Reflect"].duration, source="Reflect")
         return f"A magic force field envelopes {target.name}.\n"
 
 
@@ -5573,6 +5644,7 @@ class IceBlock(SupportSpell):
         caster.mana.current -= self.cost
         caster.magic_effects["Ice Block"].active = True
         caster.magic_effects["Ice Block"].duration = 3
+        caster._emit_status_event(caster, "Ice Block", applied=True, duration=3, source="Resist All")
         return f"{target.name} encases themself in a block of ice, making them invulnerable for a time."
 
 
@@ -5595,6 +5667,7 @@ class Vulcanize(SupportSpell):
         fire_resist = target.check_mod("resist", enemy=caster, typ="Fire")
         damage = int((1 - fire_resist) * (target.health.current * 0.1))
         target.health.current -= damage
+        caster._emit_damage_event(target, damage, damage_type="Fire", is_critical=False)
         if damage > 0:
             cast_message += f"{target.name} takes {damage} damage from the flames.\n"
         elif damage < 0:
@@ -5711,6 +5784,7 @@ class MirrorImage(IllusionSpell):
         )
         caster.magic_effects["Duplicates"].active = True
         caster.magic_effects["Duplicates"].duration = self.duplicates
+        caster._emit_status_event(caster, "Duplicates", applied=True, duration=self.duplicates, source="Mirror Image")
         return cast_message
 
 
@@ -5757,6 +5831,7 @@ class BlindingFog(StatusSpell):
             ) > random.randint(target.stats.con // 2, target.stats.con):
                 target.status_effects["Blind"].active = True
                 target.status_effects["Blind"].duration = self.turns
+                caster._emit_status_event(target, "Blind", applied=True, duration=self.turns, source="Blinding Fog")
                 return f"{target.name} is blinded.\n"
             return "The spell had no effect.\n"
         return f"{target.name} is already blinded.\n"
@@ -5814,6 +5889,7 @@ class PoisonBreath(Attack):
                 target.status_effects["Poison"].extra = max(
                     damage, target.status_effects["Poison"].extra
                 )
+                caster._emit_status_event(target, "Poison", applied=True, duration=target.status_effects["Poison"].duration, source="Poison Breath")
                 special_str += f"{caster.name} poisons {target.name}.\n"
         return special_str
 
@@ -5878,6 +5954,7 @@ class Sleep(StatusSpell):
                 ):
                     target.status_effects["Sleep"].active = True
                     target.status_effects["Sleep"].duration = self.turns
+                    caster._emit_status_event(target, "Sleep", applied=True, duration=self.turns, source="Sleep")
                     return f"{target.name} is asleep.\n"
                 return f"{caster.name} fails to put {target.name} to sleep.\n"
             return f"{target.name} is already asleep.\n"
@@ -5912,6 +5989,7 @@ class Stupefy(StatusSpell):
                 ):
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = self.turns
+                    caster._emit_status_event(target, "Stun", applied=True, duration=self.turns, source="Stupefy")
                     return f"{target.name} is stunned.\n"
                 return f"{caster.name} fails to stun {target.name}.\n"
             return f"{target.name} is already stunned.\n"
@@ -6074,6 +6152,7 @@ class Silence(StatusSpell):
             ) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
                 target.status_effects["Silence"].active = True
                 target.status_effects["Silence"].duration = -1
+                caster._emit_status_event(target, "Silence", applied=True, duration=-1, source="Silence")
                 return f"{target.name} has been silenced.\n"
             return "The spell is ineffective.\n"
         return f"{target.name} is immune to silence.\n"
@@ -6110,6 +6189,7 @@ class Berserk(StatusSpell):
                 target.status_effects["Berserk"].duration = random.randint(
                     1, max(2, caster.stats.intel // 10)
                 )
+                caster._emit_status_event(target, "Berserk", applied=True, duration=target.status_effects["Berserk"].duration, source="Berserk")
                 return f"{target.name} is enraged.\n"
             return "The spell is ineffective.\n"
         return f"{target.name} is already enraged.\n"
@@ -6145,6 +6225,7 @@ class Hellfire(Attack):
             target.magic_effects["DOT"].extra = max(
                 damage, target.magic_effects["DOT"].extra
             )
+            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source="Hellfire")
             special_str += f"The flames of Hell continue to burn {target.name}.\n"
         return special_str
 

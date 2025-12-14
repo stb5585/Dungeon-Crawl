@@ -35,7 +35,7 @@ DESCRIPTION:
   crawl.  
   - Charisma is essentially a luck statistic, lowering cost and improving chance of success
 
-## Recent Improvements (December 2024)
+## Recent Improvements (December 2025)
 
 Dungeon Crawl has been significantly enhanced with modern architecture and forward-thinking systems:
 

@@ -7,6 +7,7 @@ from textwrap import wrap
 import abilities
 import items
 from character import Character, Combat, Resource, Stats, StatusEffect
+from combat.action_queue import ActionPriority
 
 
 # Functions
@@ -352,6 +353,11 @@ class Test(Misc):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt()},
                           "Skills": {'Doublecast': abilities.Doublecast()}}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Doublecast", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 99  # test for enemies running away
 
     def special_attack(self, target):
@@ -394,6 +400,12 @@ class Mimic(Aberration):
                                      'Slot Machine': abilities.SlotMachine()}}
         self.resistance["Poison"] = 1.0
         self.status_immunity = ["Poison", "Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Lick", "priority": ActionPriority.NORMAL},
+            {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+            {"ability": "Slot Machine", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = z
         self.sight = True
         self.picture = "mimic.txt"
@@ -412,6 +424,11 @@ class GreenSlime(Slime):
         self.inventory['Key'] = [items.Key]
         self.spellbook = {"Spells": {'Enfeeble': abilities.Enfeeble()},
                           "Skills": {'Acid Spit': abilities.AcidSpit()}}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Acid Spit", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 0
 
 
@@ -425,6 +442,9 @@ class GiantRat(Animal):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(1, 5)
         self.inventory['Rat Tail'] = [items.RatTail]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 0
         self.picture = "giantrat.txt"
 
@@ -441,6 +461,11 @@ class Goblin(Humanoid):
         self.spellbook = {"Spells": {},
                           "Skills": {"Goblin Punch": abilities.GoblinPunch(),
                                      "Gold Toss": abilities.GoldToss()}}
+        self.action_stack = [
+            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Goblin Punch", "priority": ActionPriority.NORMAL},
+            {"ability": "Gold Toss", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 0
         self.picture = "goblin.txt"
 
@@ -458,6 +483,13 @@ class Goblin2(Goblin):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Mirror Image"] = abilities.MirrorImage()
         self.spellbook['Skills']["Parry"] = abilities.Parry()
+        self.action_stack = [
+            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Goblin Punch", "priority": ActionPriority.NORMAL},
+            {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+            {"ability": "Mirror Image", "priority": ActionPriority.HIGH},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
 
 
 class Bandit(Humanoid):
@@ -474,6 +506,12 @@ class Bandit(Humanoid):
                           "Skills": {'Steal': abilities.Steal(),
                                      "Disarm": abilities.Disarm(),
                                      'Smoke Screen': abilities.SmokeScreen()}}
+        self.action_stack = [
+            {"ability": "Dirk Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Steal", "priority": ActionPriority.HIGH},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 0
         self.picture = "fighter.txt"
 
@@ -489,6 +527,9 @@ class Skeleton(Undead):
         self.gold = random.randint(1, 5)
         self.inventory['Health Potion'] = [items.HealthPotion]
         self.resistance['Fire'] = 0.0
+        self.action_stack = [
+            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 0
         self.picture = "skeleton.txt"
 
@@ -506,6 +547,10 @@ class Scarecrow(Construct):
                           "Skills": {'Sleeping Powder': abilities.SleepingPowder()}}
         self.resistance['Fire'] = -1.0
         self.resistance['Physical'] = 0.0
+        self.action_stack = [
+            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleeping Powder", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 0
         self.picture = "scarecrow.txt"
 
@@ -521,6 +566,9 @@ class GiantCentipede(Animal):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(10, 18)
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Pincer Attack", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "centipede.txt"
 
@@ -537,6 +585,10 @@ class GiantHornet(Animal):
         self.spellbook = {"Spells": {"Berserk": abilities.Berserk()},
                           "Skills": {}}
         self.flying = True
+        self.action_stack = [
+            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Berserk", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "hornet.txt"
 
@@ -556,6 +608,11 @@ class ElectricBat(Animal):
         self.flying = True
         self.resistance['Electric'] = 0.25
         self.resistance['Water'] = -0.25
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Shock", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "bat.txt"
 
@@ -571,6 +628,10 @@ class Zombie(Undead):
         self.gold = random.randint(15, 30)
         self.spellbook = {"Spells": {},
                           "Skills": {'Poison Strike': abilities.PoisonStrike()}}
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Poison Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "zombie.txt"
 
@@ -587,6 +648,11 @@ class Imp(Fiend):
         self.spellbook = {"Spells": {'Corruption': abilities.Corruption(),
                                      "Silence": abilities.Silence()},
                           "Skills": {}}
+        self.action_stack = [
+            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "imp.txt"
 
@@ -603,6 +669,10 @@ class GiantSpider(Animal):
         self.spellbook = {'Spells': {},
                           'Skills': {'Web': abilities.Web()}}
         self.resistance["Poison"] = 0.25
+        self.action_stack = [
+            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Web", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "spider.txt"
 
@@ -628,6 +698,11 @@ class Quasit(Fiend):
                           ElectricBat,
                           GiantCentipede,
                           BattleToad]
+        self.action_stack = [
+            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 1
         self.picture = "quasit.txt"
 
@@ -647,6 +722,12 @@ class Panther(Animal):
                                      'Kidney Punch': abilities.KidneyPunch(),
                                      "Disarm": abilities.Disarm()}}
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "panther.txt"
 
@@ -673,6 +754,10 @@ class TwistedDwarf(Humanoid):
         self.gold = random.randint(10, 20)
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
+        self.action_stack = [
+            {"ability": "Mattock Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "dwarf.txt"
 
@@ -690,6 +775,10 @@ class BattleToad(Animal):
                           "Skills": {"Kidney Punch": abilities.KidneyPunch()}}
 #                          "Skills": {"Jump": abilities.Jump()}}  TODO nerf Jump by adding delay
         self.resistance["Water"] = 0.75
+        self.action_stack = [
+            {"ability": "Knuckle Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 1
         self.picture = "battletoad.txt"
 
@@ -714,6 +803,10 @@ class Satyr(Fey):
         self.resistance['Wind'] = 0.1
         self.resistance["Poison"] = 0.1
         self.resistance['Physical'] = 0.1
+        self.action_stack = [
+            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Stomp", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 1
         self.picture = "satyr.txt"
 
@@ -738,6 +831,13 @@ class Minotaur(Monster):
                                      "Disarm": abilities.Disarm(),
                                      'Parry': abilities.Parry()}}
         self.status_immunity = ["Death"]
+        self.action_stack = [
+            {"ability": "Broadaxe Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 1
         self.sight = True
         self.picture = "minotaur.txt"
@@ -763,6 +863,13 @@ class Barghest(Fiend):
                                      'Backstab': abilities.Backstab()}}
         self.resistance['Physical'] = 0.25
         self.transform = [Barghest, Goblin2, Direwolf2]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.sight = True
         self.picture = "barghest.txt"
@@ -781,6 +888,10 @@ class Gnoll(Humanoid):
         self.inventory['Feather'] = [items.Feather]
         self.spellbook = {"Spells": {},
                           "Skills": {"Disarm": abilities.Disarm()}}
+        self.action_stack = [
+            {"ability": "Partisan Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "gnoll.txt"
 
@@ -798,6 +909,10 @@ class GiantSnake(Animal):
         self.spellbook = {"Spells": {},
                           "Skills": {"Slam": abilities.Slam()}}
         self.resistance["Poison"] = 0.25
+        self.action_stack = [
+            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Slam", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "snake.txt"
 
@@ -814,6 +929,10 @@ class Orc(Humanoid):
         self.inventory['Leather'] = [items.Leather]
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
+        self.action_stack = [
+            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 2
         self.picture = "orc.txt"
 
@@ -831,6 +950,10 @@ class GiantOwl(Animal):
                           "Skills": {'Screech': abilities.Screech()}}
         self.inventory['Feather'] = [items.Feather]
         self.flying = True
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "giantowl.txt"
 
@@ -849,6 +972,13 @@ class Vampire(Undead):
                           "Skills": {'Health Drain': abilities.HealthDrain(),
                                      'Shapeshift': abilities.Shapeshift()}}
         self.transform = [Vampire, VampireBat]
+        self.action_stack = [
+            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Health Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Lightning", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 2
         self.picture = "vampire.txt"
 
@@ -867,6 +997,11 @@ class VampireBat(Animal):
                                      'Shapeshift': abilities.Shapeshift()}}
         self.transform = [Vampire, VampireBat]
         self.flying = True
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Health Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 2
         self.picture = "bat.txt"
 
@@ -885,6 +1020,11 @@ class Direwolf(Animal):
                           "Skills": {'Howl': abilities.Howl(),
                                      'Trip': abilities.Trip()}}
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Howl", "priority": ActionPriority.NORMAL},
+            {"ability": "Trip", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "direwolf.txt"
 
@@ -901,6 +1041,12 @@ class Direwolf2(Direwolf):
         self.equipment = {'Weapon': items.Claw2(), 'Armor': items.AnimalHide2(), 'OffHand': items.Claw2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook['Skills']["Jump"] = abilities.Jump()
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Howl", "priority": ActionPriority.NORMAL},
+            {"ability": "Jump", "priority": ActionPriority.HIGH}
+        ]
 
 
 class Wererat(Monster):
@@ -914,6 +1060,10 @@ class Wererat(Monster):
         self.gold = random.randint(40, 65)
         self.inventory["Rat Tail"] = [items.RatTail]
         self.inventory['Leather'] = [items.Leather]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "giantrat.txt"
 
@@ -931,6 +1081,11 @@ class RedSlime(Slime):
         self.spellbook = {'Spells': {'Firebolt': abilities.Firebolt(),
                                      'Enfeeble': abilities.Enfeeble()},
                           'Skills': {}}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
 
 
@@ -945,6 +1100,9 @@ class GiantScorpion(Animal):
         self.gold = random.randint(40, 65)
         self.resistance["Poison"] = 0.25
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "giantscorpion.txt"
 
@@ -963,6 +1121,12 @@ class Warrior(Humanoid):
                           "Skills": {'Piercing Strike': abilities.PiercingStrike(),
                                      "Disarm": abilities.Disarm(),
                                      'Parry': abilities.Parry()}}
+        self.action_stack = [
+            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 2
         self.picture = "fighter.txt"
 
@@ -980,6 +1144,12 @@ class Harpy(Monster):
         self.flying = True
         self.spellbook = {'Spells': {"Berserk": abilities.Berserk()},
                           'Skills': {'Screech': abilities.Screech()}}
+        self.action_stack = [
+            {"ability": "Mace Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL},
+            {"ability": "Berserk", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "harpy.txt"
 
@@ -997,6 +1167,11 @@ class Naga(Monster):
                           "Skills": {'Double Strike': abilities.DoubleStrike()}}
         self.resistance['Electric'] = -0.5
         self.resistance['Water'] = 0.75
+        self.action_stack = [
+            {"ability": "Partisan Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "naga.txt"
 
@@ -1015,6 +1190,11 @@ class Clannfear(Fiend):
                                      'Charge': abilities.Charge()}}
         self.resistance['Fire'] = 0.75
         self.resistance['Electric'] = -0.5
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Trip", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "clannfear.txt"
 
@@ -1040,6 +1220,11 @@ class Xorn(Elemental):
         self.resistance['Earth'] = 1.0
         self.resistance["Poison"] = 1.0
         self.status_immunity = ["Poison", "Stone"]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tremor", "priority": ActionPriority.NORMAL},
+            {"ability": "ConsumeItem", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 2
         self.picture = "xorn.txt"
 
@@ -1063,6 +1248,12 @@ class SteelPredator(Construct):
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.75
         self.resistance['Earth'] = 0.
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL},
+            {"ability": "Destroy Metal", "priority": ActionPriority.HIGH},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 2
         self.picture = "steelpredator.txt"
 
@@ -1085,6 +1276,12 @@ class Pseudodragon(Dragon):
                                      'Blinding Fog': abilities.BlindingFog(),
                                      'Dispel': abilities.Dispel()},
                           'Skills': {'Gold Toss': abilities.GoldToss()}}
+        self.action_stack = [
+            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Fireball", "priority": ActionPriority.NORMAL},
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, flames flickering in its throat"}
+        ]
         self.level.pro_level = 2
         self.sight = True
         self.picture = "pseudodragon.txt"
@@ -1115,6 +1312,13 @@ class Nightmare(Fiend):
         self.resistance['Ice'] = -0.25
         self.resistance['Physical'] = 0.5
         self.flying = True
+        self.action_stack = [
+            {"ability": "Hoof Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Stomp", "priority": ActionPriority.NORMAL},
+            {"ability": "True Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.sight = True
         self.picture = "nightmare.txt"
@@ -1138,6 +1342,11 @@ class Direbear(Animal):
                           'Skills': {'Piercing Strike': abilities.PiercingStrike(),
                                      'Charge': abilities.Charge()}}
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "direbear.txt"
 
@@ -1164,6 +1373,10 @@ class Ghoul(Undead):
         self.gold = random.randint(35, 45)
         self.spellbook = {"Spells": {'Disease Breath': abilities.DiseaseBreath()},
                           "Skills": {}}
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Disease Breath", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "ghoul.txt"
 
@@ -1181,6 +1394,10 @@ class PitViper(Animal):
         self.spellbook = {"Spells": {},
                           "Skills": {'Double Strike': abilities.DoubleStrike()}}
         self.resistance["Poison"] = 0.25
+        self.action_stack = [
+            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "snake.txt"
 
@@ -1200,6 +1417,13 @@ class Disciple(Humanoid):
                                      'Enfeeble': abilities.Enfeeble(),
                                      'Boost': abilities.Boost()},
                           'Skills': {}}
+        self.action_stack = [
+            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Lance", "priority": ActionPriority.NORMAL},
+            {"ability": "Arcane Blast", "priority": ActionPriority.NORMAL, "delay": 1,
+             "telegraph": "channeling all remaining mana into a devastating blast"}
+        ]
         self.level.pro_level = 3
         self.picture = "disciple.txt"
 
@@ -1220,6 +1444,12 @@ class BlackSlime(Slime):
                                      'Corruption': abilities.Corruption(),
                                      'Stupefy': abilities.Stupefy()},
                           'Skills': {}}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Stupefy", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
 
 
@@ -1235,6 +1465,12 @@ class Ogre(Monster):
         self.spellbook = {"Spells": {'Magic Missile': abilities.MagicMissile(),
                                      'Dispel': abilities.Dispel()},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
+        self.action_stack = [
+            {"ability": "Maul Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "ogre.txt"
 
@@ -1250,6 +1486,11 @@ class Alligator(Animal):
         self.gold = random.randint(40, 50)
         self.spellbook = {"Spells": {},
                           "Skills": {"Trip": abilities.Trip()}}
+        self.action_stack = [
+            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Trip", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "alligator.txt"
 
@@ -1265,6 +1506,10 @@ class Troll(Humanoid):
         self.gold = random.randint(35, 45)
         self.spellbook = {"Spells": {},
                           "Skills": {'Mortal Strike': abilities.MortalStrike()}}
+        self.action_stack = [
+            {"ability": "Axe Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "troll.txt"
 
@@ -1283,6 +1528,10 @@ class GoldenEagle(Animal):
         self.spellbook = {"Spells": {},
                           "Skills": {'Screech': abilities.Screech()}}
         self.flying = True
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "goldeneagle.txt"
 
@@ -1304,6 +1553,14 @@ class EvilCrusader(Humanoid):
                                      "Goad": abilities.Goad()}}
         self.resistance['Shadow'] = 0.5
         self.resistance['Holy'] = -0.5
+        self.action_stack = [
+            {"ability": "Mace Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Block", "priority": ActionPriority.HIGH},
+            {"ability": "Smite", "priority": ActionPriority.NORMAL},
+            {"ability": "Bless", "priority": ActionPriority.NORMAL},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "skeleton.txt"
 
@@ -1325,6 +1582,11 @@ class Werewolf(Monster):
                           "Skills": {'True Strike': abilities.TrueStrike(),
                                      'Howl': abilities.Howl()}}
         self.resistance['Physical'] = 0.1
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "True Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Howl", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "werewolf.txt"
 
@@ -1356,6 +1618,11 @@ class Antlion(Animal):
                           "Skills": {'Double Strike': abilities.DoubleStrike(),
                                      "Tunnel": abilities.Tunnel()}}
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tunnel", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 3
         self.picture = "antlion.txt"
 
@@ -1382,6 +1649,14 @@ class InvisibleStalker(Elemental):
         self.status_immunity = ["Poison"]
         self.invisible = True
         self.sight = True
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
+            {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 3
         self.picture = "assassin.txt"
 
@@ -1402,6 +1677,13 @@ class NightHag(Fey):
         self.resistance['Fire'] = 0.25
         self.resistance['Cold'] = 0.25
         self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "nighthag.txt"
 
@@ -1423,6 +1705,14 @@ class NightHag2(NightHag):
         self.inventory['Brass Key'] = [items.BrassKey]
         self.spellbook['Skills']["Widow's Wail"] = abilities.WidowsWail()
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL},
+            {"ability": "Widow's Wail", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class Treant(Fey):
@@ -1443,6 +1733,12 @@ class Treant(Fey):
         self.resistance["Poison"] = 1.
         self.resistance['Physical'] = 0.25
         self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Throw Rock", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "treant.txt"
 
@@ -1463,6 +1759,12 @@ class Ankheg(Monster):
         self.resistance["Poison"] = 1.
         self.resistance['Physical'] = 0.1
         self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Trip", "priority": ActionPriority.NORMAL},
+            {"ability": "Acid Spit", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "ankheg.txt"
 
@@ -1485,6 +1787,12 @@ class Fuath(Monster):
         self.resistance["Water"] = 1.25
         self.resistance["Shadow"] = 0.25
         self.resistance["Holy"] = -0.25
+        self.action_stack = [
+            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Water Jet", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.picture = "fuath.txt"
 
@@ -1509,6 +1817,13 @@ class Cockatrice(Monster):
                                      'Double Strike': abilities.DoubleStrike()}}
         self.flying = True
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL},
+            {"ability": "Petrify", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 3
         self.sight = True
         self.picture = "cockatrice.txt"
@@ -1537,6 +1852,14 @@ class Wendigo(Fey):
         self.resistance['Ice'] = 1
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison", "Death"]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Berserk", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.sight = True
         self.picture = "wendigo.txt"
@@ -1555,6 +1878,11 @@ class BrownSlime(Slime):
         self.spellbook = {'Spells': {'Mudslide': abilities.Mudslide(),
                                      'Enfeeble': abilities.Enfeeble()},
                           'Skills': {}}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Mudslide", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
 
 
@@ -1572,6 +1900,11 @@ class Gargoyle(Elemental):
         self.flying = True
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison", "Stone"]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Blinding Fog", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "gargoyle.txt"
 
@@ -1591,6 +1924,15 @@ class Conjurer(Humanoid):
                                      'Aqualung': abilities.Aqualung(),
                                      'Boost': abilities.Boost()},
                           "Skills": {"Mana Shield": abilities.ManaShield()}}
+        self.action_stack = [
+            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Fireball", "priority": ActionPriority.NORMAL},
+            {"ability": "Lightning", "priority": ActionPriority.NORMAL},
+            {"ability": "Aqualung", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 4
         self.picture = "disciple.txt"
 
@@ -1608,6 +1950,12 @@ class Chimera(Monster):
                                      'Dispel': abilities.Dispel()},
                           "Skills": {"True Strike": abilities.TrueStrike()}}
         self.resistance['Physical'] = 0.5
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "True Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Molten Rock", "priority": ActionPriority.NORMAL},
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "chimera.txt"
 
@@ -1627,6 +1975,12 @@ class Dragonkin(Dragon):
                                      'Charge': abilities.Charge(),
                                      "Goad": abilities.Goad()}}
         self.flying = True
+        self.action_stack = [
+            {"ability": "Halberd Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "dragonkin.txt"
 
@@ -1644,6 +1998,11 @@ class Griffin(Monster):
                           "Skills": {'Screech': abilities.Screech()}}
         self.flying = True
         self.resistance['Physical'] = 0.5
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Screech", "priority": ActionPriority.NORMAL},
+            {"ability": "Hurricane", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "griffin.txt"
 
@@ -1667,6 +2026,13 @@ class DrowAssassin(Humanoid):
                                      'Mug': abilities.Mug(),
                                      'Parry': abilities.Parry(),
                                      'Smoke Screen': abilities.SmokeScreen()}}
+        self.action_stack = [
+            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Shadow Strike", "priority": ActionPriority.HIGH, "delay": 1,
+             "telegraph": "melding with the shadows, preparing a deadly strike"}
+        ]
         self.level.pro_level = 4
         self.sight = True
         self.picture = "assassin.txt"
@@ -1689,6 +2055,10 @@ class Cyborg(Construct):
                           "Skills": {}}
         self.resistance['Electric'] = 1.25
         self.resistance['Water'] = -0.75
+        self.action_stack = [
+            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Shock", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "cyborg.txt"
 
@@ -1714,6 +2084,12 @@ class DarkKnight(Fiend):
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      "Disarm": abilities.Disarm(),
                                      'Shield Block': abilities.ShieldBlock()}}
+        self.action_stack = [
+            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Crushing Blow", "priority": ActionPriority.NORMAL, "delay": 1,
+             "telegraph": "raising weapon high for a crushing overhead strike"}
+        ]
         self.level.pro_level = 4
         self.picture = "darkknight.txt"
 
@@ -1731,6 +2107,10 @@ class Myrmidon(Elemental):
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Bash", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 4
         self.picture = "myrmidon.txt"
 
@@ -1746,6 +2126,11 @@ class FireMyrmidon(Myrmidon):
                           "Skills": {'Shield Slam': abilities.ShieldSlam()}}
         self.resistance['Fire'] = 1.5
         self.resistance['Ice'] = -0.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Scorch", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class IceMyrmidon(Myrmidon):
@@ -1760,6 +2145,12 @@ class IceMyrmidon(Myrmidon):
                                      'True Strike': abilities.TrueStrike()}}
         self.resistance['Fire'] = -0.5
         self.resistance['Ice'] = 1.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "True Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Lance", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class ElectricMyrmidon(Myrmidon):
@@ -1774,6 +2165,12 @@ class ElectricMyrmidon(Myrmidon):
                                      'Piercing Strike': abilities.PiercingStrike()}}
         self.resistance['Electric'] = 1.5
         self.resistance['Water'] = -0.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shock", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class WaterMyrmidon(Myrmidon):
@@ -1788,6 +2185,12 @@ class WaterMyrmidon(Myrmidon):
                                      'Parry': abilities.Parry()}}
         self.resistance['Electric'] = -0.5
         self.resistance['Water'] = 1.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH},
+            {"ability": "Water Jet", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class EarthMyrmidon(Myrmidon):
@@ -1803,6 +2206,13 @@ class EarthMyrmidon(Myrmidon):
                                      "Goad": abilities.Goad()}}
         self.resistance['Earth'] = 1.5
         self.resistance['Wind'] = -0.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Block", "priority": ActionPriority.HIGH},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL},
+            {"ability": "Tremor", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class WindMyrmidon(Myrmidon):
@@ -1817,6 +2227,12 @@ class WindMyrmidon(Myrmidon):
                                      'Double Strike': abilities.DoubleStrike()}}
         self.resistance['Earth'] = -0.5
         self.resistance['Wind'] = 1.5
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Gust", "priority": ActionPriority.NORMAL}
+        ]
 
 
 class DisplacerBeast(Fey):
@@ -1832,6 +2248,12 @@ class DisplacerBeast(Fey):
                           "Skills": {'Double Strike': abilities.DoubleStrike(),
                                      'Smoke Screen': abilities.SmokeScreen()}}
         self.invisible = True
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tentacle Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 4
         self.picture = "displacerbeast.txt"
 
@@ -1857,6 +2279,12 @@ class Golem(Construct):
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.25
         self.resistance['Earth'] = 0.5
+        self.action_stack = [
+            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Crush", "priority": ActionPriority.LOW},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "golem.txt"
@@ -1884,6 +2312,13 @@ class IronGolem(Golem):
         self.resistance['Electric'] = -0.25
         self.resistance['Water'] = -0.5
         self.turtled = False  # signifies if enemy has used turtle or not; limited to once a battle
+        self.action_stack = [
+            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Crush", "priority": ActionPriority.LOW},
+            {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL}
+        ]
 
 
     def special_effects(self, target):
@@ -1938,6 +2373,13 @@ class Jester(Humanoid):
                            "Poison": round(random.uniform(-1, 1), 1),
                            'Physical': round(random.uniform(-1, 1), 1)}
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+            {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL},
+            {"ability": "Mirror Image", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "jester.txt"
@@ -1986,6 +2428,11 @@ class ShadowSerpent(Elemental):
         self.resistance['Holy'] = -0.75
         self.resistance["Poison"] = 0.25
         self.invisible = True
+        self.action_stack = [
+            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
 
@@ -2005,6 +2452,13 @@ class Aboleth(Slime):
                           "Skills": {'Acid Spit': abilities.AcidSpit()}}
         self.resistance["Poison"] = 1.5
         self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Acid Spit", "priority": ActionPriority.NORMAL},
+            {"ability": "Disease Breath", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
 
 
@@ -2024,6 +2478,14 @@ class Beholder(Aberration):
                           "Skills": {'Mana Drain': abilities.ManaDrain()}}
         self.flying = True
         self.status_immunity = ["Death"]
+        self.action_stack = [
+            {"ability": "Gaze", "priority": ActionPriority.NORMAL},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Disintegrate", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.picture = "beholder.txt"
 
@@ -2042,6 +2504,12 @@ class Behemoth(Aberration):
                                      "Berserk": abilities.Berserk()},
                           "Skills": {'True Strike': abilities.TrueStrike(),
                                      'Counterspell': abilities.Counterspell()}}
+        self.action_stack = [
+            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "True Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Holy", "priority": ActionPriority.NORMAL},
+            {"ability": "Berserk", "priority": ActionPriority.NORMAL}
+        ]
         self.resistance['Fire'] = 1.
         self.resistance['Electric'] = 0.75
         self.resistance['Holy'] = 0.75
@@ -2077,6 +2545,15 @@ class Lich(Undead):
                                      'Boost': abilities.Boost()},
                           "Skills": {'Health/Mana Drain': abilities.HealthManaDrain()}}
         self.resistance['Ice'] = 0.9
+        self.action_stack = [
+            {"ability": "Touch Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Blizzard", "priority": ActionPriority.NORMAL},
+            {"ability": "Desoul", "priority": ActionPriority.NORMAL},
+            {"ability": "Health/Mana Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.picture = "lich.txt"
 
@@ -2095,6 +2572,12 @@ class Basilisk(Monster):
                           "Skills": {'Slam': abilities.Slam()}}
         self.resistance["Poison"] = 0.75
         self.status_immunity = ["Death", "Poison", "Stone"]
+        self.action_stack = [
+            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Petrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Poison Breath", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
 
@@ -2118,6 +2601,13 @@ class MindFlayer(Aberration):
         self.resistance['Shadow'] = 0.5
         self.resistance['Holy'] = -0.25
         self.status_immunity = ["Death"]
+        self.action_stack = [
+            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Doom", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "mindflayer.txt"
@@ -2143,6 +2633,13 @@ class Sandworm(Monster):
         self.resistance["Poison"] = 1
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Stone"]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Earthquake", "priority": ActionPriority.NORMAL},
+            {"ability": "Sandstorm", "priority": ActionPriority.NORMAL},
+            {"ability": "Consume Item", "priority": ActionPriority.HIGH},
+            {"ability": "Tunnel", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 5
         self.picture = "naga.txt"
 
@@ -2159,6 +2656,11 @@ class Warforged(Construct):
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
         self.spellbook = {"Spells": {"Silence": abilities.Silence()},
                           "Skills": {"Crush": abilities.Crush()}}
+        self.action_stack = [
+            {"ability": "Cannon Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Crush", "priority": ActionPriority.LOW},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 5
         self.picture = "golem.txt"
 
@@ -2192,6 +2694,13 @@ class Wyrm(Dragon):
         self.gold = random.randint(650, 830)
         self.spellbook = {'Spells': {'Volcano': abilities.Volcano()},
                           'Skills': {'Triple Strike': abilities.TripleStrike()}}
+        self.action_stack = [
+            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Volcano", "priority": ActionPriority.NORMAL},
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "drawing in massive amounts of air, magma swirling in its throat"}
+        ]
         self.level.pro_level = 5
         self.picture = "wyrm.txt"
 
@@ -2212,6 +2721,14 @@ class Hydra(Monster):
         self.resistance["Poison"] = 0.75
         self.resistance['Physical'] = 0.25
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tsunami", "priority": ActionPriority.NORMAL},
+            {"ability": "Dragon Breath (Water)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "all heads rearing back, gathering torrential water in their maws"}
+        ]
         self.level.pro_level = 5
         self.picture = "hydra.txt"
 
@@ -2227,6 +2744,12 @@ class Wyvern(Dragon):
         self.gold = random.randint(420, 570)
         self.spellbook = {"Spells": {'Tornado': abilities.Tornado()},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Tornado", "priority": ActionPriority.NORMAL},
+            {"ability": "Dragon Breath (Wind)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, gathering a powerful gale within"}
+        ]
         self.flying = True
         self.level.pro_level = 5
         self.picture = "wyvern.txt"
@@ -2256,6 +2779,15 @@ class Archvile(Fiend):
         self.resistance['Electric'] = 0.5
         self.resistance["Poison"] = 1.
         self.status_immunity.append("Poison")
+        self.action_stack = [
+            {"ability": "Gauntlet Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Firestorm", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 5
         self.picture = "archvile.txt"
 
@@ -2282,6 +2814,13 @@ class BrainGorger(Aberration):
         self.resistance['Wind'] = 0.25
         self.resistance["Poison"] = 1.
         self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Brain Gorge", "priority": ActionPriority.NORMAL},
+            {"ability": "Weaken Mind", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 5
         self.picture = "braingorger.txt"
 
@@ -2316,6 +2855,15 @@ class Domingo(Aberration):
                            "Poison": 0.25,
                            'Physical': 0}
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
+            {"ability": "Desoul", "priority": ActionPriority.NORMAL},
+            {"ability": "Doublecast", "priority": ActionPriority.NORMAL},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL},
+            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "domingo.txt"
@@ -2340,6 +2888,13 @@ class RedDragon(Dragon):
                                      'Ultima': abilities.Ultima()},
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
                                      'Doublecast': abilities.Doublecast()}}
+        self.action_stack = [
+            {"ability": "Tail Sweep", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Volcano", "priority": ActionPriority.NORMAL},
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, roaring flames building in its maw"}
+        ]
         self.flying = True
         self.resistance = {'Fire': 1.5,
                            'Ice': 0.5,
@@ -2398,6 +2953,16 @@ class Merzhin(Humanoid):
                                      "Ruin": abilities.Ruin()},
                           "Skills": {"Mana Shield": abilities.ManaShield2()}}
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
+            {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+            {"ability": "Disintegrate", "priority": ActionPriority.NORMAL},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL},
+            {"ability": "Mirror Image", "priority": ActionPriority.HIGH},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 6
 
 
@@ -2425,6 +2990,14 @@ class Cerberus(Fiend):
         self.resistance['Holy'] = 0.25
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Trip", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL},
+            {"ability": "Shell", "priority": ActionPriority.NORMAL}
+        ]
         self.level.pro_level = 6
         self.sight = True
         self.picture = "cerberus.txt"
@@ -2466,6 +3039,15 @@ class Devil(Fiend):
         self.status_immunity = ["Death", "Poison", "Stone"]
         self.damage_mod = 0
         self.spell_mod = 0
+        self.action_stack = [
+            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Choose Fate", "priority": ActionPriority.HIGH},
+            {"ability": "Crush", "priority": ActionPriority.LOW},
+            {"ability": "Hellfire", "priority": ActionPriority.NORMAL},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH}
+        ]
         self.level.pro_level = 99
         self.sight = True
         self.picture = "devil.txt"

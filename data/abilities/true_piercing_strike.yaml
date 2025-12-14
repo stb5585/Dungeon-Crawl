@@ -1,0 +1,38 @@
+name: True Piercing Strike
+type: Skill
+subtype: Physical
+description: A perfectly aimed strike that pierces armor and defenses, guaranteed to hit
+cost: 15
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "channeling power into their weapon, seeking the perfect weak point"
+
+effects:
+  - type: damage
+    base: 0  # Uses weapon damage
+    scaling:
+      stat: strength
+      ratio: 1.5
+    element: Physical
+    weapon_damage: true
+    guaranteed_hit: true
+    ignore_defense: true
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to channel power and find weak point
+
+# Usage notes
+notes: |
+  Advanced offensive skill requiring weapon and charge time.
+  
+  GUARANTEED to hit AND ignores all armor/defenses.
+  
+  Enhanced damage (1.5x damage mod) with penetration.
+  
+  Telegraph: "The [Enemy] is channeling power into their weapon, seeking the perfect weak point!"
+  
+  Upgraded version of True Strike - both hit guarantee and defense ignore.
+  
+  Used by: Advanced warriors, assassins, elite martial characters.

@@ -1,0 +1,42 @@
+name: Charge
+type: Skill
+subtype: Physical
+description: Charge the enemy, building momentum before stunning them and dealing weapon damage
+cost: 10
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "lowering their head and building momentum for a devastating charge"
+
+effects:
+  - type: status
+    status_name: Stun
+    duration: 1
+    chance: 0.7  # STR vs CON check
+    applies_before_damage: true
+  
+  - type: damage
+    base: 0  # Uses weapon damage
+    scaling:
+      stat: strength
+      ratio: 0.75
+    element: Physical
+    weapon_damage: true
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to build momentum
+
+# Usage notes
+notes: |
+  Offensive skill that requires charging and a weapon.
+  
+  Unlike most abilities, Charge applies stun BEFORE dealing damage.
+  
+  Reduced damage (0.75x) but chance to stun target for 1 turn.
+  
+  Stun chance based on user's STR vs target's CON.
+  
+  Telegraph: "The [Enemy] is lowering their head and building momentum for a devastating charge!"
+  
+  Used by: Minotaur, Centaur, Rhino-like enemies.

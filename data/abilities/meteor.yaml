@@ -1,0 +1,29 @@
+name: Meteor
+type: Attack
+subtype: Non-elemental
+description: A large, extra-terrestrial rock falls from the heavens, crushing the target for immense damage
+cost: 40
+damage_mod: 5.0
+crit: 3
+
+# Charging mechanics
+charge_time: 2
+telegraph_message: "gathering cosmic energy for a devastating meteor strike"
+
+effects:
+  - type: damage
+    base: 150
+    scaling:
+      stat: intelligence
+      ratio: 5.0
+    element: Non-elemental
+
+# Priority and targeting
+priority: NORMAL
+delay: 2  # Takes 2 turns to charge before executing
+
+# Usage notes
+notes: |
+  Massive damage spell that requires 2 turns of charging.
+  Used by Behemoth as final attack.
+  Telegraph shows: "Enemy is gathering cosmic energy for a devastating meteor strike!"

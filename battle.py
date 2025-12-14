@@ -220,6 +220,17 @@ class BattleManager:
 
     def execute_battle(self) -> bool:
         """Handles the entire battle flow."""
+        # Emit combat start event
+        from events import get_event_bus, create_combat_event, EventType
+        event_bus = get_event_bus()
+        event_bus.emit(create_combat_event(
+            EventType.COMBAT_START,
+            actor=self.player_char,
+            target=self.enemy,
+            initiative=self.attacker == self.player_char,
+            boss=self.boss
+        ))
+        
         self.logger.start_battle(
             self.player_char, self.enemy, initiative=self.attacker == self.player_char, boss=self.boss
             )
@@ -227,6 +238,17 @@ class BattleManager:
             self.process_turn()
 
         self.end_battle()
+        
+        # Emit combat end event
+        event_bus.emit(create_combat_event(
+            EventType.COMBAT_END,
+            actor=self.player_char,
+            target=self.enemy,
+            fled=self.flee,
+            player_alive=self.player_char.is_alive(),
+            enemy_alive=self.enemy.is_alive()
+        ))
+        
         return self.flee
 
     def battle_continues(self) -> bool:
@@ -298,12 +320,30 @@ class BattleManager:
 
     def execute_action(self, action: str, choice: str=None, result: str=None):
         """Executes an attack or skill selection."""
+        from events import get_event_bus, create_combat_event, EventType
+        event_bus = get_event_bus()
+        
         if action == "Nothing":
             result = f"{self.attacker.name} does nothing."
         elif action == "Attack":
+            # Emit attack event
+            event_bus.emit(create_combat_event(
+                EventType.ATTACK,
+                actor=self.attacker,
+                target=self.defender,
+                is_special=False
+            ))
+            
             if not random.randint(0, 9 - self.attacker.check_mod("luck", luck_factor=20)):
                 try:
                     result = self.attacker.special_attack(target=self.defender)
+                    # Mark as special attack
+                    event_bus.emit(create_combat_event(
+                        EventType.ATTACK,
+                        actor=self.attacker,
+                        target=self.defender,
+                        is_special=True
+                    ))
                 except NotImplementedError:
                     result, _, _ = self.attacker.weapon_damage(self.defender)
             else:
@@ -312,13 +352,34 @@ class BattleManager:
             result = f"{self.attacker.name} picks up their weapon."
             self.attacker.physical_effects["Disarm"].active = False
         elif action == "Flee":
+            event_bus.emit(create_combat_event(
+                EventType.FLEE_ATTEMPT,
+                actor=self.attacker,
+                target=self.defender
+            ))
             self.flee, result = self.attacker.flee(self.defender)
         elif action == "Cast Spell":
+            # Emit spell cast event
+            event_bus.emit(create_combat_event(
+                EventType.SPELL_CAST,
+                actor=self.attacker,
+                target=self.defender,
+                spell_name=choice
+            ))
             result = self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
         elif action == "Use Skill":
             if choice == "Remove Shield":
                 choice = "Mana Shield"
             skill = self.attacker.spellbook['Skills'][choice]
+            
+            # Emit skill use event
+            event_bus.emit(create_combat_event(
+                EventType.SKILL_USE,
+                actor=self.attacker,
+                target=self.defender,
+                skill_name=skill.name
+            ))
+            
             result = f"{self.attacker.name} uses {skill.name}.\n"
             if skill.name == 'Smoke Screen':
                 result += skill.use(self.attacker, target=self.defender)
@@ -339,6 +400,14 @@ class BattleManager:
             if itm.subtyp == "Scroll":
                 if itm.spell.subtyp != "Support":
                     target = self.defender
+            
+            # Emit item use event
+            event_bus.emit(create_combat_event(
+                EventType.ITEM_USE,
+                actor=self.attacker,
+                target=target,
+                item_name=itm.name
+            ))
             result = itm.use(self.attacker, target=target)
         elif action == "Summon":
             self.summon = self.attacker.summons[choice]

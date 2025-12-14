@@ -1,0 +1,39 @@
+name: Shadow Strike
+type: Stealth
+subtype: Shadow
+description: Meld with shadows before striking from the darkness with deadly precision
+cost: 20
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "melding with the shadows, preparing to strike"
+
+effects:
+  - type: damage
+    base: 90
+    scaling:
+      stat: dexterity
+      ratio: 2.0
+    element: Shadow
+    guaranteed_critical: true
+  
+  - type: status
+    status_name: Blind
+    duration: 2
+    chance: 0.6
+
+# Priority and targeting
+priority: HIGH  # Faster than normal attacks
+delay: 1  # Takes 1 turn to prepare
+
+# Usage notes
+notes: |
+  Rogue's ultimate stealth attack.
+  
+  ALWAYS critical hits (crit multiplier based on weapon).
+  
+  60% chance to blind target for 2 turns.
+  
+  Telegraph: "The Rogue is melding with the shadows, preparing to strike!"
+  
+  Note: Seeker/Inquisitor would see this, others see generic "preparing something..."

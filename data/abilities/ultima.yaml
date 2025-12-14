@@ -1,0 +1,39 @@
+name: Ultima
+type: Spell
+subtype: Non-elemental
+description: Envelopes the enemy in a magical void, dealing massive non-elemental damage
+cost: 35
+rank: 2  # Rank 2 enemy spell
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "gathering dark energy, reality warping around them as the void forms"
+
+effects:
+  - type: damage
+    base: 50
+    scaling:
+      stat: intelligence
+      ratio: 2.0
+    element: Non-elemental
+    crit_multiplier: 4
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to gather void energy
+
+# Usage notes
+notes: |
+  High-level enemy spell requiring charge time.
+  
+  Non-elemental damage - cannot be fully resisted by elemental resistances.
+  
+  High damage (2.0x damage mod) with good crit potential (4x).
+  
+  Telegraph: "The Lich is gathering dark energy, reality warping around them as the void forms!"
+  
+  Used by: Lich, Archvile, Mind Flayer, other high-level casters.
+  
+  Rank 2 spell - more powerful than standard spells.
+  
+  Counter: Reflect, Mana Shield, or high magic defense.

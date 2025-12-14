@@ -597,7 +597,7 @@ class Player(Character):
             if self.usable_item(item):
                 popup = utils.ConfirmPopupMenu(game, f"Do you want to use the {item.name}", box_height=7)
                 if popup.navigate_popup():
-                    use_str, _ = item.use(self)
+                    use_str = item.use(self)
                     if use_str:
                         useitembox = utils.TextBox(game)
                         useitembox.print_text_in_rectangle(use_str)

@@ -1,0 +1,40 @@
+name: Jump
+type: Skill
+subtype: Physical
+description: Leap into the air and bring down your weapon onto the enemy, delivering critical damage
+cost: 10
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "coiling their legs, preparing to leap into the air"
+
+effects:
+  - type: damage
+    base: 0  # Uses weapon damage
+    scaling:
+      stat: strength
+      ratio: 2.0
+    element: Physical
+    weapon_damage: true
+    crit_multiplier: 2
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to prepare
+
+# Special mechanics
+prone_while_charging: true  # User is vulnerable (prone) while preparing the jump
+
+# Usage notes
+notes: |
+  Offensive skill that requires charging.
+  
+  User is PRONE while charging (vulnerable to attacks).
+  
+  Delivers critical weapon damage (2x crit multiplier, 2x damage mod).
+  
+  Telegraph: "The [Enemy] is coiling their legs, preparing to leap into the air!"
+  
+  Can be interrupted by status effects during charge (future implementation).
+  
+  Variants: Jump2 (increased damage), Thrust/Defend/Rend modifications available.

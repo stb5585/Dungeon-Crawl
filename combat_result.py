@@ -51,6 +51,14 @@ class CombatResultGroup:
 
     def add(self, result: CombatResult) -> None:
         self.results.append(result)
+    
+    def __getitem__(self, index):
+        """Make CombatResultGroup subscriptable for backward compatibility."""
+        return self.results[index]
+    
+    def __len__(self):
+        """Return the number of results in the group."""
+        return len(self.results)
 
     def to_dict(self) -> list[dict[str, object]]:
         return [res.to_dict() for res in self.results]

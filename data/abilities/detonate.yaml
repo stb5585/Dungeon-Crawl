@@ -1,0 +1,52 @@
+name: Detonate
+type: Skill
+subtype: Physical
+description: Self-destruct sequence initiated - massive explosion dealing devastating damage to the target
+cost: 0  # Costs user's life
+
+# Charging mechanics
+charge_time: 2
+telegraph_message: "systems failing, initiating self-destruct sequence with red lights flashing"
+
+effects:
+  - type: damage
+    base_formula: "user_current_hp / 2"  # Minimum damage
+    max_formula: "user_current_hp * 4"   # Maximum with variance
+    scaling:
+      stat: none
+      ratio: 0
+    element: Physical
+    resistance_partial: true  # Can partially resist but not fully
+    
+  - type: self_damage
+    amount: "user_max_hp"  # User dies
+    triggers: "after_damage"
+
+# Priority and targeting
+priority: LOW  # Slow to execute, giving player time to react
+delay: 2  # Takes 2 turns to initiate self-destruct
+
+# Special mechanics
+unblockable: false  # Can be blocked by shields (Mana Shield, Divine Aegis)
+dodgeable: true     # Can partially dodge for half damage
+ignore_ice_block: false
+
+# Usage notes
+notes: |
+  Ultimate sacrifice ability - user dies after execution.
+  
+  Requires 2 FULL TURNS to charge (plenty of warning).
+  
+  Damage: 50% to 400% of user's current HP based on rolls.
+  
+  Can be blocked by active shields (Mana Shield, Crusader Divine Aegis).
+  
+  Can be partially dodged (50% damage reduction with speed/luck check).
+  
+  Cannot fully resist except with shield - physical resistance only reduces damage.
+  
+  Telegraph: "The Steel Predator's systems are failing, initiating self-destruct sequence with red lights flashing!"
+  
+  Used by: Steel Predator, Cyborg, Golem (when near death).
+  
+  Strategic: Gives player 2 turns to finish enemy, flee, or activate defenses.

@@ -1,0 +1,53 @@
+name: Disintegrate
+type: Spell
+subtype: Non-elemental
+description: An intense blast focused directly at the target, obliterating them or dealing massive damage
+cost: 65
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "focusing a beam of pure destruction, the air crackling with lethal energy"
+
+effects:
+  - type: conditional
+    condition: instant_kill_check
+    success_effect:
+      type: instant_kill
+      check_formula: "caster_CHA * (1 - target_resist) > target_CON + target_luck"
+      
+  - type: damage  # If instant kill fails
+    base_formula: "caster_CHA + (target_current_hp * 0.25)"
+    scaling:
+      stat: charisma
+      ratio: 1.0
+    element: Non-elemental
+    dodgeable: true  # Can dodge for 50% damage with luck
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to focus the beam
+
+# Special mechanics
+cannot_reflect: true      # Cannot be reflected
+cannot_absorb_mana: true  # Cannot be absorbed by Mana Shield
+resistance_affects_kill: true  # Elemental resistance reduces instant kill chance
+
+# Usage notes
+notes: |
+  Death spell with instant kill potential OR massive damage.
+  
+  First attempts instant kill based on CHA vs CON check (reduced by resistances).
+  
+  If kill fails, deals damage equal to CHA + 25% of target's current HP.
+  
+  Can be dodged with luck for 50% damage reduction.
+  
+  Cannot be reflected or absorbed by Mana Shield (pierces defenses).
+  
+  Telegraph: "The Archvile is focusing a beam of pure destruction, the air crackling with lethal energy!"
+  
+  Used by: Lich, Archvile, Mind Flayer, other powerful spellcasters.
+  
+  Very expensive (65 mana) - usually used as finishing move or when desperate.
+  
+  Counter: High CON, elemental resistances (reduce kill chance), luck (dodge damage).

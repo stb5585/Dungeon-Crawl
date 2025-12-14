@@ -1,0 +1,41 @@
+name: Holy Smite
+type: HolySpell
+subtype: Divine
+description: Channel divine energy into a powerful smiting attack against evil
+cost: 30
+damage_mod: 2.5
+crit: 2
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "channeling divine energy for a holy smite"
+
+effects:
+  - type: damage
+    base: 100
+    scaling:
+      stat: wisdom
+      ratio: 2.5
+    element: Holy
+    
+  - type: damage_bonus
+    condition: target_is_undead_or_demon
+    multiplier: 2.0
+  
+  - type: heal
+    target: self
+    amount_percent: 0.3  # Heal 30% of damage dealt
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to channel divine power
+
+# Usage notes
+notes: |
+  Cleric/Paladin powerful spell against evil.
+  
+  Deals extra damage to undead and demons (x2).
+  
+  Heals caster for 30% of damage dealt.
+  
+  Telegraph: "The Cleric is channeling divine energy for a holy smite!"

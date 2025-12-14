@@ -1655,6 +1655,7 @@ class Gaze(NaturalWeapon):
         self.att_name = 'leers'
 
     def special_effect(self, results: CombatResultGroup) -> None:
+        result = results.results[-1]
         result.extra[self.att_name] = True
         result = abilities.Petrify().cast(result, special=True)
         return results
@@ -3125,8 +3126,11 @@ class HealthPotion(Potion):
             return use_str
         user.modify_inventory(self, subtract=True)
         if user.state != 'fight':
-            heal = int(user.health.max * self.percent)
+            # Out of combat: 80-110% of base amount for variance and improved usefulness
+            base_heal = int(user.health.max * self.percent)
+            heal = int(random.uniform(0.8, 1.1) * base_heal)
         else:
+            # In combat: 50-100% with luck modifier
             rand_heal = int(user.health.max * self.percent)
             heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
             heal = max(heal, int(50 * self.percent))
@@ -3185,8 +3189,11 @@ class ManaPotion(Potion):
             return use_str
         user.modify_inventory(self, subtract=True)
         if user.state != 'fight':
-            heal = int(user.mana.max * self.percent)
+            # Out of combat: 80-110% of base amount for variance and improved usefulness
+            base_heal = int(user.mana.max * self.percent)
+            heal = int(random.uniform(0.8, 1.1) * base_heal)
         else:
+            # In combat: 50-100% with luck modifier
             rand_res = int(user.mana.max * self.percent)
             heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
         use_str += f"The potion restored {heal} mana points.\n"

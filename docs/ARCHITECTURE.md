@@ -50,12 +50,21 @@ Wrap existing curses logic in `CursesPresenter(GamePresenter)`
 - Modified `game.py` to use presenter pattern
 - All tests still passing
 
-### Phase 2: Event-Driven Architecture
-**Goal**: Replace string returns with structured events for GUI/web compatibility
+**Status**: Partially complete - Interface defined (`presentation/interface.py`), 4 implementations created (Null, Console, EventDriven, Mock)
 
-#### 2.1 Event System
+### Phase 2: Enhanced Combat & Event System ✅
+**Goal**: Integrate action queue, implement event emissions, fix gameplay bugs
+
+#### 2.1 EnhancedBattleManager
+- Priority-based action queue (5 priority levels)
+- Speed-based turn ordering
+- Telegraph system for Seeker/Inquisitor foresight
+- Charging action framework
+- Backward compatible with feature flags
+
+#### 2.2 Event System
 ```python
-# events/combat_events.py
+# events/event_bus.py
 @dataclass
 class CombatEvent:
     type: EventType  # ATTACK, SPELL_CAST, STATUS_APPLIED, etc.
@@ -81,41 +90,47 @@ Future GUI presenter subscribes → updates sprite animations
 - Modified combat flow to emit events
 - Backward-compatible terminal output
 
-### Phase 3: Action Queue System
-**Goal**: Implement proper turn resolution with action stack (noted in TODO)
+**Status**: ✅ **COMPLETE** - See `PHASE_2.md` and `EVENT_EMISSIONS.md`
 
-#### 3.1 Action Queue
+### Phase 3: GUI Development (NEXT)
+**Goal**: Build Pygame-based GUI using event-driven architecture
+
+#### 3.1 Pygame Presenter
 ```python
-# combat/action_queue.py
-class ActionQueue:
+# presentation/pygame_presenter.py
+class PygamePresenter(GamePresenter):
     def __init__(self):
-        self.queue: list[ScheduledAction] = []
+        self.event_bus = get_event_bus()
+        self.event_bus.subscribe(EventType.DAMAGE_DEALT, self.animate_damage)
+        self.event_bus.subscribe(EventType.SPELL_CAST, self.show_spell_effect)
     
-    def schedule(self, action, priority, delay=0): ...
-    def resolve_next(self) -> ActionResult: ...
+    def animate_damage(self, event):
+        # Display floating damage number
+        # Animate health bar reduction
+    
+    def show_spell_effect(self, event):
+        # Play spell animation
+        # Show particle effects
 ```
 
-#### 3.2 Turn Manager
-```python
-class TurnManager:
-    def __init__(self, participants):
-        self.action_queue = ActionQueue()
-        self.participants = participants
-    
-    def determine_order(self): ...  # Initiative calculation
-    def execute_round(self): ...     # Process all actions
-```
+#### 3.2 GUI Components
+- **Combat View**: Character sprites, health/mana bars, status icons
+- **Damage Numbers**: Floating text animations for damage/healing
+- **Spell Effects**: Visual effects for spells/abilities
+- **Turn Indicator**: Shows whose turn it is, telegraph messages
+- **Combat Log**: Scrollable event history from event bus
 
 **Benefits**:
-- Smarter enemy AI (stacked abilities)
-- Simultaneous actions
-- Speed-based turn order (not just first/second)
-- Easy to visualize in GUI timeline
+- Modern, engaging interface
+- Improved player experience
+- Better visibility of combat mechanics
+- Foundation for monetization (premium skins, effects)
 
 **Deliverables**:
-- `combat/action_queue.py`
-- Modified `BattleManager` to use queue
-- Enemy action stack implementation
+- `presentation/pygame_presenter.py`
+- Sprite assets and animations
+- Combat UI components
+- Event-to-animation mappings
 
 ### Phase 4: Data-Driven Abilities
 **Goal**: Move hardcoded abilities to JSON/YAML definitions
@@ -154,6 +169,8 @@ class AbilityFactory:
 - Moddability
 - Analytics (which abilities are overpowered?)
 - Automated testing of all abilities
+
+**Status**: Partially complete - YAML loader exists in `data/ability_loader.py`, needs population with ability data
 
 **Deliverables**:
 - `data/abilities/` directory with YAML definitions

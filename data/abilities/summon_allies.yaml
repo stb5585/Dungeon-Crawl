@@ -1,0 +1,53 @@
+name: Summon Allies
+type: SummonSpell
+subtype: Summoning
+description: Call forth powerful allies to fight alongside you in combat
+cost: 35
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "chanting an incantation to summon powerful allies"
+
+effects:
+  - type: summon
+    summon_type: random
+    possible_summons:
+      - Dire Wolf
+      - Giant Eagle
+      - Elemental
+      - Shadow Beast
+    
+    summon_stats:
+      health: 
+        base: 50
+        scaling:
+          stat: intelligence
+          ratio: 2.0
+      
+      damage:
+        base: 20
+        scaling:
+          stat: intelligence
+          ratio: 1.5
+    
+    duration: 
+      type: until_killed
+      max_turns: 10
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to summon
+
+# Usage notes
+notes: |
+  Summoner's signature ability.
+  
+  Summons a random ally to fight alongside the player:
+  - Health: 50 + (INT * 2)
+  - Damage: 20 + (INT * 1.5)
+  
+  Summon lasts until killed or 10 turns pass.
+  
+  Telegraph: "The Summoner is chanting an incantation to summon powerful allies!"
+  
+  Currently simplified - full implementation would create actual Character objects.

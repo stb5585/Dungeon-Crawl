@@ -165,6 +165,53 @@ class Character:
         self.sight = False
         self.turtle = False
         self.tunnel = False
+    
+    def _emit_damage_event(self, target: 'Character', damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
+        """Helper to emit damage dealt events."""
+        try:
+            from events import get_event_bus, create_combat_event, EventType
+            event_bus = get_event_bus()
+            event_bus.emit(create_combat_event(
+                EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
+                actor=self,
+                target=target,
+                damage=damage,
+                damage_type=damage_type,
+                is_critical=is_critical
+            ))
+        except:
+            pass
+    
+    def _emit_healing_event(self, amount: int, source: str = "Unknown") -> None:
+        """Helper to emit healing events."""
+        try:
+            from events import get_event_bus, create_combat_event, EventType
+            event_bus = get_event_bus()
+            event_bus.emit(create_combat_event(
+                EventType.HEALING_DONE,
+                actor=self,
+                target=self,
+                amount=amount,
+                source=source
+            ))
+        except:
+            pass
+    
+    def _emit_status_event(self, target: 'Character', status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
+        """Helper to emit status effect events."""
+        try:
+            from events import get_event_bus, create_combat_event, EventType
+            event_bus = get_event_bus()
+            event_bus.emit(create_combat_event(
+                EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
+                actor=self,
+                target=target,
+                status_name=status_name,
+                duration=duration,
+                source=source
+            ))
+        except:
+            pass
 
     def incapacitated(self):
         return any([self.status_effects["Sleep"].active,
@@ -281,9 +328,20 @@ class Character:
                 typ = self.equipment[att].att_name
                 if typ == 'leers':
                     hits[i] = True
-                    # TODO: special_effect call disabled - incomplete refactor to CombatResultGroup API
-                    # weapon_dam_str += self.equipment[att].special_effect(self, defender)
-                    weapon_dam_str += f"{self.name} leers at {defender.name}.\n"  # Temporary fallback text
+                    # Create CombatResult and call special_effect for Leer/Gaze attack
+                    from combat_result import CombatResult, CombatResultGroup
+                    result = CombatResult(
+                        action="Leer",
+                        actor=self,
+                        target=defender,
+                        hit=True,
+                        crit=1,
+                        damage=0
+                    )
+                    results = CombatResultGroup()
+                    results.add(result)
+                    self.equipment[att].special_effect(results)
+                    weapon_dam_str += f"{self.name} leers at {defender.name}.\n"
                     break
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
@@ -309,6 +367,18 @@ class Character:
                     if not self.is_alive():
                         return weapon_dam_str, any(hits), max(crits)
                 else:
+                    # Emit dodge event
+                    try:
+                        from events import get_event_bus, create_combat_event, EventType
+                        event_bus = get_event_bus()
+                        event_bus.emit(create_combat_event(
+                            EventType.DODGE,
+                            actor=defender,
+                            target=self,
+                            damage=damage
+                        ))
+                    except:
+                        pass
                     weapon_dam_str += f"{defender.name} evades {self.name}'s attack.\n"
             else:
                 if hits[i] and defender.magic_effects["Duplicates"].active:
@@ -323,6 +393,18 @@ class Character:
                 if hits[i]:
                     if crits[i] > 1:
                         weapon_dam_str += "Critical hit!\n"
+                        # Emit critical hit event
+                        try:
+                            from events import get_event_bus, create_combat_event, EventType
+                            event_bus = get_event_bus()
+                            event_bus.emit(create_combat_event(
+                                EventType.CRITICAL_HIT,
+                                actor=self,
+                                target=defender,
+                                multiplier=crits[i]
+                            ))
+                        except:
+                            pass
                     if cover:
                         weapon_dam_str += (f"{defender.familiar.name} steps in front of the attack, "
                                            f"taking the damage for {defender.name}.\n")
@@ -341,6 +423,18 @@ class Character:
                                 blk_per = min(1, blk_per)
                                 damage *= (1 - blk_per)
                                 damage = int(damage)
+                                # Emit block event
+                                try:
+                                    from events import get_event_bus, create_combat_event, EventType
+                                    event_bus = get_event_bus()
+                                    event_bus.emit(create_combat_event(
+                                        EventType.BLOCK,
+                                        actor=defender,
+                                        target=self,
+                                        damage_blocked=int(dmg * crit_per * blk_per)
+                                    ))
+                                except:
+                                    pass
                                 weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
                                                    f"{round(blk_per * 100)} percent of the damage.\n")
                     elif defender.magic_effects["Mana Shield"].active:
@@ -350,6 +444,7 @@ class Character:
                             weapon_dam_str += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
                             damage -= abs_dam
                             defender.mana.current = 0
+                            self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
                             defender.magic_effects["Mana Shield"].active = False
                             weapon_dam_str += f"The mana shield dissolves around {defender.name}.\n"
                         else:
@@ -375,6 +470,8 @@ class Character:
                         ref_dam = int(0.25 * damage)
                         damage -= ref_dam
                         self.health.current -= ref_dam
+                        # Emit reflected damage event
+                        defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
                         weapon_dam_str += f"{ref_dam} is reflected back at {self.name}.\n"
                     if damage > 0:
                         e_resist = 0
@@ -389,19 +486,27 @@ class Character:
                         defender.health.current -= damage
                         if damage > 0:
                             weapon_dam_str += f"{self.name} {typ} {defender.name} for {damage} damage.\n"
+                            # Emit damage event
+                            damage_type = "Physical"
+                            if self.equipment[att].element:
+                                damage_type = self.equipment[att].element
+                            self._emit_damage_event(defender, damage, damage_type=damage_type, is_critical=(crits[i] > 1))
                             if defender.status_effects["Sleep"].active and \
                                 not random.randint(0, defender.status_effects["Sleep"].duration):
                                     weapon_dam_str += f"The attack awakens {defender.name}!\n"
+                                    self._emit_status_event(defender, "Sleep", applied=False, source="Awakened by Damage")
                                     defender.status_effects["Sleep"].active = False
                                     defender.status_effects["Sleep"].duration = 0
                             if self.cls.name in "Ninja" and self.power_up:
                                 dam_abs = self.class_effects["Power Up"].active * damage
                                 self.health.current += dam_abs
+                                self._emit_healing_event(dam_abs, source="Ninja Life Steal")
                                 weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
                             if self.cls.name in "Lycan" and self.power_up:
                                 dam_abs = damage // 2
                                 self.health.current += dam_abs
                                 if dam_abs > 0:
+                                    self._emit_healing_event(dam_abs, source="Lycan Life Steal")
                                     weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
                         else:
                             weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
@@ -412,10 +517,35 @@ class Character:
                 else:
                     weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
             if hits[i]:
-                # TODO: special_effect calls disabled - incomplete refactor to CombatResultGroup API
-                # weapon_dam_str += defender.equipment['Armor'].special_effect(defender, self)
-                # if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
-                #     weapon_dam_str += self.equipment[att].special_effect(self, defender, damage=damage, crit=crits[i])
+                # Call special_effect for armor (thorns/reflection) and weapon (life steal, instant death, etc.)
+                from combat_result import CombatResult, CombatResultGroup
+                result = CombatResult(
+                    action=att,
+                    actor=self,
+                    target=defender,
+                    hit=True,
+                    crit=crits[i],
+                    damage=damage if 'damage' in locals() else 0
+                )
+                results = CombatResultGroup()
+                results.add(result)
+                
+                # Armor special effects (thorns, reflection)
+                defender.equipment['Armor'].special_effect(results)
+                
+                # Weapon special effects (life steal, elemental effects, instant death)
+                if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
+                    self.equipment[att].special_effect(results)
+                
+                # Process special effect results
+                for res in results.results:
+                    if 'Drain' in res.extra and res.extra['Drain']:
+                        drain_amount = res.actor.health.current - (res.actor.health.current - res.damage)
+                        weapon_dam_str += f"{res.actor.name} drains {drain_amount} health from {res.target.name}.\n"
+                    if 'Instant Death' in res.extra and res.extra['Instant Death']:
+                        res.target.health.current = 0
+                        weapon_dam_str += f"{res.target.name} is instantly killed!\n"
+                
                 if self.cls.name == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1
@@ -425,6 +555,72 @@ class Character:
                     self.class_effects["Power Up"].duration = 0    
 
         return weapon_dam_str, any(hits), max(crits)
+
+    def handle_defenses(self, attacker, damage, cover=False, typ="Physical"):
+        """
+        Stub method for handling defensive calculations.
+        
+        This method was planned but never fully implemented. Currently handles
+        ManaShield logic, otherwise passes damage through unchanged.
+        
+        Args:
+            attacker: The attacking character
+            damage: Base damage value
+            cover: Whether attack can be blocked by familiar/pet
+            typ: Damage type ("Physical", "Magic", etc.)
+            
+        Returns:
+            tuple: (hit: bool, message: str, damage: int)
+        """
+        message = ""
+        hit = True
+        
+        # Handle Mana Shield
+        if self.magic_effects["Mana Shield"].active:
+            mana_loss = damage // self.magic_effects["Mana Shield"].duration
+            if mana_loss > self.mana.current:
+                abs_dam = self.mana.current * self.magic_effects["Mana Shield"].duration
+                message += f"The mana shield around {self.name} absorbs {abs_dam} damage.\n"
+                damage -= abs_dam
+                self.mana.current = 0
+                self.magic_effects["Mana Shield"].active = False
+                message += f"The mana shield dissolves around {self.name}.\n"
+            else:
+                message += f"The mana shield around {self.name} absorbs {damage} damage.\n"
+                self.mana.current -= mana_loss
+                damage = 0
+                hit = False
+        
+        return (hit, message, damage)
+
+    def damage_reduction(self, damage, attacker, typ="Physical"):
+        """
+        Stub method for calculating damage reduction.
+        
+        This method was planned but never fully implemented. For now, it applies
+        basic resistance checks.
+        
+        Args:
+            damage: Incoming damage value
+            attacker: The attacking character
+            typ: Damage type for resistance calculation
+            
+        Returns:
+            tuple: (hit: bool, message: str, final_damage: int)
+        """
+        # Apply basic resistance only if typ is a valid resistance type
+        resist = 0
+        if typ in self.resistance:
+            resist = self.check_mod('resist', enemy=attacker, typ=typ)
+        
+        final_damage = int(damage * (1 - resist))
+        
+        message = ""
+        if resist > 0 and final_damage < damage:
+            reduction = damage - final_damage
+            message = f"{self.name}'s resistance reduces damage by {reduction}.\n"
+        
+        return True, message, final_damage
 
     def flee(self, enemy, smoke=False):
         blind = enemy.status_effects["Blind"].active
@@ -493,11 +689,15 @@ class Character:
             if end_combat:
                 for effect_dict in effect_dicts:
                     for effect in effect_dict.keys():
+                        if effect_dict[effect].active:
+                            self._emit_status_event(self, effect, applied=False, source="Combat End")
                         effect_dict[effect].active = False
                         effect_dict[effect].duration = 0
                         effect_dict[effect].extra = 0
             else:
                 effect_dict = self.effect_handler(effect=effect)
+                if effect_dict[effect].active:
+                    self._emit_status_event(self, effect, applied=False, source="Duration Expired")
                 effect_dict[effect].active = False
                 effect_dict[effect].duration = 0
                 effect_dict[effect].extra = 0

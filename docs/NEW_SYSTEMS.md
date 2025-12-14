@@ -1,20 +1,26 @@
 # Dungeon Crawl - New Systems Guide
 
-## Overview of Improvements
+## Overview
 
 This document describes the new systems added to Dungeon Crawl to improve architecture, enable GUI migration, and support balance testing/analytics.
 
+**Phase 2 Status**: Complete ✅ - Enhanced combat integrated, event emissions active, all bugs fixed
+
+For implementation details and Phase 2 status, see `PHASE_2.md`.
+
 ## New Modules
 
-### 1. Combat Action Queue (`combat/action_queue.py`)
+### 1. Combat Action Queue (`combat/action_queue.py`) ✅
 
-A priority-based action queue system for more sophisticated turn-based combat.
+A priority-based action queue system for sophisticated turn-based combat, integrated via `EnhancedBattleManager`.
 
 **Key Features:**
 - Priority-based action execution (IMMEDIATE → HIGH → NORMAL → LOW → DELAYED)
 - Speed-based turn order (within same priority)
 - Delayed actions (charge-up abilities, status ticks)
 - Support for enemy AI action stacks
+
+**Integration Status**: Fully integrated in `combat/enhanced_manager.py`
 
 **Usage Example:**
 ```python
@@ -42,7 +48,7 @@ while queue.has_ready_actions():
 - Supports simultaneous/multi-actor combat
 - Clean separation of action scheduling from execution
 
-### 2. Enhanced Effect System (`effects/`)
+### 2. Enhanced Effect System (`effects/`) ✅
 
 Expanded effect types with composition and conditional logic.
 
@@ -78,6 +84,8 @@ Event-driven architecture to decouple game logic from UI.
 - Event history for analytics
 - Multiple subscribers per event
 
+**Integration Status**: Events emitted in `battle.py` and `combat/enhanced_manager.py`. See `EVENT_EMISSIONS.md` for details.
+
 **Usage Example:**
 ```python
 from events import get_event_bus, EventType, create_combat_event
@@ -99,12 +107,18 @@ bus.emit(create_combat_event(
 ))
 ```
 
+**Active Events**: 
+- Combat lifecycle: `COMBAT_START`, `COMBAT_END`
+- Turns: `TURN_START`, `TURN_END`
+- Actions: `ATTACK`, `SPELL_CAST`, `SKILL_USE`, `ITEM_USE`, `FLEE_ATTEMPT`
+- Infrastructure ready: `DAMAGE_DEALT`, `HEALING_DONE`, `STATUS_APPLIED`, `STATUS_REMOVED`
+
 **Benefits:**
 - UI can react to game events without tight coupling
 - Easy to add new UI implementations (GUI, web)
 - Event history enables analytics
 
-### 4. Presentation Layer (`presentation/interface.py`)
+### 4. Presentation Layer (`presentation/interface.py`) ✅
 
 Abstract interface for UI implementations.
 
@@ -135,9 +149,11 @@ presenter.cleanup()
 - Easy to test without UI
 - Swap UIs without changing game code
 
-### 5. Data-Driven Abilities (`data/ability_loader.py`)
+### 5. Data-Driven Abilities (`data/ability_loader.py`) ⏳
 
 Load abilities from YAML files instead of hardcoding.
+
+**Status**: Loader implemented, needs ability data population
 
 **Key Features:**
 - AbilityFactory - Create abilities from data

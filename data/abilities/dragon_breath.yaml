@@ -1,0 +1,45 @@
+name: Dragon Breath
+type: Skill
+subtype: Elemental
+description: Special breath weapon attack used by dragon-like creatures, dealing massive elemental damage
+cost: 0
+
+# Charging mechanics
+charge_time: 2
+telegraph_message: "inhaling deeply, preparing to unleash a devastating breath weapon"
+
+# Breath weapon can have different elemental types
+variants:
+  - element: Fire
+    telegraph: "inhaling deeply, flames flickering in its throat"
+  - element: Ice
+    telegraph: "inhaling deeply, frost forming around its maw"
+  - element: Lightning
+    telegraph: "inhaling deeply, electricity crackling between its fangs"
+  - element: Poison
+    telegraph: "inhaling deeply, toxic fumes seeping from its nostrils"
+  - element: Wind
+    telegraph: "inhaling deeply, winds swirling around it"
+  - element: Non-elemental
+    telegraph: "inhaling deeply, raw energy building within"
+
+effects:
+  - type: damage
+    base: 100
+    scaling:
+      # Combines strength and intelligence
+      stat: combined
+      stats: [strength, intelligence]
+      ratio: 1.5
+    element: Variable  # Depends on dragon type
+
+# Priority and targeting
+priority: NORMAL
+delay: 2  # Takes 2 turns to charge
+
+# Usage notes
+notes: |
+  Powerful breath weapon that requires charging.
+  Element type depends on the dragon's affinity.
+  Damage is (STR + INT) * 1.5 + variance, then reduced by target's resistance.
+  Telegraph shows dragon type: "The Red Dragon is inhaling deeply, flames flickering in its throat!"

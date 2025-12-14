@@ -1,0 +1,36 @@
+name: Arcane Blast
+type: PowerUp
+subtype: Arcane
+description: Expend all remaining mana in a devastating blast of arcane energy
+cost: 0  # Uses remaining mana
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "channeling all remaining mana into a devastating blast"
+
+effects:
+  - type: damage
+    base: 0
+    scaling:
+      # Damage = remaining mana * 3
+      stat: mana_remaining
+      ratio: 3.0
+    element: Arcane
+    
+  - type: resource_drain
+    resource: mana
+    amount: all_remaining
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to charge
+
+# Usage notes
+notes: |
+  Powerful spell that converts ALL remaining mana into damage.
+  Damage = (current_mana * 3) * (1 - magic_resist)
+  
+  After casting, user has 0 mana.
+  
+  Best used as a finishing move or when out of options.
+  Telegraph: "The Mage is channeling all remaining mana into a devastating blast!"

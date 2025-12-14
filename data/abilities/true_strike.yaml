@@ -1,0 +1,35 @@
+name: True Strike
+type: Skill
+subtype: Physical
+description: A perfectly aimed strike that is guaranteed to hit the target
+cost: 12
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "focusing intently, taking careful aim for a perfect strike"
+
+effects:
+  - type: damage
+    base: 0  # Uses weapon damage
+    scaling:
+      stat: strength
+      ratio: 1.0
+    element: Physical
+    weapon_damage: true
+    guaranteed_hit: true
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to focus and aim
+
+# Usage notes
+notes: |
+  Offensive skill requiring weapon and charge time.
+  
+  GUARANTEED to hit - bypasses all dodge, evasion, and miss chances.
+  
+  Normal weapon damage with no modifiers.
+  
+  Telegraph: "The [Enemy] is focusing intently, taking careful aim for a perfect strike!"
+  
+  Used for: Enemies with low accuracy, critical moments, high-dodge targets.

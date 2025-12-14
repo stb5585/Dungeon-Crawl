@@ -1,0 +1,59 @@
+name: Dim Mak
+type: Skill
+subtype: Chi Strike
+description: The touch of death - a powerful chi strike that can stun or kill, absorbing the target's essence
+cost: 50
+damage_mod: 1.5
+crit: 3
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "focusing chi energy into a deadly strike"
+
+effects:
+  - type: damage
+    base: 80
+    scaling:
+      stat: strength
+      ratio: 1.5
+    ignore_defense: true
+  
+  - type: chance
+    chance: 0.3
+    effect:
+      type: instant_death
+      death_text: "sustains a lethal blow and collapses to the ground"
+      condition: not_immune_to_death
+  
+  - type: chance
+    chance: 0.7
+    condition: target_alive
+    effect:
+      type: status
+      status_name: Stun
+      duration_formula: "user.wisdom // 10"
+  
+  - type: conditional
+    condition: target_killed
+    effect:
+      type: essence_absorption
+      heal: max_health
+      restore_mana: max_mana
+
+# Priority and targeting
+priority: HIGH
+delay: 1  # Takes 1 turn to charge
+
+# Usage notes
+notes: |
+  Monk's ultimate ability - "Touch of Death"
+  
+  On successful kill:
+  - User absorbs essence gaining full health and mana
+  
+  If target survives:
+  - 30% chance of instant death (if not immune)
+  - 70% chance to stun for (wisdom / 10) turns
+  
+  Ignores all defense and armor.
+  Telegraph: "The Monk is focusing chi energy into a deadly strike!"

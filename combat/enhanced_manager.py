@@ -15,6 +15,10 @@ from battle import BattleManager as BaseBattleManager
 # Import from the combat/ package
 from combat.action_queue import ActionQueue, ActionType, ActionPriority, ScheduledAction
 
+# Import event system
+from events import get_event_bus, create_combat_event, EventType
+import time
+
 if TYPE_CHECKING:
     from character import Character
     from game import Game
@@ -58,6 +62,15 @@ class EnhancedBattleManager(BaseBattleManager):
             super().process_turn()
             return
         
+        # Emit turn start event
+        event_bus = get_event_bus()
+        event_bus.emit(create_combat_event(
+            EventType.TURN_START,
+            actor=self.attacker,
+            target=self.defender,
+            turn_number=getattr(self, 'turn_count', 0)
+        ))
+        
         # Action queue logic
         self.before_turn()
         
@@ -84,6 +97,14 @@ class EnhancedBattleManager(BaseBattleManager):
         
         self.after_turn()
         self.action_queue.next_round()
+        
+        # Emit turn end event
+        event_bus.emit(create_combat_event(
+            EventType.TURN_END,
+            actor=self.attacker,
+            target=self.defender,
+            turn_number=getattr(self, 'turn_count', 0)
+        ))
     
     def _update_charging_actions(self) -> None:
         """Update status of charging/delayed actions and show telegraphs."""
@@ -312,6 +333,19 @@ class EnhancedBattleManager(BaseBattleManager):
         """Execute a scheduled action from the queue."""
         # Set attacker/defender for compatibility with existing methods
         self.attacker = scheduled_action.actor
+        
+        # Check if actor is incapacitated before executing (status could have changed mid-turn)
+        if self.attacker.incapacitated():
+            status_msg = []
+            if self.attacker.status_effects["Sleep"].active:
+                status_msg.append("asleep")
+            if self.attacker.physical_effects["Prone"].active:
+                status_msg.append("prone")
+            if self.attacker.status_effects["Stun"].active:
+                status_msg.append("stunned")
+            
+            self.print_text(f"{self.attacker.name} is {' and '.join(status_msg)} and cannot act!\n")
+            return
         
         # Determine target (might be in params or default to opposite side)
         if scheduled_action.target:

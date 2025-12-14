@@ -1,0 +1,40 @@
+name: Crushing Blow
+type: Offensive
+subtype: Physical
+description: A devastating overhead strike that takes time to wind up but deals massive damage
+cost: 25
+damage_mod: 3.0
+crit: 2
+
+# Charging mechanics
+charge_time: 1
+telegraph_message: "raising weapon high for a crushing overhead strike"
+
+effects:
+  - type: damage
+    base: 120
+    scaling:
+      stat: strength
+      ratio: 3.0
+    element: Physical
+  
+  - type: chance
+    chance: 0.5
+    effect:
+      type: status
+      status_name: Stun
+      duration: 2
+
+# Priority and targeting
+priority: NORMAL
+delay: 1  # Takes 1 turn to wind up
+
+# Usage notes
+notes: |
+  Powerful physical attack that requires wind-up.
+  
+  50% chance to stun target for 2 turns.
+  
+  Deals triple normal weapon damage.
+  
+  Telegraph: "The Warrior is raising weapon high for a crushing overhead strike!"
