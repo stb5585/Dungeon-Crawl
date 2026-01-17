@@ -316,13 +316,13 @@ class IndrasFist(Weapon):
         if not any(["Stun" in result.target.status_immunity,
                     f"Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod]):
-            if result.crit[-1] > 1:
+            if result.crit > 1:
                 if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
                         > random.randint(result.target.stats.con // 2, result.target.stats.con):
                     duration = max(1, result.actor.stats.strength // 10)
                     result.target.status_effects["Stun"].active = True
                     result.target.status_effects["Stun"].duration = duration
-                    result.status_applied['Stun'] = True
+                    result.effects_applied['Stun'] = True
 
 
 class GodsHand(Weapon):
@@ -344,7 +344,6 @@ class GodsHand(Weapon):
         resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
         damage = int(random.randint(result.damage // 2, result.damage) * (1 - resist))
         if damage > 0:
-            special_str += f"Holy light burns {result.target.name}, dealing {damage} additional holy damage."
             result.target.health.current -= damage
             result.damage += damage
             result.extra["Holy Damage"] = True
@@ -439,7 +438,7 @@ class Carnwennan(Weapon):
                     duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                     result.target.status_effects["Stun"].active = True
                     result.target.status_effects["Stun"].duration = duration
-                    result.status_applied['Stun'] = True
+                    result.effects_applied['Stun'] = True
         return results
 
 
@@ -872,16 +871,16 @@ class Jarnbjorn(Weapon):
 
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
-        if result.crit[-1] > 1:
+        if result.crit > 1:
             if random.randint((result.actor.stats.strength // 2), result.actor.stats.strength) \
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
                 duration = max(1, result.actor.stats.strength // 10)
-                bleed_dmg = max(result.actor.stats.strength // 2, result.damage[-1])
+                bleed_dmg = max(result.actor.stats.strength // 2, result.damage)
                 if not result.target.physical_effects["Bleed"].active:
                     result.target.physical_effects["Bleed"].active = True
-                    result.status_applied['Physical'].append('Bleed')
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    result.status_applied['Physical'].append('Bleed+')
+                    result.effects_applied['Physical'].append('Bleed+')
                 result.target.physical_effects["Bleed"].duration = max(duration, result.target.physical_effects["Bleed"].duration)
                 result.target.physical_effects["Bleed"].extra = max(bleed_dmg, result.target.physical_effects["Bleed"].extra)
         return results
@@ -964,7 +963,7 @@ class Ranseur(Weapon):
                                          result.target.check_mod("speed", enemy=result.actor)) + chance:
                     result.target.physical_effects["Disarm"].active = True
                     result.target.physical_effects["Disarm"].duration = result.actor.stats.strength // 10
-                    result.status_applied['Physical'].append('Disarm')
+                    result.effects_applied['Physical'].append('Disarm')
         return results
 
 
@@ -1197,7 +1196,7 @@ class Skullcrusher(Weapon):
                         duration = max(1, result.actor.stats.strength // 10)
                         result.target.status_effects["Stun"].active = True
                         result.target.status_effects["Stun"].duration = duration
-                        result.status_applied['Status'].append('Stun')
+                        result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1226,7 +1225,7 @@ class EarthMaw(NaturalWeapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if result.crit > 1:
-            result = abilities.Sandstorm.cast(result, special=True)
+            abilities.Sandstorm().cast(result.actor, result.target, special=True)
         return results
 
 
@@ -1377,9 +1376,9 @@ class Claw3(Claw):
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
                 if not result.target.physical_effects["Bleed"].active:
                     result.target.physical_effects["Bleed"].active = True
-                    result.status_applied['Physical'].append('Bleed')
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    result.status_applied['Physical'].append('Bleed+')
+                    result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                 bleed_dmg = int(max(result.actor.check_mod("speed", enemy=result.target) // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
@@ -1404,9 +1403,9 @@ class BearClaw(NaturalWeapon):
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
                 if not result.target.physical_effects["Bleed"].active:
                     result.target.physical_effects["Bleed"].active = True
-                    result.status_applied['Physical'].append('Bleed')
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    result.status_applied['Physical'].append('Bleed+')
+                    result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
                 bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
@@ -1427,14 +1426,14 @@ class Stinger(NaturalWeapon):
         result = results[-1]
         resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
         if resist < 1 and not any(["Status-Poison" in result.target.status_immunity, "Status-All" in result.target.status_immunity]):
-            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit[-1]) // 2,
-                              (result.actor.check_mod("speed", enemy=result.target) * result.crit[-1])) \
+            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit) // 2,
+                              (result.actor.check_mod("speed", enemy=result.target) * result.crit)) \
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
-                if not result.target.physical_effects["Poison"].active:
-                    result.target.physical_effects["Poison"].active = True
-                    result.status_applied['Status'].append('Poison')
+                if not result.target.status_effects["Poison"].active:
+                    result.target.status_effects["Poison"].active = True
+                    result.effects_applied['Status'].append('Poison')
                 else:
-                    result.status_applied['Status'].append('Poison+')
+                    result.effects_applied['Status'].append('Poison+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                 damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
@@ -1458,11 +1457,11 @@ class Pincers(NaturalWeapon):
             resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
             if resist < 1 and not any(["Status-Poison" in result.target.status_immunity,
                                        "Status-All" in result.target.status_immunity]):
-                if not result.target.physical_effects["Poison"].active:
-                    result.target.physical_effects["Poison"].active = True
-                    result.status_applied['Status'].append('Poison')
+                if not result.target.status_effects["Poison"].active:
+                    result.target.status_effects["Poison"].active = True
+                    result.effects_applied['Status'].append('Poison')
                 else:
-                    result.status_applied['Status'].append('Poison+')
+                    result.effects_applied['Status'].append('Poison+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                 damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
@@ -1479,7 +1478,7 @@ class Pincers(NaturalWeapon):
                                 > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             s_duration = max(1, result.actor.stats.strength // 10)
                             result.target.status_effects["Stun"] = StatusEffect(True, s_duration)
-                            result.status_applied['Status'].append('Stun')
+                            result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1499,7 +1498,7 @@ class DemonClaw(NaturalWeapon):
         self.att_name = 'claws'
 
     def special_effect(self, results: CombatResultGroup) -> None:
-        result = abilities.Doom().cast(result, special=True)
+        results = abilities.Doom().cast(results, special=True)
         return results
 
 
@@ -1527,14 +1526,14 @@ class SnakeFang(NaturalWeapon):
         result = results[-1]
         resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
         if resist < 1 and not any(["Status-Poison" in result.target.status_immunity, "Status-All" in result.target.status_immunity]):
-            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit[-1]) // 2,
-                              (result.actor.check_mod("speed", enemy=result.target) * result.crit[-1])) \
+            if random.randint((result.actor.check_mod("speed", enemy=result.target) * result.crit) // 2,
+                              (result.actor.check_mod("speed", enemy=result.target) * result.crit)) \
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
-                if not result.target.physical_effects["Poison"].active:
-                    result.target.physical_effects["Poison"].active = True
-                    result.status_applied['Status'].append('Poison')
+                if not result.target.status_effects["Poison"].active:
+                    result.target.status_effects["Poison"].active = True
+                    result.effects_applied['Status'].append('Poison')
                 else:
-                    result.status_applied['Status'].append('Poison+')
+                    result.effects_applied['Status'].append('Poison+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                 damage = int(result.target.health.max * 0.005)
                 pois_dmg = max(1, int(damage * (1 - resist)))
@@ -1572,7 +1571,7 @@ class AlligatorTail(NaturalWeapon):
                                 > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             duration = max(1, result.actor.stats.strength // 10)
                             result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            result.status_applied['Status'].append('Stun')
+                            result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1595,7 +1594,7 @@ class LionPaw(NaturalWeapon):
                     if random.randint(0, result.actor.stats.strength) > random.randint(result.target.stats.con // 2, result.target.stats.con):
                         duration = max(3, result.actor.stats.strength // 10)
                         result.target.status_effects["Berserk"] = StatusEffect(True, duration)
-                        result.status_applied['Status'].append('Berserk')
+                        result.effects_applied['Status'].append('Berserk')
         return results
 
 
@@ -1624,11 +1623,11 @@ class Laser2(Laser):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=5) / 100
-        if result.crit[-1] > 1:
+        if result.crit > 1:
             if random.random() > 0.95 + t_chance:  # 5% chance minus charisma // 5
                 stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
                 stat_name = random.choice(stat_list)
-                result.status_applied('Stat').append(stat_name.capitalize())
+                result.effects_applied['Stat'].append(stat_name.capitalize())
                 if stat_name == 'strength':
                     result.target.stats.strength -= 1
                 if stat_name == 'intelligence':
@@ -1657,7 +1656,8 @@ class Gaze(NaturalWeapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results.results[-1]
         result.extra[self.att_name] = True
-        result = abilities.Petrify().cast(result, special=True)
+        # Cast Petrify with proper actor and target from the combat result
+        abilities.Petrify().cast(result.actor, result.target, special=True)
         return results
 
 
@@ -1684,14 +1684,15 @@ class DragonClaw2(DragonClaw):
         result = results[-1]
         resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint(0, result.actor.stats.strength * result.crit[-1]) \
+            if random.randint(0, result.actor.stats.strength * result.crit) \
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
                 if not result.target.physical_effects["Bleed"].active:
-                    special_str += f"{result.target.name} is bleeding.\n"
+                    result.target.physical_effects["Bleed"].active = True
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{result.target.name} continues to bleed.\n"
+                    result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
-                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage[-1]) * (1 - resist))
+                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
                 result.target.physical_effects["Bleed"] = StatusEffect(True,
                                                               max(duration, result.target.physical_effects["Bleed"].duration),
@@ -1722,12 +1723,12 @@ class DragonTail2(DragonTail):
             if not result.target.status_effects["Stun"].active:
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if result.crit[-1] > 1:
-                        if random.randint(0, result.actor.stats.strength * result.crit[-1]) * (1 - resist) \
+                    if result.crit > 1:
+                        if random.randint(0, result.actor.stats.strength * result.crit) * (1 - resist) \
                                 > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             duration = max(1, result.actor.stats.strength // 10)
                             result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{result.target.name} is stunned.\n"
+                            result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1748,11 +1749,9 @@ class NightmareHoof(NaturalWeapon):
         damage = int(random.randint(result.actor.stats.intel // 2, result.actor.stats.intel) * (1 - resist))
         result.target.health.current -= damage
         if damage > 0:
-            special_str += f"The fire from {result.actor.name}'s attack burns {result.target.name} for {damage} damage.\n"
+            pass
         elif damage < 0:
-            special_str += f"{result.target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
-        else:
-            special_str += "The fire is ineffective, dealing no damage.\n"
+            result.healing[-1] = abs(damage)
         return results
 
 
@@ -1769,19 +1768,16 @@ class ElementalBlade(NaturalWeapon):
         result = results[-1]
         elemental_type = max(result.actor.resistance, key=result.actor.resistance.get)
         resist = result.target.check_mod('resist', enemy=result.actor, typ=elemental_type)
-        damage = int(result.damage[-1] * (1 - resist))
+        damage = int(result.damage * (1 - resist))
         if damage < 0:
-            result.healing[-1] = abs(damage)
-            special_str += f"{result.target.name} absorbs the {elemental_type.lower()} damage, gaining {abs(damage)} hit points.\n"
+            result.healing = abs(damage)
         elif damage > 0:
-            result.damage[-1] += damage
-            special_str += f"{result.actor.name}'s blade deals {damage} additional {elemental_type.lower()} damage to {result.target.name}.\n"
-        else:
-            special_str += f"{elemental_type} damage was not effective against {result.target.name}.\n"
+            result.damage += damage
         result.target.health.current -= damage
         if damage > 0 and elemental_type == "Fire" and result.target.is_alive():
             if not result.target.magic_effects["DOT"].active:
-                special_str += f"{result.target.name} is on fire.\n"
+                result.target.magic_effects["DOT"].active = True
+                result.effects_applied['Magic'].append('Burn')
             result.target.magic_effects["DOT"] = StatusEffect(True, 3, 
                                                         max(int(damage // 2), result.target.magic_effects["DOT"].extra))
         return results
@@ -1801,6 +1797,7 @@ class Tentacle(NaturalWeapon):
         self.special = True
 
     def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
         result = abilities.Trip().use(result, special=True)
         return results
 
@@ -1824,12 +1821,11 @@ class Tentacle2(Tentacle):
             if not result.target.status_effects["Stun"].active:
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if result.crit[-1] > 1:
+                    if result.crit > 1:
                         if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist) \
                                 > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             duration = max(1, result.actor.stats.strength // 10)
                             result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{result.target.name} is stunned.\n"
         return results
 
 
@@ -1852,12 +1848,11 @@ class InvisibleBlade(NaturalWeapon):
             if not result.target.status_effects["Stun"].active:
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
-                    if result.crit[-1] > 1:
+                    if result.crit > 1:
                         if random.randint(0, result.actor.check_mod("speed", enemy=result.target) // 2) * (1 - resist) \
                                 > random.randint(result.target.stats.con // 2, result.target.stats.con):
                             duration = 1
                             result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            special_str += f"{result.target.name} is stunned.\n"
         return results
 
 
@@ -1871,14 +1866,15 @@ class CerberusClaw(NaturalWeapon):
         result = results[-1]
         resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
         if resist < 1:
-            if random.randint((result.actor.stats.strength // 2) * result.crit[-1], result.actor.stats.strength * result.crit[-1]) \
+            if random.randint((result.actor.stats.strength // 2) * result.crit, result.actor.stats.strength * result.crit) \
                     > random.randint(result.target.stats.con // 2, result.target.stats.con):
                 if not result.target.physical_effects["Bleed"].active:
-                    special_str += f"{result.target.name} is bleeding.\n"
+                    result.target.physical_effects["Bleed"].active = True
+                    result.effects_applied['Physical'].append('Bleed')
                 else:
-                    special_str += f"{result.target.name} continues to bleed.\n"
+                    result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
-                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage[-1]) * (1 - resist))
+                bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
                 bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
                 result.target.physical_effects["Bleed"] = StatusEffect(
                     True, max(duration, result.target.physical_effects["Bleed"].duration),
@@ -1896,16 +1892,12 @@ class CerberusBite(NaturalWeapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
-        damage = int(random.randint(result.damage[-1] // 2, result.damage[-1]) * (1 - resist))
+        damage = int(random.randint(result.damage // 2, result.damage) * (1 - resist))
         result.target.health.current -= damage
         if damage > 0:
-            result.damage[-1] += damage
-            special_str += f"The fire from {result.actor.name}'s bite burns {result.target.name} for {damage} damage.\n"
+            result.damage += damage
         elif damage < 0:
-            result.healing[-1] = abs(damage)
-            special_str += f"{result.target.name} absorbs the fire damage and is healed for {abs(damage)} hit points.\n"
-        else:
-            special_str += f"The fire is ineffective, dealing {damage} damage.\n"
+            result.healing = abs(damage)
         return results
 
 
@@ -1925,12 +1917,11 @@ class LichHand(NaturalWeapon):
                     f"Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
-                if result.crit[-1] > 1:
+                if result.crit > 1:
                     if random.randint(result.actor.stats.intel // 4, result.actor.stats.intel) \
                             > random.randint(result.target.stats.wisdom // 2, result.target.stats.wisdom):
                         duration = max(1, result.actor.stats.intel // 10)
                         result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                        special_str += f"{result.target.name} is stunned.\n"
         return results
 
 
@@ -1949,12 +1940,11 @@ class Cannon(NaturalWeapon):
                     f"Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
-                if result.crit[-1] > 1:
+                if result.crit > 1:
                     if random.randint(result.actor.stats.strength // 4, result.actor.stats.strength) \
                             > random.randint(result.target.stats.con // 2, result.target.stats.con):
                         duration = max(1, result.actor.stats.strength // 10)
                         result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                        special_str += f"{result.target.name} is stunned.\n"
         return results
 
 
@@ -1971,19 +1961,20 @@ class DevilBlade(NaturalWeapon):
         result = results[-1]
         w_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
         t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=20)
-        if result.crit[-1] > 1:
-            if random.randint(0, w_chance) > random.randint(0, t_chance):
-                effect = random.choice(result.target.status_effects)
-                if any([effect in result.target.status_immunity,
-                        f"Status-{effect}" in result.target.equipment["Pendant"].mod,
-                        "Status-All" in result.target.equipment["Pendant"].mod]):
-                    return results
-                result.target.status_effects[effect] = StatusEffect(
-                    True, max(random.randint(1, 5), result.target.status_effects[effect].duration))
-                if effect == "Poison":
-                    damage = int(result.target.health.max * 0.005)
-                    result.target.status_effects["Poison"].extra += damage  # damage builds over time
-                special_str += f"The attack inflicts {effect.lower()} on {result.target.name}.\n"
+        if result.crit > 1:
+            # Only 25% chance for status effect to apply even on crit
+            if random.random() < 0.1:
+                if random.randint(0, w_chance) > random.randint(0, t_chance):
+                    effect = random.choice(list(result.target.status_effects.keys()))
+                    if any([effect in result.target.status_immunity,
+                            f"Status-{effect}" in result.target.equipment["Pendant"].mod,
+                            "Status-All" in result.target.equipment["Pendant"].mod]):
+                        return results
+                    result.target.status_effects[effect] = StatusEffect(
+                        True, max(random.randint(1, 5), result.target.status_effects[effect].duration))
+                    if effect == "Poison":
+                        damage = int(result.target.health.max * 0.05)
+                        result.target.status_effects["Poison"].extra += damage  # damage builds over time
         return results
 
 
@@ -2356,15 +2347,9 @@ class DemonArmor2(DemonArmor):
         damage = int(random.randint(self.shadow_damage // 2, self.shadow_damage) * (1 - resist))
         result.actor.health.current -= damage
         if damage > 0:
-            result.damage[-1] += damage
-            special_str += f"An aura of shadow emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
+            result.damage += damage
         elif damage < 0:
-            result.healing[-1] = abs(damage)
-            special_str += (
-                f"{result.actor.name} absorbs the shadow damage emanating from {result.target.name} and is healed for "
-                f"{abs(damage)} hit points.\n")
-        else:
-            special_str += f"The shadow aura is ineffective, dealing {damage} damage.\n"
+            result.healing = abs(damage)
         return results
 
 
@@ -2396,13 +2381,9 @@ class CerberusHide(NaturalArmor):
         damage = int(random.randint(self.fire_damage // 2, self.fire_damage) * (1 - resist))
         result.actor.health.current -= damage
         if damage > 0:
-            special_str += f"An aura of fire emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
+            pass
         elif damage < 0:
-            special_str += (
-                f"{result.actor.name} absorbs the fire damage emanating from {result.target.name} and is healed for {abs(damage)} "
-                f"hit points.\n")
-        else:
-            special_str += f"The fire is ineffective, dealing {damage} damage.\n"
+            result.healing[-1] = abs(damage)
         return results
 
 
@@ -2421,10 +2402,6 @@ class DevilSkin(NaturalArmor):
         a_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
         damage = random.randint(self.damage // (1 + a_chance), self.damage)
         result.actor.health.current -= damage
-        if damage > 0:
-            special_str += f"An aura emanates from {result.target.name}, dealing {damage} damage to {result.actor.name}.\n"
-        else:
-            special_str += f"The aura is ineffective, dealing {damage} damage.\n"
         return results
 
 
@@ -2826,8 +2803,126 @@ class ClassRing(Accessory):
                          value=0, rarity=0, mod="Special", subtyp="Ring", unequip=False)
         self.weight = 0.1
 
+    def get_description(self, player_char=None):
+        """Get dynamic description based on player's class."""
+        if player_char is None:
+            return self.description
+        
+        cls_name = player_char.cls.name
+        descriptions = {
+            "Berserker": "A ring that grants +15% Critical Hit Chance when worn by a Berserker.",
+            "Crusader": "A ring that grants +10% Holy damage when worn by a Crusader.",
+            "Dragoon": "A ring that grants +20% Jump damage when worn by a Dragoon.",
+            "Stalwart Defender": "A ring that reduces damage taken by 10% when worn by a Stalwart Defender.",
+            "Wizard": "A ring that increases the chance to trigger Arcane and elemental spell special effects when worn by a Wizard.",
+            "Shadowcaster": "A ring that grants Shadow Bolt a special effect that heals the caster based on damage dealt when worn by a Shadowcaster.",
+            "Knight Enchanter": "A ring that increases Mana Tap effectiveness (turns 10% mana into 20% heal) when worn by a Knight Enchanter.",
+            "Grand Summoner": "A ring that increases HP and damage of summoned creatures by 30% when worn by a Grand Summoner.",
+            "Rogue": "A ring that grants +2 Luck bonus when worn by a Rogue.",
+            "Seeker": "A ring that grants a chance to find rare items based on dungeon level when worn by a Seeker.",
+            "Ninja": "A ring that grants first round standard attack double damage if you have initiative when worn by a Ninja.",
+            "Arcane Trickster": "A ring that grants a buff increasing Magic damage and dodge chance when a spell is stolen, when worn by an Arcane Trickster.",
+            "Templar": "A ring that provides random blessings in combat (health/mana regen, attack/defense boost) when worn by a Templar.",
+            "Master Monk": "A ring that increases damage and armor by 50% when unarmed and not wearing armor when worn by a Master Monk.",
+            "Archbishop": "A ring that grants a random chance to heal 25% of health when below 50% health when worn by an Archbishop.",
+            "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",
+            "Lycan": "A ring that grants an attack bonus immediately after transforming when worn by a Lycan.",
+            "Geomancer": "A ring that boosts the terrain effect of spells when worn by a Geomancer.",
+            "Soulcatcher": "A ring that grants a chance on miss or crit to not reset Maelstrom Weapon buff when worn by a Soulcatcher.",
+            "Beast Master": "A ring that increases defense for you and your companion when covering the other when worn by a Beast Master.",
+        }
+        return descriptions.get(cls_name, self.description)
+
     def class_mod(self, player_char):
-        pass  # TODO
+        """Apply class-specific bonuses to the wearer."""
+        cls_name = player_char.cls.name
+        
+        # Warrior Branch
+        if cls_name == "Berserker":
+            # +15% Critical Hit Chance
+            if "Crit" not in player_char.equipment["Ring"].mod:
+                player_char.equipment["Ring"].mod = "+15% Crit"
+        
+        elif cls_name == "Crusader":
+            # +10% Holy damage
+            player_char.equipment["Ring"].mod = "+10% Holy Damage"
+        
+        elif cls_name == "Dragoon":
+            # +20% Jump damage
+            player_char.equipment["Ring"].mod = "+20% Jump Damage"
+        
+        elif cls_name == "Stalwart Defender":
+            # Reduce damage taken by 10%
+            player_char.equipment["Ring"].mod = "Damage Reduction"
+        
+        # Mage Branch
+        elif cls_name == "Wizard":
+            # Increased chance to trigger Arcane and elemental spell special effects
+            player_char.equipment["Ring"].mod = "Spell Effect"
+        
+        elif cls_name == "Shadowcaster":
+            # Shadow Bolt gains special effect that heals based on damage
+            player_char.equipment["Ring"].mod = "Shadow Bolt Heal"
+        
+        elif cls_name == "Knight Enchanter":
+            # Increase effectiveness of Mana Tap (10% mana → 20% heal)
+            player_char.equipment["Ring"].mod = "Mana Tap+"
+        
+        elif cls_name == "Grand Summoner":
+            # Increase HP and damage of summoned creatures by 30%
+            player_char.equipment["Ring"].mod = "+30% Summons"
+        
+        # Footpad Branch
+        elif cls_name == "Rogue":
+            # +2 luck bonus
+            player_char.stats.charisma += 2
+            player_char.equipment["Ring"].mod = "+2 Luck"
+        
+        elif cls_name == "Seeker":
+            # Chance to find rare items based on dungeon level
+            player_char.equipment["Ring"].mod = "Rare Find"
+        
+        elif cls_name == "Ninja":
+            # First round standard attack deals double damage if player has initiative
+            player_char.equipment["Ring"].mod = "First Strike"
+        
+        elif cls_name == "Arcane Trickster":
+            # Gain buff when spell is stolen (Magic damage + dodge)
+            player_char.equipment["Ring"].mod = "Spell Steal Buff"
+        
+        # Healer Branch
+        elif cls_name == "Templar":
+            # Provides random blessing in combat
+            player_char.equipment["Ring"].mod = "Random Blessing"
+        
+        elif cls_name == "Master Monk":
+            # Damage and armor increased by 50% when unarmed and not wearing armor
+            player_char.equipment["Ring"].mod = "Martial Master"
+        
+        elif cls_name == "Archbishop":
+            # Random chance to heal 25% of health when below 50% health
+            player_char.equipment["Ring"].mod = "Divine Intervention"
+        
+        elif cls_name == "Troubadour":
+            # Double the intelligence bonus to all songs
+            player_char.equipment["Ring"].mod = "Amplified Song"
+        
+        # Pathfinder Branch
+        elif cls_name == "Lycan":
+            # Gain attack bonus immediately after transforming
+            player_char.equipment["Ring"].mod = "Transform Boost"
+        
+        elif cls_name == "Geomancer":
+            # Boost terrain effect of spells
+            player_char.equipment["Ring"].mod = "Terrain Master"
+        
+        elif cls_name == "Soulcatcher":
+            # Chance on miss or crit to not reset Maelstrom Weapon buff
+            player_char.equipment["Ring"].mod = "Soul Persistence"
+        
+        elif cls_name == "Beast Master":
+            # Increased defense for wearer and companion when covering the other
+            player_char.equipment["Ring"].mod = "Pack Bond"
 
 
 class NoPendant(Accessory):
@@ -3576,6 +3671,18 @@ class MasterKey(Misc):
     def __init__(self):
         super().__init__(name="Master Key", description="Unlocks doors that may lead to either valuable treasure or to "
                                                      "powerful enemies.",
+                         value=0, rarity=0, subtyp='Key')
+
+
+class CrypticKey(Misc):
+    """
+    A mysterious key of unknown purpose; appears to be crafted with care and precision
+    """
+
+    def __init__(self):
+        super().__init__(name="Cryptic Key", 
+                         description="A pristine key forged by Griswold. Its purpose is shrouded in mystery, "
+                                     "but it feels important.",
                          value=0, rarity=0, subtyp='Key')
 
 

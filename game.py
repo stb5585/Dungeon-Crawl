@@ -7,8 +7,6 @@ import glob
 import sys
 import time
 
-import dill
-
 import player
 import town
 import utils
@@ -17,6 +15,7 @@ from combat.enhanced_manager import EnhancedBattleManager
 from character import Combat, Level, Resource, Stats
 from classes import classes_dict
 from races import races_dict
+from save_system import SaveManager
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -94,7 +93,7 @@ class Game:
             menu.update_options(menu_options)
 
     def update_loadfiles(self):
-        self.load_files = glob.glob('save_files/*')
+        self.load_files = SaveManager.list_saves()
 
     def run(self):
         self.update_bounties()
@@ -211,17 +210,18 @@ class Game:
         player_char = None
         load_options = []
         for f in self.load_files:
-            load_options.append(f.split(".")[0].split("/")[-1].capitalize())
+            load_options.append(f.split(".")[0].capitalize())
         load_options.append("Go Back")
         menu = utils.LoadGameMenu(self, load_options)
         selected_idx = menu.navigate_menu()
         if load_options[selected_idx] == "Go Back":
             return
         utils.save_file_popup(self, load=True)
-        with open(self.load_files[selected_idx], "rb") as save_file:
-            player_dict = dill.load(save_file)
-        player_char = player.load_char(player_dict=player_dict)
-        # player_char.load_tiles()  # uncomment for testing tile changes
+        filename = self.load_files[selected_idx]
+        player_char = SaveManager.load_player(filename)
+        if player_char is None:
+            return
+        player_char.load_tiles()  # uncomment for testing tile changes
 
         return player_char
 
@@ -229,6 +229,18 @@ class Game:
         room = self.player_char.world_dict[
             (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)
             ]
+        # Debug: log tile type each step and FirePath status
+        try:
+            x = self.player_char.location_x
+            y = self.player_char.location_y
+            z = self.player_char.location_z
+            tile_name = type(room).__name__ if room else "None"
+            print(f"[DEBUG] Step: pos=({x},{y},{z}), facing={self.player_char.facing}, tile={tile_name}")
+            if room and ('FirePath' in tile_name):
+                resist = self.player_char.check_mod('resist', typ='Fire')
+                print(f"[DEBUG] FirePath state: flying={self.player_char.flying}, resist={resist:.2f}")
+        except Exception as e:
+            print(f"[DEBUG] Step debug error: {e}")
         try:
             room.special_text(self)
         except AttributeError:
@@ -299,7 +311,7 @@ special_event_dict = {
     },
     "Unobtainium": {
         "Text": [
-            "A brilliant column of light highlights the small piece of ore on a pedestal at the center of the room.",
+            "A brilliant column of light highlights a small piece of ore resting on the ground at the center of the room.",
             "You approach it with caution but find no traps or tricks.",
             "This must be the legendary ore you have heard so much about...",
             "You reach for it, half expecting to be obliterated...but all you feel is warmth throughout your body.",

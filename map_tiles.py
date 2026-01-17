@@ -317,10 +317,13 @@ class FirePath(EmptyCavePath):
     def modify_player(self, game):
         super().modify_player(game)
         if not game.player_char.flying:
-            resist = game.player_char.check_mod("resist", "Fire")
+            resist = game.player_char.check_mod("resist", typ="Fire")
+            print(f"[DEBUG] FirePath enter: flying={game.player_char.flying}, resist={resist:.2f}, HP={game.player_char.health.current}/{game.player_char.health.max}")
             health_10per = max(0, int(game.player_char.health.max * 0.1 * (1 - resist)))
             damage = random.randint(health_10per // 2, health_10per)
+            print(f"[DEBUG] FirePath damage calc: base10%={health_10per}, roll={damage}")
             game.player_char.health.current -= damage
+            print(f"[DEBUG] FirePath post-damage HP: {game.player_char.health.current}/{game.player_char.health.max}")
             if damage > 0:
                 lava_message = f"{game.player_char.name} takes {damage} damage from the fire."
                 lavabox = utils.TextBox(game)
@@ -526,7 +529,9 @@ class BossRoom(SpecialTile):
 
     def special_text(self, game):
         if not self.read:
-            game.special_event(self.enemy().name)
+            enemy_instance = self.enemy if isinstance(self.enemy, str) else (self.enemy() if callable(self.enemy) else self.enemy)
+            enemy_name = enemy_instance.name if hasattr(enemy_instance, 'name') else str(enemy_instance)
+            game.special_event(enemy_name)
             self.read = True
 
     def generate_enemy(self):
@@ -697,6 +702,7 @@ class ChestRoom(MapTile):
         self.open = False
         self.locked = False
         self.loot = None
+        self.generate_loot()  # Generate loot when chest is created
 
     def available_actions(self, player_char):
         raise NotImplementedError
@@ -707,7 +713,8 @@ class ChestRoom(MapTile):
         self.generate_loot()
 
     def generate_loot(self):
-        if self.visited:
+        """Generate random loot for the chest if not already generated."""
+        if self.loot is None:
             bonus = int('Locked' in str(self)) + int('Room2' in str(self))
             self.loot = items.random_item(self.z + bonus)
 
@@ -836,6 +843,9 @@ class LockedDoor(MapTile):
         self.visited = True
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
+        # If door is already open, no need to unlock it
+        if self.open:
+            return
         if self.locked:
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
@@ -878,6 +888,128 @@ class LockedDoor(MapTile):
             self.blocked = "South"
 
 
+class OreVaultDoor(Wall):
+    """
+    Hidden door that blocks access to the Unobtainium vault.
+    Appears as a regular wall unless the player has Keen Eye skill or the Cryptic Key.
+    Can only be unlocked with the Cryptic Key, Master Key, or Master Lockpick.
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.open = False
+        self.locked = True
+        self.blocked = None
+        self.enter = False  # Starts as impassable wall
+        self.detected = False  # Track if player has detected the hidden door
+
+    def intro_text(self, game):
+        intro_str = ""
+        # Call grandparent MapTile intro_text for Keen Eye check
+        intro_str += MapTile.intro_text(self, game)
+        
+        # Door is open - can pass through
+        if self.open:
+            intro_str += "The secret vault door stands open.\n"
+            return intro_str
+        
+        # Check if player can perceive the hidden door
+        has_keen_eye = 'Keen Eye' in game.player_char.spellbook['Skills']
+        has_cryptic_key = "Cryptic Key" in game.player_char.inventory
+        
+        # Only reveal and mark as detected if player has the means to see it
+        if has_cryptic_key:
+            # Key glows in presence of the door
+            self.detected = True
+            intro_str += "The Cryptic Key in your possession begins to glow warmly.\n"
+            intro_str += "You notice faint seams in the wall... a hidden door!\n"
+        elif has_keen_eye:
+            # Keen perception reveals the door
+            self.detected = True
+            intro_str += f"{game.player_char.name}'s keen eye spots something unusual in the wall.\n"
+            intro_str += "The stone here doesn't quite match... it's a hidden door!\n"
+        else:
+            # Reset detected status if player no longer has the means to see it
+            self.detected = False
+        # Otherwise appears as a normal wall (no text)
+        
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        self.which_blocked(game)
+        self.adjacent_visited(game.player_char)
+        
+        # If door hasn't been detected, treat it like a wall - no interaction
+        has_cryptic_key = "Cryptic Key" in game.player_char.inventory
+        has_keen_eye = 'Keen Eye' in game.player_char.spellbook['Skills']
+        
+        if not (has_cryptic_key or has_keen_eye or self.open):
+            # Door is not detected and not open - act like a wall, do nothing
+            return
+        
+        # If door is already open, allow passage
+        if self.open:
+            self.enter = True
+            return
+        
+        # If locked, check for ways to unlock
+        if self.locked:
+            # Check if player has the Cryptic Key and can detect the door
+            if "Cryptic Key" in game.player_char.inventory:
+                popup = utils.ConfirmPopupMenu(game, "Use the Cryptic Key on the hidden door?", box_height=8)
+                if popup.navigate_popup():
+                    self.locked = False
+                    self.open = True
+                    self.enter = True
+                    unlockbox = utils.TextBox(game)
+                    unlockbox.print_text_in_rectangle("The Cryptic Key turns smoothly in the hidden lock.\nThe door swings open, revealing the vault beyond!\n")
+                    game.stdscr.getch()
+                    unlockbox.clear_rectangle()
+                    game.player_char.modify_inventory(game.player_char.inventory['Cryptic Key'][0], subtract=True)
+            elif "Master Key" in game.player_char.special_inventory:
+                # Master Key works if player has Keen Eye to see the door
+                if 'Keen Eye' in game.player_char.spellbook['Skills']:
+                    popup = utils.ConfirmPopupMenu(game, "Use the Master Key on the hidden door?", box_height=8)
+                    if popup.navigate_popup():
+                        self.locked = False
+                        self.open = True
+                        self.enter = True
+                        unlockbox = utils.TextBox(game)
+                        unlockbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
+                        game.stdscr.getch()
+                        unlockbox.clear_rectangle()
+            elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
+                # Master Lockpick works if player can detect the door (Keen Eye or key)
+                if 'Keen Eye' in game.player_char.spellbook['Skills']:
+                    popup = utils.ConfirmPopupMenu(game, "Attempt to pick the hidden door's lock?", box_height=8)
+                    if popup.navigate_popup():
+                        self.locked = False
+                        self.open = True
+                        self.enter = True
+                        unlockbox = utils.TextBox(game)
+                        unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
+                        game.stdscr.getch()
+                        unlockbox.clear_rectangle()
+
+    def available_actions(self, player_char):
+        # If open, allow normal movement
+        if self.open:
+            return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        # If closed, acts like a wall (blocks movement)
+        return player_char
+
+    def which_blocked(self, game):
+        if self.x == game.player_char.previous_location[0] + 1:
+            self.blocked = "East"
+        if self.x == game.player_char.previous_location[0] - 1:
+            self.blocked = "West"
+        if self.y == game.player_char.previous_location[1] - 1:
+            self.blocked = "North"
+        if self.y == game.player_char.previous_location[1] + 1:
+            self.blocked = "South"
+
+
 class WarningTile(CavePath):
 
     def __init__(self, x, y, z):
@@ -891,6 +1023,11 @@ class WarningTile(CavePath):
                           f"Plan accordingly.\n")
         return intro_str
 
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+        self.warning = True
+
     def enter_combat(self, player_char):
         pass
 
@@ -899,14 +1036,11 @@ class UnobtainiumRoom(SpecialTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += "An empty pedestal stands in the center of the room.\n"
         return intro_str
 
     def modify_player(self, game):
+        # Reveal nearby tiles but leave the ore to be looted manually
         self.adjacent_visited(game.player_char)
-        if not self.visited:
-            game.player_char.modify_inventory(items.Unobtainium(), rare=True, quest=True)
-            self.visited = True
 
     def special_text(self, game):
         if not self.read:
@@ -918,7 +1052,7 @@ class RelicRoom(SpecialTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += "An empty pedestal stands in the center of the room.\n"
+        intro_str += "An empty altar stands in the center of the room.\n"
         return intro_str
 
     def modify_player(self, game):
@@ -1034,6 +1168,16 @@ class FinalRoom(SpecialTile):
         for x in [13, 14, 15, 16, 17]:
             for y in [8, 9, 10, 11]:
                 player_char.world_dict[(x, y, 6)].near = True
+
+    def available_actions(self, player_char):
+        """Return combat actions for the final boss."""
+        action_list = ["Attack", "Use Item", "Flee"]
+        if not player_char.status_effects["Silence"].active:
+            if player_char.usable_abilities("Spells"):
+                action_list.insert(1, "Cast Spell")
+            if player_char.usable_abilities("Skills"):
+                action_list.insert(1, "Use Skill")
+        return action_list
 
     def special_text(self, game):
         fight = game.special_event("Final Boss")

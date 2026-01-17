@@ -70,7 +70,7 @@
 
 #### Project Configuration
 - **pyproject.toml**: Modern Python packaging with PEP 621 standard
-  - Dependencies: dill, numpy, pyyaml
+  - Dependencies: numpy, pyyaml
   - Dev dependencies: pytest, pytest-cov
   - GUI dependencies: pygame (for Phase 3)
   - Tool configs: pytest, black, mypy, isort, coverage

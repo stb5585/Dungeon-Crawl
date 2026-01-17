@@ -6,7 +6,6 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 from math import exp
-from typing import Tuple
 
 
 # functions
@@ -81,17 +80,17 @@ class Character:
         stats (Stats): A dataclass containing the 6 primary statistics of the character.
         combat (Combat): A dataclass containing the 4 primary combat stats of the character.
         gold (int): how much gold the character possesses
-        equipment (Dict[str, object]): A dictionary containing the items which the character is currently equipped. 
-        inventory (Dict[str, List[object, int]]): A dictionary containing the character's inventory, including the item
+        equipment (dict[str, object]): A dictionary containing the items which the character is currently equipped. 
+        inventory (dict[str, list[object, int]]): A dictionary containing the character's inventory, including the item
             and quantity.
-        special_inventory (Dict[str, List[object, int]]): A dictionary containing the character's special inventory, 
+        special_inventory (dict[str, list[object, int]]): A dictionary containing the character's special inventory, 
             including the item and quantity. The special inventory stores items that are related to quests or the plot
             of the story.
-        spellbook (Dict[str, Dict[str, Spell]]): A dictionary containing the spells and skills learned for the
+        spellbook (dict[str, dict[str, Spell]]): A dictionary containing the spells and skills learned for the
             character to use.
-        status_effects (Dict[str, StatusEffect]): A dictionary containing the character's status effects.
-        status_immunity (List[str]): A list of all status effects the character is immune against.
-        resistance (Dict[str, float]): A dictionary containing the elemental impact on the character.
+        status_effects (dict[str, StatusEffect]): A dictionary containing the character's status effects.
+        status_immunity (list[str]): A list of all status effects the character is immune against.
+        resistance (dict[str, float]): A dictionary containing the elemental impact on the character.
         flying (bool): A boolean variable indicating whether the character is flying or not. Flying affects chance
             to hit and some elemental effect.
         invisible (bool): A boolean variable indicating whether the character is invisible or not. Invisibility
@@ -298,7 +297,7 @@ class Character:
             crit_chance += (0.1 * self.power_up)
         return crit_chance
 
-    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False) -> Tuple[str, bool, int]:
+    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False) -> tuple[str, bool, int]:
         """
         Function that controls melee attacks during combat
         defender(Character): the target of the attack
@@ -392,7 +391,6 @@ class Character:
                             defender.magic_effects["Duplicates"].active = False
                 if hits[i]:
                     if crits[i] > 1:
-                        weapon_dam_str += "Critical hit!\n"
                         # Emit critical hit event
                         try:
                             from events import get_event_bus, create_combat_event, EventType
@@ -485,7 +483,10 @@ class Character:
                         damage = int(damage * variance)
                         defender.health.current -= damage
                         if damage > 0:
-                            weapon_dam_str += f"{self.name} {typ} {defender.name} for {damage} damage.\n"
+                            damage_msg = f"{self.name} {typ} {defender.name} for {damage} damage"
+                            if crits[i] > 1:
+                                damage_msg += " (Critical hit!)"
+                            weapon_dam_str += damage_msg + ".\n"
                             # Emit damage event
                             damage_type = "Physical"
                             if self.equipment[att].element:
@@ -641,7 +642,7 @@ class Character:
                 (self.check_mod("speed", enemy=enemy) + enemy.check_mod("speed", enemy=enemy) + 1)
             pro_diff = self.level.pro_level / max(enemy.level.pro_level, 1)
             flee_chance = min(0.95, chance + speed_factor * pro_diff)  # capped at 95%
-            if random.random() > flee_chance or enemy.incapacitated() or blind:
+            if random.random() < flee_chance or enemy.incapacitated() or blind:
                 flee_message = f"{self.name} flees from the {enemy.name}."
                 self.state = 'normal'
                 success = True
@@ -815,7 +816,8 @@ class Character:
                 else:
                     self.class_effects["Power Up"].duration -= 1
                 if self.cls.name == "Knight Enchanter" and self.power_up:
-                    mana_regen = min(int(self.mana.max * 0.15), self.mana.max - self.mana.current)
+                    missing_mana = self.mana.max - self.mana.current
+                    mana_regen = max(1, min(self.class_effects["Power Up"].extra, missing_mana)) if missing_mana > 0 else 0
                     self.mana.current += mana_regen
                     status_text += f"{self.name} regens {mana_regen} mana.\n"
                 if self.cls.name == "Archbishop" and self.power_up:

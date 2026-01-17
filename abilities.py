@@ -1785,7 +1785,7 @@ class HealthManaDrain(Drain):
     def __init__(self):
         super().__init__(
             name="Health/Mana Drain",
-            description="Drain the enemy, absorbing the health and mana in " "return.",
+            description="Drain the enemy, absorbing the health and mana in return.",
         )
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
@@ -1829,16 +1829,22 @@ class ManaTap(Drain):
 
     def __init__(self):
         super().__init__(
-            name="Mana Tap", description="Convert 10% of your mana into health.", cost=0
+            name="Mana Tap", description="Convert 10% of your mana into health."
         )
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         if user.health.current == user.health.max:
             return f"You are already at full health.\n"
-        mana_loss = int(min(user.mana.max * 0.1, user.mana.current))
+        
+        # Check if user has Class Ring with Mana Tap+ mod (Knight Enchanter)
+        heal_multiplier = 0.1
+        if "Mana Tap+" in user.equipment["Ring"].mod:
+            heal_multiplier = 0.2
+        
+        mana_loss = int(min(user.mana.max * heal_multiplier, user.mana.current))
         user.mana.current -= mana_loss
         user.health.current += min(mana_loss, user.health.max - user.health.current)
-        return f"{user.name} sacrifices {mana_loss} mana to restore health.\n"
+        return f"{user.name} sacrifices {int(user.mana.max * heal_multiplier)} mana to restore health.\n"
 
     def use_out(self, game):
         return self.use(game.player_char)
@@ -2691,8 +2697,10 @@ class ArcaneBlast(PowerUp):
                 target.health.current -= damage
                 use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
         if target.is_alive() and hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
+            user.power_up = True
             user.class_effects["Power Up"].active = True
             user.class_effects["Power Up"].duration = 4
+            user.class_effects["Power Up"].extra = max(1, user.mana.max // 10)
         return use_str
 
 
@@ -3130,6 +3138,8 @@ class Trip(Skill):
     def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
         if not special:
             user.mana.current -= self.cost
+        if not target:
+            return "It has no effect.\n"
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         if not target.physical_effects["Prone"].active:
@@ -3173,7 +3183,6 @@ class NightmareFuel(Skill):
                 target.stats.wisdom // 2, target.stats.wisdom
             ):
                 if random.random() > 0.5:  # 50% chance to crit
-                    use_str += "Critical hit!\n"
                     crit = 2
                 variance = random.uniform(0.85, 1.15)
                 damage = int(
@@ -3183,7 +3192,10 @@ class NightmareFuel(Skill):
                     * variance
                 )
                 target.health.current -= damage
-                use_str += f"{user.name} invades {target.name}'s dreams, dealing {damage} damage.\n"
+                damage_msg = f"{user.name} invades {target.name}'s dreams, dealing {damage} damage"
+                if crit > 1:
+                    damage_msg += " (Critical hit!)"
+                use_str += damage_msg + ".\n"
             else:
                 use_str += f"{target.name} resists the spell.\n"
         else:
@@ -3281,7 +3293,6 @@ class ThrowRock(Skill):
                 crit = 1
                 if (a_chance - d_chance) * 0.1 > random.random():
                     crit = 2
-                    use_str += "Critical hit!\n"
                 damage = (
                     random.randint(user.stats.strength // 4, user.stats.strength // 3)
                     * (size + 1)
@@ -3300,9 +3311,10 @@ class ThrowRock(Skill):
                     use_str += message
                 if damage > 0:
                     target.health.current -= damage
-                    use_str += (
-                        f"{target.name} is hit by the rock and takes {damage} damage.\n"
-                    )
+                    damage_msg = f"{target.name} is hit by the rock and takes {damage} damage"
+                    if crit > 1:
+                        damage_msg += " (Critical hit!)"
+                    use_str += damage_msg + ".\n"
                     if not target.physical_effects["Prone"].active:
                         if random.randint(
                             user.stats.strength // 2, user.stats.strength
@@ -3372,7 +3384,6 @@ class Stomp(Skill):
             crit = 1
             if (a_chance - d_chance) * 0.1 > random.random():
                 crit = 2
-                use_str += "Critical hit!\n"
             damage = int(
                 random.randint(user.stats.strength // 2, user.stats.strength)
                 * (1 - resist)
@@ -3390,9 +3401,10 @@ class Stomp(Skill):
                 use_str += message
             if damage > 0:
                 target.health.current -= damage
-                use_str += (
-                    f"{user.name} stomps {target.name}, dealing {damage} damage.\n"
-                )
+                damage_msg = f"{user.name} stomps {target.name}, dealing {damage} damage"
+                if crit > 1:
+                    damage_msg += " (Critical hit!)"
+                use_str += damage_msg + ".\n"
                 if not any(
                     [
                         "Stun" in target.status_immunity,
@@ -3591,7 +3603,6 @@ class Crush(Skill):
             crit = 1
             if (a_chance - d_chance) * 0.1 > random.random():
                 crit = 2
-                use_str += "Critical hit!\n"
             damage = max(
                 int(target.health.current * 0.25),
                 int(
@@ -3601,7 +3612,10 @@ class Crush(Skill):
                 ),
             )
             target.health.current -= damage
-            use_str += f"{user.name} crushes {target.name}, dealing {damage} damage.\n"
+            damage_msg = f"{user.name} crushes {target.name}, dealing {damage} damage"
+            if crit > 1:
+                damage_msg += " (Critical hit!)"
+            use_str += damage_msg + ".\n"
             if (
                 random.randint(user.stats.strength // 2, user.stats.strength)
                 > random.randint(0, target.check_mod("speed", enemy=user)) + d_chance
@@ -4050,7 +4064,6 @@ class Attack(Spell):
             crit = 1
             if not random.randint(0, self.crit):
                 crit = 2
-                cast_message += "Critical Hit!\n"
             crit_per = random.uniform(1, crit)
             damage = int(self.dmg_mod * spell_mod * crit_per)
             # Apply defenses and reductions
@@ -4082,13 +4095,19 @@ class Attack(Spell):
                         damage //= 2
                         if damage > 0:
                             cast_message += f"{target.name} shrugs off the spell and only receives half of the damage.\n"
-                            cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
+                            damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                            if crit > 1:
+                                damage_msg += " (Critical hit!)"
+                            cast_message += damage_msg + ".\n"
                         else:
                             cast_message += (
                                 f"The spell was ineffective and does no damage.\n"
                             )
                     else:
-                        cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
+                        damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                        if crit > 1:
+                            damage_msg += " (Critical hit!)"
+                        cast_message += damage_msg + ".\n"
                     target.health.current -= damage
                     if target.is_alive() and damage > 0 and not reflect:
                         cast_message += self.special_effect(
@@ -4273,7 +4292,6 @@ class MagicMissile(Attack):
                 crit = 1
                 if not random.randint(0, self.crit):
                     crit = 2
-                    cast_message += "Critical Hit!\n"
                 if hits[i] and target.magic_effects["Duplicates"].active:
                     chance = target.magic_effects[
                         "Duplicates"
@@ -4312,13 +4330,19 @@ class MagicMissile(Attack):
                         damage //= 2
                         if damage > 0:
                             cast_message += f"{target.name} shrugs off the {self.name} and only receives half of the damage.\n"
-                            cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
+                            damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                            if crit > 1:
+                                damage_msg += " (Critical hit!)"
+                            cast_message += damage_msg + ".\n"
                         else:
                             cast_message += (
                                 f"{self.name} was ineffective and does no damage.\n"
                             )
                     else:
-                        cast_message += f"{caster.name} damages {target.name} for {damage} hit points.\n"
+                        damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                        if crit > 1:
+                            damage_msg += " (Critical hit!)"
+                        cast_message += damage_msg + ".\n"
                     target.health.current -= damage
                     if not target.is_alive():
                         break
@@ -5306,7 +5330,6 @@ class TurnUndead(HolySpell):
             crit = 1
             chance = max(2, target.check_mod("luck", enemy=caster, luck_factor=6))
             if not random.randint(0, self.crit):
-                cast_message += "Critical hit!\n"
                 crit = 2
                 chance -= 1
             if not random.randint(0, chance):
@@ -5323,9 +5346,10 @@ class TurnUndead(HolySpell):
                 variance = random.uniform(0.85, 1.15)
                 damage = int(damage * variance)
                 target.health.current -= damage
-                cast_message += (
-                    f"{caster.name} damages {target.name} for {damage} hit points.\n"
-                )
+                damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                if crit > 1:
+                    damage_msg += " (Critical hit!)"
+                cast_message += damage_msg + ".\n"
         else:
             cast_message += "The spell does nothing.\n"
         return cast_message

@@ -142,7 +142,7 @@ class BalanceReport:
             threshold: Number of standard deviations to consider an outlier
             
         Returns:
-            Dict with 'overpowered' and 'underpowered' classes
+            Dictionary with 'overpowered' and 'underpowered' classes
         """
         if len(self._win_rates) < 2:
             return {'overpowered': [], 'underpowered': []}

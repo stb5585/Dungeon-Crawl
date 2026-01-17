@@ -394,7 +394,7 @@ During migration:
 1. **Multiplayer**: Scope for Phase 7+?
 2. **Mobile**: After GUI or parallel track?
 3. **AI Difficulty**: Rule-based or ML? (Start rule-based)
-4. **Save Format**: Current dill or JSON for cross-platform?
+4. **Save Format**: JSON for cross-platform compatibility
 5. **Modding Support**: Plugin architecture? Scripting language?
 
 ## Conclusion

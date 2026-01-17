@@ -286,6 +286,14 @@ def check_quests(game, quest_giver):
         for main_quest in main_quests:
             key = list(main_quest)[0]
             if key in player_mains:
+                # Ensure collection quests like Relics reflect current progress even if accepted late
+                try:
+                    q = game.player_char.quest_dict['Main'][key]
+                    if q.get('Type') == 'Collect' and q.get('What') == 'Relics' and not q.get('Completed'):
+                        if game.player_char.has_relics():
+                            q['Completed'] = True
+                except Exception:
+                    pass
                 if game.player_char.quest_dict['Main'][key]['Completed'] and \
                         not game.player_char.quest_dict['Main'][key]['Turned In']:
                     turn_in_quest(game, key, "Main")
@@ -299,18 +307,18 @@ def check_quests(game, quest_giver):
     if len(side_quests) > 0:
         for side_quest in side_quests:
             key = list(side_quest)[0]
+            # Skip Debug quest entirely (never show in production)
+            if key == "Debug":
+                continue
             if key in player_sides:
                 if game.player_char.quest_dict['Side'][key]['Completed'] and \
                         not game.player_char.quest_dict['Side'][key]['Turned In']:
                     turn_in_quest(game, key, "Side")
                     quest = True
-                if not any([game.debug_mode, key == "Debug"]):
-                    if not game.player_char.quest_dict['Side'][key]['Turned In']:
-                        responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
+                if not game.player_char.quest_dict['Side'][key]['Turned In']:
+                    responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
             else:
                 if key == "Pandora's Box" and "Ultima" not in game.player_char.spellbook["Spells"]:
-                    continue
-                if key == "Debug" and any([not game.debug_mode, game.player_char.max_level()]):
                     continue
                 quest = accept_quest(game, side_quest, "Side")
             if quest:
@@ -838,7 +846,10 @@ def church(game):
                 game.stdscr.getch()
                 churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Quit Game':
-            if game.player_char.game_quit(game):
+            from gui.confirmation_popup import ConfirmationPopup
+            popup = ConfirmationPopup(game.presenter, "Are you sure you want to quit? Any unsaved progress will be lost.")
+            if popup.show():
+                game.player_char.quit = True
                 return
         elif church_options[church_idx] == 'Leave':
             churchbox.print_text_in_rectangle("Let the light of Elysia guide you.")
@@ -1123,8 +1134,8 @@ class BountyBoard:
             game.player_char.level.pro_level
         bounty["gold"] = random.randint(25*bounty["num"], 50*bounty["num"]) * game.player_char.player_level()
         if random.randint(0, game.player_char.check_mod('luck', luck_factor=10)):
-            bounty["reward"] = items.random_item(
-                game.player_char.level.pro_level + random.randint(0, game.player_char.level.pro_level))
+            item_level = min(8, game.player_char.level.pro_level + random.randint(0, game.player_char.level.pro_level))
+            bounty["reward"] = items.random_item(item_level)
         return bounty
 
     def generate_bounties(self, game):
@@ -1559,12 +1570,13 @@ quest_dict = {
                     'End Text':
                         "By the light of Elysia, you have found him! I must admit I had given up hope. It comes at no "
                         "surprise that he chose to stay in the depths to help those in need, perhaps he will choose to"
-                        " come home once the primal evil has been vanquished.",
+                        " come home once the primal evil has been vanquished. As a reward, take this key—Chisolm told me "
+                        "of a vault deep below where legendary ore is kept. This key will grant you access.",
                     "Help Text":
                         "I haven't the faintest idea where Chisolm may be but he is a strong warrior and I have no "
                         "doubt he is still alive. I have heard rumors of secret passageways in the depths but they "
                         "have never been confirmed.",
-                    'Reward': ["Upgrade"],
+                    'Reward': [items.CrypticKey],
                     'Reward Number': 1,
                     'Experience': 20000,
                     'Completed': False,

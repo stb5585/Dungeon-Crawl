@@ -1,5 +1,5 @@
 UnobtainiumRoom	Wall	Wall	FakeWall	FakeWall	FakeWall	FakeWall	FakeWall	Wall	Wall	Wall	FakeWall	FakeWall	FakeWall	CavePath1	FakeWall	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall
-EmptyCavePath	Wall	Wall	FakeWall	Wall	FakeWall	FakeWall	FakeWall	Wall	UltimateArmorShop	Wall	Wall	FakeWall	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	Wall
+OreVaultDoor	Wall	Wall	FakeWall	Wall	FakeWall	FakeWall	FakeWall	Wall	UltimateArmorShop	Wall	Wall	FakeWall	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	Wall
 EmptyCavePath	FakeWall	Wall	FakeWall	Wall	FakeWall	Wall	LockedChestRoom	Wall	EmptyCavePath	Wall	FakeWall	FakeWall	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	Wall
 Wall	CavePath1	CavePath1	CavePath1	Wall	FakeWall	Wall	Wall	Wall	FakeWall	Wall	Wall	FakeWall	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	Wall
 EmptyCavePath	FakeWall	Wall	FakeWall	Wall	Wall	Wall	Wall	Wall	FakeWall	Wall	Wall	UnlockedChestRoom	Wall	CavePath1	Wall	FakeWall	Wall	EmptyCavePath	Wall

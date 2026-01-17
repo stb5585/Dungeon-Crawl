@@ -21,7 +21,7 @@ This document addresses three key questions before moving to Phase 3 (GUI Develo
 [project]
 name = "dungeon-crawl"
 version = "2.0.0"
-dependencies = ["dill>=0.3.9", "numpy>=2.2.0", "pyyaml>=6.0.2"]
+dependencies = ["numpy>=2.2.0", "pyyaml>=6.0.2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4.2", "pytest-cov>=4.1.0"]

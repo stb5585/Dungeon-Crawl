@@ -123,7 +123,7 @@ class MultiStatBuffEffect(Effect):
     def __init__(self, stat_modifiers: dict[str, int], duration: int):
         """
         Args:
-            stat_modifiers: Dict mapping stat names to modifier amounts
+            stat_modifiers: Dictionary mapping stat names to modifier amounts
                            e.g., {'attack': 10, 'defense': 5}
             duration: Number of turns the effect lasts
         """

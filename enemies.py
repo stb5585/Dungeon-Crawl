@@ -66,7 +66,7 @@ class Enemy(Character):
         self.enemy_typ = ""
         self.action_stack = []
         self.picture = "test.txt"
-
+        self.color = (150, 150, 150)  # Default gray, overridden by subclasses
 
     def __str__(self):
         return (f"{self.name} | "
@@ -173,6 +173,7 @@ class Misc(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Misc'
+        self.color = (150, 150, 150)  # Gray
 
 
 class Slime(Enemy):
@@ -195,6 +196,7 @@ class Slime(Enemy):
         self.resistance['Holy'] = 0.75
         self.resistance['Physical'] = -0.5
         self.picture = "slime.txt"
+        self.color = (120, 160, 100)  # Slimy green
 
 
 class Animal(Enemy):
@@ -208,6 +210,7 @@ class Animal(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Animal'
         self.inventory['Mystery Meat'] = [items.MysteryMeat]
+        self.color = (140, 110, 80)  # Natural brown
 
 
 class Humanoid(Enemy):
@@ -220,6 +223,7 @@ class Humanoid(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Humanoid'
+        self.color = (180, 140, 100)  # Flesh tone
 
 
 class Fey(Enemy):
@@ -233,6 +237,7 @@ class Fey(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Fey'
         self.resistance['Shadow'] = 0.25
+        self.color = (100, 160, 100)  # Forest green
 
 
 class Fiend(Enemy):
@@ -248,6 +253,7 @@ class Fiend(Enemy):
         self.resistance['Shadow'] = 0.25
         self.resistance['Holy'] = -0.25
         self.status_immunity = ["Death"]
+        self.color = (200, 60, 60)  # Dark red
 
 
 class Undead(Enemy):
@@ -265,6 +271,7 @@ class Undead(Enemy):
         self.resistance['Holy'] = -0.75
         self.resistance["Poison"] = 0.5
         self.status_immunity = ["Death"]
+        self.color = (200, 200, 180)  # Pale bone white
 
 
 class Elemental(Enemy):
@@ -278,6 +285,7 @@ class Elemental(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Elemental'
         self.resistance['Physical'] = 0.25
+        self.color = (150, 150, 200)  # Ethereal blue
 
 
 class Dragon(Enemy):
@@ -298,6 +306,7 @@ class Dragon(Enemy):
         self.resistance['Wind'] = 0.25
         self.resistance['Physical'] = 0.1
         self.status_immunity = ["Death", "Stone"]
+        self.color = (200, 140, 40)  # Gold
 
 
 class Monster(Enemy):
@@ -310,6 +319,7 @@ class Monster(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Monster'
+        self.color = (160, 120, 100)  # Mottled brown
 
 
 class Aberration(Enemy):
@@ -322,6 +332,7 @@ class Aberration(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Aberration'
+        self.color = (160, 100, 160)  # Sickly purple
 
 
 class Construct(Enemy):
@@ -337,6 +348,7 @@ class Construct(Enemy):
         self.resistance["Poison"] = 1.
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Poison", "Death", "Stone"]
+        self.color = (140, 140, 140)  # Stone gray
 
 
 # Enemies
@@ -2520,11 +2532,12 @@ class Behemoth(Aberration):
         self.picture = "behemoth.txt"
 
     def special_effects(self, target):
-        """Casts Meteor on death"""
+        """Has a 60% chance to cast Meteor on death"""
         special_str = ""
         if not self.is_alive():
-            special_str += f"{self.name} unleashes a powerful attack as it dies.\n"
-            special_str += abilities.Meteor().cast(self, target=target, special=True)
+            if random.randint(0, 100) < 60:  # 60% chance to cast
+                special_str += f"{self.name} unleashes a powerful attack as it dies.\n"
+                special_str += abilities.Meteor().cast(self, target=target, special=True)
         return special_str
 
 
@@ -3015,8 +3028,8 @@ class Devil(Fiend):
     """
 
     def __init__(self):
-        super().__init__(name='The Devil', health=5000, mana=1000, strength=75, intel=55, wisdom=70, con=85,
-                         charisma=80, dex=45, attack=208, defense=205, magic=194, magic_def=156,
+        super().__init__(name='The Devil', health=3500, mana=800, strength=65, intel=48, wisdom=60, con=70,
+                         charisma=70, dex=40, attack=170, defense=170, magic=150, magic_def=140,
                          exp=0)
         self.equipment = {'Weapon': items.DevilBlade(), 'Armor': items.DevilSkin(), 'OffHand': items.DevilBlade(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -3041,12 +3054,12 @@ class Devil(Fiend):
         self.spell_mod = 0
         self.action_stack = [
             {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Choose Fate", "priority": ActionPriority.HIGH},
-            {"ability": "Crush", "priority": ActionPriority.LOW},
+            {"ability": "Choose Fate", "priority": ActionPriority.NORMAL},
             {"ability": "Hellfire", "priority": ActionPriority.NORMAL},
+            {"ability": "Parry", "priority": ActionPriority.HIGH},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
             {"ability": "Regen", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Crush", "priority": ActionPriority.LOW}
         ]
         self.level.pro_level = 99
         self.sight = True

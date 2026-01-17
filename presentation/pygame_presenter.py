@@ -5,14 +5,28 @@ This presenter implements the GamePresenter interface using Pygame for graphical
 It subscribes to the event system for animations and real-time updates.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
+import sys
+import os
+from typing import TYPE_CHECKING, Any
+
 import pygame
+
+# Add assets to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from presentation.interface import GamePresenter
 from events import get_event_bus, EventType
 
+# Import sprite manager
+try:
+    from assets.sprite_manager import get_sprite_manager
+    SPRITES_AVAILABLE = True
+except ImportError:
+    SPRITES_AVAILABLE = False
+    print("Warning: Sprite manager not available")
+
 if TYPE_CHECKING:
     from character import Character
-    from items import Item
 
 # Colors
 BLACK = (0, 0, 0)
@@ -44,7 +58,7 @@ DAMAGE_COLORS = {
 class FloatingText:
     """Floating damage/healing text that animates upward."""
     
-    def __init__(self, text: str, x: int, y: int, color: Tuple[int, int, int], font: pygame.font.Font):
+    def __init__(self, text: str, x: int, y: int, color: tuple[int, int, int], font: pygame.font.Font):
         self.text = text
         self.x = x
         self.y = y
@@ -92,23 +106,30 @@ class PygamePresenter(GamePresenter):
         self.fps = 60
         
         # Combat state
-        self.player: Optional[Character] = None
-        self.enemy: Optional[Character] = None
+        self.player: Character | None = None
+        self.enemy: Character | None = None
         self.turn_number: int = 0
-        self.telegraph_message: Optional[str] = None
+        self.telegraph_message: str | None = None
         
         # Animations
-        self.floating_texts: List[FloatingText] = []
+        self.floating_texts: list[FloatingText] = []
         self.shake_intensity = 0
         self.shake_duration = 0
+        
+        # Sprite manager
+        self.sprite_manager = get_sprite_manager() if SPRITES_AVAILABLE else None
         
         # Event system
         self.event_bus = get_event_bus()
         self._subscribe_to_events()
         
-        # Combat log
-        self.combat_log: List[str] = []
-        self.max_log_lines = 10
+        # Combat log with scrolling
+        self.combat_log: list[str] = []
+        self.max_log_lines = 100  # Store more messages for scrolling
+        self.log_scroll_offset = 0
+        
+        # Debug mode
+        self.debug_mode = False  # Default debug mode, can be overridden by game launcher
         
     def _subscribe_to_events(self):
         """Subscribe to combat events for animations."""
@@ -192,10 +213,22 @@ class PygamePresenter(GamePresenter):
     def _on_status_applied(self, event):
         """Handle status effect application."""
         status_name = event.data.get('status_name', 'Unknown')
-        target = event.data.get('target')
-        
-        if target:
-            self._add_log(f"{target.name} is {status_name}!")
+
+        # Prefer the CombatEvent.target object when available; fall back to data payload
+        target_obj = getattr(event, 'target', None)
+        target_data = event.data.get('target')
+
+        if target_obj and hasattr(target_obj, 'name'):
+            target_name = target_obj.name
+        elif hasattr(target_data, 'name'):
+            target_name = target_data.name  # pragma: no cover
+        elif target_data:
+            target_name = str(target_data)
+        else:
+            target_name = None
+
+        if target_name:
+            self._add_log(f"{target_name} is {status_name}!")
             
     def _add_log(self, message: str):
         """Add message to combat log."""
@@ -205,10 +238,20 @@ class PygamePresenter(GamePresenter):
             
     def _draw_character(self, character: Character, x: int, y: int, is_player: bool = True):
         """Draw a character sprite with health/mana bars."""
-        # Character placeholder (will be replaced with sprites later)
-        char_rect = pygame.Rect(x - 50, y - 50, 100, 100)
-        color = BLUE if is_player else RED
-        pygame.draw.rect(self.screen, color, char_rect, 2)
+        # Get character sprite
+        sprite = None
+        if self.sprite_manager:
+            sprite = self.sprite_manager.get_character_sprite(character)
+            
+        if sprite:
+            # Draw actual sprite
+            sprite_rect = sprite.get_rect(center=(x, y - 20))
+            self.screen.blit(sprite, sprite_rect)
+        else:
+            # Fallback: Draw placeholder rectangle
+            char_rect = pygame.Rect(x - 50, y - 50, 100, 100)
+            color = BLUE if is_player else RED
+            pygame.draw.rect(self.screen, color, char_rect, 2)
         
         # Name
         name_text = self.normal_font.render(character.name, True, WHITE)
@@ -257,16 +300,26 @@ class PygamePresenter(GamePresenter):
             mp_rect = mp_text.get_rect(centerx=x, centery=y + 100)
             self.screen.blit(mp_text, mp_rect)
             
-        # Status effects (icons placeholder)
+        # Status effects with icons
         status_y = y + 120
         active_statuses = [name for name, effect in character.status_effects.items() if effect.active]
-        if active_statuses:
+        if active_statuses and self.sprite_manager:
+            # Draw status icons
+            icon_x = x - (len(active_statuses) * 18)
+            for status_name in active_statuses[:4]:  # Show up to 4 icons
+                icon = self.sprite_manager.get_status_icon(status_name)
+                if icon:
+                    icon_rect = icon.get_rect(center=(icon_x, status_y + 10))
+                    self.screen.blit(icon, icon_rect)
+                    icon_x += 36
+        elif active_statuses:
+            # Fallback: Text display
             status_text = self.small_font.render(", ".join(active_statuses[:3]), True, YELLOW)
             status_rect = status_text.get_rect(centerx=x, top=status_y)
             self.screen.blit(status_text, status_rect)
             
     def _draw_combat_log(self):
-        """Draw the combat log at the bottom of the screen."""
+        """Draw the combat log at the bottom of the screen with scrolling support."""
         log_y = self.height - 200
         
         # Background
@@ -278,12 +331,27 @@ class PygamePresenter(GamePresenter):
         title = self.normal_font.render("Combat Log", True, YELLOW)
         self.screen.blit(title, (20, log_y + 5))
         
-        # Log messages
+        # Calculate how many lines can fit
+        lines_per_page = 8
+        max_scroll = max(0, len(self.combat_log) - lines_per_page)
+        self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
+        
+        # Log messages with scrolling
         y = log_y + 35
-        for message in self.combat_log[-8:]:  # Show last 8 messages
+        visible_messages = self.combat_log[self.log_scroll_offset:self.log_scroll_offset + lines_per_page]
+        for message in visible_messages:
             text = self.small_font.render(message, True, LIGHT_GRAY)
             self.screen.blit(text, (20, y))
             y += 20
+        
+        # Scroll indicators
+        if len(self.combat_log) > lines_per_page:
+            if self.log_scroll_offset > 0:
+                up_text = self.small_font.render("▲", True, GRAY)
+                self.screen.blit(up_text, (self.width - 40, log_y + 35))
+            if self.log_scroll_offset < max_scroll:
+                down_text = self.small_font.render("▼", True, GRAY)
+                self.screen.blit(down_text, (self.width - 40, log_y + 160))
             
     def _draw_telegraph(self):
         """Draw telegraph message if active."""
@@ -298,7 +366,7 @@ class PygamePresenter(GamePresenter):
             
             self.screen.blit(text, rect)
             
-    def _apply_screen_shake(self) -> Tuple[int, int]:
+    def _apply_screen_shake(self) -> tuple[int, int]:
         """Calculate screen shake offset."""
         if self.shake_duration > 0:
             self.shake_duration -= 1
@@ -315,6 +383,13 @@ class PygamePresenter(GamePresenter):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
+            elif event.type == pygame.KEYDOWN:
+                # Handle log scrolling
+                if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    self.log_scroll_offset = max(0, self.log_scroll_offset - 1)
+                elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    max_scroll = max(0, len(self.combat_log) - 8)
+                    self.log_scroll_offset = min(max_scroll, self.log_scroll_offset + 1)
                 
         # Update animations
         self.floating_texts = [ft for ft in self.floating_texts if ft.update()]
@@ -364,30 +439,161 @@ class PygamePresenter(GamePresenter):
         pygame.display.flip()
         self.clock.tick(self.fps)
         
-    def render_menu(self, title: str, options: List[str], selected: int = 0) -> int:
-        """Render a menu and return selected option."""
-        # This is a simplified version - you'll need to add proper input handling
-        self.screen.fill(BLACK)
+    def render_menu(
+        self,
+        title: str,
+        options: list[str],
+        selected_index: int = 0,
+        use_grid: bool = False,
+        max_visible: int | None = None,
+    ) -> int:
+        """Render a menu and return selected option index.
         
-        # Title
-        title_text = self.title_font.render(title, True, YELLOW)
-        title_rect = title_text.get_rect(centerx=self.width // 2, top=100)
-        self.screen.blit(title_text, title_rect)
+        Args:
+            title: Menu title
+            options: list of menu options
+            selected_index: Initially selected option
+            use_grid: If True, render options in a 2-column grid layout
+        """
+        selected = selected_index
+        scroll_offset = 0
         
-        # Options
-        y = 250
-        for i, option in enumerate(options):
-            color = YELLOW if i == selected else WHITE
-            option_text = self.large_font.render(option, True, color)
-            option_rect = option_text.get_rect(centerx=self.width // 2, top=y)
-            self.screen.blit(option_text, option_rect)
-            y += 60
+        while True:
+            # Handle events
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if use_grid:
+                        # Grid navigation: up/down/left/right
+                        cols = 2
+                        rows = (len(options) + cols - 1) // cols
+                        current_row = selected // cols
+                        current_col = selected % cols
+                        
+                        if event.key == pygame.K_UP:
+                            current_row = (current_row - 1) % rows
+                            selected = current_row * cols + current_col
+                            if selected >= len(options):
+                                selected = len(options) - 1
+                        elif event.key == pygame.K_DOWN:
+                            current_row = (current_row + 1) % rows
+                            selected = min(current_row * cols + current_col, len(options) - 1)
+                        elif event.key == pygame.K_LEFT:
+                            if current_col > 0:
+                                selected -= 1
+                            else:
+                                # Wrap to previous row, last column
+                                selected = max(0, selected - 1)
+                        elif event.key == pygame.K_RIGHT:
+                            if current_col < cols - 1 and selected + 1 < len(options):
+                                selected += 1
+                            else:
+                                # Wrap to next row, first column
+                                selected = min(len(options) - 1, selected + 1)
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                            return selected
+                        elif event.key == pygame.K_ESCAPE:
+                            return None  # Cancel
+                    else:
+                        # list navigation: up/down only (supports optional scrolling window)
+                        if event.key == pygame.K_UP:
+                            selected = (selected - 1) % len(options)
+                        elif event.key == pygame.K_DOWN:
+                            selected = (selected + 1) % len(options)
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                            return selected
+                        elif event.key == pygame.K_ESCAPE:
+                            return None  # Cancel
+
+                        # Maintain scroll window if max_visible provided
+                        if not use_grid and max_visible and max_visible > 0:
+                            if selected < scroll_offset:
+                                scroll_offset = selected
+                            elif selected >= scroll_offset + max_visible:
+                                scroll_offset = selected - max_visible + 1
             
-        pygame.display.flip()
-        return selected
+            # Render menu
+            self.screen.fill(BLACK)
+            
+            # Title - handle multiline titles
+            title_lines = title.split('\n')
+            title_y = 80
+            for line in title_lines:
+                if line:  # Only render non-empty lines
+                    title_text = self.title_font.render(line, True, YELLOW)
+                    title_rect = title_text.get_rect(centerx=self.width // 2, top=title_y)
+                    self.screen.blit(title_text, title_rect)
+                title_y += 40  # Move down for next line (or blank space)
+            
+            # Calculate menu start position based on title height
+            menu_start_y = max(250, title_y + 30)
+            
+            if use_grid:
+                # Grid layout - 2 columns
+                cols = 2
+                col_width = self.width // 3
+                start_x = self.width // 2 - col_width
+                start_y = menu_start_y
+                row_height = 70
+                
+                for i, option in enumerate(options):
+                    row = i // cols
+                    col = i % cols
+                    
+                    x = start_x + col * col_width
+                    y = start_y + row * row_height
+                    
+                    color = YELLOW if i == selected else WHITE
+                    option_text = self.large_font.render(option, True, color)
+                    
+                    # Draw selection box if selected
+                    if i == selected:
+                        box_rect = pygame.Rect(x - 10, y - 5, col_width - 20, 50)
+                        pygame.draw.rect(self.screen, DARK_GRAY, box_rect, 2)
+                    
+                    option_rect = option_text.get_rect(left=x, centery=y + 20)
+                    self.screen.blit(option_text, option_rect)
+            else:
+                # list layout with optional vertical scrolling
+                y = menu_start_y
+                visible_start = scroll_offset if (max_visible and max_visible > 0) else 0
+                visible_end = visible_start + max_visible if (max_visible and max_visible > 0) else len(options)
+                for i in range(visible_start, min(visible_end, len(options))):
+                    option = options[i]
+                    color = YELLOW if i == selected else WHITE
+                    option_text = self.large_font.render(option, True, color)
+                    option_rect = option_text.get_rect(centerx=self.width // 2, top=y)
+                    self.screen.blit(option_text, option_rect)
+                    y += 60
+
+                # Scroll indicators
+                if max_visible and len(options) > max_visible:
+                    if scroll_offset > 0:
+                        up_text = self.small_font.render("▲", True, GRAY)
+                        up_rect = up_text.get_rect(centerx=self.width // 2, top=210)
+                        self.screen.blit(up_text, up_rect)
+                    if scroll_offset + max_visible < len(options):
+                        down_text = self.small_font.render("▼", True, GRAY)
+                        down_rect = down_text.get_rect(centerx=self.width // 2, top=y)
+                        self.screen.blit(down_text, down_rect)
+            
+            # Instructions
+            if use_grid:
+                help_text = self.small_font.render("Arrow Keys: Navigate  ENTER: Select  ESC: Cancel", True, GRAY)
+            else:
+                nav_hint = "UP/DOWN" if not max_visible else "UP/DOWN (scroll)"
+                help_text = self.small_font.render(f"{nav_hint}: Navigate  ENTER: Select  ESC: Cancel", True, GRAY)
+            help_rect = help_text.get_rect(centerx=self.width // 2, bottom=self.height - 20)
+            self.screen.blit(help_text, help_rect)
+                
+            pygame.display.flip()
+            self.clock.tick(30)  # 30 FPS for menus
         
     def show_message(self, message: str, title: str = ""):
-        """Display a message box."""
+        """Display a message box and wait for keypress."""
         self.screen.fill(BLACK)
         
         if title:
@@ -398,27 +604,53 @@ class PygamePresenter(GamePresenter):
         else:
             y = 250
             
-        # Wrap message
-        words = message.split()
+        # Handle explicit newlines first, then word wrap each paragraph
         lines = []
-        current_line = []
-        for word in words:
-            current_line.append(word)
-            test_line = " ".join(current_line)
-            if self.normal_font.size(test_line)[0] > self.width - 100:
-                current_line.pop()
+        for paragraph in message.split('\n'):
+            if not paragraph.strip():
+                # Empty line - preserve spacing
+                lines.append("")
+                continue
+                
+            # Wrap this paragraph
+            words = paragraph.split()
+            current_line = []
+            for word in words:
+                current_line.append(word)
+                test_line = " ".join(current_line)
+                if self.normal_font.size(test_line)[0] > self.width - 100:
+                    current_line.pop()
+                    if current_line:  # Avoid empty lines from long words
+                        lines.append(" ".join(current_line))
+                    current_line = [word]
+            if current_line:
                 lines.append(" ".join(current_line))
-                current_line = [word]
-        if current_line:
-            lines.append(" ".join(current_line))
             
         for line in lines:
-            text = self.normal_font.render(line, True, WHITE)
-            text_rect = text.get_rect(centerx=self.width // 2, top=y)
-            self.screen.blit(text, text_rect)
+            if line:  # Only render non-empty lines
+                text = self.normal_font.render(line, True, WHITE)
+                text_rect = text.get_rect(centerx=self.width // 2, top=y)
+                self.screen.blit(text, text_rect)
             y += 40
+        
+        # Instructions
+        help_text = self.small_font.render("Press any key to continue...", True, GRAY)
+        help_rect = help_text.get_rect(centerx=self.width // 2, bottom=self.height - 20)
+        self.screen.blit(help_text, help_rect)
             
         pygame.display.flip()
+        
+        # Wait for keypress
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    waiting = False
+            self.clock.tick(30)
         
     def cleanup(self):
         """Clean up Pygame resources."""
@@ -438,7 +670,7 @@ class PygamePresenter(GamePresenter):
         pygame.display.flip()
         self.clock.tick(self.fps)
         
-    def get_player_action(self, prompt: str, options: List[str]) -> str:
+    def get_player_action(self, prompt: str, options: list[str]) -> str:
         """Get player action through menu."""
         selected = 0
         while True:
@@ -455,11 +687,50 @@ class PygamePresenter(GamePresenter):
                         
             self.render_menu(prompt, options, selected)
             
-    def get_text_input(self, prompt: str, default: str = "") -> str:
+    def get_text_input(self, prompt: str, default: str = "", default_text: str = None) -> str:
         """Get text input from player."""
-        # Simplified - returns default for now
-        # Full implementation would need text input handling
-        return default
+        # Support both 'default' and 'default_text' for compatibility
+        if default_text is not None:
+            default = default_text
+        text = default
+        
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        return text if text else default
+                    elif event.key == pygame.K_ESCAPE:
+                        return default
+                    elif event.key == pygame.K_BACKSPACE:
+                        text = text[:-1]
+                    elif event.unicode and event.unicode.isprintable():
+                        if len(text) < 20:  # Max length
+                            text += event.unicode
+            
+            # Render
+            self.screen.fill(BLACK)
+            
+            # Prompt
+            prompt_text = self.large_font.render(prompt, True, WHITE)
+            prompt_rect = prompt_text.get_rect(centerx=self.width // 2, top=200)
+            self.screen.blit(prompt_text, prompt_rect)
+            
+            # Input box
+            input_text = self.normal_font.render(text + "_", True, YELLOW)
+            input_rect = input_text.get_rect(centerx=self.width // 2, top=300)
+            self.screen.blit(input_text, input_rect)
+            
+            # Instructions
+            help_text = self.small_font.render("ENTER: Confirm  ESC: Cancel", True, GRAY)
+            help_rect = help_text.get_rect(centerx=self.width // 2, bottom=self.height - 20)
+            self.screen.blit(help_text, help_rect)
+            
+            pygame.display.flip()
+            self.clock.tick(30)
         
     def confirm(self, message: str) -> bool:
         """Show confirmation dialog."""
@@ -478,7 +749,7 @@ class PygamePresenter(GamePresenter):
                     waiting = False
             self.clock.tick(30)
             
-    def render_map(self, game_map: Any, player_position: Tuple[int, int]):
+    def render_map(self, game_map: Any, player_position: tuple[int, int]):
         """Render the game map."""
         # Placeholder - would need tile graphics
         self.screen.fill(BLACK)

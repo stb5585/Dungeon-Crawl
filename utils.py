@@ -2,12 +2,11 @@
 """ utils manager """
 
 import curses
-import curses.textpad
 import random
 import time
 from textwrap import wrap
 
-import dill
+from save_system import SaveManager
 
 
 # functions
@@ -416,10 +415,9 @@ class LoadGameMenu:
     def draw_desc(self):
         self.desc_win.erase()
         if self.options_list[self.current_option] != "Go Back":
-            loadfile = f"save_files/{self.options_list[self.current_option].lower()}.save"
-            with open(loadfile, "rb") as save_file:
-                player_dict = dill.load(save_file)
-            desc_lines = self.config_desc_str(player_dict).splitlines()
+            loadfile = f"{self.options_list[self.current_option].lower()}.save"
+            player_obj = SaveManager.load_player(loadfile)
+            desc_lines = self.config_desc_str(player_obj).splitlines()
             for i, line in enumerate(desc_lines):
                 self.desc_win.addstr(5 + (2 * i), self.width // 3 - (len(line) // 2), line)
         self.desc_win.box()
@@ -433,19 +431,28 @@ class LoadGameMenu:
         self.game.stdscr.erase()
         self.game.stdscr.refresh()
 
-    def config_desc_str(self, player_dict):
-        desc_str = f"{player_dict['name']}\n"
-        desc_str += (f"Level {player_dict['level'].level} "
-                     f"{player_dict['race'].name} "
-                     f"{player_dict['cls'].name}\n")
-        desc_str += (f"{'Hit Points:':13}{' ':1}{player_dict['health'].current:3}/{player_dict['health'].max:>3}\n"
-                     f"{'Mana Points:':13}{' ':1}{player_dict['mana'].current:3}/{player_dict['mana'].max:>3}\n"
-                     f"{'Strength:':13}{' ':1}{player_dict['stats'].strength:>7}\n"
-                     f"{'Intelligence:':13}{' ':1}{player_dict['stats'].intel:>7}\n"
-                     f"{'Wisdom:':13}{' ':1}{player_dict['stats'].wisdom:>7}\n"
-                     f"{'Constitution:':13}{' ':1}{player_dict['stats'].con:>7}\n"
-                     f"{'Charisma:':13}{' ':1}{player_dict['stats'].charisma:>7}\n"
-                     f"{'Dexterity:':13}{' ':1}{player_dict['stats'].dex:>7}\n")
+    def config_desc_str(self, player_obj):
+        if player_obj is None:
+            return "Corrupted save"
+        desc_str = f"{getattr(player_obj, 'name', 'Unknown')}\n"
+        level = getattr(getattr(player_obj, 'level', None), 'level', '?')
+        race_name = getattr(getattr(player_obj, 'race', None), 'name', 'Unknown')
+        cls_name = getattr(getattr(player_obj, 'cls', None), 'name', 'Unknown')
+        desc_str += (f"Level {level} {race_name} {cls_name}\n")
+
+        health = getattr(player_obj, 'health', None)
+        mana = getattr(player_obj, 'mana', None)
+        stats = getattr(player_obj, 'stats', None)
+
+        if health and mana and stats:
+            desc_str += (f"{'Hit Points:':13} {' ':1}{health.current:3}/{health.max:>3}\n"
+                         f"{'Mana Points:':13} {' ':1}{mana.current:3}/{mana.max:>3}\n"
+                         f"{'Strength:':13} {' ':1}{stats.strength:>7}\n"
+                         f"{'Intelligence:':13} {' ':1}{stats.intel:>7}\n"
+                         f"{'Wisdom:':13} {' ':1}{stats.wisdom:>7}\n"
+                         f"{'Constitution:':13} {' ':1}{stats.con:>7}\n"
+                         f"{'Charisma:':13} {' ':1}{stats.charisma:>7}\n"
+                         f"{'Dexterity:':13} {' ':1}{stats.dex:>7}\n")
         return desc_str
 
     def navigate_menu(self):
@@ -1208,7 +1215,15 @@ class PromotionPopupMenu(PopupMenu):
                 # new equipment
                 self.popup_win.addstr(13, (3 * self.box_width // 5) - 6, "New Equipment", curses.A_BOLD)
                 self.popup_win.addstr(14, (3 * self.box_width // 5) - 15, f"{'Weapon:':8} {cls.equipment['Weapon'].name:>20}")
-                self.popup_win.addstr(16, (3 * self.box_width // 5) - 15, f"{'OffHand:':8} {cls.equipment['OffHand'].name:>20}")
+                # Format OffHand with buff info
+                offhand_item = cls.equipment['OffHand']
+                if offhand_item.subtyp == 'Shield':
+                    offhand_display = f"{offhand_item.name} ({int(offhand_item.mod * 100)}%)"
+                elif offhand_item.subtyp in ['Tome', 'Rod']:
+                    offhand_display = f"{offhand_item.name} (+{int(offhand_item.mod)})"
+                else:
+                    offhand_display = offhand_item.name
+                self.popup_win.addstr(16, (3 * self.box_width // 5) - 15, f"{'OffHand:':8} {offhand_display:>20}")
                 self.popup_win.addstr(18, (3 * self.box_width // 5) - 15, f"{'Armor:':8} {cls.equipment['Armor'].name:>20}")
                 # equipment restrictions
                 self.popup_win.addstr(j + 17, (2 * self.box_width // 5) - 11, "Equipment Restrictions", curses.A_BOLD)
@@ -1845,7 +1860,7 @@ class QuestListPopupMenu(PopupMenu):
         h_adjust += 1
         for quest, info in self.game.player_char.quest_dict["Bounty"].items():
             if info[2]:
-                self.popup_win.addstr(h_adjust, 16, f"{quest}: Completed")
+                self.popup_win.addstr(h_adjust, 16, f"{quest}: Complete")
             else:
                 self.popup_win.addstr(h_adjust, 16, f"{quest}: {info[1]}/{info[0]['num']}")
             h_adjust += 1
@@ -1932,6 +1947,7 @@ class QuestListPopupMenu(PopupMenu):
 
     def quest_str_config(self, quest):
         completed = "Yes" if quest["Completed"] else "No"
+        turned_in = "Yes" if quest["Turned In"] else "No"
         what_str = quest["What"] if isinstance(quest["What"], str) else quest["What"]().name
         quest_str =  (f"{self.options_list[self.current_option]}\n\n"
                       f"{quest['Type']} {what_str}\n"
@@ -1947,6 +1963,7 @@ class QuestListPopupMenu(PopupMenu):
                     current = 0
             quest_str += f"Collected: {current}/{quest['Total']}\n"
         quest_str += f"Completed: {completed}\n"
+        quest_str += f"Turned In: {turned_in}\n"
         return quest_str
 
     def completed_quests(self):

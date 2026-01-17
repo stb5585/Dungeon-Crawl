@@ -13,7 +13,6 @@ Standard Library
 - glob
 - math
 - os
-- dill
 - random
 - re
 - sys
@@ -21,7 +20,6 @@ Standard Library
 - typing
 
 3rd Party
-- dill 0.3.9
 - numpy 2.2.3
 - PyYAML 6.x (for data-driven abilities)
 

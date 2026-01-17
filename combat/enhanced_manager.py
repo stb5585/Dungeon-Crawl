@@ -96,6 +96,13 @@ class EnhancedBattleManager(BaseBattleManager):
                     break
         
         self.after_turn()
+        
+        # Trigger enemy death special effects (like Behemoth's Meteor)
+        if not self.enemy.is_alive() and hasattr(self.enemy, 'special_effects'):
+            result = self.enemy.special_effects(self.player_char)
+            if result:
+                self.print_text(result)
+        
         self.action_queue.next_round()
         
         # Emit turn end event

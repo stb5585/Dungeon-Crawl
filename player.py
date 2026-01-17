@@ -7,7 +7,6 @@ import os
 import random
 import time
 
-import dill
 import numpy
 
 import abilities
@@ -16,6 +15,7 @@ from battle import BattleManager
 from combat.enhanced_manager import EnhancedBattleManager
 from character import Character
 from items import remove_equipment
+from save_system import SaveManager
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -40,40 +40,32 @@ DIRECTIONS = {
     }
 
 
-def load_char(char=None, player_dict=None):
+def load_char(char=None, filename=None, is_tmp=False):
     """
-    Initializes the character based on the load file
+    Initializes the character based on the save file using the data-driven save system.
+
+    Args:
+        char: Optional character instance; if provided, loads from tmp_files/<name>.save
+        filename: Explicit filename to load (e.g., "myhero.save")
+        is_tmp: Whether to load from tmp_files instead of save_files
     """
-    if char:
-        load_file = "tmp_files/" + str(char.name).lower() + ".tmp"
-        with open(load_file, "rb") as l_file:
-            player_dict = dill.load(l_file)
-        os.system(f"rm {load_file}")
-    player_char = Player(player_dict['location_x'], player_dict['location_y'], player_dict['location_z'],
-                         player_dict['level'], player_dict['health'], player_dict['mana'], 
-                         player_dict['stats'], player_dict["combat"],
-                         player_dict['gold'], player_dict['resistance'])
-    player_char.name = player_dict['name']
-    player_char.race = player_dict['race']
-    player_char.cls = player_dict['cls']
-    player_char.equipment = player_dict['equipment']
-    player_char.inventory = player_dict['inventory']
-    player_char.special_inventory = player_dict['special_inventory']
-    player_char.spellbook = player_dict['spellbook']
-    player_char.familiar = player_dict['familiar']
-    player_char.summons = player_dict["summons"]
-    player_char.transform_type = player_dict['transform_type']
-    player_char.teleport = player_dict['teleport']
-    player_char.world_dict = player_dict['world_dict']
-    player_char.quest_dict = player_dict['quest_dict']
-    player_char.kill_dict = player_dict['kill_dict']
-    player_char.invisible = player_dict['invisible']
-    player_char.flying = player_dict['flying']
-    player_char.storage = player_dict['storage']
-    player_char.power_up = player_dict['power_up']
-    player_char.sight = player_dict['sight']
-    player_char.warp_point = player_dict['warp_point']
-    return player_char
+    target_filename = filename
+    target_tmp = is_tmp
+
+    if char and not filename:
+        target_filename = f"{str(char.name).lower()}.save"
+        target_tmp = True
+
+    if not target_filename:
+        return None
+
+    player = SaveManager.load_player(target_filename, is_tmp=target_tmp)
+    if player and target_tmp:
+        try:
+            os.remove(f"tmp_files/{target_filename}")
+        except FileNotFoundError:
+            pass
+    return player
 
 
 class Player(Character):
@@ -134,7 +126,17 @@ class Player(Character):
                     if 'Stairs' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25E3"
                     elif "Door" in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u2593" if not self.world_dict[tile].open else "."
+                        # Special handling for OreVaultDoor - only show as door if detected or open
+                        if "OreVaultDoor" in str(self.world_dict[tile]):
+                            if self.world_dict[tile].open:
+                                map_array[tile_x][tile_y] = "."
+                            elif hasattr(self.world_dict[tile], 'detected') and self.world_dict[tile].detected:
+                                map_array[tile_x][tile_y] = "\u2593"
+                            else:
+                                # Show as wall if not detected
+                                map_array[tile_x][tile_y] = "#"
+                        else:
+                            map_array[tile_x][tile_y] = "\u2593" if not self.world_dict[tile].open else "."
                     elif 'Wall' in str(self.world_dict[tile]):
                         if "FakeWall" in str(self.world_dict[tile]) and self.world_dict[tile].visited:
                             map_array[tile_x][tile_y] = ":"
@@ -148,6 +150,8 @@ class Player(Character):
                         map_array[tile_x][tile_y] = "\u2620" if not self.world_dict[tile].defeated else "."
                     elif "SecretShop" in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2302"
+                    elif "WarpPoint" in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = "\u25C9"
                     else:
                         map_array[tile_x][tile_y] = "."
         map_array[self.location_y][self.location_x] = DIRECTIONS[self.facing]["char"]
@@ -215,9 +219,17 @@ class Player(Character):
 
     def player_level(self):
         """
-        total player level
+        total player level (cumulative across all promotions)
+        Base class: levels 1-30
+        First promotion: levels 31-60 (reset to 1, gain 30 more)
+        Second promotion: levels 61-110 (reset to 1, gain 50 more)
         """
-        return self.level.level + (30 * (self.level.pro_level - 1))
+        if self.level.pro_level == 1:
+            return self.level.level
+        elif self.level.pro_level == 2:
+            return 30 + self.level.level
+        else:  # pro_level == 3
+            return 60 + self.level.level
 
     def max_level(self):
         return any([(self.level.level == 50 and self.level.pro_level == 3),
@@ -359,10 +371,23 @@ class Player(Character):
         """
 
         buff_str = self.buff_str()
+        # Format OffHand with buff info
+        offhand_item = self.equipment['OffHand']
+        if offhand_item.subtyp == 'Shield':
+            offhand_str = f"{offhand_item.name} ({int(offhand_item.mod * 100)}% Block)"
+        elif offhand_item.subtyp in ['Tome', 'Rod']:
+            offhand_str = f"{offhand_item.name} (+{int(offhand_item.mod)} Magic)"
+        elif offhand_item.subtyp == 'Musical Instrument':
+            offhand_str = f"{offhand_item.name} (+{int(offhand_item.mod)} Heal)"
+        elif offhand_item.typ == 'Weapon':
+            offhand_str = offhand_item.name
+        else:
+            offhand_str = offhand_item.name
+        
         return (f"{'Weapon'}:    {self.equipment['Weapon'].name:<30}\n"
                 f"{'Armor'}:     {self.equipment['Armor'].name:<30}\n"
                 f"{'Ring'}:      {self.equipment['Ring'].name:<30}\n"
-                f"{'OffHand'}:   {self.equipment['OffHand'].name:<30}\n"
+                f"{'OffHand'}:   {offhand_str:<30}\n"
                 f"{'Pendant'}:   {self.equipment['Pendant'].name:<30}\n"
                 f"{'Buffs'}:     {buff_str:<30}\n")
 
@@ -621,28 +646,43 @@ class Player(Character):
         s_popup = utils.AbilitiesPopupMenu(game, "Abilities")
         s_popup.navigate_popup()
 
-    def save(self, game=None, tmp=False):
+    def save(self, game=None, tmp=False, filepath=None):
+        """
+        Save the player state using the new data-driven save system.
+
+        Args:
+            game: Game instance (for UI prompts)
+            tmp: If True, save to tmp_files
+            filepath: Direct filepath (bypasses all prompts)
+        """
+        if filepath:
+            # Direct save to specified path
+            SaveManager.save_player(self, os.path.basename(filepath), is_tmp=False)
+            return
+        
         if tmp:
-            tmp_dir = "tmp_files"
-            save_file = tmp_dir + f"/{str(self.name)}.tmp"
-            if not os.path.isdir(tmp_dir):
-                os.mkdir(tmp_dir)
-            with open(save_file, "wb") as save_game:
-                dill.dump(self.__dict__, save_game)
+            # Save to tmp_files with player name
+            filename = f"{str(self.name).lower()}.save"
+            SaveManager.save_player(self, filename, is_tmp=True)
         else:
-            while True:
-                if not os.path.isdir("save_files"):
-                    os.mkdir("save_files")
-                save_file = f"save_files/{str(self.name).lower()}.save"
-                if os.path.exists(save_file):
-                    confirm_str = "A save file under this name already exists. Are you sure you want to overwrite it?"
-                    confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
-                    if not confirm.navigate_popup():
-                        break
+            # Interactive save with UI
+            filename = f"{str(self.name).lower()}.save"
+            
+            if not os.path.isdir("save_files"):
+                os.mkdir("save_files")
+            
+            filepath = f"save_files/{filename}"
+            
+            if os.path.exists(filepath):
+                confirm_str = "A save file under this name already exists. Are you sure you want to overwrite it?"
+                confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
+                if not confirm.navigate_popup():
+                    return
+            
+            if game:
                 utils.save_file_popup(game)
-                with open(save_file, "wb") as save_game:
-                    dill.dump(self.__dict__, save_game)
-                break
+            
+            SaveManager.save_player(self, filename, is_tmp=False)
 
     def equip(self, equip_slot, item, check=False):
         """
@@ -656,7 +696,7 @@ class Player(Character):
                 Default is False.
 
         Returns:
-            None: This function does not return a value.
+            bool: True if equipment was successful, False if item is not allowed for this class.
 
         Example:
             >>> equip("Weapon", Dirk)
@@ -666,6 +706,10 @@ class Player(Character):
         equip_slots = {"Weapon", "OffHand", "Armor", "Ring", "Pendant"}
         if equip_slot not in equip_slots:
             raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")
+
+        # Check if the class allows this item type
+        if not self.cls.equip_check(item, equip_slot):
+            return False
 
         if self.equipment[equip_slot].subtyp != 'None' and not check:
             self.modify_inventory(self.equipment[equip_slot])
@@ -697,6 +741,7 @@ class Player(Character):
             self.flying = True
         if not check and item.subtyp != "None":
             self.modify_inventory(item, subtract=True)
+        return True
 
     def equip_diff(self, item, equip_slot, buy=False):
         """

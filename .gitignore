@@ -43,9 +43,11 @@ modify_save.py
 fixes.txt
 notes.txt
 launch.sh
-launch_debug.sh
+launch*.sh
 composition_patterns.py
 
 # ignore save_files
 save_files/*
 backup_saves/*
+
+old_assets/

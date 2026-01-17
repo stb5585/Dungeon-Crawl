@@ -8,7 +8,7 @@ This allows the game logic to remain independent of the UI technology (curses, p
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from character import Character
@@ -56,7 +56,8 @@ class GamePresenter(ABC):
         self,
         title: str,
         options: list[str],
-        selected_index: int = 0
+        selected_index: int = 0,
+        max_visible: int | None = None
     ) -> None:
         """
         Render a menu screen.
@@ -209,7 +210,8 @@ class NullPresenter(GamePresenter):
         self,
         title: str,
         options: list[str],
-        selected_index: int = 0
+        selected_index: int = 0,
+        max_visible: int | None = None
     ) -> None:
         pass
     
@@ -325,7 +327,8 @@ class ConsolePresenter(GamePresenter):
         self,
         title: str,
         options: list[str],
-        selected_index: int = 0
+        selected_index: int = 0,
+        max_visible: int | None = None
     ) -> None:
         print(f"\n=== {title} ===")
         for i, option in enumerate(options):

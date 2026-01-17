@@ -204,7 +204,6 @@ class AbilityFactory:
             }
         """
         from dataclasses import dataclass, field
-        from typing import List, Any
         
         @dataclass
         class SimpleAbility:
@@ -215,7 +214,7 @@ class AbilityFactory:
             description: str
             cost: int
             dmg_mod: float
-            effects: List[Any] = field(default_factory=list)
+            effects: list[Any] = field(default_factory=list)
         
         name = ability_data.get('name', 'Unknown')
         description = ability_data.get('description', '')
