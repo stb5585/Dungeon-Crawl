@@ -50,4 +50,23 @@ composition_patterns.py
 save_files/*
 backup_saves/*
 
+# ignore old files
+docs/archive/
 old_assets/
+
+# ignore system files
+.DS_Store
+Thumbs.db
+
+# ignore log files
+*.log
+logs/
+*.out
+*.err
+
+# ignore temporary files
+tmp/
+temp/
+tmp_files/
+*.tmp
+*.temp
