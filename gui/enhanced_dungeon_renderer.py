@@ -1198,7 +1198,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._closed_door_base is None:
-            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'closed_door-512x512.png')
+            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'closed_door.png')
             if os.path.exists(door_path):
                 try:
                     self._closed_door_base = pygame.image.load(door_path).convert_alpha()
@@ -1226,7 +1226,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._open_door_base is None:
-            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'opened_door-512x512.png')
+            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'opened_door.png')
             if os.path.exists(door_path):
                 try:
                     self._open_door_base = pygame.image.load(door_path).convert_alpha()
@@ -1254,7 +1254,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._stairs_up_base is None:
-            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_up-512x512.png')
+            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_up.png')
             if os.path.exists(stairs_path):
                 try:
                     self._stairs_up_base = pygame.image.load(stairs_path).convert_alpha()
@@ -1282,7 +1282,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._stairs_down_base is None:
-            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_down-512x512.png')
+            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_down.png')
             if os.path.exists(stairs_path):
                 try:
                     self._stairs_down_base = pygame.image.load(stairs_path).convert_alpha()

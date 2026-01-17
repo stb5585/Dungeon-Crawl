@@ -17,13 +17,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from presentation.interface import GamePresenter
 from events import get_event_bus, EventType
 
+# TODO: Re-enable sprite manager when available
 # Import sprite manager
-try:
-    from assets.sprite_manager import get_sprite_manager
-    SPRITES_AVAILABLE = True
-except ImportError:
-    SPRITES_AVAILABLE = False
-    print("Warning: Sprite manager not available")
+# try:
+#     from assets.sprite_manager import get_sprite_manager
+#     SPRITES_AVAILABLE = True
+# except ImportError:
+SPRITES_AVAILABLE = False
+# print("Warning: Sprite manager not available")
 
 if TYPE_CHECKING:
     from character import Character
@@ -117,7 +118,8 @@ class PygamePresenter(GamePresenter):
         self.shake_duration = 0
         
         # Sprite manager
-        self.sprite_manager = get_sprite_manager() if SPRITES_AVAILABLE else None
+        # self.sprite_manager = get_sprite_manager() if SPRITES_AVAILABLE else None
+        self.sprite_manager = None  # Temporarily disable sprite manager usage
         
         # Event system
         self.event_bus = get_event_bus()

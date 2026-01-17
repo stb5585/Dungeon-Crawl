@@ -48,13 +48,12 @@ class CombatView:
         if len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
     
-    def _get_enemy_sprite(self, enemy, size=128):
+    def _get_enemy_sprite(self, enemy):
         """
         Load enemy sprite from file based on enemy type.
         
         Args:
             enemy: Enemy character object
-            size: Desired sprite size (32, 64, or 128)
         
         Returns:
             pygame.Surface or None if sprite not found
@@ -73,14 +72,14 @@ class CombatView:
             return None
         
         # Create cache key
-        cache_key = f"{sprite_name}_{size}"
+        cache_key = f"{sprite_name}"
         
         # Check cache first
         if cache_key in self.sprite_cache:
             return self.sprite_cache[cache_key]
         
         # Build sprite filename
-        sprite_filename = f"{sprite_name}_{size}.png"
+        sprite_filename = f"{sprite_name}.png"
         sprite_path = os.path.join(self.sprite_dir, sprite_filename)
         
         # Try to load sprite
@@ -170,8 +169,8 @@ class CombatView:
         center_x = self.combat_width // 2
         center_y = self.combat_height // 3
         
-        # Try to load enemy sprite (using larger 128px sprite and scaling it up)
-        sprite = self._get_enemy_sprite(enemy, size=128)
+        # Try to load enemy sprite
+        sprite = self._get_enemy_sprite(enemy)
         
         if sprite:
             # Scale sprite up to 256x256 for better visibility
@@ -342,8 +341,8 @@ class CombatView:
         # Check if player has sight
         has_sight = self._has_sight(player_char)
         
-        # Try to load enemy sprite (using larger 128px sprite and scaling it up)
-        sprite = self._get_enemy_sprite(enemy, size=128)
+        # Try to load enemy sprite
+        sprite = self._get_enemy_sprite(enemy)
         
         if sprite:
             # Colorize the sprite based on enemy type
