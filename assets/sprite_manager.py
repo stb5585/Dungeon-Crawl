@@ -77,11 +77,8 @@ ENEMY_SPRITE_MAP = {
 # Player class to sprite mapping
 PLAYER_SPRITE_MAP = {
     'Warrior': 'player_warrior',
-    'Fighter': 'player_warrior',
-    'Knight': 'player_warrior',
     'Paladin': 'player_warrior',
     'Crusader': 'player_warrior',
-    'Samurai': 'player_warrior',
     'Berserker': 'player_warrior',
     
     'Mage': 'player_mage',

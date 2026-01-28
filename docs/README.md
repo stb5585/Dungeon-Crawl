@@ -1,25 +1,26 @@
 # Documentation Index
 
 ## Architecture & Planning
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - 6-phase migration plan from terminal to GUI, monetization strategy
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Long-term 6-phase migration plan from terminal to GUI, monetization strategy
 - **[PHASE_2.md](PHASE_2.md)** - Phase 2 complete reference: Enhanced combat, event emissions, bug fixes ✅
-- **[FORESIGHT_ENHANCEMENT.md](FORESIGHT_ENHANCEMENT.md)** - Future enhancement plan for making foresight accessible to all classes
+- **[PRE_PHASE_3_CLEANUP.md](PRE_PHASE_3_CLEANUP.md)** - Project configuration and Phase 3 planning
 
 ## Implementation Guides
 - **[NEW_SYSTEMS.md](NEW_SYSTEMS.md)** - User guide for new systems (action queue, effects, events, etc.)
 - **[EVENT_EMISSIONS.md](EVENT_EMISSIONS.md)** - Event system implementation details and usage
+- **[PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md)** - Character promotion ability transition rules with extensibility examples
 
 ## Development Notes
-- **[notes.txt](notes.txt)** - TODO list, design questions, bug fixes, scaling notes
-- **[archive/](archive/)** - Archived documentation (superseded by current docs)
+- **[notes.txt](notes.txt)** - Personal TODO list, design questions, and feature ideas (not tracked in git)
+- **[archive/](archive/)** - Archived documentation and past enhancement plans
 
-## Tools & Tests
+## Related Documentation
+- **[../tests/README.md](../tests/README.md)** - Test suite documentation (47 passing tests, recent improvements)
 - **[../tools/](../tools/)** - Development utilities (dev_tools.py, modify_save.py)
-- **[../tests/](../tests/)** - Test files (test_integration.py, basic_tests.py)
 
 ## Project Structure
 
-### New Modules
+### Core Modules
 ```
 combat/          - Enhanced combat system (action queue, enhanced manager)
 effects/         - Expanded effect system (20+ composable effect types)
@@ -28,6 +29,21 @@ presentation/    - UI abstraction layer (presenter interfaces)
 analytics/       - Combat simulation and balance testing
 data/            - YAML-based ability definitions
 ```
+
+## Recent Changes
+
+### Phase 3 Status
+- Pygame GUI implementation in progress
+- Event system fully integrated with combat
+- Character sprite generation system operational
+- Test suite expanded to 47 tests with equipment validation
+
+### Latest Fixes (This Session)
+- ✅ Two-handed weapon equipment logic (Lancer/Dragoon exception validated)
+- ✅ Key Items menu display from special_inventory
+- ✅ GitHub Actions CI/CD (upload-artifact v3 → v4)
+- ✅ Test suite health (47 passing, 1 skipped, 0 failures)
+- ✅ Equipment system tests added (16 new tests)
 
 ### Core Game Files
 ```

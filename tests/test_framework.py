@@ -177,6 +177,10 @@ class TestGameState:
                 item = TestGameState._get_item_by_name(item_name)
                 if item:
                     player.equipment[slot] = item
+        else:
+            # If no custom equipment provided, use class default equipment
+            if hasattr(player.cls, 'equipment') and player.cls.equipment:
+                player.equipment = player.cls.equipment.copy()
         
         # Save character if requested
         if save_as:

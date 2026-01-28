@@ -11,9 +11,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from character import Character
-from races import Human
-from classes import Fighter
 
 
 class TestBattleManagerAPI:
@@ -31,7 +28,6 @@ class TestBattleManagerAPI:
     
     def test_battle_manager_creation(self):
         """Test basic BattleManager instantiation."""
-        from battle import BattleManager
         
         # Create mock objects
         class MockGame:
@@ -71,9 +67,10 @@ class TestCombatResultAPI:
     def test_combat_result_with_characters(self):
         """Test CombatResult with character references."""
         from combat_result import CombatResult
+        from tests.test_framework import TestGameState
         
-        attacker = Character(name="Attacker", race=Human(), cls=Fighter())
-        defender = Character(name="Defender", race=Human(), cls=Fighter())
+        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
+        defender = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
         
         result = CombatResult(
             action="Attack",

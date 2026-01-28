@@ -4,9 +4,11 @@ Test script to verify PIL perspective transforms work correctly.
 Creates sample perspective-transformed tiles and displays them.
 """
 
-import pygame
 import os
+
+import pygame
 from PIL import Image
+
 
 def test_perspective_transform():
     """Test that PIL can load textures and apply perspective transforms."""
@@ -17,8 +19,8 @@ def test_perspective_transform():
     pygame.display.set_caption("Perspective Transform Test")
     
     # Load a texture
-    tileset_path = "assets/dungeon_tiles/SBS - Tiny Texture Pack 2 - 256x256/256x256"
-    texture_file = os.path.join(tileset_path, "Brick/Brick_20-256x256.png")
+    tileset_path = "assets/dungeon_tiles"
+    texture_file = os.path.join(tileset_path, "walls/brick.png")
     
     try:
         # Load with PIL
@@ -120,29 +122,20 @@ def test_perspective_transform():
         
         pygame.display.flip()
         
-        # Wait for user
-        running = True
-        clock = pygame.time.Clock()
-        
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-            
-            clock.tick(30)
+        # Validation: Just verify transforms created successfully (no GUI loop for tests)
+        print("✓ Left wall perspective created: " + str(left_wall.size))
+        print("✓ Right wall perspective created: " + str(right_wall.size))
+        print("✓ Floor perspective created: " + str(floor.size))
         
         pygame.quit()
         print("\n✓ PIL perspective transforms working correctly!")
-        return True
+        assert True
         
     except Exception as e:
         print(f"\n✗ ERROR: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"PIL perspective transform failed: {e}"
 
 if __name__ == "__main__":
     print("=" * 60)

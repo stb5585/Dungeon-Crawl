@@ -4,12 +4,14 @@ Test script to verify the new tileset loading and perspective generation.
 This creates a simple preview without requiring the full game to run.
 """
 
-import pygame
 import os
 import sys
 
+import pygame
+
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(__file__))
+
 
 def test_tileset_loading():
     """Test loading and generating perspective tiles."""
@@ -20,12 +22,12 @@ def test_tileset_loading():
     pygame.display.set_caption("Tileset Preview")
     
     # Load textures
-    tileset_path = "assets/dungeon_tiles/SBS - Tiny Texture Pack 2 - 256x256/256x256"
+    tileset_path = "assets/dungeon_tiles"
     
     texture_map = {
-        'wall': 'Stone/Stone_01-256x256.png',
-        'floor': 'Brick/Brick_01-256x256.png',
-        'ceiling': 'Stone/Stone_02-256x256.png',
+        'wall': 'walls/brick.png',
+        'floor': 'floors/dirt.png',
+        'ceiling': 'ceilings/stone.png',
     }
     
     textures = {}
@@ -37,7 +39,7 @@ def test_tileset_loading():
             print(f"✓ Loaded {tex_type}: {tex_path} - Size: {image.get_size()}")
         except Exception as e:
             print(f"✗ ERROR loading {tex_type}: {e}")
-            return False
+            assert False, f"Failed to load {tex_type}: {e}"
     
     # Display raw textures on left side
     screen.fill((50, 50, 50))
@@ -101,24 +103,16 @@ def test_tileset_loading():
     
     pygame.display.flip()
     
-    # Wait for user to close
-    running = True
-    clock = pygame.time.Clock()
-    
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-        
-        clock.tick(30)
+    # Validation: Just verify textures loaded successfully (no GUI loop for tests)
+    print("✓ Wall texture loaded: " + str(textures.get('wall').get_size() if textures.get('wall') else "N/A"))
+    print("✓ Floor texture loaded: " + str(textures.get('floor').get_size() if textures.get('floor') else "N/A"))
+    print("✓ Ceiling texture loaded: " + str(textures.get('ceiling').get_size() if textures.get('ceiling') else "N/A"))
     
     pygame.quit()
     print("\n✓ All textures loaded successfully!")
     print("✓ Tileset integration complete!")
-    return True
+    assert True
+
 
 if __name__ == "__main__":
     print("=" * 60)

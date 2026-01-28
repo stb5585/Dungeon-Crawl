@@ -738,15 +738,29 @@ class Player(Character):
             self.invisible = False
         if self.equipment[equip_slot].name == 'Levitation Necklace':
             self.flying = False
-        if self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
-            if equip_slot == "Weapon":
-                if item.handed == 2:
+        
+        # Handle two-handed weapon conflicts with offhand items
+        if equip_slot == "Weapon":
+            if item.handed == 2:
+                # Lancer/Dragoon can use 2H polearms with shields
+                can_keep_offhand = (self.cls.name in ["Lancer", "Dragoon"] and 
+                                   item.subtyp == 'Polearm' and 
+                                   self.equipment["OffHand"].subtyp == 'Shield')
+                
+                if not can_keep_offhand:
                     if self.equipment["OffHand"].subtyp != 'None' and not check:
                         self.modify_inventory(self.equipment["OffHand"])
                     if not check:
                         self.equipment["OffHand"] = remove_equipment("OffHand")
-            if equip_slot == "OffHand":
-                if self.equipment["Weapon"].handed == 2:
+        
+        if equip_slot == "OffHand":
+            if self.equipment["Weapon"].handed == 2:
+                # Lancer/Dragoon can use 2H polearms with shields
+                can_keep_weapon = (self.cls.name in ["Lancer", "Dragoon"] and 
+                                  self.equipment["Weapon"].subtyp == 'Polearm' and 
+                                  item.subtyp == 'Shield')
+                
+                if not can_keep_weapon:
                     if self.equipment["Weapon"].subtyp != 'None' and not check:
                         self.modify_inventory(self.equipment["Weapon"])
                     if not check:

@@ -1215,17 +1215,21 @@ class SimpleListPopupMenu(BasePopupMenu):
             self.screen.blit(subtyp_text, (x, y))
             y += self.line_height
 
-        # Show mana cost or "Passive"
+        # Show mana cost or "Passive" only for abilities (items with a 'cost' attribute)
+        # This avoids showing mana cost for regular items like Key Items
         is_passive = getattr(item, "passive", False)
-        if is_passive:
-            cost_text = self.normal_font.render("Passive", True, self.LIGHT_GRAY)
-        else:
-            cost = getattr(item, "cost", None)
-            if cost is not None:
-                cost_text = self.normal_font.render(f"Mana Cost: {cost}", True, self.LIGHT_GRAY)
+        has_cost_attr = hasattr(item, "cost")
+        
+        if is_passive or has_cost_attr:
+            if is_passive:
+                cost_text = self.normal_font.render("Passive", True, self.LIGHT_GRAY)
             else:
-                cost_text = self.normal_font.render("Mana Cost: —", True, self.LIGHT_GRAY)
-        self.screen.blit(cost_text, (x, y))
+                cost = getattr(item, "cost", None)
+                if cost is not None:
+                    cost_text = self.normal_font.render(f"Mana Cost: {cost}", True, self.LIGHT_GRAY)
+                else:
+                    cost_text = self.normal_font.render("Mana Cost: —", True, self.LIGHT_GRAY)
+            self.screen.blit(cost_text, (x, y))
 
     def on_select(self, player_char, item):
         return ("list_item_selected", item)

@@ -8,29 +8,30 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3  # Pulls the latest code
+        uses: actions/checkout@v4  # Pulls the latest code
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11.11"  # Adjust based on your game
+          python-version: "3.12"  # Match local development environment
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt  # Install game dependencies
-          pip install pytest  # Install testing framework
+          pip install --upgrade pip
+          pip install -e .  # Install game with pyproject.toml
+          pip install pytest pytest-cov  # Install testing framework
 
       - name: Run Tests
-        run: pytest tests/  # Runs your tests (if you have any)
+        run: pytest tests/ -v  # Runs tests with verbose output
 
       - name: Check for syntax errors
         run: python -m compileall .  # Catches syntax issues
 
       - name: Package Game
-        run: tar -czf dungeon_crawl.tar.gz .  # Creates a compressed archive
+        run: tar -czf dungeon_crawl.tar.gz --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=*.pyc --exclude=.pytest_cache --exclude=dungeon_crawl.egg-info .  # Creates a compressed archive
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dungeon_crawl_build
           path: dungeon_crawl.tar.gz

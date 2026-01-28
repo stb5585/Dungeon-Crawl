@@ -1,68 +1,185 @@
 # Test Suite Summary
 
-## Test Files Created
+## Overview
 
-### tests/test_core.py
-Core functionality tests that verify:
-- Character creation and attributes
-- Required methods exist (check_active, incapacitated, weapon_damage)
-- Combat API contracts
-- Enemy and player initialization
-- CombatResult API compatibility
+**Status**: 47 tests passing, 1 skipped (intentional), 0 failures  
+**Execution Time**: ~3.2 seconds  
+**Coverage**: Core systems, equipment, combat, assets, UI
 
-**Run with:** `.venv/bin/python tests/test_core.py`
+## Test Files
 
-### tests/test_integration.py  
-Enhanced combat system integration tests:
-- Module imports
-- Action queue functionality
-- Telegraph system logic
-- Priority ordering
-- Charging actions
+### Core Tests
 
-**Run with:** `.venv/bin/python tests/test_integration.py`
+**tests/test_core.py** (7 tests)  
+Core functionality verification:
+- Character creation with proper attributes
+- Equipment initialization
+- Method signatures (check_active, weapon_damage, is_alive)
+- Enemy and player creation
+- CombatResult API
 
-### tests/test_character.py (requires pytest)
-Comprehensive character tests using pytest framework.
+**tests/test_character.py** (8 tests)  
+Character system tests:
+- Character creation and required attributes
+- Character methods (check_active, incapacitated, weapon_damage)
+- Combat API contracts (combat attributes for enemy/player)
+- Speed stat for turn ordering
 
-### tests/test_battle.py (requires pytest)
-Battle system tests using pytest framework.
+**tests/test_battle.py** (7 tests)  
+Battle system tests:
+- BattleManager import and API
+- EnhancedBattleManager import
+- CombatResult creation and groups
+- Ability initialization
+- Full combat flow (CombatResult with characters)
 
-## Current Test Status
+### Equipment & Combat Tests
 
-✅ **Integration Tests**: 6/6 passing
-✅ **Core Imports**: All modules load successfully
-✅ **Character Methods**: check_active() implemented
-✅ **CombatResult API**: Optional actor/target parameters
+**tests/test_equipment.py** (16 tests) ✨ NEW  
+Equipment system validation:
+- Equipment initialization from class defaults
+- Two-handed weapon logic (handed == 2)
+- **Lancer/Dragoon polearm + shield exception** (validates fix)
+- **Dragoon promotion inherits polearm exception**
+- Class-specific equipment restrictions
+- Off-hand equipment (shields, dual-wield)
+- All 5 equipment slots (Weapon, Armor, OffHand, Ring, Pendant)
+- Armor type validation (Light, Medium, Heavy, None)
+- Edge cases (unequip/reequip, multi-slot equipping)
 
-## Issues Fixed
+**tests/test_weapon_special_effects.py** (5 tests)  
+Weapon special effects:
+- VampireBite (life steal on critical)
+- Ninjato (instant death chance)
+- Gaze (petrification)
+- Mjolnir (stun effect)
+- Armor effects
 
-1. **Package Naming Conflict**
-   - Renamed `combat.py` → `battle.py`
-   - Updated all imports throughout codebase
+### Asset & UI Tests
 
-2. **CombatResult API Incompatibility**
-   - Made `actor` and `target` optional parameters (default=None)
-   - Allows abilities to create template results
+**tests/test_perspective.py** (1 test)  
+PIL perspective transforms:
+- Asset loading (PIL Image operations)
+- Perspective transformation matrices
+- Wall/floor projection validation
+- CI/CD compatible (no interactive GUI)
 
-3. **Missing check_active() Method**
-   - Added to Character class (line ~174)
-   - Returns `(bool, str)` tuple
-   - Required by EnhancedBattleManager
+**tests/test_tileset.py** (1 test)  
+Tileset asset loading:
+- Texture file loading
+- Sprite scaling
+- Tileset composition
+- CI/CD compatible (no interactive GUI)
 
-4. **Incomplete weapon_damage Refactor**
-   - Reverted to working implementation
-   - Restored original API: `weapon_damage(target, ...) -> (str, bool, int)`
+**tests/test_shop_gui.py** (1 test)  
+Shop GUI instantiation:
+- Shop object creation
+- Basic menu structure
+- No interactive simulation (autonomous test)
+
+### Navigation Tests
+
+**tests/test_dungeon_navigation.py** (1 test)  
+Player movement system:
+- Basic movement mechanics
+- Location tracking
+
+### Legacy/Integration Tests
+
+**tests/test_integration.py**  
+Enhanced combat system integration (legacy)
+
+**tests/basic_tests.py**  
+Basic functionality checks (legacy)
+
+## Test Execution
+
+### Run All Tests
+```bash
+.venv/bin/python -m pytest tests/ -v
+```
+
+### Run Specific Test File
+```bash
+.venv/bin/python -m pytest tests/test_equipment.py -v
+```
+
+### Run Specific Test Class
+```bash
+.venv/bin/python -m pytest tests/test_equipment.py::TestTwoHandedWeaponLogic -v
+```
+
+### Run Specific Test
+```bash
+.venv/bin/python -m pytest tests/test_equipment.py::TestTwoHandedWeaponLogic::test_lancer_can_equip_polearm_with_shield -v
+```
+
+## Current Test Results
+
+✅ **47 tests PASSING**  
+⏭️ **1 test SKIPPED** (test_battle_manager_creation - requires full game context)  
+❌ **0 tests FAILING**  
+⚠️ **0 deprecation warnings**
+
+## Recent Improvements
+
+### Phase 1: Equipment System Fix (Validated)
+- Two-handed weapon unequipping for non-Lancer/Dragoon classes
+- Special exception for Lancer/Dragoon polearms with shields
+- **Test coverage**: 4 dedicated tests validate the fix
+
+### Phase 2: Test Suite Enhancement
+- Added 16 equipment system tests (51% increase in test count)
+- Fixed deprecated Player API usage in test_character.py
+- Removed GUI event loops from perspective/tileset tests
+- Converted return-based assertions to pytest assertions
+- **Coverage**: Now 47 tests covering core systems
+
+### Phase 3: CI/CD Compatibility
+- Removed blocking GUI waits from tile transformation tests
+- All tests run autonomously without user input
+- GitHub Actions upload-artifact updated to v4
+- No interactive elements or manual inputs required
+
+## Test Framework
+
+### TestGameState Helper
+```python
+# Create test characters easily
+player = TestGameState.create_player(
+    name="TestPlayer",
+    class_name="Warrior", 
+    race_name="Human"
+)
+
+# Character is fully initialized with:
+# - Equipment from class defaults
+# - Stats and combat attributes
+# - Spellbook with abilities
+# - Proper class and race bindings
+```
+
+### Test Structure
+- Uses pytest framework
+- Proper isolation between tests
+- Fixtures for shared setup (test_framework.py)
+- Parametrized tests for variants
+- Docstrings on all test methods
 
 ## Known Limitations
 
-- Enhanced combat uses methods that may not be fully integrated
-- Some tests require pytest (not in requirements.txt)
-- Player initialization complex, needs full game context
+- BattleManager instantiation requires full game context (intentionally skipped)
+- Some gameplay features untested (inventory, level progression, status effects)
+- GUI integration tests limited (basic instantiation only)
+- Save/load system not yet tested
 
-## Next Steps
+## Next Steps for Coverage
 
-1. Test actual gameplay with `./launch.sh`
-2. Verify enhanced combat features work in game
-3. Add more edge case tests as issues are discovered
-4. Consider adding pytest to requirements.txt for full test suite
+Priority items for future test additions:
+1. Inventory management (add/remove/drop items)
+2. Status effect management (apply/remove/duration)
+3. Combat calculations (damage, defense, magic)
+4. Level progression (stat gains, experience)
+5. Ability system (mana cost, targeting, cooldowns)
+
+

@@ -111,13 +111,29 @@ class CharacterScreen(TownScreenBase):
     
     def _get_key_items_list(self, player_char):
         """Get list of key items from player character."""
-        key_items = getattr(player_char, "key_items", [])
-        if callable(key_items):
-            key_items = key_items()
-        if not key_items:
+        special_inv = getattr(player_char, "special_inventory", {})
+        if not special_inv:
             return ["No key items"]
-        # Extract names if objects
-        return [getattr(ki, "name", str(ki)) for ki in key_items]
+        # Return the actual item objects from the inventory
+        # The special_inventory format is: {item_name: [item_obj, item_obj, ...]}
+        key_items = []
+        for item_name, item_list in special_inv.items():
+            if item_list and len(item_list) > 0:
+                # Get the first item object (all instances are the same)
+                item_obj = item_list[0]
+                # Store as dict with the item object and display the count if > 1
+                quantity = len(item_list)
+                if quantity > 1:
+                    # Create a wrapper dict to show quantity in the name
+                    key_items.append({
+                        "text": f"{item_name} ({quantity})",
+                        "value": item_obj,
+                        "is_header": False
+                    })
+                else:
+                    # Just return the item object directly
+                    key_items.append(item_obj)
+        return key_items if key_items else ["No key items"]
     
     def _get_specials_list(self, player_char):
         """Get list of special abilities from player character, separated by type."""
@@ -439,11 +455,9 @@ class CharacterScreen(TownScreenBase):
                             _ = popup.show(player_char)
                         elif chosen == "Key Items":
                             # Check if there are any key items
-                            key_items = getattr(player_char, "key_items", [])
-                            if callable(key_items):
-                                key_items = key_items()
+                            special_inv = getattr(player_char, "special_inventory", {})
                             
-                            if not key_items:
+                            if not special_inv:
                                 # Show popup message instead of empty list
                                 from gui.confirmation_popup import ConfirmationPopup
                                 # Capture current screen once to avoid redraw flicker
