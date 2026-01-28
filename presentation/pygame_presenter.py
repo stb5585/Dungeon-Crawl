@@ -36,6 +36,7 @@ RED = (220, 20, 60)
 GREEN = (34, 139, 34)
 BLUE = (30, 144, 255)
 YELLOW = (255, 215, 0)
+GOLD = (218, 165, 32)
 PURPLE = (147, 112, 219)
 ORANGE = (255, 140, 0)
 GRAY = (128, 128, 128)
@@ -316,7 +317,7 @@ class PygamePresenter(GamePresenter):
                     icon_x += 36
         elif active_statuses:
             # Fallback: Text display
-            status_text = self.small_font.render(", ".join(active_statuses[:3]), True, YELLOW)
+            status_text = self.small_font.render(", ".join(active_statuses[:3]), True, GOLD)
             status_rect = status_text.get_rect(centerx=x, top=status_y)
             self.screen.blit(status_text, status_rect)
             
@@ -330,7 +331,7 @@ class PygamePresenter(GamePresenter):
         pygame.draw.rect(self.screen, WHITE, log_bg, 2)
         
         # Title
-        title = self.normal_font.render("Combat Log", True, YELLOW)
+        title = self.normal_font.render("Combat Log", True, GOLD)
         self.screen.blit(title, (20, log_y + 5))
         
         # Calculate how many lines can fit
@@ -411,7 +412,7 @@ class PygamePresenter(GamePresenter):
         self.screen = temp_surface
         
         # Turn number
-        turn_text = self.large_font.render(f"Turn {self.turn_number}", True, YELLOW)
+        turn_text = self.large_font.render(f"Turn {self.turn_number}", True, GOLD)
         self.screen.blit(turn_text, (self.width // 2 - 60, 10))
         
         # Telegraph message
@@ -422,7 +423,7 @@ class PygamePresenter(GamePresenter):
         self._draw_character(enemy, int(self.width * 0.75), int(self.height * 0.35), is_player=False)
         
         # VS text
-        vs_text = self.title_font.render("VS", True, YELLOW)
+        vs_text = self.title_font.render("VS", True, GOLD)
         vs_rect = vs_text.get_rect(center=(self.width // 2, self.height // 2))
         self.screen.blit(vs_text, vs_rect)
         
@@ -525,7 +526,7 @@ class PygamePresenter(GamePresenter):
             title_y = 80
             for line in title_lines:
                 if line:  # Only render non-empty lines
-                    title_text = self.title_font.render(line, True, YELLOW)
+                    title_text = self.title_font.render(line, True, GOLD)
                     title_rect = title_text.get_rect(centerx=self.width // 2, top=title_y)
                     self.screen.blit(title_text, title_rect)
                 title_y += 40  # Move down for next line (or blank space)
@@ -548,7 +549,7 @@ class PygamePresenter(GamePresenter):
                     x = start_x + col * col_width
                     y = start_y + row * row_height
                     
-                    color = YELLOW if i == selected else WHITE
+                    color = GOLD if i == selected else WHITE
                     option_text = self.large_font.render(option, True, color)
                     
                     # Draw selection box if selected
@@ -565,7 +566,7 @@ class PygamePresenter(GamePresenter):
                 visible_end = visible_start + max_visible if (max_visible and max_visible > 0) else len(options)
                 for i in range(visible_start, min(visible_end, len(options))):
                     option = options[i]
-                    color = YELLOW if i == selected else WHITE
+                    color = GOLD if i == selected else WHITE
                     option_text = self.large_font.render(option, True, color)
                     option_rect = option_text.get_rect(centerx=self.width // 2, top=y)
                     self.screen.blit(option_text, option_rect)
@@ -599,7 +600,7 @@ class PygamePresenter(GamePresenter):
         self.screen.fill(BLACK)
         
         if title:
-            title_text = self.title_font.render(title, True, YELLOW)
+            title_text = self.title_font.render(title, True, GOLD)
             title_rect = title_text.get_rect(centerx=self.width // 2, top=200)
             self.screen.blit(title_text, title_rect)
             y = 300
@@ -653,6 +654,79 @@ class PygamePresenter(GamePresenter):
                 if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                     waiting = False
             self.clock.tick(30)
+
+    def show_progress_popup(self, header: str = "Load Game", message: str = "Loading game file...",
+                             steps: int = 20, total_time: float = 3.0):
+        """Show a centered popup with a progress bar, similar to curses version.
+
+        Args:
+            header: Title shown at the top of the popup
+            message: Message shown above the progress bar
+            steps: Number of increments to animate
+            total_time: Total time in seconds to animate the bar
+        """
+        import time
+
+        # Popup dimensions and position
+        popup_width = max(420, self.width // 2 - 100)
+        popup_height = 180
+        popup_x = (self.width - popup_width) // 2
+        popup_y = (self.height - popup_height) // 2
+
+        # Progress bar geometry
+        bar_margin = 20
+        bar_rect = pygame.Rect(
+            popup_x + bar_margin,
+            popup_y + popup_height - 60,
+            popup_width - 2 * bar_margin,
+            24,
+        )
+
+        # Calculate delay per step
+        delay = total_time / max(1, steps)
+
+        # Animate progress
+        for i in range(steps + 1):
+            # Handle window events to keep UI responsive
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+
+            # Dim background
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 160))
+            self.screen.blit(overlay, (0, 0))
+
+            # Popup background
+            popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
+            pygame.draw.rect(self.screen, (20, 20, 20), popup_rect)
+            pygame.draw.rect(self.screen, WHITE, popup_rect, 2)
+
+            # Header
+            header_text = self.normal_font.render(header, True, GOLD)
+            header_rect = header_text.get_rect(centerx=popup_rect.centerx, top=popup_y + 12)
+            self.screen.blit(header_text, header_rect)
+
+            # Message
+            msg_text = self.small_font.render(message, True, WHITE)
+            msg_rect = msg_text.get_rect(centerx=popup_rect.centerx, top=popup_y + 60)
+            self.screen.blit(msg_text, msg_rect)
+
+            # Progress bar background and border
+            pygame.draw.rect(self.screen, DARK_GRAY, bar_rect)
+            pygame.draw.rect(self.screen, WHITE, bar_rect, 2)
+
+            # Filled portion
+            filled_width = int((bar_rect.width - 4) * (i / max(1, steps)))
+            if filled_width > 0:
+                filled_rect = pygame.Rect(bar_rect.left + 2, bar_rect.top + 2, filled_width, bar_rect.height - 4)
+                pygame.draw.rect(self.screen, GRAY, filled_rect)
+
+            pygame.display.flip()
+            if not self.debug_mode:
+                time.sleep(delay)
         
     def cleanup(self):
         """Clean up Pygame resources."""
@@ -722,7 +796,7 @@ class PygamePresenter(GamePresenter):
             self.screen.blit(prompt_text, prompt_rect)
             
             # Input box
-            input_text = self.normal_font.render(text + "_", True, YELLOW)
+            input_text = self.normal_font.render(text + "_", True, GOLD)
             input_rect = input_text.get_rect(centerx=self.width // 2, top=300)
             self.screen.blit(input_text, input_rect)
             
@@ -765,7 +839,7 @@ class PygamePresenter(GamePresenter):
         self.screen.fill(BLACK)
         
         # Title
-        title = self.title_font.render(character.name, True, YELLOW)
+        title = self.title_font.render(character.name, True, GOLD)
         self.screen.blit(title, (50, 50))
         
         y = 150

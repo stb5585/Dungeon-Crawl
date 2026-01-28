@@ -581,17 +581,36 @@ class Player(Character):
             drop[i] = item.subtyp == "Special"
             rare[i] = item.subtyp == "Special"
             if item.subtyp == "Quest":
-                for info in self.quest_dict['Side'].values():
-                    try:
-                        if info['What']().name == item.name and not info['Completed']:
-                            rarity = item.rarity
-                            if item.name == "Bird Fat" and "Summoner" not in self.cls.name:
-                                rarity = 0.75
-                            rare[i] = True
-                            drop[i] = True if rarity > random.random() else False
-                            break
-                    except (AttributeError, TypeError):
-                        pass
+                quest_found = False
+                # Check both Main and Side quests
+                for quest_type in ['Main', 'Side']:
+                    for quest_name, info in self.quest_dict.get(quest_type, {}).items():
+                        try:
+                            quest_what = info['What']
+                            # Handle different types of 'What': class, instance, or string
+                            if isinstance(quest_what, str):
+                                quest_item_name = quest_what
+                            elif callable(quest_what):
+                                # It's a class, instantiate it
+                                quest_item_name = quest_what().name
+                            else:
+                                # It's already an instance
+                                quest_item_name = quest_what.name
+                            
+                            is_completed = info['Completed']
+                            if quest_item_name == item.name and not is_completed:
+                                rarity = item.rarity
+                                if item.name == "Bird Fat" and "Summoner" not in self.cls.name:
+                                    rarity = 0.75
+                                rarity_roll = random.random()
+                                rare[i] = True
+                                drop[i] = True if rarity > rarity_roll else False
+                                quest_found = True
+                                break
+                        except (AttributeError, TypeError, KeyError):
+                            pass
+                    if quest_found:
+                        break
             elif 'Boss' in str(tile):
                 drop[i] = True  # all non-quest items will drop from bosses
             else:
@@ -1232,9 +1251,9 @@ class Player(Character):
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
-            if self.equipment['OffHand'].subtyp == 'Shield':
+            if self.equipment['OffHand'] and self.equipment['OffHand'].subtyp == 'Shield':
                 block_mod = round(self.equipment['OffHand'].mod * 100)
-            if self.equipment['Ring'].mod == "Block":
+            if self.equipment['Ring'] and self.equipment['Ring'].mod == "Block":
                 block_mod += 25
             return max(0, block_mod)
         if mod == 'offhand':
@@ -1246,7 +1265,7 @@ class Player(Character):
                 class_mod += (self.stats.dex // 2)
             try:
                 off_mod = self.equipment['OffHand'].damage
-                if 'Physical Damage' in self.equipment['Ring'].mod:
+                if self.equipment['Ring'] is not None and 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
                 return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
@@ -1264,17 +1283,17 @@ class Player(Character):
                 class_mod += (self.player_level() // 11)
             if self.cls.name == 'Dragoon' and self.power_up:
                 class_mod = armor_mod * self.class_effects["Power Up"].active * self.class_effects["Power Up"].duration
-            if 'Physical Defense' in self.equipment['Ring'].mod:
+            if self.equipment['Ring'] is not None and 'Physical Defense' in self.equipment['Ring'].mod:
                 armor_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
             return max(0, (armor_mod * int(not ignore)) + class_mod + self.combat.defense)
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
-            if self.equipment['OffHand'].subtyp == 'Tome':
+            if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
                 magic_mod += self.equipment['OffHand'].mod
-            if self.equipment['Weapon'].subtyp == 'Staff':
+            if self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
                 magic_mod += int(self.equipment['Weapon'].damage * 0.75)
-            if 'Magic Damage' in self.equipment['Pendant'].mod:
+            if self.equipment['Pendant'] is not None and 'Magic Damage' in self.equipment['Pendant'].mod:
                 magic_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             if self.cls.name == "Shadowcaster" and self.class_effects["Power Up"].active:
@@ -1282,15 +1301,15 @@ class Player(Character):
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
             m_def_mod = self.stats.wisdom * self.level.pro_level
-            if "Magic Defense" in self.equipment['Pendant'].mod:
+            if self.equipment['Pendant'] is not None and "Magic Defense" in self.equipment['Pendant'].mod:
                 m_def_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
             return max(0, m_def_mod + class_mod + self.combat.magic_def)
         if mod == 'heal':
             heal_mod = self.stats.wisdom * self.level.pro_level
-            if self.equipment['OffHand'].subtyp == 'Tome':
+            if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
                 heal_mod += self.equipment['OffHand'].mod
-            elif self.equipment['Weapon'].subtyp == 'Staff':
+            elif self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
                 heal_mod += self.equipment['Weapon'].damage
             heal_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             return max(0, heal_mod + class_mod + self.combat.magic)

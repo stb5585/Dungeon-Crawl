@@ -6,40 +6,22 @@ Layout structure:
 - Bottom: Large item list box (left), stat comparison box (right top), gold box (right bottom)
 """
 
-import pygame
-import items as items_module
 from textwrap import wrap
 
+import pygame
 
-class ShopScreen:
+from gui.town_base import TownScreenBase
+
+
+class ShopScreen(TownScreenBase):
     """
     Pygame shop interface that matches the curses terminal layout.
     """
     
     def __init__(self, presenter, player_char, shop_message):
-        self.presenter = presenter
+        super().__init__(presenter)
         self.player_char = player_char
         self.shop_message = shop_message
-        self.screen = presenter.screen
-        self.width = presenter.width
-        self.height = presenter.height
-        
-        # Colors
-        self.BLACK = (0, 0, 0)
-        self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
-        self.GRAY = (128, 128, 128)
-        self.DARK_GRAY = (64, 64, 64)
-        self.BLUE = (100, 149, 237)
-        self.GREEN = (0, 200, 0)
-        self.RED = (200, 0, 0)
-        self.BORDER_COLOR = (200, 200, 200)
-        self.HIGHLIGHT_BG = (60, 60, 80)
-        
-        # Fonts
-        self.title_font = presenter.title_font
-        self.normal_font = presenter.normal_font
-        self.small_font = presenter.small_font
         
         # State
         self.current_option = 0
@@ -51,6 +33,12 @@ class ShopScreen:
         
         # Calculate window positions (matching curses layout)
         self.calculate_window_rects()
+
+    def set_options(self, options_list, reset_cursor=True):
+        """Replace options and optionally reset the selection index."""
+        self.options_list = options_list
+        if reset_cursor:
+            self.current_option = 0
     
     def calculate_window_rects(self):
         """Calculate the rectangles for each UI section matching curses layout."""
@@ -86,18 +74,18 @@ class ShopScreen:
     
     def draw_top(self):
         """Draw the top header with shop message."""
-        pygame.draw.rect(self.screen, self.BLACK, self.top_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.top_rect, 2)
+        self.draw_semi_transparent_panel(self.top_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.top_rect, 2)
         
         # Center the shop message
-        text = self.normal_font.render(self.shop_message, True, self.YELLOW)
+        text = self.normal_font.render(self.shop_message, True, self.colors.GOLD)
         text_rect = text.get_rect(center=(self.width // 2, self.top_rect.centery))
         self.screen.blit(text, text_rect)
     
     def draw_options(self):
         """Draw the menu options (Buy, Sell, Quests, Leave)."""
-        pygame.draw.rect(self.screen, self.BLACK, self.options_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.options_rect, 2)
+        self.draw_semi_transparent_panel(self.options_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.options_rect, 2)
         
         # Calculate spacing for options
         num_options = len(self.options_list)
@@ -105,7 +93,7 @@ class ShopScreen:
         
         for idx, option in enumerate(self.options_list):
             # Highlight selected option
-            color = self.YELLOW if idx == self.current_option else self.WHITE
+            color = self.colors.GOLD if idx == self.current_option else self.colors.WHITE
             
             # Draw option text centered
             text = self.normal_font.render(option, True, color)
@@ -120,15 +108,15 @@ class ShopScreen:
                     self.options_rect.width - 20,
                     text.get_height() + 10
                 )
-                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                pygame.draw.rect(self.screen, self.YELLOW, highlight_rect, 2)
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
+                pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 2)
             
             self.screen.blit(text, (text_x, text_y))
     
     def draw_item_desc(self):
         """Draw the description of the currently highlighted item."""
-        pygame.draw.rect(self.screen, self.BLACK, self.desc_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.desc_rect, 2)
+        self.draw_semi_transparent_panel(self.desc_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.desc_rect, 2)
         
         if self.item_list and 0 <= self.current_item < len(self.item_list):
             display_str, item, cost, owned = self.item_list[self.current_item]
@@ -147,19 +135,19 @@ class ShopScreen:
                 start_y = self.desc_rect.centery - total_height // 2
                 
                 for i, line in enumerate(lines):
-                    text = self.small_font.render(line, True, self.WHITE)
+                    text = self.small_font.render(line, True, self.colors.WHITE)
                     text_x = self.desc_rect.centerx - text.get_width() // 2
                     text_y = start_y + i * line_height
                     self.screen.blit(text, (text_x, text_y))
     
     def draw_shop_list(self):
         """Draw the list of items for sale or selling."""
-        pygame.draw.rect(self.screen, self.BLACK, self.list_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.list_rect, 2)
+        self.draw_semi_transparent_panel(self.list_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.list_rect, 2)
         
         if not self.item_list:
             # Display message when no items available
-            no_items_text = self.normal_font.render("No items available", True, self.GRAY)
+            no_items_text = self.normal_font.render("No items available", True, self.colors.GRAY)
             text_rect = no_items_text.get_rect(
                 centerx=self.list_rect.centerx,
                 centery=self.list_rect.centery
@@ -177,17 +165,17 @@ class ShopScreen:
         # Draw header row at fixed positions
         header_y = self.list_rect.top + 10
         
-        type_header = self.small_font.render("Type", True, self.YELLOW)
+        type_header = self.small_font.render("Type", True, self.colors.GOLD)
         self.screen.blit(type_header, (type_col_x, header_y))
         
-        item_header = self.small_font.render("Item", True, self.YELLOW)
+        item_header = self.small_font.render("Item", True, self.colors.GOLD)
         self.screen.blit(item_header, (item_col_x, header_y))
         
         if self.buy_or_sell == "Buy":
-            cost_header = self.small_font.render("Cost", True, self.YELLOW)
+            cost_header = self.small_font.render("Cost", True, self.colors.GOLD)
             self.screen.blit(cost_header, (cost_col_x, header_y))
         
-        owned_header = self.small_font.render("Owned", True, self.YELLOW)
+        owned_header = self.small_font.render("Owned", True, self.colors.GOLD)
         self.screen.blit(owned_header, (owned_col_x, header_y))
         
         # Draw items (scrollable)
@@ -210,11 +198,11 @@ class ShopScreen:
                     self.list_rect.width - 10,
                     line_height - 2
                 )
-                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                pygame.draw.rect(self.screen, self.YELLOW, highlight_rect, 1)
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
+                pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
             
             # Draw each column at fixed positions
-            color = self.YELLOW if i == self.current_item else self.WHITE
+            color = self.colors.GOLD if i == self.current_item else self.colors.WHITE
             
             # Skip special items (like Next Page for pagination)
             if display_str in ["Next Page"]:
@@ -243,8 +231,8 @@ class ShopScreen:
     
     def draw_mod(self):
         """Draw equipment modification comparison."""
-        pygame.draw.rect(self.screen, self.BLACK, self.mod_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.mod_rect, 2)
+        self.draw_semi_transparent_panel(self.mod_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.mod_rect, 2)
         
         if not self.item_list or self.current_item >= len(self.item_list):
             return
@@ -260,7 +248,7 @@ class ShopScreen:
             return
         
         # Draw title
-        title = self.small_font.render("Equipment Modifications", True, self.YELLOW)
+        title = self.small_font.render("Equipment Modifications", True, self.colors.GOLD)
         title_x = self.mod_rect.centerx - title.get_width() // 2
         self.screen.blit(title, (title_x, self.mod_rect.top + 10))
         
@@ -287,14 +275,14 @@ class ShopScreen:
                             
                             # Color code based on positive/negative
                             if stat_value.startswith('+'):
-                                value_color = self.GREEN
+                                value_color = self.colors.GREEN
                             elif stat_value.startswith('-'):
-                                value_color = self.RED
+                                value_color = self.colors.RED
                             else:
-                                value_color = self.WHITE
+                                value_color = self.colors.WHITE
                             
                             # Draw stat name (left aligned)
-                            name_text = self.small_font.render(stat_name, True, self.WHITE)
+                            name_text = self.small_font.render(stat_name, True, self.colors.WHITE)
                             self.screen.blit(name_text, (self.mod_rect.left + 10, y))
                             
                             # Draw stat value (right aligned)
@@ -308,25 +296,26 @@ class ShopScreen:
     
     def draw_gold(self):
         """Draw player's current gold."""
-        pygame.draw.rect(self.screen, self.BLACK, self.gold_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.gold_rect, 2)
+        self.draw_semi_transparent_panel(self.gold_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.gold_rect, 2)
         
         gold_str = f"{self.player_char.gold}G"
-        text = self.normal_font.render(gold_str, True, self.YELLOW)
+        text = self.normal_font.render(gold_str, True, self.colors.GOLD)
         text_x = self.gold_rect.right - text.get_width() - 10
         text_y = self.gold_rect.centery - text.get_height() // 2
         self.screen.blit(text, (text_x, text_y))
     
-    def draw_all(self):
-        """Draw all shop UI elements."""
-        self.screen.fill(self.BLACK)
+    def draw_all(self, do_flip=True):
+        """Draw all shop UI elements. Set do_flip=False when drawing as a background for overlays."""
+        self.draw_background()
         self.draw_top()
         self.draw_options()
         self.draw_item_desc()
         self.draw_shop_list()
         self.draw_mod()
         self.draw_gold()
-        pygame.display.flip()
+        if do_flip:
+            pygame.display.flip()
     
     def update_item_list(self, itemdict, buy_or_sell):
         """

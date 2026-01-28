@@ -32,6 +32,8 @@ from gui.load_game import LoadGameScreen
 from gui.race_selection import RaceSelectionScreen
 from gui.class_selection import ClassSelectionScreen
 from gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
+from gui.town_menu import TownMenuScreen
+from gui.shop_selection import ShopSelectionScreen
 
 # Use enhanced combat by default
 USE_ENHANCED_COMBAT = True
@@ -67,6 +69,65 @@ class PygameGame:
         # CharacterScreen is created on-demand when needed
         
         self.presenter.debug_mode = debug_mode  # Propagate debug mode to presenter
+
+        # Provide a minimal curses-compatible shim for legacy code paths
+        class _PygameStdscr:
+            def __init__(self, presenter):
+                self.presenter = presenter
+
+            def getch(self):
+                """Wait briefly for any key event and return a dummy value.
+
+                Many legacy calls just block on `getch()` to pause until the user presses a key
+                after a popup. Our GUI popups already block, so this can return immediately.
+                """
+                # Drain pending events to keep window responsive
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        import sys
+                        sys.exit()
+                    if event.type == pygame.KEYDOWN:
+                        return 13  # Enter key
+                # No strict blocking required; return quickly
+                return 13
+
+            def getmaxyx(self):
+                # Provide screen size for code that queries it
+                return (self.presenter.height, self.presenter.width)
+
+        # Attach shim so existing code using `game.stdscr.getch()` works in GUI mode
+        self.stdscr = _PygameStdscr(self.presenter)
+
+    def special_event(self, name: str):
+        """GUI implementation of narrative special events.
+
+        Displays a formatted modal message using the Pygame confirmation popup.
+        """
+        try:
+            from game import special_event_dict
+            lines = special_event_dict.get(name, {}).get("Text", [])
+        except Exception:
+            lines = []
+        message = "\n".join(lines) if lines else name
+
+        # Show message-only popup (any key to continue)
+        # Pass a background draw function that maintains current screen state
+        def draw_current_screen():
+            """Redraw the current game state (dungeon or town) to screen."""
+            try:
+                if self.dungeon_manager and self.player_char.location_z > 0:
+                    # In dungeon: render the dungeon view
+                    self.dungeon_manager._render()
+                else:
+                    # In town: render town (currently just black, which is fine)
+                    # The TownMenuScreen would be responsible for drawing if we're in town UI
+                    pass
+            except Exception:
+                pass
+        
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(background_draw_func=draw_current_screen)
     
     def initialize_managers(self):
         """Initialize location managers after player character is created."""
@@ -82,10 +143,12 @@ class PygameGame:
         if self.debug_mode:
             if confirm_yes_no(self.presenter, "Debug Mode - Turn off random encounters?"):
                 self._random_combat = False
-                self.presenter.show_message("Random encounters disabled", "Debug Mode")
+                popup = ConfirmationPopup(self.presenter, "Random encounters disabled", show_buttons=False)
+                popup.show()
             else:
                 self._random_combat = True
-                self.presenter.show_message("Random encounters enabled", "Debug Mode")
+                popup = ConfirmationPopup(self.presenter, "Random encounters enabled", show_buttons=False)
+                popup.show()
         
         # Create main menu screen
         main_menu = MainMenuScreen(self.presenter)
@@ -131,9 +194,10 @@ class PygameGame:
             # Confirm race selection with popup
             confirm_race = ConfirmationPopup(
                 self.presenter,
-                f"You have selected {race_name} as your race. Continue?"
+                f"You have selected {race_name} as your race. Continue?",
+                show_buttons=True,
             )
-            if confirm_race.show(background_draw_func=race_screen.draw_all):
+            if confirm_race.show():
                 break  # Yes selected, continue to class selection
             # No selected, loop back to race selection
         
@@ -149,9 +213,10 @@ class PygameGame:
             # Confirm class selection with popup
             confirm_class = ConfirmationPopup(
                 self.presenter,
-                f"You have selected {class_name} as your class. Continue?"
+                f"You have selected {class_name} as your class. Continue?",
+                show_buttons=True,
             )
-            if confirm_class.show(background_draw_func=class_screen.draw_all):
+            if confirm_class.show():
                 break  # Yes selected, continue to name input
             # No selected, loop back to class selection
         
@@ -235,6 +300,9 @@ class PygameGame:
         if selected_file is None:
             return None
         
+        # Show loading popup similar to curses UI
+        self.presenter.show_progress_popup(header="Load Game", message="Loading game file...")
+
         # Load the character from the selected file
         player_char = SaveManager.load_player(selected_file)
         if player_char is None:
@@ -247,14 +315,10 @@ class PygameGame:
         # Set flag to suppress heal message if loading in town
         if player_char.in_town():
             player_char._suppress_heal_message = True
-        
-        self.presenter.show_message(f"Loaded: {player_char.name}")
+        # Skip blocking message; jump straight into the game
         
         self.player_char = player_char
         self.initialize_managers()
-        
-        return player_char
-        self.initialize_managers()  # Initialize location managers
         
         return player_char
         
@@ -320,25 +384,14 @@ class PygameGame:
     
     def town_menu(self):
         """Display town menu and handle selection."""
-        # Auto-heal when entering town menu
-        try:
-            self.player_char.town_heal()
-            # Check if we should suppress the heal message (loading in town)
-            if not getattr(self.player_char, '_suppress_heal_message', False):
-                self.presenter.show_message("You rest in town. HP and MP fully restored.")
-            else:
-                # Clear the flag after first use
-                self.player_char._suppress_heal_message = False
-        except Exception:
-            # If any issue occurs, continue without blocking town menu
-            pass
+        # Build options list first so it can be reused for popups
         options = [
             "Enter Dungeon",
             "Visit Shop",
             "Visit Barracks",
             "Visit Inn",
             "Visit Church",
-            "Character Info",
+            "Character Menu",
         ]
         
         # Add Warp Point or Old Warehouse based on player progress
@@ -349,11 +402,27 @@ class PygameGame:
         
         options.append("Quit to Main Menu")
         
+        # Create and use the new town menu screen
+        town_screen = TownMenuScreen(self.presenter)
+        
+        # Auto-heal when entering town menu
+        try:
+            self.player_char.town_heal()
+            # Check if we should suppress the heal message (loading in town)
+            if not getattr(self.player_char, '_suppress_heal_message', False):
+                popup = ConfirmationPopup(self.presenter, "You rest in town. HP and MP fully restored.", show_buttons=False)
+                popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+            else:
+                # Clear the flag after first use
+                self.player_char._suppress_heal_message = False
+        except Exception:
+            # If any issue occurs, continue without blocking town menu
+            pass
+        
         while True:
-            choice_idx = self.presenter.render_menu("Town of Silvana", options, use_grid=True)
+            choice_idx = town_screen.navigate(options)
             
             if choice_idx is None or choice_idx == len(options) - 1:  # Quit
-                from gui.confirmation_popup import ConfirmationPopup
                 popup = ConfirmationPopup(self.presenter, "Return to the main menu?")
                 if popup.show():
                     return "quit"
@@ -381,7 +450,7 @@ class PygameGame:
             elif choice_idx == 4:  # Visit Church
                 self.visit_church()
                 
-            elif choice_idx == 5:  # Character Info
+            elif choice_idx == 5:  # Character Menu
                 self.show_character_info()
                 # Check if player quit while in character menu
                 if self.player_char.quit:
@@ -393,7 +462,8 @@ class PygameGame:
                     if result == "dungeon":
                         return "dungeon"
                 else:
-                    self.presenter.show_message("Authorized personnel only. Please leave.")
+                    popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
+                    popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
     
     def use_warp_point(self):
         """Use the warp point to teleport to dungeon level 5."""
@@ -434,12 +504,15 @@ class PygameGame:
     
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""
-        shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Leave"]
+        shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Go Back"]
+        
+        # Create shop selection screen
+        shop_screen = ShopSelectionScreen(self.presenter)
         
         while True:
-            choice = self.presenter.render_menu("Town Shops", shop_options)
+            choice = shop_screen.navigate(shop_options)
             
-            if choice is None or choice == 3:  # Leave
+            if choice is None or choice == 3:  # Go Back
                 break
                 
             elif choice == 0:  # Blacksmith
@@ -474,30 +547,12 @@ class PygameGame:
     def show_character_info(self):
         """Display character information using the character screen."""
         char_screen = CharacterScreen(self.presenter)
-        
+
         while True:
             choice = char_screen.navigate(self.player_char)
-            
+
             if choice == "Exit Menu":
                 break
-            elif choice == "Inventory":
-                # TODO: Open inventory screen
-                self.presenter.show_message("Inventory system not yet implemented in GUI")
-            elif choice == "Equipment":
-                # TODO: Open equipment screen
-                self.presenter.show_message("Equipment system not yet implemented in GUI")
-            elif choice == "Quests":
-                # TODO: Open quests screen
-                self.presenter.show_message("Quests system not yet implemented in GUI")
-            elif choice == "Key Items":
-                # TODO: Open key items screen
-                self.presenter.show_message("Key Items system not yet implemented in GUI")
-            elif choice == "Specials":
-                # TODO: Open specials/abilities screen
-                self.presenter.show_message("Specials system not yet implemented in GUI")
-            elif choice == "Class Menu":
-                # TODO: Open class menu screen
-                self.presenter.show_message("Class Menu not yet implemented in GUI")
             elif choice == "Quit Game":
                 from gui.confirmation_popup import confirm_yes_no
                 if confirm_yes_no(self.presenter, "Are you sure you want to quit?"):

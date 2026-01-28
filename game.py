@@ -41,7 +41,7 @@ class Game:
     def __init__(self, stdscr, debug_mode=False):
         self.stdscr = stdscr
         self.debug_mode = debug_mode
-        self.load_files = glob.glob('save_files/*')
+        self.load_files = SaveManager.list_saves()
         self.races_dict = races_dict
         self.classes_dict = classes_dict
         self.player_char = None

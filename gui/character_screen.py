@@ -3,6 +3,7 @@ Character Screen for Pygame - matches curses terminal layout.
 """
 
 import pygame
+from gui.town_base import TownScreenBase
 from .popup_menus import (
     InventoryPopupMenu,
     EquipmentPopupMenu,
@@ -10,7 +11,7 @@ from .popup_menus import (
 )
 
 
-class CharacterScreen:
+class CharacterScreen(TownScreenBase):
     """
     Character screen with menu options and character stats.
     Layout:
@@ -21,24 +22,7 @@ class CharacterScreen:
     """
     
     def __init__(self, presenter):
-        self.presenter = presenter
-        self.screen = presenter.screen
-        self.width = presenter.width
-        self.height = presenter.height
-        
-        # Colors
-        self.BLACK = (0, 0, 0)
-        self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
-        self.GRAY = (128, 128, 128)
-        self.BORDER_COLOR = (200, 200, 200)
-        self.HIGHLIGHT_BG = (60, 60, 80)
-        
-        # Fonts
-        self.title_font = presenter.title_font
-        self.large_font = presenter.large_font
-        self.normal_font = presenter.normal_font
-        self.small_font = presenter.small_font
+        super().__init__(presenter)
         
         # State
         self.current_selection = 0
@@ -138,90 +122,87 @@ class CharacterScreen:
     def _get_specials_list(self, player_char):
         """Get list of special abilities from player character, separated by type."""
         result = []
-        
-        # Check for abilities_list
-        abilities = getattr(player_char, "abilities_list", None)
-        if abilities and isinstance(abilities, dict):
-            if abilities.get("spells"):
-                result.append("--- SPELLS ---")
-                for spell in abilities["spells"]:
-                    result.append(getattr(spell, "name", str(spell)))
-            if abilities.get("skills"):
-                result.append("--- SKILLS ---")
-                for skill in abilities["skills"]:
-                    result.append(getattr(skill, "name", str(skill)))
-            return result if result else ["No special abilities"]
-        
-        # Fallback to specials attribute
-        specials = getattr(player_char, "specials", [])
-        if callable(specials):
-            specials = specials()
-        if not specials:
-            return ["No special abilities"]
-        return [getattr(s, "name", str(s)) for s in specials]
+
+        # Primary source: player spellbook (Spells/Skills dictionaries)
+        if not result:
+            spellbook = getattr(player_char, "spellbook", None)
+            if spellbook and isinstance(spellbook, dict):
+                spells = spellbook.get("Spells", {}) or {}
+                skills = spellbook.get("Skills", {}) or {}
+                if spells:
+                    result.append("--- SPELLS ---")
+                    for spell in spells.values():
+                        result.append(spell)
+                if skills:
+                    result.append("--- SKILLS ---")
+                    for skill in skills.values():
+                        result.append(skill)
+                # If spellbook present but empty, fall through to specials check
+
+        return result if result else ["No special abilities"]
 
     def draw_info(self, player_char):
         """Draw character info header."""
-        pygame.draw.rect(self.screen, self.BLACK, self.info_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.info_rect, 2)
+        self.draw_semi_transparent_panel(self.info_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.info_rect, 2)
 
         x = self.info_rect.left + 20
         y = self.info_rect.top + 12
 
-        name_text = self.title_font.render(player_char.name, True, self.YELLOW)
+        name_text = self.title_font.render(player_char.name, True, self.colors.GOLD)
         self.screen.blit(name_text, (x, y))
 
         # Location
         y += 50
 
-        location_text = self.normal_font.render(getattr(player_char, 'location', 'Town'), True, self.WHITE)
+        location_text = self.normal_font.render(getattr(player_char, 'location', 'Town'), True, self.colors.WHITE)
         self.screen.blit(location_text, (x, y))
 
         # Calculate weight from inventory
         weight = sum(item.weight for items in player_char.inventory.values() for item in items)
         max_weight = player_char.stats.strength * 10
         weight_max = f"Weight/Max: {int(weight)}/{int(max_weight)}"
-        weight_text = self.normal_font.render(weight_max, True, self.WHITE)
+        weight_text = self.normal_font.render(weight_max, True, self.colors.WHITE)
         self.screen.blit(weight_text, (self.info_rect.right - weight_text.get_width() - 10, y))
 
         y += 40
         class_text = self.normal_font.render(
-            f"{player_char.race.name} {player_char.cls.name}", True, self.WHITE
+            f"{player_char.race.name} {player_char.cls.name}", True, self.colors.WHITE
         )
         self.screen.blit(class_text, (x, y))
 
         # Gold
         gold_amount = getattr(player_char, 'gold', 0)
-        gold_text = self.normal_font.render(f"{gold_amount}G", True, self.YELLOW)
+        gold_text = self.normal_font.render(f"{gold_amount}G", True, self.colors.GOLD)
         self.screen.blit(gold_text, (self.info_rect.right - gold_text.get_width() - 10, y))
 
     def draw_exp(self, player_char):
         """Draw experience info."""
-        pygame.draw.rect(self.screen, self.BLACK, self.exp_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.exp_rect, 2)
+        self.draw_semi_transparent_panel(self.exp_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.exp_rect, 2)
 
         x = self.exp_rect.left + 20
         y = self.exp_rect.top + 12
 
         # Level
-        level_text = self.large_font.render(f"Level: {player_char.level.level}", True, self.WHITE)
+        level_text = self.large_font.render(f"Level: {player_char.level.level}", True, self.colors.WHITE)
         self.screen.blit(level_text, (x, self.exp_rect.centery - level_text.get_height() // 2))
 
         # Experience and to next level
         exp_str = f"Experience: {player_char.level.exp}"
-        exp_text = self.normal_font.render(exp_str, True, self.WHITE)
+        exp_text = self.normal_font.render(exp_str, True, self.colors.WHITE)
         self.screen.blit(exp_text, (self.exp_rect.right - exp_text.get_width() - 10, y))
         y += 22
 
         to_next = player_char.level.exp_to_gain
         to_next_str = f"To Next Level: {to_next}"
-        next_level_text = self.normal_font.render(to_next_str, True, self.WHITE)
+        next_level_text = self.normal_font.render(to_next_str, True, self.colors.WHITE)
         self.screen.blit(next_level_text, (self.exp_rect.right - next_level_text.get_width() - 10, y))
 
     def draw_menu(self):
         """Draw menu options in two columns."""
-        pygame.draw.rect(self.screen, self.BLACK, self.menu_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.menu_rect, 2)
+        self.draw_semi_transparent_panel(self.menu_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.menu_rect, 2)
 
         col_width = self.menu_rect.width // 4
         col1_x = self.menu_rect.centerx - col_width - 30
@@ -239,16 +220,16 @@ class CharacterScreen:
 
             highlight_rect = pygame.Rect(x - 12, y - 3, col_width, line_height + 2)
             if i == self.current_selection:
-                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                text = self.large_font.render(option, True, self.YELLOW)
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
+                text = self.large_font.render(option, True, self.colors.GOLD)
             else:
-                text = self.large_font.render(option, True, self.WHITE)
+                text = self.large_font.render(option, True, self.colors.WHITE)
             self.screen.blit(text, (x, y))
     
     def draw_stats(self, player_char):
         """Draw character stats in three columns."""
-        pygame.draw.rect(self.screen, self.BLACK, self.stats_rect)
-        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.stats_rect, 2)
+        self.draw_semi_transparent_panel(self.stats_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.stats_rect, 2)
         
         # Three columns: base stats, combat stats, equipped gear
         col1_x = self.stats_rect.left + 20
@@ -274,10 +255,10 @@ class CharacterScreen:
         
         for label, value in stats:
             if label:
-                label_text = self.normal_font.render(label, True, self.WHITE)
+                label_text = self.normal_font.render(label, True, self.colors.WHITE)
                 self.screen.blit(label_text, (col1_x, col1_y))
                 
-                value_text = self.normal_font.render(value, True, self.WHITE)
+                value_text = self.normal_font.render(value, True, self.colors.WHITE)
                 self.screen.blit(value_text, (col1_x + 150, col1_y))
             col1_y += line_height
         
@@ -296,10 +277,10 @@ class CharacterScreen:
         
         for label, value in combat_stats:
             if label:
-                label_text = self.normal_font.render(label, True, self.WHITE)
+                label_text = self.normal_font.render(label, True, self.colors.WHITE)
                 self.screen.blit(label_text, (col2_x, col2_y))
                 
-                value_text = self.normal_font.render(value, True, self.WHITE)
+                value_text = self.normal_font.render(value, True, self.colors.WHITE)
                 self.screen.blit(value_text, (col2_x + 150, col2_y))
             col2_y += line_height
         
@@ -307,7 +288,7 @@ class CharacterScreen:
         col3_y = y_start
         
         # Header
-        header_text = self.normal_font.render("Equipped Gear", True, self.YELLOW)
+        header_text = self.normal_font.render("Equipped Gear", True, self.colors.GOLD)
         self.screen.blit(header_text, (col3_x, col3_y))
         col3_y += line_height + 5
         
@@ -318,31 +299,31 @@ class CharacterScreen:
             item = player_char.equipment.get(slot)
             item_name = item.name if item else "(empty)"
             
-            label_text = self.normal_font.render(f"{slot}:", True, self.WHITE)
+            label_text = self.normal_font.render(f"{slot}:", True, self.colors.WHITE)
             self.screen.blit(label_text, (col3_x, col3_y))
             
-            value_text = self.normal_font.render(item_name, True, self.WHITE)
+            value_text = self.normal_font.render(item_name, True, self.colors.WHITE)
             self.screen.blit(value_text, (col3_x + 100, col3_y))
             
             col3_y += line_height
         
         # Buffs
         col3_y += line_height
-        buffs_label = self.normal_font.render("Buffs:", True, self.WHITE)
+        buffs_label = self.normal_font.render("Buffs:", True, self.colors.WHITE)
         self.screen.blit(buffs_label, (col3_x, col3_y))
         col3_y += line_height
         
         if hasattr(player_char, 'buffs') and player_char.buffs:
             for buff in player_char.buffs[:3]:  # Show up to 3 buffs
-                buff_text = self.normal_font.render(buff.name, True, self.WHITE)
+                buff_text = self.normal_font.render(buff.name, True, self.colors.WHITE)
                 self.screen.blit(buff_text, (col3_x + 20, col3_y))
                 col3_y += line_height - 2
         else:
-            none_text = self.normal_font.render("None", True, self.GRAY)
+            none_text = self.normal_font.render("None", True, self.colors.GRAY)
             self.screen.blit(none_text, (col3_x + 20, col3_y))
 
         # Resistances
-        resistance_text = self.normal_font.render("Resistances", True, self.YELLOW)
+        resistance_text = self.normal_font.render("Resistances", True, self.colors.GOLD)
         self.screen.blit(resistance_text, (self.stats_rect.centerx - 50, self.stats_rect.bottom - 150))
 
         resistance_names = [
@@ -362,19 +343,19 @@ class CharacterScreen:
             resist_val = player_char.resistance.get(resist_name, 0.0)
             display = f"{resist_name}: {resist_val * 100:.1f}"
 
-            text = self.normal_font.render(display, True, self.WHITE)
+            text = self.normal_font.render(display, True, self.colors.WHITE)
             self.screen.blit(text, (col_x, resist_y))
 
     def draw_all(self, player_char, do_flip=True):
         """Draw all UI elements. Set do_flip=False when drawing as a background for overlays."""
-        self.screen.fill(self.BLACK)
+        self.draw_background()
         self.draw_info(player_char)
         self.draw_menu()
         self.draw_stats(player_char)
         self.draw_exp(player_char)
         if do_flip:
             pygame.display.flip()
-    
+
     def navigate(self, player_char):
         """
         Navigate the character menu and return selected option.
@@ -457,13 +438,31 @@ class CharacterScreen:
                             popup = QuestPopupMenu(self.presenter, self)
                             _ = popup.show(player_char)
                         elif chosen == "Key Items":
-                            popup = SimpleListPopupMenu(
-                                self.presenter,
-                                self,
-                                title="Key Items",
-                                source_fn=self._get_key_items_list,
-                            )
-                            _ = popup.show(player_char)
+                            # Check if there are any key items
+                            key_items = getattr(player_char, "key_items", [])
+                            if callable(key_items):
+                                key_items = key_items()
+                            
+                            if not key_items:
+                                # Show popup message instead of empty list
+                                from gui.confirmation_popup import ConfirmationPopup
+                                # Capture current screen once to avoid redraw flicker
+                                self.draw_all(player_char, do_flip=False)
+                                background_surface = self.presenter.screen.copy()
+                                popup = ConfirmationPopup(
+                                    self.presenter,
+                                    "You do not have any key items.",
+                                    show_buttons=False
+                                )
+                                popup.show(background_draw_func=lambda: self.presenter.screen.blit(background_surface, (0, 0)))
+                            else:
+                                popup = SimpleListPopupMenu(
+                                    self.presenter,
+                                    self,
+                                    title="Key Items",
+                                    source_fn=self._get_key_items_list,
+                                )
+                                _ = popup.show(player_char)
                         elif chosen == "Specials":
                             popup = SimpleListPopupMenu(
                                 self.presenter,

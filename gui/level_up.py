@@ -2,8 +2,12 @@
 Level Up GUI for Pygame.
 Displays level up bonuses and allows stat selection.
 """
-import pygame
+
 import random
+
+import pygame
+from gui.stat_selection_popup import StatSelectionPopup
+from gui.level_up_popup import LevelUpPopup
 
 
 class LevelUpScreen:
@@ -43,11 +47,9 @@ class LevelUpScreen:
         # Calculate gains
         level_info = self._calculate_level_up(player_char)
         
-        # Show level up information
-        self._display_level_up_info(player_char, level_info)
-        
-        # Wait for player to acknowledge
-        self._wait_for_continue()
+        # Show level up information popup
+        popup = LevelUpPopup(self.presenter, level_info)
+        popup.show(background_draw_func=lambda: self.screen.fill(self.bg_color))
         
         # Handle stat selection every 4 levels
         if player_char.level.level % 4 == 0:
@@ -253,7 +255,7 @@ class LevelUpScreen:
         pygame.display.flip()
     
     def _select_stat_increase(self, player_char):
-        """Allow player to select a stat to increase (every 4 levels)."""
+        """Allow player to select a stat to increase (every 4 levels) using a popup."""
         stat_options = [
             ('Strength', player_char.stats.strength),
             ('Intelligence', player_char.stats.intel),
@@ -263,91 +265,50 @@ class LevelUpScreen:
             ('Dexterity', player_char.stats.dex)
         ]
         
-        selected = 0
-        choosing = True
+        # Show popup to select stat
+        popup = StatSelectionPopup(self.presenter, stat_options)
+        selected_stat = popup.show(background_draw_func=lambda: self._draw_level_up_background(player_char))
         
-        while choosing:
-            # Render selection screen
-            self.screen.fill(self.bg_color)
-            
-            y = 80
-            title = self.title_font.render("Choose Stat to Increase", True, self.highlight_color)
-            title_rect = title.get_rect(center=(self.width // 2, y))
-            self.screen.blit(title, title_rect)
-            y += 100
-            
-            # Display stat options
-            for i, (stat_name, stat_value) in enumerate(stat_options):
-                if i == selected:
-                    # Highlight selected
-                    rect = pygame.Rect(self.width // 2 - 200, y - 5, 400, 40)
-                    pygame.draw.rect(self.screen, self.border_color, rect)
-                    pygame.draw.rect(self.screen, self.highlight_color, rect, 3)
-                
-                text = self.header_font.render(
-                    f"{stat_name}: {stat_value} -> {stat_value + 1}",
-                    True, self.text_color
-                )
-                text_rect = text.get_rect(center=(self.width // 2, y + 15))
-                self.screen.blit(text, text_rect)
-                y += 60
-            
-            # Footer
-            footer = self.small_font.render(
-                "Arrow Keys: Navigate | Enter: Select",
-                True, self.text_color
-            )
-            footer_rect = footer.get_rect(center=(self.width // 2, self.height - 40))
-            self.screen.blit(footer, footer_rect)
-            
-            pygame.display.flip()
-            
-            # Handle input
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    return
-                elif event.type == pygame.KEYDOWN:
-                    if event.key in [pygame.K_UP, pygame.K_w]:
-                        selected = (selected - 1) % len(stat_options)
-                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                        selected = (selected + 1) % len(stat_options)
-                    elif event.key == pygame.K_RETURN:
-                        # Apply stat increase
-                        stat_name = stat_options[selected][0]
-                        if stat_name == 'Strength':
-                            player_char.stats.strength += 1
-                        elif stat_name == 'Intelligence':
-                            player_char.stats.intel += 1
-                        elif stat_name == 'Wisdom':
-                            player_char.stats.wisdom += 1
-                        elif stat_name == 'Constitution':
-                            player_char.stats.con += 1
-                        elif stat_name == 'Charisma':
-                            player_char.stats.charisma += 1
-                        elif stat_name == 'Dexterity':
-                            player_char.stats.dex += 1
-                        
-                        # Show confirmation
-                        self._show_stat_confirmation(stat_name, stat_options[selected][1] + 1)
-                        choosing = False
+        if selected_stat is None:
+            return
+        
+        # Apply stat increase
+        if selected_stat == 'Strength':
+            player_char.stats.strength += 1
+        elif selected_stat == 'Intelligence':
+            player_char.stats.intel += 1
+        elif selected_stat == 'Wisdom':
+            player_char.stats.wisdom += 1
+        elif selected_stat == 'Constitution':
+            player_char.stats.con += 1
+        elif selected_stat == 'Charisma':
+            player_char.stats.charisma += 1
+        elif selected_stat == 'Dexterity':
+            player_char.stats.dex += 1
+        
+        # Show confirmation
+        self._show_stat_confirmation(selected_stat, stat_options)
     
-    def _show_stat_confirmation(self, stat_name, new_value):
-        """Show confirmation of stat increase."""
+    def _draw_level_up_background(self, player_char):
+        """Draw the level up info as background for the popup."""
+        # This method will be called to redraw the background
+        # For now, just fill with a dark background
         self.screen.fill(self.bg_color)
+    
+    def _show_stat_confirmation(self, stat_name, stat_options):
+        """Show confirmation of stat increase using a popup."""
+        from gui.confirmation_popup import ConfirmationPopup
         
-        message = self.header_font.render(
-            f"{stat_name} increased to {new_value}!",
-            True, self.gain_color
-        )
-        message_rect = message.get_rect(center=(self.width // 2, self.height // 2))
-        self.screen.blit(message, message_rect)
+        # Find the new value for this stat
+        new_value = None
+        for name, value in stat_options:
+            if name == stat_name:
+                new_value = value + 1
+                break
         
-        footer = self.small_font.render("Press any key to continue...", True, self.text_color)
-        footer_rect = footer.get_rect(center=(self.width // 2, self.height - 40))
-        self.screen.blit(footer, footer_rect)
-        
-        pygame.display.flip()
-        self._wait_for_continue()
+        message = f"{stat_name} increased to {new_value}!"
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(background_draw_func=lambda: self.screen.fill(self.bg_color))
     
     def _wait_for_continue(self):
         """Wait for player to press a key."""

@@ -19,7 +19,7 @@ class MainMenuScreen:
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
+        self.GOLD = (218, 165, 32)
         self.GRAY = (128, 128, 128)
         self.BORDER_COLOR = (200, 200, 200)
         self.HIGHLIGHT_BG = (60, 60, 80)

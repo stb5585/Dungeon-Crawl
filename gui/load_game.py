@@ -3,6 +3,7 @@ Load Game screen for Pygame GUI - matches the shop layout with character details
 """
 
 import pygame
+
 from save_system import SaveManager
 
 
@@ -22,7 +23,7 @@ class LoadGameScreen:
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
+        self.GOLD = (218, 165, 32)
         self.GRAY = (128, 128, 128)
         self.BORDER_COLOR = (200, 200, 200)
         self.HIGHLIGHT_BG = (60, 60, 80)
@@ -61,7 +62,7 @@ class LoadGameScreen:
         pygame.draw.rect(self.screen, self.BLACK, self.header_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.header_rect, 2)
         
-        title = self.normal_font.render("Choose the character to load", True, self.YELLOW)
+        title = self.normal_font.render("Choose the character to load", True, self.GOLD)
         title_rect = title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery)
         self.screen.blit(title, title_rect)
     
@@ -81,7 +82,7 @@ class LoadGameScreen:
         line_height = 30
         
         # Character name (bold/larger)
-        name_text = self.normal_font.render(info['name'], True, self.YELLOW)
+        name_text = self.normal_font.render(info['name'], True, self.GOLD)
         self.screen.blit(name_text, (x, y))
         y += line_height * 1.5
         
@@ -106,7 +107,7 @@ class LoadGameScreen:
         # Stats if available
         if 'stats' in info and info['stats']:
             y += 10
-            stats_header = self.small_font.render("Stats:", True, self.YELLOW)
+            stats_header = self.small_font.render("Stats:", True, self.GOLD)
             self.screen.blit(stats_header, (x, y))
             y += line_height
             
@@ -134,7 +135,7 @@ class LoadGameScreen:
         y = self.file_list_rect.top + 10
         line_height = 40
         
-        header = self.small_font.render("Save Files", True, self.YELLOW)
+        header = self.small_font.render("Save Files", True, self.GOLD)
         self.screen.blit(header, (x, y))
         y += line_height
         
@@ -152,8 +153,8 @@ class LoadGameScreen:
                     line_height - 4
                 )
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                pygame.draw.rect(self.screen, self.YELLOW, highlight_rect, 1)
-                color = self.YELLOW
+                pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
+                color = self.GOLD
             else:
                 color = self.WHITE
             

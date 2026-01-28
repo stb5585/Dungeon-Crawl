@@ -5,19 +5,22 @@ Implements the core shop logic from town.py adapted for Pygame presenter.
 
 import items as items_module
 from gui.shop_screen import ShopScreen
+from gui.confirmation_popup import ConfirmationPopup
+from gui.town_base import TownScreenBase
 
 
-class ShopManager:
+class ShopManager(TownScreenBase):
     """Manages all shop interactions with pygame presenter."""
     
     def __init__(self, presenter, player_char):
-        self.presenter = presenter
+        super().__init__(presenter)
         self.player_char = player_char
     
     def visit_blacksmith(self):
         """Visit Griswold's Blacksmith - weapons and shields."""
         if self.player_char.player_level() < 5:
-            self.presenter.show_message("Sorry but the blacksmith is currently closed. Try again later.")
+            popup = ConfirmationPopup(self.presenter, "Sorry but the blacksmith is currently closed. Try again later.", show_buttons=False)
+            popup.show(background_draw_func=lambda: self.draw_background())
             return
         
         # Check for unobtainium ultimate weapon quest
@@ -30,31 +33,38 @@ class ShopManager:
             )
         
         from gui.quest_manager import QuestManager
-        qm = QuestManager(self.presenter, self.player_char)
+        qm = QuestManager(
+            self.presenter,
+            self.player_char,
+            background_draw_func=lambda: shop_screen.draw_background(),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+        )
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Griswold's Blacksmith")
-        shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
+        shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
         
         while True:
             choice = shop_screen.navigate_options()
             
             if choice is None or choice == "Leave":
-                self.presenter.show_message("Come back whenever you'd like.")
+                popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
+                popup.show(background_draw_func=lambda: shop_screen.draw_background())
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
-                shop_screen.options_list = ["Weapons", "Shields", "Back"]
+                shop_screen.set_options(["Weapons", "Shields", "Armor", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Weapons":
                     self.buy_weapons()
                 elif buy_choice == "Shields":
                     self.buy_shields()
-                elif buy_choice == "Back":
-                    # Restore main options
-                    shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
-                    shop_screen.shop_message = "Griswold's Blacksmith"
+                elif buy_choice == "Armor":
+                    self.buy_armor()
+                # Always restore main options after buy submenu (including ESC/Back)
+                shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
+                shop_screen.shop_message = "Griswold's Blacksmith"
             elif choice == "Sell":
                 self.sell_items()
             elif choice == "Quests":
@@ -63,21 +73,27 @@ class ShopManager:
     def visit_alchemist(self):
         """Visit the Alchemist - potions and consumables."""
         from gui.quest_manager import QuestManager
-        qm = QuestManager(self.presenter, self.player_char)
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Welcome to Ye Olde Item Shoppe.")
-        shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
+        qm = QuestManager(
+            self.presenter,
+            self.player_char,
+            background_draw_func=lambda: shop_screen.draw_background(),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+        )
+        shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
         
         while True:
             choice = shop_screen.navigate_options()
             
             if choice is None or choice == "Leave":
-                self.presenter.show_message("Good luck on your adventures!")
+                popup = ConfirmationPopup(self.presenter, "Good luck on your adventures!", show_buttons=False)
+                popup.show(background_draw_func=lambda: shop_screen.draw_background())
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
-                shop_screen.options_list = ["Potions", "Scrolls", "Back"]
+                shop_screen.set_options(["Potions", "Scrolls", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Potions":
@@ -86,7 +102,7 @@ class ShopManager:
                     self.buy_scrolls()
                 
                 # Always restore main options after buying or going back
-                shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
+                shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
                 shop_screen.shop_message = "Welcome to Ye Olde Item Shoppe."
             elif choice == "Sell":
                 self.sell_items()
@@ -96,25 +112,32 @@ class ShopManager:
     def visit_jeweler(self):
         """Visit the Jeweler - rings and pendants."""
         if self.player_char.player_level() < 10:
-            self.presenter.show_message("Sorry but the jeweler is currently closed. Try again later.")
+            popup = ConfirmationPopup(self.presenter, "Sorry but the jeweler is currently closed. Try again later.", show_buttons=False)
+            popup.show(background_draw_func=lambda: self.draw_background())
             return
         
         from gui.quest_manager import QuestManager
-        qm = QuestManager(self.presenter, self.player_char)
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Come glimpse the finest jewelry in the land.")
-        shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
+        qm = QuestManager(
+            self.presenter,
+            self.player_char,
+            background_draw_func=lambda: shop_screen.draw_background(),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+        )
+        shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
         
         while True:
             choice = shop_screen.navigate_options()
             
             if choice is None or choice == "Leave":
-                self.presenter.show_message("May fortune favor you!")
+                popup = ConfirmationPopup(self.presenter, "May fortune favor you!", show_buttons=False)
+                popup.show(background_draw_func=lambda: shop_screen.draw_background())
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
-                shop_screen.options_list = ["Rings", "Pendants", "Back"]
+                shop_screen.set_options(["Rings", "Pendants", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Rings":
@@ -123,7 +146,7 @@ class ShopManager:
                     self.buy_pendants()
                 
                 # Always restore main options after buying or going back
-                shop_screen.options_list = ["Buy", "Sell", "Quests", "Leave"]
+                shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
                 shop_screen.shop_message = "Come glimpse the finest jewelry in the land."
             elif choice == "Sell":
                 self.sell_items()
@@ -134,48 +157,87 @@ class ShopManager:
         """Buy weapons - choose 1H or 2H first."""
         # Use ShopScreen for weapon type selection
         shop_screen = ShopScreen(self.presenter, self.player_char, "Choose weapon type")
-        shop_screen.options_list = ["1-Handed", "2-Handed", "Back"]
+        shop_screen.set_options(["1-Handed", "2-Handed", "Back"])
         handed_choice = shop_screen.navigate_options()
         
-        if handed_choice is None or handed_choice == "Back":
+        # Treat ESC ("Leave") the same as Back for submenus
+        if handed_choice is None or handed_choice in ("Back", "Leave"):
             return
         
         handed = handed_choice
         weapon_dict = items_module.items_dict["Weapon"][handed]
         
-        # Choose weapon subtype using ShopScreen
-        subtypes = list(weapon_dict.keys())
+        # Choose weapon subtype using ShopScreen, filtering out unavailable categories
+        subtypes = []
+        for subtype, item_list in weapon_dict.items():
+            if self._has_available_items(item_list):
+                subtypes.append(subtype)
+        
+        # If no items are available, return to main menu
+        if not subtypes:
+            return
+        
         subtypes.append("Back")
         
         shop_screen.shop_message = f"Choose {handed.lower()} weapon type"
-        shop_screen.options_list = subtypes
+        shop_screen.set_options(subtypes)
         subtype_choice = shop_screen.navigate_options()
         
-        if subtype_choice is None or subtype_choice == "Back":
+        # Treat ESC ("Leave") the same as Back for submenus
+        if subtype_choice is None or subtype_choice in ("Back", "Leave"):
             return
         
         subtype = subtype_choice
-        self.buy_equipment(weapon_dict[subtype], subtype)
+        self.buy_equipment(weapon_dict[subtype], subtype, )
     
     def buy_shields(self):
         """Buy shields from blacksmith."""
         shield_list = items_module.items_dict["OffHand"]["Shield"]
-        self.buy_equipment(shield_list, "Shield")
+        self.buy_equipment(shield_list, "Shield", )
+    
+    def buy_armor(self):
+        """Buy armor from blacksmith - choose armor type first."""
+        # Use ShopScreen for armor type selection
+        shop_screen = ShopScreen(self.presenter, self.player_char, "Choose armor type")
+        
+        armor_dict = items_module.items_dict["Armor"]
+        
+        # Filter armor types by availability
+        armor_types = []
+        for armor_type, item_list in armor_dict.items():
+            if self._has_available_items(item_list):
+                armor_types.append(armor_type)
+        
+        # If no armor types available, return
+        if not armor_types:
+            return
+        
+        armor_types.append("Back")
+        
+        shop_screen.set_options(armor_types)
+        armor_choice = shop_screen.navigate_options()
+        
+        # Treat ESC ("Leave") the same as Back for submenus
+        if armor_choice is None or armor_choice in ("Back", "Leave"):
+            return
+        
+        armor_type = armor_choice
+        self.buy_equipment(armor_dict[armor_type], armor_type, )
     
     def buy_rings(self):
         """Buy rings from jeweler."""
         ring_list = items_module.items_dict["Accessory"]["Ring"]
-        self.buy_equipment(ring_list, "Ring")
+        self.buy_equipment(ring_list, "Ring", )
     
     def buy_pendants(self):
         """Buy pendants from jeweler."""
         pendant_list = items_module.items_dict["Accessory"]["Pendant"]
-        self.buy_equipment(pendant_list, "Pendant")
+        self.buy_equipment(pendant_list, "Pendant", )
     
     def buy_scrolls(self):
         """Buy scrolls from alchemist."""
         scroll_list = items_module.items_dict["Misc"]["Scroll"]
-        self.buy_equipment(scroll_list, "Scroll")
+        self.buy_equipment(scroll_list, "Scroll", )
     
     def buy_potions(self):
         """Buy potions from alchemist with level-based availability."""
@@ -197,7 +259,7 @@ class ShopManager:
             potion_dict["Misc"].append(items_module.SuperManaPotion)
         
         # Use the new shop screen
-        self._buy_with_shop_screen(potion_dict, "Potions")
+        self._buy_with_shop_screen(potion_dict, "Potions", )
     
     def buy_equipment(self, item_list, category_name):
         """Generic equipment buying interface using ShopScreen."""
@@ -205,10 +267,12 @@ class ShopManager:
         itemdict = {category_name: item_list}
         
         # Use the new shop screen
-        self._buy_with_shop_screen(itemdict, category_name)
+        self._buy_with_shop_screen(itemdict, category_name, )
     
     def _buy_with_shop_screen(self, itemdict, category_name):
         """Use the new ShopScreen interface for buying items."""
+        from gui.confirmation_popup import QuantityPopup
+        
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}")
         shop_screen.update_item_list(itemdict, "Buy")
         
@@ -225,16 +289,16 @@ class ShopManager:
             if display_str in ["Next Page"] or not item:
                 continue
             
-            # Ask quantity
-            qty_choice = self.presenter.render_menu(
-                f"Buy {item.name} for {cost}g each?",
-                ["Buy 1", "Buy 5", "Cancel"]
-            )
+            # Use QuantityPopup for better quantity selection
+            max_can_carry = self.player_char.stats.strength * 10
+            max_qty = min(self.player_char.gold // cost, 99) if cost > 0 else 99
             
-            if qty_choice is None or qty_choice == 2:
+            qty_popup = QuantityPopup(self.presenter, item.name, cost, max_qty)
+            quantity = qty_popup.show(background_draw_func=lambda: shop_screen.draw_all(do_flip=False))
+            
+            if quantity is None or quantity == 0:
                 continue
             
-            quantity = 1 if qty_choice == 0 else 5
             total_cost = cost * quantity
             
             if self.player_char.gold < total_cost:
@@ -243,13 +307,30 @@ class ShopManager:
                 shop_screen.draw_all()
                 continue
             
+            # Confirm purchase via popup
+            shop_screen.draw_all(do_flip=False)
+            background_surface = self.presenter.screen.copy()
+            confirm_popup = ConfirmationPopup(
+                self.presenter,
+                f"Buy {quantity}x {item.name} for {total_cost}g?"
+            )
+            confirmed = confirm_popup.show(background_draw_func=lambda: self.presenter.screen.blit(background_surface, (0, 0)))
+            if not confirmed:
+                continue
+
             # Purchase items
             self.player_char.gold -= total_cost
             self.player_char.modify_inventory(item, num=quantity)
-            self.presenter.show_message(
-                f"Purchased {quantity}x {item.name}!\n\n"
-                f"Gold remaining: {self.player_char.gold}"
+
+            # Show transaction summary in popup using captured background
+            shop_screen.draw_all(do_flip=False)
+            summary_bg = self.presenter.screen.copy()
+            summary_popup = ConfirmationPopup(
+                self.presenter,
+                f"Purchased {quantity}x {item.name}!\n\nGold remaining: {self.player_char.gold}",
+                show_buttons=False
             )
+            summary_popup.show(background_draw_func=lambda: self.presenter.screen.blit(summary_bg, (0, 0)))
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
@@ -334,13 +415,41 @@ class ShopManager:
                 info_lines.append(f"(No {equip_slot} currently equipped)")
         
         return "\n".join(info_lines)
+    
+    def _has_available_items(self, item_classes):
+        """Check if any items in the given list are available at the player's level."""
+        player_level = self.player_char.player_level()
         
-        return "\n".join(info_lines)
+        for item_class in item_classes:
+            item = item_class()
+            
+            # Check level restrictions
+            if hasattr(item, 'restriction') and item.restriction:
+                try:
+                    if player_level < min(item.restriction):
+                        continue
+                except (TypeError, ValueError):
+                    # Restriction contains non-numeric values (e.g., class names like "Ninja")
+                    # Skip items with class restrictions
+                    continue
+            
+            # Check rarity for town shops
+            if self.player_char.in_town():
+                min_rarity = max(0.4, (1.0 - (0.02 * player_level)))
+                if item.rarity < min_rarity:
+                    continue
+            
+            # If we get here, the item is available
+            return True
+        
+        # No available items found
+        return False
     
     def sell_items(self):
         """Sell items from inventory using ShopScreen."""
         if not self.player_char.inventory:
-            self.presenter.show_message("You have nothing to sell!")
+            popup = ConfirmationPopup(self.presenter, "You have nothing to sell!", show_buttons=False)
+            popup.show(background_draw_func=lambda: self.draw_background())
             return
         
         while True:
@@ -351,7 +460,15 @@ class ShopManager:
                     sellable[name] = items_list
             
             if not sellable:
-                self.presenter.show_message("You have no items to sell.")
+                # Capture current shop background to avoid flicker
+                self.draw_background()
+                background_surface = self.presenter.screen.copy()
+                popup = ConfirmationPopup(
+                    self.presenter,
+                    "You have no items to sell.",
+                    show_buttons=False
+                )
+                popup.show(background_draw_func=lambda: self.presenter.screen.blit(background_surface, (0, 0)))
                 return
             
             # Use ShopScreen for selling
@@ -370,47 +487,39 @@ class ShopManager:
             if display_str in ["Next Page"] or not item:
                 continue
             
-            # Choose quantity
-            qty_options = ["Sell 1"]
-            if count >= 5:
-                qty_options.append("Sell 5")
-            if count >= 10:
-                qty_options.append("Sell 10")
-            qty_options.append("Sell All")
-            qty_options.append("Cancel")
+            # Use QuantityPopup for sell quantity selection
+            from gui.confirmation_popup import QuantityPopup
+            qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count)
+            quantity = qty_popup.show(background_draw_func=lambda: shop_screen.draw_all(do_flip=False))
             
-            qty_choice = self.presenter.render_menu(
-                f"Sell {item.name} ({sell_price}g each):",
-                qty_options
-            )
-            
-            if qty_choice is None or qty_options[qty_choice] == "Cancel":
+            if quantity is None or quantity == 0:
                 continue
-            
-            if qty_options[qty_choice] == "Sell 1":
-                quantity = 1
-            elif qty_options[qty_choice] == "Sell 5":
-                quantity = 5
-            elif qty_options[qty_choice] == "Sell 10":
-                quantity = 10
-            else:  # Sell All
-                quantity = count
             
             total_gold = sell_price * quantity
             
-            # Confirm sale
-            confirm = self.presenter.render_menu(
-                f"Sell {quantity}x {item.name} for {total_gold}g?",
-                ["Yes", "No"]
+            # Confirm sale via popup
+            # Capture current shop screen as background to avoid flicker
+            shop_screen.draw_all(do_flip=False)
+            background_surface = self.presenter.screen.copy()
+            confirm_popup = ConfirmationPopup(
+                self.presenter,
+                f"Sell {quantity}x {item.name} for {total_gold}g?"
             )
+            confirm = confirm_popup.show(background_draw_func=lambda: self.presenter.screen.blit(background_surface, (0, 0)))
             
-            if confirm == 0:
+            if confirm:
                 self.player_char.gold += total_gold
                 self.player_char.modify_inventory(item, num=quantity, subtract=True)
-                self.presenter.show_message(
-                    f"Sold {quantity}x {item.name} for {total_gold}g!\n\n"
-                    f"Gold: {self.player_char.gold}"
+
+                # Show transaction summary in popup using captured background
+                shop_screen.draw_all(do_flip=False)
+                summary_bg = self.presenter.screen.copy()
+                summary_popup = ConfirmationPopup(
+                    self.presenter,
+                    f"Sold {quantity}x {item.name} for {total_gold}g!\n\nGold: {self.player_char.gold}",
+                    show_buttons=False
                 )
+                summary_popup.show(background_draw_func=lambda: self.presenter.screen.blit(summary_bg, (0, 0)))
                 # Continue selling (will reload inventory)
             else:
                 # Continue browsing

@@ -3,9 +3,10 @@ Combat Manager for Pygame GUI.
 Handles combat flow with GUI rendering (doesn't use curses BattleManager).
 """
 from __future__ import annotations
-import pygame
-import random
+
 from typing import TYPE_CHECKING
+
+import pygame
 
 from gui.combat_view import CombatView
 from gui.level_up import LevelUpScreen
@@ -13,7 +14,6 @@ from gui.level_up import LevelUpScreen
 if TYPE_CHECKING:
     from character import Character
     from player import Player
-    from game import Game
 
 
 class GUICombatManager:
@@ -74,6 +74,9 @@ class GUICombatManager:
         Returns:
             bool: True if player won, False if player fled/died
         """
+        # Store tile for loot drops
+        self.current_tile = tile
+        
         # Determine available actions
         if hasattr(tile, 'available_actions'):
             available_actions = tile.available_actions(player_char)
@@ -308,7 +311,6 @@ class GUICombatManager:
                 # Cast the spell
                 spell_obj = player_char.spellbook['Spells'][selected_spell]
                 if player_char.mana.current >= spell_obj.cost:
-                    player_char.mana.current -= spell_obj.cost
                     result = spell_obj.cast(player_char, target=enemy)
                     message = self._result_to_message(result)
                     self.combat_view.add_combat_message(message)
@@ -325,7 +327,6 @@ class GUICombatManager:
                 # Use the skill
                 skill_obj = player_char.spellbook['Skills'][selected_skill]
                 if player_char.mana.current >= skill_obj.cost:
-                    player_char.mana.current -= skill_obj.cost
                     result = skill_obj.use(player_char, target=enemy)
                     message = self._result_to_message(result)
                     self.combat_view.add_combat_message(message)
@@ -569,15 +570,21 @@ class GUICombatManager:
     
     def _handle_combat_end(self, player_char, enemy, fled):
         """Handle end of combat and show results."""
+        end_messages = []
+        
         if not player_char.is_alive():
-            self.combat_view.add_combat_message("You have been defeated!")
+            end_messages.append("You have been defeated!")
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-            pygame.time.wait(2000)
+            
+            # Show defeat message in popup
+            from gui.confirmation_popup import ConfirmationPopup
+            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
+            popup.show(background_draw_func=lambda: None)
             return False
         
         elif not enemy.is_alive():
-            self.combat_view.add_combat_message(f"Victory! {enemy.name} defeated!")
+            end_messages.append(f"Victory! {enemy.name} defeated!")
             
             # Trigger enemy death special effects (like Behemoth's Meteor)
             if hasattr(enemy, 'special_effects'):
@@ -585,50 +592,64 @@ class GUICombatManager:
                 if result:
                     for line in result.strip().split('\n'):
                         if line:
-                            self.combat_view.add_combat_message(line)
-                    self._render_combat_frame(player_char, enemy, [], -1)
-                    pygame.display.flip()
-                    pygame.time.wait(2000)
+                            end_messages.append(line)
             
-            # Calculate rewards
-            gold_gained = enemy.gold
+            # Handle loot drops (gold, exp, and items)
+            tile = getattr(self, 'current_tile', None)
+            
+            # Award experience
             exp_gained = enemy.experience
-            
-            player_char.gold += gold_gained
             player_char.level.exp += exp_gained
+            end_messages.append(f"Gained {exp_gained} exp!")
             
-            self.combat_view.add_combat_message(f"Gained {gold_gained} gold and {exp_gained} exp!")
+            # Handle gold and item drops
+            loot_msg = player_char.loot(enemy, tile)
+            if loot_msg:
+                for line in loot_msg.strip().split('\n'):
+                    if line:
+                        end_messages.append(line)
             
             # Check for quest completion
             quest_msg = player_char.quests(enemy=enemy)
             if quest_msg:
-                # Split multi-line quest messages and add each line separately
                 for line in quest_msg.strip().split('\n'):
-                    if line:  # Only add non-empty lines
-                        self.combat_view.add_combat_message(line)
+                    if line:
+                        end_messages.append(line)
             
-            # Check for level up (subtract from exp_to_gain, check if <= 0)
+            # Check for level up
+            level_up = False
             if not player_char.max_level():
                 player_char.level.exp_to_gain -= exp_gained
                 if player_char.level.exp_to_gain <= 0:
-                    self.combat_view.add_combat_message("LEVEL UP!")
-                    self._render_combat_frame(player_char, enemy, [], -1)
-                    pygame.display.flip()
-                    pygame.time.wait(1500)
-                    
-                    # Show level up screen
-                    self.level_up_screen.show_level_up(player_char, self.game)
+                    level_up = True
+                    end_messages.append("\nLEVEL UP!")
             
+            # Render final combat state
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-            pygame.time.wait(3000)
+            
+            # Show all end messages in popup
+            from gui.confirmation_popup import ConfirmationPopup
+            combat_bg = self.screen.copy()
+            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
+            popup.show(background_draw_func=lambda: self.screen.blit(combat_bg, (0, 0)))
+            
+            # Handle level up screen if needed
+            if level_up:
+                self.level_up_screen.show_level_up(player_char, self.game)
+            
             return True
         
         elif fled:
-            self.combat_view.add_combat_message("You fled from combat!")
+            end_messages.append("You fled from combat!")
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-            pygame.time.wait(1500)
+            
+            # Show flee message in popup
+            from gui.confirmation_popup import ConfirmationPopup
+            combat_bg = self.screen.copy()
+            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
+            popup.show(background_draw_func=lambda: self.screen.blit(combat_bg, (0, 0)))
             return False
         
         return True

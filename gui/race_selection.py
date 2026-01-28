@@ -21,7 +21,7 @@ class RaceSelectionScreen:
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
+        self.GOLD = (218, 165, 32)
         self.GRAY = (128, 128, 128)
         self.DARK_GRAY = (64, 64, 64)
         self.BORDER_COLOR = (200, 200, 200)
@@ -61,7 +61,7 @@ class RaceSelectionScreen:
         pygame.draw.rect(self.screen, self.BLACK, self.header_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.header_rect, 2)
         
-        title = self.normal_font.render("Select the race for your character", True, self.YELLOW)
+        title = self.normal_font.render("Select the race for your character", True, self.GOLD)
         title_rect = title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery)
         self.screen.blit(title, title_rect)
     
@@ -87,7 +87,7 @@ class RaceSelectionScreen:
         classes_y = self.details_rect.top + 500  # Fixed position
         
         # Race name as title
-        name_text = self.normal_font.render(race_name, True, self.YELLOW)
+        name_text = self.normal_font.render(race_name, True, self.GOLD)
         self.screen.blit(name_text, (x, name_y))
         
         # Description (limited to fixed height)
@@ -105,7 +105,7 @@ class RaceSelectionScreen:
         
         # Base Stats section (fixed position)
         if 'stats' in race:
-            stats_header = self.small_font.render("Base Stats", True, self.YELLOW)
+            stats_header = self.small_font.render("Base Stats", True, self.GOLD)
             self.screen.blit(stats_header, (x, stats_y))
             
             stats = race['stats']
@@ -158,7 +158,7 @@ class RaceSelectionScreen:
         
         # Resistances section (fixed position)
         if 'resistance' in race:
-            resist_header = self.small_font.render("Resistances", True, self.YELLOW)
+            resist_header = self.small_font.render("Resistances", True, self.GOLD)
             self.screen.blit(resist_header, (x, resist_y))
             
             resistances = race['resistance']
@@ -206,7 +206,7 @@ class RaceSelectionScreen:
         
         # Available Base Classes section (fixed position)
         if 'available_classes' in race:
-            classes_header = self.small_font.render("Available Base Classes", True, self.YELLOW)
+            classes_header = self.small_font.render("Available Base Classes", True, self.GOLD)
             self.screen.blit(classes_header, (x, classes_y))
             
             y = classes_y + line_height + 5
@@ -263,8 +263,8 @@ class RaceSelectionScreen:
                     line_height - 4
                 )
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                pygame.draw.rect(self.screen, self.YELLOW, highlight_rect, 1)
-                color = self.YELLOW
+                pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
+                color = self.GOLD
             else:
                 color = self.WHITE
             

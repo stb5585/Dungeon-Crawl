@@ -292,7 +292,9 @@ class Character:
     
     def critical_chance(self, att):
         base_crit = 0.005 * (self.check_mod("speed") + self.check_mod("luck", luck_factor=10))
-        crit_chance = self.equipment[att].crit + base_crit
+        crit_chance = base_crit
+        if self.equipment[att] is not None:
+            crit_chance += self.equipment[att].crit
         if self.cls.name == "Seeker":
             crit_chance += (0.1 * self.power_up)
         return crit_chance

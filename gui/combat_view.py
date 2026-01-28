@@ -3,8 +3,10 @@ GUI Combat View for Pygame-based first-person combat.
 Integrates with BattleManager or EnhancedBattleManager for combat logic.
 """
 from __future__ import annotations
-import pygame
+
 import os
+
+import pygame
 
 
 class CombatView:

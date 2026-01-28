@@ -3,6 +3,8 @@ Dungeon Navigation Manager
 Handles dungeon exploration logic, movement, and interactions.
 """
 
+import os
+
 import pygame
 
 from gui.enhanced_dungeon_renderer import EnhancedDungeonRenderer
@@ -23,6 +25,10 @@ class DungeonManager:
         self.presenter = presenter
         self.player_char = player_char
         self.game = game_instance
+
+        # Cache for dungeon background (used for loading screen & character menu)
+        self._dungeon_background = None
+        self._dungeon_background_loaded = False
 
         # Initialize renderer and HUD
         self.renderer = EnhancedDungeonRenderer(presenter)
@@ -63,6 +69,11 @@ class DungeonManager:
         self._next_anim_tick = 0
         self._anim_interval_ms = 120  # torch flicker / subtle view effects
 
+        # Apply dungeon background to character menu in-dungeon
+        dungeon_bg = self._load_dungeon_background()
+        if dungeon_bg:
+            self.character_screen.background = dungeon_bg
+
     def add_message(self, message: str):
         """Add a message to the message log."""
         # Split long messages into multiple lines if needed
@@ -92,65 +103,152 @@ class DungeonManager:
         # Messages affect the UI overlay.
         self.ui_dirty = True
 
-    def _mark_view_dirty(self):
-        """Mark the 3D view as dirty (needs a redraw)."""
-        self.view_dirty = True
-
     def get_current_tile(self):
-        """Get the tile the player is currently standing on."""
+        """Return the tile the player is currently standing on."""
         return self.player_char.world_dict.get(
-            (self.player_char.location_x,
-             self.player_char.location_y,
-             self.player_char.location_z)
+            (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)
         )
 
-    def get_tile_ahead(self):
-        """Get the tile directly in front of the player."""
-        dx, dy = DIRECTIONS[self.player_char.facing]["move"]
-        return self.player_char.world_dict.get(
-            (self.player_char.location_x + dx,
-             self.player_char.location_y + dy,
-             self.player_char.location_z)
-        )
+    def _load_dungeon_background(self):
+        """Load and scale the dungeon background once."""
+        if self._dungeon_background_loaded:
+            return self._dungeon_background
+
+        self._dungeon_background_loaded = True
+        bg_path = os.path.join("assets", "backgrounds", "dungeon.png")
+
+        if os.path.exists(bg_path):
+            try:
+                bg_image = pygame.image.load(bg_path).convert()
+                bg_width, bg_height = bg_image.get_size()
+                scale_x = self.presenter.width / bg_width
+                scale_y = self.presenter.height / bg_height
+                scale = max(scale_x, scale_y)
+
+                new_width = int(bg_width * scale)
+                new_height = int(bg_height * scale)
+                self._dungeon_background = pygame.transform.scale(bg_image, (new_width, new_height))
+            except Exception as exc:
+                print(f"Warning: Could not load dungeon background: {exc}")
+                self._dungeon_background = None
+        else:
+            print(f"Warning: Dungeon background not found at {bg_path}")
+            self._dungeon_background = None
+
+        return self._dungeon_background
+
+    def _show_dungeon_loading_screen(self, message: str, duration: float = 1.25):
+        """Display a short fake-loading screen with progress bar."""
+        bg = self._load_dungeon_background()
+        screen = self.presenter.screen
+        clock = pygame.time.Clock()
+
+        start_ms = pygame.time.get_ticks()
+        end_ms = start_ms + int(duration * 1000)
+
+        while True:
+            now = pygame.time.get_ticks()
+            progress = min(1.0, (now - start_ms) / max(1, end_ms - start_ms))
+
+            # Draw background + dim overlay
+            if bg:
+                bg_rect = bg.get_rect(center=(self.presenter.width // 2, self.presenter.height // 2))
+                screen.blit(bg, bg_rect)
+            else:
+                screen.fill((0, 0, 0))
+
+            overlay = pygame.Surface((self.presenter.width, self.presenter.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 170))
+            screen.blit(overlay, (0, 0))
+
+            # Title text
+            text = self.presenter.title_font.render(message, True, (255, 255, 255))
+            text_rect = text.get_rect(center=(self.presenter.width // 2, self.presenter.height // 2 - 40))
+            screen.blit(text, text_rect)
+
+            # Progress bar
+            bar_width = self.presenter.width // 2
+            bar_height = 24
+            bar_x = (self.presenter.width - bar_width) // 2
+            bar_y = self.presenter.height // 2 + 10
+
+            border_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
+            fill_rect = pygame.Rect(bar_x + 3, bar_y + 3, int((bar_width - 6) * progress), bar_height - 6)
+
+            pygame.draw.rect(screen, (220, 220, 220), border_rect, 2)
+            pygame.draw.rect(screen, (218, 165, 32), fill_rect)
+
+            # Percent text
+            percent_text = self.presenter.small_font.render(f"{int(progress * 100)}%", True, (255, 255, 255))
+            percent_rect = percent_text.get_rect(center=(self.presenter.width // 2, bar_y + bar_height + 16))
+            screen.blit(percent_text, percent_rect)
+
+            pygame.display.flip()
+
+            # Keep window responsive
+            for event in pygame.event.get(pygame.QUIT):
+                pygame.quit()
+                import sys
+                sys.exit()
+
+            if progress >= 1.0:
+                break
+
+            clock.tick(60)
+
+    def _mark_view_dirty(self):
+        """Mark the 3D view and UI overlays to redraw next frame."""
+        self.view_dirty = True
+        self.ui_dirty = True
 
     def move_forward(self):
-        """Move player forward in the direction they're facing."""
-        tile_ahead = self.get_tile_ahead()
+        """Move one tile forward if the path is clear."""
+        dx, dy = DIRECTIONS[self.player_char.facing]["move"]
+        ahead_pos = (
+            self.player_char.location_x + dx,
+            self.player_char.location_y + dy,
+            self.player_char.location_z,
+        )
 
-        if not tile_ahead:
-            self.add_message("You can't go that way!")
+        tile_ahead = self.player_char.world_dict.get(ahead_pos)
+        if tile_ahead is None:
+            self.add_message("You can't move that way.")
             return False
 
-        if not getattr(tile_ahead, 'enter', True):
-            self.add_message("Your path is blocked by a wall!")
-            return False
-
-        # Determine tile type once for subsequent checks
         tile_type = type(tile_ahead).__name__
 
-        # Check for locked/closed doors blocking movement
+        # Impassable tiles (walls, undetected hidden doors, etc.)
+        if not getattr(tile_ahead, "enter", True):
+            if tile_type == "OreVaultDoor" and getattr(tile_ahead, "locked", False):
+                self.add_message("A solid wall blocks your path.")
+            else:
+                self.add_message("You can't move that way.")
+            return False
+
+        # Closed or locked doors block movement
         if 'Door' in tile_type:
-            # If door is explicitly open, allow passage even if locked flag wasn't cleared
-            if hasattr(tile_ahead, 'open') and tile_ahead.open:
-                pass
-            elif hasattr(tile_ahead, 'locked') and tile_ahead.locked:
+            if getattr(tile_ahead, "locked", False):
                 self.add_message("A locked door blocks your path. (Press O to unlock)")
                 return False
-            elif hasattr(tile_ahead, 'open') and not tile_ahead.open:
+            if hasattr(tile_ahead, "open") and not tile_ahead.open:
                 self.add_message("A closed door blocks your path. (Press O to open)")
                 return False
 
-        # Check for FinalBlocker
-        if 'FinalBlocker' in tile_type:
-            if not self.player_char.has_relics():
-                # Check which direction is blocked
-                blocked_dir = getattr(tile_ahead, 'blocked', None)
-                if blocked_dir and blocked_dir.lower() == self.player_char.facing:
-                    self.add_message("An invisible force prevents you from moving forward!")
-                    return False
+        # Final blocker requires relics
+        if 'FinalBlocker' in tile_type and not self.player_char.has_relics():
+            blocked_dir = getattr(tile_ahead, 'blocked', None)
+            if blocked_dir and blocked_dir.lower() == self.player_char.facing:
+                self.add_message("An invisible force prevents you from moving forward!")
+                return False
+
+        # Record previous position for tiles that inspect it (doors, blockers, etc.)
+        self.player_char.previous_location = (
+            self.player_char.location_x,
+            self.player_char.location_y,
+            self.player_char.location_z,
+        )
 
         # Move the player
-        dx, dy = DIRECTIONS[self.player_char.facing]["move"]
         self.player_char.location_x += dx
         self.player_char.location_y += dy
 
@@ -233,7 +331,11 @@ class DungeonManager:
             self.add_message("There are no stairs here!")
             return False
 
-        self.player_char.location_z -= 1
+        target_level = self.player_char.location_z - 1
+        loading_text = "Returning to town..." if target_level <= 0 else f"Ascending to level {target_level}..."
+        self._show_dungeon_loading_screen(loading_text)
+
+        self.player_char.location_z = target_level
         self._mark_view_dirty()
         self.add_message(f"You climb the stairs upward...")
 
@@ -255,7 +357,10 @@ class DungeonManager:
             self.add_message("There are no stairs here!")
             return False
 
-        self.player_char.location_z += 1
+        target_level = self.player_char.location_z + 1
+        self._show_dungeon_loading_screen(f"Descending to level {target_level}...")
+
+        self.player_char.location_z = target_level
         self._mark_view_dirty()
         self.add_message(f"You descend the stairs deeper into the dungeon...")
         self.add_message(f"Now on dungeon level {self.player_char.location_z}")
@@ -857,6 +962,12 @@ class DungeonManager:
                     self.renderer.trigger_damage_flash()
                 self.ui_dirty = True
                 self.view_dirty = True
+        
+        # Check if tile effect teleported player to town (e.g., "Bring Him Home" quest)
+        if self.player_char.in_town():
+            self.add_message("You've been teleported back to town!")
+            self.running = False  # Exit dungeon mode
+            return
 
         # Check for enemy encounter after enter_combat has had a chance to spawn one
         if hasattr(current_tile, 'enemy') and current_tile.enemy:
@@ -923,6 +1034,13 @@ class DungeonManager:
         Main dungeon exploration loop.
         Returns when player exits dungeon (returns to town, quits, etc.)
         """
+        # Always show a loading screen on entry. If we're in town coordinates, use a descending message.
+        if hasattr(self.player_char, "in_town") and callable(self.player_char.in_town):
+            msg = "Descending further into the dungeon..." if self.player_char.in_town() else "Entering the dungeon..."
+        else:
+            msg = "Entering the dungeon..."
+        self._show_dungeon_loading_screen(msg, duration=1.25)
+
         # Initial message
         current_tile = self.get_current_tile()
         if current_tile:
@@ -1012,12 +1130,6 @@ class DungeonManager:
                     # Placeholder until inventory/equipment/etc screens exist
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
 
-        # Debug toggle (G for gradients) - disabled for raycasting renderer
-        # elif key == pygame.K_g and self.game.debug_mode:
-        #     self.renderer.enable_gradients = not self.renderer.enable_gradients
-        #     status = "enabled" if self.renderer.enable_gradients else "disabled"
-        #     self.presenter.show_message(f"Gradient shading {status}", "Debug")
-
         # Escape menu
         elif key == pygame.K_ESCAPE:
             self._show_menu()
@@ -1026,21 +1138,29 @@ class DungeonManager:
         """Show in-dungeon menu."""
         menu_options = [
             "Resume Exploration",
-            "Character Info",
+            "Character Menu",
             "Save and Quit",
             "Quit Game (No Save)"
         ]
 
-        choice = self.presenter.render_menu("Dungeon Menu", menu_options)
+        choice = self._popup_menu("Dungeon Menu", menu_options)
 
         # Handle None (menu closed without selection)
         if choice is None or choice == 0:  # Resume
             self.add_message("Resuming exploration...")
             return
 
-        elif choice == 1:  # Character Info
-            self.add_message("Character menu (coming soon...)")
-            # TODO: Show character menu
+        elif choice == 1:  # Character Menu
+            while True:
+                char_choice = self.character_screen.navigate(self.player_char)
+                if char_choice == "Exit Menu" or char_choice is None:
+                    break
+                elif char_choice == "Quit Game":
+                    self.game.running = False
+                    self.running = False
+                    return
+                else:
+                    self.presenter.show_message("This menu is not yet implemented in the dungeon.")
 
         elif choice == 2:  # Save and Quit
             from gui.confirmation_popup import ConfirmationPopup
@@ -1059,6 +1179,76 @@ class DungeonManager:
                 self.add_message("Exiting game...")
                 self.running = False
                 self.player_char.quit = True
+
+    def _popup_menu(self, title: str, options: list[str]):
+        """Lightweight modal popup menu drawn over the current view.
+
+        Returns the selected index or None if canceled.
+        """
+        selected = 0
+        clock = self.presenter.clock
+        screen = self.presenter.screen
+
+        # Snapshot current frame as background
+        background = screen.copy()
+
+        # Layout
+        panel_width = self.presenter.width // 2
+        panel_height = self.presenter.height // 2
+        panel_x = (self.presenter.width - panel_width) // 2
+        panel_y = (self.presenter.height - panel_height) // 2
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+
+        def draw():
+            # Draw background dimmed
+            screen.blit(background, (0, 0))
+            overlay = pygame.Surface((self.presenter.width, self.presenter.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            screen.blit(overlay, (0, 0))
+
+            # Panel
+            pygame.draw.rect(screen, (20, 20, 30), panel_rect)
+            pygame.draw.rect(screen, (200, 200, 200), panel_rect, 3)
+
+            # Title
+            title_surf = self.presenter.title_font.render(title, True, (218, 165, 32))
+            title_rect = title_surf.get_rect(center=(panel_rect.centerx, panel_rect.top + 40))
+            screen.blit(title_surf, title_rect)
+
+            # Options
+            y = title_rect.bottom + 20
+            for idx, opt in enumerate(options):
+                color = (218, 165, 32) if idx == selected else (255, 255, 255)
+                surf = self.presenter.large_font.render(opt, True, color)
+                rect = surf.get_rect(center=(panel_rect.centerx, y))
+                screen.blit(surf, rect)
+                y += 40
+
+            # Instructions
+            instr = "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel"
+            instr_surf = self.presenter.small_font.render(instr, True, (180, 180, 180))
+            instr_rect = instr_surf.get_rect(center=(panel_rect.centerx, panel_rect.bottom - 30))
+            screen.blit(instr_surf, instr_rect)
+
+            pygame.display.flip()
+
+        while True:
+            draw()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        selected = (selected - 1) % len(options)
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        selected = (selected + 1) % len(options)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return selected
+                    elif event.key == pygame.K_ESCAPE:
+                        return None
+            clock.tick(30)
 
     def _render(self):
         """Render the complete dungeon view."""

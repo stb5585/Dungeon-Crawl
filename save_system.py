@@ -344,6 +344,23 @@ class QuestDataSerializer:
                     if isinstance(quest_data, dict):
                         serialized_quest = dict(quest_data)
                         
+                        # Serialize item class in 'What' field for Collect quests FIRST
+                        # (before other processing to ensure it's properly handled)
+                        if 'What' in serialized_quest and serialized_quest.get('Type') == 'Collect':
+                            what = serialized_quest['What']
+                            if isinstance(what, type):
+                                try:
+                                    instance = what()
+                                    serialized_quest['What'] = ItemSerializer.serialize(instance)
+                                except:
+                                    serialized_quest['What'] = what.__name__
+                            elif isinstance(what, str):
+                                # Already a string, leave it
+                                pass
+                            elif hasattr(what, 'name'):
+                                # It's an instance, serialize it
+                                serialized_quest['What'] = ItemSerializer.serialize(what)
+                        
                         # Serialize item classes in 'Reward' field
                         if 'Reward' in serialized_quest:
                             reward = serialized_quest['Reward']
@@ -368,16 +385,6 @@ class QuestDataSerializer:
                                 pass  # Leave as-is
                             elif isinstance(reward, type):
                                 serialized_quest['Reward'] = ItemSerializer.serialize(reward())
-                        
-                        # Serialize item class in 'What' field for Collect quests
-                        if 'What' in serialized_quest and serialized_quest.get('Type') == 'Collect':
-                            what = serialized_quest['What']
-                            if isinstance(what, type):
-                                try:
-                                    instance = what()
-                                    serialized_quest['What'] = ItemSerializer.serialize(instance)
-                                except:
-                                    serialized_quest['What'] = what.__name__
                         
                         serialized[quest_type][quest_name] = serialized_quest
                     else:
@@ -436,6 +443,11 @@ class QuestDataSerializer:
                             what = deserialized_quest['What']
                             if isinstance(what, dict):
                                 deserialized_quest['What'] = ItemSerializer.deserialize(what)
+                            elif isinstance(what, str):
+                                # Handle legacy string data - try to find the item class
+                                # For now, leave as string (will be handled by GUI)
+                                # TODO: Could add item name -> class mapping here
+                                pass
                         
                         quest_dict[quest_type][quest_name] = deserialized_quest
                     else:
@@ -516,6 +528,7 @@ class PlayerDataSerializer:
             'encumbered': player.encumbered,
             'state': player.state,
             'warp_point': player.warp_point,
+            'intro_shown': getattr(player, 'intro_shown', False),
             
             # Derived data - serialize quest_dict properly
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
@@ -625,6 +638,7 @@ class PlayerDataSerializer:
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
         player.kill_dict = data.get('kill_dict', {})
+        player.intro_shown = data.get('intro_shown', False)
         
         # Load world tiles and restore saved world state
         player.load_tiles()

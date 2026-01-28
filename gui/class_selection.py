@@ -31,7 +31,7 @@ class ClassSelectionScreen:
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
-        self.YELLOW = (255, 255, 0)
+        self.GOLD = (218, 165, 32)
         self.GRAY = (128, 128, 128)
         self.DARK_GRAY = (64, 64, 64)
         self.BORDER_COLOR = (200, 200, 200)
@@ -75,7 +75,7 @@ class ClassSelectionScreen:
         
         title = self.normal_font.render(
             f"Select the class for your {self.race_name} character",
-            True, self.YELLOW
+            True, self.GOLD
         )
         title_rect = title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery)
         self.screen.blit(title, title_rect)
@@ -102,7 +102,7 @@ class ClassSelectionScreen:
         promo_y = self.details_rect.top + 500
         
         # Class name as title
-        name_text = self.normal_font.render(class_name, True, self.YELLOW)
+        name_text = self.normal_font.render(class_name, True, self.GOLD)
         self.screen.blit(name_text, (x, name_y))
         
         # Description (limit lines to avoid pushing sections)
@@ -120,7 +120,7 @@ class ClassSelectionScreen:
         
         # Starting Stats section (fixed position)
         if 'stats' in class_info:
-            stats_header = self.small_font.render("Starting Stats", True, self.YELLOW)
+            stats_header = self.small_font.render("Starting Stats", True, self.GOLD)
             self.screen.blit(stats_header, (x, stats_y))
             
             stats = class_info['stats']
@@ -170,7 +170,7 @@ class ClassSelectionScreen:
         
         # Equipment Restrictions section (fixed position)
         if 'equipment_restrictions' in class_info:
-            equip_header = self.small_font.render("Equipment Restrictions", True, self.YELLOW)
+            equip_header = self.small_font.render("Equipment Restrictions", True, self.GOLD)
             self.screen.blit(equip_header, (x, equip_y))
             y_equip = equip_y + line_height + 5
             restrictions = class_info['equipment_restrictions']
@@ -186,7 +186,7 @@ class ClassSelectionScreen:
         
         # Available Promotions section (fixed position)
         if 'promotions' in class_info and class_info['promotions']:
-            promo_header = self.small_font.render("Available Promotions", True, self.YELLOW)
+            promo_header = self.small_font.render("Available Promotions", True, self.GOLD)
             self.screen.blit(promo_header, (x, promo_y))
             y_promo = promo_y + line_height + 5
             promo_str = ", ".join(class_info['promotions'])
@@ -240,8 +240,8 @@ class ClassSelectionScreen:
                     line_height - 4
                 )
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
-                pygame.draw.rect(self.screen, self.YELLOW, highlight_rect, 1)
-                color = self.YELLOW
+                pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
+                color = self.GOLD
             else:
                 color = self.WHITE
             
