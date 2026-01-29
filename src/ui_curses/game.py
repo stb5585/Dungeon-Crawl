@@ -2,10 +2,10 @@
 The main module to run the Dungeon Crawl game (Curses version).
 """
 
-import curses
-import glob
 import sys
 import time
+
+import curses
 
 from ..core import player, abilities, items
 from . import menus, town, map_tiles

@@ -22,7 +22,7 @@ def test_tileset_loading():
     pygame.display.set_caption("Tileset Preview")
     
     # Load textures
-    tileset_path = "assets/dungeon_tiles"
+    tileset_path = "src/ui_pygame/assets/dungeon_tiles"
     
     texture_map = {
         'wall': 'walls/brick.png',

@@ -6,7 +6,9 @@ import time
 from textwrap import wrap
 
 from . import classes
+from . import enemies
 from . import items
+from ..ui_curses import menus
 
 
 ULTIMATE_WEAPONS = {'Dagger': items.Carnwennan,
@@ -37,7 +39,7 @@ def ultimate(game):
         "I can\'t believe you have found it!",
         "It has been a lifelong dream of mine to forge a weapon from the mythical metal."
     ]
-    ultimate_pad = utils.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
+    ultimate_pad = menus.QuestPopupMenu(game, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
     ultimate_pad.draw_popup(texts)
     make_options = []
     weapon_list = []
@@ -54,13 +56,13 @@ def ultimate(game):
             i += 1
     make_options.append('Not Yet')
     make_message = "What type of weapon would you like me to make?"
-    menu = utils.SelectionPopupMenu(game=game,
+    menu = menus.SelectionPopupMenu(game=game,
                                     header_message=make_message,
                                     stat_options=make_options,
                                     box_height=len(make_options)+5,
                                     rewards=weapon_list,
                                     confirm=False)
-    ultimatebox = utils.TextBox(game)
+    ultimatebox = menus.TextBox(game)
     while True:
         make_idx = menu.navigate_popup()
         if make_options[make_idx] == 'Not Yet':
@@ -86,7 +88,7 @@ def ultimate(game):
 
 def turn_in_quest(game, quest, typ):
     quest_desc = wrap(game.player_char.quest_dict[typ][quest]['End Text'], 50, break_on_hyphens=False)
-    quest_pad = utils.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
+    quest_pad = menus.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
     quest_pad.draw_popup(quest_desc)
     quest_pad.clear_popup()
     game.player_char.quest_dict[typ][quest]['Turned In'] = True
@@ -99,7 +101,7 @@ def turn_in_quest(game, quest, typ):
             game.special_event("Remedy")
     else:
         reward_options = [x().name for x in reward]
-        popup = utils.SelectionPopupMenu(
+        popup = menus.SelectionPopupMenu(
             game, f"Choose your reward{' ':10}(press i for info)",
             reward_options, box_height=6+len(reward), rewards=reward, confirm=True)
         reward_idx = popup.navigate_popup()
@@ -133,7 +135,7 @@ def turn_in_quest(game, quest, typ):
     game.player_char.level.exp += exp
     if not game.player_char.max_level():
         game.player_char.level.exp_to_gain -= exp
-    turninbox = utils.TextBox(game)
+    turninbox = menus.TextBox(game)
     turninbox.print_text_in_rectangle(reward_message)
     game.stdscr.getch()
     turninbox.clear_rectangle()
@@ -240,12 +242,12 @@ def accept_quest(game, quest, typ):
             "I understand your hesitation but I hope you reconsider."
         ]
     quest_desc = wrap(quest[quest_key]['Start Text'], 50, break_on_hyphens=False)
-    menu = utils.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
+    menu = menus.QuestPopupMenu(game, box_height=len(quest_desc)+2, box_width=len(max(quest_desc, key=len))+4)
     accepted = False
-    acceptquestbox = utils.TextBox(game)
+    acceptquestbox = menus.TextBox(game)
     menu.draw_popup(quest_desc)
     confirm_str = "Do you accept this quest?"
-    confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=6)
+    confirm = menus.ConfirmPopupMenu(game, confirm_str, box_height=6)
     if confirm.navigate_popup():
         player_char = game.player_char
         player_char.quest_dict[typ][quest_key] = quest[quest_key].copy()
@@ -426,7 +428,7 @@ def tavern_patrons(game):
 
     patron_options = patron_list(game)
     patron_message = "Who would you like to talk with?"
-    menu = utils.LocationMenu(game, "The Thirsty Dog", patron_options, options_message=patron_message)
+    menu = menus.LocationMenu(game, "The Thirsty Dog", patron_options, options_message=patron_message)
     while True:
         patron_idx = menu.navigate_menu()
         if patron_options[patron_idx] == 'Go Back':
@@ -438,7 +440,7 @@ def tavern_patrons(game):
             if patron_options[patron_idx] == "Drunkard" and game.player_char.player_level() >= 65:
                 level_talks = [talks[65]]
             response = random.choice(random.choice(level_talks))
-            textbox = utils.TextBox(game)
+            textbox = menus.TextBox(game)
             textbox.print_text_in_rectangle(response)
             game.stdscr.getch()
             textbox.clear_rectangle()
@@ -451,8 +453,8 @@ def tavern(game):
         tavern_options = ["Talk with Patrons", "View the Job Board", "Leave"]
         if any(x[2] for x in game.player_char.quest_dict['Bounty'].values()):
             tavern_options.insert(1, "Turn In Bounty")
-        menu = utils.LocationMenu(game, "The Thirsty Dog", tavern_options)
-        tavernbox = utils.TextBox(game)
+        menu = menus.LocationMenu(game, "The Thirsty Dog", tavern_options)
+        tavernbox = menus.TextBox(game)
         while True:
             menu.update_options(tavern_options)
             tavern_idx = menu.navigate_menu()
@@ -481,7 +483,7 @@ def tavern(game):
                             if abandon_choice == "Go Back":
                                 break
                             abandon_message = f"Are you sure you want to abandon the {abandon_choice} bounty?"
-                            confirm = utils.ConfirmPopupMenu(game, abandon_message, box_height=8)
+                            confirm = menus.ConfirmPopupMenu(game, abandon_message, box_height=8)
                             if confirm.navigate_popup():
                                 del game.player_char.quest_dict['Bounty'][abandon_choice]
                                 abandon_options.pop(abandon_options.index(abandon_choice))
@@ -493,7 +495,7 @@ def tavern(game):
                     else:
                         selection = bounty_list[bounty_idx]
                         select_message = f"We would like you to defeat {selection['num']} {selection['enemy'].name}s."
-                        confirm = utils.ConfirmPopupMenu(game, select_message, box_height=7)
+                        confirm = menus.ConfirmPopupMenu(game, select_message, box_height=7)
                         if confirm.navigate_popup():
                             game.player_char.quest_dict['Bounty'][selection["enemy"].name] = [selection, 0, False]
                             tavernbox.print_text_in_rectangle(
@@ -556,8 +558,8 @@ def barracks(game):
 
     barracks_message = "Step inside, soldier. This is your new home."
     barracks_options = ["Quests", "Storage", "Leave"]
-    menu = utils.LocationMenu(game, barracks_message, barracks_options)
-    barracksbox = utils.TextBox(game)
+    menu = menus.LocationMenu(game, barracks_message, barracks_options)
+    barracksbox = menus.TextBox(game)
     menu.draw_all()
     menu.refresh_all()
     if "Brass Key" in game.player_char.special_inventory:
@@ -611,7 +613,7 @@ def barracks(game):
                             while True:
                                 num_message = (f"You have {total} {name}s in your inventory.\n"
                                                 f"How many would you like to store?")
-                                popup = utils.ShopPopup(game, num_message, box_height=9)
+                                popup = menus.ShopPopup(game, num_message, box_height=9)
                                 num = popup.navigate_popup()
                                 if num <= total:
                                     game.player_char.modify_inventory(itemlist[0], num=num, subtract=True, storage=True)
@@ -647,7 +649,7 @@ def barracks(game):
                             while True:
                                 num_message = (f"You have {total} {name}s in storage.\n"
                                                f"How many would you like to retrieve? ")
-                                popup = utils.ShopPopup(game, num_message, box_height=9)
+                                popup = menus.ShopPopup(game, num_message, box_height=9)
                                 num = popup.navigate_popup()
                                 if num <= total:
                                     game.player_char.modify_inventory(game.player_char.storage[name][0], num, storage=True)
@@ -693,8 +695,8 @@ def blacksmith(game):
     if 'Unobtainium' in game.player_char.special_inventory:
         ultimate(game)
     blacksmith_message = "Welcome to Griswold's! What can I do you for?"
-    menu = utils.ShopMenu(game, blacksmith_message)
-    blacksmithbox = utils.TextBox(game)
+    menu = menus.ShopMenu(game, blacksmith_message)
+    blacksmithbox = menus.TextBox(game)
     if all(["Summoner" in game.player_char.cls.name,
             "Triangulus" in game.player_char.special_inventory,
             "Quadrata" in game.player_char.special_inventory]):
@@ -751,8 +753,8 @@ def alchemist(game):
     """
 
     alchemist_message = "Welcome to Ye Olde Item Shoppe."
-    menu = utils.ShopMenu(game, alchemist_message)
-    alchemistbox = utils.TextBox(game)
+    menu = menus.ShopMenu(game, alchemist_message)
+    alchemistbox = menus.TextBox(game)
     while True:
         menu.update_itemdict(None)
         alchemist_choice = menu.navigate_options()
@@ -787,8 +789,8 @@ def jeweler(game):
     """
 
     jeweler_message = "Come glimpse the finest jewelry in the land."
-    menu = utils.ShopMenu(game, jeweler_message)
-    jewelerbox = utils.TextBox(game)
+    menu = menus.ShopMenu(game, jeweler_message)
+    jewelerbox = menus.TextBox(game)
     while True:
         menu.update_itemdict(None)
         jeweler_choice = menu.navigate_options()
@@ -819,8 +821,8 @@ def jeweler(game):
 def church(game):
     church_message = "Come in my child. You are always welcome in the arms of Elysia. How can we be of service?"
     church_options = ['Promotion', 'Save', 'Quests', 'Quit Game', 'Leave']
-    menu = utils.LocationMenu(game, church_message, church_options)
-    churchbox = utils.TextBox(game)
+    menu = menus.LocationMenu(game, church_message, church_options)
+    churchbox = menus.TextBox(game)
     while True:
         church_idx = menu.navigate_menu()
         if church_options[church_idx] == 'Promotion':
@@ -845,7 +847,8 @@ def church(game):
                 game.stdscr.getch()
                 churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Quit Game':
-            from gui.confirmation_popup import ConfirmationPopup
+            # Import pygame GUI module - circular import so import inside function
+            from ..ui_pygame.gui.confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(game.presenter, "Are you sure you want to quit? Any unsaved progress will be lost.")
             if popup.show():
                 game.player_char.quit = True
@@ -863,10 +866,10 @@ def church(game):
 def secret_shop(game):
 
     ss_message = "Since you're here, you might as well buy some supplies."
-    menu = utils.ShopMenu(game, ss_message)
+    menu = menus.ShopMenu(game, ss_message)
     secret_options = ['Buy', 'Sell', 'Leave']
     menu.update_options(secret_options)
-    secretshopbox = utils.TextBox(game)
+    secretshopbox = menus.TextBox(game)
     while True:
         menu.reset_options()
         menu.update_itemdict(None)
@@ -905,17 +908,17 @@ def ultimate_armor_repo(game):
             quest_texts = ["Hmmm, I see my big brother sent you to look for me.", 
                            "Tell him do not worry about me and that I will not return",
                            " until the ultimate evil has been vanquished."]
-            ultimate_pad = utils.QuestPopupMenu(game, box_height=len(quest_texts)+2, box_width=len(max(quest_texts, key=len))+4)
+            ultimate_pad = menus.QuestPopupMenu(game, box_height=len(quest_texts)+2, box_width=len(max(quest_texts, key=len))+4)
             ultimate_pad.draw_popup(quest_texts)
     loc = (game.player_char.location_x, game.player_char.location_y, game.player_char.location_z)
     tile = game.player_char.world_dict[loc]
-    ultimatebox = utils.TextBox(game)
+    ultimatebox = menus.TextBox(game)
     if not tile.looted:
         ultimate_message = f"Which type of armor do you choose?"
         ultimate_options = ['Cloth', 'Light', 'Medium', 'Heavy', "Leave"]
         no_message = "You need time to consider you choice, I respect that. Come back when you have made your choice."
         armor_list = [items.MerlinRobe(), items.DragonHide(), items.Aegis(), items.Genji()]
-        popup = utils.SelectionPopupMenu(game, ultimate_message, ultimate_options, confirm=True)
+        popup = menus.SelectionPopupMenu(game, ultimate_message, ultimate_options, confirm=True)
         ultimate_idx = popup.navigate_popup()
         if ultimate_options[ultimate_idx] == "Leave":
             ultimatebox.print_text_in_rectangle(no_message)
@@ -926,7 +929,7 @@ def ultimate_armor_repo(game):
             game.stdscr.getch()
             ultimatebox.clear_rectangle()
             confirm_str = f"You have chosen an immaculate {ultimate_options[ultimate_idx].lower()} armor. Is this correct?"
-            confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=8)
+            confirm = menus.ConfirmPopupMenu(game, confirm_str, box_height=8)
             if confirm.navigate_popup():
                 chosen = armor_list[ultimate_idx]
                 ultimatebox.print_text_in_rectangle(
@@ -973,14 +976,14 @@ def buy(game, menu, buy_choice, handed=None):
         if item_str == "Go Back":
             menu.update_itemdict(None)
             return False if buy_choice not in ["Alchemist", "Jeweler", "Secret"] else True
-        buybox = utils.TextBox(game)
+        buybox = menus.TextBox(game)
         typ, name, adj_cost, _ = [x.strip() for x in list(filter(None, item_str.split('  ')))]
         if int(adj_cost) > game.player_char.gold:
             buybox.print_text_in_rectangle("You do not have enough gold to purchase this item.")
             game.stdscr.getch()
             buybox.clear_rectangle()
         else:
-            popup = utils.ShopPopup(game, f"How many {name} do you want to buy?", box_height=7)
+            popup = menus.ShopPopup(game, f"How many {name} do you want to buy?", box_height=7)
             num = popup.navigate_popup()
             total_cost = int(adj_cost) * num
             if int(total_cost) > game.player_char.gold:
@@ -989,7 +992,7 @@ def buy(game, menu, buy_choice, handed=None):
                 buybox.clear_rectangle()
             elif num > 0:
                 item = [x for x in item_dict[typ] if x().name == name][0]()
-                buy_popup = utils.ConfirmPopupMenu(
+                buy_popup = menus.ConfirmPopupMenu(
                     game, f"Are you sure you want to buy {num} {name} for {total_cost} gold?", box_height=8)
                 if buy_popup.navigate_popup():
                     game.player_char.gold -= int(total_cost)
@@ -998,7 +1001,7 @@ def buy(game, menu, buy_choice, handed=None):
 
 def sell(game, menu):
 
-    sellbox = utils.TextBox(game)
+    sellbox = menus.TextBox(game)
     if len(game.player_char.inventory) == 0:
         sellbox.print_text_in_rectangle("You don't have anything to sell.")
         game.stdscr.getch()
@@ -1019,11 +1022,11 @@ def sell(game, menu):
         typ_name, total = [x.strip() for x in list(filter(None, item_str.split(" x")))]
         _, name = [x.strip() for x in list(filter(None, typ_name.split('  ')))]
         item = sell_dict[name][0]
-        popup = utils.ShopPopup(game, f"How many {name} do you want to sell?", max=total, box_height=8)
+        popup = menus.ShopPopup(game, f"How many {name} do you want to sell?", max=total, box_height=8)
         num = popup.navigate_popup()
         if num > 0:
             adj_cost = int((0.025 * game.player_char.stats.charisma) * num * item.value)
-            sell_popup = utils.ConfirmPopupMenu(
+            sell_popup = menus.ConfirmPopupMenu(
                 game, f"Do you want to sell {num} {name} for {adj_cost} gold?", box_height=8)
             if sell_popup.navigate_popup():
                 game.player_char.gold += int(adj_cost)
@@ -1031,9 +1034,9 @@ def sell(game, menu):
 
 
 def warp_point(game):
-    warpbox = utils.TextBox(game)
+    warpbox = menus.TextBox(game)
     warp_message = f"Hello, {game.player_char.name}. Do you want to warp down to level 5?"
-    warp_popup = utils.ConfirmPopupMenu(game, warp_message, box_height=8)
+    warp_popup = menus.ConfirmPopupMenu(game, warp_message, box_height=8)
     if warp_popup.navigate_popup():
         if not game.player_char.world_dict[(3, 0, 5)].visited:
             game.player_char.world_dict[(3, 0, 5)].visited = True
@@ -1068,8 +1071,8 @@ def town(game):
     options = town_options(game)
     game.player_char.health.current = game.player_char.health.max
     game.player_char.mana.current = game.player_char.mana.max
-    menu = utils.TownMenu(game, options)
-    townbox = utils.TextBox(game)
+    menu = menus.TownMenu(game, options)
+    townbox = menus.TextBox(game)
     if "Dead Body" in game.player_char.special_inventory and \
         not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
         game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
@@ -1122,8 +1125,7 @@ class BountyBoard:
         bounty = {"reward": None}
         level = str(min(6, game.player_char.player_level() // 10))
         while True:
-            from enemies import random_enemy
-            enemy = random_enemy(level)
+            enemy = enemies.random_enemy(level)
             if enemy.name not in game.player_char.quest_dict['Bounty'] and \
                 enemy.name not in self.bounty_options():
                 break

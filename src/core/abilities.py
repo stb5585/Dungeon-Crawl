@@ -5,12 +5,16 @@ from __future__ import annotations
 import random
 import time
 from textwrap import wrap
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .combat_result import CombatResult
+from ..core import enemies
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from .character import Character
+    from ..ui_curses.game import Game
 
 
 class Ability:
@@ -839,7 +843,7 @@ class Doublecast(Offensive):
         self.cast = 2
 
     def use(self, user: Character, target: Character=None, cover=False, game: Game=None) -> str:
-        import utils
+        from ..ui_curses import menus
 
         use_str = ""
         user.mana.current -= self.cost
@@ -863,7 +867,7 @@ class Doublecast(Offensive):
                 break
             if game:
                 choices = ["first", "second", "third"]
-                popup = utils.SelectionPopupMenu(
+                popup = menus.SelectionPopupMenu(
                     game, f"Select the {choices[j]} spell", spell_list, confirm=False
                 )
                 spell_index = popup.navigate_popup()
@@ -1888,9 +1892,9 @@ class Transform(Class):
         )
 
     def use(self, user):
-        from enemies import Panther
+        from . import enemies
 
-        user.transform_type = Panther()
+        user.transform_type = enemies.Panther()
         return ""
 
 
@@ -1906,9 +1910,7 @@ class Transform2(Transform):
         self.description = "Transforms the druid into a Direbear, assuming the spells and abilities inherent to the creature."
 
     def use(self, user):
-        from enemies import Direbear
-
-        user.transform_type = Direbear()
+        user.transform_type = enemies.Direbear()
         return ""
 
 
@@ -1924,9 +1926,7 @@ class Transform3(Transform):
         self.description = "Transforms the druid into a Werewolf, assuming the spells and abilities inherent to the creature."
 
     def use(self, user):
-        from enemies import Werewolf
-
-        user.transform_type = Werewolf()
+        user.transform_type = enemies.Werewolf()
         return ""
 
 
@@ -1944,12 +1944,8 @@ class Transform4(Transform):
             "Transforms the druid into a Red Dragon, assuming the spells and abilities inherent to the "
             "creature."
         )
-
     def use(self, user):
-        from enemies import RedDragon
-
-        user.transform_type = RedDragon()
-        return ""
+        user.transform_type = enemies.RedDragon()
 
 
 class Totem(Class):
@@ -2347,11 +2343,11 @@ class SlotMachine(Luck):
         self.rank = 2
 
     def use(self, game: Game, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        import utils
+        from ..ui_curses import menus
 
         use_str = ""
         user.mana.current -= self.cost
-        popup = utils.SlotMachinePopupMenu(game, "")
+        popup = menus.SlotMachinePopupMenu(game, "")
 
         hands = {
             "Death": ["666", "999"],
@@ -2503,9 +2499,9 @@ class SlotMachine(Luck):
                     ]
                 ):
                     target = user
-                from items import random_item
+                from . import items
 
-                item = random_item(int(level))
+                item = items.random_item(int(level))
                 try:
                     target.modify_inventory(item)
                 except AttributeError:
@@ -2520,7 +2516,7 @@ class SlotMachine(Luck):
                 use_str += wd_str
             else:
                 if random.randint(0, user_chance) and retries < 2:
-                    textbox = utils.TextBox(game)
+                    textbox = menus.TextBox(game)
                     textbox.print_text_in_rectangle("No luck, try again.")
                     time.sleep(1)
                     textbox.clear_rectangle()
@@ -2545,11 +2541,11 @@ class Blackjack(Luck):
         self.cost = 7
 
     def use(self, game: Game, user: Character, target: Character=None, cover: bool=False):
-        import utils
+        from ..ui_curses import menus
 
         user.mana.current -= self.cost
         use_str = ""
-        popup = utils.BlackjackPopupMenu(game, f"{user.name} Hand  {target.name} Hand")
+        popup = menus.BlackjackPopupMenu(game, f"{user.name} Hand  {target.name} Hand")
         result = popup.navigate_popup()
         prizes = {"Win": ["Regen", "Gold", ""], "Break": ["Ultima"], "Draw": []}
         if result == "Target Win":
@@ -3745,6 +3741,8 @@ class DestroyMetal(Skill):
         self.cost = 27
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        from ..core.items import remove_equipment
+
         use_str = ""
         user.mana.current -= self.cost
         metal_items = ['Fist', 'Dagger', 'Club', 'Sword', 'Ninja Blade', 'Longsword', 'Battle Axe', 'Polearm',
@@ -3763,7 +3761,7 @@ class DestroyMetal(Skill):
             destroy_item = random.choice(destroy_list)
             t_chance = target.check_mod("luck", enemy=user, luck_factor=5)
             if not random.randint(0, int(2 / destroy_item.rarity) + t_chance):
-                from items import remove_equipment
+                from . import items
 
                 if destroy_loc == "inv":
                     use_str += f"{user.name} destroys a {destroy_item.name} out of {target.name}'s inventory.\n"
@@ -3936,12 +3934,12 @@ class ChooseFate(Skill):
     def use(self, game: Game, user: Character, target: Character=None, cover: bool=False) -> str:
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
-        import utils
+        from ..ui_curses import menus
 
         use_str = ""
         choose_message = "I'm bored, you choose."
         options = ["Attack", "Hellfire", "Crush"]
-        popup = utils.SelectionPopupMenu(game, choose_message, options, confirm=True)
+        popup = menus.SelectionPopupMenu(game, choose_message, options, confirm=True)
         option_index = popup.navigate_popup()
         mod_up = random.randint(10, 25)
         if options[option_index] == "Attack":
@@ -5760,13 +5758,13 @@ class Teleport(MovementSpell):
         self.combat = False
 
     def cast_out(self, game):
-        import utils
+        from ..ui_curses import menus
 
         teleport_message = (
             "Do you want to set your location or teleport to the previous location?"
         )
         options = ["Set", "Teleport"]
-        popup = utils.SelectionPopupMenu(game, teleport_message, options, confirm=False)
+        popup = menus.SelectionPopupMenu(game, teleport_message, options, confirm=False)
         option_index = popup.navigate_popup()
         if options[option_index] == "Set":
             cast_message = (

@@ -160,7 +160,7 @@ Events are emitted alongside existing game logic. Non-breaking design:
 
 **Subscribing to events**:
 ```python
-from events import get_event_bus, EventType
+from .events.event_bus import get_event_bus, EventType
 
 def on_combat_start(event):
     print(f"Battle begins: {event.actor.name} vs {event.target.name}")
@@ -171,7 +171,7 @@ event_bus.subscribe(EventType.COMBAT_START, on_combat_start)
 
 **Event logging**:
 ```python
-from events import ConsoleEventLogger, get_event_bus
+from .events.event_bus import ConsoleEventLogger, get_event_bus
 
 logger = ConsoleEventLogger(get_event_bus())
 # Now all events logged to console

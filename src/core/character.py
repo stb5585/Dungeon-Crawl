@@ -165,10 +165,10 @@ class Character:
         self.turtle = False
         self.tunnel = False
     
-    def _emit_damage_event(self, target: 'Character', damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
+    def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
         try:
-            from events import get_event_bus, create_combat_event, EventType
+            from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
             event_bus.emit(create_combat_event(
                 EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
@@ -184,7 +184,7 @@ class Character:
     def _emit_healing_event(self, amount: int, source: str = "Unknown") -> None:
         """Helper to emit healing events."""
         try:
-            from events import get_event_bus, create_combat_event, EventType
+            from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
             event_bus.emit(create_combat_event(
                 EventType.HEALING_DONE,
@@ -196,10 +196,10 @@ class Character:
         except:
             pass
     
-    def _emit_status_event(self, target: 'Character', status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
+    def _emit_status_event(self, target: Character, status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
         """Helper to emit status effect events."""
         try:
-            from events import get_event_bus, create_combat_event, EventType
+            from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
             event_bus.emit(create_combat_event(
                 EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
@@ -243,7 +243,7 @@ class Character:
                 return effect_dict
         raise NotImplementedError(f"{effect} does not exist in character attributes.")
 
-    def hit_chance(self, defender, typ='weapon'):
+    def hit_chance(self, defender: Character, typ='weapon'):
         """
         Calculate hit chance based on various factors.
 
@@ -370,7 +370,7 @@ class Character:
                 else:
                     # Emit dodge event
                     try:
-                        from events import get_event_bus, create_combat_event, EventType
+                        from .events.event_bus import get_event_bus, create_combat_event, EventType
                         event_bus = get_event_bus()
                         event_bus.emit(create_combat_event(
                             EventType.DODGE,
@@ -395,7 +395,7 @@ class Character:
                     if crits[i] > 1:
                         # Emit critical hit event
                         try:
-                            from events import get_event_bus, create_combat_event, EventType
+                            from .events.event_bus import get_event_bus, create_combat_event, EventType
                             event_bus = get_event_bus()
                             event_bus.emit(create_combat_event(
                                 EventType.CRITICAL_HIT,
@@ -425,7 +425,7 @@ class Character:
                                 damage = int(damage)
                                 # Emit block event
                                 try:
-                                    from events import get_event_bus, create_combat_event, EventType
+                                    from .events.event_bus import get_event_bus, create_combat_event, EventType
                                     event_bus = get_event_bus()
                                     event_bus.emit(create_combat_event(
                                         EventType.BLOCK,

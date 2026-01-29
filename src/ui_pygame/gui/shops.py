@@ -32,7 +32,7 @@ class ShopManager(TownScreenBase):
                 "(Ultimate weapon crafting coming soon!)"
             )
         
-        from gui.quest_manager import QuestManager
+        from .quest_manager import QuestManager
         qm = QuestManager(
             self.presenter,
             self.player_char,
@@ -72,7 +72,7 @@ class ShopManager(TownScreenBase):
     
     def visit_alchemist(self):
         """Visit the Alchemist - potions and consumables."""
-        from gui.quest_manager import QuestManager
+        from .quest_manager import QuestManager
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Welcome to Ye Olde Item Shoppe.")
@@ -116,7 +116,7 @@ class ShopManager(TownScreenBase):
             popup.show(background_draw_func=lambda: self.draw_background())
             return
         
-        from gui.quest_manager import QuestManager
+        from .quest_manager import QuestManager
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Come glimpse the finest jewelry in the land.")
@@ -271,7 +271,7 @@ class ShopManager(TownScreenBase):
     
     def _buy_with_shop_screen(self, itemdict, category_name):
         """Use the new ShopScreen interface for buying items."""
-        from gui.confirmation_popup import QuantityPopup
+        from .confirmation_popup import QuantityPopup
         
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}")
         shop_screen.update_item_list(itemdict, "Buy")
@@ -488,7 +488,7 @@ class ShopManager(TownScreenBase):
                 continue
             
             # Use QuantityPopup for sell quantity selection
-            from gui.confirmation_popup import QuantityPopup
+            from .confirmation_popup import QuantityPopup
             qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count)
             quantity = qty_popup.show(background_draw_func=lambda: shop_screen.draw_all(do_flip=False))
             

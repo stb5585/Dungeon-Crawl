@@ -4,16 +4,12 @@ Handles combat flow with GUI rendering (doesn't use curses BattleManager).
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pygame
 
+from ...core.character import Character
+from ...core.player import Player
 from .combat_view import CombatView
 from .level_up import LevelUpScreen
-
-if TYPE_CHECKING:
-    from character import Character
-    from player import Player
 
 
 class GUICombatManager:
@@ -37,7 +33,7 @@ class GUICombatManager:
             return result
         
         # Handle CombatResult object
-        from combat_result import CombatResult
+        from src.core.combat_result import CombatResult
         if isinstance(result, CombatResult):
             # Build a message from the CombatResult
             msg_parts = []
@@ -578,7 +574,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Show defeat message in popup
-            from gui.confirmation_popup import ConfirmationPopup
+            from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
             popup.show(background_draw_func=lambda: None)
             return False
@@ -629,7 +625,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Show all end messages in popup
-            from gui.confirmation_popup import ConfirmationPopup
+            from .confirmation_popup import ConfirmationPopup
             combat_bg = self.screen.copy()
             popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
             popup.show(background_draw_func=lambda: self.screen.blit(combat_bg, (0, 0)))
@@ -646,7 +642,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Show flee message in popup
-            from gui.confirmation_popup import ConfirmationPopup
+            from .confirmation_popup import ConfirmationPopup
             combat_bg = self.screen.copy()
             popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
             popup.show(background_draw_func=lambda: self.screen.blit(combat_bg, (0, 0)))

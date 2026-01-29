@@ -5,7 +5,6 @@ Uses Pygame for graphical presentation instead of curses text interface.
 """
 
 import sys
-import os
 import time
 
 import pygame
@@ -15,6 +14,7 @@ from ..core.classes import classes_dict
 from ..core.races import races_dict
 from ..core.save_system import SaveManager
 from ..core.events import EventType
+from ..core import items
 from .presentation.pygame_presenter import PygamePresenter
 
 # GUI modules
@@ -82,7 +82,6 @@ class PygameGame:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
-                        import sys
                         sys.exit()
                     if event.type == pygame.KEYDOWN:
                         return 13  # Enter key
@@ -102,8 +101,8 @@ class PygameGame:
         Displays a formatted modal message using the Pygame confirmation popup.
         """
         try:
-            from game import special_event_dict
-            lines = special_event_dict.get(name, {}).get("Text", [])
+            from . import game as pygame_game
+            lines = pygame_game.special_event_dict.get(name, {}).get("Text", [])
         except Exception:
             lines = []
         message = "\n".join(lines) if lines else name
@@ -224,7 +223,7 @@ class PygameGame:
             name = "Hero"  # Default name
         
         # Create player character using the same logic as the original game
-        from player import Player
+        from ..core.player import Player
         
         location_x, location_y, location_z = (5, 10, 0)
         stats_tuple = tuple(map(
@@ -258,13 +257,12 @@ class PygameGame:
         player_char.equipment = char_class.equipment
         
         # Add starting spell if available
-        import abilities
+        from ..core import abilities
         if "1" in abilities.spell_dict.get(char_class.name, {}):
             spell_gain = abilities.spell_dict[char_class.name]["1"]()
             player_char.spellbook['Spells'][spell_gain.name] = spell_gain
         
         # Add starting items
-        import items
         player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]
         
         # Load world tiles
@@ -352,7 +350,7 @@ class PygameGame:
 
     def update_bounties(self):
         """Generate bounties (parity with text-mode game)."""
-        import town
+        from ..core import town
 
         bounty_board = town.BountyBoard()
         bounty_board.generate_bounties(self)
@@ -551,7 +549,7 @@ class PygameGame:
             if choice == "Exit Menu":
                 break
             elif choice == "Quit Game":
-                from gui.confirmation_popup import confirm_yes_no
+                from .gui.confirmation_popup import confirm_yes_no
                 if confirm_yes_no(self.presenter, "Are you sure you want to quit?"):
                     self.player_char.quit = True
                     break
@@ -665,7 +663,7 @@ class PygameGame:
             
     def create_test_enemy(self):
         """Create a test enemy for combat demo."""
-        from enemies import Enemy
+        from ..core.enemies import Enemy
         
         # Create a basic goblin enemy using the Enemy constructor
         # (name, health, mana, strength, intel, wisdom, con, charisma, dex, attack, defense, magic, magic_def, exp)

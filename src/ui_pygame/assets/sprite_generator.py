@@ -392,7 +392,7 @@ def generate_all_sprites():
     print("Generating sprites...")
     
     # Player characters
-    sprite_gen = SpriteGenerator("assets/sprites")
+    sprite_gen = SpriteGenerator("src/ui_pygame/assets/sprites")
     
     # Player classes
     sprite_gen.create_humanoid_sprite("player_warrior", COLORS['player_blue'], 
@@ -419,7 +419,7 @@ def generate_all_sprites():
     print(f"  ✓ Created {9} character sprites")
     
     # Effects
-    effect_gen = SpriteGenerator("assets/effects")
+    effect_gen = SpriteGenerator("src/ui_pygame/assets/effects")
     effect_gen.create_effect_sprite("fireball", "fireball", (255, 100, 0))
     effect_gen.create_effect_sprite("ice_shard", "ice", (100, 200, 255))
     effect_gen.create_effect_sprite("lightning", "lightning", (255, 255, 100))
@@ -430,7 +430,7 @@ def generate_all_sprites():
     print(f"  ✓ Created {6} effect sprites")
     
     # Status icons
-    icon_gen = SpriteGenerator("assets/ui")
+    icon_gen = SpriteGenerator("src/ui_pygame/assets/ui")
     icon_gen.create_icon("icon_stun", "stun", (255, 255, 100))
     icon_gen.create_icon("icon_poison", "poison", (100, 200, 100))
     icon_gen.create_icon("icon_sleep", "sleep", (150, 150, 255))

@@ -13,6 +13,7 @@ from . import abilities
 from .battle import BattleManager
 from .combat.enhanced_manager import EnhancedBattleManager
 from .character import Character
+from . import enemies
 from .items import remove_equipment
 from .save_system import SaveManager
 
@@ -26,11 +27,7 @@ def _get_ui_module():
         from src.ui_curses import menus
         return menus
     except ImportError:
-        try:
-            import utils
-            return utils
-        except ImportError:
-            return None
+        return None
 
 _ui_module = None
 
@@ -335,19 +332,14 @@ class Player(Character):
         """
         if game is None:
             return
-        # Try to import from curses UI, fall back to utils for backwards compatibility
+        # Try to import from curses UI
         try:
             from src.ui_curses import menus
             menu_class = menus.CharacterMenu
             textbox_class = menus.TextBox
         except ImportError:
-            # Fall back for backwards compatibility or non-curses mode
-            try:
-                import utils
-                menu_class = utils.CharacterMenu
-                textbox_class = utils.TextBox
-            except ImportError:
-                return
+            # Can't proceed without UI modules
+            return
         
         class_option = "Class Menu"
         class_action = None
@@ -595,7 +587,6 @@ class Player(Character):
             plus = int('ChestRoom2' in str(tile))
             gold = random.randint(5, 50) * (self.location_z + locked + plus) * self.stats.charisma
             if not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10:
-                import enemies
                 enemy = enemies.Mimic(self.location_z + locked + plus)
                 tile.enemy = enemy
                 openupbox.print_text_in_rectangle("There is a Mimic in the chest!")

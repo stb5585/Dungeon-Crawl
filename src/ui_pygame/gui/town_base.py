@@ -51,7 +51,7 @@ class TownScreenBase:
     
     def _load_background(self):
         """Load and scale the town background image."""
-        bg_path = os.path.join("assets", "backgrounds", "town.png")
+        bg_path = os.path.join("src", "ui_pygame", "assets", "backgrounds", "town.png")
         if os.path.exists(bg_path):
             try:
                 bg_image = pygame.image.load(bg_path)

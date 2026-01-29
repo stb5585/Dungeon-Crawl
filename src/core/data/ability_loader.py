@@ -8,7 +8,7 @@ This allows for easy balancing and modding without changing code.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -25,7 +25,8 @@ from effects import (
 )
 
 if TYPE_CHECKING:
-    from abilities import Ability
+    from typing import Any
+
     from effects.base import Effect
 
 

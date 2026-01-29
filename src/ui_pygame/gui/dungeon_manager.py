@@ -4,6 +4,9 @@ Handles dungeon exploration logic, movement, and interactions.
 """
 
 import os
+import random
+import sys
+import traceback
 
 import pygame
 
@@ -13,6 +16,7 @@ from .combat_manager import GUICombatManager
 from .character_screen import CharacterScreen
 from .loot_popup import LootPopup
 from src.core.player import DIRECTIONS
+from src.core import items, enemies, companions
 
 
 class DungeonManager:
@@ -46,11 +50,11 @@ class DungeonManager:
         self.loot_popup = LootPopup(presenter.screen, presenter)
 
         # Import shop manager (lazy import to avoid circular dependencies)
-        from gui.shops import ShopManager
+        from .shops import ShopManager
         self.shop_manager = ShopManager(presenter, player_char)
 
         # Import ultimate armor shop
-        from gui.ultimate_armor import UltimateArmorShop
+        from .ultimate_armor import UltimateArmorShop
         self.ultimate_armor_shop = UltimateArmorShop(presenter)
 
         # Message log
@@ -115,7 +119,9 @@ class DungeonManager:
             return self._dungeon_background
 
         self._dungeon_background_loaded = True
-        bg_path = os.path.join("assets", "backgrounds", "dungeon.png")
+        # Assets are now in src/ui_pygame/assets/
+        bg_path = os.path.join(os.path.dirname(__file__), "..", "assets", "backgrounds", "dungeon.png")
+        bg_path = os.path.abspath(bg_path)
 
         if os.path.exists(bg_path):
             try:
@@ -188,7 +194,6 @@ class DungeonManager:
             # Keep window responsive
             for event in pygame.event.get(pygame.QUIT):
                 pygame.quit()
-                import sys
                 sys.exit()
 
             if progress >= 1.0:
@@ -373,7 +378,6 @@ class DungeonManager:
         self._mark_view_dirty()
 
         # First check tile ahead
-        from player import DIRECTIONS
         direction = self.player_char.facing
         dx, dy = DIRECTIONS[direction]['move']
         ahead_x = self.player_char.location_x + dx
@@ -580,8 +584,6 @@ class DungeonManager:
 
     def _interact_relic(self, relic_tile):
         """Handle relic room interaction."""
-        import items
-
         if hasattr(relic_tile, 'read') and relic_tile.read:
             self.add_message("You already collected the relic from this room.")
             return
@@ -634,7 +636,6 @@ class DungeonManager:
         # Check if player has drunk from the spring
         spring_tile = self.player_char.world_dict.get((4, 9, 3))
         if spring_tile and hasattr(spring_tile, 'drink') and spring_tile.drink:
-            import items
             self.add_message("You find a magnificent sword embedded in the boulder!")
             self.add_message("You obtained: Excaliper!")
             self.player_char.modify_inventory(items.Excaliper(), rare=True)
@@ -644,8 +645,6 @@ class DungeonManager:
 
     def _interact_underground_spring(self, spring_tile):
         """Handle underground spring interaction."""
-        import items
-
         choice = self.presenter.render_menu(
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
             ["Yes", "No"]
@@ -664,10 +663,8 @@ class DungeonManager:
                 self.add_message("Quest completed: Naivete")
 
         # Random encounter with Fuath
-        import random
         if self.player_char.level.pro_level > 1 and not random.randint(0, 1):
             if not hasattr(spring_tile, 'defeated') or not spring_tile.defeated:
-                import enemies
                 self.add_message("A Fuath emerges from the spring!")
 
                 enemy = enemies.Fuath()
@@ -681,7 +678,6 @@ class DungeonManager:
 
                 if combat_won and "Summoner" in self.player_char.cls.name:
                     if "Fuath" not in self.player_char.summons:
-                        import companions
                         self.add_message("The Fuath pledges loyalty to you!")
                         summon = companions.Fuath()
                         summon.initialize_stats(self.player_char)
@@ -723,16 +719,12 @@ class DungeonManager:
             self.add_message("The ground here is already cleared.")
             return
 
-        import items
         self.add_message("You spot Unobtainium on the ground and pick it up!")
         self.player_char.modify_inventory(items.Unobtainium(), rare=True, quest=True)
         unobtainium_tile.visited = True
 
     def _interact_dead_body(self, body_tile):
         """Handle dead body interaction."""
-        import items
-        import enemies
-
         # Check for quest item
         if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
             if not hasattr(body_tile, 'read') or not body_tile.read:
@@ -775,9 +767,9 @@ class DungeonManager:
             final_room_tile.adjacent_visited(self.player_char)
             
             # Show the Devil's dialogue
-            from game import special_event_dict
-            if "Final Boss" in special_event_dict:
-                dialog_lines = special_event_dict["Final Boss"]["Text"]
+            from src.ui_pygame import game as pygame_game
+            if "Final Boss" in pygame_game.special_event_dict:
+                dialog_lines = pygame_game.special_event_dict["Final Boss"]["Text"]
                 dialog_text = "\n".join(dialog_lines)
                 self.presenter.show_message(dialog_text, "The Devil")
             
@@ -785,7 +777,6 @@ class DungeonManager:
             pygame.event.clear()
             
             # Spawn and initiate combat with Devil
-            import enemies
             devil = enemies.Devil()
             self.player_char.state = 'fight'
             
@@ -858,7 +849,6 @@ class DungeonManager:
                 messages.append(f"A {current_tile.enemy.name} blocks your path!")
 
         # Check tile ahead (for interactive objects like chests, doors, relics)
-        from player import DIRECTIONS
         direction = self.player_char.facing
         dx, dy = DIRECTIONS[direction]['move']
         ahead_x = self.player_char.location_x + dx
@@ -923,8 +913,6 @@ class DungeonManager:
 
     def _check_tile_effects(self):
         """Check for tile effects like encounters, traps, etc."""
-        import random
-
         current_tile = self.get_current_tile()
         if not current_tile:
             return
@@ -1161,7 +1149,7 @@ class DungeonManager:
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
 
         elif choice == 2:  # Save and Quit
-            from gui.confirmation_popup import ConfirmationPopup
+            from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "Save your progress before quitting?")
             if popup.show():
                 # Save the game
@@ -1171,7 +1159,7 @@ class DungeonManager:
                 self.player_char.quit = True
 
         elif choice == 3:  # Quit without saving
-            from gui.confirmation_popup import ConfirmationPopup
+            from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "Quit without saving? Progress will be lost.")
             if popup.show():
                 self.add_message("Exiting game...")
@@ -1235,7 +1223,6 @@ class DungeonManager:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    import sys
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key in (pygame.K_UP, pygame.K_w):
@@ -1269,7 +1256,6 @@ class DungeonManager:
                 # Do not spam tracebacks every frame.
                 if not self._render_error_logged:
                     print(f"Render error: {e}")
-                    import traceback
                     traceback.print_exc()
                     self._render_error_logged = True
 
@@ -1290,7 +1276,6 @@ class DungeonManager:
         except Exception as e:
             if not self._render_error_logged:
                 print(f"HUD render error: {e}")
-                import traceback
                 traceback.print_exc()
                 self._render_error_logged = True
 
@@ -1299,7 +1284,6 @@ class DungeonManager:
         except Exception as e:
             if not self._render_error_logged:
                 print(f"Damage flash render error: {e}")
-                import traceback
                 traceback.print_exc()
                 self._render_error_logged = True
 

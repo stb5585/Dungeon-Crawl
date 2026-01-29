@@ -9,6 +9,8 @@ import os
 import pygame
 from PIL import Image
 
+from ...core.player import DIRECTIONS
+
 
 class EnhancedDungeonRenderer:
     """
@@ -164,7 +166,7 @@ class EnhancedDungeonRenderer:
         tiles = {}
 
         # Load base textures from consolidated PNG files
-        tileset_base = "assets/dungeon_tiles"
+        tileset_base = "src/ui_pygame/assets/dungeon_tiles"
 
         # Texture selections - single PNG file per type
         # Includes standard floor types and special tile floor variants
@@ -737,7 +739,7 @@ class EnhancedDungeonRenderer:
         - Depth 2: Two tiles ahead
         - Depth 3: Three tiles ahead
         """
-        from player import DIRECTIONS
+        from ...core.player import DIRECTIONS
 
         x, y, z = player_char.location_x, player_char.location_y, player_char.location_z
         facing = player_char.facing
@@ -853,7 +855,6 @@ class EnhancedDungeonRenderer:
         - depth 3: two tiles ahead
         """
         try:
-            from player import DIRECTIONS
             x = self.player_char.location_x
             y = self.player_char.location_y
             z = self.player_char.location_z
@@ -1198,7 +1199,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._closed_door_base is None:
-            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'closed_door.png')
+            door_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'closed_door.png')
             if os.path.exists(door_path):
                 try:
                     self._closed_door_base = pygame.image.load(door_path).convert_alpha()
@@ -1226,7 +1227,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._open_door_base is None:
-            door_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'opened_door.png')
+            door_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'opened_door.png')
             if os.path.exists(door_path):
                 try:
                     self._open_door_base = pygame.image.load(door_path).convert_alpha()
@@ -1254,7 +1255,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._stairs_up_base is None:
-            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_up.png')
+            stairs_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'stairs_up.png')
             if os.path.exists(stairs_path):
                 try:
                     self._stairs_up_base = pygame.image.load(stairs_path).convert_alpha()
@@ -1282,7 +1283,7 @@ class EnhancedDungeonRenderer:
 
         # Load base image lazily
         if self._stairs_down_base is None:
-            stairs_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'stairs_down.png')
+            stairs_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'stairs_down.png')
             if os.path.exists(stairs_path):
                 try:
                     self._stairs_down_base = pygame.image.load(stairs_path).convert_alpha()
@@ -1521,7 +1522,7 @@ class EnhancedDungeonRenderer:
 
         # Lazy-load base image
         if self._chest_locked_base is None:
-            chest_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'closed_locked_chest.png')
+            chest_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'closed_locked_chest.png')
             if os.path.exists(chest_path):
                 try:
                     self._chest_locked_base = pygame.image.load(chest_path).convert_alpha()
@@ -1547,7 +1548,7 @@ class EnhancedDungeonRenderer:
         size_map = {1: 512, 2: 256, 3: 128}
 
         if self._chest_unlocked_base is None:
-            chest_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'closed_unlocked_chest.png')
+            chest_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'closed_unlocked_chest.png')
             if os.path.exists(chest_path):
                 try:
                     self._chest_unlocked_base = pygame.image.load(chest_path).convert_alpha()
@@ -1573,7 +1574,7 @@ class EnhancedDungeonRenderer:
         size_map = {1: 512, 2: 256, 3: 128}
 
         if self._chest_open_base is None:
-            chest_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', 'opened_chest.png')
+            chest_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'opened_chest.png')
             if os.path.exists(chest_path):
                 try:
                     self._chest_open_base = pygame.image.load(chest_path).convert_alpha()
@@ -1616,7 +1617,7 @@ class EnhancedDungeonRenderer:
         # Lazy-load base image for this altar type
         cache_key = altar_name
         if cache_key not in self._altar_bases:
-            altar_path = os.path.join('assets', 'dungeon_tiles', 'special_tiles', altar_name)
+            altar_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', altar_name)
             if os.path.exists(altar_path):
                 try:
                     self._altar_bases[cache_key] = pygame.image.load(altar_path).convert_alpha()
@@ -1725,7 +1726,7 @@ class EnhancedDungeonRenderer:
             self._unobtainium_cache = {}
 
         if self._unobtainium_base is None:
-            ore_path = os.path.join('assets', 'sprites', 'relics', 'unobtainium.png')
+            ore_path = os.path.join('src/ui_pygame/assets', 'sprites', 'relics', 'unobtainium.png')
             if os.path.exists(ore_path):
                 try:
                     self._unobtainium_base = pygame.image.load(ore_path).convert_alpha()

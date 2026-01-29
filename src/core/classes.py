@@ -4,15 +4,13 @@
 import time
 from textwrap import wrap
 
+from . import abilities
 from . import items
 
 
 # Functions
 def choose_familiar(game):
-    try:
-        from src.ui_curses import menus as utils
-    except ImportError:
-        import utils
+    from src.ui_curses import menus as utils
     from . import companions
 
     fam_name = ""
@@ -122,8 +120,6 @@ def apply_promotion_ability_rules(promoted_player, new_class_name):
     Returns:
         str: Message describing ability changes, or empty string if none
     """
-    import abilities
-    
     rules = PROMOTION_ABILITY_RULES.get(new_class_name, {})
     message = ""
     
@@ -168,10 +164,7 @@ def apply_promotion_ability_rules(promoted_player, new_class_name):
 
 
 def promotion(game):
-    try:
-        from src.ui_curses import menus as utils
-    except ImportError:
-        import utils
+    from src.ui_curses import menus as utils
     
     pro_message = "Choose your path"
     pro1_dict = {
@@ -221,8 +214,6 @@ def promotion(game):
             )
         confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=9)
         if confirm.navigate_popup():
-            import abilities
-
             promo_str = (
                 f"Congratulations! {game.player_char.name} has been promoted from a {current_class} to a "
                 f"{new_class.name}!\n"

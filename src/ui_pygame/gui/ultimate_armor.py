@@ -4,6 +4,7 @@ Handles the special armor crafting encounter in the dungeon depths.
 """
 import pygame
 import time
+from ...core import items
 
 
 class UltimateArmorShop:
@@ -63,9 +64,6 @@ class UltimateArmorShop:
                 "The Forge Master"
             )
             return
-        
-        # Import items
-        import items
         
         # Armor list mapping
         armor_classes = [

@@ -6,6 +6,7 @@ import time
 from textwrap import wrap
 
 from ..core import classes
+from ..core import enemies
 from ..core import items
 from . import menus
 
@@ -119,7 +120,7 @@ def turn_in_quest(game, quest, typ):
         reward_message = f"You received {exp} experience and gain access to the Warp Point.\n"
     elif reward == "Izulu":
         game.special_event("Izulu")
-        from companions import Izulu
+        from ..core.companions import Izulu
         summon = Izulu()
         summon.initialize_stats(game.player_char)
         game.player_char.summons[summon.name] = summon
@@ -867,7 +868,7 @@ def church(game):
                 game.stdscr.getch()
                 churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Quit Game':
-            from gui.confirmation_popup import ConfirmationPopup
+            from ..ui_pygame.gui.confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(game.presenter, "Are you sure you want to quit? Any unsaved progress will be lost.")
             if popup.show():
                 game.player_char.quit = True
@@ -1144,8 +1145,7 @@ class BountyBoard:
         bounty = {"reward": None}
         level = str(min(6, game.player_char.player_level() // 10))
         while True:
-            from enemies import random_enemy
-            enemy = random_enemy(level)
+            enemy = enemies.random_enemy(level)
             if enemy.name not in game.player_char.quest_dict['Bounty'] and \
                 enemy.name not in self.bounty_options():
                 break

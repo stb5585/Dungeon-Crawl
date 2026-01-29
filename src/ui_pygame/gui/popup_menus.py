@@ -4,6 +4,7 @@ Docstring for gui.popup_menus
 
 import pygame
 
+from ...core import items
 from .confirmation_popup import ConfirmationPopup
 
 
@@ -784,8 +785,6 @@ class EquipmentPopupMenu(BasePopupMenu):
     
     def _equip_from_inventory(self, player_char, slot, new_item):
         """Equip an item from inventory, unequipping current item if needed."""
-        from items import NoWeapon, NoArmor, NoOffHand, NoRing, NoPendant
-        
         # Get current item
         current_item = player_char.equipment.get(slot)
         
@@ -820,13 +819,12 @@ class EquipmentPopupMenu(BasePopupMenu):
             return
         
         # Remove from equipment and replace with appropriate NoItem
-        from items import NoWeapon, NoArmor, NoOffHand, NoRing, NoPendant
         no_item_classes = {
-            "Weapon": NoWeapon,
-            "Armor": NoArmor,
-            "OffHand": NoOffHand,
-            "Ring": NoRing,
-            "Pendant": NoPendant
+            "Weapon": items.NoWeapon,
+            "Armor": items.NoArmor,
+            "OffHand": items.NoOffHand,
+            "Ring": items.NoRing,
+            "Pendant": items.NoPendant
         }
         
         if slot in no_item_classes:
@@ -1304,26 +1302,22 @@ class EquipmentSelectionPopup(BasePopupMenu):
         elif item_str == "Unequip":
             # Show diffs for unequipping (switching to placeholder)
             if self.slot and self.player_char_ref and self.current_item:
-                try:
-                    from items import NoWeapon, NoArmor, NoOffHand, NoRing, NoPendant
-                    no_item_classes = {
-                        "Weapon": NoWeapon,
-                        "Armor": NoArmor,
-                        "OffHand": NoOffHand,
-                        "Ring": NoRing,
-                        "Pendant": NoPendant
-                    }
-                    
-                    if self.slot in no_item_classes:
-                        placeholder = no_item_classes[self.slot]()
-                        diff_str = self.player_char_ref.equip_diff(placeholder, self.slot)
-                        if diff_str:
-                            for line in diff_str.split("\n"):
-                                text = self.normal_font.render(line, True, self.LIGHT_GRAY)
-                                self.screen.blit(text, (x, y))
-                                y += self.line_height
-                except Exception:
-                    pass
+                no_item_classes = {
+                    "Weapon": items.NoWeapon,
+                    "Armor": items.NoArmor,
+                    "OffHand": items.NoOffHand,
+                    "Ring": items.NoRing,
+                    "Pendant": items.NoPendant
+                }
+                
+                if self.slot in no_item_classes:
+                    placeholder = no_item_classes[self.slot]()
+                    diff_str = self.player_char_ref.equip_diff(placeholder, self.slot)
+                    if diff_str:
+                        for line in diff_str.split("\n"):
+                            text = self.normal_font.render(line, True, self.LIGHT_GRAY)
+                            self.screen.blit(text, (x, y))
+                            y += self.line_height
         
         else:
             # Search through inventory for matching item and show diff

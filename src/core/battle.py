@@ -8,9 +8,11 @@ from __future__ import annotations
 import datetime
 import random
 import re
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from .enemies import Enemy
     from .character import Character
     from .player import Player
@@ -154,9 +156,9 @@ class BattleManager:
             game: Any,
             enemy: Character,
             logger: BattleLogger | None = None,
-            battle_ui: Optional[Any] = None,
-            battle_popup: Optional[Any] = None,
-            textbox: Optional[Any] = None,
+            battle_ui: Any | None = None,
+            battle_popup: Any | None = None,
+            textbox: Any | None = None,
             ):
         self.game = game
         self.player_char: Character = game.player_char
@@ -220,7 +222,7 @@ class BattleManager:
     def execute_battle(self) -> bool:
         """Handles the entire battle flow."""
         # Emit combat start event
-        from events import get_event_bus, create_combat_event, EventType
+        from .events.event_bus import get_event_bus, create_combat_event, EventType
         event_bus = get_event_bus()
         event_bus.emit(create_combat_event(
             EventType.COMBAT_START,
@@ -319,7 +321,7 @@ class BattleManager:
 
     def execute_action(self, action: str, choice: str=None, result: str=None):
         """Executes an attack or skill selection."""
-        from events import get_event_bus, create_combat_event, EventType
+        from .events.event_bus import get_event_bus, create_combat_event, EventType
         event_bus = get_event_bus()
         
         if action == "Nothing":

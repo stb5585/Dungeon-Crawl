@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
 
 
 class GamePresenter(ABC):
@@ -275,7 +275,7 @@ class EventDrivenPresenter(GamePresenter):
     
     def _setup_event_handlers(self) -> None:
         """Subscribe to relevant events. Override in subclasses."""
-        from events import EventType
+        from src.core.events import EventType
         
         # Example subscriptions
         self.event_bus.subscribe(EventType.DAMAGE_DEALT, self.on_damage_dealt)

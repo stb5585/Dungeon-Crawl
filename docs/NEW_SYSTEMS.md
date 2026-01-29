@@ -88,7 +88,7 @@ Event-driven architecture to decouple game logic from UI.
 
 **Usage Example:**
 ```python
-from events import get_event_bus, EventType, create_combat_event
+from .events.event_bus import get_event_bus, EventType, create_combat_event
 
 bus = get_event_bus()
 

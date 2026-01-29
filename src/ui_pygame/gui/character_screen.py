@@ -450,7 +450,7 @@ class CharacterScreen(TownScreenBase):
                             popup = EquipmentPopupMenu(self.presenter, self)
                             _ = popup.show(player_char)
                         elif chosen == "Quests":
-                            from gui.popup_menus import QuestPopupMenu
+                            from .popup_menus import QuestPopupMenu
                             popup = QuestPopupMenu(self.presenter, self)
                             _ = popup.show(player_char)
                         elif chosen == "Key Items":
@@ -459,7 +459,7 @@ class CharacterScreen(TownScreenBase):
                             
                             if not special_inv:
                                 # Show popup message instead of empty list
-                                from gui.confirmation_popup import ConfirmationPopup
+                                from .confirmation_popup import ConfirmationPopup
                                 # Capture current screen once to avoid redraw flicker
                                 self.draw_all(player_char, do_flip=False)
                                 background_surface = self.presenter.screen.copy()

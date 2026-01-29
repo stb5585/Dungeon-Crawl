@@ -8,7 +8,6 @@ while maintaining backward compatibility with the existing combat flow.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import time
 
 # Import BattleManager from battle.py (renamed to avoid package conflict)
 from ..battle import BattleManager as BaseBattleManager
@@ -20,6 +19,8 @@ from .action_queue import ActionQueue, ActionType, ActionPriority, ScheduledActi
 from ..events import get_event_bus, create_combat_event, EventType
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from ..character import Character
 
 

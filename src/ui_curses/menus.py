@@ -1991,50 +1991,25 @@ class TextBox:
             self.presenter = game.presenter
 
     def print_text_in_rectangle(self, text):
-        if not self.is_pygame:
-            # Calculate the position (curses)
-            if "\n" in text:
-                lines = text.splitlines()
-            else:
-                lines = wrap(text, 48, break_on_hyphens=False)
-            rect_width = max(50, len(max(lines, key=len)) + 2)
-            rect_height = len(lines) + 2
-            start_y = (self.height - rect_height) // 2
-            start_x = (self.width - rect_width) // 2
-
-            # Create the window for the rectangle
-            self.win = curses.newwin(rect_height, rect_width, start_y, start_x)
-            self.win.box()
-
-            # Center the text inside the rectangle
-            for i, line in enumerate(lines):
-                self.win.addstr(i + 1, (rect_width // 2) - (len(line) // 2), line)
-
-            # Refresh to show the changes
-            self.win.refresh()
+        if "\n" in text:
+            lines = text.splitlines()
         else:
-            # Use GUI confirmation popup with no buttons (any key to dismiss)
-            try:
-                from gui.confirmation_popup import ConfirmationPopup
-                popup = ConfirmationPopup(self.presenter, text, show_buttons=False)
-                
-                # Check if we're in dungeon and can draw the dungeon background
-                def draw_background():
-                    # Try to get dungeon background from dungeon_manager
-                    if hasattr(self.game, 'dungeon_manager') and self.game.dungeon_manager:
-                        bg = self.game.dungeon_manager._load_dungeon_background()
-                        if bg:
-                            bg_rect = bg.get_rect(center=(self.presenter.width // 2, self.presenter.height // 2))
-                            self.presenter.screen.blit(bg, bg_rect)
-                            return
-                    # Fallback: copy current screen
-                    background_surface = self.presenter.screen.copy()
-                    self.presenter.screen.blit(background_surface, (0, 0))
-                
-                popup.show(background_draw_func=draw_background)
-            except Exception:
-                # Fallback: simple render to screen without interactivity
-                self.presenter.show_message(text) if hasattr(self.presenter, 'show_message') else None
+            lines = wrap(text, 48, break_on_hyphens=False)
+        rect_width = max(50, len(max(lines, key=len)) + 2)
+        rect_height = len(lines) + 2
+        start_y = (self.height - rect_height) // 2
+        start_x = (self.width - rect_width) // 2
+
+        # Create the window for the rectangle
+        self.win = curses.newwin(rect_height, rect_width, start_y, start_x)
+        self.win.box()
+
+        # Center the text inside the rectangle
+        for i, line in enumerate(lines):
+            self.win.addstr(i + 1, (rect_width // 2) - (len(line) // 2), line)
+
+        # Refresh to show the changes
+        self.win.refresh()
 
     def clear_rectangle(self):
         if not self.is_pygame:

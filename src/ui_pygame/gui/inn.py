@@ -179,7 +179,7 @@ class InnManager(TownScreenBase):
             patron = options[choice]
             # Route to quest manager for applicable quest givers
             if patron in ("Barkeep", "Waitress", "Soldier", "Busboy", "Hooded Figure", "Drunkard"):
-                from gui.quest_manager import QuestManager
+                from .quest_manager import QuestManager
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 

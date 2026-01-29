@@ -5,8 +5,7 @@ This presenter implements the GamePresenter interface using Pygame for graphical
 It subscribes to the event system for animations and real-time updates.
 """
 from __future__ import annotations
-import sys
-import os
+
 from typing import TYPE_CHECKING, Any
 
 import pygame
@@ -17,14 +16,14 @@ from ...core.events import get_event_bus, EventType
 # TODO: Re-enable sprite manager when available
 # Import sprite manager
 # try:
-#     from assets.sprite_manager import get_sprite_manager
+#     from src.ui_pygame.assets.sprite_manager import get_sprite_manager
 #     SPRITES_AVAILABLE = True
 # except ImportError:
 SPRITES_AVAILABLE = False
 # print("Warning: Sprite manager not available")
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
 
 # Colors
 BLACK = (0, 0, 0)
@@ -866,7 +865,7 @@ if __name__ == "__main__":
     presenter = PygamePresenter()
     
     # Create mock characters for testing
-    from character import Character, Stats, Combat, Resource
+    from src.core.character import Character, Stats, Combat, Resource
     
     stats = Stats(strength=15, intel=10, wisdom=10, con=15, charisma=10, dex=12)
     combat_stats = Combat(attack=10, defense=8, magic=5, magic_def=5)

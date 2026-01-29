@@ -1,6 +1,70 @@
 # Dungeon Crawl - Changelog
 
-## [Unreleased] - 2025-12-14
+## [Unreleased] - 2026-01-28
+
+### Major Reorganization - Code Structure Overhaul ✅
+
+#### Codebase Reorganization
+**Complete restructuring into modular architecture**:
+- **src/core/** - All game logic modules (UI-agnostic)
+  - Moved: abilities.py, battle.py, character.py, classes.py, combat_result.py
+  - Moved: companions.py, enemies.py, items.py, map_tiles.py, player.py
+  - Moved: races.py, save_system.py, town.py, tutorial.py
+  - Kept: combat/ and events/ subdirectories
+  
+- **src/ui_curses/** - Terminal UI implementation
+  - Moved: game.py, menus.py, town.py, map_tiles.py from root
+  - Clean separation from game logic
+  
+- **src/ui_pygame/** - GUI implementation (Pygame)
+  - Organized: gui/ directory with all pygame components
+  - Created: presentation/pygame_presenter.py for event-driven UI
+  
+- **_old_code_archive/** - Archived original files
+  - Git-ignored for safety during reorganization
+  - Original file structure preserved
+
+#### Import System Overhaul
+**Fixed 20+ import errors across reorganized codebase**:
+- **Core Modules**: Updated all imports to use relative imports (`from . import`, `from .. import`)
+- **UI Modules**: Fixed cross-boundary imports (`from ..core import`, `from ...core import`)
+- **Pygame GUI**: Corrected all relative import paths in gui/ subdirectories
+- **Module-Level Imports**: Moved all local function imports to module level
+- **Circular Dependencies**: Resolved with proper import structure
+
+**Files Fixed** (20+ files):
+- src/core/abilities.py (8 import fixes + 3 bugfixes for missing code)
+- src/core/town.py (added enemies import)
+- src/core/player.py (removed invalid utils import, fixed Mimic instantiation)
+- src/core/classes.py (removed try/except fallbacks, added module imports)
+- src/core/save_system.py (added enemies import, fixed indentation)
+- src/ui_curses/town.py (added enemies import)
+- src/ui_pygame/gui/combat_manager.py (fixed TYPE_CHECKING imports)
+- src/ui_pygame/gui/enhanced_dungeon_renderer.py (added DIRECTIONS import)
+- src/ui_pygame/gui/popup_menus.py (added module-level items import)
+- And 10+ more files with import corrections
+
+#### Code Quality Improvements
+- **Syntax Errors Fixed**: 3 syntax errors from incomplete edits (abilities.py, save_system.py)
+- **Indentation Fixed**: Corrected indentation errors in save_system.py
+- **Missing Code Restored**: Added missing popup/result assignments in abilities.py
+- **Dead Code Removed**: Eliminated unreachable pygame code in curses menus.py
+
+#### Verification
+- ✅ **Both UIs Working**: Terminal (curses) and GUI (pygame) both import successfully
+- ✅ **Zero Import Errors**: Comprehensive grep search confirms no bad imports remain
+- ✅ **All Tests Passing**: Import verification test passes for all critical modules
+- ✅ **Entry Points Functional**: Both game_curses.py and game_pygame.py launch correctly
+
+#### Developer Experience
+- **Clearer Structure**: Logical separation of concerns (core vs UI)
+- **Easier Navigation**: Files organized by purpose
+- **Better Imports**: Consistent relative import patterns
+- **Future-Proof**: Ready for additional UI implementations (web, mobile)
+
+---
+
+## [Phase 3 Started] - 2025-12-14
 
 ### Phase 3 Started - GUI Development with Pygame 🎮
 

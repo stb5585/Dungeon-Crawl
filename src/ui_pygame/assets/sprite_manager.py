@@ -10,7 +10,7 @@ import pygame
 import os
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
 
 # Enemy name to sprite mapping
 ENEMY_SPRITE_MAP = {
@@ -106,7 +106,7 @@ PLAYER_SPRITE_MAP = {
 class SpriteManager:
     """Manages sprite loading, caching, and retrieval."""
     
-    def __init__(self, assets_dir: str = "assets"):
+    def __init__(self, assets_dir: str = "src/ui_pygame/assets"):
         """Initialize sprite manager."""
         self.assets_dir = assets_dir
         self.sprite_cache: dict[str, pygame.Surface] = {}

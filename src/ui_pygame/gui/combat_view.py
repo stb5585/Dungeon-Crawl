@@ -41,7 +41,7 @@ class CombatView:
         
         # Sprite cache
         self.sprite_cache = {}
-        self.sprite_dir = 'assets/sprites'
+        self.sprite_dir = 'src/ui_pygame/assets/sprites'
         
         
     def add_combat_message(self, message):

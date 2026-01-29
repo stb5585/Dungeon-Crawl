@@ -30,7 +30,7 @@ class BarracksManager(TownScreenBase):
                 break
             
             elif choice_idx == 0:  # Quests
-                from gui.quest_manager import QuestManager
+                from .quest_manager import QuestManager
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
@@ -77,7 +77,7 @@ class BarracksManager(TownScreenBase):
             popup.show(background_draw_func=lambda: self.draw_background())
             return
         
-        from gui.confirmation_popup import QuantityPopup
+        from .confirmation_popup import QuantityPopup
         
         store_screen = LocationMenuScreen(self.presenter, "Store Items")
         
@@ -130,7 +130,7 @@ class BarracksManager(TownScreenBase):
             popup.show(background_draw_func=lambda: self.draw_background())
             return
         
-        from gui.confirmation_popup import QuantityPopup
+        from .confirmation_popup import QuantityPopup
         
         storage_screen = LocationMenuScreen(self.presenter, "Retrieve Items")
         

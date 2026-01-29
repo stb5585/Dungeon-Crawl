@@ -351,8 +351,8 @@ class ShopScreen(TownScreenBase):
                         continue
                 
                 # Calculate adjusted cost based on charisma
-                from utils import scaled_decay_function
-                adj_scale = scaled_decay_function(self.player_char.stats.charisma // 2)
+                from ... import utils
+                adj_scale = utils.scaled_decay_function(self.player_char.stats.charisma // 2)
                 adj_cost = max(1, int(item.value * adj_scale))
                 
                 # Count owned items

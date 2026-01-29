@@ -80,68 +80,78 @@ FUTURE DEVELOPMENT:
 - Medium-term: Complete ability migration to data-driven format
 - Long-term: Extract reusable engine, launch developer tools as SaaS
 
-DIRECTORY STRUCTURE:
+DIRECTORY STRUCTURE (Updated January 2026):
 ```
-combat/          - Enhanced combat system (action queue, enhanced manager)
+src/
+  core/          - Game engine (UI-agnostic logic)
+                   ├── abilities.py, battle.py, character.py, classes.py
+                   ├── enemies.py, items.py, player.py, town.py, etc.
+                   ├── combat/ (action queue, enhanced manager)
+                   └── events/ (event bus)
+  ui_curses/     - Terminal UI implementation (curses-based)
+                   ├── game.py, menus.py, town.py, map_tiles.py
+  ui_pygame/     - GUI implementation (Pygame-based, in development)
+                   ├── game.py
+                   ├── gui/ (combat manager, shops, character screen, etc.)
+                   └── presentation/ (pygame presenter)
+
 effects/         - Expanded effect system (20+ composable types)
-events/          - Event-driven architecture (event bus)
-presentation/    - UI abstraction layer
+presentation/    - UI abstraction layer (interface + implementations)
 analytics/       - Combat simulation and balance testing
 data/            - YAML-based ability/item definitions
+assets/          - Sprites, backgrounds, tiles, UI graphics
 docs/            - All documentation and design notes
 tools/           - Development utilities (dev_tools.py, modify_save.py)
-tests/           - Test files
+tests/           - Comprehensive test suite
+_old_code_archive/ - Archived original files (git-ignored)
+
+game_curses.py   - Terminal game entry point
+game_pygame.py   - GUI game entry point
 ```
 
-CORE GAME FILES:
+CORE GAME FILES (now in src/core/):
 - abilities.py
 - battle.py (BattleManager, BattleLogger)
 - character.py
-- classes.py
 - combat_result.py
 - companions.py
 - enemies.py
-- game.py
 - items.py
-- map_tiles.py
-- races.py
-- README.md
-- town.py
-- tutorial.py
-- utils.py
-
-FILE DESCRIPTIONS:
-- abilities.py
-    - Main file for controlling spells and skills of the character classes
-- battle.py
-    - Main file for handling combat between the player and enemies; includes BattleManager for combat flow and 
-      BattleLogger for recording battle events for later analysis
-- character.py
-    - Main file for controlling the all characters, players, enemies, and companions
-- classes.py
-    - File that controls the classes available for new characters to choose from; includes function that checks whether 
-      an item can be equipped by a player's class
-- companions.py
-    - File that defines class companions, Warlock familiars and Summon creatures 
-- enemies.py
-    - Main file for controlling enemies, including the statistics and unique aspects of each enemy
-- game.py
-    - The primary file for the game; controls how and when the game functions
-- items.py
-    - Main file for controlling items, including randomly generating for chests and drops
-- launch.sh
-    - source file used to set the terminal size and launch the game
-- map_tiles.py
-    - Defines the room tiles of the world and available movement per each tile
 - player.py
-    - File for controlling the playable character, including all actions/interactions with the world
 - races.py
-    - File that outlines the various racial options when creating a new character
-- README.md
-    - General description of program
+- save_system.py
 - town.py
-    - Controls the interactions of the character while in town
 - tutorial.py
-    - File that controls the tutorial; not yet implemented
-- utils.py
-    - FIle that contains utility functions and classes, including the TUI instances
+
+FILE DESCRIPTIONS (Core Game Logic - src/core/):
+- **abilities.py** - Spells and skills for all character classes
+- **battle.py** - Combat management (BattleManager, BattleLogger, action queue integration)
+- **character.py** - All characters (players, enemies, companions) with stats and combat logic
+- **classes.py** - Class definitions, promotions, and equipment restrictions
+- **companions.py** - Warlock familiars, summon creatures, and class companions
+- **enemies.py** - Enemy definitions, AI action stacks, and special abilities
+- **items.py** - Item system with random generation, special effects, and equipment
+- **player.py** - Player character with world interactions, dungeon exploration, treasure
+- **races.py** - Racial options for character creation with stat bonuses
+- **save_system.py** - Data-driven save/load system (JSON-based)
+- **town.py** - Town interactions, shops, quests, promotions
+- **combat/action_queue.py** - Priority-based turn system with charging abilities
+- **combat/enhanced_manager.py** - Enhanced battle manager with action queue integration
+- **events/event_bus.py** - Event system for UI decoupling and animations
+
+UI IMPLEMENTATIONS:
+- **src/ui_curses/** - Terminal UI (curses-based, fully functional)
+  - game.py - Main game loop and UI orchestration
+  - menus.py - Menu system and popup dialogs
+  - town.py - Town UI
+  - map_tiles.py - Dungeon rendering
+  
+- **src/ui_pygame/** - GUI (Pygame-based, in development)
+  - game.py - Pygame game loop
+  - gui/ - All GUI components (combat, shops, character screen, dungeon renderer, etc.)
+  - presentation/pygame_presenter.py - Event-driven presenter with animations
+
+ENTRY POINTS:
+- **game_curses.py** - Launch terminal version: `python game_curses.py`
+- **game_pygame.py** - Launch GUI version: `python game_pygame.py`
+- **launch.sh** - Shell script for terminal version with proper window sizing

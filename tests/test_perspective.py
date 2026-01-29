@@ -19,7 +19,7 @@ def test_perspective_transform():
     pygame.display.set_caption("Perspective Transform Test")
     
     # Load a texture
-    tileset_path = "assets/dungeon_tiles"
+    tileset_path = "src/ui_pygame/assets/dungeon_tiles"
     texture_file = os.path.join(tileset_path, "walls/brick.png")
     
     try:

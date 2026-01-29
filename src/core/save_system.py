@@ -11,14 +11,20 @@ Architecture:
 - SaveData: Root container for all game state
 """
 
-import os
+from __future__ import annotations
+
 import json
+import os
 from dataclasses import dataclass, asdict
-from typing import Any
+from typing import TYPE_CHECKING
 
 from . import abilities
+from . import enemies
 from . import items
 from .character import Resource, Stats, Combat, Level
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 @dataclass
@@ -284,35 +290,30 @@ class EnemyStateSerializer:
         if not enemy_data:
             return None
         
-        try:
-            import enemies
-            enemy_class_name = enemy_data.get('class_type')
-            
-            # Get the enemy class from enemies module
-            enemy_class = getattr(enemies, enemy_class_name, None)
-            if not enemy_class:
-                return None
-            
-            # If it was stored as a class, return the class
-            if enemy_data.get('is_class'):
-                return enemy_class
-            
-            # Create instance
-            enemy = enemy_class()
-            
-            # Restore health/mana if present
-            if 'health' in enemy_data and hasattr(enemy, 'health'):
-                enemy.health.max = enemy_data['health']['max']
-                enemy.health.current = enemy_data['health']['current']
-            
-            if 'mana' in enemy_data and hasattr(enemy, 'mana'):
-                enemy.mana.max = enemy_data['mana']['max']
-                enemy.mana.current = enemy_data['mana']['current']
-            
-            return enemy
-        except Exception as e:
-            print(f"Error deserializing enemy: {e}")
+        enemy_class_name = enemy_data.get('class_type')
+        
+        # Get the enemy class from enemies module
+        enemy_class = getattr(enemies, enemy_class_name, None)
+        if not enemy_class:
             return None
+        
+        # If it was stored as a class, return the class
+        if enemy_data.get('is_class'):
+            return enemy_class
+        
+        # Create instance
+        enemy = enemy_class()
+        
+        # Restore health/mana if present
+        if 'health' in enemy_data and hasattr(enemy, 'health'):
+            enemy.health.max = enemy_data['health']['max']
+            enemy.health.current = enemy_data['health']['current']
+        
+        if 'mana' in enemy_data and hasattr(enemy, 'mana'):
+            enemy.mana.max = enemy_data['mana']['max']
+            enemy.mana.current = enemy_data['mana']['current']
+        
+        return enemy
 
 
 class QuestDataSerializer:

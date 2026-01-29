@@ -59,7 +59,7 @@ class LevelUpScreen:
     
     def _calculate_level_up(self, player_char):
         """Calculate all level up bonuses."""
-        import abilities
+        from ...core import abilities
         
         dv = max(1, 5 - player_char.check_mod('luck', luck_factor=8))
         
@@ -297,7 +297,7 @@ class LevelUpScreen:
     
     def _show_stat_confirmation(self, stat_name, stat_options):
         """Show confirmation of stat increase using a popup."""
-        from gui.confirmation_popup import ConfirmationPopup
+        from .confirmation_popup import ConfirmationPopup
         
         # Find the new value for this stat
         new_value = None

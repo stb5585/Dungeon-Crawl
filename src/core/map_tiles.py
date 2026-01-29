@@ -7,9 +7,11 @@ import time
 from . import companions
 from . import enemies
 from . import items
+from . import town
 from .battle import BattleManager
 from .combat.enhanced_manager import EnhancedBattleManager
 from .player import DIRECTIONS, actions_dict
+from ..ui_curses import menus
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -201,7 +203,7 @@ class CavePath(MapTile):
                     rand_item = items.random_item(self.z)
                     game.player_char.modify_inventory(rand_item, 1)
                     find_message = f"{game.player_char.familiar.name} finds {rand_item.name} and gives it to {game.player_char.name}.\n"
-                    findbox = utils.TextBox(game)
+                    findbox = menus.TextBox(game)
                     findbox.print_text_in_rectangle(find_message)
                     time.sleep(0.5)
                     game.stdscr.getch()
@@ -252,7 +254,7 @@ class CavePath0(CavePath):
                     quest_message = f"You find a piece of the raffle ticket.\n"
                     game.player_char.modify_inventory(items.TicketPiece(), rare=True)
                     quest_message += game.player_char.quests(item=items.TicketPiece())
-                    questbox = utils.TextBox(game)
+                    questbox = menus.TextBox(game)
                     questbox.print_text_in_rectangle(quest_message)
                     time.sleep(0.5)
                     game.stdscr.getch()
@@ -324,7 +326,7 @@ class FirePath(EmptyCavePath):
             print(f"[DEBUG] FirePath post-damage HP: {game.player_char.health.current}/{game.player_char.health.max}")
             if damage > 0:
                 lava_message = f"{game.player_char.name} takes {damage} damage from the fire."
-                lavabox = utils.TextBox(game)
+                lavabox = menus.TextBox(game)
                 lavabox.print_text_in_rectangle(lava_message)
                 time.sleep(0.5)
                 game.stdscr.getch()
@@ -366,8 +368,8 @@ class UndergroundSpring(SpecialTile):
         self.visited = True
         player_char = game.player_char
         confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
-        confirm = utils.ConfirmPopupMenu(game, header_message=confirm_message, box_height=8)
-        springbox = utils.TextBox(game)
+        confirm = menus.ConfirmPopupMenu(game, header_message=confirm_message, box_height=8)
+        springbox = menus.TextBox(game)
         if "Naivete" in player_char.quest_dict["Side"] and \
             not player_char.quest_dict["Side"]["Naivete"]["Completed"]:
             player_char.modify_inventory(items.EmptyVial(), subtract=True, rare=True)
@@ -790,7 +792,7 @@ class LockedChestRoom(ChestRoom):
         self.adjacent_visited(game.player_char)
         self.generate_loot()
         if self.locked:
-            unlockbox = utils.TextBox(game)
+            unlockbox = menus.TextBox(game)
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
                 unlockbox.print_text_in_rectangle("You open the chest with the Master key.\n")
@@ -803,7 +805,7 @@ class LockedChestRoom(ChestRoom):
                 game.stdscr.getch()
                 unlockbox.clear_rectangle()
             elif "Key" in game.player_char.inventory:
-                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the chest with a Key?", box_height=8)
+                popup = menus.ConfirmPopupMenu(game, "Do you want to unlock the chest with a Key?", box_height=8)
                 if popup.navigate_popup():
                     self.locked = False
                     game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
@@ -847,7 +849,7 @@ class LockedDoor(MapTile):
         if self.locked:
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-                unlockbox = utils.TextBox(game)
+                unlockbox = menus.TextBox(game)
                 unlockbox.print_text_in_rectangle("You open the door with the Master key.\n")
                 game.stdscr.getch()
                 unlockbox.clear_rectangle()
@@ -857,7 +859,7 @@ class LockedDoor(MapTile):
                 game.stdscr.getch()
                 unlockbox.clear_rectangle()
             elif "Old Key" in game.player_char.inventory:
-                popup = utils.ConfirmPopupMenu(game, "Do you want to unlock the door with an Old Key?", box_height=8)
+                popup = menus.ConfirmPopupMenu(game, "Do you want to unlock the door with an Old Key?", box_height=8)
                 if popup.navigate_popup():
                     self.locked = False
                     game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
@@ -955,12 +957,12 @@ class OreVaultDoor(Wall):
         if self.locked:
             # Check if player has the Cryptic Key and can detect the door
             if "Cryptic Key" in game.player_char.inventory:
-                popup = utils.ConfirmPopupMenu(game, "Use the Cryptic Key on the hidden door?", box_height=8)
+                popup = menus.ConfirmPopupMenu(game, "Use the Cryptic Key on the hidden door?", box_height=8)
                 if popup.navigate_popup():
                     self.locked = False
                     self.open = True
                     self.enter = True
-                    unlockbox = utils.TextBox(game)
+                    unlockbox = menus.TextBox(game)
                     unlockbox.print_text_in_rectangle("The Cryptic Key turns smoothly in the hidden lock.\nThe door swings open, revealing the vault beyond!\n")
                     game.stdscr.getch()
                     unlockbox.clear_rectangle()
@@ -968,24 +970,24 @@ class OreVaultDoor(Wall):
             elif "Master Key" in game.player_char.special_inventory:
                 # Master Key works if player has Keen Eye to see the door
                 if 'Keen Eye' in game.player_char.spellbook['Skills']:
-                    popup = utils.ConfirmPopupMenu(game, "Use the Master Key on the hidden door?", box_height=8)
+                    popup = menus.ConfirmPopupMenu(game, "Use the Master Key on the hidden door?", box_height=8)
                     if popup.navigate_popup():
                         self.locked = False
                         self.open = True
                         self.enter = True
-                        unlockbox = utils.TextBox(game)
+                        unlockbox = menus.TextBox(game)
                         unlockbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
                         game.stdscr.getch()
                         unlockbox.clear_rectangle()
             elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
                 # Master Lockpick works if player can detect the door (Keen Eye or key)
                 if 'Keen Eye' in game.player_char.spellbook['Skills']:
-                    popup = utils.ConfirmPopupMenu(game, "Attempt to pick the hidden door's lock?", box_height=8)
+                    popup = menus.ConfirmPopupMenu(game, "Attempt to pick the hidden door's lock?", box_height=8)
                     if popup.navigate_popup():
                         self.locked = False
                         self.open = True
                         self.enter = True
-                        unlockbox = utils.TextBox(game)
+                        unlockbox = menus.TextBox(game)
                         unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
                         game.stdscr.getch()
                         unlockbox.clear_rectangle()
@@ -1063,7 +1065,7 @@ class RelicRoom(SpecialTile):
             relics = [items.Relic1(), items.Relic2(), items.Relic3(), items.Relic4(), items.Relic5(), items.Relic6()]
             game.player_char.modify_inventory(relics[game.player_char.location_z - 1], rare=True, quest=True)
             self.read = True
-            specialbox = utils.TextBox(game)
+            specialbox = menus.TextBox(game)
             specialbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")
             game.stdscr.getch()
             game.player_char.health.current = game.player_char.health.max
@@ -1238,7 +1240,7 @@ class WarpPoint(MapTile):
 
     def modify_player(self, game):
         if not self.warped:
-            popup = utils.ConfirmPopupMenu(game, "Do you want to return to town?", box_height=7)
+            popup = menus.ConfirmPopupMenu(game, "Do you want to return to town?", box_height=7)
             if popup.navigate_popup():
                 game.player_char.to_town()
                 town.town(game)
