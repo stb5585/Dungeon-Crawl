@@ -28,7 +28,7 @@ jobs:
         run: python -m compileall .  # Catches syntax issues
 
       - name: Package Game
-        run: tar -czf dungeon_crawl.tar.gz --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=*.pyc --exclude=.pytest_cache --exclude=dungeon_crawl.egg-info .  # Creates a compressed archive
+        run: tar -czf dungeon_crawl.tar.gz --exclude=.git --exclude=.venv --exclude=__pycache__ --exclude=*.pyc --exclude=.pytest_cache --exclude=dungeon_crawl.egg-info --exclude=dungeon_crawl.tar.gz .  # Creates a compressed archive
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
