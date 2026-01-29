@@ -4,7 +4,7 @@ AUTHOR: Shawn Thomas Booth
 
 CREATION DATE: March 2020
 
-LANGUAGE: Python 3.11.11
+LANGUAGE: Python 3.10+
 
 DEPENDENCIES:
 Standard Library
@@ -22,6 +22,8 @@ Standard Library
 3rd Party
 - numpy 2.2.3
 - PyYAML 6.x (for data-driven abilities)
+- pygame 2.5.0+ (for GUI and sprite rendering)
+- Pillow 10.0.0+ (for image processing and perspective transforms)
 
 EXECUTION:
 - source launch.sh (play the game)

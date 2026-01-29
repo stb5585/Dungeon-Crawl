@@ -6,13 +6,11 @@ Quick test script for the new shop GUI interface.
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 import pygame
 
-from gui.shops import ShopManager
-from presentation.pygame_presenter import PygamePresenter
-from test_framework import TestGameState
+from src.ui_pygame.gui.shops import ShopManager
+from src.ui_pygame.presentation.pygame_presenter import PygamePresenter
+from tests.test_framework import TestGameState
 
 
 def test_shop():

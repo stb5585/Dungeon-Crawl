@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import items
+from src.core import items
 from tests.test_framework import TestGameState
 
 

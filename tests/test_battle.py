@@ -18,12 +18,12 @@ class TestBattleManagerAPI:
     
     def test_battle_manager_import(self):
         """Test that BattleManager can be imported."""
-        from battle import BattleManager
+        from src.core.battle import BattleManager
         assert BattleManager is not None
     
     def test_enhanced_battle_manager_import(self):
         """Test that EnhancedBattleManager can be imported."""
-        from combat.enhanced_manager import EnhancedBattleManager
+        from src.core.combat.enhanced_manager import EnhancedBattleManager
         assert EnhancedBattleManager is not None
     
     def test_battle_manager_creation(self):
@@ -56,7 +56,7 @@ class TestCombatResultAPI:
     
     def test_combat_result_creation(self):
         """Test creating CombatResult objects."""
-        from combat_result import CombatResult
+        from src.core.combat_result import CombatResult
         
         # Test with minimal args (actor and target should be optional)
         result = CombatResult(action="Attack")
@@ -66,7 +66,7 @@ class TestCombatResultAPI:
     
     def test_combat_result_with_characters(self):
         """Test CombatResult with character references."""
-        from combat_result import CombatResult
+        from src.core.combat_result import CombatResult
         from tests.test_framework import TestGameState
         
         attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
@@ -87,7 +87,7 @@ class TestCombatResultAPI:
     
     def test_combat_result_group(self):
         """Test CombatResultGroup functionality."""
-        from combat_result import CombatResult, CombatResultGroup
+        from src.core.combat_result import CombatResult, CombatResultGroup
         
         group = CombatResultGroup()
         assert len(group.results) == 0
@@ -102,7 +102,7 @@ class TestAbilitiesAPI:
     
     def test_ability_initialization(self):
         """Test that abilities can initialize without errors."""
-        from abilities import Ability
+        from src.core.abilities import Ability
         
         # Abilities should be able to create empty CombatResult
         try:
@@ -113,7 +113,7 @@ class TestAbilitiesAPI:
             )
             # If it has a result attribute, it should be a CombatResult
             if hasattr(ability, 'result'):
-                from combat_result import CombatResult
+                from src.core.combat_result import CombatResult
                 assert isinstance(ability.result, CombatResult)
         except TypeError as e:
             if "missing" in str(e) and "required" in str(e):

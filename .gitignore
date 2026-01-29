@@ -70,3 +70,6 @@ temp/
 tmp_files/
 *.tmp
 *.temp
+
+# Old code archive (marked for deletion)
+_old_code_archive/

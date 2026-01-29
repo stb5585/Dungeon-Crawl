@@ -4,8 +4,8 @@ Test script to verify dungeon navigation is working correctly.
 This simulates the key presses without needing the full GUI.
 """
 
-from player import Player, DIRECTIONS
-from character import Combat, Level, Resource, Stats
+from src.core.player import Player, DIRECTIONS
+from src.core.character import Combat, Level, Resource, Stats
 
 def test_movement():
     """Test that movement logic works correctly."""

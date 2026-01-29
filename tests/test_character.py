@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 
-from enemies import Goblin
+from src.core.enemies import Goblin
 from tests.test_framework import TestGameState
 
 
@@ -100,7 +100,7 @@ class TestCombatAPIContract:
     
     def test_enemy_has_combat_attributes(self):
         """Verify enemies have all required combat attributes."""
-        from enemies import Goblin
+        from src.core.enemies import Goblin
         
         enemy = Goblin()
         assert hasattr(enemy, 'name')

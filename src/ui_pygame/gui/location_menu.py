@@ -1,0 +1,267 @@
+"""
+Generic location menu screen for town locations (church, barracks, inn).
+Provides a consistent menu interface with background support, using ShopScreen-style layout.
+"""
+
+import pygame
+
+from .town_base import TownScreenBase
+
+
+class LocationMenuScreen(TownScreenBase):
+    """
+    A generic menu screen for town locations.
+    Uses a two-column layout similar to ShopScreen: options on left, content area on right.
+    """
+    
+    def __init__(self, presenter, location_name):
+        super().__init__(presenter)
+        self.location_name = location_name
+        
+        # State
+        self.current_option = 0
+        self.options_list = []
+    
+    def draw_all(self):
+        """Draw the location menu interface."""
+        self.draw_background()
+        
+        self.draw_top()
+        self.draw_options()
+        self.draw_content()
+        pygame.display.flip()
+
+    def draw_top(self):
+        """Draw the top header with location name."""
+        top_height = self.height // 12
+        top_rect = pygame.Rect(0, 0, self.width, top_height)
+        
+        self.draw_semi_transparent_panel(top_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, top_rect, 2)
+        
+        # Center the location name
+        text = self.normal_font.render(self.location_name, True, self.colors.GOLD)
+        text_rect = text.get_rect(center=(self.width // 2, top_rect.centery))
+        self.screen.blit(text, text_rect)
+    
+    def draw_options(self):
+        """Draw the menu options on the left side."""
+        top_height = self.height // 12
+        options_width = self.width // 3
+        options_height = self.height // 4
+        options_y = top_height
+        options_rect = pygame.Rect(0, options_y, options_width, options_height)
+        
+        self.draw_semi_transparent_panel(options_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, options_rect, 2)
+        
+        # Calculate spacing for options
+        num_options = len(self.options_list)
+        option_height = options_rect.height // (num_options + 1)
+        
+        for idx, option in enumerate(self.options_list):
+            # Highlight selected option
+            color = self.colors.GOLD if idx == self.current_option else self.colors.WHITE
+            
+            # Draw option text centered
+            text = self.normal_font.render(option, True, color)
+            text_x = options_rect.centerx - text.get_width() // 2
+            text_y = options_rect.top + (idx + 1) * option_height
+            
+            # Highlight background for selected
+            if idx == self.current_option:
+                highlight_rect = pygame.Rect(
+                    options_rect.left + 10,
+                    text_y - 5,
+                    options_rect.width - 20,
+                    option_height - 5
+                )
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
+                pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
+            
+            self.screen.blit(text, (text_x, text_y))
+    
+    def draw_content(self, content_text=""):
+        """Draw the content area on the right side with optional text."""
+        top_height = self.height // 12
+        content_width = 2 * self.width // 3
+        content_height = self.height - top_height
+        content_x = self.width // 3
+        content_y = top_height
+        content_rect = pygame.Rect(content_x, content_y, content_width, content_height)
+        
+        self.draw_semi_transparent_panel(content_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, content_rect, 2)
+        
+        # Draw content text if provided
+        if content_text:
+            text_x = content_rect.left + 20
+            text_y = content_rect.top + 20
+            max_width = content_rect.width - 40
+            
+            # Check if this is an item list (contains cursor marker or item quantity pattern)
+            import re
+            is_item_list = '►' in content_text or bool(re.search(r'\bx\s*\d+\b', content_text))
+            
+            # Wrap text and render
+            lines = content_text.split('\n')
+            for line in lines:
+                # For item lists, use monospace font and don't wrap
+                if is_item_list:
+                    # Use a smaller monospace-like font for item lists
+                    font = pygame.font.Font(None, 26)
+                    text_surface = font.render(line, True, self.colors.WHITE)
+                    self.screen.blit(text_surface, (text_x, text_y))
+                    text_y += 28
+                else:
+                    # For regular text, wrap long lines
+                    import textwrap
+                    wrapped_lines = textwrap.wrap(line, width=50)
+                    for wrapped_line in wrapped_lines:
+                        text_surface = self.large_font.render(wrapped_line, True, self.colors.WHITE)
+                        self.screen.blit(text_surface, (text_x, text_y))
+                        text_y += 25
+    
+    def navigate(self, options, reset_cursor: bool = True):
+        """
+        Navigate the menu and return the selected option index.
+        
+        Args:
+            options: List of menu options
+            reset_cursor: When False, retain current selection index
+        
+        Returns:
+            Index of selected option, or None if escaped
+        """
+        self.options_list = options
+        if reset_cursor:
+            self.current_option = 0
+        else:
+            # Clamp to valid range in case options changed
+            if self.options_list:
+                self.current_option = max(0, min(self.current_option, len(self.options_list) - 1))
+            else:
+                self.current_option = 0
+        
+        while True:
+            self.draw_all()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        return None
+                    elif event.key == pygame.K_UP:
+                        self.current_option = (self.current_option - 1) % len(self.options_list)
+                    elif event.key == pygame.K_DOWN:
+                        self.current_option = (self.current_option + 1) % len(self.options_list)
+                    elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        return self.current_option
+            
+            self.presenter.clock.tick(30)
+
+    def display_items_list(self, items_data):
+        """
+        Display a list of items with quantities in the content area.
+        items_data: list of tuples (item_name, quantity)
+        """
+        
+        # Build items display text
+        lines = []
+        for item_name, quantity in items_data:
+            lines.append(f"{item_name:30} x{quantity:3}")
+        
+        items_text = "\n".join(lines)
+        
+        # Continuously draw with items list displayed
+        while True:
+            self.draw_background()
+            self.draw_top()
+            self.draw_options()
+            self.draw_content(items_text)
+            pygame.display.flip()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    # Exit display on any key
+                    return
+            
+            self.presenter.clock.tick(30)
+
+    def draw_options_instructions(self):
+        """Draw instructions only on the left side, without menu highlighting."""
+        top_height = self.height // 12
+        left_width = self.width // 3
+        options_rect = pygame.Rect(0, top_height, left_width, self.height - top_height)
+        
+        self.draw_semi_transparent_panel(options_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, options_rect, 2)
+        
+        # Draw instructions text
+        instr_font = self.normal_font
+        instructions = [
+            "[Use arrows to select]",
+            "[Press ESC to go back]"
+        ]
+        
+        y = options_rect.top + 20
+        for instruction in instructions:
+            text = instr_font.render(instruction, True, self.colors.GOLD)
+            text_rect = text.get_rect(centerx=options_rect.centerx, top=y)
+            self.screen.blit(text, text_rect)
+            y += 40
+
+    def navigate_with_content(self, items_data):
+        """
+        Navigate menu with items displayed in the right content area.
+        items_data: list of tuples (item_name, quantity) to display and navigate on right
+        """
+        current_item = 0
+        
+        while True:
+            self.draw_background()
+            self.draw_top()
+            self.draw_options_instructions()
+            
+            # Build items display with highlight on current selection
+            lines = []
+            for idx, (item_name, quantity) in enumerate(items_data):
+                if idx == current_item:
+                    if quantity > 0:
+                        lines.append(f"{'>':<2} {item_name:32} x{quantity}")
+                    else:
+                        # For "Back" which has quantity 0
+                        lines.append(f"{'>':<2} {item_name}")
+                else:
+                    if quantity > 0:
+                        lines.append(f"{'':<2}  {item_name:32} x{quantity}")
+                    else:
+                        lines.append(f"{'':<2}  {item_name}")
+            items_text = "\n".join(lines)
+            
+            self.draw_content(items_text)
+            pygame.display.flip()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        return None
+                    elif event.key == pygame.K_UP:
+                        current_item = (current_item - 1) % len(items_data)
+                    elif event.key == pygame.K_DOWN:
+                        current_item = (current_item + 1) % len(items_data)
+                    elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        return current_item
+            
+            self.presenter.clock.tick(30)

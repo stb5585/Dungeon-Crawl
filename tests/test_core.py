@@ -11,7 +11,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from enemies import Goblin
+from src.core.enemies import Goblin
 from tests.test_framework import TestGameState
 
 
@@ -106,7 +106,7 @@ def test_weapon_damage_api():
 def test_combat_result():
     """Test CombatResult creation."""
     print("\n[Test] CombatResult API")
-    from combat_result import CombatResult
+    from src.core.combat_result import CombatResult
     
     # Test creating with minimal args
     result = CombatResult(action="Attack")
@@ -120,7 +120,7 @@ def test_combat_result():
 def test_enemy_creation():
     """Test enemy creation."""
     print("\n[Test] Enemy Creation")
-    from enemies import random_enemy
+    from src.core.enemies import random_enemy
     
     enemy = random_enemy('0')
     print(f"  ✅ Created enemy: {enemy.name}")

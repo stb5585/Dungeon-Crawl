@@ -11,9 +11,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import random
-from character import Character, Stats, Combat, Resource, Level
-import items
-from combat_result import CombatResult, CombatResultGroup
+from src.core.character import Character, Stats, Combat, Resource, Level
+from src.core import items
+from src.core.combat_result import CombatResult, CombatResultGroup
 
 
 def create_test_character(name="TestChar", level_num=10):
@@ -37,7 +37,7 @@ def create_test_character(name="TestChar", level_num=10):
     }
     
     # Initialize status effects using StatusEffect dataclass
-    from character import StatusEffect
+    from src.core.character import StatusEffect
     char.status_effects = {
         'Stun': StatusEffect(),
         'Sleep': StatusEffect(),

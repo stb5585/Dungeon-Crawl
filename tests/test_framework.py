@@ -5,7 +5,7 @@ This module provides utilities to quickly set up game states for testing
 without needing to play through the entire game.
 
 Usage:
-    from test_framework import TestGameState
+    from tests.test_framework import TestGameState
     
     # Create a Knight Enchanter ready for final boss
     player = TestGameState.create_player_for_final_boss()
@@ -22,22 +22,22 @@ Usage:
     )
 """
 
-from character import Resource, Stats, Combat, Level
-from player import Player
-from save_system import SaveManager
-import classes
-import items
-import abilities
-import races
+from src.core.character import Resource, Stats, Combat, Level
+from src.core.player import Player
+from src.core.save_system import SaveManager
+from src.core import classes
+from src.core import items
+from src.core import abilities
+from src.core import races
 
 # Import specific ability classes for better reliability
-from abilities import (
+from src.core.abilities import (
     ArcaneBlast, Fireball, Heal, Heal2, Heal3,
     Regen, Regen2, Regen3, ManaShield
 )
 
 # Import specific item classes
-from items import (
+from src.core.items import (
     MithrilshodStaff, PlateMail, PowerRing,
     GarfunkelPendant, NoWeapon, NoArmor, NoOffHand, NoPendant, NoRing
 )
