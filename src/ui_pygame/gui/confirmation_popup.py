@@ -121,7 +121,7 @@ class ConfirmationPopup:
         
         return lines
     
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None) -> bool:
         """
         Show the popup and wait for user response.
         
@@ -129,10 +129,10 @@ class ConfirmationPopup:
             background_draw_func: Optional function to redraw background screen
             
         Returns:
-            bool: True if Yes (or any key if no buttons), False if No
+            True if Yes (or any key if no buttons), False if No
         """
         while True:
-            # Draw background each frame (if provided and no buttons - message only popup)
+            # Draw background each frame
             if background_draw_func:
                 background_draw_func()
             
@@ -162,20 +162,19 @@ class ConfirmationPopup:
             self.presenter.clock.tick(30)
 
 
-def confirm_yes_no(presenter, message, background_draw_func=None):
+def confirm_yes_no(presenter, message) -> bool:
     """
     Convenience helper for simple Yes/No confirmations.
 
     Args:
         presenter: Active presenter with screen/clock/fonts
         message: Prompt to display
-        background_draw_func: Optional function to redraw the underlying screen once
 
     Returns:
         bool: True for Yes, False for No (ESC also returns False)
     """
     popup = ConfirmationPopup(presenter, message)
-    return popup.show(background_draw_func=background_draw_func)
+    return popup.show()
 
 
 class QuantityPopup:

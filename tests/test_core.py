@@ -106,7 +106,7 @@ def test_weapon_damage_api():
 def test_combat_result():
     """Test CombatResult creation."""
     print("\n[Test] CombatResult API")
-    from src.core.combat_result import CombatResult
+    from src.core.combat.combat_result import CombatResult
     
     # Test creating with minimal args
     result = CombatResult(action="Attack")

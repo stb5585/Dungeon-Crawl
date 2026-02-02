@@ -3,12 +3,9 @@ Character Screen for Pygame - matches curses terminal layout.
 """
 
 import pygame
+
+from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, SimpleListPopupMenu
 from .town_base import TownScreenBase
-from .popup_menus import (
-    InventoryPopupMenu,
-    EquipmentPopupMenu,
-    SimpleListPopupMenu,
-)
 
 
 class CharacterScreen(TownScreenBase):

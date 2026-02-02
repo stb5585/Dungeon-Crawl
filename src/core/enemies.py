@@ -4,8 +4,7 @@
 import random
 from textwrap import wrap
 
-from . import abilities
-from . import items
+from . import abilities, items
 from .character import Character, Combat, Resource, Stats, StatusEffect
 from .combat.action_queue import ActionPriority
 

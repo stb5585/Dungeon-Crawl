@@ -18,7 +18,7 @@ print("=" * 60)
 # Test 1: Import the enhanced manager
 print("\n[Test 1] Importing EnhancedBattleManager...")
 try:
-    from src.core.combat.enhanced_manager import EnhancedBattleManager
+    from src.ui_curses.enhanced_manager import EnhancedBattleManager
     print("✅ Successfully imported EnhancedBattleManager")
 except Exception as e:
     print(f"❌ Failed to import: {e}")

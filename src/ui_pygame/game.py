@@ -5,16 +5,15 @@ Uses Pygame for graphical presentation instead of curses text interface.
 """
 
 import sys
-import time
 
 import pygame
 
-from ..core.character import Combat, Level, Resource, Stats
-from ..core.classes import classes_dict
-from ..core.races import races_dict
-from ..core.save_system import SaveManager
-from ..core.events import EventType
-from ..core import items
+from src.core.character import Combat, Level, Resource, Stats
+from src.core.classes import classes_dict
+from src.core.data.data_loader import get_special_events
+from src.core.races import races_dict
+from src.core.save_system import SaveManager
+from src.core import items
 from .presentation.pygame_presenter import PygamePresenter
 
 # GUI modules
@@ -101,8 +100,8 @@ class PygameGame:
         Displays a formatted modal message using the Pygame confirmation popup.
         """
         try:
-            from . import game as pygame_game
-            lines = pygame_game.special_event_dict.get(name, {}).get("Text", [])
+            special_event_dict = get_special_events()
+            lines = special_event_dict.get(name, {}).get("Text", [])
         except Exception:
             lines = []
         message = "\n".join(lines) if lines else name
@@ -419,7 +418,7 @@ class PygameGame:
             
             if choice_idx is None or choice_idx == len(options) - 1:  # Quit
                 popup = ConfirmationPopup(self.presenter, "Return to the main menu?")
-                if popup.show():
+                if popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))):
                     return "quit"
                 continue
                 
@@ -565,127 +564,6 @@ class PygameGame:
             self.load_files = SaveManager.list_saves()
         else:
             self.presenter.show_message("Save failed. Please try again.")
-
-    def test_combat(self):
-        """Run a test combat encounter."""
-        # Create a test enemy
-        enemy = self.create_test_enemy()
-        
-        # For now, we'll create a simplified combat demo
-        # The full integration with BattleManager/EnhancedBattleManager requires
-        # the curses-based game object, which we'll handle in a future iteration
-        
-        self.presenter.show_message(
-            f"Combat Demo\n\n"
-            f"Player: {self.player_char.name}\n"
-            f"HP: {self.player_char.health.current}/{self.player_char.health.max}\n"
-            f"MP: {self.player_char.mana.current}/{self.player_char.mana.max}\n\n"
-            f"Enemy: {enemy.name}\n"
-            f"HP: {enemy.health.current}/{enemy.health.max}\n"
-            f"MP: {enemy.mana.current}/{enemy.mana.max}\n\n"
-            f"Watch the combat unfold..."
-        )
-        
-        # Simulate a few combat events to demonstrate the GUI
-        # Start combat
-        self.event_bus.emit_simple(EventType.COMBAT_START, {
-            'actor': self.player_char,
-            'target': enemy
-        })
-        
-        # Give time for rendering
-        time.sleep(1)
-        
-        # Turn 1 - Player attacks
-        self.event_bus.emit_simple(EventType.TURN_START, {
-            'character': self.player_char,
-            'turn_number': 1
-        })
-        time.sleep(0.8)
-        
-        self.event_bus.emit_simple(EventType.DAMAGE_DEALT, {
-            'attacker': self.player_char,
-            'target': enemy,
-            'damage': 15,
-            'damage_type': 'Physical'
-        })
-        enemy.health.current -= 15
-        time.sleep(1.2)
-        
-        # Turn 2 - Enemy attacks
-        self.event_bus.emit_simple(EventType.TURN_START, {
-            'character': enemy,
-            'turn_number': 2
-        })
-        time.sleep(0.8)
-        
-        self.event_bus.emit_simple(EventType.DAMAGE_DEALT, {
-            'attacker': enemy,
-            'target': self.player_char,
-            'damage': 8,
-            'damage_type': 'Physical'
-        })
-        self.player_char.health.current -= 8
-        time.sleep(1.2)
-        
-        # Turn 3 - Player critical hit!
-        self.event_bus.emit_simple(EventType.TURN_START, {
-            'character': self.player_char,
-            'turn_number': 3
-        })
-        time.sleep(0.8)
-        
-        self.event_bus.emit_simple(EventType.CRITICAL_HIT, {
-            'attacker': self.player_char,
-            'target': enemy
-        })
-        time.sleep(0.5)
-        
-        self.event_bus.emit_simple(EventType.DAMAGE_DEALT, {
-            'attacker': self.player_char,
-            'target': enemy,
-            'damage': 28,
-            'damage_type': 'Physical',
-            'is_critical': True
-        })
-        enemy.health.current -= 28
-        time.sleep(1.5)
-        
-        # Combat end - victory!
-        self.event_bus.emit_simple(EventType.COMBAT_END, {
-            'player_alive': True,
-            'fled': False,
-            'turns': 3
-        })
-        
-        time.sleep(2)
-        self.presenter.show_message("Combat demo complete!\n\nThis was a simulated combat to showcase the GUI.")
-            
-    def create_test_enemy(self):
-        """Create a test enemy for combat demo."""
-        from ..core.enemies import Enemy
-        
-        # Create a basic goblin enemy using the Enemy constructor
-        # (name, health, mana, strength, intel, wisdom, con, charisma, dex, attack, defense, magic, magic_def, exp)
-        enemy = Enemy(
-            name="Goblin Warrior",
-            health=25,
-            mana=5,
-            strength=8,
-            intel=6,
-            wisdom=6,
-            con=8,
-            charisma=5,
-            dex=10,
-            attack=12,
-            defense=13,
-            magic=5,
-            magic_def=10,
-            exp=50
-        )
-        enemy.enemy_typ = "goblin"
-        
-        return enemy
         
     def cleanup(self):
         """Clean up resources."""

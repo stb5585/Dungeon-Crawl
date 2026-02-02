@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import random
-import time
 from textwrap import wrap
 from typing import TYPE_CHECKING
 
-from .combat_result import CombatResult
-from ..core import enemies
+from .combat.combat_result import CombatResult
+from . import enemies
 
 if TYPE_CHECKING:
     from typing import Any
 
     from .character import Character
-    from ..ui_curses.game import Game
 
 
 class Ability:
@@ -842,41 +840,45 @@ class Doublecast(Offensive):
         self.cost = 10
         self.cast = 2
 
-    def use(self, user: Character, target: Character=None, cover=False, game: Game=None) -> str:
-        from ..ui_curses import menus
-
+    def use(self, user: Character, target: Character=None, cover=False, spell_selector=None) -> str:
+        """
+        Cast multiple spells in a single turn. This method is UI-agnostic:
+        - The spell_selector argument should be a callable provided by the UI layer (curses, pygame, etc.)
+        - spell_selector(user, spell_list, cast_index) -> spell_key
+        - If not provided, a random spell is chosen.
+        This allows the core logic to remain independent of any UI framework.
+        Args:
+            user: The character casting the spell
+            target: The target of the spell (optional)
+            cover: Whether the target is in cover
+            spell_selector: Optional callable for spell selection
+        Returns:
+            str: Result of casting the spells
+        """
         use_str = ""
         user.mana.current -= self.cost
         j = 0
         while j < self.cast:
             spell_list = []
             for entry in user.spellbook["Spells"]:
-                if user.spellbook["Spells"][entry].cost <= user.mana.current:
-                    if user.spellbook["Spells"][entry].name != "Magic Missile":
-                        if user.cls != user:
-                            spell_list.append(
-                                str(entry)
-                                + "  "
-                                + str(user.spellbook["Spells"][entry].cost)
-                            )
-                        else:
-                            spell_list.append(str(entry))
+                spell_obj = user.spellbook["Spells"][entry]
+                if spell_obj.cost <= user.mana.current and spell_obj.name != "Magic Missile":
+                    if user.cls != user:
+                        spell_list.append(f"{entry}  {spell_obj.cost}")
+                    else:
+                        spell_list.append(str(entry))
             if len(spell_list) == 0:
                 use_str += f"{user.name} does not have enough mana to cast any spells with {self.name}.\n"
                 user.mana.current += self.cost
                 break
-            if game:
-                choices = ["first", "second", "third"]
-                popup = menus.SelectionPopupMenu(
-                    game, f"Select the {choices[j]} spell", spell_list, confirm=False
-                )
-                spell_index = popup.navigate_popup()
-                spell = user.spellbook["Spells"][
-                    spell_list[spell_index].rsplit("  ", 1)[0]
-                ]
+            # UI-agnostic spell selection
+            if spell_selector is not None:
+                spell_key = spell_selector(user, spell_list, j)
+                # If spell_list contains cost, strip it
+                spell_key = spell_key.rsplit("  ", 1)[0]
             else:
-                spell_index = random.choice(spell_list)
-                spell = user.spellbook["Spells"][spell_index]
+                spell_key = random.choice([s.rsplit("  ", 1)[0] for s in spell_list])
+            spell = user.spellbook["Spells"][spell_key]
             cast_message = spell.cast(user, target=target, cover=cover)
             use_str += cast_message
             j += 1
@@ -2342,12 +2344,21 @@ class SlotMachine(Luck):
         self.cost = 15
         self.rank = 2
 
-    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        from ..ui_curses import menus
-
+    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False, slot_machine_callback=None, textbox_callback=None) -> str:
+        """
+        Play the slot machine. UI-agnostic: expects a slot_machine_callback for user interaction.
+        Args:
+            user: The character using the ability
+            target: The target (optional)
+            cover: Whether the target is in cover
+            fam: Familiar flag
+            slot_machine_callback: Callable that returns a slot machine spin result (str of 3 digits)
+            textbox_callback: Optional callable for displaying messages (for retries)
+        Returns:
+            str: Result of the slot machine ability
+        """
         use_str = ""
         user.mana.current -= self.cost
-        popup = menus.SlotMachinePopupMenu(game, "")
 
         hands = {
             "Death": ["666", "999"],
@@ -2368,7 +2379,10 @@ class SlotMachine(Luck):
         success = False
         retries = 0
         while not success:
-            spin = popup.results()
+            if slot_machine_callback is not None:
+                spin = slot_machine_callback(user, target)
+            else:
+                spin = f"{random.randint(0,9)}{random.randint(0,9)}{random.randint(0,9)}"
             if spin in hands["Death"]:
                 use_str += "The mark of the beast!\n"
                 success = True
@@ -2516,10 +2530,8 @@ class SlotMachine(Luck):
                 use_str += wd_str
             else:
                 if random.randint(0, user_chance) and retries < 2:
-                    textbox = menus.TextBox(game)
-                    textbox.print_text_in_rectangle("No luck, try again.")
-                    time.sleep(1)
-                    textbox.clear_rectangle()
+                    if textbox_callback is not None:
+                        textbox_callback("No luck, try again.")
                     retries += 1
                 else:
                     success = True
@@ -2540,13 +2552,23 @@ class Blackjack(Luck):
         )
         self.cost = 7
 
-    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False):
-        from ..ui_curses import menus
-
+    def use(self, user: Character, target: Character=None, cover: bool=False, blackjack_callback=None):
+        """
+        Play a round of blackjack. UI-agnostic: expects a blackjack_callback for user interaction.
+        Args:
+            user: The character using the ability
+            target: The target (optional)
+            cover: Whether the target is in cover
+            blackjack_callback: Callable that returns the blackjack result (str)
+        Returns:
+            str: Result of the blackjack ability
+        """
         user.mana.current -= self.cost
         use_str = ""
-        popup = menus.BlackjackPopupMenu(game, f"{user.name} Hand  {target.name} Hand")
-        result = popup.navigate_popup()
+        if blackjack_callback is not None:
+            result = blackjack_callback(user, target)
+        else:
+            result = random.choice(["User Win", "Target Win", "Draw", "User Break", "Target Break"])
         prizes = {"Win": ["Regen", "Gold", ""], "Break": ["Ultima"], "Draw": []}
         if result == "Target Win":
             use_str += f"{target.name} wins the hand!\n"
@@ -2697,6 +2719,30 @@ class ArcaneBlast(PowerUp):
             user.class_effects["Power Up"].duration = 4
             user.class_effects["Power Up"].extra = max(1, user.mana.max // 10)
         return use_str
+
+
+# Passive ability for Summoner
+class EternalConduit(Ability):
+    """
+    Eternal Conduit (Passive): The Summoner's bond with their summons is so strong that they gain a portion of all 
+    healing and buffs their summons receive, and their summons gain a portion of all healing and buffs the Summoner 
+    receives.
+    """
+    def __init__(self):
+        super().__init__(
+            name="Eternal Conduit",
+            description="The Summoner's bond with their summons is so strong that "
+            "they gain a portion of all healing and buffs their summons receive, "
+            "and their summons gain a portion of all healing and buffs the Summoner"
+            " receives.",
+            passive=True,
+            typ="Skill",
+            subtyp="Power Up"
+        )
+
+    def special_effect(self, user, *args, **kwargs):
+        # TODO: actual shared healing/buff logic to be implemented
+        return CombatResult(action=self.name, extra={"effect": "shared_healing_and_buffs"})
 
 
 class StrokeLuck(PowerUp):
@@ -2868,6 +2914,27 @@ class DimMak(PowerUp):
         return use_str
 
 
+class SongInspiration(PowerUp):
+    """
+    Song of Inspiration (Passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats
+    and occasionally removing negative status effects at the start of combat.
+    """
+    def __init__(self):
+        super().__init__(
+            name="Song of Inspiration",
+            description="The Troubadour's presence inspires allies and self, granting "
+            "a small bonus to all stats and occasionally removing negative status "
+            "effects at the start of combat.",
+            passive=True,
+            typ="Skill",
+            subtyp="Power Up"
+        )
+
+    def special_effect(self, user, *args, **kwargs):
+        # TODO: actual stat bonus and status removal logic to be implemented
+        return CombatResult(action=self.name, extra={"effect": "stat_bonus_and_status_removal"})
+
+
 class LunarFrenzy(PowerUp):
     """
     Lycan Power Up
@@ -2936,6 +3003,28 @@ class SoulHarvest(PowerUp):
             "effectiveness against that enemy type.",
         )
         self.passive = True
+
+
+class PackBond(PowerUp):
+    """
+    Pack Bond (Passive): The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense
+    when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect.
+    """
+    def __init__(self):
+        super().__init__(
+            name="Pack Bond",
+            description="The Beast Master and their animal companion(s) share a deep "
+            "bond, granting increased damage and defense when fighting alongside a "
+            "companion. Occasionally, the companion will intercept attacks or provide"
+            " a healing effect.",
+            passive=True,
+            typ="Skill",
+            subtyp="Power Up"
+        )
+
+    def special_effect(self, user, *args, **kwargs):
+        # TODO: actual companion bonus and intercept/heal logic to be implemented
+        return CombatResult(action=self.name, extra={"effect": "companion_bonus_and_intercept"})
 
 
 # Enemy skills
@@ -3931,16 +4020,26 @@ class ChooseFate(Skill):
         )
         self.dmg_mod = 1.5
 
-    def use(self, game: Game, user: Character, target: Character=None, cover: bool=False) -> str:
+    def use(self, user: Character, target: Character=None, cover: bool=False, selection_callback=None) -> str:
+        """
+        Let the player choose the Devil's action. UI-agnostic: expects a selection_callback for user interaction.
+        Args:
+            user: The character using the ability
+            target: The target (optional)
+            cover: Whether the target is in cover
+            selection_callback: Callable (choose_message, options) -> option_index
+        Returns:
+            str: Result of the ability
+        """
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
-        from ..ui_curses import menus
-
         use_str = ""
         choose_message = "I'm bored, you choose."
         options = ["Attack", "Hellfire", "Crush"]
-        popup = menus.SelectionPopupMenu(game, choose_message, options, confirm=True)
-        option_index = popup.navigate_popup()
+        if selection_callback is not None:
+            option_index = selection_callback(choose_message, options)
+        else:
+            option_index = random.randint(0, len(options) - 1)
         mod_up = random.randint(10, 25)
         if options[option_index] == "Attack":
             wd_str, _, _ = user.weapon_damage(target, dmg_mod=self.dmg_mod)
@@ -5377,27 +5476,34 @@ class Heal(HealSpell):
             crit=5,
         )
 
-    def cast_out(self, game: Game) -> str:
-        cast_message = f"{game.player_char.name} casts {self.name}.\n"
-        if game.player_char.health.current == game.player_char.health.max:
+    def cast_out(self, actor) -> str:
+        """
+        UI-agnostic: expects an actor (player character) object, not a Game object.
+        Args:
+            actor: The character to heal (should have .name, .health, .mana, etc.)
+        Returns:
+            str: Result of the ability
+        """
+        cast_message = f"{actor.name} casts {self.name}.\n"
+        if actor.health.current == actor.health.max:
             cast_message += f"You are already at full health.\n"
             return cast_message
-        game.player_char.mana.current -= self.cost
+        actor.mana.current -= self.cost
         crit = 1
-        heal_mod = game.player_char.check_mod("heal")
-        heal = int(game.player_char.health.max * self.heal + heal_mod)
+        heal_mod = actor.check_mod("heal")
+        heal = int(actor.health.max * self.heal + heal_mod)
         if not random.randint(0, self.crit):
             cast_message += f"Critical Heal!\n"
             crit = 2
         heal *= crit
-        game.player_char.health.current += heal
-        game.player_char._emit_healing_event(heal, source=self.name)
+        actor.health.current += heal
+        actor._emit_healing_event(heal, source=self.name)
         cast_message += (
-            f"{game.player_char.name} heals themself for {heal} hit points.\n"
+            f"{actor.name} heals themself for {heal} hit points.\n"
         )
-        if game.player_char.health.current >= game.player_char.health.max:
-            game.player_char.health.current = game.player_char.health.max
-            cast_message += f"{game.player_char.name} is at full health.\n"
+        if actor.health.current >= actor.health.max:
+            actor.health.current = actor.health.max
+            cast_message += f"{actor.name} is at full health.\n"
         return cast_message
 
 
@@ -5757,15 +5863,23 @@ class Teleport(MovementSpell):
         )
         self.combat = False
 
-    def cast_out(self, game):
-        from ..ui_curses import menus
-
+    def cast_out(self, selection_callback=None, game=None):
+        """
+        Teleport or set location. UI-agnostic: expects a selection_callback for user interaction.
+        Args:
+            selection_callback: Callable (teleport_message, options) -> option_index
+            game: Optional game context
+        Returns:
+            str: Result of the ability
+        """
         teleport_message = (
             "Do you want to set your location or teleport to the previous location?"
         )
         options = ["Set", "Teleport"]
-        popup = menus.SelectionPopupMenu(game, teleport_message, options, confirm=False)
-        option_index = popup.navigate_popup()
+        if selection_callback is not None:
+            option_index = selection_callback(teleport_message, options)
+        else:
+            option_index = random.randint(0, len(options) - 1)
         if options[option_index] == "Set":
             cast_message = (
                 f"This location has been set for teleport by {game.player_char.name}.\n"

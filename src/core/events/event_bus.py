@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from character import Character
-    from combat_result import CombatResult
+    from src.core.combat.combat_result import CombatResult
 
 
 class EventType(Enum):

@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 import pygame
 
+from src.core.events import get_event_bus, EventType
 from .interface import GamePresenter
-from ...core.events import get_event_bus, EventType
 
 # TODO: Re-enable sprite manager when available
 # Import sprite manager

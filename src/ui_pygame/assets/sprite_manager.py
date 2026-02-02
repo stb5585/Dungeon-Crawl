@@ -5,9 +5,11 @@ This module provides a centralized sprite management system with caching,
 enemy-to-sprite mapping, and easy sprite retrieval.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
-import pygame
+
 import os
+from typing import TYPE_CHECKING
+
+import pygame
 
 if TYPE_CHECKING:
     from src.core.character import Character

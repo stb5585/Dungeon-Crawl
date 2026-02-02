@@ -20,13 +20,14 @@ class BarracksManager(TownScreenBase):
         barracks_options = ["Quests", "Storage", "Leave"]
         
         barracks_screen = LocationMenuScreen(self.presenter, "Barracks")
+        barracks_bg = self.screen.copy()
         
         while True:
             choice_idx = barracks_screen.navigate(barracks_options)
             
             if choice_idx is None or choice_idx == 2:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Take care, soldier.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(barracks_bg, (0, 0)))
                 break
             
             elif choice_idx == 0:  # Quests
@@ -34,7 +35,6 @@ class BarracksManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    background_draw_func=lambda: self.draw_background(),
                     quest_text_renderer=lambda text: barracks_screen.display_quest_text(text)
                 )
                 qm.check_and_offer('Sergeant')
@@ -72,9 +72,10 @@ class BarracksManager(TownScreenBase):
     
     def store_items(self):
         """Store items in storage locker."""
+        store_bg = self.screen.copy()
         if not self.player_char.inventory:
             popup = ConfirmationPopup(self.presenter, "You have no items to store.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(store_bg, (0, 0)))
             return
         
         from .confirmation_popup import QuantityPopup
@@ -97,7 +98,7 @@ class BarracksManager(TownScreenBase):
             
             if not item_options:
                 popup = ConfirmationPopup(self.presenter, "You have no items to store.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(store_bg, (0, 0)))
                 return
             
             item_options.append("Back")
@@ -113,7 +114,7 @@ class BarracksManager(TownScreenBase):
             
             # Use QuantityPopup for quantity selection
             qty_popup = QuantityPopup(self.presenter, item.name, unit_cost=0, max_quantity=count, action="store")
-            quantity = qty_popup.show(background_draw_func=lambda: self.draw_background())
+            quantity = qty_popup.show(background_draw_func=lambda: self.screen.blit(store_bg, (0, 0)))
             
             if quantity is None or quantity == 0:
                 continue
@@ -121,13 +122,14 @@ class BarracksManager(TownScreenBase):
             # Move to storage
             self.player_char.modify_inventory(item, num=quantity, storage=True)
             popup = ConfirmationPopup(self.presenter, f"Stored {quantity}x {item.name}", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(store_bg, (0, 0)))
     
     def retrieve_items(self):
         """Retrieve items from storage locker."""
+        retrieve_bg = self.screen.copy()
         if not self.player_char.storage:
             popup = ConfirmationPopup(self.presenter, "Your storage is empty.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(retrieve_bg, (0, 0)))
             return
         
         from .confirmation_popup import QuantityPopup
@@ -149,7 +151,7 @@ class BarracksManager(TownScreenBase):
             
             if not storage_options:
                 popup = ConfirmationPopup(self.presenter, "Your storage is empty.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(retrieve_bg, (0, 0)))
                 return
             
             storage_options.append("Back")
@@ -165,7 +167,7 @@ class BarracksManager(TownScreenBase):
             
             # Use QuantityPopup for quantity selection
             qty_popup = QuantityPopup(self.presenter, item.name, unit_cost=0, max_quantity=count, action="retrieve")
-            quantity = qty_popup.show(background_draw_func=lambda: self.draw_background())
+            quantity = qty_popup.show(background_draw_func=lambda: self.screen.blit(retrieve_bg, (0, 0)))
             
             if quantity is None or quantity == 0:
                 continue
@@ -173,5 +175,5 @@ class BarracksManager(TownScreenBase):
             # Move from storage to inventory (subtract=False means add to inventory, remove from storage)
             self.player_char.modify_inventory(item, num=quantity, storage=True, subtract=False)
             popup = ConfirmationPopup(self.presenter, f"Retrieved {quantity}x {item.name}", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(retrieve_bg, (0, 0)))
     

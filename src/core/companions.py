@@ -3,8 +3,7 @@
 
 import random
 
-from . import abilities
-from . import items
+from . import abilities, items
 from .character import Character, Combat, Resource, Stats
 
 

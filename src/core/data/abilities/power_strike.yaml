@@ -1,7 +1,7 @@
 name: Power Strike
 type: Skill
 subtype: Offensive
-description: A powerful melee attack that deals heavy physical damage
+description: A powerful melee attack
 cost: 10
 damage_mod: 2.0
 effects:

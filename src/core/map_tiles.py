@@ -2,16 +2,9 @@
 """ map manager """
 
 import random
-import time
 
-from . import companions
-from . import enemies
-from . import items
-from . import town
-from .battle import BattleManager
-from .combat.enhanced_manager import EnhancedBattleManager
+from . import companions, enemies, items, town
 from .player import DIRECTIONS, actions_dict
-from ..ui_curses import menus
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -175,7 +168,7 @@ class Wall(MapTile):
 
     def available_actions(self, player_char):
         """Returns all the available actions in this room."""
-        return player_char
+        return []
 
 
 class FakeWall(Wall):
@@ -194,7 +187,7 @@ class CavePath(MapTile):
         super().__init__(x, y, z)
         self.enemy = None
 
-    def modify_player(self, game):
+    def modify_player(self, game, textbox=None):
         self.visited = True
         self.adjacent_visited(game.player_char)
         if game.player_char.cls in ['Warlock', 'Shadowcaster']:
@@ -202,12 +195,8 @@ class CavePath(MapTile):
                 if not random.randint(0, int(20 - game.player_char.check_mod('luck', luck_factor=10))):
                     rand_item = items.random_item(self.z)
                     game.player_char.modify_inventory(rand_item, 1)
-                    find_message = f"{game.player_char.familiar.name} finds {rand_item.name} and gives it to {game.player_char.name}.\n"
-                    findbox = menus.TextBox(game)
-                    findbox.print_text_in_rectangle(find_message)
-                    time.sleep(0.5)
-                    game.stdscr.getch()
-                    findbox.clear_rectangle()
+                    if textbox:
+                        textbox.print_text_in_rectangle(f"{game.player_char.familiar.name} finds {rand_item.name} and gives it to {game.player_char.name}.")
         if all([not random.randint(0, 4),
                 self.enemy is None,
                 game._random_combat]):
@@ -240,8 +229,8 @@ class EmptyCavePath(CavePath):
 
 class CavePath0(CavePath):
 
-    def modify_player(self, game):
-        super().modify_player(game)
+    def modify_player(self, game, textbox=None):
+        super().modify_player(game, textbox=textbox)
         if 'Bring Him Home' in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Bring Him Home']['Completed']:
                 if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=10)):
@@ -254,11 +243,8 @@ class CavePath0(CavePath):
                     quest_message = f"You find a piece of the raffle ticket.\n"
                     game.player_char.modify_inventory(items.TicketPiece(), rare=True)
                     quest_message += game.player_char.quests(item=items.TicketPiece())
-                    questbox = menus.TextBox(game)
-                    questbox.print_text_in_rectangle(quest_message)
-                    time.sleep(0.5)
-                    game.stdscr.getch()
-                    questbox.clear_rectangle()
+                    if textbox:
+                        textbox.print_text_in_rectangle(quest_message)
 
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy('0')
@@ -314,23 +300,18 @@ class SandwormLair(EmptyCavePath):
 
 class FirePath(EmptyCavePath):
 
-    def modify_player(self, game):
-        super().modify_player(game)
+    def modify_player(self, game, textbox=None):
+        super().modify_player(game, textbox=textbox)
         if not game.player_char.flying:
             resist = game.player_char.check_mod("resist", typ="Fire")
-            print(f"[DEBUG] FirePath enter: flying={game.player_char.flying}, resist={resist:.2f}, HP={game.player_char.health.current}/{game.player_char.health.max}")
             health_10per = max(0, int(game.player_char.health.max * 0.1 * (1 - resist)))
             damage = random.randint(health_10per // 2, health_10per)
-            print(f"[DEBUG] FirePath damage calc: base10%={health_10per}, roll={damage}")
             game.player_char.health.current -= damage
-            print(f"[DEBUG] FirePath post-damage HP: {game.player_char.health.current}/{game.player_char.health.max}")
             if damage > 0:
-                lava_message = f"{game.player_char.name} takes {damage} damage from the fire."
-                lavabox = menus.TextBox(game)
-                lavabox.print_text_in_rectangle(lava_message)
-                time.sleep(0.5)
-                game.stdscr.getch()
-                lavabox.clear_rectangle()
+                if textbox:
+                    textbox.print_text_in_rectangle(
+                        f"The heat sears {game.player_char.name}, dealing {damage} damage!"
+                    )
 
 
 class FirePathSpecial(FirePath):
@@ -338,7 +319,7 @@ class FirePathSpecial(FirePath):
     Cacus summon can be obtained by Summoner class once Vulcan's Hammer is obtained
     """
 
-    def modify_player(self, game):
+    def modify_player(self, game, textbox=None):
         if "Vulcan's Hammer" in game.player_char.special_inventory:
             game.special_event("Cacus")
             summon = companions.Cacus()
@@ -346,7 +327,7 @@ class FirePathSpecial(FirePath):
             game.player_char.modify_inventory(items.BlacksmithsHammer(), subtract=True, rare=True)
             game.player_char.summons[summon.name] = summon
         else:
-            super().modify_player(game)
+            super().modify_player(game, textbox=textbox)
 
 
 class UndergroundSpring(SpecialTile):
@@ -364,34 +345,38 @@ class UndergroundSpring(SpecialTile):
         self.enemy = None
         self.defeated = False
 
-    def modify_player(self, game):
+    def modify_player(self, game, confirm_popup=None, textbox=None, battle_manager=None):
+        """
+        Handles player interaction with the underground spring. UI and combat logic must be provided by the frontend.
+        Args:
+            game: Game instance (for context)
+            confirm_popup: Optional ConfirmPopupMenu UI component
+            textbox: Optional TextBox UI component
+            battle_manager: Optional callable/class for handling battles
+        """
         self.visited = True
         player_char = game.player_char
-        confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
-        confirm = menus.ConfirmPopupMenu(game, header_message=confirm_message, box_height=8)
-        springbox = menus.TextBox(game)
+        # UI hook: confirm with player about drinking from spring
+        # UI hook: show quest completion message for Naivete
         if "Naivete" in player_char.quest_dict["Side"] and \
             not player_char.quest_dict["Side"]["Naivete"]["Completed"]:
             player_char.modify_inventory(items.EmptyVial(), subtract=True, rare=True)
             player_char.modify_inventory(items.SpringWater(), rare=True)
             player_char.quest_dict["Side"]["Naivete"]["Completed"] = True
-            message = ("You fill the empty vial with some of the spring water.\n"
-                       "You have completed the quest Naivete.\n")
-            springbox.print_text_in_rectangle(message)
-            game.stdscr.getch()
-            springbox.clear_rectangle()
-        if confirm.navigate_popup():
+            if textbox:
+                textbox.print_text_in_rectangle(
+                    "You fill the empty vial with water from the spring. "
+                    "You feel a strange sense of clarity as you do so."
+                )
+        if confirm_popup and confirm_popup.navigate_popup():
             if player_char.level.pro_level > 1 and not random.randint(0, 1):
                 if not self.defeated:
                     self.generate_enemy()
                     if self.enemy.is_alive():
                         game.special_event("Fuath1")
                         self.enter_combat(player_char)
-                        if USE_ENHANCED_COMBAT:
-                            battle = EnhancedBattleManager(game, self.enemy, use_queue=True)
-                        else:
-                            battle = BattleManager(game, self.enemy)
-                        battle.execute_battle()
+                        if battle_manager:
+                            battle_manager(game, self.enemy)
                     if all(["Summoner" in player_char.cls.name,
                             "Fuath" not in player_char.summons,
                             player_char.is_alive()]):
@@ -404,9 +389,8 @@ class UndergroundSpring(SpecialTile):
                 self.defeated = True
             if not self.drink:
                 message = "You drank water from the underground spring...nothing seems to have changed."
-                springbox.print_text_in_rectangle(message)
-                game.stdscr.getch()
-                springbox.clear_rectangle()
+                if textbox:
+                    textbox.print_text_in_rectangle(message)
                 self.drink = True
             if not self.nimue and "Excaliper" in player_char.special_inventory:
                 game.special_event("Nimue")
@@ -421,6 +405,8 @@ class UndergroundSpring(SpecialTile):
                         player_char.modify_inventory(items.Excalibur(), subtract=True)
                     else:
                         player_char.equipment['Weapon'] = items.Excalibur2()
+                # UI hook: handle further quest logic
+        # TODO: handle additional quest/response UI hooks as needed
                 """ TODO
                 quest, responses = town.check_quests(game, "Nimue")
                 if not quest:
@@ -787,28 +773,32 @@ class LockedChestRoom(ChestRoom):
             return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
 
-    def modify_player(self, game):
+    def modify_player(self, game, confirm_popup=None, textbox=None):
+        """
+        Handles player interaction with a locked chest. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (for context)
+            confirm_popup: Optional ConfirmPopupMenu UI component
+            textbox: Optional TextBox UI component
+        """
         self.visited = True
         self.adjacent_visited(game.player_char)
         self.generate_loot()
         if self.locked:
-            unlockbox = menus.TextBox(game)
+            # UI hook: prompt player to unlock chest (Master Key, lockpick, or Key)
+            # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-                unlockbox.print_text_in_rectangle("You open the chest with the Master key.\n")
-                game.stdscr.getch()
-                unlockbox.clear_rectangle()
+                if textbox:
+                    textbox.print_text_in_rectangle("You open the chest with the Master key.\n")
             elif any(["Lockpick" in game.player_char.spellbook["Skills"],
                       "Master Lockpick" in game.player_char.spellbook["Skills"]]):
-                unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
                 self.locked = False
-                game.stdscr.getch()
-                unlockbox.clear_rectangle()
-            elif "Key" in game.player_char.inventory:
-                popup = menus.ConfirmPopupMenu(game, "Do you want to unlock the chest with a Key?", box_height=8)
-                if popup.navigate_popup():
-                    self.locked = False
-                    game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
+                if textbox:
+                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
+            elif "Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
+                self.locked = False
+                game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
 
 
 class LockedChestRoom2(LockedChestRoom):
@@ -839,7 +829,14 @@ class LockedDoor(MapTile):
             intro_str += "There is an open door.\n"
         return intro_str
 
-    def modify_player(self, game):
+    def modify_player(self, game, confirm_popup=None, textbox=None):
+        """
+        Handles player interaction with a locked door. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (for context)
+            confirm_popup: Optional ConfirmPopupMenu UI component
+            textbox: Optional TextBox UI component
+        """
         self.visited = True
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
@@ -847,22 +844,19 @@ class LockedDoor(MapTile):
         if self.open:
             return
         if self.locked:
+            # UI hook: prompt player to unlock door (Master Key, lockpick, or Old Key)
+            # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-                unlockbox = menus.TextBox(game)
-                unlockbox.print_text_in_rectangle("You open the door with the Master key.\n")
-                game.stdscr.getch()
-                unlockbox.clear_rectangle()
+                if textbox:
+                    textbox.print_text_in_rectangle("You open the door with the Master key.\n")
             elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
-                unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
                 self.locked = False
-                game.stdscr.getch()
-                unlockbox.clear_rectangle()
-            elif "Old Key" in game.player_char.inventory:
-                popup = menus.ConfirmPopupMenu(game, "Do you want to unlock the door with an Old Key?", box_height=8)
-                if popup.navigate_popup():
-                    self.locked = False
-                    game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
+                if textbox:
+                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
+            elif "Old Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
+                self.locked = False
+                game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
 
     def available_actions(self, player_char):
         if not self.open:
@@ -935,7 +929,14 @@ class OreVaultDoor(Wall):
         
         return intro_str
 
-    def modify_player(self, game):
+    def modify_player(self, game, confirm_popup=None, textbox=None):
+        """
+        Handles player interaction with the Ore Vault hidden door. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (for context)
+            confirm_popup: Optional ConfirmPopupMenu UI component
+            textbox: Optional TextBox UI component
+        """
         self.visited = True
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
@@ -955,49 +956,34 @@ class OreVaultDoor(Wall):
         
         # If locked, check for ways to unlock
         if self.locked:
-            # Check if player has the Cryptic Key and can detect the door
-            if "Cryptic Key" in game.player_char.inventory:
-                popup = menus.ConfirmPopupMenu(game, "Use the Cryptic Key on the hidden door?", box_height=8)
-                if popup.navigate_popup():
-                    self.locked = False
-                    self.open = True
-                    self.enter = True
-                    unlockbox = menus.TextBox(game)
-                    unlockbox.print_text_in_rectangle("The Cryptic Key turns smoothly in the hidden lock.\nThe door swings open, revealing the vault beyond!\n")
-                    game.stdscr.getch()
-                    unlockbox.clear_rectangle()
-                    game.player_char.modify_inventory(game.player_char.inventory['Cryptic Key'][0], subtract=True)
-            elif "Master Key" in game.player_char.special_inventory:
-                # Master Key works if player has Keen Eye to see the door
-                if 'Keen Eye' in game.player_char.spellbook['Skills']:
-                    popup = menus.ConfirmPopupMenu(game, "Use the Master Key on the hidden door?", box_height=8)
-                    if popup.navigate_popup():
-                        self.locked = False
-                        self.open = True
-                        self.enter = True
-                        unlockbox = menus.TextBox(game)
-                        unlockbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
-                        game.stdscr.getch()
-                        unlockbox.clear_rectangle()
-            elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
-                # Master Lockpick works if player can detect the door (Keen Eye or key)
-                if 'Keen Eye' in game.player_char.spellbook['Skills']:
-                    popup = menus.ConfirmPopupMenu(game, "Attempt to pick the hidden door's lock?", box_height=8)
-                    if popup.navigate_popup():
-                        self.locked = False
-                        self.open = True
-                        self.enter = True
-                        unlockbox = menus.TextBox(game)
-                        unlockbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
-                        game.stdscr.getch()
-                        unlockbox.clear_rectangle()
+            # UI hook: prompt player to unlock hidden door (Cryptic Key, Master Key, or Master Lockpick)
+            # UI hook: show unlock success/failure messages
+            if "Cryptic Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
+                self.locked = False
+                self.open = True
+                self.enter = True
+                if textbox:
+                    textbox.print_text_in_rectangle("The Cryptic Key turns smoothly in the hidden lock.\nThe door swings open, revealing the vault beyond!\n")
+                game.player_char.modify_inventory(game.player_char.inventory['Cryptic Key'][0], subtract=True)
+            elif "Master Key" in game.player_char.special_inventory and 'Keen Eye' in game.player_char.spellbook['Skills'] and confirm_popup and confirm_popup.navigate_popup():
+                self.locked = False
+                self.open = True
+                self.enter = True
+                if textbox:
+                    textbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
+            elif 'Master Lockpick' in game.player_char.spellbook['Skills'] and 'Keen Eye' in game.player_char.spellbook['Skills'] and confirm_popup and confirm_popup.navigate_popup():
+                self.locked = False
+                self.open = True
+                self.enter = True
+                if textbox:
+                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
 
     def available_actions(self, player_char):
         # If open, allow normal movement
         if self.open:
             return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
         # If closed, acts like a wall (blocks movement)
-        return player_char
+        return []
 
     def which_blocked(self, game):
         if self.x == game.player_char.previous_location[0] + 1:
@@ -1029,8 +1015,12 @@ class WarningTile(CavePath):
         self.warning = True
 
     def enter_combat(self, player_char):
-        pass
-
+        # If locked, check for ways to unlock
+        if self.locked:
+            # UI hook: prompt player to unlock chest (Master Key, lockpick, or Key)
+            # UI hook: show unlock success/failure messages
+            pass
+            
 
 class UnobtainiumRoom(SpecialTile):
 
@@ -1059,20 +1049,20 @@ class RelicRoom(SpecialTile):
         self.adjacent_visited(game.player_char)
         self.visited = True
 
-    def special_text(self, game):
+    def special_text(self, game, textbox=None):
         if not self.read:
             game.special_event("Relic Room")
             relics = [items.Relic1(), items.Relic2(), items.Relic3(), items.Relic4(), items.Relic5(), items.Relic6()]
             game.player_char.modify_inventory(relics[game.player_char.location_z - 1], rare=True, quest=True)
             self.read = True
-            specialbox = menus.TextBox(game)
-            specialbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")
+            if textbox:
+                textbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")
             game.stdscr.getch()
             game.player_char.health.current = game.player_char.health.max
             game.player_char.mana.current = game.player_char.mana.max
             game.player_char.quests()
-            specialbox.clear_rectangle()
-            
+            if textbox:
+                textbox.clear_rectangle()
 
 
 class DeadBody(SpecialTile):
@@ -1202,7 +1192,7 @@ class SecretShop(SpecialTile):
             self.read = True
 
     def available_actions(self, player_char):
-        pass
+        return []
 
 
 class UltimateArmorShop(SpecialTile):
@@ -1224,7 +1214,7 @@ class UltimateArmorShop(SpecialTile):
         town.ultimate_armor_repo(game)
 
     def available_actions(self, player_char):
-        pass
+        return []
 
     def special_text(self, game):
         if not self.read:
@@ -1238,10 +1228,15 @@ class WarpPoint(MapTile):
         super().__init__(x, y, z)
         self.warped = False
 
-    def modify_player(self, game):
+    def modify_player(self, game, confirm_popup=None):
+        """
+        Handles player interaction with the warp point. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (for context)
+            confirm_popup: Optional ConfirmPopupMenu UI component
+        """
         if not self.warped:
-            popup = menus.ConfirmPopupMenu(game, "Do you want to return to town?", box_height=7)
-            if popup.navigate_popup():
+            if confirm_popup and confirm_popup.navigate_popup():
                 game.player_char.to_town()
                 town.town(game)
                 return

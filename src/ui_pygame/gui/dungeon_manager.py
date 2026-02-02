@@ -10,13 +10,14 @@ import traceback
 
 import pygame
 
-from .enhanced_dungeon_renderer import EnhancedDungeonRenderer
-from .dungeon_hud import DungeonHUD
-from .combat_manager import GUICombatManager
-from .character_screen import CharacterScreen
-from .loot_popup import LootPopup
-from src.core.player import DIRECTIONS
 from src.core import items, enemies, companions
+from src.core.data.data_loader import get_special_events
+from src.core.player import DIRECTIONS
+from .character_screen import CharacterScreen
+from .combat_manager import GUICombatManager
+from .dungeon_hud import DungeonHUD
+from .enhanced_dungeon_renderer import EnhancedDungeonRenderer
+from .loot_popup import LootPopup
 
 
 class DungeonManager:
@@ -767,9 +768,9 @@ class DungeonManager:
             final_room_tile.adjacent_visited(self.player_char)
             
             # Show the Devil's dialogue
-            from src.ui_pygame import game as pygame_game
-            if "Final Boss" in pygame_game.special_event_dict:
-                dialog_lines = pygame_game.special_event_dict["Final Boss"]["Text"]
+            special_event_dict = get_special_events()
+            if "Final Boss" in special_event_dict:
+                dialog_lines = special_event_dict["Final Boss"]["Text"]
                 dialog_text = "\n".join(dialog_lines)
                 self.presenter.show_message(dialog_text, "The Devil")
             

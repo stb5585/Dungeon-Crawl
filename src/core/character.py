@@ -13,6 +13,24 @@ def sigmoid(x):
     return 1 / (1 + exp(-x))
 
 
+def scaled_decay_function(x, rate=0.1):
+    """
+    Returns a value between 0 and 1 that decreases as x increases.
+    Used for shop price adjustments based on charisma.
+    
+    Args:
+        x (float): The input value, must be >= 0.
+        rate (float): The rate of decay; higher values make it decrease faster.
+
+    Returns:
+        float: A value between 0 and 1.
+    """
+    if x < 0:
+        raise ValueError("x must be non-negative.")
+    decay_value = 1 / (1 + rate * x)  # Exponential decay
+    return 0.5 + decay_value * 0.75  # Scale and shift to fit [0.5, 1.25]
+
+
 # Character dataclasses
 @dataclass
 class Stats:
@@ -330,7 +348,7 @@ class Character:
                 if typ == 'leers':
                     hits[i] = True
                     # Create CombatResult and call special_effect for Leer/Gaze attack
-                    from .combat_result import CombatResult, CombatResultGroup
+                    from .combat.combat_result import CombatResult, CombatResultGroup
                     result = CombatResult(
                         action="Leer",
                         actor=self,
@@ -521,7 +539,7 @@ class Character:
                     weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
             if hits[i]:
                 # Call special_effect for armor (thorns/reflection) and weapon (life steal, instant death, etc.)
-                from .combat_result import CombatResult, CombatResultGroup
+                from .combat.combat_result import CombatResult, CombatResultGroup
                 result = CombatResult(
                     action=att,
                     actor=self,

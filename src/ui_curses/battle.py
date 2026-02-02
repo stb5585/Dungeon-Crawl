@@ -1,11 +1,9 @@
 """
-This module handles combat between the player and enemies. It includes functions for determining initiative, handling
-turns, and executing actions. The BattleManager class manages the flow of combat, while the BattleLogger class records
-combat events for later analysis.
+BattleManager for curses-based UI combat.
+Moved from core.battle to keep UI dependencies separate from core logic.
 """
 from __future__ import annotations
 
-import datetime
 import random
 import re
 from typing import TYPE_CHECKING
@@ -13,142 +11,29 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
 
-    from .enemies import Enemy
-    from .character import Character
-    from .player import Player
-
-
-class BattleLogger:
-    def __init__(self):
-        self.events = []
-        self.metadata = {}
-        self.turn_counter = 0
-
-    def start_battle(self, player: Player, enemy: Enemy, initiative: bool, boss: bool) -> None:
-        """
-        Initializes the battle logger with metadata about the battle.
-        Args:
-            player (Player): The player character.
-            enemy (Enemy): The enemy character.
-        """
-        self.metadata = {
-            "start_time": datetime.datetime.now().isoformat(),
-            "player": {
-                "name": player.name,
-                "cls": player.cls.name,
-                "level": player.level.level,
-                "pro level": player.level.pro_level,
-                "attributes": player.stats,
-                "combat stats": player.combat,
-                "hp": player.health.current,
-                "mp": player.mana.current,
-                "resistances": player.resistance,
-                "dungeon level": player.location_z,
-                "initiative": initiative,
-            },
-            "enemy": {
-                "name": enemy.name,
-                "type": enemy.enemy_typ,
-                "level": enemy.level,
-                "attributes": enemy.stats,
-                "combat stats": player.combat,
-                "hp": enemy.health.current,
-                "mp": enemy.mana.current,
-                "resistances": enemy.resistance,
-                "boss": boss,
-            }
-        }
-
-    def log_event(
-            self,
-            event_type: str,
-            actor: Character,
-            target: Character=None,
-            action: str=None,
-            outcome: str=None,
-            damage: int=None,
-            flags: list=None,
-            status_changes: dict=None,
-            notes: str=None,
-            ) -> None:
-        """
-        Logs a combat event with details about the action taken.
-        Args:
-            event_type (str): The type of event (e.g., "attack", "spell", "item").
-            actor (Character): The character performing the action.
-            target (Character): The character being targeted (if applicable).
-            action (str): The action taken (e.g., "attack", "spell", "item").
-            outcome (str): The outcome of the action.
-            damage (int): The amount of damage dealt (if applicable).
-            flags (list): Any special flags or conditions associated with the event.
-                Example: ["critical", "miss", "dodge"]
-            status_changes (dict): Any changes to status effects or conditions.
-            notes (str): Additional notes about the event.
-        """
-        event = {
-            "turn": self.turn_counter,
-            "event_type": event_type,
-            "actor": actor.name if actor else None,
-            "target": target.name if target else None,
-            "action": action,
-            "outcome": outcome,
-            "damage": damage,
-            "flags": flags or [],
-            "status_changes": status_changes or {},
-            "notes": notes,
-            "actor_health": actor.health.current / actor.health.max if actor else None,
-            "actor_mana": actor.mana.current / actor.mana.max if actor else None,
-            "target_health": target.health.current / target.health.max if target else None,
-            "target_mana": target.mana.current / target.mana.max if target else None,
-        }
-        self.events.append(event)
-
-    def next_turn(self) -> None:
-        self.turn_counter += 1
-
-    def end_battle(self, result: str, winner: str | None, boss: bool) -> None:
-        self.metadata.update({
-            "result": result,
-            "winner": winner,
-            "boss": boss,
-            "turns": self.turn_counter,
-            "end_time": datetime.datetime.now().isoformat(),
-        })
-
-    def export(self) -> list:
-        """
-        Exports the logged events for analysis or storage.
-        Returns:
-            list: A list of dictionaries containing the logged events.
-        """
-        # This could be extended to save to a file or database
-        # For now, we just return the events
-        # as a list of dictionaries
-        # Example: [{"event": "attack", "actor": "Player", "target": "Enemy", "details": "Hit for 10 damage"}]
-        # This is a placeholder for actual export logic
-        # You could save to a JSON file or a database here
-        return self.events
+    from src.core.combat.battle_logger import BattleLogger
+    from src.core.character import Character
 
 
 class BattleManager:
     """
     Handles the flow of combat between the player and an enemy.
-    
+
     Attributes:
-        game (Game): The current game instance.
-        player_char (Character): The player character.
-        enemy (Character): The enemy character.
-        logger (BattleLogger): The logger for recording combat events.
-        flee (bool): Whether the player has chosen to flee combat.
-        tile (MapTile): The current tile the player is on.
-        battle_ui (CombatMenu): The UI for the battle screen.
-        battle_popup (CombatPopupMenu): The UI for selecting spells, skills, or items.
-        textbox (TextBox): The UI for displaying text.
-        available_actions (list): The actions the player can take in combat.
-        summon_active (bool): Whether the player has summoned a companion.
-        summon (Character): The player's summoned companion.
-        attacker (Character): The character currently taking their turn.
-        defender (Character): The character currently being attacked.
+        game: The current game instance.
+        player_char: The player character.
+        enemy: The enemy character.
+        logger: The logger for recording combat events.
+        flee: Whether the player has chosen to flee combat.
+        tile: The current tile the player is on.
+        battle_ui: The UI for the battle screen.
+        battle_popup: The UI for selecting spells, skills, or items.
+        textbox: The UI for displaying text.
+        available_actions: The actions the player can take in combat.
+        summon_active: Whether the player has summoned a companion.
+        summon: The player's summoned companion.
+        attacker: The character currently taking their turn.
+        defender: The character currently being attacked.
     """
 
     def __init__(
@@ -174,7 +59,7 @@ class BattleManager:
         self.textbox = textbox
         self.available_actions: list = self.tile.available_actions(game.player_char)
         self.summon_active: bool = False
-        self.summon: Character = None
+        self.summon: Character | None = None
         self.attacker, self.defender = self.determine_initiative()
 
     def render_screen(self) -> None:
@@ -222,7 +107,7 @@ class BattleManager:
     def execute_battle(self) -> bool:
         """Handles the entire battle flow."""
         # Emit combat start event
-        from .events.event_bus import get_event_bus, create_combat_event, EventType
+        from src.core.events.event_bus import get_event_bus, create_combat_event, EventType
         event_bus = get_event_bus()
         event_bus.emit(create_combat_event(
             EventType.COMBAT_START,
@@ -231,15 +116,15 @@ class BattleManager:
             initiative=self.attacker == self.player_char,
             boss=self.boss
         ))
-        
+
         self.logger.start_battle(
             self.player_char, self.enemy, initiative=self.attacker == self.player_char, boss=self.boss
-            )
+        )
         while self.battle_continues():
             self.process_turn()
 
         self.end_battle()
-        
+
         # Emit combat end event
         event_bus.emit(create_combat_event(
             EventType.COMBAT_END,
@@ -249,7 +134,7 @@ class BattleManager:
             player_alive=self.player_char.is_alive(),
             enemy_alive=self.enemy.is_alive()
         ))
-        
+
         return self.flee
 
     def battle_continues(self) -> bool:
@@ -257,7 +142,7 @@ class BattleManager:
         self.render_screen()
         return all([self.player_char.is_alive() and self.enemy.is_alive(),
                     not self.flee])
-    
+
     def process_turn(self) -> None:
         """Handles the flow of a single turn."""
         self.before_turn()
@@ -321,9 +206,9 @@ class BattleManager:
 
     def execute_action(self, action: str, choice: str=None, result: str=None):
         """Executes an attack or skill selection."""
-        from .events.event_bus import get_event_bus, create_combat_event, EventType
+        from src.core.events.event_bus import get_event_bus, create_combat_event, EventType
         event_bus = get_event_bus()
-        
+
         if action == "Nothing":
             result = f"{self.attacker.name} does nothing."
         elif action == "Attack":
@@ -334,7 +219,7 @@ class BattleManager:
                 target=self.defender,
                 is_special=False
             ))
-            
+
             if not random.randint(0, 9 - self.attacker.check_mod("luck", luck_factor=20)):
                 try:
                     result = self.attacker.special_attack(target=self.defender)
@@ -372,7 +257,7 @@ class BattleManager:
             if choice == "Remove Shield":
                 choice = "Mana Shield"
             skill = self.attacker.spellbook['Skills'][choice]
-            
+
             # Emit skill use event
             event_bus.emit(create_combat_event(
                 EventType.SKILL_USE,
@@ -380,7 +265,7 @@ class BattleManager:
                 target=self.defender,
                 skill_name=skill.name
             ))
-            
+
             result = f"{self.attacker.name} uses {skill.name}.\n"
             if skill.name == 'Smoke Screen':
                 result += skill.use(self.attacker, target=self.defender)
@@ -401,7 +286,7 @@ class BattleManager:
             if itm.subtyp == "Scroll":
                 if itm.spell.subtyp != "Support":
                     target = self.defender
-            
+
             # Emit item use event
             event_bus.emit(create_combat_event(
                 EventType.ITEM_USE,
@@ -460,7 +345,7 @@ class BattleManager:
                 self.print_text(result)
                 self.logger.log_event(
                     "Special Effect", self.defender, target=self.attacker, outcome=result
-                    )
+                )
             self.available_actions = self.tile.available_actions(self.player_char)
             if self.summon_active:
                 if self.summon.is_alive():

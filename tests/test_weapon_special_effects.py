@@ -6,14 +6,16 @@ Tests:
 3. Stun effects (Mjolnir, Onikiri)
 4. Leer/Gaze petrification
 """
-import sys
+
 import os
+import random
+import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import random
 from src.core.character import Character, Stats, Combat, Resource, Level
 from src.core import items
-from src.core.combat_result import CombatResult, CombatResultGroup
+from src.core.combat.combat_result import CombatResult, CombatResultGroup
 
 
 def create_test_character(name="TestChar", level_num=10):

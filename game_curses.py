@@ -4,8 +4,8 @@ Entry point for Dungeon Crawl - Curses (Terminal) Version
 Run the game with: python game_curses.py
 """
 
-import sys
 import curses
+import sys
 
 from src.ui_curses.game import Game
 

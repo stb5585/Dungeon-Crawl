@@ -12,11 +12,11 @@ from . import abilities
 from .character import StatusEffect
 
 if TYPE_CHECKING:
-    from .combat_result import CombatResultGroup
+    from .combat.combat_result import CombatResultGroup
 
 
 # Functions
-def random_item(z):
+def random_item(z: int) -> Item:
     """
     Returns a random item based on the given integer.
     """
@@ -43,7 +43,7 @@ def random_item(z):
     return random.choice(random_dict[str(z)])
 
 
-def remove_equipment(typ):
+def remove_equipment(typ: str) -> Item:
     typ_dict = {'Weapon': NoWeapon, 'OffHand': NoOffHand, 'Armor': NoArmor, 'Pendant': NoPendant, 'Ring': NoRing}
     return typ_dict[typ]()
 
@@ -57,7 +57,7 @@ class Item:
     subtyp: the subtype of the item (i.e. Sword would be a subtype of Weapon)
     """
 
-    def __init__(self, name, description, value, rarity, subtyp):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str):
         self.name = name
         self.description = '\n'.join(wrap(description, 35, break_on_hyphens=False))
         self.value = value
@@ -1498,7 +1498,12 @@ class DemonClaw(NaturalWeapon):
         self.att_name = 'claws'
 
     def special_effect(self, results: CombatResultGroup) -> None:
-        results = abilities.Doom().cast(results, special=True)
+        # Extract caster and target from combat results
+        if results.results:
+            caster = results.results[0].actor
+            target = results.results[0].target
+            if caster and target:
+                abilities.Doom().cast(caster, target, special=True)
         return results
 
 
@@ -4334,3 +4339,13 @@ items_dict = {
                    ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll],
         'Reagents': []}
 }
+
+ultimate_weapons = {'Dagger': Carnwennan,
+                   'Sword': Excalibur,
+                   'Mace': Mjolnir,
+                   'Fist': GodsHand,
+                   'Axe': Jarnbjorn,
+                   'Polearm': Gungnir,
+                   'Staff': [PrincessGuard, DragonStaff],
+                   'Hammer': Skullcrusher,
+                   'Ninja Blade': Ninjato}

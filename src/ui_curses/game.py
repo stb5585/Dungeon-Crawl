@@ -7,14 +7,16 @@ import time
 
 import curses
 
-from ..core import player, abilities, items
-from . import menus, town, map_tiles
-from ..core.battle import BattleManager
-from ..core.combat.enhanced_manager import EnhancedBattleManager
-from ..core.character import Combat, Level, Resource, Stats
-from ..core.classes import classes_dict
-from ..core.races import races_dict
-from ..core.save_system import SaveManager
+from src.core import abilities, items, player
+from src.core.character import Combat, Level, Resource, Stats
+from src.core.classes import classes_dict
+from src.core.data.data_loader import get_special_events
+from src.core.races import races_dict
+from src.core.save_system import SaveManager
+from src.core.town import BountyBoard
+from . import menus, town
+from .battle import BattleManager
+from .enhanced_manager import EnhancedBattleManager
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -199,7 +201,7 @@ class Game:
             spell_gain = abilities.spell_dict[cls.name]["1"]()
             player_char.spellbook['Spells'][spell_gain.name] = spell_gain
         player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]  # care package
-        player_char.load_tiles(map_tiles_module=map_tiles)
+        player_char.load_tiles()
 
         return player_char
 
@@ -215,7 +217,7 @@ class Game:
             return
         menus.save_file_popup(self, load=True)
         filename = self.load_files[selected_idx]
-        player_char = SaveManager.load_player(filename, map_tiles_module=map_tiles)
+        player_char = SaveManager.load_player(filename)
         if player_char is None:
             return
         
@@ -263,7 +265,11 @@ class Game:
                     available_hotkeys = [x['hotkey'] for x in available_actions]
                     try:
                         if chr(action_input).lower() == action['hotkey']:
-                            action['method'](self.player_char, self)
+                            # Try calling with game parameter first, fall back to without
+                            try:
+                                action['method'](self.player_char, self)
+                            except TypeError:
+                                action['method'](self.player_char)
                             if chr(action_input).lower() in available_hotkeys and \
                                 ("Move" in action['name'] or "Open" in action['name'] or "stairs" in action['name']):
                                 return
@@ -293,7 +299,7 @@ class Game:
 
     def update_bounties(self):
         self.bounties = {}
-        bounties = town.BountyBoard()
+        bounties = BountyBoard()
         bounties.generate_bounties(self)
         for bounty in bounties.bounties:
             self.bounties[bounty["enemy"].name] = bounty
@@ -302,437 +308,11 @@ class Game:
         del self.bounties[bounty["enemy"].name]
 
     def special_event(self, name):
+        special_event_dict = get_special_events()
         text = special_event_dict[name]["Text"]
         pad = menus.QuestPopupMenu(self, box_height=len(text)+2, box_width=len(max(text, key=len))+4)
         pad.draw_popup(text)
         pad.clear_popup()
-        
-
-special_event_dict = {
-    "Timmy": {
-        "Text": [
-            "'Hello...who's there?'",
-            "You see a small child peak out from behind some rubble.",
-            "'This place is scary...I want to go home.'",
-            "You have found the little boy, Timmy, and escort him home."
-            ]
-    },
-    "Unobtainium": {
-        "Text": [
-            "A brilliant column of light highlights a small piece of ore resting on the ground at the center of the room.",
-            "You approach it with caution but find no traps or tricks.",
-            "This must be the legendary ore you have heard so much about...",
-            "You reach for it, half expecting to be obliterated...but all you feel is warmth throughout your body.",
-            "You have obtained the Unobtainium!"
-            ]
-    },
-    "Dead Body": {
-        "Text" : [
-            "Before you lies the body of a warrior, battered, bloody, and broken...",
-            "This must be the body of Joffrey, the one betrothed to the waitress at the tavern.",
-            "You move the body for a proper burial and notice a crushed gold locket lying on the ground.",
-            "You should return this to its rightful owner..."
-            ]
-    },
-    "Busboy": {
-        "Text": [
-            "The door to the tavern swings shut and you can no longer hear the waitress fleeing",
-            "Just then you hear the bartender from behind the bar. 'Hey, where are you going?!'",
-            "'Damn, now whose gonna get this food and drink out to my patrons?!'",
-            "You shrug your shoulders, not wanting to get caught up in all of the chaos.",
-            "'BUSBOY! Get out here, you've gotta take over these tables.'"
-        ]
-    },
-    "Waitress": {
-        "Text" : [
-            "(cry)...why, why did you have to leave me, Joffrey...",
-            "Who...who's there..leave me, I do not wish to be disturbed...",
-            "WAIT, IT'S YOU! YOU FAILED MY BELOVED JOFFREY!",
-            "WHY DIDN'T YOU SAVE HIM?! YOU WILL MEET THE SAME FATE!!"
-            ]
-    },
-    "Joffrey's Key": {
-        "Text" : [
-            "That key that you have...that's one of our storage locker keys.",
-            "You say you got this from the waitress at the tavern?",
-            "She attacked you?! Well, I guess she lost her mind after Joffrey's death.",
-            "Maybe this key is to his locker. Let me see...yes it is.",
-            "All that's left inside are some potions and this letter.",
-            "'My love, I know you have questions but the answers will not be to your liking...",
-            "forgive me but I could not resist his will. If you are reading this, it means I am dead...",
-            "please remember that above all, I love you.' -Joffrey",
-            "What did he mean by he couldn't resist his will? Something doesn't seem right...",
-            "Keep you wits about you, there's evil afoot.", 
-            "Since there is no one left to claim his things, you can have what's left. Put them to good use."
-        ]
-    },
-    "Power Up": {
-        "Text" : [
-            "You enter into the back of the blacksmith shop and see what looks like a metal coffin glowing green.",
-            "'Climb on in, we have some work to do.' You enter the machine against your better judgment.",
-            "Griswold stands behind a panel and after a few button presses, you see the green glow around you grow.",
-            "You are suddenly overwhelmed by an searing pain. You stifle a scream but it is becoming unbearable.",
-            "Just as you think you can't take more, the whir of the machine begins to wane.",
-            "Your whole body hurts but strangely you feel a power inside of you that you have never experienced.",
-            "'How do you feel? Any different?' You exit the chamber more powerful than you entered it."
-        ]
-    },
-    "Final Blocker": {
-        "Text": [
-            "The invisible force that once blocked you path is now gone.",
-            "What lies ahead is unknown.",
-            "Proceed at your own peril..."
-            ]
-    },
-    "Final Boss": {
-        "Text": [
-            "You enter a massive room. A booming voice greets you.",
-            "'Hello again. You have done well to reach me, many have tried and failed.'",
-            "The voice talks to you as if you should recognize them...it must the be hooded figure from the tavern.",
-            "'It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel,",
-            "knowing that one of us will not leave here alive.'",
-            "You know this is what you were working toward but the threat of death has left you wavering.",
-            "'I give you but one chance to reconsider, after which I will not go easy on you.'"
-            ]
-    },
-    "Relic Room": {
-        "Text": [
-            "A bright column of light highlights a pedestal at the center of the room.",
-            "You instantly realize the significance of the finding, sure that this is one of the six relics you seek.",
-            "You eagerly take the relic and instantly feel rejuvenated.",
-            "You have obtained a relic!"
-            ]
-    },
-    "Secret Shop": {
-        "Text": [
-            "Who's there?! Oh, you're not a monster...",
-            "You are one of the first travelers I have seen in some time.",
-            "I have built up a cache of items that I can sell you if you're interested..."
-        ]
-    },
-    "Ultimate Armor":{
-        "Text": [
-            "Hello, my name is Chisolm, Griswold's brother.",
-            "I tried to defeat the ultimate evil but could not even damage it.",
-            "I barely escaped, camping here to lick my wounds.",
-            "I decided I would instead use my blacksmith skills to help those who look to do what I could not.",
-            "Choose the type of armor you would prefer and I will make you the finest set you could imagine."
-        ]
-    },
-    "Boulder": {
-        "Text": [
-            "Before you sits a decent sized boulder, although you are not sure what it is doing in the dungeon.",
-            "You look closer and notice the hilt of a sword sticking out from behind it.",
-            "You grab the sword and try to dislodge it but it seems pretty stuck.",
-            "With one final yank, the sword comes free...or part of it at least.",
-            "You gain the not-so-legendary Excaliper...whomp whomp..."
-        ]
-    },
-    "Nimue": {
-        "Text": [
-            "Before your eyes appears the most beautiful creature you have ever seen.",
-            "'Greeting, my name is Nimue. I am the Maid of this spring.'",
-            "You notice a faint aura resonating from your bag, as if you carry something of value to her.",
-            "'Finally, a worthy champion...you have brought me the sword of legend. May I see it?'",
-            "Sword of legend?...you are uncertain what she could be referring to...perhaps the broken sword?",
-            "You take out what's left of Excaliper and hand it over. Her joyous expression quickly changes.",
-            "'Oh pity, this is not but a cheap knock-off...and it's broken...curses.'",
-            "'Whoever forged this weapon was not much of a blacksmith, yet possessed the magical acumen to trick me.'",
-            "'I'd bet anything Merzhin was involved. Ever since I spurred his advances, he has been a very naughty boy.'",
-            "The remains of Excaliper vanish from her hands. 'Oh well, you can still be of use to me.'",
-            "Her words are somewhat unsettling as you ponder what she means. You thoughts are quickly disturbed.",
-            "'I see you seek to end the blight of this land, perhaps we can be of assistance to each other.'",
-            "'Merzhin is a powerful wizard and he has become a thorn in my side. I would like you to deal with him.'",
-            "'His domain is not of this plane, residing in the Realm of Cambion. Luckily I can teleport you there.'",
-            "You are uncertain if you want to get involved. 'I can make it worth your time. Think on it for a bit.'",
-            "'If you wish to summon me, just drink from the spring and I will appear. Until then...'. She disappears.",
-        ]
-    },
-    "Minotaur": {
-        "Text": [
-            "As you enter the corridor, you are met with a horrific scene.",
-            "The carnage is almost as unbelievable as the monster you are confronted with.",
-            "You first notice the glint of a battle-worn axe, stained with the blood of countless foes.",
-            "The beast's fiery eyes lock onto you, letting out a deafening roar.",
-            "There is no mistaking the towering Minotaur, known to many as 'The Butcher'.",
-            "Chains and bone fragments litter the floor—a grim testament to those who dared to challenge him.",
-            "The Butcher snarls, 'You are next, little one!'",
-        ]
-    },
-    "Barghest": {
-        "Text": [
-            "The sacred chamber hums with an ominous energy as you step forward, the air growing cold with each breath.",
-            "A deep growl reverberates through the hall, and from the shadows emerges a large wolf-like beast.",
-            "This must be the Barghest, a tricky shapeshifter that is also the guardian of the first Holy Relic.",
-            "Its spectral eyes burn with a ghostly light, and its jagged fangs gleam with menace.",
-            "Its black fur bristles like shadowy flames and its claws carve furrows into the stone floor as it prowls.",
-            "With a chilling snarl, it lunges, its voice echoing, “None shall desecrate the relics!”"
-        ]
-    },
-    "Pseudodragon": {
-        "Text": [
-            "The dungeon narrows as you round the corner and you are met by a faint, red light.",
-            "A warmth meets your body and the sweet smell of jasmine permeates around you.",
-            "'Oh please, enter my chamber without permission.' You see nothing but a lavish lair and a crackling fireplace.",
-            "You step forward in defiance, spotting the creature perched upon the hearth, no larger than a house cat.",
-            "'So, you thought you would make a name for yourself by slaying a mighty dragon? Sorry to disappoint...'",
-            "It is true, you did expect something more. However, your experience tells you not to take it lightly.",
-            "'Oh, still a bit frisky, are we? Well, I should warn you that short doesn't always mean sweet.'",
-            "'But that is enough foreplay, let us proceed to the main course!' The beast takes flight and attacks!"
-        ]
-    },
-    "Nightmare": {
-        "Text": [
-            "You travel a great hall, expecting something monstrous to attack. What you find is much worse.",
-            "The hair on the back of your neck stands at attention and suddenly feel fear grab ahold of you.",
-            "Your will is steadfast but you know that will only last for so long as the sight you feared emerges.",
-            "A massive stallion with a mane and tail of flames, the rest as black as the deepest depths.",
-            "It says no words but has no need, for silence is much more frightening.",
-            "You catch a glimpse of a relic perched atop a glowing pedestal but the Nightmare stands in your way.",
-            "With a flare of its nostrils, the beast charges right at you, filled with malice aforethought."
-        ]
-    },
-    "Cockatrice": {
-        "Text": [
-            "As you step into the dimly lit cavern, the air grows thick and heavy.",
-            "A low, menacing hiss reverberates off the stone walls, sending shivers down your spine.",
-            "A monstrosity emerges from the shadows, its leathery wings unfurling, and its beady eyes locked onto you.",
-            "With every movement, its claws scrape against the floor, and its serpentine tail lashes out.",
-            "The beast lets out a bone-chilling screech, its petrifying aura threatening to halt your advance."
-        ]
-    },
-    "Wendigo": {
-        "Text": [
-            "The stagnant isolation of the dungeon is suddenly disturbed, replaced by a bone-chilling cold.",
-            "The icy winds howl as you approach the sacred grounds of the third relic.",
-            "Emerging from the darkness, a beast towers above, its gaunt frame shrouded in frost and shadows.",
-            "Its hollow eyes burn with a ravenous hunger, and its clawed hands twitch with restless energy.",
-            "The air grows colder, biting at your skin, as the creature lets out an unearthly wail.",
-            "The guardian of the relic stands ready, an embodiment of hunger and despair, the Wendigo."
-        ]
-    },
-    "Golem": {
-        "Text": [
-            "The ground trembles as a towering figure of stone and metal lumbers into view.",
-            "Its massive frame glints in the dim light, its eyes dead and lifeless.",
-            "You stand still waiting for something to happen and notice a low hum build as the construct comes online.",
-            "The golem's glowing eyes fixate on you, while the hum of ancient magic reverberates through the air.",
-            "Cracks in its surface reveal faint pulsations of energy, hinting at the immense power contained within.",
-            "The guardian moves with deliberate purpose, its heavy footsteps echoing like a drumbeat of inevitability.",
-            "Another trial stands before you, as implacable as the earth itself."
-        ]
-    },
-    "Iron Golem": {
-        "Text": [
-            "The Iron Golem stands motionless at the threshold, its massive form forged from enchanted steel.",
-            "Etched with ancient runes of power, the massive statue is a formidable sight.",
-            "Sparks crackle from its joints as it animates, each movement deliberate and heavy with menace.",
-            "Its glowing core pulses like a molten heart, radiating an oppressive heat that fills the chamber.",
-            "The ground shudders under its iron steps, and its piercing gaze locks onto you, assessing your worth.",
-            "The path forward lies in proving yourself against this unyielding sentinel of the dungeon depths."
-        ]
-    },
-    "Jester": {
-        "Text": [
-            "You pass through the open door into a small chamber and you are met with a horrifying sight.",
-            "A disfigured man is shackled against the wall, upside down and covered with blood.",
-            "The man struggles to breathe but manages to muster a weak 'Help me!'.",
-            "The Jester steps into view with an unsettling gait, his face painted in a macabre grin.",
-            "His ragged outfit jingles with the sound of bells, each step punctuated by a spine-chilling laugh.",
-            "His eyes glint with wild, unrestrained madness as he deftly twirls a knife between his fingers.",
-            "Without looking away from you, he steps towards the chained man and thrusts the knife deep into his chest.",
-            "You hear nothing but a meager gasp, his body slumping down. 'We were playing a game. He lost...hehe.'",
-            "The Jester turns and walks towards a table in the corner of the room, covered with the tools of his trade.",
-            "'Care to play?' he asks, his voice dripping with mockery.",
-            "'The stakes? Oh, just your sanity—or maybe your life. Let's see where the chips fall!'"
-        ]
-    },
-    "Domingo": {
-        "Text": [
-            "Your search for another one of the mystical relics leads you down a dark flight of stairs.",
-            "As you descend into the dungeon, you notice the air grow heavy, and a gurgling sound echoing from beyond.",
-            "A cartoonish creature emerges, its writhing tentacles glowing faintly with an unearthly, pulsating light.",
-            "Its bulbous body quivers, and its eyes...far too many eyes...unnervingly fixate on you.",
-            "'You dare face the perfection of creation?' a voice reverberates in your mind. How?!",
-            "The creature's tentacles twitch, ready to unleash its magical fury. 'Prepare to witness true power!'"
-        ]
-    },
-    "Red Dragon": {
-        "Text": [
-            "After several minutes exploring an empty corridor, you exit into a massive sanctum riddled with fissures.",
-            "The cavern trembles as the ground beneath you grows unbearably hot.",
-            "A deafening roar erupts from the shadows, and the Red Dragon steps forward.",
-            "Its scales gleam like molten metal and its eyes burn with a primal fury.",
-            "'You've come this far,' it growls, its voice reverberating like thunder.",
-            "'But you will go no further. Prove your worth... or be reduced to ashes where you stand.'",
-            "Its wings spread wide, blocking your path as your next trial begins."
-        ]
-    },
-    "Cerberus": {
-        "Text": [
-            "You step out from the hidden passage and expect a moment to gather yourself. You were mistaken.",
-            "The ground quakes, and an ominous growl fills the air as the three-headed Cerberus emerges before you.",
-            "Each head snarls and gnashes in unison, its glowing eyes locking onto you with predatory intent.",
-            "'You dare to disturb the sanctity of the final relic?' the voices echo, a guttural chorus of menace.",
-            "'No one passes. No one escapes.' The beast's claws dig into the ground, its teeth gleaming in the faint light.",
-            "This is your pentultimate test-face the guardian or perish in its jaws."
-        ]
-    },
-    "Devil": {
-        "Text": [
-            "You feel your body lifted in the air, riding an invisible path toward the far side of the sanctum.",
-            "The ride comes to an immediate end, leaving you reeling from the abrupt stop.",
-            "The bones of those who have faced the prime evil surround you. Will you join them?",
-            "Your thoughts are interrupted by the shaking of the ground as an incomprehesible sight approaches you.",
-            "Before you stands the Devil—a towering figure of malice, wreathed in flame and shadow.",
-            "Its horns scrape the heavens, and its crimson eyes burn with the fury of eons.",
-            "'You may not recognize me in my current form. Let me refresh your memory.'",
-            "From the shadows appears the hooded figure from the town tavern.",
-            "'You probably expected my appearance but the surprises are just beginning.'",
-            "You were certain of their duplicity but your suspicion was only partially correct.",
-            "The Devil begins to transform, replacing the monstrosity with a familiar sight-the busboy!",
-            "'Not who you expected? I guess you weren't actually paying attention then.'",
-            "Your mind races, combing over everything that has happened, certain you have missed some clue.",
-            "'I have been lurking, with my trusted acolyte by my side. I knew eventually a worthy opponent would appear.'",
-            "A fury rises within you at the thought of all the lives ruined. You clench as he continues to speak.",
-            "'I stayed away at first but your success piqued my curiosity. You have earned a mighty reward.'",
-            "Reward?! This must be a joke, surely there is nothing left but a battle to the death.",
-            "'Join my army and I will make you one of my chosen. You will lead droves of my minions into battle.'",
-            "You cry out for silence, insulted by the implication. You would never join him!",
-            "'I thought it was a fair offer but so be it. Instead your soul will be used for my amusement.'",
-            "The Devil transforms back into his real form and a battle for the ages commences."
-        ]
-    },
-    "Dilong": {
-        "Text": [
-            "The ground feels different here, almost like sand.",
-            "Suddenly your whole body starts to shake and the ground starts to open underneath you.",
-            "You stumble back just in time and out of the floor a massive earthworm-like creature appears.",
-            "'Who dares disturb my home! Give me one reason I shouldn't swallow you right up?'",
-            "The game piece you found begins to glows and levitates up into the air.",
-            "'Oh look, that will complete my set. Maybe instead of violence, we could help each other out.'",
-            "'Give it to me and I will lend you my services when needed.'",
-            "You have gained the summon Dilong."
-        ]
-    },
-    "Agloolik": {
-        "Text": [
-            "The wails of anguish have settled and the Wendigo lays at your feet.",
-            "After a long fight, you take a moment to catch your breath and feel an icy chill creep over you.",
-            "A mist has fallen upon the room with an icy film caked over every surface, including you.",
-            "A massive shiver runs through your bones and you buckle at your knees in pain.",
-            "'I expected more from the one who defeated this beast. Hahaha...pathetic.'",
-            "You regain your composure and return to your feet, defiant in the face of the unseen.",
-            "An entity forms in front of you with a crooked smile, 'Maybe you are worth something. We shall see...'",
-            "You have gained the summon Agloolik."
-        ]
-    },
-    "Cacus": {
-        "Text": [
-            "The searing pain continues as you traverse the blazing hallway, unsure if the reward is worth the pain.",
-            "You encounter what appears to be a dead end but notice a pool of lava, bubbling and spitting molten rock.",
-            "This must be the place...perhaps there is a way to awaken what dwells here.",
-            "You cast the blacksmith's hammer into the lava...and nothing...for a time.",
-            "Suddenly a large figure emerges, a man over nine feet tall, engulfed in fire and brimstone.",
-            "'I have slumbered for too long. What is this that returns me to the realm of the living?'",
-            "'A summoner? Of course, I should have known...the downfalls of my curse. Shall we leave?'"
-            "You have gained the summon Cacus."
-        ]
-    },
-    "Fuath1": {
-        "Text": [
-            "You drank water from the underground spring...nothing seems to have changed...at first.",
-            "Suddenly an eddy forms and out from the vortex emerges a blond-haired maiden in a green silk dress.",
-            "A haunting voice echoes around you, even though her mouth does not move.",
-            "You start to feel a strange calm, as if you are being lulled to sleep. Is this some kind of trick?",
-            "Your question is immediately answered, when the figure changes into something out of the horrors.",
-            "An ugly creature, with giant teeth and webbed hands and feet, let's out a shriek and falls to all fours.",
-            "As if by some godly power, the creature crawls along the top of the water, heading right toward you.",
-            "You are overcome with an almost mystical level of fear, frozen in place even against your will.",
-            "Giant claws reach out for you, no doubt to pull you under. Your resolve finally returns.",
-            "You prepare for combat, sure of a fight to ensue."
-        ]
-    },
-    "Fuath2": {
-        "Text": [
-            "The Fuath relents slumping to the ground. The creature returns to its original form.",
-            "After a moment, you hear a raspy voice coming from inside your head.",
-            "'It's been some time since anyone could hold their own against me. Many have tried but none have succeeded.'",
-            "Exhaustion is replaced by an expression of hatred. 'I will not submit to your will!'",
-            "The Fuath tries to slip back into the waters but is held back by an invisible force.",
-            "'NO, I WON'T GO WITH THEM!!!', as if pleading with the universe. The struggle ends quickly.",
-            "'CURSES!...I must fulfill the covenant and aid you in your quest...'",
-            "You have gained the summon Fuath."
-        ]
-    },
-    "Izulu": {
-        "Text": [
-            "You follow the priest down a dark alley, passing several homeless people before arriving at a tent.",
-            "'Go inside and tell her I sent you.' The priest turns around and heads back toward the church.",
-            "You enter the tent and are instantly hit by a strange odor, not bad but also not good.",
-            "A figure emerges from behind a bookshelf. 'Come in, I've been expecting you.'",
-            "A masked figure stands before you, minimally clothed in rags and adorned in shells and bones.",
-            "'The priest told me you helped the church out immensely. I owe him my life.'",
-            "'Perhaps I can help you. You possess the power to summon creatures, a gift not many have mastered.'",
-            "From a back room, you hear a bird shriek, followed by a bright flash and the crack of thunder.",
-            "'Right on cue, come out Izulu.' To your surprise, a young man emerges from the darkness.",
-            "'This is Izulu, my familiar. Don't let this form fool you, my pet is a powerful force.'",
-            "At the snap of a finger, the young man transforms into a giant bird. Electricity crackles around him.",
-            "'I grant you permission to summon him and do your bidding, until the day the evil is purged.'",
-            "You have gained the summon Izulu."
-        ]
-    },
-    "Hala": {
-        "Text": [
-            "You have gained the summon Hala."
-        ]
-    },
-    "Grigori": {
-        "Text": [
-            "You have gained the summon Grigori."
-        ]
-    },
-    "Bardi": {
-        "Text": [
-            "You have gained the summon Bardi."
-        ]
-    },
-    "Kobalos": {
-        "Text": [
-            "You have gained the summon Kobalos."
-        ]
-    },
-    "Zahhak": {
-        "Text": [
-            "You have gained the summon Zahhak."
-        ]
-    },
-    "Rookie": {
-        "Text": [
-            "You come to the end of a long corridor and realize the dungeon smells just a little worse than normal.",
-            "You spot a mass against the wall and quickly identify the insignia of the town guard.",
-            "The body is partially eaten but you believe this must be the recruit the Sergeant told you about.",
-            "You retrieve the body that even though is missing parts, still weighs quite a bit.",
-            "As you turn to leave you come face to face with an enemy and it attacks!"
-        ]
-    },
-    "Remedy": {
-        "Text": [
-            "You follow the priest down a dark alley, passing several homeless people before arriving at a tent.",
-            "'Go inside and tell her I sent you.' The priest turns around and heads back toward the church.",
-            "You enter the tent and are instantly hit by a strange odor, not bad but also not good.",
-            "A figure emerges from behind a bookshelf. 'Come in, I've been expecting you.'",
-            "A masked figure stands before you, minimally clothed in rags and adorned in shells and bones.",
-            "'The priest told me you helped the church out immensely. I owe him my life.'",
-            "'As you likely have guessed, I am a shaman. Some would call me a witch doctor...'",
-            "'I believe I can help you in your quest to purge this land of evil. Wait here...'",
-            "The shaman exits the room through a flap in the back. You wait for some time...",
-            "Suddenly a flash of light and a series of bangs exit the back room, followed by a trail of smoke.",
-            "The shaman reemerges. 'Here, take these potions. They will cure all status effects.'",
-            "'Good luck. I will do what I can from the shadows to help you.'"
-        ]
-    }
-}
 
 
 if __name__ == "__main__":

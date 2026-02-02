@@ -6,12 +6,14 @@ or trigger based on conditions.
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Callable
+
 from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
-    from combat_result import CombatResult
+    from src.core.combat.combat_result import CombatResult
 
 
 class ConditionalEffect(Effect):

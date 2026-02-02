@@ -2,9 +2,12 @@
 Ultimate Armor Shop for Dungeon
 Handles the special armor crafting encounter in the dungeon depths.
 """
-import pygame
+
 import time
-from ...core import items
+
+import pygame
+
+from src.core import items
 
 
 class UltimateArmorShop:

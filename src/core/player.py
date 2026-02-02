@@ -5,38 +5,13 @@ This module defines the player character and its attributes and actions.
 import glob
 import os
 import random
-import time
 
 import numpy
 
-from . import abilities
-from .battle import BattleManager
-from .combat.enhanced_manager import EnhancedBattleManager
+from . import abilities, enemies
 from .character import Character
-from . import enemies
 from .items import remove_equipment
 from .save_system import SaveManager
-
-# Feature flag: Set to True to use enhanced combat with action queue
-USE_ENHANCED_COMBAT = True
-
-# Dynamic UI module import
-def _get_ui_module():
-    """Get the appropriate UI module for UI components."""
-    try:
-        from src.ui_curses import menus
-        return menus
-    except ImportError:
-        return None
-
-_ui_module = None
-
-def _ensure_ui_module():
-    """Ensure UI module is imported."""
-    global _ui_module
-    if _ui_module is None:
-        _ui_module = _get_ui_module()
-    return _ui_module
 
 
 DIRECTIONS = {
@@ -186,15 +161,9 @@ class Player(Character):
         map_str = map_str = "\n".join(" ".join(row) for row in map_array)
         return map_str
 
-    def load_tiles(self, map_tiles_module=None):
-        """Parses a file that describes the world space into the _world object
-        
-        Args:
-            map_tiles_module: The map_tiles module to use (allows UI-specific versions)
-        """
-        if map_tiles_module is None:
-            # Fallback to core map_tiles
-            from . import map_tiles as map_tiles_module
+    def load_tiles(self):
+        """Parses a file that describes the world space into the _world object"""
+        from . import map_tiles
             
         world_dict = {}
         map_files = glob.glob('map_files/map_level_*')
@@ -208,7 +177,7 @@ class Player(Character):
                 cols = rows[y].split('\t')
                 for x in range(x_max):
                     tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
-                    tile = getattr(map_tiles_module, tile_name)(x, y, z)
+                    tile = getattr(map_tiles, tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
         self.world_dict = world_dict
 
@@ -312,56 +281,58 @@ class Player(Character):
             weight += item[0].weight * len(item)
         return round(weight, 1)
 
-    def game_quit(self, game):
+    def game_quit(self, game=None, confirm_popup=None, textbox=None):
         """
-        Function that allows for exiting the game
+        Function that allows for exiting the game. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (optional, for UI context)
+            confirm_popup: Optional ConfirmPopupMenu UI component or factory
+            textbox: Optional TextBox UI component
+        Returns True if quit confirmed, else None.
         """
         confirm_str = "Are you sure you want to quit? Any unsaved data will be lost."
-        confirm = (_ensure_ui_module() or type("Stub", (), {})).ConfirmPopupMenu(game, confirm_str, box_height=8)
-        if confirm.navigate_popup():
-            gamequitbox = (_ensure_ui_module() or type("Stub", (), {})).TextBox(game)
-            gamequitbox.print_text_in_rectangle(f"Goodbye, {self.name}!")
-            game.stdscr.getch()
-            gamequitbox.clear_rectangle()
+        popup = None
+        # If confirm_popup is a class/factory, instantiate with message; else assume it's already an instance
+        if confirm_popup and callable(confirm_popup):
+            popup = confirm_popup(game, header_message=confirm_str)
+        elif confirm_popup:
+            popup = confirm_popup
+        if popup and popup.navigate_popup():
+            if textbox:
+                textbox.print_text_in_rectangle(f"Goodbye, {self.name}!")
             self.quit = True
             return True
 
-    def character_menu(self, game, **kwargs):
+    def character_menu(self, game=None, menu=None, textbox=None, actions_dict=None):
         """
-        Lists character options
+        Lists character options. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (optional, for UI context)
+            menu: Optional menu UI component
+            textbox: Optional TextBox UI component
+            actions_dict: Optional dict of action callbacks
+        Returns True if quit, else None.
         """
-        if game is None:
+        if not (menu and actions_dict):
             return
-        # Try to import from curses UI
-        try:
-            from src.ui_curses import menus
-            menu_class = menus.CharacterMenu
-            textbox_class = menus.TextBox
-        except ImportError:
-            # Can't proceed without UI modules
-            return
-        
         class_option = "Class Menu"
         class_action = None
         if "Summoner" in self.cls.name:
             class_option = "Summons"
-            class_action = actions_dict["Summons"]
-        character_options = [actions_dict['ViewInventory'], actions_dict["ViewKeyItems"], actions_dict["Equipment"],
-                             actions_dict['Specials'], actions_dict['ViewQuests'], class_action, "Exit Menu", actions_dict['Quit']]
+            class_action = actions_dict.get("Summons")
+        character_options = [actions_dict.get('ViewInventory'), actions_dict.get("ViewKeyItems"), actions_dict.get("Equipment"),
+                             actions_dict.get('Specials'), actions_dict.get('ViewQuests'), class_action, "Exit Menu", actions_dict.get('Quit')]
         options = ["Inventory", "Key Items", "Equipment", "Specials", "Quests", class_option, "Exit Menu", "Quit Game"]
-        menu = menu_class(game, options)
+        menu.set_options(options)
         menu.draw_all()
         while True:
             character_idx = menu.navigate_menu()
             action = character_options[character_idx]
             if action == "Exit Menu":
                 break
-            if action is None:
-                textbox = textbox_class(game)
+            if action is None and textbox:
                 textbox.print_text_in_rectangle("Your class does not have a special menu.\n")
-                game.stdscr.getch()
-                textbox.clear_rectangle()
-            else:
+            elif isinstance(action, dict) and 'method' in action:
                 action['method'](self, game)
                 if self.quit:
                     return True
@@ -546,14 +517,12 @@ class Player(Character):
             textbox.clear_rectangle()
         
         if self.level.level % 4 == 0:
-            stat_message = "Pick the stat you would like to increase."
             stat_options = [f'Strength - {self.stats.strength}',
                             f'Intelligence - {self.stats.intel}',
                             f'Wisdom - {self.stats.wisdom}',
                             f'Constitution - {self.stats.con}',
                             f'Charisma - {self.stats.charisma}',
                             f'Dexterity - {self.stats.dex}']
-            
             # Only show stat selection if menu is provided
             if menu and game:
                 stat_idx = menu.navigate_popup()
@@ -579,9 +548,15 @@ class Player(Character):
                 game.stdscr.getch()
                 textbox.clear_rectangle()
 
-    def open_up(self, game):
+    def open_up(self, game=None, textbox=None, battle_manager=None):
+        """
+        Handles opening chests and doors. UI and combat logic must be provided by the frontend.
+        Args:
+            game: Game instance (optional, for UI context)
+            textbox: Optional TextBox UI component
+            battle_manager: Optional callable/class for handling battles
+        """
         tile = self.world_dict[(self.location_x, self.location_y, self.location_z)]
-        openupbox = (_ensure_ui_module() or type("Stub", (), {})).TextBox(game)
         if 'Chest' in str(tile):
             locked = int('Locked' in str(tile))
             plus = int('ChestRoom2' in str(tile))
@@ -589,30 +564,25 @@ class Player(Character):
             if not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10:
                 enemy = enemies.Mimic(self.location_z + locked + plus)
                 tile.enemy = enemy
-                openupbox.print_text_in_rectangle("There is a Mimic in the chest!")
+                if textbox:
+                    textbox.print_text_in_rectangle("There is a Mimic in the chest!")
                 self.state = 'fight'
-                if USE_ENHANCED_COMBAT:
-                    battle = EnhancedBattleManager(game, enemy, use_queue=True)
-                else:
-                    battle = BattleManager(game, enemy)
-                battle.execute_battle()
+                if battle_manager:
+                    battle_manager(game, enemy)
             if self.is_alive():
                 tile.open = True
                 loot = tile.loot()
-                openupbox.print_text_in_rectangle(
-                    f"{self.name} opens the chest, containing {gold} gold and a {loot.name}.")
-                game.stdscr.getch()
-                openupbox.clear_rectangle()
+                if textbox:
+                    textbox.print_text_in_rectangle(
+                        f"{self.name} opens the chest, containing {gold} gold and a {loot.name}.")
                 self.modify_inventory(loot, 1)
                 self.gold += gold
         elif 'Door' in str(tile):
             tile.open = True
-            openupbox.print_text_in_rectangle(f"{self.name} opens the door.")
-            game.stdscr.getch()
-            openupbox.clear_rectangle()
+            if textbox:
+                textbox.print_text_in_rectangle(f"{self.name} opens the door.")
         else:
             raise AssertionError("Something is not working. Check code.")
-        openupbox.clear_rectangle()
 
     def loot(self, enemy, tile):
         loot_message = ""
@@ -681,45 +651,44 @@ class Player(Character):
                 loot_message += self.quests(item=item)
         return loot_message
 
-    def inventory_screen(self, game):
-        inv_popup = (_ensure_ui_module() or type("Stub", (), {})).InventoryPopupMenu(game, "Inventory")
+    def inventory_screen(self, game, inv_popup=None, confirm_popup=None, useitembox=None):
+        """Inventory screen logic, now UI-agnostic. UI components must be provided by the frontend."""
+        if inv_popup is None:
+            raise ValueError("UI component 'inv_popup' must be provided by the frontend.")
         while True:
             item = inv_popup.navigate_popup()
             if item == "Go Back":
                 return
             if self.usable_item(item):
-                popup = (_ensure_ui_module() or type("Stub", (), {})).ConfirmPopupMenu(game, f"Do you want to use the {item.name}", box_height=7)
+                if confirm_popup is None:
+                    raise ValueError("UI component 'confirm_popup' must be provided by the frontend.")
+                popup = confirm_popup(game, f"Do you want to use the {item.name}", box_height=7)
                 if popup.navigate_popup():
                     use_str = item.use(self)
                     if use_str:
-                        useitembox = (_ensure_ui_module() or type("Stub", (), {})).TextBox(game)
+                        if useitembox is None:
+                            raise ValueError("UI component 'useitembox' must be provided by the frontend.")
                         useitembox.print_text_in_rectangle(use_str)
                         game.stdscr.getch()
                         useitembox.clear_rectangle()
                     if "Sanctuary" in item.name:
                         return
 
-    def key_item_screen(self, game):
-        inv_popup = (_ensure_ui_module() or type("Stub", (), {})).InventoryPopupMenu(game, "Key Items")
+    def key_item_screen(self, game, inv_popup=None):
+        """Key item screen logic, now UI-agnostic. UI component must be provided by the frontend."""
+        if inv_popup is None:
+            raise ValueError("UI component 'inv_popup' must be provided by the frontend.")
         while True:
             item = inv_popup.navigate_popup()
             if item == "Go Back":
                 return
 
-    def equipment_screen(self, game, popup=None):
-        if popup is None:
-            ui = _ensure_ui_module()
-            if not ui:
-                return
-            popup = ui.EquipPopupMenu(game, "Select Equipment", 15)
+    def equipment_screen(self, game, popup):
+        """Equipment screen logic, now UI-agnostic. UI component must be provided by the frontend."""
         popup.navigate_popup()
 
-    def abilities_screen(self, game, popup=None):
-        if popup is None:
-            ui = _ensure_ui_module()
-            if not ui:
-                return
-            popup = ui.AbilitiesPopupMenu(game, "Abilities")
+    def abilities_screen(self, game, popup):
+        """Abilities screen logic, now UI-agnostic. UI component must be provided by the frontend."""
         popup.navigate_popup()
 
     def save(self, game=None, tmp=False, filepath=None, confirm_popup=None, save_popup=None):
@@ -975,13 +944,13 @@ class Player(Character):
 
         self.facing = directions[new_idx]
 
-    def turn_left(self, game):
+    def turn_left(self):
         self.turn("left")
 
-    def turn_right(self, game):
+    def turn_right(self):
         self.turn("right")
 
-    def turn_around(self, game):
+    def turn_around(self):
         self.turn("around")
 
     def stairs(self, dz):
@@ -989,10 +958,10 @@ class Player(Character):
         self.previous_location = (self.location_x, self.location_y, self.location_z)
         self.location_z += dz
 
-    def stairs_up(self, game):
+    def stairs_up(self):
         self.stairs(dz=-1)
 
-    def stairs_down(self, game):
+    def stairs_down(self):
         self.stairs(dz=1)
 
     def change_location(self, x, y, z):
@@ -1000,9 +969,13 @@ class Player(Character):
         self.location_y = y
         self.location_z = z
 
-    def death(self, game):
+    def death(self, textbox=None):
         """
-        Controls what happens when you die; no negative affect will occur for players under level 10
+        Controls what happens when you die; no negative affect will occur for players under level 10.
+        UI logic must be provided by the frontend.
+
+        Args:
+            textbox: Optional TextBox UI component
         """
         death_message = ""
         stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
@@ -1033,12 +1006,8 @@ class Player(Character):
         self.effects(end=True)
         self.to_town()
         death_message += "You wake up in town.\n"
-        ui = _ensure_ui_module()
-        if ui:
-            deathbox = ui.TextBox(game)
-            deathbox.print_text_in_rectangle(death_message)
-            game.stdscr.getch()
-            deathbox.clear_rectangle()
+        if textbox:
+            textbox.print_text_in_rectangle(death_message)
 
     def class_upgrades(self, game, enemy):
         upgrade_str = ""
@@ -1210,8 +1179,17 @@ class Player(Character):
         return transform_str
 
     def end_combat(self, game, enemy, tile, flee=False, summon=None, textbox=None):
+        """
+        Handles end of combat. UI logic must be provided by the frontend.
+        Args:
+            game: Game instance (optional, for UI context)
+            enemy: Enemy instance
+            tile: Tile instance
+            flee: Whether the player fled
+            summon: Summon instance (optional)
+            textbox: Optional TextBox UI component
+        """
         self.state = 'normal'
-        endcombatbox = textbox
         # Only transform back if character is currently transformed
         if self.cls != self.transform_type:
             self.transform(back=True)
@@ -1236,11 +1214,8 @@ class Player(Character):
             self.kill_dict[enemy.enemy_typ][enemy.name] += 1
             endcombat_str += self.loot(enemy, tile)
             endcombat_str += self.quests(enemy=enemy)
-            if endcombatbox:
-                endcombatbox.print_text_in_rectangle(endcombat_str)
-                time.sleep(0.25)
-                game.stdscr.getch()
-                endcombatbox.clear_rectangle()
+            if textbox:
+                textbox.print_text_in_rectangle(endcombat_str)
             self.level.exp += enemy.experience
             self.class_upgrades(game, enemy)
             if not self.max_level():
@@ -1252,15 +1227,12 @@ class Player(Character):
         elif flee:
             pass
         else:
-            if endcombatbox:
-                endcombatbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
-                time.sleep(0.5)
-                game.stdscr.getch()
-                endcombatbox.clear_rectangle()
+            if textbox:
+                textbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
             enemy.effects(end=True)
             enemy.health.current = enemy.health.max
             enemy.mana.current = enemy.mana.max
-            self.death(game)
+            self.death()
 
     def quests(self, enemy=None, item=None):
         quest_message = ""
@@ -1299,12 +1271,8 @@ class Player(Character):
                     self.quest_dict['Main']['The Holy Relics']['Completed'] = True
         return quest_message
 
-    def quests_screen(self, game, popup=None):
-        if popup is None:
-            ui = _ensure_ui_module()
-            if not ui:
-                return
-            popup = ui.QuestListPopupMenu(game, "Quests")
+    def quests_screen(self, game, popup):
+        """Quests screen logic, now UI-agnostic. UI component must be provided by the frontend."""
         popup.navigate_popup()
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
@@ -1441,78 +1409,82 @@ class Player(Character):
         return 0
 
     def special_power(self, game):
-        """
-        Player attains power up following quest to find the Power Core, used to give Golems life
-        Each class has a unique combat ability (* means implemented)
+            """
+            Player attains power up following quest to find the Power Core, used to give Golems life
+            Each class has a unique combat ability or passive that is activated upon receiving the Power Core
 
-        *Berserker - Blood Rage(passive): attack increases as health decreases; if below 30% health, bonus to defense
-        *Crusader - Divine Aegis: create shell that absorbs damage and increases healing; if the shield survives
-          the full duration, it will explode and deal holy damage to the enemy
-        *Dragoon - Dragon's Fury(passive): attack and defense double for each successive hit; a miss resets this buff
-        Stalwart Defender - 
-        *Wizard - Spell Mastery(passive): automatically triggers when no spells can be cast due to low mana; all spells
-          become free for a short time and mana regens based on damage dealt
-        *Shadowcaster - Veil of Shadows(passive): become one with the darkness, making the player invisible to most enemies
-          and making them harder to hit; increases damage of initial attack if first
-        *Knight Enchanter - Arcane Blast: blast the enemy with a powerful attack, draining all remaining mana points; mana
-          will regen in full over the next 4 turns (25% per turn)
-        Summoner - 
-        *Rogue - Stroke of Luck(passive): the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, including
-          dodge and critical chance
-        *Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as 
-          well as chance to dodge/parry attacks
-        *Ninja - Blade of Fatalities: sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing
-          damage dealt and absorbing it into the user
-        Arcane Trickster - 
-        *Templar - Holy Retribution: a radiant shield envelopes the Templar, reflecting damage back at the attacker; while
-          the shield is active, attack damage and chance to dodge/parry increase
-        *Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and 
-          holy damage for duration
-        *Master Monk - Dim Mak: unleash a powerful attack that deals heavy damage and can either stun or in some cases 
-          kill the target; if the target is killed, the user will absorb the enemy's essence and will be regenerated by
-          its max health and mana
-        Troubadour - 
-        *Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
-          damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
-          will be unable to transform back until after the battle
-        *Geomancer - Tetra-Disaster: unleash a powerful attack consisting of all 4 elements; this will also increase resistance
-          of caster to the 4 elements by 50%
-        *Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
-          that enemy type
-        Beast Master - 
-        """
+            Berserker - Blood Rage(passive): attack increases as health decreases; if below 30% health, bonus to defense
+            Crusader - Divine Aegis: create shell that absorbs damage and increases healing; if the shield survives
+                the full duration, it will explode and deal holy damage to the enemy
+            Dragoon - Dragon's Fury(passive): attack and defense double for each successive hit; a miss resets this buff
+            Stalwart Defender - 
+            Wizard - Spell Mastery(passive): automatically triggers when no spells can be cast due to low mana; all spells
+                become free for a short time and mana regens based on damage dealt
+            Shadowcaster - Veil of Shadows(passive): become one with the darkness, making the player invisible to most enemies
+                and making them harder to hit; increases damage of initial attack if first
+            Knight Enchanter - Arcane Blast: blast the enemy with a powerful attack, draining all remaining mana points; mana
+                will regen in full over the next 4 turns (25% per turn)
+            Summoner - Eternal Conduit (passive): The Summoner's bond with their summons is so strong that they gain a portion of all healing and buffs their summons receive, and their summons gain a portion of all healing and buffs the Summoner receives.
+            Rogue - Stroke of Luck(passive): the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, including
+                dodge and critical chance
+            Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as 
+                well as chance to dodge/parry attacks
+            Ninja - Blade of Fatalities: sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing
+                damage dealt and absorbing it into the user
+            Arcane Trickster - 
+            Templar - Holy Retribution: a radiant shield envelopes the Templar, reflecting damage back at the attacker; while
+                the shield is active, attack damage and chance to dodge/parry increase
+            Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and 
+                holy damage for duration
+            Master Monk - Dim Mak: unleash a powerful attack that deals heavy damage and can either stun or in some cases 
+                kill the target; if the target is killed, the user will absorb the enemy's essence and will be regenerated by
+                its max health and mana
+            Troubadour - Song of Inspiration (passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats and occasionally removing negative status effects at the start of combat.
+            Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
+                damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
+                will be unable to transform back until after the battle
+            Geomancer - Tetra-Disaster: unleash a powerful attack consisting of all 4 elements; this will also increase resistance
+                of caster to the 4 elements by 50%
+            Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
+                that enemy type
+            Beast Master - Pack Bond (passive): The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect.
+            """
 
-        powerup_dict = {
-            "Berserker": abilities.BloodRage,
-            "Crusader": abilities.DivineAegis,
-            "Dragoon": abilities.DragonsFury,
-            "Wizard": abilities.SpellMastery,
-            "Shadowcaster": abilities.VeilShadows,
-            "Knight Enchanter": abilities.ArcaneBlast,
-            "Rogue": abilities.StrokeLuck,
-            "Seeker": abilities.EyesUnseen,
-            "Ninja": abilities.BladeFatalities,
-            "Templar": abilities.HolyRetribution,
-            "Archbishop": abilities.GreatGospel,
-            "Master Monk": abilities.DimMak,
-            "Lycan": abilities.LunarFrenzy,
-            "Geomancer": abilities.TetraDisaster,
-            "Soulcatcher": abilities.SoulHarvest
-        }
-        game.special_event("Power Up")
-        skill = powerup_dict[self.cls.name]()
-        self.spellbook['Skills'][skill.name] = skill
-        self.power_up = True
-        if self.cls.name == "Shadowcaster":
-            self.invisible = True
-        return f"You gain the skill {skill.name}.\n"
+            powerup_dict = {
+                    "Berserker": abilities.BloodRage,
+                    "Crusader": abilities.DivineAegis,
+                    "Dragoon": abilities.DragonsFury,
+                    "Wizard": abilities.SpellMastery,
+                    "Shadowcaster": abilities.VeilShadows,
+                    "Knight Enchanter": abilities.ArcaneBlast,
+                    "Summoner": abilities.EternalConduit,
+                    "Rogue": abilities.StrokeLuck,
+                    "Seeker": abilities.EyesUnseen,
+                    "Ninja": abilities.BladeFatalities,
+                    "Templar": abilities.HolyRetribution,
+                    "Archbishop": abilities.GreatGospel,
+                    "Master Monk": abilities.DimMak,
+                    "Troubadour": abilities.SongInspiration,
+                    "Lycan": abilities.LunarFrenzy,
+                    "Geomancer": abilities.TetraDisaster,
+                    "Soulcatcher": abilities.SoulHarvest,
+                    "Beast Master": abilities.PackBond
+            }
+            game.special_event("Power Up")
+            skill = powerup_dict[self.cls.name]()
+            self.spellbook['Skills'][skill.name] = skill
+            self.power_up = True
+            if self.cls.name == "Shadowcaster":
+                    self.invisible = True
+            return f"You gain the skill {skill.name}.\n"
 
-    def summon_menu(self, game):
+    def summon_menu(self, game, summonpopup=None, summonbox=None):
+        """Summon menu logic, now UI-agnostic. UI components must be provided by the frontend."""
+        if summonpopup is None or summonbox is None:
+            raise ValueError("UI components 'summonpopup' and 'summonbox' must be provided by the frontend.")
         summon_names = list(self.summons)
-        summonpopup = (_ensure_ui_module() or type("Stub", (), {})).SelectionPopupMenu(game, "Summons", summon_names, confirm=False)
         summon_idx = summonpopup.navigate_popup()
         summon = self.summons[summon_names[summon_idx]]
-        summonbox = (_ensure_ui_module() or type("Stub", (), {})).TextBox(game)
         summonbox.print_text_in_rectangle(summon.inspect())
         game.stdscr.getch()
         summonbox.clear_rectangle()

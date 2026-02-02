@@ -12,9 +12,22 @@ class Race:
     Class restriction lists the available classes for each race
     Resistance describes each race's resistances to magic
     """
-    def __init__(self, name, description, strength, intel, wisdom, con, charisma, dex,
-                 base_attack, base_defense, base_magic, base_magic_def,
-                 cls_res, resistance):
+    def __init__(self,
+                 name: str,
+                 description: str,
+                 strength: int,
+                 intel: int,
+                 wisdom: int,
+                 con: int,
+                 charisma: int,
+                 dex: int,
+                 base_attack: int,
+                 base_defense: int,
+                 base_magic: int,
+                 base_magic_def: int,
+                 cls_res: dict,
+                 resistance: dict,
+                 ):
         self.name = name
         self.description = "\n".join(wrap(description, 75, break_on_hyphens=False))
         self.strength = strength

@@ -4,7 +4,7 @@ Load Game screen for Pygame GUI - matches the shop layout with character details
 
 import pygame
 
-from ...core.save_system import SaveManager
+from src.core.save_system import SaveManager
 
 
 class LoadGameScreen:

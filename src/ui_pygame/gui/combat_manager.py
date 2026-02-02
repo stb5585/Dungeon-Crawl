@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import pygame
 
-from ...core.character import Character
-from ...core.player import Player
+from src.core.character import Character
+from src.core.combat.battle_logger import BattleLogger
+from src.core.player import Player
 from .combat_view import CombatView
 from .level_up import LevelUpScreen
 
@@ -22,6 +23,7 @@ class GUICombatManager:
         self.game = game
         self.combat_view = CombatView(self.screen, presenter)
         self.level_up_screen = LevelUpScreen(self.screen, presenter)
+        self.logger = BattleLogger()
         self.running = False
         # References to dungeon rendering (set by dungeon_manager)
         self.dungeon_renderer = None
@@ -33,7 +35,7 @@ class GUICombatManager:
             return result
         
         # Handle CombatResult object
-        from src.core.combat_result import CombatResult
+        from src.core.combat.combat_result import CombatResult
         if isinstance(result, CombatResult):
             # Build a message from the CombatResult
             msg_parts = []
@@ -98,6 +100,15 @@ class GUICombatManager:
         self.combat_view.combat_log.clear()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         
+        # Initialize combat state
+        self.running = True
+        self.combat_view.combat_log.clear()
+        self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
+        
+        # Initialize battle logger
+        boss = "Boss" in str(tile)
+        player_initiative = True
+        
         # Show initial combat screen with brief transition delay
         self._render_combat_frame(player_char, enemy, [], -1)
         pygame.display.flip()
@@ -107,6 +118,7 @@ class GUICombatManager:
         # Encumbered player always loses initiative
         if player_char.encumbered:
             first = enemy
+            player_initiative = False
         else:
             p_chance = player_char.check_mod("speed", enemy=enemy) + \
                        player_char.check_mod('luck', enemy=enemy, luck_factor=10)
@@ -121,6 +133,11 @@ class GUICombatManager:
             else:
                 # Fallback to simple dex comparison
                 first = player_char if player_char.stats.dex >= enemy.stats.dex else enemy
+            
+            player_initiative = (first == player_char)
+        
+        # Start logging battle
+        self.logger.start_battle(player_char, enemy, player_initiative, boss)
         
         if first == player_char:
             attacker, defender = player_char, enemy
@@ -165,6 +182,9 @@ class GUICombatManager:
                 
                 # Switch to player turn
                 attacker, defender = player_char, enemy
+            
+            # Advance turn counter in logger
+            self.logger.next_turn()
             
             # Small delay between turns
             pygame.time.wait(300)
@@ -275,10 +295,22 @@ class GUICombatManager:
         """Execute a player action."""
         if action == "Attack":
             # Execute attack using weapon_damage method (same as battle.py)
-            message, hit, _ = player_char.weapon_damage(enemy)
+            message, hit, damage = player_char.weapon_damage(enemy)
             
             # Add the combat message
             self.combat_view.add_combat_message(message.strip())
+            
+            # Log attack event
+            flags = ["hit"] if hit else ["miss"]
+            self.logger.log_event(
+                event_type="attack",
+                actor=player_char,
+                target=enemy,
+                action="Attack",
+                outcome="Hit" if hit else "Miss",
+                damage=damage if hit else 0,
+                flags=flags
+            )
             
             # Show damage flash if hit
             if hit:
@@ -297,6 +329,14 @@ class GUICombatManager:
                 # Use the item
                 message = selected_item.use(player_char, target=player_char)
                 self.combat_view.add_combat_message(message.strip())
+                
+                # Log item usage
+                self.logger.log_event(
+                    event_type="item",
+                    actor=player_char,
+                    action=f"Used {selected_item.name}",
+                    outcome="Success"
+                )
                 return "action_taken"
             return None  # Cancelled, don't count as action
             
@@ -310,6 +350,15 @@ class GUICombatManager:
                     result = spell_obj.cast(player_char, target=enemy)
                     message = self._result_to_message(result)
                     self.combat_view.add_combat_message(message)
+                    
+                    # Log spell cast
+                    self.logger.log_event(
+                        event_type="spell",
+                        actor=player_char,
+                        target=enemy,
+                        action=f"Cast {selected_spell}",
+                        outcome="Success"
+                    )
                     return "action_taken"
                 else:
                     self.combat_view.add_combat_message("Not enough mana!")
@@ -326,6 +375,15 @@ class GUICombatManager:
                     result = skill_obj.use(player_char, target=enemy)
                     message = self._result_to_message(result)
                     self.combat_view.add_combat_message(message)
+                    
+                    # Log skill usage
+                    self.logger.log_event(
+                        event_type="skill",
+                        actor=player_char,
+                        target=enemy,
+                        action=f"Used {selected_skill}",
+                        outcome="Success"
+                    )
                     return "action_taken"
                 else:
                     self.combat_view.add_combat_message("Not enough mana!")
@@ -502,6 +560,15 @@ class GUICombatManager:
         # Check if enemy is stunned or asleep
         if enemy.status_effects.get('Stun') and enemy.status_effects['Stun'].active:
             self.combat_view.add_combat_message(f"{enemy.name} is stunned and cannot act!")
+            
+            # Log stunned turn
+            self.logger.log_event(
+                event_type="status",
+                actor=enemy,
+                action="Stunned",
+                outcome="Skip turn"
+            )
+            
             # Process status effects (tick down duration)
             effect_messages = self._process_status_effects(enemy)
             for msg in effect_messages:
@@ -510,6 +577,15 @@ class GUICombatManager:
         
         if enemy.status_effects.get('Sleep') and enemy.status_effects['Sleep'].active:
             self.combat_view.add_combat_message(f"{enemy.name} is asleep and cannot act!")
+            
+            # Log asleep turn
+            self.logger.log_event(
+                event_type="status",
+                actor=enemy,
+                action="Asleep",
+                outcome="Skip turn"
+            )
+            
             # Process status effects (tick down duration)
             effect_messages = self._process_status_effects(enemy)
             for msg in effect_messages:
@@ -522,10 +598,22 @@ class GUICombatManager:
         pygame.time.wait(500)  # Pause before enemy acts
         
         # Enemy attacks using weapon_damage method (same as battle.py)
-        message, hit, _ = enemy.weapon_damage(player_char)
+        message, hit, damage = enemy.weapon_damage(player_char)
         
         # Add the combat message
         self.combat_view.add_combat_message(message.strip())
+        
+        # Log enemy attack
+        flags = ["hit"] if hit else ["miss"]
+        self.logger.log_event(
+            event_type="attack",
+            actor=enemy,
+            target=player_char,
+            action="Attack",
+            outcome="Hit" if hit else "Miss",
+            damage=damage if hit else 0,
+            flags=flags
+        )
         
         # Show damage flash if hit
         if hit:
@@ -570,6 +658,10 @@ class GUICombatManager:
         
         if not player_char.is_alive():
             end_messages.append("You have been defeated!")
+            
+            # Log battle end
+            self.logger.end_battle(result="Defeat", winner=enemy.name, boss="Boss" in str(self.current_tile))
+            
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             
@@ -581,6 +673,9 @@ class GUICombatManager:
         
         elif not enemy.is_alive():
             end_messages.append(f"Victory! {enemy.name} defeated!")
+            
+            # Log victory
+            self.logger.end_battle(result="Victory", winner=player_char.name, boss="Boss" in str(self.current_tile))
             
             # Trigger enemy death special effects (like Behemoth's Meteor)
             if hasattr(enemy, 'special_effects'):
@@ -638,6 +733,10 @@ class GUICombatManager:
         
         elif fled:
             end_messages.append("You fled from combat!")
+            
+            # Log fled battle
+            self.logger.end_battle(result="Fled", winner=None, boss="Boss" in str(self.current_tile))
+            
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             

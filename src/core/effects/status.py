@@ -1,12 +1,13 @@
 # effects/status.py
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
-    from combat_result import CombatResult
+    from src.core.combat.combat_result import CombatResult
 
 
 class StatusEffect(Effect):

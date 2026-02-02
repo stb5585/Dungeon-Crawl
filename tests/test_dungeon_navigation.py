@@ -7,6 +7,7 @@ This simulates the key presses without needing the full GUI.
 from src.core.player import Player, DIRECTIONS
 from src.core.character import Combat, Level, Resource, Stats
 
+
 def test_movement():
     """Test that movement logic works correctly."""
     print("="*70)
@@ -102,6 +103,7 @@ def test_movement():
     print()
     print("If all tests passed, the dungeon navigation should work!")
     print("Try running the game with: python pygame_game.py")
+
 
 if __name__ == '__main__':
     test_movement()

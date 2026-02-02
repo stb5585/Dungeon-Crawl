@@ -9,7 +9,7 @@ import os
 import pygame
 from PIL import Image
 
-from ...core.player import DIRECTIONS
+from src.core.player import DIRECTIONS
 
 
 class EnhancedDungeonRenderer:

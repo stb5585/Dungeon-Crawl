@@ -13,9 +13,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from typing import Callable, Any
+
     from character import Character
 
 
@@ -60,7 +62,7 @@ class ScheduledAction:
     action_type: ActionType
     target: Character | None
     priority: ActionPriority
-    callback: Callable
+    callback: Callable[..., Any]
     delay: int = 0
     params: dict[str, Any] = field(default_factory=dict)
     speed_modifier: float = 1.0
@@ -109,7 +111,7 @@ class ActionQueue:
         self,
         actor: Character,
         action_type: ActionType,
-        callback: Callable,
+        callback: Callable[..., Any],
         target: Character | None = None,
         priority: ActionPriority = ActionPriority.NORMAL,
         delay: int = 0,
@@ -297,7 +299,7 @@ class TurnManager:
 def create_attack_action(
     actor: Character,
     target: Character,
-    attack_callback: Callable,
+    attack_callback: Callable[..., Any],
     fast: bool = False
 ) -> ScheduledAction:
     """
@@ -328,7 +330,7 @@ def create_attack_action(
 def create_spell_action(
     actor: Character,
     target: Character,
-    spell_callback: Callable,
+    spell_callback: Callable[..., Any],
     cast_time: int = 0,
 ) -> ScheduledAction:
     """

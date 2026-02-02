@@ -4,8 +4,10 @@ Sprite Generator - Creates placeholder sprites for Dungeon Crawl.
 This module generates simple, recognizable sprites programmatically using Pygame.
 These can be replaced with actual artwork later.
 """
-import pygame
+
 import os
+
+import pygame
 
 # Color palette
 COLORS = {

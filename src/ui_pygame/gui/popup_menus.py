@@ -4,7 +4,7 @@ Docstring for gui.popup_menus
 
 import pygame
 
-from ...core import items
+from src.core import items
 from .confirmation_popup import ConfirmationPopup
 
 
@@ -1134,6 +1134,9 @@ class SimpleListPopupMenu(BasePopupMenu):
             if isinstance(entry, str) and entry.strip().startswith("---") and entry.strip().endswith("---"):
                 # Treat as header row
                 self.items.append({"is_header": True, "text": entry})
+            elif isinstance(entry, dict) and "text" in entry:
+                # Entry is already a properly formatted dict (e.g., from _get_key_items_list with quantities)
+                self.items.append(entry)
             else:
                 if isinstance(entry, object) and not isinstance(entry, str):
                     self.items.append({"is_header": False, "text": getattr(entry, 'name', str(entry)), "value": entry})

@@ -9,19 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-# Import BattleManager from battle.py (renamed to avoid package conflict)
-from ..battle import BattleManager as BaseBattleManager
-
-# Import from the combat/ package
-from .action_queue import ActionQueue, ActionType, ActionPriority, ScheduledAction
-
-# Import event system
-from ..events import get_event_bus, create_combat_event, EventType
+from src.core.combat.action_queue import ActionQueue, ActionType, ActionPriority, ScheduledAction
+from src.core.events import get_event_bus, create_combat_event, EventType
+from .battle import BattleManager as BaseBattleManager
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from ..character import Character
+    from src.core.character import Character
 
 
 class EnhancedBattleManager(BaseBattleManager):

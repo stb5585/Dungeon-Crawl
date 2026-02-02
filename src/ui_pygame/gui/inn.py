@@ -6,97 +6,11 @@ Implements the core tavern logic from town.py adapted for Pygame presenter.
 import random
 import textwrap
 
+from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES
 from .level_up import LevelUpScreen
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
 from .town_base import TownScreenBase
-
-
-# Patron dialogue keyed by minimum total level (base + promotions)
-PATRON_DIALOGUES = {
-    "Barkeep": {
-        1: [
-            "If you want to access the character menu, you can do so by hitting the (c) button.",
-            "Make sure to stop by from time to time. You never know who might show up.",
-            "Equipment vendors will show you how an item can improve or hurt your fighting ability. If an item type doesn't show any change, your class can't use it.",
-            "Heavier armor provides better protection but lowers your mobility in combat. Choose carefully.",
-        ],
-        5: [
-            "How did you like that stat bonus at level 4? You get another every 4th level, so plan your promotions accordingly.",
-            "If you get a quest from someone, come back and talk with them after it is completed and they will likely reward you for your efforts.",
-        ],
-        10: [
-            "Locked chests contain more powerful items compared with unlocked ones, however you need a key or a lockpick to get to the treasure.",
-            "Boss enemies have true sight, so that Invisibility Pendant is useless against them.",
-            "Some status effects last until the end of combat or until healed. Make sure to stock up on potions!",
-        ],
-    },
-    "Waitress": {
-        1: [
-            "Entering the town will replenish your health and mana. Seems like you could take advantage of that.",
-            "Sorry, I can't talk now! I am getting married and need to make as much money as I can.",
-        ],
-        5: [
-            "Some spells can be cast outside of battle. You can do so in the Character Menu after inspecting the spell.",
-        ],
-        10: [
-            "(sobbing) I can't believe it...a week before our wedding and my husband to be decides to join the fight against the prime evil...I want to be mad but he says he can't stand by when I am in danger. My hero...",
-        ],
-        25: [
-            "Joffrey returned yesterday bloodied but resolute. He has gained much experience and hopes to have found the source of our suffering by month's end. I gave him my lucky pendant to return to me when his mission is complete.",
-        ],
-    },
-    "Soldier": {
-        10: [
-            "You may find locked doors along your path while exploring the dungeon. You can't open these with just any old key, you need an actual Old Key.",
-            "Watch your carry weight in the Character Menu. If you try to carry more than you can manage, you will become encumbered, which affects your speed in combat.",
-            "Check the shops periodically, you may notice new items available to buy.",
-        ],
-        25: [
-            "I just finished my shift guarding the old warehouse behind the barracks. They won't tell us what's in there but I have seen several scientists come and go.",
-        ],
-        65: [
-            "The Devil is immune to normal weapons but legend says there is a material that will do the job.",
-        ],
-    },
-    "Drunkard": {
-        8: ["(hic)...I am not as think as you drunk I am...(hic)"],
-        25: ["Do you see (hic) that person in the corner? What's their deal, TAKE THE HOOD OFF ALREADY!...ah whatever..."],
-        30: ["(hic)...I heard tell there were secret passages...(hic) in the dungeon."],
-        65: [
-            "We are all praying for your success and survival!",
-            "Rutger used to talk about a so-called Master key, that could open any lock. I wonder how much truth was in that.",
-        ],
-    },
-    "Busboy": {
-        1: [
-            "The waitress left crying some time ago...sounds like her fiance was killed in the dungeons.",
-            "Entering the town will replenish your health and mana. Seems like you could take advantage of that.",
-            "Some spells can be cast outside of battle. You can do so in the Character Menu after inspecting the spell.",
-            "The guy in the corner gives me the creeps...tips well though.",
-        ],
-    },
-    "Hooded Figure": {
-        25: ["..."],
-        35: ["Hmm...interesting..."],
-        50: ["Your power has grown...I am impressed."],
-        60: ["Have you defeated the Red Dragon yet?"],
-    },
-}
-
-# General tavern flavor comments used when no quests are available/active
-TAVERN_FLAVOR_DIALOGUES = [
-    "I heard there are powerful artifacts deep in the dungeon...",
-    "Many adventurers have entered the dungeon, but few return.",
-    "They say the evil grows stronger with each passing day.",
-    "Be careful down there, adventurer. The monsters are cunning.",
-    "I lost my brother to the dungeon. Please, be safe.",
-    "The blacksmith Griswold is the best in the kingdom!",
-    "If you need potions, visit the alchemist. They saved my life once.",
-    "I've heard rumors of a secret shop somewhere in the depths...",
-    "The barracks offers bounties for hunting dangerous creatures.",
-    "Some say there's treasure beyond imagination in the depths."
-]
 
 
 class InnManager(TownScreenBase):
@@ -117,8 +31,9 @@ class InnManager(TownScreenBase):
             choice_idx = inn_screen.navigate(inn_options)
             
             if choice_idx is None or choice_idx == 2:  # Leave
+                inn_bg = self.screen.copy()
                 popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
                 break
             
             elif choice_idx == 0:  # Talk to patrons
@@ -170,6 +85,7 @@ class InnManager(TownScreenBase):
         options.append('Back')
 
         patrons_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog - Patrons")
+        inn_bg = self.screen.copy()
         
         while True:
             choice = patrons_screen.navigate(options, reset_cursor=False)
@@ -183,7 +99,6 @@ class InnManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    background_draw_func=lambda: self.draw_background(),
                     quest_text_renderer=lambda text: patrons_screen.display_quest_text(text)
                 )
                 did_action, showed_message = qm.check_and_offer(patron, show_help=False, suppress_no_quests_message=True)
@@ -205,7 +120,7 @@ class InnManager(TownScreenBase):
                 # but keep a fallback to show a general tavern flavor comment.
                 patron_dialogue = random.choice(TAVERN_FLAVOR_DIALOGUES)
                 popup = ConfirmationPopup(self.presenter, patron_dialogue, show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
     
     def show_bounty_board(self):
         """Show and manage bounty quests from the tavern."""
@@ -239,6 +154,7 @@ class InnManager(TownScreenBase):
     def accept_bounty(self):
         """Accept a bounty from the board."""
         bounty_dict = self.player_char.quest_dict.get('Bounty', {})
+        inn_bg = self.screen.copy()
         
         # Get available bounties
         bounties_available = []
@@ -251,7 +167,7 @@ class InnManager(TownScreenBase):
         
         if not bounties_available:
             popup = ConfirmationPopup(self.presenter, "No new bounties available at this time.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
             return
         
         bounty_screen = LocationMenuScreen(self.presenter, "Accept Bounty")
@@ -281,13 +197,14 @@ class InnManager(TownScreenBase):
             f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
         )
         popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
-        popup.show(background_draw_func=lambda: self.draw_background())
+        popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
     
     def turn_in_bounty(self, completable):
         """Turn in completed bounties using the inn UI."""
+        inn_bg = self.screen.copy()
         if not completable:
             popup = ConfirmationPopup(self.presenter, "No bounties to turn in.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
             return
 
         bounty_screen = LocationMenuScreen(self.presenter, "Turn In Bounty")
@@ -302,7 +219,7 @@ class InnManager(TownScreenBase):
         bounty_data = self.player_char.quest_dict['Bounty'].get(bounty_name)
         if not bounty_data:
             popup = ConfirmationPopup(self.presenter, "That bounty is no longer available.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
             return
 
         bounty = bounty_data[0]
@@ -331,7 +248,7 @@ class InnManager(TownScreenBase):
 
         reward_msg = "\n".join(reward_lines)
         popup = ConfirmationPopup(self.presenter, reward_msg, show_buttons=False)
-        popup.show(background_draw_func=lambda: self.draw_background())
+        popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
 
         # Remove completed bounty
         del self.player_char.quest_dict['Bounty'][bounty_name]
@@ -348,8 +265,9 @@ class InnManager(TownScreenBase):
         bounty_dict = self.player_char.quest_dict.get('Bounty', {})
         
         if not bounty_dict:
+            inn_bg = self.screen.copy()
             popup = ConfirmationPopup(self.presenter, "No active bounties.\n\nCheck back later for new opportunities!", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(inn_bg, (0, 0)))
             return
         
         bounty_screen = LocationMenuScreen(self.presenter, "Active Bounties")

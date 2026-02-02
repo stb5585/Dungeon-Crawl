@@ -1,12 +1,14 @@
 ###########################################
 """ Curses menu classes """
 
-import curses
 import random
 import time
 from textwrap import wrap
 
-from ..core.save_system import SaveManager
+import curses
+
+from src.core.save_system import SaveManager
+from src.core.character import scaled_decay_function
 
 
 # functions
@@ -66,24 +68,6 @@ def ascii_art(filename):
     with open("ascii_files/" + filename, "r") as f:
         ascii_str = f.readlines()
     return [x for x in ascii_str if x.strip()]
-
-
-def scaled_decay_function(x, rate=0.1):
-    """
-    Returns a value between 0 and 1 that decreases as x increases.
-    
-    Args:
-        x (float): The input value, must be >= 0.
-        rate (float): The rate of decay; higher values make it decrease faster.
-
-    Returns:
-        float: A value between 0 and 1.
-    """
-
-    if x < 0:
-        raise ValueError("x must be non-negative.")
-    decay_value = 1 / (1 + rate * x)  # Exponential decay
-    return 0.5 + decay_value * 0.75  # Scale and shift to fit [0.5, 1.25]
 
 
 def save_file_popup(game, load=False):
@@ -1975,20 +1959,10 @@ class QuestListPopupMenu(PopupMenu):
 
 class TextBox:
     def __init__(self, game):
-        """Cross-backend text box.
-
-        - In curses mode, draws a bordered window and waits for key via `game.stdscr.getch()`.
-        - In Pygame GUI mode (when `game` has a `presenter`), shows a modal popup.
-        """
+        """Cross-backend text box."""
         self.game = game
-        self.is_pygame = hasattr(game, 'presenter') and game.presenter is not None
         self.win = None
-        if not self.is_pygame:
-            # Curses layout
-            self.height, self.width = game.stdscr.getmaxyx()
-        else:
-            # Pygame presenter fonts/screen
-            self.presenter = game.presenter
+        self.height, self.width = game.stdscr.getmaxyx()
 
     def print_text_in_rectangle(self, text):
         if "\n" in text:
@@ -2012,10 +1986,6 @@ class TextBox:
         self.win.refresh()
 
     def clear_rectangle(self):
-        if not self.is_pygame:
-            if self.win:
-                self.win.erase()
-                self.win.refresh()
-        else:
-            # No explicit clear needed; popup dismissed itself
-            pass
+        if self.win:
+            self.win.erase()
+            self.win.refresh()

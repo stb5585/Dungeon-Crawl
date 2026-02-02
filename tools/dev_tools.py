@@ -212,25 +212,25 @@ def main():
         epilog="""
 Examples:
   # Test loading abilities from data files
-  python dev_tools.py abilities --directory data/abilities
+  python tools/dev_tools.py abilities --directory src/core/data/abilities
   
   # Test a specific ability file
-  python dev_tools.py abilities --file data/abilities/fireball.yaml
+  python tools/dev_tools.py abilities --file src/core/data/abilities/fireball.yaml
   
   # Test the event system with verbose logging
-  python dev_tools.py events --verbose
+  python tools/dev_tools.py events --verbose
   
   # Test the action queue system
-  python dev_tools.py queue
+  python tools/dev_tools.py queue
   
   # Test the effect system
-  python dev_tools.py effects
+  python tools/dev_tools.py effects
   
   # Run balance simulations (placeholder)
-  python dev_tools.py balance --iterations 1000
+  python tools/dev_tools.py balance --iterations 1000
   
   # Generate sample ability YAML files
-  python dev_tools.py generate --output data/abilities
+  python tools/dev_tools.py generate --output src/core/data/abilities
         """
     )
     

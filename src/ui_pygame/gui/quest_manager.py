@@ -9,17 +9,17 @@ import random
 import textwrap
 from typing import Any
 
-from ...core import items
+from src.core import items
+from src.core.town import quest_dict, RESPONSE_MAP
 from .confirmation_popup import ConfirmationPopup
 from .level_up import LevelUpScreen
-from ...core.town import quest_dict
 
 
 class QuestManager:
-    def __init__(self, presenter, player_char, background_draw_func=None, quest_text_renderer=None, wrap_width=52):
+    def __init__(self, presenter, player_char, quest_text_renderer=None, wrap_width=52):
         self.presenter = presenter
+        self.screen = presenter.screen
         self.player_char = player_char
-        self.background_draw_func = background_draw_func
         self.quest_text_renderer = quest_text_renderer
         self.wrap_width = wrap_width  # characters
 
@@ -58,18 +58,19 @@ class QuestManager:
         main_list: list[dict[str, Any]] = []
         side_list: list[dict[str, Any]] = []
         for lvl, q in data.get("Main", {}).items():
-            if level >= lvl:
+            if level >= int(lvl):
                 main_list.append(q)
         for lvl, q in data.get("Side", {}).items():
-            if level >= lvl:
+            if level >= int(lvl):
                 side_list.append(q)
         return main_list, side_list
 
     def _turn_in(self, quest_name: str, typ: str) -> None:
+        loc_bg = self.screen.copy()
         # Prevent Debug quest interactions in non-debug mode
         if quest_name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
             popup = ConfirmationPopup(self.presenter, "This quest cannot be turned in.", show_buttons=False)
-            popup.show(background_draw_func=self.background_draw_func)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
             return
         
         qdata = self.player_char.quest_dict[typ][quest_name]
@@ -85,7 +86,7 @@ class QuestManager:
             else:
                 wrapped_end = "\n".join(textwrap.wrap(header_text, width=self.wrap_width))
                 popup = ConfirmationPopup(self.presenter, wrapped_end, show_buttons=False)
-                popup.show(background_draw_func=self.background_draw_func)
+                popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
 
         # Rewards
         exp = qdata.get('Experience', 0) * max(1, getattr(self.player_char.level, 'pro_level', 1))
@@ -123,7 +124,7 @@ class QuestManager:
                 self.quest_text_renderer(wrapped_message)
             else:
                 popup = ConfirmationPopup(self.presenter, wrapped_message, show_buttons=False)
-                popup.show(background_draw_func=self.background_draw_func)
+                popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
 
             # Then apply experience and trigger level-up(s)
             self.player_char.level.exp += exp
@@ -194,7 +195,7 @@ class QuestManager:
                             self.quest_text_renderer(format_item_info(item))
                         else:
                             popup = ConfirmationPopup(self.presenter, format_item_info(item), show_buttons=False)
-                            popup.show(background_draw_func=self.background_draw_func)
+                            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
                         confirm = self.presenter.render_menu(f"Take {item.name}?", ["Take", "Back"])
                         if confirm == 0:
                             for _ in range(reward_num):
@@ -227,7 +228,7 @@ class QuestManager:
             self.quest_text_renderer(combined_msg)
         else:
             popup = ConfirmationPopup(self.presenter, combined_msg, show_buttons=False)
-            popup.show(background_draw_func=self.background_draw_func)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
 
         # Then apply experience and trigger level-up(s)
         self.player_char.level.exp += exp
@@ -249,6 +250,7 @@ class QuestManager:
         return False
 
     def _offer(self, giver: str, quest_name: str, q: dict[str, Any], typ: str) -> bool:
+        loc_bg = self.screen.copy()
         # Offer quest via presenter
         text = q.get('Start Text', '')
         # Add quest name header for visibility
@@ -262,11 +264,11 @@ class QuestManager:
             self.quest_text_renderer(wrapped_text)
         else:
             popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
-            popup.show(background_draw_func=self.background_draw_func)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
         
         # Separate Accept/Decline menu as popup
         popup = ConfirmationPopup(self.presenter, "Accept this quest?")
-        if popup.show(background_draw_func=self.background_draw_func):
+        if popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0))):
             # Add a copy of quest to player quest log
             if typ not in self.player_char.quest_dict:
                 self.player_char.quest_dict[typ] = {}
@@ -298,16 +300,24 @@ class QuestManager:
                 except Exception:
                     pass
 
+            # Use personalized response from RESPONSE_MAP
+            response = RESPONSE_MAP.get(giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."])[0]
+            # Special case for Sergeant's Relics quest
+            if giver == "Sergeant" and quest_name == "The Holy Relics":
+                response += "\n\nMake sure to grab the health potions out of your storage locker if you haven't already."
+            
             popup = ConfirmationPopup(
                 self.presenter,
-                "Quest accepted! Check your quest log for details.",
+                response,
                 show_buttons=False,
             )
-            popup.show(background_draw_func=self.background_draw_func)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
             return True
         else:
-            popup = ConfirmationPopup(self.presenter, "Maybe next time.", show_buttons=False)
-            popup.show(background_draw_func=self.background_draw_func)
+            # Use personalized rejection response from RESPONSE_MAP
+            response = RESPONSE_MAP.get(giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."])[1]
+            popup = ConfirmationPopup(self.presenter, response, show_buttons=False)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
             return False
 
     def check_and_offer(self, giver: str, show_help: bool = True, suppress_no_quests_message: bool = False) -> tuple[bool, bool]:
@@ -320,6 +330,7 @@ class QuestManager:
         showed_message = False
         quest_was_offered = False
         mains, sides = self._eligible_quests(giver)
+        loc_bg = self.screen.copy()
 
         # Turn-in checks, then offers
         # Build flat (name, data) lists
@@ -400,11 +411,11 @@ class QuestManager:
                     self.quest_text_renderer(wrapped_hint)
                 else:
                     popup = ConfirmationPopup(self.presenter, wrapped_hint, show_buttons=False)
-                    popup.show(background_draw_func=self.background_draw_func)
+                    popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
                 showed_message = True
         elif not quest_was_offered and not suppress_no_quests_message:
             # Only show "no quests" if no quest was offered at all and not suppressed
             popup = ConfirmationPopup(self.presenter, "I have no new quests for you at this time.", show_buttons=False)
-            popup.show(background_draw_func=self.background_draw_func)
+            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
             showed_message = True
         return did_action, showed_message

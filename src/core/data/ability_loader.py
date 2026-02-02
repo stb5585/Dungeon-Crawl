@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from effects import (
+from ..effects import (
     DamageEffect,
     HealEffect,
     StatusEffect,
@@ -27,7 +27,7 @@ from effects import (
 if TYPE_CHECKING:
     from typing import Any
 
-    from effects.base import Effect
+    from ..effects.base import Effect
 
 
 class EffectFactory:

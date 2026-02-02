@@ -6,8 +6,9 @@ Displays level up bonuses and allows stat selection.
 import random
 
 import pygame
-from .stat_selection_popup import StatSelectionPopup
+
 from .level_up_popup import LevelUpPopup
+from .stat_selection_popup import StatSelectionPopup
 
 
 class LevelUpScreen:

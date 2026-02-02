@@ -1,11 +1,12 @@
 # effects/base.py
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from character import Character
-    from combat_result import CombatResult
+    from src.core.combat.combat_result import CombatResult
 
 
 class Effect(ABC):

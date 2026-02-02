@@ -5,10 +5,9 @@ Implements the core church logic from town.py adapted for Pygame presenter.
 
 import os
 
-from ...core import companions
+from src.core import companions
 from src.core.classes import classes_dict, apply_promotion_ability_rules
-from ...core.items import remove_equipment
-
+from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
@@ -28,13 +27,14 @@ class ChurchManager(TownScreenBase):
         church_options = ["Promotion", "Save Game", "Quests", "Leave"]
         
         church_screen = LocationMenuScreen(self.presenter, "Church of Elysia")
+        church_bg = self.screen.copy()
         
         while True:
             choice_idx = church_screen.navigate(church_options)
             
             if choice_idx is None or choice_idx == 3:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Let the light of Elysia guide you.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
                 break
             
             elif choice_idx == 0:  # Promotion
@@ -47,19 +47,19 @@ class ChurchManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    background_draw_func=lambda: self.draw_background(),
                     quest_text_renderer=lambda text: church_screen.display_quest_text(text)
                 )
                 qm.check_and_offer('Priest')
     
     def handle_promotion(self):
         """Handle class promotion at level 30."""
+        church_bg = self.screen.copy()
         if self.player_char.level.level < 30 or self.player_char.level.pro_level >= 3:
             if self.player_char.level.pro_level == 3:
                 popup = ConfirmationPopup(self.presenter, "You are at max promotion level and can no longer be promoted.", show_buttons=False)
             else:
                 popup = ConfirmationPopup(self.presenter, "You need to be level 30 before you can promote your character.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
             return
 
         current_class = self.player_char.cls.name
@@ -102,7 +102,7 @@ class ChurchManager(TownScreenBase):
 
         if not options:
             popup = ConfirmationPopup(self.presenter, "No promotion options are currently available.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
             return
 
         promo_screen = PromotionScreen(
@@ -116,13 +116,13 @@ class ChurchManager(TownScreenBase):
         chosen_name = promo_screen.navigate()
         if not chosen_name:
             popup = ConfirmationPopup(self.presenter, "Promotion cancelled.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
             return
 
         chosen_ctor = option_map.get(chosen_name)
         if not chosen_ctor:
             popup = ConfirmationPopup(self.presenter, "Promotion option unavailable.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
             return
 
         try:
@@ -156,7 +156,7 @@ class ChurchManager(TownScreenBase):
             ability_change_msg = apply_promotion_ability_rules(self.player_char, chosen_name)
             if ability_change_msg:
                 popup = ConfirmationPopup(self.presenter, ability_change_msg.strip(), show_buttons=False)
-                popup.show(background_draw_func=lambda: self.draw_background())
+                popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
 
             if chosen_name == "Warlock":
                 fam_options = ["Homunculus", "Fairy", "Mephit", "Jinkin"]
@@ -201,7 +201,7 @@ class ChurchManager(TownScreenBase):
                                 familiar.name = fam_name
                                 self.player_char.familiar = familiar
                                 popup = ConfirmationPopup(self.presenter, f"Your familiar {familiar.race} joins you as '{familiar.name}'.", show_buttons=False)
-                                popup.show(background_draw_func=lambda: self.draw_background())
+                                popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
 
             if chosen_name == "Summoner":
                 try:
@@ -209,18 +209,19 @@ class ChurchManager(TownScreenBase):
                     pet.initialize_stats(self.player_char)
                     self.player_char.summons[pet.name] = pet
                     popup = ConfirmationPopup(self.presenter, "You have learned to summon Patagon.", show_buttons=False)
-                    popup.show(background_draw_func=lambda: self.draw_background())
+                    popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
                 except Exception:
                     pass
 
             popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
     
     def save_game(self):
         """Save the game at the church."""
+        church_bg = self.screen.copy()
         save_dir = "save_files"
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -234,7 +235,7 @@ class ChurchManager(TownScreenBase):
             # Save directly to filepath using the new Player.save signature
             self.player_char.save(filepath=filepath)
             popup = ConfirmationPopup(self.presenter, f"Game saved successfully!", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Error saving game:\n\n{str(e)}", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.draw_background())
+            popup.show(background_draw_func=lambda: self.screen.blit(church_bg, (0, 0)))

@@ -18,9 +18,7 @@ import os
 from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
-from . import abilities
-from . import enemies
-from . import items
+from . import abilities, enemies, items
 from .character import Resource, Stats, Combat, Level
 
 if TYPE_CHECKING:
@@ -542,12 +540,11 @@ class PlayerDataSerializer:
         return data
     
     @staticmethod
-    def deserialize(data: dict[str, Any], map_tiles_module=None, skip_tiles=False):
+    def deserialize(data: dict[str, Any], skip_tiles=False):
         """Reconstruct player from data dictionary.
         
         Args:
             data: Serialized player data dictionary
-            map_tiles_module: Optional map_tiles module for UI-specific tiles
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
         from .player import Player
@@ -649,7 +646,7 @@ class PlayerDataSerializer:
         
         # Load world tiles and restore saved world state (unless skipped for transform)
         if not skip_tiles:
-            player.load_tiles(map_tiles_module=map_tiles_module)
+            player.load_tiles()
             if 'world_state' in data:
                 TileStateSerializer.restore_tile_state(player.world_dict, data['world_state'])
         
@@ -691,13 +688,12 @@ class SaveManager:
             return False
     
     @staticmethod
-    def load_player(filename: str, is_tmp: bool = False, map_tiles_module=None, skip_tiles=False):
+    def load_player(filename: str, is_tmp: bool = False, skip_tiles=False):
         """Load player from file.
         
         Args:
             filename: Name of save file
             is_tmp: Whether to load from tmp directory
-            map_tiles_module: Optional map_tiles module for UI-specific tiles
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
         try:
@@ -712,7 +708,7 @@ class SaveManager:
                 data = json.load(f)
             
             # Deserialize player
-            player = PlayerDataSerializer.deserialize(data, map_tiles_module=map_tiles_module, skip_tiles=skip_tiles)
+            player = PlayerDataSerializer.deserialize(data, skip_tiles=skip_tiles)
             return player
         except Exception as e:
             print(f"Error loading player: {e}")

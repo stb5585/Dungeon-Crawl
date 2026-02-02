@@ -13,7 +13,7 @@
   - Kept: combat/ and events/ subdirectories
   
 - **src/ui_curses/** - Terminal UI implementation
-  - Moved: game.py, menus.py, town.py, map_tiles.py from root
+  - Moved: game.py, menus.py, town.py from root
   - Clean separation from game logic
   
 - **src/ui_pygame/** - GUI implementation (Pygame)

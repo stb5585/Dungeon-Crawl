@@ -1,9 +1,8 @@
 name: Blessing
 type: Spell
 subtype: Support
-description: Blesses an ally, increasing their attack and defense temporarily
+description: Increases attack and defense
 cost: 12
-damage_mod: 1.0
 effects:
 - type: buff
   stat: attack

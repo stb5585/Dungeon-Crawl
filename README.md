@@ -4,11 +4,11 @@ AUTHOR: Shawn Thomas Booth
 
 CREATION DATE: March 2020
 
-LANGUAGE: Python 3.10+
+LANGUAGE: Python 3.12+
 
 DEPENDENCIES:
 Standard Library
-- curses
+- curses (ui_curses only)
 - dataclasses
 - glob
 - math
@@ -35,17 +35,25 @@ DESCRIPTION:
   crawl.  
   - Charisma is essentially a luck statistic, lowering cost and improving chance of success
 
-## Recent Improvements (December 2025)
 
-Dungeon Crawl has been significantly enhanced with modern architecture and forward-thinking systems:
+## Recent Improvements (February 2026)
 
-### New Systems
+Dungeon Crawl has completed a major code restructuring focused on architecture, maintainability, and feature parity:
+
+### Completed Refactoring
+- **Data Externalization** - Quest system, dialogues, and special events now in JSON files (src/core/data/content/)
+- **Combat Analytics** - BattleLogger integrated in BOTH curses and Pygame UIs for consistent event tracking
+- **Import Standardization** - Absolute imports (`src.core.*`) for reliable cross-context execution
+- **UI Separation** - Battle managers moved to UI layers (ui_curses/, ui_pygame/), keeping core/ UI-agnostic
+- **Path Resolution** - Absolute path handling using `Path(__file__).parent` for test compatibility
+
+### Systems (December 2025)
 - **Combat Action Queue** - Priority-based turn system with delayed actions
 - **Enhanced Effect System** - 20+ composable effect types (buffs, debuffs, composite effects)
 - **Event System** - Event-driven architecture for UI decoupling
-- **Presentation Layer** - Abstract UI interface (enables GUI migration)
-- **Data-Driven Abilities** - YAML-based ability definitions
-- **Combat Analytics** - Automated balance testing and simulation framework
+- **Presentation Layer** - Abstract UI interface supporting multiple UIs
+- **Data-Driven Content** - JSON-based quest/dialogue system (complete), YAML abilities (in progress)
+- **Combat Analytics** - BattleLogger with detailed event tracking for balance testing
 
 ### Developer Tools
 ```bash
@@ -58,19 +66,10 @@ python3 tools/dev_tools.py abilities -d data/abilities  # Load abilities
 ### Documentation
 All documentation is now in the **[docs/](docs/)** directory:
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete GUI migration roadmap
+- **[docs/EVENT_EMISSIONS.md](docs/EVENT_EMISSIONS.md)** - describes combat event flow output
 - **[docs/NEW_SYSTEMS.md](docs/NEW_SYSTEMS.md)** - User guide for new systems
-- **[docs/TEST_SUMMARY.md](docs/TEST_SUMMARY.md)** - Integration test results
-- **[docs/QUICK_TEST_GUIDE.md](docs/QUICK_TEST_GUIDE.md)** - Quick testing reference
+- **[docs/PROMOTION_ABILITY_RULES.md](docs/PROMOTION_ABILITY_RULES.md)** - outlines ability acquisition at promotion
 - **[docs/notes.txt](docs/notes.txt)** - TODO list and development notes
-
-See **[docs/README.md](docs/README.md)** for complete documentation index.
-
-### Strategic Direction
-Dungeon Crawl is now positioned as:
-1. **A playable game** (terminal now, GUI later)
-2. **A technical showcase** (clean architecture, testable systems)
-3. **A reusable platform** (extractable combat engine + tools)
-4. **A monetizable product** (developer-facing balance/simulation tools)
 
 See **[docs/README.md](docs/README.md)** for complete documentation index.
 
@@ -80,25 +79,30 @@ FUTURE DEVELOPMENT:
 - Medium-term: Complete ability migration to data-driven format
 - Long-term: Extract reusable engine, launch developer tools as SaaS
 
-DIRECTORY STRUCTURE (Updated January 2026):
+DIRECTORY STRUCTURE (Updated February 2026):
 ```
 src/
   core/          - Game engine (UI-agnostic logic)
-                   ├── abilities.py, battle.py, character.py, classes.py
+                   ├── abilities.py, character.py, classes.py
                    ├── enemies.py, items.py, player.py, town.py, etc.
-                   ├── combat/ (action queue, enhanced manager)
+                   ├── combat/ (action queue, combat_result, battle_logger)
+                   ├── data/ (data_loader, content/*.json)
                    └── events/ (event bus)
   ui_curses/     - Terminal UI implementation (curses-based)
                    ├── game.py, menus.py, town.py, map_tiles.py
-  ui_pygame/     - GUI implementation (Pygame-based, in development)
+                   ├── battle.py, enhanced_manager.py (combat UI logic)
+                   └── classes.py (promotion UI)
+  ui_pygame/     - GUI implementation (Pygame-based)
                    ├── game.py
-                   ├── gui/ (combat manager, shops, character screen, etc.)
+                   ├── gui/ (combat_manager, shops, character screen, etc.)
                    └── presentation/ (pygame presenter)
 
+ascii_files/     - ASCII art for enemies
+map_files/       - Dungeon floor layouts
+save_files/      - Player save data
 effects/         - Expanded effect system (20+ composable types)
 presentation/    - UI abstraction layer (interface + implementations)
-analytics/       - Combat simulation and balance testing
-data/            - YAML-based ability/item definitions
+data/            - YAML-based ability definitions (in progress)
 assets/          - Sprites, backgrounds, tiles, UI graphics
 docs/            - All documentation and design notes
 tools/           - Development utilities (dev_tools.py, modify_save.py)
@@ -111,9 +115,7 @@ game_pygame.py   - GUI game entry point
 
 CORE GAME FILES (now in src/core/):
 - abilities.py
-- battle.py (BattleManager, BattleLogger)
 - character.py
-- combat_result.py
 - companions.py
 - enemies.py
 - items.py
@@ -122,10 +124,11 @@ CORE GAME FILES (now in src/core/):
 - save_system.py
 - town.py
 - tutorial.py
+- combat/ (battle_logger, combat_result, action_queue)
+- data/ (data_loader, content/dialogues.json, quests.json, special_events.json)
 
 FILE DESCRIPTIONS (Core Game Logic - src/core/):
 - **abilities.py** - Spells and skills for all character classes
-- **battle.py** - Combat management (BattleManager, BattleLogger, action queue integration)
 - **character.py** - All characters (players, enemies, companions) with stats and combat logic
 - **classes.py** - Class definitions, promotions, and equipment restrictions
 - **companions.py** - Warlock familiars, summon creatures, and class companions
@@ -134,19 +137,28 @@ FILE DESCRIPTIONS (Core Game Logic - src/core/):
 - **player.py** - Player character with world interactions, dungeon exploration, treasure
 - **races.py** - Racial options for character creation with stat bonuses
 - **save_system.py** - Data-driven save/load system (JSON-based)
-- **town.py** - Town interactions, shops, quests, promotions
+- **town.py** - Town core logic (quest validation, shop inventory)
+- **combat/battle_logger.py** - Combat event logging for analytics (used by both UIs)
+- **combat/combat_result.py** - Combat result dataclasses for action outcomes
 - **combat/action_queue.py** - Priority-based turn system with charging abilities
-- **combat/enhanced_manager.py** - Enhanced battle manager with action queue integration
+- **data/data_loader.py** - JSON data loader with caching for game content
+- **data/content/** - JSON files for quests, dialogues, special events
 - **events/event_bus.py** - Event system for UI decoupling and animations
 
 UI IMPLEMENTATIONS:
 - **src/ui_curses/** - Terminal UI (curses-based, fully functional)
-  - game.py - Main game loop and UI orchestration
-  - menus.py - Menu system and popup dialogs
-  - town.py - Town UI
-  - map_tiles.py - Dungeon rendering
+  - game.py - Main ga with quest/shop interactions
+  - battle.py - BattleManager with BattleLogger integration
+  - enhanced_manager.py - Action queue-based combat manager
+  - classes.py - Promotion and familiar selection UI
   
-- **src/ui_pygame/** - GUI (Pygame-based, in development)
+- **src/ui_pygame/** - GUI (Pygame-based, fully functional)
+  - game.py - Pygame game loop
+  - gui/combat_manager.py - GUI combat with BattleLogger integration (13 logging points)
+  - gui/shops.py - Blacksmith, alchemist, jeweler with quest integration
+  - gui/inn.py - Tavern interactions with patron dialogues and bounties
+  - gui/dungeon_manager.py - First-person dungeon exploration
+  - gui/enhanced_dungeon_renderer.py - Perspective tileset rendering
   - game.py - Pygame game loop
   - gui/ - All GUI components (combat, shops, character screen, dungeon renderer, etc.)
   - presentation/pygame_presenter.py - Event-driven presenter with animations
