@@ -171,12 +171,20 @@ class CharacterScreen(TownScreenBase):
         location_text = self.normal_font.render(getattr(player_char, 'location', 'Town'), True, self.colors.WHITE)
         self.screen.blit(location_text, (x, y))
 
-        # Calculate weight from inventory
-        weight = sum(item.weight for items in player_char.inventory.values() for item in items)
-        max_weight = player_char.stats.strength * 10
+        # Calculate weight from inventory, equipment, and special items
+        weight = player_char.current_weight()
+        max_weight = player_char.max_weight()
         weight_max = f"Weight/Max: {int(weight)}/{int(max_weight)}"
-        weight_text = self.normal_font.render(weight_max, True, self.colors.WHITE)
+
+        # Show weight - use RED if encumbered
+        weight_color = self.colors.RED if getattr(player_char, 'encumbered', False) else self.colors.WHITE
+        weight_text = self.normal_font.render(weight_max, True, weight_color)
         self.screen.blit(weight_text, (self.info_rect.right - weight_text.get_width() - 10, y))
+
+        # Show encumbered warning if applicable
+        if getattr(player_char, 'encumbered', False):
+            encumb_text = self.small_font.render("ENCUMBERED", True, self.colors.RED)
+            self.screen.blit(encumb_text, (self.info_rect.right - encumb_text.get_width() - 10, y + 20))
 
         y += 40
         class_text = self.normal_font.render(

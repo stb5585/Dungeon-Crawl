@@ -30,6 +30,10 @@ class ShopScreen(TownScreenBase):
         self.item_list = []  # List of tuples: (display_string, item_object, cost, owned_count)
         self.buy_or_sell = None
         self.scroll_offset = 0
+
+        # Caching for equip_diff to prevent recalculation on every blit
+        self.cached_item_index = -1
+        self.cached_diff_str = ""
         
         # Calculate window positions (matching curses layout)
         self.calculate_window_rects()
@@ -252,13 +256,18 @@ class ShopScreen(TownScreenBase):
         title_x = self.mod_rect.centerx - title.get_width() // 2
         self.screen.blit(title, (title_x, self.mod_rect.top + 10))
         
-        # Get stat comparison
+        # Get stat comparison (cached to prevent recalculation on every blit)
         try:
             equip_slot = item.typ
             if item.typ == "Accessory":
                 equip_slot = item.subtyp
             
-            stat_diff_str = self.player_char.equip_diff(item, equip_slot, buy=True)
+            # Only recalculate if the item selection changed
+            if self.current_item != self.cached_item_index:
+                self.cached_diff_str = self.player_char.equip_diff(item, equip_slot, buy=True)
+                self.cached_item_index = self.current_item
+
+            stat_diff_str = self.cached_diff_str
             
             if stat_diff_str:
                 lines = stat_diff_str.splitlines()
@@ -339,9 +348,9 @@ class ShopScreen(TownScreenBase):
             for item_class in item_classes:
                 item = item_class()
                 
-                # Check level restrictions
+                # Check class restrictions
                 if hasattr(item, 'restriction') and item.restriction:
-                    if self.player_char.player_level() < min(item.restriction):
+                    if self.player_char.cls.name not in item.restriction:
                         continue
                 
                 # Check rarity for town shops

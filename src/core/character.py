@@ -695,6 +695,10 @@ class Character:
         if quest:
             self.quests(item=item)
 
+        # Update encumbered status for player characters
+        if hasattr(self, 'max_weight'):
+            self.encumbered = self.current_weight() > self.max_weight()
+
     def effects(self, end=False):
         """
         Silence, Blind, and Disarm can be indefinite unless cured (duration=-1)

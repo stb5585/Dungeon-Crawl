@@ -119,6 +119,7 @@ class GUICombatManager:
         if player_char.encumbered:
             first = enemy
             player_initiative = False
+            self.combat_view.add_combat_message("You are ENCUMBERED! Enemy strikes first!")
         else:
             p_chance = player_char.check_mod("speed", enemy=enemy) + \
                        player_char.check_mod('luck', enemy=enemy, luck_factor=10)

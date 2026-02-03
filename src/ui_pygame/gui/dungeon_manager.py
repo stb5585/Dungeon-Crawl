@@ -15,6 +15,7 @@ from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
 from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
+from .confirmation_popup import ConfirmationPopup
 from .dungeon_hud import DungeonHUD
 from .enhanced_dungeon_renderer import EnhancedDungeonRenderer
 from .loot_popup import LootPopup
@@ -935,7 +936,7 @@ class DungeonManager:
         # This enables effects like FirePath damage on entry.
         hp_before = getattr(self.player_char.health, 'current', None)
         try:
-            current_tile.modify_player(self.game)
+            current_tile.modify_player(self.game, popup_class=ConfirmationPopup)
         except AttributeError:
             pass
         except Exception as e:

@@ -229,7 +229,7 @@ class EmptyCavePath(CavePath):
 
 class CavePath0(CavePath):
 
-    def modify_player(self, game, textbox=None):
+    def modify_player(self, game, textbox=None, popup_class=None):
         super().modify_player(game, textbox=textbox)
         if 'Bring Him Home' in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Bring Him Home']['Completed']:
@@ -245,7 +245,11 @@ class CavePath0(CavePath):
                     quest_message += game.player_char.quests(item=items.TicketPiece())
                     if textbox:
                         textbox.print_text_in_rectangle(quest_message)
-
+                    elif popup_class and game.presenter is not None:
+                        # Pygame version - show quest notification as a popup
+                        dungeon_bg = game.presenter.screen.copy()
+                        popup = popup_class(game.presenter, quest_message, show_buttons=False)
+                        popup.show(background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)))
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy('0')
         player_char.state = 'fight'
@@ -253,13 +257,21 @@ class CavePath0(CavePath):
 
 class CavePath1(CavePath):
 
-    def modify_player(self, game):
-        super().modify_player(game)
+    def modify_player(self, game, textbox=None, popup_class=None):
+        super().modify_player(game, textbox=textbox)
         if (self.x, self.y, self.z) == (8, 8, 1) and \
             "Rookie Mistake" in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
                 game.special_event("Rookie")
                 game.player_char.modify_inventory(items.DeadBody(), rare=True)
+                quest_message = "You found the rookie! He's dead...\n"
+                if textbox:
+                    textbox.print_text_in_rectangle(quest_message)
+                elif popup_class and game.presenter is not None:
+                    # Pygame version - show quest notification as a popup
+                    dungeon_bg = game.presenter.screen.copy()
+                    popup = popup_class(game.presenter, quest_message, show_buttons=False)
+                    popup.show(background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)))
                 self.enter_combat(game.player_char)
 
     def enter_combat(self, player_char):

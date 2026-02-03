@@ -234,6 +234,7 @@ class CombatView:
         y = self.combat_height - 120
         
         font = pygame.font.Font(None, 24)
+        small_font = pygame.font.Font(None, 18)
         
         # HP
         hp_text = f"HP: {player_char.health.current}/{player_char.health.max}"
@@ -244,6 +245,26 @@ class CombatView:
         mp_text = f"MP: {player_char.mana.current}/{player_char.mana.max}"
         mp_surf = font.render(mp_text, True, self.colors['mp_bar'])
         self.screen.blit(mp_surf, (x, y + 30))
+
+        # Encumbered warning
+        if getattr(player_char, 'encumbered', False):
+            y += 60
+            # Warning icon/text
+            warning_text = "⚠ ENCUMBERED"
+            warning_surf = font.render(warning_text, True, (255, 165, 0))  # Orange
+            self.screen.blit(warning_surf, (x, y))
+
+            # Penalties list
+            penalty_lines = [
+                "• Always lose initiative",
+                "• -25% hit chance",
+                "• -50% dodge chance"
+            ]
+            y += 25
+            for line in penalty_lines:
+                penalty_surf = small_font.render(line, True, (255, 100, 100))  # Light red
+                self.screen.blit(penalty_surf, (x + 5, y))
+                y += 18
     
     def _render_action_menu(self, actions, selected_action):
         """Render the action selection menu."""

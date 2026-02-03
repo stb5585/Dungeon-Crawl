@@ -732,19 +732,19 @@ class Player(Character):
             
             SaveManager.save_player(self, filename, is_tmp=False)
 
-    def equip(self, equip_slot, item, check=False):
+    def equip(self, equip_slot: str, item, check: bool = False) -> bool:
         """
         Handles equiping and character modification effects of equipment
 
         Args:
-            equip_slot(str): Equipment slot where item is to be equipped. Must be one of the following: "Weapon",
+            equip_slot: Equipment slot where item is to be equipped. Must be one of the following: "Weapon",
                 "OffHand", "Armor", "Ring", "Pendant"
-            item(Equipment): Equipment object to be equipped
-            check(bool, optional): A flag signifying whether this is an equipment check or an actual equipment change.
+            item: Equipment object to be equipped
+            check: A flag signifying whether this is an equipment check or an actual equipment change.
                 Default is False.
 
         Returns:
-            bool: True if equipment was successful, False if item is not allowed for this class.
+            True if equipment was successful, False if item is not allowed for this class.
 
         Example:
             >>> equip("Weapon", Dirk)
@@ -808,102 +808,110 @@ class Player(Character):
     def equip_diff(self, item, equip_slot, buy=False):
         """
         function to analyze impact of item on player
+        Temporarily equips the item, calculates stat differences, then safely restores original equipment
         """
         if equip_slot == "Accessory":
             equip_slot = item.subtyp
-        current_equipment = self.equipment.copy()  # copy old equipment to use at end
-        main_dmg = self.check_mod('weapon')
-        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
-        attack = f"{str(main_dmg)}"
-        crit = f"{str(main_crit)}%"
-        if self.equipment['OffHand'].typ == 'Weapon':
-            off_dmg = self.check_mod('offhand')
-            off_crit = int((self.equipment['OffHand'].crit  + (0.005 * self.check_mod("speed"))) * 100)
-            attack = f"{str(main_dmg)}/{str(off_dmg)}"
-            crit = f"{str(main_crit)}%/{str(off_crit)}%"
-        armor = self.check_mod('armor')
-        block = self.check_mod('shield')
-        spell_def = self.check_mod('magic def')
-        spell_mod = self.check_mod('magic')
-        heal_mod = self.check_mod('heal')
-        buffs = self.buff_str()
-        diff_dict = {
-            "Attack": attack,
-            "Critical Chance": crit,
-            "Armor": str(armor),
-            "Block Chance": f"{block}%",
-            "Spell Defense": str(spell_def),
-            "Spell Modifier": str(spell_mod),
-            "Heal Modifier": str(heal_mod),
-            "Buffs": buffs
-        }
 
-        # return empty if item is not equipable by player
-        if not self.cls.equip_check(item, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
-            return ""
+        # Save the current equipment reference BEFORE any modifications
+        original_item = self.equipment[equip_slot]
+        original_offhand = self.equipment["OffHand"] if equip_slot == "Weapon" else None
 
-        # equip new item
-        self.equip(equip_slot, item, check=True)
-        if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
-            self.equip("OffHand", item)
-        new_main_dmg = self.check_mod('weapon')
-        if new_main_dmg != main_dmg:
-            diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}"
-        new_main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
-        if new_main_crit != main_crit:
-            diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%"
-        if equip_slot == 'Weapon':
-            if current_equipment['OffHand'].typ == 'Weapon':
-                if item.handed == 2 and self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
-                    diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%"
-                else:
+        try:
+            # Get current stats with original equipment
+            main_dmg = self.check_mod('weapon')
+            main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
+            attack = f"{str(main_dmg)}"
+            crit = f"{str(main_crit)}%"
+            if self.equipment['OffHand'].typ == 'Weapon':
+                off_dmg = self.check_mod('offhand')
+                off_crit = int((self.equipment['OffHand'].crit  + (0.005 * self.check_mod("speed"))) * 100)
+                attack = f"{str(main_dmg)}/{str(off_dmg)}"
+                crit = f"{str(main_crit)}%/{str(off_crit)}%"
+            armor = self.check_mod('armor')
+            block = self.check_mod('shield')
+            spell_def = self.check_mod('magic def')
+            spell_mod = self.check_mod('magic')
+            heal_mod = self.check_mod('heal')
+            buffs = self.buff_str()
+            diff_dict = {
+                "Attack": attack,
+                "Critical Chance": crit,
+                "Armor": str(armor),
+                "Block Chance": f"{block}%",
+                "Spell Defense": str(spell_def),
+                "Spell Modifier": str(spell_mod),
+                "Heal Modifier": str(heal_mod),
+                "Buffs": buffs
+            }
+
+            # return empty if item is not equipable by player
+            if not self.cls.equip_check(item, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
+                return ""
+
+            # Temporarily equip new item - directly modify equipment dict
+            self.equipment[equip_slot] = item
+            if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
+                self.equipment["OffHand"] = item
+
+            # Get new stats with test equipment
+            new_main_dmg = self.check_mod('weapon')
+            if new_main_dmg != main_dmg:
+                diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}"
+            new_main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
+            if new_main_crit != main_crit:
+                diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%"
+            if equip_slot == 'Weapon':
+                if original_offhand and original_offhand.typ == 'Weapon':
+                    if item.handed == 2 and self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
+                        diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}"
+                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%"
+                    else:
+                        new_off_dmg = self.check_mod('offhand')
+                        new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+                        if new_main_dmg != main_dmg or new_off_dmg != off_dmg:
+                            diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
+                        if new_main_crit != main_crit or new_off_crit != off_crit:
+                            diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
+                elif item.subtyp in self.cls.restrictions["OffHand"] and buy:
                     new_off_dmg = self.check_mod('offhand')
                     new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
-                    if new_main_dmg != main_dmg or new_off_dmg != off_dmg:
+                    if original_offhand and original_offhand.typ == "Weapon":
                         diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                    if new_main_crit != main_crit or new_off_crit != off_crit:
-                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"                    
-            elif item.subtyp in self.cls.restrictions["OffHand"] and buy:
-                new_off_dmg = self.check_mod('offhand')
-                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
-                if current_equipment["OffHand"].typ == "Weapon":
-                    diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
-                else:
-                    diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%/{new_off_crit}%"
-            else:
-                pass
-        if equip_slot == 'OffHand':
-            if item.typ == "Weapon":
-                new_off_dmg = self.check_mod('offhand')
-                new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
-                diff_dict["Attack"] = f"{main_dmg} -> {main_dmg}/{new_off_dmg}"
-                diff_dict["Critical Chance"] = f"{main_crit}% -> {main_crit}%/{new_off_crit}%"
-                if current_equipment["OffHand"].typ == 'Weapon':
-                    diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}/{new_off_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%/{new_off_crit}%"
-            if item.subtyp == "None" and current_equipment["OffHand"].typ == "Weapon":
-                diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}"
-                diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%"
-        if self.check_mod('shield') != block:
-            diff_dict["Block Chance"] = f"{block}% -> {self.check_mod('shield')}%"
-        if self.check_mod('armor') != armor:
-            diff_dict["Armor"] = f"{armor} -> {self.check_mod('armor')}"
-        if self.check_mod('magic def') != spell_def:
-            diff_dict["Spell Defense"] = f"{spell_def} -> {self.check_mod('magic def')}"
-        if self.check_mod('magic') != spell_mod:
-            diff_dict["Spell Modifier"] = f"{spell_mod} -> {self.check_mod('magic')}"
-        if self.check_mod('heal') != heal_mod:
-            diff_dict["Heal Modifier"] = f"{heal_mod} -> {self.check_mod('heal')}"
-        diff_dict['Buffs'] = self.buff_str()
+                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
+                    else:
+                        diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}/{new_off_dmg}"
+                        diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%/{new_off_crit}%"
+            if equip_slot == 'OffHand':
+                if item.typ == "Weapon":
+                    new_off_dmg = self.check_mod('offhand')
+                    new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+                    diff_dict["Attack"] = f"{main_dmg} -> {main_dmg}/{new_off_dmg}"
+                    diff_dict["Critical Chance"] = f"{main_crit}% -> {main_crit}%/{new_off_crit}%"
+                    if original_offhand and original_offhand.typ == 'Weapon':
+                        diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}/{new_off_dmg}"
+                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%/{new_off_crit}%"
+                if item.subtyp == "None" and original_offhand and original_offhand.typ == "Weapon":
+                    diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}"
+                    diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%"
+            if self.check_mod('shield') != block:
+                diff_dict["Block Chance"] = f"{block}% -> {self.check_mod('shield')}%"
+            if self.check_mod('armor') != armor:
+                diff_dict["Armor"] = f"{armor} -> {self.check_mod('armor')}"
+            if self.check_mod('magic def') != spell_def:
+                diff_dict["Spell Defense"] = f"{spell_def} -> {self.check_mod('magic def')}"
+            if self.check_mod('magic') != spell_mod:
+                diff_dict["Spell Modifier"] = f"{spell_mod} -> {self.check_mod('magic')}"
+            if self.check_mod('heal') != heal_mod:
+                diff_dict["Heal Modifier"] = f"{heal_mod} -> {self.check_mod('heal')}"
+            diff_dict['Buffs'] = self.buff_str()
 
-        # revert equipment to before
-        self.equip(equip_slot, current_equipment[equip_slot], check=True)
-        if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
-            self.equip("OffHand", current_equipment[equip_slot])
-        return "\n".join([f"{x:16}{' ':2}{y:>6}" for x, y in diff_dict.items()])
+            return "\n".join([f"{x:16}{' ':2}{y:>6}" for x, y in diff_dict.items()])
+        finally:
+            # ALWAYS restore original equipment, even if an exception occurs
+            self.equipment[equip_slot] = original_item
+            if equip_slot == "Weapon" and original_offhand:
+                self.equipment["OffHand"] = original_offhand
 
     def unequip(self, typ=None, promo=False):
         if typ:
@@ -1255,7 +1263,7 @@ class Player(Character):
         elif item is not None:
             for quest in self.quest_dict['Side']:
                 try:
-                    if self.quest_dict['Side'][quest]['What']().name == item.name:
+                    if self.quest_dict['Side'][quest]['What'].name == item.name:
                         if item.name in self.special_inventory:
                             if len(self.special_inventory[item.name]) >= self.quest_dict['Side'][quest]['Total'] and \
                                     not self.quest_dict['Side'][quest]['Completed']:

@@ -237,6 +237,26 @@ class QuestManager:
                 self.player_char.level.exp_to_gain -= exp
             except Exception:
                 pass
+
+        # Remove collected items if this is a Collect type quest
+        if qdata.get('Type') == 'Collect':
+            quest_item = qdata.get('What')
+            if quest_item:
+                try:
+                    # Handle both string and class/instance types
+                    if isinstance(quest_item, str):
+                        item_name = quest_item
+                    elif callable(quest_item):
+                        item_name = quest_item().name
+                    else:
+                        item_name = quest_item.name
+
+                    # Delete from special inventory if it exists
+                    if item_name in self.player_char.special_inventory:
+                        del self.player_char.special_inventory[item_name]
+                except Exception:
+                    pass
+
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
         while not self.player_char.max_level() and self.player_char.level.exp_to_gain <= 0:
             level_up_screen.show_level_up(self.player_char, None)

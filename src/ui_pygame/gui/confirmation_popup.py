@@ -37,9 +37,15 @@ class ConfirmationPopup:
         self.current_selection = 0  # 0 = Yes, 1 = No
         self.options = ["Yes", "No"]
         
-        # Calculate popup position (centered)
-        self.popup_width = 400
-        self.popup_height = 200 if show_buttons else 220
+        # Calculate popup size based on message content
+        self.popup_width = 500
+        # First, wrap text to calculate required height
+        wrapped_lines = self._wrap_text(message, self.popup_width - 40)
+        # Each line takes approximately 30 pixels in height, plus padding
+        min_height = 150 if show_buttons else 180
+        content_height = len(wrapped_lines) * 30
+        self.popup_height = max(min_height, content_height + 100)
+
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)

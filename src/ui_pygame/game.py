@@ -104,7 +104,12 @@ class PygameGame:
             lines = special_event_dict.get(name, {}).get("Text", [])
         except Exception:
             lines = []
-        message = "\n".join(lines) if lines else name
+
+        if lines:
+            # Join lines and let the popup handle text wrapping with pixel-based width
+            message = "\n".join(lines)
+        else:
+            message = name
 
         # Show message-only popup (any key to continue)
         # Pass a background draw function that maintains current screen state
@@ -412,7 +417,16 @@ class PygameGame:
         except Exception:
             # If any issue occurs, continue without blocking town menu
             pass
-        
+
+        # Check for Rookie Mistake quest completion upon entering town
+        if ("Dead Body" in self.player_char.special_inventory and 
+                'Rookie Mistake' in self.player_char.quest_dict.get('Side', {}) and
+                not self.player_char.quest_dict['Side']['Rookie Mistake']['Completed']):
+            self.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
+            self.player_char.modify_inventory(items.DeadBody(), subtract=True, rare=True)
+            popup = ConfirmationPopup(self.presenter, "You have completed the quest Rookie Mistake.", show_buttons=False)
+            popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+
         while True:
             choice_idx = town_screen.navigate(options)
             

@@ -277,7 +277,6 @@ class ShopManager(TownScreenBase):
         
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}")
         shop_screen.update_item_list(itemdict, "Buy")
-        shop_bg = shop_screen.screen.copy()
         
         while True:
             result = shop_screen.navigate_items()
@@ -316,6 +315,7 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Buy {quantity}x {item.name} for {total_cost}g?"
             )
+            shop_bg = shop_screen.screen.copy()
             confirmed = confirm_popup.show(background_draw_func=lambda: self.presenter.screen.blit(shop_bg, (0, 0)))
             if not confirmed:
                 continue
