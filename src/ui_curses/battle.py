@@ -8,10 +8,11 @@ import random
 import re
 from typing import TYPE_CHECKING
 
+from src.core.combat.battle_logger import BattleLogger
+
 if TYPE_CHECKING:
     from typing import Any
 
-    from src.core.combat.battle_logger import BattleLogger
     from src.core.character import Character
 
 
@@ -64,9 +65,16 @@ class BattleManager:
 
     def render_screen(self) -> None:
         """Renders the battle screen."""
-        vision = all([self.player_char.sight,
-                      "Boss" not in str(self.tile),
-                      self.enemy.name != "Waitress"])
+        has_sight = any([
+            self.player_char.cls.name in ["Inquisitor", "Seeker"],
+            getattr(self.player_char.equipment.get("Pendant"), "mod", None) == "Vision",
+            getattr(self.player_char, "sight", False),
+        ])
+        vision = all([
+            has_sight,
+            "Boss" not in str(self.tile),
+            self.enemy.name != "Waitress",
+        ])
         self.battle_ui.draw_enemy(self.enemy, vision=vision)
         self.battle_ui.draw_options(self.available_actions)
         if self.summon_active:
@@ -77,9 +85,21 @@ class BattleManager:
 
     def print_text(self, text: str) -> None:
         """Prints text to the screen."""
-        self.textbox.print_text_in_rectangle(text)
-        self.game.stdscr.getch()
+        cleaned = self._filter_status_lines(text)
+        if not cleaned:
+            return
+        self.textbox.print_text_in_rectangle(cleaned)
         self.textbox.clear_rectangle()
+
+    def _filter_status_lines(self, text: str) -> str:
+        """Remove status-effect log lines in favor of status icons."""
+        kept_lines = []
+        for line in text.split("\n"):
+            if "is affected by" in line.lower():
+                continue
+            if line.strip():
+                kept_lines.append(line)
+        return "\n".join(kept_lines)
 
     def determine_initiative(self) -> tuple[Character, Character]:
         """Determine who goes first using each character's dexterity plus luck."""
@@ -178,9 +198,16 @@ class BattleManager:
             if self.attacker.status_effects["Berserk"].active:
                 action = "Attack"
             elif self.attacker.class_effects["Jump"].active:
-                action = "Use Skill"
-                choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
-                self.attacker.class_effects["Jump"].active = False
+                # If incapacitated while charging, cancel the Jump
+                if self.attacker.incapacitated():
+                    jump_choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
+                    jump_skill = self.attacker.spellbook['Skills'][jump_choice]
+                    self.print_text(jump_skill.cancel_charge(self.attacker))
+                    self.attacker.class_effects["Jump"].active = False
+                else:
+                    action = "Use Skill"
+                    choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
+                    self.attacker.class_effects["Jump"].active = False
             else:
                 if self.attacker == self.player_char:
                     while True:
@@ -244,6 +271,13 @@ class BattleManager:
                 target=self.defender
             ))
             self.flee, result = self.attacker.flee(self.defender)
+        elif action == "Defend":
+            event_bus.emit(create_combat_event(
+                EventType.DEFEND,
+                actor=self.attacker,
+                target=self.defender
+            ))
+            result = self.attacker.enter_defensive_stance(duration=1, source="Defend")
         elif action == "Cast Spell":
             # Emit spell cast event
             event_bus.emit(create_combat_event(
@@ -252,7 +286,8 @@ class BattleManager:
                 target=self.defender,
                 spell_name=choice
             ))
-            result = self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
+            result = f"{self.attacker.name} casts {choice}.\n"
+            result += self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
         elif action == "Use Skill":
             if choice == "Remove Shield":
                 choice = "Mana Shield"
@@ -276,8 +311,11 @@ class BattleManager:
             elif skill.name in ["Doublecast", "Triplecast"]:
                 result += skill.use(self.attacker, self.defender, game=self.game)
             elif "Jump" in skill.name:
-                self.attacker.class_effects["Jump"].active = True
-                result += f"{self.attacker.name} prepares to leap into the air.\n"
+                charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
+                if charge_time > 0:
+                    self.attacker.class_effects["Jump"].active = True
+                    result += f"{self.attacker.name} prepares to leap into the air.\n"
+                result += skill.use(self.attacker, target=self.defender)
             else:
                 result += skill.use(self.attacker, target=self.defender)
         elif action == "Use Item":
@@ -331,7 +369,9 @@ class BattleManager:
                                     textbox=self.textbox)
         if self.player_char.is_alive() and self.boss:
             self.tile.defeated = True
+            self.tile.enemy = None
         self.logger.end_battle(result=result, winner=winner, boss=self.boss)
+        self.game.stdscr.getch()
 
     def before_turn(self) -> None:
         """Hook for pre-turn effects like buffs, debuffs, or AI strategy changes."""

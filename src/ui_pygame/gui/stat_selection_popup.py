@@ -64,6 +64,10 @@ class StatSelectionPopup:
         """
         self.result = None
         selecting = True
+
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
         
         while selecting:
             # Draw background if provided
@@ -91,6 +95,16 @@ class StatSelectionPopup:
             self.presenter.clock.tick(30)
         
         return self.result
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()
     
     def draw_popup(self):
         """Draw the stat selection popup over the current screen."""

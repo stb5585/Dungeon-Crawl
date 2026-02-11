@@ -1381,7 +1381,7 @@ class Claw3(Claw):
                     result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
                 bleed_dmg = int(max(result.actor.check_mod("speed", enemy=result.target) // 2, result.damage) * (1 - resist))
-                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
+                bleed_dmg = max(1, int(random.randint(bleed_dmg // 4, bleed_dmg) * 0.75))
                 result.target.physical_effects["Bleed"] = StatusEffect(True,
                                                               max(duration, result.target.physical_effects["Bleed"].duration),
                                                               max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
@@ -1408,7 +1408,7 @@ class BearClaw(NaturalWeapon):
                     result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
                 bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
-                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
+                bleed_dmg = max(1, int(random.randint(bleed_dmg // 4, bleed_dmg) * 0.75))
                 result.target.physical_effects["Bleed"] = StatusEffect(True,
                                                               max(duration, result.target.physical_effects["Bleed"].duration),
                                                               max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
@@ -1435,7 +1435,7 @@ class Stinger(NaturalWeapon):
                 else:
                     result.effects_applied['Status'].append('Poison+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
-                damage = int(result.target.health.max * 0.005)
+                damage = int(result.target.health.max * 0.01)
                 pois_dmg = max(1, int(damage * (1 - resist)))
                 result.target.status_effects["Poison"] = StatusEffect(True,
                                                                max(duration, result.target.status_effects["Poison"].duration),
@@ -1452,6 +1452,8 @@ class Pincers(NaturalWeapon):
 
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
+        if not result.hit or not result.damage:
+            return results
         if random.randint(result.actor.check_mod("speed", enemy=result.target) // 2, result.actor.check_mod("speed", enemy=result.target)) \
             > random.randint(result.target.stats.con // 2, result.target.stats.con):
             resist = result.target.check_mod('resist', enemy=result.actor, typ="Poison")
@@ -1463,7 +1465,7 @@ class Pincers(NaturalWeapon):
                 else:
                     result.effects_applied['Status'].append('Poison+')
                 duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
-                damage = int(result.target.health.max * 0.005)
+                damage = int(result.target.health.max * 0.01)
                 pois_dmg = max(1, int(damage * (1 - resist)))
                 result.target.status_effects["Poison"] = StatusEffect(True,
                                                                max(duration, result.target.status_effects["Poison"].duration),
@@ -1698,7 +1700,7 @@ class DragonClaw2(DragonClaw):
                     result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
                 bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
-                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
+                bleed_dmg = max(1, int(random.randint(bleed_dmg // 4, bleed_dmg) * 0.75))
                 result.target.physical_effects["Bleed"] = StatusEffect(True,
                                                               max(duration, result.target.physical_effects["Bleed"].duration),
                                                               max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
@@ -1880,7 +1882,7 @@ class CerberusClaw(NaturalWeapon):
                     result.effects_applied['Physical'].append('Bleed+')
                 duration = max(1, result.actor.stats.strength // 10)
                 bleed_dmg = int(max(result.actor.stats.strength // 2, result.damage) * (1 - resist))
-                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
+                bleed_dmg = max(1, int(random.randint(bleed_dmg // 4, bleed_dmg) * 0.75))
                 result.target.physical_effects["Bleed"] = StatusEffect(
                     True, max(duration, result.target.physical_effects["Bleed"].duration),
                     max(bleed_dmg, result.target.physical_effects["Bleed"].extra))
@@ -1964,6 +1966,8 @@ class DevilBlade(NaturalWeapon):
 
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
+        if not result.hit or not result.damage:
+            return results
         w_chance = result.actor.check_mod('luck', enemy=result.target, luck_factor=10)
         t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=20)
         if result.crit > 1:
@@ -2817,7 +2821,7 @@ class ClassRing(Accessory):
         descriptions = {
             "Berserker": "A ring that grants +15% Critical Hit Chance when worn by a Berserker.",
             "Crusader": "A ring that grants +10% Holy damage when worn by a Crusader.",
-            "Dragoon": "A ring that grants +20% Jump damage when worn by a Dragoon.",
+            "Dragoon": "A ring that unlocks an additional Jump modification slot (max 6) when worn by a Dragoon.",
             "Stalwart Defender": "A ring that reduces damage taken by 10% when worn by a Stalwart Defender.",
             "Wizard": "A ring that increases the chance to trigger Arcane and elemental spell special effects when worn by a Wizard.",
             "Shadowcaster": "A ring that grants Shadow Bolt a special effect that heals the caster based on damage dealt when worn by a Shadowcaster.",
@@ -2853,8 +2857,8 @@ class ClassRing(Accessory):
             player_char.equipment["Ring"].mod = "+10% Holy Damage"
         
         elif cls_name == "Dragoon":
-            # +20% Jump damage
-            player_char.equipment["Ring"].mod = "+20% Jump Damage"
+            # Unlock additional Jump modification slot (max 6)
+            player_char.equipment["Ring"].mod = "+1 Jump Mod"
         
         elif cls_name == "Stalwart Defender":
             # Reduce damage taken by 10%
@@ -4168,16 +4172,6 @@ class SpringWater(Misc):
                          value=0, rarity=0, subtyp='Special')
 
 
-class Joker(Misc):
-    """
-    Dropped by Jester; used to obtain the trickster summon Kobalos
-    """
-
-    def __init__(self):
-        super().__init__(name="Joker", description="They say that Joker's are wild; you'll see how wild this one is.",
-                         value=0, rarity=0, subtyp="Special")
-
-
 class Unobtainium(Misc):
     """
     Magical ore that can be used to forge ultimate weapons at the blacksmith; only one in the game
@@ -4268,6 +4262,18 @@ class Excaliper(Misc):
                         value=0, rarity=0, subtyp="Special")
 
 
+# Ability-related items
+class Joker(Misc):
+    """
+    Dropped by Jester; used to obtain the trickster summon Kobalos
+    """
+
+    def __init__(self):
+        super().__init__(name="Joker", description="They say that Joker's are wild; you'll see how wild this one is.",
+                         value=0, rarity=1, subtyp="Special")
+        self.restricted_classes = ["Summoner", "Grand Summoner", "Spell Stealer", "Arcane Trickster"]
+
+
 class ChiryuKoma(Misc):
     """
     Needed to unlock Dilong summon; visit 1:I17 with item in inventory
@@ -4276,6 +4282,7 @@ class ChiryuKoma(Misc):
     def __init__(self):
         super().__init__(name="Chiryu Koma", description="A game piece used for shogi, depicting an earth dragon.",
                          value=0, rarity=0.1, subtyp="Summon - Dilong")
+        self.restricted_classes = ["Summoner", "Grand Summoner"]
 
 
 class BlacksmithsHammer(Misc):
@@ -4288,6 +4295,21 @@ class BlacksmithsHammer(Misc):
         super().__init__(name="Blacksmith's Hammer", description="It looks like a normal blacksmithing hammer but "
                                                                  "something seems...special about this one.",
                          value=0, rarity=0, subtyp="Summon - Cacus")
+        self.restricted_classes = ["Summoner", "Grand Summoner"]
+
+
+class DragonTear(Misc):
+    """
+    Super rare drop from Dragon-type enemies. Unlocks the Recover modification for the Jump ability.
+    Only available to Lancer and Dragoon classes.
+    """
+
+    def __init__(self):
+        super().__init__(name="Dragon's Tear", 
+                         description="A crystallized tear shed by a dragon. Said to contain the essence "
+                                   "of draconic vitality and regeneration. Extremely rare.",
+                         value=0, rarity=0.01, subtyp="Special")
+        self.restricted_classes = ["Lancer", "Dragoon"]
 
 
 # items_dict used by shops

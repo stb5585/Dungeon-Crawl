@@ -60,7 +60,7 @@ class LevelUpScreen:
     
     def _calculate_level_up(self, player_char):
         """Calculate all level up bonuses."""
-        from ...core import abilities
+        from src.core import abilities
         
         dv = max(1, 5 - player_char.check_mod('luck', luck_factor=8))
         
@@ -158,6 +158,44 @@ class LevelUpScreen:
             elif skill_name in ["Transform", "Purity of Body"]:
                 effect_msg = skill_gain.use(player_char)
                 new_abilities.append(effect_msg)
+        
+        # Unlock Jump modifications (Lancer/Dragoon)
+        jump_skill = None
+        skills = player_char.spellbook.get("Skills", {})
+        if "Jump" in skills:
+            jump_skill = skills["Jump"]
+        else:
+            for sk in skills.values():
+                if getattr(sk, "name", "") == "Jump":
+                    jump_skill = sk
+                    break
+        if jump_skill is not None:
+            # Check for max active modifications increase
+            if hasattr(jump_skill, "get_max_active_modifications"):
+                # Create a temporary mock character with old level for comparison
+                import copy
+                old_char = copy.copy(player_char)
+                old_char.level = copy.copy(player_char.level)
+                old_char.level.level = player_char.level.level - 1
+                
+                old_max = jump_skill.get_max_active_modifications(old_char)
+                new_max = jump_skill.get_max_active_modifications(player_char)
+                if new_max > old_max:
+                    new_abilities.append(f"Jump: Can now equip {new_max} modifications (was {old_max})")
+            
+            # Check for newly unlocked modifications
+            newly_unlocked = []
+            if hasattr(jump_skill, "check_and_unlock_level_modifications"):
+                newly_unlocked = jump_skill.check_and_unlock_level_modifications(
+                    player_char.level.level, player_char.cls.name
+                )
+            elif hasattr(jump_skill, "check_and_unlock_level_modification"):
+                newly_unlocked = jump_skill.check_and_unlock_level_modification(
+                    player_char.level.level, player_char.cls.name
+                )
+            if newly_unlocked:
+                for mod_name in newly_unlocked:
+                    new_abilities.append(f"Jump Modification: {mod_name}")
         
         # Update exp requirement
         if not player_char.max_level():

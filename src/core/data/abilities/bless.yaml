@@ -1,0 +1,14 @@
+name: Bless
+type: Spell
+subtype: Support
+description: A prayer is spoken, bestowing a mighty blessing upon the caster's weapon, increasing melee damage.
+cost: 12
+effects:
+- type: buff
+  stat: attack
+  amount: 10
+  duration: 5
+- type: buff
+  stat: defense
+  amount: 8
+  duration: 5

@@ -28,6 +28,7 @@ class ActionPriority(Enum):
     NORMAL = 2         # Standard attacks and abilities
     LOW = 3            # Slow/charging abilities
     DELAYED = 4        # Actions that occur later (e.g., after X turns)
+    SKIP = 99          # AI-only: do not select/schedule this action
 
 
 class ActionType(Enum):

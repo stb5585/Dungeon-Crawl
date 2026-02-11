@@ -138,12 +138,15 @@ class Character:
         self.spellbook = {'Spells': {},
                           'Skills': {}}
         self.status_effects = {"Berserk": StatusEffect(False, 0),
-                               "Blind": StatusEffect(False, 0),
-                               "Doom": StatusEffect(False, 0),
-                               "Poison": StatusEffect(False, 0, 0),
-                               "Silence": StatusEffect(False, 0),
-                               "Sleep": StatusEffect(False, 0),
-                               "Stun": StatusEffect(False, 0)}
+                                "Blind": StatusEffect(False, 0),
+                                "Doom": StatusEffect(False, 0),
+                                "Poison": StatusEffect(False, 0, 0),
+                                "Silence": StatusEffect(False, 0),
+                                "Sleep": StatusEffect(False, 0),
+                                "Stun": StatusEffect(False, 0),
+                                "Defend": StatusEffect(False, 0, 0),
+                                "Steal Success": StatusEffect(False, 0),
+                                "Shapeshifted": StatusEffect(False, 0)}
         self.physical_effects = {"Bleed": StatusEffect(False, 0, 0),
                                  "Disarm": StatusEffect(False, 0),
                                  "Prone": StatusEffect(False, 0)}
@@ -182,6 +185,9 @@ class Character:
         self.sight = False
         self.turtle = False
         self.tunnel = False
+
+        # Defensive stance settings
+        self.defensive_stance_reduction = 0.25
     
     def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
@@ -229,6 +235,37 @@ class Character:
             ))
         except:
             pass
+
+    def enter_defensive_stance(self, duration: int = 1, reduction: float | None = None, source: str = "Defend") -> str:
+        """
+        Put the character into a defensive stance for a number of turns.
+
+        Args:
+            duration: Number of turns the stance lasts
+            reduction: Optional damage reduction percentage (0.0 - 1.0)
+            source: Source name for status event logging
+
+        Returns:
+            str: Message describing the stance
+        """
+        if reduction is None:
+            reduction = self.defensive_stance_reduction
+
+        self.status_effects["Defend"].active = True
+        self.status_effects["Defend"].duration = max(self.status_effects["Defend"].duration, duration)
+        self.status_effects["Defend"].extra = reduction
+        self._emit_status_event(self, "Defend", applied=True, duration=duration, source=source)
+
+        return f"{self.name} takes a defensive stance.\n"
+
+    def get_defensive_reduction(self) -> float:
+        """Return total defensive damage reduction from stances/modifiers."""
+        reduction = 0.0
+        if self.status_effects.get("Defend") and self.status_effects["Defend"].active:
+            reduction += float(self.status_effects["Defend"].extra)
+        if hasattr(self, "jump_defend_active") and self.jump_defend_active:
+            reduction += 0.15
+        return min(0.75, reduction)
 
     def incapacitated(self):
         return any([self.status_effects["Sleep"].active,
@@ -317,7 +354,7 @@ class Character:
             crit_chance += (0.1 * self.power_up)
         return crit_chance
 
-    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False) -> tuple[str, bool, int]:
+    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False, use_offhand=True) -> tuple[str, bool, int]:
         """
         Function that controls melee attacks during combat
         defender(Character): the target of the attack
@@ -333,7 +370,7 @@ class Character:
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
         attacks = ['Weapon']
-        if self.equipment['OffHand'].typ == 'Weapon':
+        if use_offhand and self.equipment['OffHand'].typ == 'Weapon':
             attacks.append('OffHand')
         weapon_dam_str = ""
         for i, att in enumerate(attacks):
@@ -453,8 +490,10 @@ class Character:
                                     ))
                                 except:
                                     pass
-                                weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
-                                                   f"{round(blk_per * 100)} percent of the damage.\n")
+                                blocked_pct = round(blk_per * 100)
+                                if blocked_pct > 0:
+                                    weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
+                                                       f"{blocked_pct} percent of the damage.\n")
                     elif defender.magic_effects["Mana Shield"].active:
                         mana_loss = damage // defender.magic_effects["Mana Shield"].duration
                         if mana_loss > defender.mana.current:
@@ -501,6 +540,14 @@ class Character:
                         damage = max(0, int(damage * (1 - p_resist) * (1 - e_resist) * (1 - (dam_red / (dam_red + 50)))))
                         variance = random.uniform(0.85, 1.15)
                         damage = int(damage * variance)
+
+                        defensive_reduction = defender.get_defensive_reduction() if hasattr(defender, "get_defensive_reduction") else 0.0
+                        if defensive_reduction > 0 and damage > 0:
+                            reduced = max(1, int(damage * defensive_reduction))
+                            damage = max(0, damage - reduced)
+                            weapon_dam_str += (
+                                f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
+                            )
                         defender.health.current -= damage
                         if damage > 0:
                             damage_msg = f"{self.name} {typ} {defender.name} for {damage} damage"
@@ -761,7 +808,7 @@ class Character:
                     status_text += f"{self.name} is still prone.\n"
             if self.status_effects["Poison"].active:
                 self.status_effects["Poison"].duration -= 1
-                poison_damage = self.status_effects["Poison"].extra
+                poison_damage = max(1, int(self.status_effects["Poison"].extra * 1.25))
                 if not random.randint(0, self.stats.con // 10):
                     self.health.current -= poison_damage
                     status_text += f"The poison damages {self.name} for {poison_damage} health points.\n"
@@ -783,7 +830,7 @@ class Character:
                     status_text += f"The magic affecting {self.name} has worn off.\n"
             if self.physical_effects["Bleed"].active:
                 self.physical_effects["Bleed"].duration -= 1
-                bleed_damage = self.physical_effects["Bleed"].extra
+                bleed_damage = max(1, int(self.physical_effects["Bleed"].extra * 0.75))
                 if not random.randint(0, self.stats.con // 10):
                     self.health.current -= bleed_damage
                     status_text += f"The bleed damages {self.name} for {bleed_damage} health points.\n"
@@ -812,6 +859,15 @@ class Character:
                 if not self.status_effects["Berserk"].duration:
                     status_text += f"{self.name} has regained their composure.\n"
                     default(effect="Berserk")
+            if self.status_effects["Defend"].active:
+                self.status_effects["Defend"].duration -= 1
+                if not self.status_effects["Defend"].duration:
+                    status_text += f"{self.name} lowers their guard.\n"
+                    default(effect="Defend")
+            if self.status_effects["Steal Success"].active:
+                self.status_effects["Steal Success"].duration -= 1
+                if not self.status_effects["Steal Success"].duration:
+                    default(effect="Steal Success")
             if self.magic_effects["Reflect"].active:
                 self.magic_effects["Reflect"].duration -= 1
                 if not self.magic_effects["Reflect"].duration:

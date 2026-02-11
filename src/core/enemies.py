@@ -54,6 +54,20 @@ class Enemy(Character):
     picture(str): file that contains the ascii art for the enemy 
     """
 
+    _DEBUFF_REAPPLY_RULES = {
+        "Enfeeble": {"stat_all": ["Attack", "Defense"]},
+        "Weaken Mind": {"stat_all": ["Magic", "Magic Defense"]},
+        "Ruin": {"stat_all": ["Attack", "Defense", "Magic", "Magic Defense"]},
+        "Sleeping Powder": {"status": "Sleep"},
+        "Sleep": {"status": "Sleep"},
+        "Stupefy": {"status": "Stun"},
+        "Berserk": {"status": "Berserk"},
+        "Howl": {"status": "Stun"},
+        "Trip": {"physical": "Prone"},
+        "Goad": {"status": "Berserk"},
+        "Blinding Fog": {"status": "Blind"},
+    }
+
     def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
                  attack, defense, magic, magic_def, exp):
         super().__init__(name, Resource(health+con, health+con), Resource(mana+intel, mana+intel),
@@ -115,6 +129,12 @@ class Enemy(Character):
             return "Attack", None
         if self.turtle or self.magic_effects["Ice Block"].active:
             return "Nothing", None
+        
+        # If action_stack is defined with priorities, use weighted selection
+        if self.action_stack and any(isinstance(item, dict) and "priority" in item for item in self.action_stack):
+            return self._choose_action_by_priority(target, tile)
+        
+        # Legacy path: standard random action selection
         if self.name != 'Test' and not self.tunnel:
             action_list = ["Attack"]
         else:
@@ -123,6 +143,8 @@ class Enemy(Character):
             spell_list = []
             for spell_name, spell in self.spellbook['Spells'].items():
                 if self.spellbook['Spells'][spell_name].passive:
+                    continue
+                if self._should_skip_reapply_debuff(spell_name, target):
                     continue
                 if self.tunnel:
                     if spell.subtyp not in ["Heal", "Support"]:
@@ -139,6 +161,8 @@ class Enemy(Character):
                         self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
                             self.health.current > self.health.max * 0.25,
                         self.tunnel]):
+                    continue
+                if self._should_skip_reapply_debuff(skill_name, target):
                     continue
                 if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
                     skill_list.append(skill_name)
@@ -161,9 +185,279 @@ class Enemy(Character):
             ability = random.choice(skill_list)
         else:
             ability = None
-        if self.action_stack:
-            pass  # TODO make responses dictionary for status effects and such
         return action, ability
+
+    def _choose_action_by_priority(self, target, tile):
+        """
+        Choose an action based on priority weights from action_stack.
+        Priority weighting: HIGH=3, NORMAL=2, LOW=1
+        Ensures enemies use abilities strategically, not just random selection.
+        """
+        # Build weighted pool of available actions from action_stack
+        weighted_actions = []
+        
+        for action_entry in self.action_stack:
+            if not isinstance(action_entry, dict):
+                continue
+            
+            ability_name = action_entry.get("ability", "Attack")
+            priority = action_entry.get("priority", ActionPriority.NORMAL)
+            priority_if = action_entry.get("priority_if")
+            if priority_if:
+                priority = self._resolve_priority_condition(priority_if, priority, target, tile)
+            if priority == ActionPriority.SKIP:
+                continue
+            
+            # Determine action type and check availability
+            if ability_name == "Attack":
+                action_type = "Attack"
+                usable = True
+            elif ability_name in self.spellbook.get("Spells", {}):
+                if self._should_skip_reapply_debuff(ability_name, target):
+                    continue
+                spell = self.spellbook["Spells"][ability_name]
+                # Skip passive spells and check mana
+                if spell.passive or self.mana.current < spell.cost:
+                    continue
+                action_type = "Cast Spell"
+                usable = True
+            elif ability_name in self.spellbook.get("Skills", {}):
+                if self._should_skip_reapply_debuff(ability_name, target):
+                    continue
+                skill = self.spellbook["Skills"][ability_name]
+                # Skip passive skills and check mana/target constraints
+                if skill.passive or self.mana.current < skill.cost:
+                    continue
+                if ability_name == "Backstab" and not target.incapacitated():
+                    continue
+                if ability_name == "Smoke Screen":
+                    steal_ready = bool(self.status_effects.get("Steal Success", StatusEffect()).active)
+                    if not steal_ready and self.health.current > self.health.max * 0.25:
+                        continue
+                if ability_name == "Tunnel" and self.health.current > self.health.max * 0.25:
+                    continue
+                if ability_name == "Disarm" and not self._target_has_weapon(target):
+                    continue
+                action_type = "Use Skill"
+                usable = True
+            else:
+                usable = False
+            
+            if not usable:
+                continue
+            
+            # Weight by priority: HIGH=3, NORMAL=2, LOW=1
+            weight = self._priority_to_weight(priority)
+            
+            # Add action to weighted pool proportional to priority weight
+            for _ in range(weight):
+                weighted_actions.append((action_type, ability_name))
+        
+        # If no weighted actions available, fall back to standard options() logic
+        if not weighted_actions:
+            return self._fallback_action_selection(target, tile)
+        
+        # Choose from weighted pool (higher priority = more copies in pool = higher selection chance)
+        action_type, ability_name = random.choice(weighted_actions)
+        return action_type, ability_name
+
+    def _fallback_action_selection(self, target, tile):
+        """Fallback to standard random action selection if action_stack can't be used."""
+        if self.name != 'Test' and not self.tunnel:
+            action_list = ["Attack"]
+        else:
+            action_list = []
+        
+        spell_list = []
+        skill_list = []
+        
+        if not self.status_effects["Silence"].active:
+            for spell_name, spell in self.spellbook['Spells'].items():
+                if self.spellbook['Spells'][spell_name].passive:
+                    continue
+                if self._should_skip_reapply_debuff(spell_name, target):
+                    continue
+                if self.tunnel:
+                    if spell.subtyp not in ["Heal", "Support"]:
+                        continue
+                if self.spellbook['Spells'][spell_name].cost <= self.mana.current:
+                    spell_list.append(spell_name)
+            if spell_list:
+                action_list.append("Cast Spell")
+            
+            for skill_name, _ in self.spellbook['Skills'].items():
+                if any([self.spellbook['Skills'][skill_name].passive,
+                        self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
+                        self.spellbook["Skills"][skill_name].weapon and self.physical_effects["Disarm"].active,
+                        self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
+                            self.health.current > self.health.max * 0.25 and
+                            not self.status_effects.get("Steal Success", StatusEffect()).active,
+                        self.tunnel]):
+                    continue
+                if self._should_skip_reapply_debuff(skill_name, target):
+                    continue
+                if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
+                    skill_list.append(skill_name)
+            if skill_list:
+                action_list.append("Use Skill")
+        
+        if self.physical_effects["Disarm"].active:
+            action_list.append("Pickup Weapon")
+        if self.tunnel:
+            action_list.extend(["Surface", "Nothing"])
+        if all([target.level.pro_level * target.level.level >= 10,
+                target.level.pro_level > self.level.pro_level,
+                random.randint(0, max(0, target.level.pro_level - self.level.pro_level)),
+                'Boss' not in str(tile),
+                self.name != 'Mimic']):
+            action_list.append("Flee")
+        
+        action = random.choice(action_list) if action_list else "Attack"
+        ability = None
+        
+        if action == "Cast Spell" and spell_list:
+            ability = random.choice(spell_list)
+        elif action == "Use Skill" and skill_list:
+            ability = random.choice(skill_list)
+        
+        return action, ability
+
+    def _resolve_priority_condition(self, condition, fallback_priority, target, tile):
+        if not isinstance(condition, dict):
+            return fallback_priority
+
+        target_status = condition.get("target_status")
+        if target_status:
+            status_effects = getattr(target, "status_effects", {})
+            is_active = bool(status_effects.get(target_status, StatusEffect()).active)
+            if is_active:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        if condition.get("target_incapacitated") is not None:
+            is_incapacitated = target.incapacitated()
+            if is_incapacitated:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        if condition.get("target_has_weapon") is not None:
+            has_weapon = self._target_has_weapon(target)
+            if has_weapon:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        if condition.get("target_has_mana") is not None:
+            has_mana = hasattr(target, "mana") and target.mana.current > 0
+            if has_mana:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        if condition.get("target_has_positive_effects") is not None:
+            # Check for active positive effects (stat buffs or magic buffs)
+            stat_effects = getattr(target, "stat_effects", {})
+            magic_effects = getattr(target, "magic_effects", {})
+            has_positive_effects = (
+                any(bool(effect.active) for effect in stat_effects.values()) or
+                any(bool(effect.active) for effect in magic_effects.values())
+            )
+            if has_positive_effects:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        self_hp_pct_lt = condition.get("self_hp_pct_lt")
+        if self_hp_pct_lt is not None:
+            try:
+                threshold = float(self_hp_pct_lt)
+            except (TypeError, ValueError):
+                return fallback_priority
+            if self.health.max and (self.health.current / self.health.max) < threshold:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        self_mana_pct_lt = condition.get("self_mana_pct_lt")
+        if self_mana_pct_lt is not None:
+            try:
+                threshold = float(self_mana_pct_lt)
+            except (TypeError, ValueError):
+                return fallback_priority
+            if hasattr(self, "mana") and self.mana.max and (self.mana.current / self.mana.max) < threshold:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        self_status = condition.get("self_status")
+        if self_status:
+            status_effects = getattr(self, "status_effects", {})
+            is_active = bool(status_effects.get(self_status, StatusEffect()).active)
+            if is_active:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        self_stat = condition.get("self_stat")
+        if self_stat:
+            stat_effects = getattr(self, "stat_effects", {})
+            is_active = bool(stat_effects.get(self_stat, StatusEffect()).active)
+            if is_active:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        self_stat_any = condition.get("self_stat_any")
+        if self_stat_any:
+            stat_effects = getattr(self, "stat_effects", {})
+            is_active = any(
+                bool(stat_effects.get(stat_name, StatusEffect()).active)
+                for stat_name in self_stat_any
+            )
+            if is_active:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        return fallback_priority
+
+    def _should_skip_reapply_debuff(self, ability_name, target):
+        if target is None:
+            return False
+        rule = self._DEBUFF_REAPPLY_RULES.get(ability_name)
+        if not rule:
+            return False
+
+        status_name = rule.get("status")
+        if status_name:
+            status_effects = getattr(target, "status_effects", {})
+            return bool(status_effects.get(status_name, StatusEffect()).active)
+
+        physical_name = rule.get("physical")
+        if physical_name:
+            physical_effects = getattr(target, "physical_effects", {})
+            return bool(physical_effects.get(physical_name, StatusEffect()).active)
+
+        stat_all = rule.get("stat_all")
+        if stat_all:
+            stat_effects = getattr(target, "stat_effects", {})
+            return all(
+                bool(stat_effects.get(stat_name, StatusEffect()).active)
+                for stat_name in stat_all
+            )
+
+        return False
+
+    def _target_has_weapon(self, target):
+        equipment = getattr(target, "equipment", {})
+        weapon = equipment.get("Weapon") if isinstance(equipment, dict) else None
+        if weapon is None:
+            return False
+        return not isinstance(weapon, items.NoWeapon)
+
+    @staticmethod
+    def _priority_to_weight(priority):
+        """Convert ActionPriority enum to selection weight (HIGH=3, NORMAL=2, LOW=1)."""
+        if priority == ActionPriority.HIGH:
+            return 3
+        elif priority == ActionPriority.LOW:
+            return 1
+        elif priority == ActionPriority.SKIP:
+            return 0
+        else:  # NORMAL, VERY_HIGH, VERY_LOW, etc. default to 2
+            return 2
 
 
 class Misc(Enemy):
@@ -172,7 +466,6 @@ class Misc(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Misc'
-        self.color = (150, 150, 150)  # Gray
 
 
 class Slime(Enemy):
@@ -195,7 +488,6 @@ class Slime(Enemy):
         self.resistance['Holy'] = 0.75
         self.resistance['Physical'] = -0.5
         self.picture = "slime.txt"
-        self.color = (120, 160, 100)  # Slimy green
 
 
 class Animal(Enemy):
@@ -209,7 +501,6 @@ class Animal(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Animal'
         self.inventory['Mystery Meat'] = [items.MysteryMeat]
-        self.color = (140, 110, 80)  # Natural brown
 
 
 class Humanoid(Enemy):
@@ -222,7 +513,6 @@ class Humanoid(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Humanoid'
-        self.color = (180, 140, 100)  # Flesh tone
 
 
 class Fey(Enemy):
@@ -236,7 +526,6 @@ class Fey(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Fey'
         self.resistance['Shadow'] = 0.25
-        self.color = (100, 160, 100)  # Forest green
 
 
 class Fiend(Enemy):
@@ -252,7 +541,6 @@ class Fiend(Enemy):
         self.resistance['Shadow'] = 0.25
         self.resistance['Holy'] = -0.25
         self.status_immunity = ["Death"]
-        self.color = (200, 60, 60)  # Dark red
 
 
 class Undead(Enemy):
@@ -270,7 +558,6 @@ class Undead(Enemy):
         self.resistance['Holy'] = -0.75
         self.resistance["Poison"] = 0.5
         self.status_immunity = ["Death"]
-        self.color = (200, 200, 180)  # Pale bone white
 
 
 class Elemental(Enemy):
@@ -284,7 +571,6 @@ class Elemental(Enemy):
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Elemental'
         self.resistance['Physical'] = 0.25
-        self.color = (150, 150, 200)  # Ethereal blue
 
 
 class Dragon(Enemy):
@@ -305,7 +591,7 @@ class Dragon(Enemy):
         self.resistance['Wind'] = 0.25
         self.resistance['Physical'] = 0.1
         self.status_immunity = ["Death", "Stone"]
-        self.color = (200, 140, 40)  # Gold
+        self.inventory["Dragon's Tear"] = [items.DragonTear]
 
 
 class Monster(Enemy):
@@ -318,7 +604,6 @@ class Monster(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Monster'
-        self.color = (160, 120, 100)  # Mottled brown
 
 
 class Aberration(Enemy):
@@ -331,7 +616,6 @@ class Aberration(Enemy):
         super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
                          attack, defense, magic, magic_def, exp)
         self.enemy_typ = 'Aberration'
-        self.color = (160, 100, 160)  # Sickly purple
 
 
 class Construct(Enemy):
@@ -347,7 +631,6 @@ class Construct(Enemy):
         self.resistance["Poison"] = 1.
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Poison", "Death", "Stone"]
-        self.color = (140, 140, 140)  # Stone gray
 
 
 # Enemies
@@ -412,14 +695,15 @@ class Mimic(Aberration):
         self.resistance["Poison"] = 1.0
         self.status_immunity = ["Poison", "Death", "Stone"]
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Lick", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
+            {"ability": "Lick", "priority": ActionPriority.HIGH},
             {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
             {"ability": "Slot Machine", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = z
         self.sight = True
         self.picture = "mimic.txt"
+        self.color = (150, 75, 0)  # Brown
 
 
 # Starting enemies
@@ -436,11 +720,12 @@ class GreenSlime(Slime):
         self.spellbook = {"Spells": {'Enfeeble': abilities.Enfeeble()},
                           "Skills": {'Acid Spit': abilities.AcidSpit()}}
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Acid Spit", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
+            {"ability": "Acid Spit", "priority": ActionPriority.HIGH},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
+        self.color = (0, 200, 0)  # Green
 
 
 class GiantRat(Animal):
@@ -454,10 +739,11 @@ class GiantRat(Animal):
         self.gold = random.randint(1, 5)
         self.inventory['Rat Tail'] = [items.RatTail]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
         self.picture = "giantrat.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Goblin(Humanoid):
@@ -473,12 +759,13 @@ class Goblin(Humanoid):
                           "Skills": {"Goblin Punch": abilities.GoblinPunch(),
                                      "Gold Toss": abilities.GoldToss()}}
         self.action_stack = [
-            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Goblin Punch", "priority": ActionPriority.NORMAL},
-            {"ability": "Gold Toss", "priority": ActionPriority.HIGH}
+            {"ability": "Gold Toss", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
         self.picture = "goblin.txt"
+        self.color = (0, 100, 0)  # Dark green
 
 
 class Goblin2(Goblin):
@@ -492,14 +779,18 @@ class Goblin2(Goblin):
         self.combat = Combat(35, 18, 12, 22)
         self.equipment = {'Weapon': items.Jian(), 'Armor': items.LeatherArmor(), 'OffHand': items.Baselard(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.transform = [Barghest]
         self.spellbook["Spells"]["Mirror Image"] = abilities.MirrorImage()
         self.spellbook['Skills']["Parry"] = abilities.Parry()
         self.action_stack = [
-            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Goblin Punch", "priority": ActionPriority.NORMAL},
-            {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+            {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
             {"ability": "Mirror Image", "priority": ActionPriority.HIGH},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
 
 
@@ -518,13 +809,20 @@ class Bandit(Humanoid):
                                      "Disarm": abilities.Disarm(),
                                      'Smoke Screen': abilities.SmokeScreen()}}
         self.action_stack = [
-            {"ability": "Dirk Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Steal", "priority": ActionPriority.HIGH},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
-            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Steal", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.SKIP}},
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW,
+             "priority_if": {"self_status": "Steal Success",
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 0
         self.picture = "fighter.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Skeleton(Undead):
@@ -539,10 +837,11 @@ class Skeleton(Undead):
         self.inventory['Health Potion'] = [items.HealthPotion]
         self.resistance['Fire'] = 0.0
         self.action_stack = [
-            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
         self.picture = "skeleton.txt"
+        self.color = (255, 255, 255)  # White
 
 
 class Scarecrow(Construct):
@@ -559,11 +858,12 @@ class Scarecrow(Construct):
         self.resistance['Fire'] = -1.0
         self.resistance['Physical'] = 0.0
         self.action_stack = [
-            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Sleeping Powder", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
         self.picture = "scarecrow.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 # Level 1
@@ -578,10 +878,11 @@ class GiantCentipede(Animal):
         self.gold = random.randint(10, 18)
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Pincer Attack", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "centipede.txt"
+        self.color = (165, 42, 42)  # Brown
 
 
 class GiantHornet(Animal):
@@ -597,11 +898,12 @@ class GiantHornet(Animal):
                           "Skills": {}}
         self.flying = True
         self.action_stack = [
-            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Berserk", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "hornet.txt"
+        self.color = (255, 215, 0)  # Gold
 
 
 class ElectricBat(Animal):
@@ -620,12 +922,16 @@ class ElectricBat(Animal):
         self.resistance['Electric'] = 0.25
         self.resistance['Water'] = -0.25
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shock", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 1
         self.picture = "bat.txt"
+        self.color = (150, 150, 200)  # Ethereal blue
 
 
 class Zombie(Undead):
@@ -640,11 +946,12 @@ class Zombie(Undead):
         self.spellbook = {"Spells": {},
                           "Skills": {'Poison Strike': abilities.PoisonStrike()}}
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "zombie.txt"
+        self.color = (105, 105, 105)  # Gray
 
 
 class Imp(Fiend):
@@ -660,12 +967,16 @@ class Imp(Fiend):
                                      "Silence": abilities.Silence()},
                           "Skills": {}}
         self.action_stack = [
-            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 1
         self.picture = "imp.txt"
+        self.color = (139, 0, 0)  # Dark Red
 
 
 class GiantSpider(Animal):
@@ -681,11 +992,12 @@ class GiantSpider(Animal):
                           'Skills': {'Web': abilities.Web()}}
         self.resistance["Poison"] = 0.25
         self.action_stack = [
-            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Web", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "spider.txt"
+        self.color = (25, 25, 25)  # Dark Gray
 
 
 class Quasit(Fiend):
@@ -710,12 +1022,16 @@ class Quasit(Fiend):
                           GiantCentipede,
                           BattleToad]
         self.action_stack = [
-            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+            {"ability": "Shapeshift", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}}
         ]
         self.level.pro_level = 1
         self.picture = "quasit.txt"
+        self.color = (144, 238, 144)  # Light Green
 
 
 class Panther(Animal):
@@ -734,13 +1050,20 @@ class Panther(Animal):
                                      "Disarm": abilities.Disarm()}}
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.LOW,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}},
             {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL}
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 1
         self.picture = "panther.txt"
+        self.color = (10, 10, 10)  # Black
 
 
 class Panther2(Panther):
@@ -766,11 +1089,12 @@ class TwistedDwarf(Humanoid):
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
         self.action_stack = [
-            {"ability": "Mattock Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "dwarf.txt"
+        self.color = (160, 82, 45)  # Sienna
 
 
 class BattleToad(Animal):
@@ -783,15 +1107,17 @@ class BattleToad(Animal):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(31, 47)
         self.spellbook = {"Spells": {},
-                          "Skills": {"Kidney Punch": abilities.KidneyPunch()}}
-#                          "Skills": {"Jump": abilities.Jump()}}  TODO nerf Jump by adding delay
+                          "Skills": {"Kidney Punch": abilities.KidneyPunch(),
+                                     "Jump": abilities.Jump()}}
         self.resistance["Water"] = 0.75
         self.action_stack = [
-            {"ability": "Knuckle Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Kidney Punch", "priority": ActionPriority.NORMAL},
+            {"ability": "Jump", "priority": ActionPriority.NORMAL},
         ]
         self.level.pro_level = 1
         self.picture = "battletoad.txt"
+        self.color = (144, 238, 144)  # Light Green
 
 
 class Satyr(Fey):
@@ -815,11 +1141,12 @@ class Satyr(Fey):
         self.resistance["Poison"] = 0.1
         self.resistance['Physical'] = 0.1
         self.action_stack = [
-            {"ability": "Rapier Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Stomp", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 1
         self.picture = "satyr.txt"
+        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Minotaur(Monster):
@@ -843,15 +1170,18 @@ class Minotaur(Monster):
                                      'Parry': abilities.Parry()}}
         self.status_immunity = ["Death"]
         self.action_stack = [
-            {"ability": "Broadaxe Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Charge", "priority": ActionPriority.NORMAL},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 1
         self.sight = True
         self.picture = "minotaur.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Barghest(Fiend):
@@ -875,15 +1205,22 @@ class Barghest(Fiend):
         self.resistance['Physical'] = 0.25
         self.transform = [Barghest, Goblin2, Direwolf2]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Backstab", "priority": ActionPriority.HIGH},
-            {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
-            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.LOW,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}},
+            {"ability": "Kidney Punch", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.sight = True
         self.picture = "barghest.txt"
+        self.color = (105, 105, 105)  # Dark Gray
 
 
 # Level 2
@@ -900,11 +1237,15 @@ class Gnoll(Humanoid):
         self.spellbook = {"Spells": {},
                           "Skills": {"Disarm": abilities.Disarm()}}
         self.action_stack = [
-            {"ability": "Partisan Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 2
         self.picture = "gnoll.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class GiantSnake(Animal):
@@ -921,11 +1262,12 @@ class GiantSnake(Animal):
                           "Skills": {"Slam": abilities.Slam()}}
         self.resistance["Poison"] = 0.25
         self.action_stack = [
-            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Slam", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.picture = "snake.txt"
+        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Orc(Humanoid):
@@ -941,11 +1283,12 @@ class Orc(Humanoid):
         self.spellbook = {"Spells": {},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
         self.action_stack = [
-            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.HIGH}
         ]
         self.level.pro_level = 2
         self.picture = "orc.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class GiantOwl(Animal):
@@ -962,11 +1305,12 @@ class GiantOwl(Animal):
         self.inventory['Feather'] = [items.Feather]
         self.flying = True
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.picture = "giantowl.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Vampire(Undead):
@@ -984,14 +1328,21 @@ class Vampire(Undead):
                                      'Shapeshift': abilities.Shapeshift()}}
         self.transform = [Vampire, VampireBat]
         self.action_stack = [
-            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Health Drain", "priority": ActionPriority.NORMAL},
             {"ability": "Lightning", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL},
-            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 2
         self.picture = "vampire.txt"
+        self.color = (10, 10, 10)  # Black
 
 
 class VampireBat(Animal):
@@ -1009,12 +1360,16 @@ class VampireBat(Animal):
         self.transform = [Vampire, VampireBat]
         self.flying = True
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Health Drain", "priority": ActionPriority.NORMAL},
-            {"ability": "Shapeshift", "priority": ActionPriority.HIGH}
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 2
         self.picture = "bat.txt"
+        self.color = (10, 10, 10)  # Black
 
 
 class Direwolf(Animal):
@@ -1032,12 +1387,13 @@ class Direwolf(Animal):
                                      'Trip': abilities.Trip()}}
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Howl", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.picture = "direwolf.txt"
+        self.color = (105, 105, 105)  # Dark Gray
 
 
 class Direwolf2(Direwolf):
@@ -1051,12 +1407,17 @@ class Direwolf2(Direwolf):
         self.combat = Combat(36, 38, 24, 33)
         self.equipment = {'Weapon': items.Claw2(), 'Armor': items.AnimalHide2(), 'OffHand': items.Claw2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.transform = [Barghest]
         self.spellbook['Skills']["Jump"] = abilities.Jump()
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Howl", "priority": ActionPriority.NORMAL},
-            {"ability": "Jump", "priority": ActionPriority.HIGH}
+            {"ability": "Trip", "priority": ActionPriority.NORMAL},
+            {"ability": "Jump", "priority": ActionPriority.HIGH},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
         ]
 
 
@@ -1071,12 +1432,39 @@ class Wererat(Monster):
         self.gold = random.randint(40, 65)
         self.inventory["Rat Tail"] = [items.RatTail]
         self.inventory['Leather'] = [items.Leather]
+        self.transform = [Wererat, Bandit2]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 2
         self.picture = "giantrat.txt"
+        self.color = (100, 149, 237)  # Cornflower Blue
+
+
+class Bandit2(Bandit):
+    """
+    Buffed version of Bandit; Wererat will transform into
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.stats = Stats(28, 10, 9, 20, 12, 20)
+        self.combat = Combat(36, 38, 24, 33)
+        self.equipment = {'Weapon': items.Jian(), 'Armor': items.LeatherArmor(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.transform = [Wererat, Bandit2]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Shapeshift", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shapeshifted",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
+        ]
 
 
 class RedSlime(Slime):
@@ -1093,11 +1481,12 @@ class RedSlime(Slime):
                                      'Enfeeble': abilities.Enfeeble()},
                           'Skills': {}}
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
+        self.color = (255, 0, 0)  # Red
 
 
 class GiantScorpion(Animal):
@@ -1106,16 +1495,19 @@ class GiantScorpion(Animal):
         super().__init__(name='Giant Scorpion', health=random.randint(13, 18), mana=2, strength=14, intel=5, wisdom=10,
                          con=12, charisma=10, dex=9, attack=16, defense=18, magic=9, magic_def=15,
                          exp=random.randint(65, 105))
-        self.equipment = {'Weapon': items.Stinger(), 'Armor': items.Carapace(), 'OffHand': items.NoOffHand(),
+        self.equipment = {'Weapon': items.Claw2(), 'Armor': items.Carapace(), 'OffHand': items.Claw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(40, 65)
         self.resistance["Poison"] = 0.25
         self.resistance['Physical'] = 0.25
+        self.spellbook['Skills']['Poison Strike'] = abilities.PoisonStrike()
         self.action_stack = [
-            {"ability": "Stinger Strike", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
         ]
         self.level.pro_level = 2
         self.picture = "giantscorpion.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Warrior(Humanoid):
@@ -1133,13 +1525,16 @@ class Warrior(Humanoid):
                                      "Disarm": abilities.Disarm(),
                                      'Parry': abilities.Parry()}}
         self.action_stack = [
-            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 2
         self.picture = "fighter.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Harpy(Monster):
@@ -1156,13 +1551,13 @@ class Harpy(Monster):
         self.spellbook = {'Spells': {"Berserk": abilities.Berserk()},
                           'Skills': {'Screech': abilities.Screech()}}
         self.action_stack = [
-            {"ability": "Mace Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL},
-            {"ability": "Berserk", "priority": ActionPriority.NORMAL}
+            {"ability": "Berserk", "priority": ActionPriority.LOW}
         ]
         self.level.pro_level = 2
         self.picture = "harpy.txt"
+        self.color = (139, 69, 19)  # Brown
 
 
 class Naga(Monster):
@@ -1179,12 +1574,16 @@ class Naga(Monster):
         self.resistance['Electric'] = -0.5
         self.resistance['Water'] = 0.75
         self.action_stack = [
-            {"ability": "Partisan Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 2
         self.picture = "naga.txt"
+        self.color = (0, 100, 0)  # Dark Green
 
 
 class Clannfear(Fiend):
@@ -1202,12 +1601,13 @@ class Clannfear(Fiend):
         self.resistance['Fire'] = 0.75
         self.resistance['Electric'] = -0.5
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL},
             {"ability": "Charge", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.picture = "clannfear.txt"
+        self.color = (85, 107, 47)  # Greenish Brown
 
 
 class Xorn(Elemental):
@@ -1232,12 +1632,13 @@ class Xorn(Elemental):
         self.resistance["Poison"] = 1.0
         self.status_immunity = ["Poison", "Stone"]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Tremor", "priority": ActionPriority.NORMAL},
-            {"ability": "ConsumeItem", "priority": ActionPriority.HIGH}
+            {"ability": "ConsumeItem", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
         self.picture = "xorn.txt"
+        self.color = (190, 69, 19)  # Brownish Red
 
 
 class SteelPredator(Construct):
@@ -1260,13 +1661,17 @@ class SteelPredator(Construct):
         self.resistance['Water'] = -0.75
         self.resistance['Earth'] = 0.
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Charge", "priority": ActionPriority.NORMAL},
-            {"ability": "Destroy Metal", "priority": ActionPriority.HIGH},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+            {"ability": "Destroy Metal", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 2
         self.picture = "steelpredator.txt"
+        self.color = (192, 192, 192)  # Metallic Silver
 
 
 class Pseudodragon(Dragon):
@@ -1288,14 +1693,15 @@ class Pseudodragon(Dragon):
                                      'Dispel': abilities.Dispel()},
                           'Skills': {'Gold Toss': abilities.GoldToss()}}
         self.action_stack = [
-            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Fireball", "priority": ActionPriority.NORMAL},
-            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-             "telegraph": "inhaling deeply, flames flickering in its throat"}
+            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+            #  "telegraph": "inhaling deeply, flames flickering in its throat"} TODO: implement
         ]
         self.level.pro_level = 2
         self.sight = True
         self.picture = "pseudodragon.txt"
+        self.color = (255, 215, 0)  # Golden Red
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target, typ="Fire")
@@ -1324,15 +1730,19 @@ class Nightmare(Fiend):
         self.resistance['Physical'] = 0.5
         self.flying = True
         self.action_stack = [
-            {"ability": "Hoof Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Stomp", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
-            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL}
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.LOW,
+             "priority_if": {"target_status": "Sleep",
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 3
         self.sight = True
         self.picture = "nightmare.txt"
+        self.color = (48, 25, 52)  # Blackish Purple
 
     def special_attack(self, target):
         return super().special_attack(target)
@@ -1354,12 +1764,13 @@ class Direbear(Animal):
                                      'Charge': abilities.Charge()}}
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Charge", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "direbear.txt"
+        self.color = (210, 180, 140)  # Light Brown
 
 
 class Direbear2(Direbear):
@@ -1385,11 +1796,12 @@ class Ghoul(Undead):
         self.spellbook = {"Spells": {'Disease Breath': abilities.DiseaseBreath()},
                           "Skills": {}}
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Disease Breath", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Disease Breath", "priority": ActionPriority.LOW}
         ]
         self.level.pro_level = 3
         self.picture = "ghoul.txt"
+        self.color = (173, 216, 230)  # Bluish white
 
 
 class PitViper(Animal):
@@ -1406,11 +1818,12 @@ class PitViper(Animal):
                           "Skills": {'Double Strike': abilities.DoubleStrike()}}
         self.resistance["Poison"] = 0.25
         self.action_stack = [
-            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "snake.txt"
+        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Disciple(Humanoid):
@@ -1429,14 +1842,19 @@ class Disciple(Humanoid):
                                      'Boost': abilities.Boost()},
                           'Skills': {}}
         self.action_stack = [
-            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
             {"ability": "Ice Lance", "priority": ActionPriority.NORMAL},
-            {"ability": "Arcane Blast", "priority": ActionPriority.NORMAL, "delay": 1,
-             "telegraph": "channeling all remaining mana into a devastating blast"}
+            {"ability": "Shock", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.NORMAL}},
         ]
         self.level.pro_level = 3
         self.picture = "disciple.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class BlackSlime(Slime):
@@ -1456,12 +1874,13 @@ class BlackSlime(Slime):
                                      'Stupefy': abilities.Stupefy()},
                           'Skills': {}}
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
             {"ability": "Stupefy", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
+        self.color = (10, 10, 10)  # Black
 
 
 class Ogre(Monster):
@@ -1477,13 +1896,17 @@ class Ogre(Monster):
                                      'Dispel': abilities.Dispel()},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
         self.action_stack = [
-            {"ability": "Maul Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
-            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_positive_effects": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 3
         self.picture = "ogre.txt"
+        self.color = (210, 180, 140)  # Tan-White
 
 
 class Alligator(Animal):
@@ -1498,12 +1921,12 @@ class Alligator(Animal):
         self.spellbook = {"Spells": {},
                           "Skills": {"Trip": abilities.Trip()}}
         self.action_stack = [
-            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "alligator.txt"
+        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Troll(Humanoid):
@@ -1518,11 +1941,12 @@ class Troll(Humanoid):
         self.spellbook = {"Spells": {},
                           "Skills": {'Mortal Strike': abilities.MortalStrike()}}
         self.action_stack = [
-            {"ability": "Axe Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "troll.txt"
+        self.color = (34, 139, 34)  # Forest Green
 
 
 class GoldenEagle(Animal):
@@ -1540,11 +1964,12 @@ class GoldenEagle(Animal):
                           "Skills": {'Screech': abilities.Screech()}}
         self.flying = True
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "goldeneagle.txt"
+        self.color = (255, 215, 0)  # Golden Yellow
 
 
 class EvilCrusader(Humanoid):
@@ -1565,15 +1990,18 @@ class EvilCrusader(Humanoid):
         self.resistance['Shadow'] = 0.5
         self.resistance['Holy'] = -0.5
         self.action_stack = [
-            {"ability": "Mace Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
-            {"ability": "Shield Block", "priority": ActionPriority.HIGH},
             {"ability": "Smite", "priority": ActionPriority.NORMAL},
-            {"ability": "Bless", "priority": ActionPriority.NORMAL},
+            {"ability": "Bless", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat_any": ["Attack", "Defense"],
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.NORMAL}},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "skeleton.txt"
+        self.color = (169, 169, 169)  # Dark Gray
 
 
 class Werewolf(Monster):
@@ -1594,12 +2022,13 @@ class Werewolf(Monster):
                                      'Howl': abilities.Howl()}}
         self.resistance['Physical'] = 0.1
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Howl", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "werewolf.txt"
+        self.color = (139, 69, 19)  # Dark Brown
 
 
 class Werewolf2(Werewolf):
@@ -1630,12 +2059,16 @@ class Antlion(Animal):
                                      "Tunnel": abilities.Tunnel()}}
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Tunnel", "priority": ActionPriority.HIGH}
+            {"ability": "Tunnel", "priority": ActionPriority.LOW,
+             "priority_if": {"self_hp_pct_lt": 0.25,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 3
         self.picture = "antlion.txt"
+        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class InvisibleStalker(Elemental):
@@ -1661,15 +2094,21 @@ class InvisibleStalker(Elemental):
         self.invisible = True
         self.sight = True
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Backstab", "priority": ActionPriority.HIGH},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.LOW,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}},
             {"ability": "Kidney Punch", "priority": ActionPriority.HIGH},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW,
+             "priority_if": {"self_hp_pct_lt": 0.25,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 3
         self.picture = "assassin.txt"
+        self.color = (10, 10, 10)  # Black
 
 
 class NightHag(Fey):
@@ -1689,14 +2128,18 @@ class NightHag(Fey):
         self.resistance['Cold'] = 0.25
         self.resistance['Physical'] = 0.25
         self.action_stack = [
-            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
-            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL}
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.LOW,
+             "priority_if": {"target_status": "Sleep",
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 3
         self.picture = "nighthag.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class NightHag2(NightHag):
@@ -1717,12 +2160,18 @@ class NightHag2(NightHag):
         self.spellbook['Skills']["Widow's Wail"] = abilities.WidowsWail()
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
-            {"ability": "Nightmare Fuel", "priority": ActionPriority.NORMAL},
-            {"ability": "Widow's Wail", "priority": ActionPriority.NORMAL}
+            {"ability": "Nightmare Fuel", "priority": ActionPriority.LOW,
+             "priority_if": {"target_status": "Sleep",
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}},
+            {"ability": "Widow's Wail", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_hp_pct_lt": "0.5",
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.NORMAL}}
         ]
 
 
@@ -1737,7 +2186,7 @@ class Treant(Fey):
         self.gold = random.randint(60, 85)
         self.inventory['Cursed Hops'] = [items.CursedHops]
         self.spellbook = {"Spells": {"Regen": abilities.Regen()},
-                          "Skills": {'Double Strike': abilities.DoubleStrike(),
+                          "Skills": {'Crushing Blow': abilities.CrushingBlow(),
                                      'Throw Rock': abilities.ThrowRock()}}
         self.resistance['Fire'] = -1.
         self.resistance['Water'] = 1.5
@@ -1745,13 +2194,17 @@ class Treant(Fey):
         self.resistance['Physical'] = 0.25
         self.status_immunity = ["Poison"]
         self.action_stack = [
-            {"ability": "Slam", "priority": ActionPriority.NORMAL},
-            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Crushing Blow", "priority": ActionPriority.NORMAL},
             {"ability": "Throw Rock", "priority": ActionPriority.NORMAL},
-            {"ability": "Regen", "priority": ActionPriority.NORMAL}
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]}
         ]
         self.level.pro_level = 3
         self.picture = "treant.txt"
+        self.color = (34, 139, 34)  # Forest Green
 
 
 class Ankheg(Monster):
@@ -1771,13 +2224,13 @@ class Ankheg(Monster):
         self.resistance['Physical'] = 0.1
         self.status_immunity = ["Poison"]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL},
             {"ability": "Acid Spit", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "ankheg.txt"
+        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Fuath(Monster):
@@ -1799,13 +2252,14 @@ class Fuath(Monster):
         self.resistance["Shadow"] = 0.25
         self.resistance["Holy"] = -0.25
         self.action_stack = [
-            {"ability": "Pincer Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Water Jet", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
         self.picture = "fuath.txt"
+        self.color = (0, 128, 128)  # Bluish-Green
 
 
 class Cockatrice(Monster):
@@ -1829,8 +2283,7 @@ class Cockatrice(Monster):
         self.flying = True
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL},
             {"ability": "Petrify", "priority": ActionPriority.NORMAL}
@@ -1838,6 +2291,7 @@ class Cockatrice(Monster):
         self.level.pro_level = 3
         self.sight = True
         self.picture = "cockatrice.txt"
+        self.color = (245, 245, 220)  # Dirty white
 
 
 class Wendigo(Fey):
@@ -1857,23 +2311,28 @@ class Wendigo(Fey):
         self.spellbook = {"Spells": {"Regen": abilities.Regen2(),
                                      'Terrify': abilities.Terrify(),
                                      "Berserk": abilities.Berserk()},
-                          "Skills": {'Double Strike': abilities.DoubleStrike()}}
+                          "Skills": {'Double Strike': abilities.DoubleStrike(),
+                                     'Crushing Blow': abilities.CrushingBlow()}}
         self.flying = True
         self.resistance['Fire'] = -0.75
         self.resistance['Ice'] = 1
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison", "Death"]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Crushing Blow", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
             {"ability": "Berserk", "priority": ActionPriority.NORMAL},
-            {"ability": "Regen", "priority": ActionPriority.NORMAL}
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]}
         ]
         self.level.pro_level = 4
         self.sight = True
         self.picture = "wendigo.txt"
+        self.color = (169, 169, 169)  # Light Gray
 
 
 # Level 4
@@ -1895,6 +2354,7 @@ class BrownSlime(Slime):
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
+        self.color = (139, 69, 19)  # Dark Brown
 
 
 class Gargoyle(Elemental):
@@ -1912,12 +2372,13 @@ class Gargoyle(Elemental):
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison", "Stone"]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Blinding Fog", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
         self.picture = "gargoyle.txt"
+        self.color = (112, 128, 144)  # Slate Gray
 
 
 class Conjurer(Humanoid):
@@ -1936,16 +2397,28 @@ class Conjurer(Humanoid):
                                      'Boost': abilities.Boost()},
                           "Skills": {"Mana Shield": abilities.ManaShield()}}
         self.action_stack = [
-            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Fireball", "priority": ActionPriority.NORMAL},
             {"ability": "Lightning", "priority": ActionPriority.NORMAL},
             {"ability": "Aqualung", "priority": ActionPriority.NORMAL},
-            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL},
-            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+            {"ability": "Ice Block", "priority": ActionPriority.LOW, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_mana_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_hp_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL},
+                {"condition": "self_mana_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL}
+            ]},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_mana_pct_lt": 0.25,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}}
         ]
         self.level.pro_level = 4
         self.picture = "disciple.txt"
+        self.color = (0, 0, 139)  # Dark Blue
 
 
 class Chimera(Monster):
@@ -1962,13 +2435,17 @@ class Chimera(Monster):
                           "Skills": {"True Strike": abilities.TrueStrike()}}
         self.resistance['Physical'] = 0.5
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Molten Rock", "priority": ActionPriority.NORMAL},
-            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_positive_effects": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 4
         self.picture = "chimera.txt"
+        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Dragonkin(Dragon):
@@ -1987,13 +2464,17 @@ class Dragonkin(Dragon):
                                      "Goad": abilities.Goad()}}
         self.flying = True
         self.action_stack = [
-            {"ability": "Halberd Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Charge", "priority": ActionPriority.NORMAL},
-            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
         self.picture = "dragonkin.txt"
+        self.color = (207, 33, 33)  # Reddish-Gold
 
 
 class Griffin(Monster):
@@ -2010,12 +2491,13 @@ class Griffin(Monster):
         self.flying = True
         self.resistance['Physical'] = 0.5
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Screech", "priority": ActionPriority.NORMAL},
             {"ability": "Hurricane", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
         self.picture = "griffin.txt"
+        self.color = (139, 69, 19)  # Dark Brown
 
 
 class DrowAssassin(Humanoid):
@@ -2038,15 +2520,16 @@ class DrowAssassin(Humanoid):
                                      'Parry': abilities.Parry(),
                                      'Smoke Screen': abilities.SmokeScreen()}}
         self.action_stack = [
-            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Backstab", "priority": ActionPriority.HIGH},
-            {"ability": "Shadow Strike", "priority": ActionPriority.HIGH, "delay": 1,
-             "telegraph": "melding with the shadows, preparing a deadly strike"}
+            # {"ability": "Shadow Strike", "priority": ActionPriority.HIGH, "delay": 1,  TODO: implement
+            #  "telegraph": "melding with the shadows, preparing a deadly strike"}
         ]
         self.level.pro_level = 4
         self.sight = True
         self.picture = "assassin.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Cyborg(Construct):
@@ -2067,11 +2550,12 @@ class Cyborg(Construct):
         self.resistance['Electric'] = 1.25
         self.resistance['Water'] = -0.75
         self.action_stack = [
-            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shock", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
         self.picture = "cyborg.txt"
+        self.color = (192, 192, 192)  # Silver Gray
 
     def special_effects(self, target):
         """25% chance to detonate if health below 25%"""
@@ -2096,13 +2580,16 @@ class DarkKnight(Fiend):
                                      "Disarm": abilities.Disarm(),
                                      'Shield Block': abilities.ShieldBlock()}}
         self.action_stack = [
-            {"ability": "Sword Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
-            {"ability": "Crushing Blow", "priority": ActionPriority.NORMAL, "delay": 1,
-             "telegraph": "raising weapon high for a crushing overhead strike"}
+            {"ability": "Disarm", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_weapon": True,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 4
         self.picture = "darkknight.txt"
+        self.color = (25, 25, 112)  # Midnight Blue
 
 
 class Myrmidon(Elemental):
@@ -2118,10 +2605,6 @@ class Myrmidon(Elemental):
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
         self.resistance["Poison"] = 1
         self.status_immunity = ["Poison"]
-        self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Shield Bash", "priority": ActionPriority.NORMAL}
-        ]
         self.level.pro_level = 4
         self.picture = "myrmidon.txt"
 
@@ -2138,10 +2621,11 @@ class FireMyrmidon(Myrmidon):
         self.resistance['Fire'] = 1.5
         self.resistance['Ice'] = -0.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Scorch", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (255, 69, 0)  # Fire Red
 
 
 class IceMyrmidon(Myrmidon):
@@ -2157,11 +2641,12 @@ class IceMyrmidon(Myrmidon):
         self.resistance['Fire'] = -0.5
         self.resistance['Ice'] = 1.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Ice Lance", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (0, 191, 255)  # Deep Sky Blue
 
 
 class ElectricMyrmidon(Myrmidon):
@@ -2177,11 +2662,12 @@ class ElectricMyrmidon(Myrmidon):
         self.resistance['Electric'] = 1.5
         self.resistance['Water'] = -0.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Shock", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (255, 255, 0)  # Yellow
 
 
 class WaterMyrmidon(Myrmidon):
@@ -2197,11 +2683,11 @@ class WaterMyrmidon(Myrmidon):
         self.resistance['Electric'] = -0.5
         self.resistance['Water'] = 1.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH},
             {"ability": "Water Jet", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (127, 255, 212)  # Aquamarine
 
 
 class EarthMyrmidon(Myrmidon):
@@ -2218,12 +2704,12 @@ class EarthMyrmidon(Myrmidon):
         self.resistance['Earth'] = 1.5
         self.resistance['Wind'] = -0.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
-            {"ability": "Shield Block", "priority": ActionPriority.HIGH},
             {"ability": "Goad", "priority": ActionPriority.NORMAL},
             {"ability": "Tremor", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (160, 82, 45)  # Sienna Brown
 
 
 class WindMyrmidon(Myrmidon):
@@ -2239,11 +2725,12 @@ class WindMyrmidon(Myrmidon):
         self.resistance['Earth'] = -0.5
         self.resistance['Wind'] = 1.5
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Gust", "priority": ActionPriority.NORMAL}
         ]
+        self.color = (135, 206, 250)  # Light Sky Blue
 
 
 class DisplacerBeast(Fey):
@@ -2260,13 +2747,16 @@ class DisplacerBeast(Fey):
                                      'Smoke Screen': abilities.SmokeScreen()}}
         self.invisible = True
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Tentacle Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Smoke Screen", "priority": ActionPriority.HIGH}
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW,
+             "priority_if": {"self_hp_pct_lt": 0.25,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.LOW}}
         ]
         self.level.pro_level = 4
         self.picture = "displacerbeast.txt"
+        self.color = (128, 0, 128)  # Purple
 
 
 class Golem(Construct):
@@ -2291,7 +2781,7 @@ class Golem(Construct):
         self.resistance['Water'] = -0.25
         self.resistance['Earth'] = 0.5
         self.action_stack = [
-            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Crush", "priority": ActionPriority.LOW},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
@@ -2299,6 +2789,7 @@ class Golem(Construct):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "golem.txt"
+        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class IronGolem(Golem):
@@ -2324,13 +2815,13 @@ class IronGolem(Golem):
         self.resistance['Water'] = -0.5
         self.turtled = False  # signifies if enemy has used turtle or not; limited to once a battle
         self.action_stack = [
-            {"ability": "Laser Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Crush", "priority": ActionPriority.LOW},
             {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
-
+        self.color = (184, 184, 184)  # Iron Gray
 
     def special_effects(self, target):
         """If health below 10%, turtle and heal for 25% of max health"""
@@ -2385,15 +2876,19 @@ class Jester(Humanoid):
                            'Physical': round(random.uniform(-1, 1), 1)}
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Dagger Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
             {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL},
-            {"ability": "Mirror Image", "priority": ActionPriority.HIGH}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Mirror Image", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "jester.txt"
+        self.color = (255, 20, 147)  # Deep Pink
 
     def special_effects(self, target):
         """Randomizes stats and resistances"""
@@ -2440,12 +2935,13 @@ class ShadowSerpent(Elemental):
         self.resistance["Poison"] = 0.25
         self.invisible = True
         self.action_stack = [
-            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Aboleth(Slime):
@@ -2464,13 +2960,17 @@ class Aboleth(Slime):
         self.resistance["Poison"] = 1.5
         self.status_immunity = ["Poison"]
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Acid Spit", "priority": ActionPriority.NORMAL},
             {"ability": "Disease Breath", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL}
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 5
+        self.color = (144, 238, 144)  # Light Green
 
 
 class Beholder(Aberration):
@@ -2490,15 +2990,22 @@ class Beholder(Aberration):
         self.flying = True
         self.status_immunity = ["Death"]
         self.action_stack = [
-            {"ability": "Gaze", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
             {"ability": "Disintegrate", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
-            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL},
-            {"ability": "Dispel", "priority": ActionPriority.NORMAL}
+            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_mana": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}},
+            {"ability": "Dispel", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_positive_effects": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 5
         self.picture = "beholder.txt"
+        self.color = (139, 0, 139)  # Dark Magenta
 
 
 class Behemoth(Aberration):
@@ -2516,7 +3023,7 @@ class Behemoth(Aberration):
                           "Skills": {'True Strike': abilities.TrueStrike(),
                                      'Counterspell': abilities.Counterspell()}}
         self.action_stack = [
-            {"ability": "Claw Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Holy", "priority": ActionPriority.NORMAL},
             {"ability": "Berserk", "priority": ActionPriority.NORMAL}
@@ -2529,6 +3036,7 @@ class Behemoth(Aberration):
         self.status_immunity = ["Death", "Stone"]
         self.level.pro_level = 5
         self.picture = "behemoth.txt"
+        self.color = (139, 0, 0)  # Dark Red
 
     def special_effects(self, target):
         """Has a 60% chance to cast Meteor on death"""
@@ -2558,16 +3066,28 @@ class Lich(Undead):
                           "Skills": {'Health/Mana Drain': abilities.HealthManaDrain()}}
         self.resistance['Ice'] = 0.9
         self.action_stack = [
-            {"ability": "Touch Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Ice Blizzard", "priority": ActionPriority.NORMAL},
             {"ability": "Desoul", "priority": ActionPriority.NORMAL},
-            {"ability": "Health/Mana Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Health/Mana Drain", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_mana": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
-            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL}
+            {"ability": "Ice Block", "priority": ActionPriority.LOW, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_mana_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_hp_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL},
+                {"condition": "self_mana_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL}
+            ]},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 5
         self.picture = "lich.txt"
+        self.color = (216, 191, 216)  # Purple-White
 
 
 class Basilisk(Monster):
@@ -2585,13 +3105,14 @@ class Basilisk(Monster):
         self.resistance["Poison"] = 0.75
         self.status_immunity = ["Death", "Poison", "Stone"]
         self.action_stack = [
-            {"ability": "Fang Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Petrify", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Breath", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
+        self.color = (127, 255, 212)  # Aquamarine
 
 
 class MindFlayer(Aberration):
@@ -2614,15 +3135,19 @@ class MindFlayer(Aberration):
         self.resistance['Holy'] = -0.25
         self.status_immunity = ["Death"]
         self.action_stack = [
-            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Doom", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
-            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL}
+            {"ability": "Mana Drain", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_has_mana": True,
+                              "priority": ActionPriority.NORMAL,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "mindflayer.txt"
+        self.color = (148, 0, 211)  # Dark Violet
 
 
 class Sandworm(Monster):
@@ -2646,14 +3171,18 @@ class Sandworm(Monster):
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Stone"]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Earthquake", "priority": ActionPriority.NORMAL},
             {"ability": "Sandstorm", "priority": ActionPriority.NORMAL},
             {"ability": "Consume Item", "priority": ActionPriority.HIGH},
-            {"ability": "Tunnel", "priority": ActionPriority.HIGH}
+            {"ability": "Tunnel", "priority": ActionPriority.LOW,
+             "priority_if": {"self_hp_pct_lt": 0.25,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 5
         self.picture = "naga.txt"
+        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Warforged(Construct):
@@ -2669,12 +3198,16 @@ class Warforged(Construct):
         self.spellbook = {"Spells": {"Silence": abilities.Silence()},
                           "Skills": {"Crush": abilities.Crush()}}
         self.action_stack = [
-            {"ability": "Cannon Blast", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Crush", "priority": ActionPriority.LOW},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL}
+            {"ability": "Silence", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Silence",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 5
         self.picture = "golem.txt"
+        self.color = (192, 192, 192)  # Silver Gray
 
     def special_effects(self, target):
         """if health is below 10%, turtle and heal for 25% of max health"""
@@ -2707,14 +3240,15 @@ class Wyrm(Dragon):
         self.spellbook = {'Spells': {'Volcano': abilities.Volcano()},
                           'Skills': {'Triple Strike': abilities.TripleStrike()}}
         self.action_stack = [
-            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Volcano", "priority": ActionPriority.NORMAL},
-            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-             "telegraph": "drawing in massive amounts of air, magma swirling in its throat"}
+            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+            #  "telegraph": "drawing in massive amounts of air, magma swirling in its throat"}
         ]
         self.level.pro_level = 5
         self.picture = "wyrm.txt"
+        self.color = (0, 100, 0)  # Dark Green
 
 
 class Hydra(Monster):
@@ -2734,15 +3268,15 @@ class Hydra(Monster):
         self.resistance['Physical'] = 0.25
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Tail Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Tsunami", "priority": ActionPriority.NORMAL},
-            {"ability": "Dragon Breath (Water)", "priority": ActionPriority.LOW, "delay": 2,
-             "telegraph": "all heads rearing back, gathering torrential water in their maws"}
+            # {"ability": "Dragon Breath (Water)", "priority": ActionPriority.LOW, "delay": 2,
+            #  "telegraph": "all heads rearing back, gathering torrential water in their maws"}
         ]
         self.level.pro_level = 5
         self.picture = "hydra.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Wyvern(Dragon):
@@ -2757,15 +3291,15 @@ class Wyvern(Dragon):
         self.spellbook = {"Spells": {'Tornado': abilities.Tornado()},
                           "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Tornado", "priority": ActionPriority.NORMAL},
-            {"ability": "Dragon Breath (Wind)", "priority": ActionPriority.LOW, "delay": 2,
-             "telegraph": "inhaling deeply, gathering a powerful gale within"}
+            # {"ability": "Dragon Breath (Wind)", "priority": ActionPriority.LOW, "delay": 2,
+            #  "telegraph": "inhaling deeply, gathering a powerful gale within"}
         ]
         self.flying = True
         self.level.pro_level = 5
         self.picture = "wyvern.txt"
-
+        self.color = (50, 10, 10)  # Reddish Black
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target, typ="Wind")
@@ -2792,16 +3326,19 @@ class Archvile(Fiend):
         self.resistance["Poison"] = 1.
         self.status_immunity.append("Poison")
         self.action_stack = [
-            {"ability": "Gauntlet Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Firestorm", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
-            {"ability": "Regen", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH}
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]}
         ]
         self.level.pro_level = 5
         self.picture = "archvile.txt"
+        self.color = (255, 69, 0)  # Light Red
 
 
 class BrainGorger(Aberration):
@@ -2827,14 +3364,18 @@ class BrainGorger(Aberration):
         self.resistance["Poison"] = 1.
         self.status_immunity = ["Poison"]
         self.action_stack = [
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Brain Gorge", "priority": ActionPriority.NORMAL},
             {"ability": "Weaken Mind", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
-            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_mana_pct_lt": 0.25,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}}
         ]
         self.level.pro_level = 5
         self.picture = "braingorger.txt"
+        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Domingo(Aberration):
@@ -2868,17 +3409,29 @@ class Domingo(Aberration):
                            'Physical': 0}
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Ultima", "priority": ActionPriority.NORMAL},
             {"ability": "Desoul", "priority": ActionPriority.NORMAL},
             {"ability": "Doublecast", "priority": ActionPriority.NORMAL},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL},
-            {"ability": "Ice Block", "priority": ActionPriority.HIGH},
-            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Ice Block", "priority": ActionPriority.LOW, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_mana_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
+                {"condition": "self_hp_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL},
+                {"condition": "self_mana_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL}
+            ]},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_mana_pct_lt": 0.25,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}}
         ]
         self.level.pro_level = 5
         self.sight = True
         self.picture = "domingo.txt"
+        self.color = (75, 0, 130)  # Indigo
 
 
 class RedDragon(Dragon):
@@ -2901,11 +3454,14 @@ class RedDragon(Dragon):
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
                                      'Doublecast': abilities.Doublecast()}}
         self.action_stack = [
-            {"ability": "Tail Sweep", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Volcano", "priority": ActionPriority.NORMAL},
-            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-             "telegraph": "inhaling deeply, roaring flames building in its maw"}
+            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
+            {"ability": "Heal", "priority": ActionPriority.NORMAL},
+            {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Doublecast", "priority": ActionPriority.HIGH},
+            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+            #  "telegraph": "inhaling deeply, roaring flames building in its maw"}
         ]
         self.flying = True
         self.resistance = {'Fire': 1.5,
@@ -2922,6 +3478,7 @@ class RedDragon(Dragon):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "reddragon.txt"
+        self.color = (210, 0, 0)  # Red
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target)
@@ -2966,16 +3523,25 @@ class Merzhin(Humanoid):
                           "Skills": {"Mana Shield": abilities.ManaShield2()}}
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Staff Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
             {"ability": "Ultima", "priority": ActionPriority.NORMAL},
             {"ability": "Ruin", "priority": ActionPriority.NORMAL},
             {"ability": "Disintegrate", "priority": ActionPriority.NORMAL},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL},
+            {"ability": "Boost", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic",
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.NORMAL}},
             {"ability": "Mirror Image", "priority": ActionPriority.HIGH},
-            {"ability": "Mana Shield", "priority": ActionPriority.HIGH}
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_mana_pct_lt": 0.25,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}}
         ]
         self.level.pro_level = 6
+        self.sight = True
+        self.picture = "merzhin.txt"
+        self.color = (0, 191, 255)  # Deep Sky Blue
 
 
 # Final Boss Guard
@@ -3003,16 +3569,22 @@ class Cerberus(Fiend):
         self.resistance['Physical'] = 0.5
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
-            {"ability": "Bite", "priority": ActionPriority.NORMAL},
-            {"ability": "Claw Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL},
-            {"ability": "Regen", "priority": ActionPriority.NORMAL},
-            {"ability": "Shell", "priority": ActionPriority.NORMAL}
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]},
+            {"ability": "Shell", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_status": "Shell",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 6
         self.sight = True
         self.picture = "cerberus.txt"
+        self.color = (139, 0, 0)  # Dark Red
 
 
 # Final Boss
@@ -3052,17 +3624,20 @@ class Devil(Fiend):
         self.damage_mod = 0
         self.spell_mod = 0
         self.action_stack = [
-            {"ability": "Blade Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Choose Fate", "priority": ActionPriority.NORMAL},
             {"ability": "Hellfire", "priority": ActionPriority.NORMAL},
-            {"ability": "Parry", "priority": ActionPriority.HIGH},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
-            {"ability": "Regen", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]},
             {"ability": "Crush", "priority": ActionPriority.LOW}
         ]
         self.level.pro_level = 99
         self.sight = True
         self.picture = "devil.txt"
+        self.color = (178, 34, 34)  # Firebrick Red
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0

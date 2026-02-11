@@ -40,7 +40,7 @@ class LocationMenuScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, top_rect, 2)
         
         # Center the location name
-        text = self.normal_font.render(self.location_name, True, self.colors.GOLD)
+        text = self.large_font.render(self.location_name, True, self.colors.GOLD)
         text_rect = text.get_rect(center=(self.width // 2, top_rect.centery))
         self.screen.blit(text, text_rect)
     
@@ -70,19 +70,21 @@ class LocationMenuScreen(TownScreenBase):
             
             # Highlight background for selected
             if idx == self.current_option:
+                highlight_pad_x = 12
+                highlight_pad_y = 6
                 highlight_rect = pygame.Rect(
-                    options_rect.left + 10,
-                    text_y - 5,
-                    options_rect.width - 20,
-                    option_height - 5
+                    options_rect.left + highlight_pad_x,
+                    text_y - highlight_pad_y,
+                    options_rect.width - (highlight_pad_x * 2),
+                    text.get_height() + (highlight_pad_y * 2)
                 )
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
             
             self.screen.blit(text, (text_x, text_y))
     
-    def draw_content(self, content_text=""):
-        """Draw the content area on the right side with optional text."""
+    def draw_content(self, content_text="", items_data=None):
+        """Draw the content area on the right side with optional text or formatted items."""
         top_height = self.height // 12
         content_width = 2 * self.width // 3
         content_height = self.height - top_height
@@ -93,11 +95,41 @@ class LocationMenuScreen(TownScreenBase):
         self.draw_semi_transparent_panel(content_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, content_rect, 2)
         
+        # Handle structured items data with proper alignment
+        if items_data:
+            font = self.large_font
+            text_y = content_rect.top + 20
+            line_height = 28
+            
+            # Define column positions
+            cursor_x = content_rect.left + 20
+            item_x = cursor_x + 20
+            quantity_x = content_rect.right - 80  # Right-aligned quantity column
+            
+            for idx, item_name, quantity, is_selected in items_data:
+                # Draw cursor for selected item
+                if is_selected:
+                    cursor = font.render(">", True, self.colors.GOLD)
+                    self.screen.blit(cursor, (cursor_x, text_y))
+                
+                # Draw item name
+                name_surface = font.render(item_name, True, self.colors.WHITE)
+                self.screen.blit(name_surface, (item_x, text_y))
+                
+                # Draw quantity (right-aligned) if not zero
+                if quantity > 0:
+                    qty_text = f"x{quantity}"
+                    qty_surface = font.render(qty_text, True, self.colors.WHITE)
+                    qty_rect = qty_surface.get_rect(right=quantity_x, top=text_y)
+                    self.screen.blit(qty_surface, qty_rect)
+                
+                text_y += line_height
+            return
+        
         # Draw content text if provided
         if content_text:
             text_x = content_rect.left + 20
             text_y = content_rect.top + 20
-            max_width = content_rect.width - 40
             
             # Check if this is an item list (contains cursor marker or item quantity pattern)
             import re
@@ -109,7 +141,7 @@ class LocationMenuScreen(TownScreenBase):
                 # For item lists, use monospace font and don't wrap
                 if is_item_list:
                     # Use a smaller monospace-like font for item lists
-                    font = pygame.font.Font(None, 26)
+                    font = self.large_font
                     text_surface = font.render(line, True, self.colors.WHITE)
                     self.screen.blit(text_surface, (text_x, text_y))
                     text_y += 28
@@ -223,30 +255,19 @@ class LocationMenuScreen(TownScreenBase):
         Navigate menu with items displayed in the right content area.
         items_data: list of tuples (item_name, quantity) to display and navigate on right
         """
-        current_item = 0
         
         while True:
             self.draw_background()
             self.draw_top()
             self.draw_options_instructions()
             
-            # Build items display with highlight on current selection
-            lines = []
+            # Build structured items data with selection state
+            formatted_items = []
             for idx, (item_name, quantity) in enumerate(items_data):
-                if idx == current_item:
-                    if quantity > 0:
-                        lines.append(f"{'>':<2} {item_name:32} x{quantity}")
-                    else:
-                        # For "Back" which has quantity 0
-                        lines.append(f"{'>':<2} {item_name}")
-                else:
-                    if quantity > 0:
-                        lines.append(f"{'':<2}  {item_name:32} x{quantity}")
-                    else:
-                        lines.append(f"{'':<2}  {item_name}")
-            items_text = "\n".join(lines)
+                is_selected = (idx == self.current_option)
+                formatted_items.append((idx, item_name, quantity, is_selected))
             
-            self.draw_content(items_text)
+            self.draw_content(items_data=formatted_items)
             pygame.display.flip()
             
             for event in pygame.event.get():
@@ -258,10 +279,10 @@ class LocationMenuScreen(TownScreenBase):
                     if event.key == pygame.K_ESCAPE:
                         return None
                     elif event.key == pygame.K_UP:
-                        current_item = (current_item - 1) % len(items_data)
+                        self.current_option = (self.current_option - 1) % len(items_data)
                     elif event.key == pygame.K_DOWN:
-                        current_item = (current_item + 1) % len(items_data)
+                        self.current_option = (self.current_option + 1) % len(items_data)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                        return current_item
+                        return self.current_option
             
             self.presenter.clock.tick(30)

@@ -303,7 +303,7 @@ class Player(Character):
             self.quit = True
             return True
 
-    def character_menu(self, game=None, menu=None, textbox=None, actions_dict=None):
+    def character_menu(self, game=None, menu=None, textbox=None, actions_dict=None, ui_factory=None):
         """
         Lists character options. UI logic must be provided by the frontend.
         Args:
@@ -311,18 +311,38 @@ class Player(Character):
             menu: Optional menu UI component
             textbox: Optional TextBox UI component
             actions_dict: Optional dict of action callbacks
+            ui_factory: Optional dict of UI component factory functions/classes
         Returns True if quit, else None.
         """
         if not (menu and actions_dict):
             return
-        class_option = "Class Menu"
-        class_action = None
-        if "Summoner" in self.cls.name:
-            class_option = "Summons"
-            class_action = actions_dict.get("Summons")
-        character_options = [actions_dict.get('ViewInventory'), actions_dict.get("ViewKeyItems"), actions_dict.get("Equipment"),
-                             actions_dict.get('Specials'), actions_dict.get('ViewQuests'), class_action, "Exit Menu", actions_dict.get('Quit')]
-        options = ["Inventory", "Key Items", "Equipment", "Specials", "Quests", class_option, "Exit Menu", "Quit Game"]
+        jump_skill = None
+        skills = getattr(self, "spellbook", {}).get("Skills", {})
+        if "Jump" in skills:
+            jump_skill = skills["Jump"]
+        else:
+            for skill in skills.values():
+                if getattr(skill, "name", "") == "Jump":
+                    jump_skill = skill
+                    break
+
+        has_jump_mods = bool(jump_skill and hasattr(jump_skill, "modifications"))
+
+        character_options = [
+            actions_dict.get('ViewInventory'),
+            actions_dict.get("ViewKeyItems"),
+            actions_dict.get("Equipment"),
+            actions_dict.get('Specials'),
+            actions_dict.get('ViewQuests'),
+        ]
+        options = ["Inventory", "Key Items", "Equipment", "Specials", "Quests"]
+
+        if has_jump_mods:
+            character_options.append(actions_dict.get("JumpMods"))
+            options.append("Jump Mods")
+
+        character_options.extend(["Exit Menu", actions_dict.get('Quit')])
+        options.extend(["Exit Menu", "Quit Game"])
         menu.set_options(options)
         menu.draw_all()
         while True:
@@ -333,7 +353,38 @@ class Player(Character):
             if action is None and textbox:
                 textbox.print_text_in_rectangle("Your class does not have a special menu.\n")
             elif isinstance(action, dict) and 'method' in action:
-                action['method'](self, game)
+                # Use UI factory to create components if provided
+                if ui_factory:
+                    if action['name'] == 'Inventory':
+                        inv_popup = ui_factory['InventoryPopup'](game, "Inventory")
+                        confirm_popup = ui_factory['ConfirmPopup']
+                        useitembox = ui_factory['TextBox'](game)
+                        action['method'](self, game, inv_popup=inv_popup, confirm_popup=confirm_popup, useitembox=useitembox)
+                    elif action['name'] == 'Key Items':
+                        inv_popup = ui_factory['InventoryPopup'](game, "Key Items")
+                        action['method'](self, game, inv_popup=inv_popup)
+                    elif action['name'] == 'Equipment':
+                        popup = ui_factory['EquipmentPopup'](game, action['name'], 25)
+                        action['method'](self, game, popup=popup)
+                    elif action['name'] == 'Specials':
+                        popup = ui_factory['SpecialsPopup'](game, action['name'])
+                        action['method'](self, game, popup=popup)
+                    elif action['name'] == 'Quests':
+                        popup = ui_factory['QuestsPopup'](game, action['name'])
+                        action['method'](self, game, popup=popup)
+                    elif action['name'] == 'Jump Mods':
+                        popup = ui_factory['JumpModsPopup'](game, action['name'])
+                        action['method'](self, game, jump_popup=popup)
+                    elif action['name'] == 'Quit':
+                        confirm_popup = ui_factory['ConfirmPopup']
+                        quit_textbox = ui_factory['TextBox'](game)
+                        action['method'](self, game, confirm_popup=confirm_popup, textbox=quit_textbox)
+                    else:
+                        # For other actions (like Summons, Quit), call with game only
+                        action['method'](self, game)
+                else:
+                    # Fallback: call without UI components (may raise error)
+                    action['method'](self, game)
                 if self.quit:
                     return True
             menu.draw_all()
@@ -505,6 +556,29 @@ class Player(Character):
                 level_str += self.familiar.level_up()
             elif skill_name in ["Transform", "Purity of Body"]:
                 level_str += skill_gain.use(self)
+        # Unlock Jump modifications (Lancer/Dragoon)
+        jump_skill = None
+        skills = self.spellbook.get("Skills", {})
+        if "Jump" in skills:
+            jump_skill = skills["Jump"]
+        else:
+            for sk in skills.values():
+                if getattr(sk, "name", "") == "Jump":
+                    jump_skill = sk
+                    break
+        if jump_skill is not None:
+            newly_unlocked = []
+            if hasattr(jump_skill, "check_and_unlock_level_modifications"):
+                newly_unlocked = jump_skill.check_and_unlock_level_modifications(
+                    self.level.level, self.cls.name
+                )
+            elif hasattr(jump_skill, "check_and_unlock_level_modification"):
+                newly_unlocked = jump_skill.check_and_unlock_level_modification(
+                    self.level.level, self.cls.name
+                )
+            if newly_unlocked:
+                mods_str = ", ".join(newly_unlocked)
+                level_str += f"New Jump modifications unlocked: {mods_str}.\n"
         if not self.max_level():
             self.level.exp_to_gain += (self.exp_scale ** self.level.pro_level) * self.level.level
         else:
@@ -579,6 +653,10 @@ class Player(Character):
                 self.gold += gold
         elif 'Door' in str(tile):
             tile.open = True
+            if hasattr(tile, "locked"):
+                tile.locked = False
+            if hasattr(tile, "enter"):
+                tile.enter = True
             if textbox:
                 textbox.print_text_in_rectangle(f"{self.name} opens the door.")
         else:
@@ -597,6 +675,13 @@ class Player(Character):
                 item = item_typ()
             except TypeError:
                 item = item_typ
+            
+            # Check if item has class restrictions
+            if hasattr(item, 'restricted_classes'):
+                if self.cls.name not in item.restricted_classes:
+                    drop[i] = False
+                    continue
+            
             drop[i] = item.subtyp == "Special"
             rare[i] = item.subtyp == "Special"
             if item.subtyp == "Quest":
@@ -631,7 +716,11 @@ class Player(Character):
                     if quest_found:
                         break
             elif 'Boss' in str(tile):
-                drop[i] = True  # all non-quest items will drop from bosses
+                if item.subtyp == "Special":
+                    drop[i] = True if item.rarity > random.random() else False
+                    rare[i] = True
+                else:
+                    drop[i] = True  # all non-quest, non-special items will drop from bosses
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 if item.rarity > (random.random() / chance):
@@ -649,6 +738,34 @@ class Player(Character):
                 loot_message += f"{enemy.name} dropped a {item.name}.\n"
                 self.modify_inventory(item, rare=rare[i])
                 loot_message += self.quests(item=item)
+                # Unlock Jump modification for special items
+                if item.name and hasattr(self.spellbook.get("Skills", {}), "values"):
+                    jump_skill = None
+                    skills = self.spellbook.get("Skills", {})
+                    if "Jump" in skills:
+                        jump_skill = skills["Jump"]
+                    else:
+                        for sk in skills.values():
+                            if getattr(sk, "name", "") == "Jump":
+                                jump_skill = sk
+                                break
+                    if jump_skill is not None and hasattr(jump_skill, "unlock_item_modification"):
+                        unlocked = jump_skill.unlock_item_modification(item.name)
+                        if unlocked:
+                            loot_message += f"New Jump modification unlocked: {unlocked}.\n"
+        # Unlock Jump modification for boss defeats
+        if 'Boss' in str(tile):
+            skills = self.spellbook.get("Skills", {})
+            jump_skill = skills.get("Jump")
+            if jump_skill is None:
+                for sk in skills.values():
+                    if getattr(sk, "name", "") == "Jump":
+                        jump_skill = sk
+                        break
+            if jump_skill is not None and hasattr(jump_skill, "unlock_boss_modification"):
+                unlocked = jump_skill.unlock_boss_modification(enemy.name)
+                if unlocked:
+                    loot_message += f"New Jump modification unlocked: {unlocked}.\n"
         return loot_message
 
     def inventory_screen(self, game, inv_popup=None, confirm_popup=None, useitembox=None):
@@ -669,7 +786,6 @@ class Player(Character):
                         if useitembox is None:
                             raise ValueError("UI component 'useitembox' must be provided by the frontend.")
                         useitembox.print_text_in_rectangle(use_str)
-                        game.stdscr.getch()
                         useitembox.clear_rectangle()
                     if "Sanctuary" in item.name:
                         return
@@ -690,6 +806,12 @@ class Player(Character):
     def abilities_screen(self, game, popup):
         """Abilities screen logic, now UI-agnostic. UI component must be provided by the frontend."""
         popup.navigate_popup()
+
+    def jump_mods_menu(self, game, jump_popup=None):
+        """Jump modifications menu logic, now UI-agnostic. UI component must be provided by the frontend."""
+        if jump_popup is None:
+            raise ValueError("UI component 'jump_popup' must be provided by the frontend.")
+        jump_popup.navigate_popup()
 
     def save(self, game=None, tmp=False, filepath=None, confirm_popup=None, save_popup=None):
         """
@@ -755,8 +877,8 @@ class Player(Character):
         if equip_slot not in equip_slots:
             raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")
 
-        # Check if the class allows this item type
-        if not self.cls.equip_check(item, equip_slot):
+        # Check if the class allows this item type (allow unequip items)
+        if item.subtyp != "None" and not self.cls.equip_check(item, equip_slot):
             return False
 
         if self.equipment[equip_slot].subtyp != 'None' and not check:
@@ -803,6 +925,25 @@ class Player(Character):
             self.flying = True
         if not check and item.subtyp != "None":
             self.modify_inventory(item, subtract=True)
+        
+        # If Ring slot changed, check if we need to enforce Jump modification limits
+        if equip_slot == "Ring" and not check:
+            # Check if character has Jump skill
+            jump_skill = None
+            if "Skills" in self.spellbook and "Jump" in self.spellbook["Skills"]:
+                jump_skill = self.spellbook["Skills"]["Jump"]
+            else:
+                for skill in self.spellbook.get("Skills", {}).values():
+                    if getattr(skill, "name", "") == "Jump":
+                        jump_skill = skill
+                        break
+            
+            if jump_skill and hasattr(jump_skill, "enforce_modification_limit"):
+                deactivated = jump_skill.enforce_modification_limit(self)
+                # Could emit a message here if needed
+                # if deactivated:
+                #     print(f"Jump modifications deactivated due to equipment change: {', '.join(deactivated)}")
+        
         return True
 
     def equip_diff(self, item, equip_slot, buy=False):
@@ -853,6 +994,14 @@ class Player(Character):
             self.equipment[equip_slot] = item
             if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
                 self.equipment["OffHand"] = item
+
+            # Handle two-handed weapon conflicts with offhand items (preview only)
+            if equip_slot == "Weapon" and item.handed == 2:
+                can_keep_offhand = (self.cls.name in ["Lancer", "Dragoon"] and
+                                    item.subtyp == 'Polearm' and
+                                    self.equipment["OffHand"].subtyp == 'Shield')
+                if not can_keep_offhand:
+                    self.equipment["OffHand"] = remove_equipment("OffHand")
 
             # Get new stats with test equipment
             new_main_dmg = self.check_mod('weapon')
@@ -1263,7 +1412,13 @@ class Player(Character):
         elif item is not None:
             for quest in self.quest_dict['Side']:
                 try:
-                    if self.quest_dict['Side'][quest]['What'].name == item.name:
+                    quest_what = self.quest_dict['Side'][quest]['What']
+                    if isinstance(quest_what, str):
+                        matches_item = quest_what in [item.name, item.__class__.__name__]
+                    else:
+                        matches_item = quest_what.name == item.name
+
+                    if matches_item:
                         if item.name in self.special_inventory:
                             if len(self.special_inventory[item.name]) >= self.quest_dict['Side'][quest]['Total'] and \
                                     not self.quest_dict['Side'][quest]['Completed']:
@@ -1494,7 +1649,6 @@ class Player(Character):
         summon_idx = summonpopup.navigate_popup()
         summon = self.summons[summon_names[summon_idx]]
         summonbox.print_text_in_rectangle(summon.inspect())
-        game.stdscr.getch()
         summonbox.clear_rectangle()
 
 
@@ -1536,7 +1690,7 @@ actions_dict = {
     },
     'ViewKeyItems': {
         'method': Player.key_item_screen,
-        'name': 'Inventory',
+        'name': 'Key Items',
         'hotkey': None
     },
     'Equipment': {
@@ -1557,6 +1711,11 @@ actions_dict = {
     'Summons': {
         'method': Player.summon_menu,
         'name': 'Summons',
+        'hotkey': None
+    },
+    'JumpMods': {
+        'method': Player.jump_mods_menu,
+        'name': 'Jump Mods',
         'hotkey': None
     },
     'Flee': {

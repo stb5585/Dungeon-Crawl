@@ -129,7 +129,6 @@ class MainMenuScreen:
             int: Index of selected option, or None if cancelled
         """
         self.options = options
-        self.current_option = 0
         
         while True:
             self.draw()

@@ -44,6 +44,34 @@ class BasePopupMenu:
         self.scroll_offset = 0
         self.line_height = 24
 
+    def _truncate_text(self, text, max_width):
+        """Truncate text with ellipsis to fit within max_width pixels."""
+        if self.normal_font.size(text)[0] <= max_width:
+            return text
+        ellipsis = "..."
+        max_width = max(0, max_width - self.normal_font.size(ellipsis)[0])
+        if max_width <= 0:
+            return ellipsis
+        truncated = text
+        while truncated and self.normal_font.size(truncated)[0] > max_width:
+            truncated = truncated[:-1]
+        return f"{truncated}{ellipsis}"
+
+    def _ensure_visible(self):
+        """Ensure selected_index is visible and scroll_offset is clamped."""
+        if not self.items:
+            self.selected_index = 0
+            self.scroll_offset = 0
+            return
+        max_visible = max(1, self.list_rect.height // self.line_height)
+        max_scroll = max(0, len(self.items) - max_visible)
+        self.selected_index = max(0, min(self.selected_index, len(self.items) - 1))
+        if self.selected_index < self.scroll_offset:
+            self.scroll_offset = self.selected_index
+        if self.selected_index >= self.scroll_offset + max_visible:
+            self.scroll_offset = self.selected_index - max_visible + 1
+        self.scroll_offset = max(0, min(self.scroll_offset, max_scroll))
+
     def build_items(self, player_char):
         """Override in subclass to populate self.items."""
         self.items = []
@@ -84,11 +112,12 @@ class BasePopupMenu:
         start = self.scroll_offset
         end = min(len(self.items), start + max_visible)
         y = self.list_rect.top + 8
+        text_max_width = self.list_rect.width - 32
 
         for idx in range(start, end):
             item = self.items[idx]
             is_header = isinstance(item, dict) and item.get("is_header")
-            text_str = self.item_display_text(item)
+            text_str = self._truncate_text(self.item_display_text(item), text_max_width)
             row_rect = pygame.Rect(self.list_rect.left + 8, y - 2, self.list_rect.width - 16, self.line_height)
             if is_header:
                 text = self.normal_font.render(text_str, True, self.GOLD)
@@ -158,6 +187,17 @@ class BasePopupMenu:
         """Handle selection. Subclasses should override. Return a result or None."""
         return ("selected", item)
 
+    def _capture_menu_surface(self, player_char):
+        """Render the menu without popups and return a surface snapshot."""
+        self.parent_screen.draw_all(player_char, do_flip=False)
+        background_surface = self.screen.copy()
+        self.draw_background(background_surface)
+        self.draw_popup(player_char)
+        self.draw_list()
+        self.draw_details(player_char)
+        pygame.display.flip()
+        return self.screen.copy()
+
     def show(self, player_char):
         # Prepare items
         self.build_items(player_char)
@@ -180,12 +220,18 @@ class BasePopupMenu:
         self.parent_screen.draw_all(player_char, do_flip=False)
         background_surface = self.screen.copy()
 
+        prev_provider = getattr(self.presenter, "_background_provider", None)
+        menu_surface_ref = [None]
+        if hasattr(self.presenter, "set_background_provider"):
+            self.presenter.set_background_provider(lambda: menu_surface_ref[0] or self.screen.copy())
+
         while running:
             self.draw_background(background_surface)
             self.draw_popup(player_char)
             self.draw_list()
             self.draw_details(player_char)
             pygame.display.flip()
+            menu_surface_ref[0] = self.screen.copy()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -209,6 +255,7 @@ class BasePopupMenu:
                                     # Rebuild display after action
                                     self.parent_screen.draw_all(player_char, do_flip=False)
                                     background_surface = self.screen.copy()
+                                    menu_surface_ref[0] = None
                     elif event.key == pygame.K_UP:
                         if self.items:
                             self.selected_index -= 1
@@ -219,11 +266,7 @@ class BasePopupMenu:
                                 self.selected_index = len(self.items) - 1
                                 while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
                                     self.selected_index -= 1
-                        max_visible = max(1, self.list_rect.height // self.line_height)
-                        if self.selected_index < self.scroll_offset:
-                            self.scroll_offset = self.selected_index
-                        if self.selected_index < 0:
-                            self.selected_index = 0
+                        self._ensure_visible()
                     elif event.key == pygame.K_DOWN:
                         if self.items:
                             self.selected_index += 1
@@ -233,23 +276,31 @@ class BasePopupMenu:
                                 self.selected_index = 0
                                 while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
                                     self.selected_index += 1
-                        max_visible = max(1, self.list_rect.height // self.line_height)
-                        if self.selected_index >= self.scroll_offset + max_visible:
-                            self.scroll_offset = self.selected_index - max_visible + 1
+                        self._ensure_visible()
                     elif event.key == pygame.K_PAGEUP:
-                        max_visible = max(1, self.list_rect.height // self.line_height)
-                        self.selected_index = max(0, self.selected_index - max_visible)
-                        self.scroll_offset = max(0, self.scroll_offset - max_visible)
+                        if self.items:
+                            max_visible = max(1, self.list_rect.height // self.line_height)
+                            self.selected_index = max(0, self.selected_index - max_visible)
+                            while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                self.selected_index -= 1
+                            if self.selected_index < 0:
+                                self.selected_index = 0
+                        self._ensure_visible()
                     elif event.key == pygame.K_PAGEDOWN:
                         if self.items:
-                            self.selected_index += 1
-                            while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index % len(self.items)], dict) and self.items[self.selected_index % len(self.items)].get("is_header"):
+                            max_visible = max(1, self.list_rect.height // self.line_height)
+                            self.selected_index = min(len(self.items) - 1, self.selected_index + max_visible)
+                            while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
                                 self.selected_index += 1
                             if self.selected_index >= len(self.items):
-                                self.selected_index = 0
-                                while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                    self.selected_index += 1
+                                self.selected_index = len(self.items) - 1
+                                while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                    self.selected_index -= 1
+                        self._ensure_visible()
             clock.tick(30)
+
+        if hasattr(self.presenter, "set_background_provider"):
+            self.presenter.set_background_provider(prev_provider)
 
         return result
 
@@ -437,32 +488,49 @@ class InventoryPopupMenu(BasePopupMenu):
             header_message=f"What would you like to do with {getattr(obj, 'name', 'this item')}?",
             options=actions
         )
-        
-        # Capture current state for background
+
+        item_name = getattr(obj, "name", str(obj))
+
+        # Capture inventory view once to avoid flicker between action menu uses
         self.parent_screen.draw_all(player_char, do_flip=False)
         self.draw_background(self.screen.copy())
         self.draw_popup(player_char)
         self.draw_list()
         self.draw_details(player_char)
         pygame.display.flip()
-        action_bg = self.screen.copy()
-        
-        # Temporarily override draw_background for nested popup
-        original_draw_bg = action_popup.draw_background
-        action_popup.draw_background = lambda surf: self.screen.blit(action_bg, (0, 0))
-        
-        result = action_popup.show(player_char)
-        action_popup.draw_background = original_draw_bg
-        
-        if result and result[0] == "selection":
+        base_bg = self.screen.copy()
+
+        while True:
+            # Temporarily override draw_background for nested popup
+            original_draw_bg = action_popup.draw_background
+            action_popup.draw_background = lambda surf: self.screen.blit(base_bg, (0, 0))
+
+            result = action_popup.show(player_char)
+            action_popup.draw_background = original_draw_bg
+
+            if not result or result[0] != "selection":
+                break
+
             action = result[1]
-            
+            action_bg = self.screen.copy()
+
+            if action == "Cancel":
+                break
             if action == "Equip":
                 self._equip_item(player_char, obj, category)
-            elif action == "Use":
-                self._use_item(player_char, obj, category)
+                break
+            if action == "Use":
+                self._use_item(player_char, obj, category, background_surface=action_bg)
             elif action == "Drop":
-                self._drop_item(player_char, obj, category)
+                self._drop_item(player_char, obj, category, background_surface=action_bg)
+
+            remaining = [
+                it for it in player_char.inventory.get(category, [])
+                if getattr(it, "name", str(it)) == item_name
+            ]
+            if not remaining:
+                break
+            obj = remaining[0]
         
         # Return None to keep inventory open
         return None
@@ -520,28 +588,16 @@ class InventoryPopupMenu(BasePopupMenu):
         # Rebuild items list
         self.build_items(player_char)
     
-    def _use_item(self, player_char, item, category):
+    def _use_item(self, player_char, item, category, background_surface=None):
         """Use a consumable item."""
-        # Confirm usage
-        menu_bg = self.screen.copy()
-        popup = ConfirmationPopup(self.presenter, f"Use {getattr(item, 'name', 'this item')}?")
-        if not popup.show(background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0))):
-            return
+        menu_bg = background_surface or self._capture_menu_surface(player_char)
         
         # Call the item's use method if it has one
         if hasattr(item, "use") and callable(item.use):
             try:
                 result = item.use(player_char)
                 if result:
-                    # Capture and set background for result popup
-                    self.parent_screen.draw_all(player_char, do_flip=False)
-                    self.draw_background(self.screen.copy())
-                    self.draw_popup(player_char)
-                    self.draw_list()
-                    self.draw_details(player_char)
-                    pygame.display.flip()
-                    result_bg = self.screen.copy()
-                    
+                    result_bg = background_surface or self._capture_menu_surface(player_char)
                     result_popup = ConfirmationPopup(self.presenter, result, show_buttons=False)
                     result_popup.show(background_draw_func=lambda: self.screen.blit(result_bg, (0, 0)))
             except Exception as e:
@@ -556,10 +612,10 @@ class InventoryPopupMenu(BasePopupMenu):
         # Rebuild items list
         self.build_items(player_char)
     
-    def _drop_item(self, player_char, item, category):
+    def _drop_item(self, player_char, item, category, background_surface=None):
         """Drop an item from inventory."""
         # Confirm drop
-        menu_bg = self.screen.copy()
+        menu_bg = background_surface or self._capture_menu_surface(player_char)
         popup = ConfirmationPopup(self.presenter, f"Drop {getattr(item, 'name', 'this item')}? This cannot be undone.")
         if not popup.show(background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0))):
             return
@@ -860,12 +916,19 @@ class QuestPopupMenu(BasePopupMenu):
             int(self.popup_rect.width * 0.6) - 32,
             self.popup_rect.height - 120,
         )
+
+    def draw_popup(self, player_char):
+        super().draw_popup(player_char)
+        legend_text = "* = ready to turn in"
+        text = self.small_font.render(legend_text, True, self.LIGHT_GRAY)
+        self.screen.blit(text, (self.popup_rect.left + 16, self.popup_rect.bottom - text.get_height() - 36))
     
     def build_items(self, player_char):
         """Build list of quest objects from quest_dict."""
         self.items = []
+        active_items = []
+        completed_items = []
         quest_dict = getattr(player_char, "quest_dict", {})
-        debug_mode = getattr(self.presenter, "debug_mode", False)
 
         if not quest_dict:
             return
@@ -875,16 +938,17 @@ class QuestPopupMenu(BasePopupMenu):
             if quest_type == "Bounty":
                 # Bounty quests: {name: [bounty_data, count, completed]}
                 for quest_name, quest_info in quests_by_type.items():
-                    # Skip Debug quest unless in debug mode
-                    if quest_name == "Debug" and not debug_mode:
-                        continue
                     if isinstance(quest_info, list) and len(quest_info) >= 3:
                         bounty_data, count, completed = quest_info[0], quest_info[1], quest_info[2]
-                        self.items.append((f"[{quest_type}] {quest_name}", quest_type, quest_name, {
+                        entry = (f"[{quest_type}] {quest_name}", quest_type, quest_name, {
                             'bounty_data': bounty_data,
                             'count': count,
                             'completed': completed
-                        }))
+                        })
+                        if completed:
+                            completed_items.append(entry)
+                        else:
+                            active_items.append(entry)
             else:
                 # Main/Side quests: check if it's nested by level or flat structure
                 for key, value in quests_by_type.items():
@@ -894,18 +958,35 @@ class QuestPopupMenu(BasePopupMenu):
                             # This is quest data directly - flat structure
                             quest_name = key
                             quest_data = value
-                            # Skip Debug quest unless in debug mode
-                            if quest_name == "Debug" and not debug_mode:
-                                continue
-                            self.items.append((f"[{quest_type}] {quest_name}", quest_type, quest_name, quest_data))
+                            completed = quest_data.get('Completed', False)
+                            turned_in = quest_data.get('Turned In', False)
+                            display_name = f"[{quest_type}] {quest_name}"
+                            if completed and not turned_in:
+                                display_name = f"{display_name} *"
+                            entry = (display_name, quest_type, quest_name, quest_data)
+                            if turned_in:
+                                completed_items.append(entry)
+                            else:
+                                active_items.append(entry)
                         else:
                             # This is a nested structure (level -> quests)
                             for quest_name, quest_data in value.items():
-                                # Skip Debug quest unless in debug mode
-                                if quest_name == "Debug" and not debug_mode:
-                                    continue
-                                self.items.append((f"[{quest_type}] {quest_name}", quest_type, quest_name, quest_data))
+                                completed = quest_data.get('Completed', False)
+                                turned_in = quest_data.get('Turned In', False)
+                                display_name = f"[{quest_type}] {quest_name}"
+                                if completed and not turned_in:
+                                    display_name = f"{display_name} *"
+                                entry = (display_name, quest_type, quest_name, quest_data)
+                                if turned_in:
+                                    completed_items.append(entry)
+                                else:
+                                    active_items.append(entry)
         
+        self.items = active_items
+        if completed_items:
+            self.items.append({"is_header": True, "text": "Completed Quests"})
+            self.items.extend(completed_items)
+
         if not self.items:
             self.items = [("No quests available", None, None, None)]
         
@@ -914,6 +995,8 @@ class QuestPopupMenu(BasePopupMenu):
     
     def item_display_text(self, item):
         """Return display name from tuple."""
+        if isinstance(item, dict) and item.get("is_header"):
+            return item.get("text", "")
         if isinstance(item, tuple):
             return item[0]
         return str(item)
@@ -928,6 +1011,10 @@ class QuestPopupMenu(BasePopupMenu):
             self.screen.blit(self.normal_font.render("No quests", True, self.GRAY), (x, y))
             return
         
+        if isinstance(item, dict) and item.get("is_header"):
+            self.screen.blit(self.normal_font.render(item.get("text", ""), True, self.GRAY), (x, y))
+            return
+
         if not isinstance(item, tuple) or item[1] is None:
             # No quest selected or no quests available
             self.screen.blit(self.normal_font.render(str(item[0]), True, self.GRAY), (x, y))
@@ -1234,6 +1321,167 @@ class SimpleListPopupMenu(BasePopupMenu):
 
     def on_select(self, player_char, item):
         return ("list_item_selected", item)
+
+
+class JumpModsPopupMenu(BasePopupMenu):
+    """Popup menu for toggling Jump ability modifications."""
+
+    MOD_DESCRIPTIONS = {
+        "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
+        "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+        "Defend": "Increased damage reduction while preparing to Jump.",
+        "Rend": "Chance to apply Bleed, dealing damage over time.",
+        "Quake": "Chance to stun the enemy upon landing.",
+        "Acrobat": "Gain an evasion bonus while preparing to Jump.",
+        "Dragon's Fury": "Deals additional random elemental damage.",
+        "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
+        "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+        "Retribution": "Taking damage while charging boosts the Jump damage.",
+        "Unstoppable": "Jump cannot be interrupted once started.",
+        "Recover": "Regain a small amount of health and mana upon landing.",
+        "Skyfall": "Additional smaller hits fall on the target after landing.",
+    }
+
+    def __init__(self, presenter, parent_screen, title="Jump Modifications"):
+        super().__init__(presenter, parent_screen, title=title)
+        self.jump_skill = None
+
+    def _get_jump_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Jump" in skills:
+            return skills["Jump"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Jump":
+                return skill
+        return None
+
+    def build_items(self, player_char):
+        self.jump_skill = self._get_jump_skill(player_char)
+        self.items = []
+
+        if not self.jump_skill or not hasattr(self.jump_skill, "modifications"):
+            self.items.append({"is_header": True, "text": "Jump not learned"})
+            self.selected_index = 0
+            self.scroll_offset = 0
+            return
+
+        # Show active/max count in header
+        active_count = self.jump_skill.get_active_count() if hasattr(self.jump_skill, "get_active_count") else 0
+        max_count = self.jump_skill.get_max_active_modifications(player_char) if hasattr(self.jump_skill, "get_max_active_modifications") else 99
+        header_text = f"Toggle Modifications ({active_count}/{max_count} active)"
+        self.items.append({"is_header": True, "text": header_text})
+        
+        # Only show unlocked modifications
+        unlocked_mods = self.jump_skill.get_unlocked_modifications() if hasattr(self.jump_skill, "get_unlocked_modifications") else list(self.jump_skill.modifications.keys())
+        
+        for mod_name in unlocked_mods:
+            active = self.jump_skill.modifications.get(mod_name, False)
+            prefix = "[X]" if active else "[ ]"
+            self.items.append({
+                "is_header": False,
+                "text": f"{prefix} {mod_name}",
+                "value": mod_name,
+            })
+
+        self.selected_index = 1 if len(self.items) > 1 else 0
+        self.scroll_offset = 0
+
+    def item_display_text(self, item):
+        if isinstance(item, dict):
+            return item.get("text", "")
+        return str(item)
+
+    def draw_details(self, player_char):
+        item = self.items[self.selected_index] if self.items else None
+        x = self.details_rect.left + 16
+        y = self.details_rect.top + 12
+
+        if item is None:
+            self.screen.blit(self.normal_font.render("No items", True, self.GRAY), (x, y))
+            return
+
+        is_header = isinstance(item, dict) and item.get("is_header")
+        value = item.get("value") if isinstance(item, dict) else item
+        text_label = item.get("text") if isinstance(item, dict) else None
+
+        if is_header:
+            header_text = self.large_font.render(text_label or "", True, self.GOLD)
+            self.screen.blit(header_text, (x, y))
+            return
+
+        mod_name = str(value)
+        active = False
+        if self.jump_skill and hasattr(self.jump_skill, "modifications"):
+            active = self.jump_skill.modifications.get(mod_name, False)
+
+        name_text = self.large_font.render(mod_name, True, self.WHITE)
+        self.screen.blit(name_text, (x, y))
+        y += name_text.get_height() + 8
+
+        status_text = self.normal_font.render(
+            f"Status: {'Active' if active else 'Inactive'}", True, self.LIGHT_GRAY
+        )
+        self.screen.blit(status_text, (x, y))
+        y += self.line_height + 4
+
+        # Show unlock requirement info
+        if self.jump_skill and hasattr(self.jump_skill, "unlock_requirements"):
+            req = self.jump_skill.unlock_requirements.get(mod_name, {})
+            req_type = req.get("type", "")
+            req_val = req.get("requirement")
+            
+            if req_type == "lancer_level":
+                unlock_str = f"Unlocked: Lancer Level {req_val}"
+            elif req_type == "dragoon_level":
+                unlock_str = f"Unlocked: Dragoon Level {req_val}"
+            elif req_type == "boss":
+                unlock_str = f"Unlocked by defeating {req_val}"
+            elif req_type == "item":
+                unlock_str = f"Unlocked by finding {req_val}"
+            else:
+                unlock_str = "Initial modification"
+            
+            unlock_text = self.normal_font.render(unlock_str, True, self.GOLD)
+            self.screen.blit(unlock_text, (x, y))
+            y += self.line_height + 8
+
+        desc = self.MOD_DESCRIPTIONS.get(mod_name, "")
+        if desc:
+            max_width = self.details_rect.width - 32
+            words = desc.split()
+            line = ""
+            for w in words:
+                test = f"{line} {w}".strip()
+                if self.normal_font.size(test)[0] <= max_width:
+                    line = test
+                else:
+                    self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+                    y += self.line_height
+                    line = w
+            if line:
+                self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+
+    def on_select(self, player_char, item):
+        if not self.jump_skill or not hasattr(self.jump_skill, "modifications"):
+            return None
+        if isinstance(item, dict) and item.get("is_header"):
+            return None
+
+        mod_name = item.get("value") if isinstance(item, dict) else str(item)
+        current = self.jump_skill.modifications.get(mod_name, False)
+        
+        # Toggle the modification
+        result = self.jump_skill.set_modification(mod_name, not current, player_char)
+        
+        # Handle the new tuple return format
+        if isinstance(result, tuple):
+            success, error_msg = result
+            if not success and error_msg:
+                # Could show error popup here if desired
+                pass  # For now, just don't toggle if it failed
+        
+        self.build_items(player_char)
+        return None
 
 
 class SelectionPopup(BasePopupMenu):

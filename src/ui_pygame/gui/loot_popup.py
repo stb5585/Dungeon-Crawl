@@ -39,13 +39,14 @@ class LootPopup:
         self.animation_time = 0
         self.max_animation_time = 30  # frames
     
-    def show_loot(self, items, chest_type="Chest"):
+    def show_loot(self, items, chest_type="Chest", background_draw_func=None):
         """
         Display loot popup and wait for player to acknowledge.
         
         Args:
             items: Single item or list of items found in chest
             chest_type: Type of chest (for display purposes)
+            background_draw_func: Optional function to draw the background
         """
         # Normalize to list
         if not isinstance(items, list):
@@ -55,7 +56,11 @@ class LootPopup:
         items = [item for item in items if item is not None]
         
         if not items:
-            return self._show_empty_chest(chest_type)
+            return self._show_empty_chest(chest_type, background_draw_func)
+
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
         
         self.animation_time = 0
         waiting = True
@@ -69,6 +74,7 @@ class LootPopup:
                     if self.animation_time >= self.max_animation_time:
                         waiting = False
             
+            background_draw_func()
             self._render_loot_popup(items, chest_type)
             pygame.display.flip()
             
@@ -77,9 +83,13 @@ class LootPopup:
             
             clock.tick(60)
     
-    def _show_empty_chest(self, chest_type):
+    def _show_empty_chest(self, chest_type, background_draw_func=None):
         """Show empty chest message."""
         waiting = True
+
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
         
         while waiting:
             for event in pygame.event.get():
@@ -88,6 +98,7 @@ class LootPopup:
                 elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                     waiting = False
             
+            background_draw_func()
             self._render_empty_chest(chest_type)
             pygame.display.flip()
     
@@ -237,7 +248,7 @@ class LootPopup:
         c3 = c1 + 1
         return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2)
     
-    def show_unlock_prompt(self, locked_type="chest"):
+    def show_unlock_prompt(self, locked_type="chest", background_draw_func=None):
         """
         Show prompt asking if player wants to use a key.
         
@@ -246,10 +257,16 @@ class LootPopup:
         
         Returns:
             bool: True if player wants to use key, False otherwise
+            background_draw_func: Optional function to draw the background
         """
-        options = ["Use Key", "Cancel"]
+        key_name = "Old Key" if locked_type == "door" else "Key"
+        options = [f"Use {key_name}", "Cancel"]
         selected = 0
         waiting = True
+
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
         
         while waiting:
             for event in pygame.event.get():
@@ -265,8 +282,19 @@ class LootPopup:
                     elif event.key == pygame.K_ESCAPE:
                         return False
             
+            background_draw_func()
             self._render_unlock_prompt(locked_type, options, selected)
             pygame.display.flip()
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()
     
     def _render_unlock_prompt(self, locked_type, options, selected):
         """Render the unlock prompt."""

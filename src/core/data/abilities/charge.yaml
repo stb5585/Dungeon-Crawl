@@ -19,7 +19,7 @@ effects:
     base: 0  # Uses weapon damage
     scaling:
       stat: strength
-      ratio: 0.75
+      ratio: 1.25
     element: Physical
     weapon_damage: true
 

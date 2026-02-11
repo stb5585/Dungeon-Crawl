@@ -16,7 +16,7 @@ from .level_up import LevelUpScreen
 
 
 class QuestManager:
-    def __init__(self, presenter, player_char, quest_text_renderer=None, wrap_width=52):
+    def __init__(self, presenter, player_char, quest_text_renderer=None, wrap_width=50):
         self.presenter = presenter
         self.screen = presenter.screen
         self.player_char = player_char
@@ -43,8 +43,6 @@ class QuestManager:
                 if isinstance(ht, str) and ht.strip():
                     hints.append(ht)
         for name, _ in flatten(sides):
-            if name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
-                continue
             pdata = self.player_char.quest_dict.get('Side', {}).get(name)
             if pdata and not pdata.get('Turned In'):
                 ht = pdata.get('Help Text', '')
@@ -66,13 +64,6 @@ class QuestManager:
         return main_list, side_list
 
     def _turn_in(self, quest_name: str, typ: str) -> None:
-        loc_bg = self.screen.copy()
-        # Prevent Debug quest interactions in non-debug mode
-        if quest_name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
-            popup = ConfirmationPopup(self.presenter, "This quest cannot be turned in.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
-            return
-        
         qdata = self.player_char.quest_dict[typ][quest_name]
         # Show end-of-quest text from quest giver if available
         end_text = qdata.get('End Text', '')
@@ -86,7 +77,7 @@ class QuestManager:
             else:
                 wrapped_end = "\n".join(textwrap.wrap(header_text, width=self.wrap_width))
                 popup = ConfirmationPopup(self.presenter, wrapped_end, show_buttons=False)
-                popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+                popup.show()
 
         # Rewards
         exp = qdata.get('Experience', 0) * max(1, getattr(self.player_char.level, 'pro_level', 1))
@@ -114,30 +105,6 @@ class QuestManager:
             info_lines.append("")
             info_lines.append(f"Value: {getattr(item, 'value', 0)}g")
             return "\n".join(info_lines)
-
-        # Handle special Debug quest: grants massive exp for leveling
-        if quest_name == 'Debug' and qdata.get('Type') == 'Debug':
-            # Show reward first
-            message = f"You've been granted {exp:,} experience points! This quest can be used again."
-            wrapped_message = "\n".join(textwrap.wrap(message, width=self.wrap_width))
-            if self.quest_text_renderer:
-                self.quest_text_renderer(wrapped_message)
-            else:
-                popup = ConfirmationPopup(self.presenter, wrapped_message, show_buttons=False)
-                popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
-
-            # Then apply experience and trigger level-up(s)
-            self.player_char.level.exp += exp
-            if not self.player_char.max_level():
-                try:
-                    self.player_char.level.exp_to_gain -= exp
-                except Exception:
-                    pass
-            level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
-            while not self.player_char.max_level() and self.player_char.level.exp_to_gain <= 0:
-                level_up_screen.show_level_up(self.player_char, None)
-            # Do not mark as turned in so it can be repeated
-            return
 
         # Gold or items
         reward_str = ""
@@ -195,7 +162,7 @@ class QuestManager:
                             self.quest_text_renderer(format_item_info(item))
                         else:
                             popup = ConfirmationPopup(self.presenter, format_item_info(item), show_buttons=False)
-                            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+                            popup.show()
                         confirm = self.presenter.render_menu(f"Take {item.name}?", ["Take", "Back"])
                         if confirm == 0:
                             for _ in range(reward_num):
@@ -228,7 +195,7 @@ class QuestManager:
             self.quest_text_renderer(combined_msg)
         else:
             popup = ConfirmationPopup(self.presenter, combined_msg, show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+            popup.show()
 
         # Then apply experience and trigger level-up(s)
         self.player_char.level.exp += exp
@@ -270,7 +237,6 @@ class QuestManager:
         return False
 
     def _offer(self, giver: str, quest_name: str, q: dict[str, Any], typ: str) -> bool:
-        loc_bg = self.screen.copy()
         # Offer quest via presenter
         text = q.get('Start Text', '')
         # Add quest name header for visibility
@@ -284,11 +250,11 @@ class QuestManager:
             self.quest_text_renderer(wrapped_text)
         else:
             popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+            popup.show()
         
         # Separate Accept/Decline menu as popup
         popup = ConfirmationPopup(self.presenter, "Accept this quest?")
-        if popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0))):
+        if popup.show():
             # Add a copy of quest to player quest log
             if typ not in self.player_char.quest_dict:
                 self.player_char.quest_dict[typ] = {}
@@ -307,10 +273,6 @@ class QuestManager:
                         self.player_char.quest_dict[typ][quest_name]['Completed'] = True
                 except Exception:
                     pass
-
-            # Debug quest is always immediately completed when accepted
-            if quest_name == 'Debug' and q.get('Type') == 'Debug':
-                self.player_char.quest_dict[typ][quest_name]['Completed'] = True
 
             # If quest grants an initial item (e.g., Naivete empty vial in curses version),
             # replicate minimal cases here if needed.
@@ -331,13 +293,13 @@ class QuestManager:
                 response,
                 show_buttons=False,
             )
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+            popup.show()
             return True
         else:
             # Use personalized rejection response from RESPONSE_MAP
             response = RESPONSE_MAP.get(giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."])[1]
             popup = ConfirmationPopup(self.presenter, response, show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+            popup.show()
             return False
 
     def check_and_offer(self, giver: str, show_help: bool = True, suppress_no_quests_message: bool = False) -> tuple[bool, bool]:
@@ -350,8 +312,6 @@ class QuestManager:
         showed_message = False
         quest_was_offered = False
         mains, sides = self._eligible_quests(giver)
-        loc_bg = self.screen.copy()
-
         # Turn-in checks, then offers
         # Build flat (name, data) lists
         def flatten(lst):
@@ -378,9 +338,6 @@ class QuestManager:
                 return did_action, showed_message
         for name, q in flatten(sides):
             pdata = self.player_char.quest_dict.get('Side', {}).get(name)
-            # Skip Debug quest in non-debug mode
-            if name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
-                continue
             if pdata and pdata.get('Completed') and not pdata.get('Turned In'):
                 self._turn_in(name, 'Side')
                 did_action = True
@@ -398,9 +355,6 @@ class QuestManager:
             # Skip debug-only pandora/ultima style special cases
             if name == "Pandora's Box" and 'Ultima' not in self.player_char.spellbook.get('Spells', {}):
                 continue
-            # Skip Debug quest in non-debug mode
-            if name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
-                continue
             
             if name not in self.player_char.quest_dict.get('Side', {}):
                 quest_was_offered = True
@@ -415,9 +369,6 @@ class QuestManager:
             if pdata and not pdata.get('Turned In'):
                 help_texts.append(pdata.get('Help Text', ''))
         for name, q in flatten(sides):
-            # Skip Debug quest in non-debug mode
-            if name == 'Debug' and not getattr(self.presenter, 'debug_mode', False):
-                continue
             pdata = self.player_char.quest_dict.get('Side', {}).get(name)
             if pdata and not pdata.get('Turned In'):
                 help_texts.append(pdata.get('Help Text', ''))
@@ -431,11 +382,11 @@ class QuestManager:
                     self.quest_text_renderer(wrapped_hint)
                 else:
                     popup = ConfirmationPopup(self.presenter, wrapped_hint, show_buttons=False)
-                    popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+                    popup.show()
                 showed_message = True
         elif not quest_was_offered and not suppress_no_quests_message:
             # Only show "no quests" if no quest was offered at all and not suppressed
             popup = ConfirmationPopup(self.presenter, "I have no new quests for you at this time.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(loc_bg, (0, 0)))
+            popup.show()
             showed_message = True
         return did_action, showed_message

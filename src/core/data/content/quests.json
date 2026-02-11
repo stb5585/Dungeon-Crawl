@@ -384,22 +384,6 @@
       }
     },
     "Side": {
-      "1": {
-        "Debug": {
-          "Who": "Priest",
-          "Type": "Debug",
-          "What": "Debug",
-          "Total": 1,
-          "Start Text": "Ah, you must be a developer. Take this quest and turn it back in for a lot of exp.",
-          "End Text": "Looks like you know how to listen. Here's your promotion.",
-          "Help Text": "",
-          "Reward": ["Gold"],
-          "Reward Number": 0,
-          "Experience": 99999999999,
-          "Completed": true,
-          "Turned In": false
-        }
-      },
       "40": {
         "The Shocker": {
           "Who": "Priest",

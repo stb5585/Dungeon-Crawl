@@ -197,7 +197,25 @@ class CavePath(MapTile):
                     game.player_char.modify_inventory(rand_item, 1)
                     if textbox:
                         textbox.print_text_in_rectangle(f"{game.player_char.familiar.name} finds {rand_item.name} and gives it to {game.player_char.name}.")
-        if all([not random.randint(0, 4),
+        # Scale random encounter rate down if player greatly outlevels the area
+        try:
+            if hasattr(game.player_char, "player_level") and callable(game.player_char.player_level):
+                player_level = game.player_char.player_level()
+            else:
+                player_level = game.player_char.level.level
+        except Exception:
+            player_level = 1
+
+        expected_level = max(1, (self.z + 1) * 10)
+        level_diff = max(0, player_level - expected_level)
+
+        # If vastly overleveled, skip random encounters entirely
+        if level_diff >= 30:
+            return
+
+        extra_roll = min(10, level_diff // 5)
+
+        if all([not random.randint(0, 4 + extra_roll),
                 self.enemy is None,
                 game._random_combat]):
             self.enter_combat(game.player_char)
@@ -249,7 +267,12 @@ class CavePath0(CavePath):
                         # Pygame version - show quest notification as a popup
                         dungeon_bg = game.presenter.screen.copy()
                         popup = popup_class(game.presenter, quest_message, show_buttons=False)
-                        popup.show(background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)))
+                        popup.show(
+                            background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)),
+                            flush_events=True,
+                            require_key_release=True,
+                            min_display_ms=300
+                        )
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy('0')
         player_char.state = 'fight'
@@ -424,7 +447,6 @@ class UndergroundSpring(SpecialTile):
                 if not quest:
                     response = random.choice(random.choice(responses))
                     springbox.print_text_in_rectangle(response)
-                    game.stdscr.getch()
                     springbox.clear_rectangle()
                 confirm.header_message = "Do you wish to enter the Realm of Cambion?\n"
                 if confirm.navigate_popup():
@@ -1069,7 +1091,6 @@ class RelicRoom(SpecialTile):
             self.read = True
             if textbox:
                 textbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")
-            game.stdscr.getch()
             game.player_char.health.current = game.player_char.health.max
             game.player_char.mana.current = game.player_char.mana.max
             game.player_char.quests()

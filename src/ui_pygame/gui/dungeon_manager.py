@@ -15,7 +15,6 @@ from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
 from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
-from .confirmation_popup import ConfirmationPopup
 from .dungeon_hud import DungeonHUD
 from .enhanced_dungeon_renderer import EnhancedDungeonRenderer
 from .loot_popup import LootPopup
@@ -72,6 +71,7 @@ class DungeonManager:
         self.ui_dirty = True
         self._render_error_logged = False
         self._cached_view = None  # pygame.Surface
+        self._cached_frame = None  # pygame.Surface
         self._next_anim_tick = 0
         self._anim_interval_ms = 120  # torch flicker / subtle view effects
 
@@ -79,6 +79,16 @@ class DungeonManager:
         dungeon_bg = self._load_dungeon_background()
         if dungeon_bg:
             self.character_screen.background = dungeon_bg
+
+        if hasattr(self.presenter, "set_background_provider"):
+            self.presenter.set_background_provider(self._get_popup_background)
+
+    def _get_popup_background(self):
+        if self._cached_frame is not None:
+            return self._cached_frame
+        if self._cached_view is not None:
+            return self._cached_view
+        return self.presenter.screen.copy()
 
     def add_message(self, message: str):
         """Add a message to the message log."""
@@ -234,10 +244,12 @@ class DungeonManager:
 
         # Closed or locked doors block movement
         if 'Door' in tile_type:
-            if getattr(tile_ahead, "locked", False):
+            if hasattr(tile_ahead, "open") and tile_ahead.open:
+                pass
+            elif getattr(tile_ahead, "locked", False):
                 self.add_message("A locked door blocks your path. (Press O to unlock)")
                 return False
-            if hasattr(tile_ahead, "open") and not tile_ahead.open:
+            elif hasattr(tile_ahead, "open") and not tile_ahead.open:
                 self.add_message("A closed door blocks your path. (Press O to open)")
                 return False
 
@@ -283,9 +295,10 @@ class DungeonManager:
             pass
 
         # Get tile intro text
-        intro = self._get_tile_intro()
-        if intro:
-            self.add_message(intro)
+        intro_messages = self._get_tile_intro()
+        if intro_messages:
+            for message in intro_messages:
+                self.add_message(message)
 
         # Check for random encounters or tile effects
         self._check_tile_effects()
@@ -300,9 +313,10 @@ class DungeonManager:
         self.add_message(f"You turn to face {self.player_char.facing}.")
         self._mark_view_dirty()
         # Emit any context intro messages for the new facing (e.g., hidden door detection)
-        intro = self._get_tile_intro()
-        if intro:
-            self.add_message(intro)
+        intro_messages = self._get_tile_intro()
+        if intro_messages:
+            for message in intro_messages:
+                self.add_message(message)
 
     def turn_right(self):
         """Turn player 90 degrees clockwise."""
@@ -312,9 +326,10 @@ class DungeonManager:
         self.add_message(f"You turn to face {self.player_char.facing}.")
         self._mark_view_dirty()
         # Emit any context intro messages for the new facing (e.g., hidden door detection)
-        intro = self._get_tile_intro()
-        if intro:
-            self.add_message(intro)
+        intro_messages = self._get_tile_intro()
+        if intro_messages:
+            for message in intro_messages:
+                self.add_message(message)
 
     def turn_around(self):
         """Turn player 180 degrees."""
@@ -324,9 +339,10 @@ class DungeonManager:
         self.add_message(f"You turn around to face {self.player_char.facing}.")
         self._mark_view_dirty()
         # Emit any context intro messages for the new facing (e.g., hidden door detection)
-        intro = self._get_tile_intro()
-        if intro:
-            self.add_message(intro)
+        intro_messages = self._get_tile_intro()
+        if intro_messages:
+            for message in intro_messages:
+                self.add_message(message)
 
     def use_stairs_up(self):
         """Use stairs to go up a level."""
@@ -486,6 +502,23 @@ class DungeonManager:
                 self.add_message("The chest is locked! You need a Key or Lockpick skill.")
                 return
 
+        # Check for Mimic (same logic as curses version)
+        locked = int('Locked' in tile_type)
+        plus = int('ChestRoom2' in tile_type)
+        if not random.randint(0, 9 + self.player_char.check_mod('luck', luck_factor=3)) and self.player_char.level.level >= 10:
+            print("[DEBUG] Mimic encounter triggered in chest interaction.")
+            from src.core import enemies
+            enemy = enemies.Mimic(self.player_char.location_z + locked + plus)
+            chest_tile.enemy = enemy
+            self.add_message("There is a Mimic in the chest!")
+            # Start combat with the Mimic
+            self.player_char.state = 'fight'
+            victory = self.combat_manager.start_combat(self.player_char, enemy, chest_tile)
+            if not getattr(enemy, "is_alive", lambda: True)():
+                chest_tile.enemy = None
+            if not victory or not self.player_char.is_alive():
+                return  # Player fled or died, don't open chest
+
         # Open the chest
         chest_tile.open = True
 
@@ -563,26 +596,26 @@ class DungeonManager:
             door_tile.open = True
             door_tile.blocked = None
             self.add_message("You unlock and open the door with the Master Key!")
-        elif "Lockpick" in self.player_char.spellbook.get("Skills", []):
+        elif "Master Lockpick" in self.player_char.spellbook.get("Skills", []):
             door_tile.locked = False
             door_tile.open = True
             door_tile.blocked = None
             self.add_message("You skillfully pick the lock and open the door!")
-        elif "Key" in self.player_char.inventory:
+        elif "Old Key" in self.player_char.inventory:
             use_key = self.loot_popup.show_unlock_prompt("door")
             if use_key:
                 door_tile.locked = False
                 door_tile.open = True
                 door_tile.blocked = None
                 self.player_char.modify_inventory(
-                    self.player_char.inventory["Key"][0],
+                    self.player_char.inventory["Old Key"][0],
                     subtract=True
                 )
-                self.add_message("You unlock and open the door with a Key!")
+                self.add_message("You unlock and open the door with an Old Key!")
             else:
                 self.add_message("The door remains locked.")
         else:
-            self.add_message("The door is locked! You need a Key or Lockpick skill.")
+            self.add_message("The door is locked! You need an Old Key or Master Lockpick skill.")
 
     def _interact_relic(self, relic_tile):
         """Handle relic room interaction."""
@@ -598,6 +631,11 @@ class DungeonManager:
         ]
 
         if 1 <= z <= 6:
+            try:
+                if self.game is not None:
+                    self.game.special_event("Relic Room")
+            except Exception:
+                pass
             relic = relics[z - 1]
             self.add_message(f"You found a relic: {relic.name}!")
             self.player_char.modify_inventory(relic, rare=True, quest=True)
@@ -647,12 +685,13 @@ class DungeonManager:
 
     def _interact_underground_spring(self, spring_tile):
         """Handle underground spring interaction."""
-        choice = self.presenter.render_menu(
+        from .confirmation_popup import ConfirmationPopup
+        popup = ConfirmationPopup(
+            self.presenter,
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
-            ["Yes", "No"]
+            show_buttons=True,
         )
-
-        if choice != 0:  # Not Yes
+        if not popup.show():
             return
 
         # Check for Naivete quest
@@ -663,6 +702,13 @@ class DungeonManager:
                 self.player_char.modify_inventory(items.SpringWater(), rare=True)
                 self.player_char.quest_dict["Side"]["Naivete"]["Completed"] = True
                 self.add_message("Quest completed: Naivete")
+                from .confirmation_popup import ConfirmationPopup
+                popup = ConfirmationPopup(
+                    self.presenter,
+                    "You fill the empty vial with Spring Water.\n\nItem received: Spring Water",
+                    show_buttons=False,
+                )
+                popup.show()
 
         # Random encounter with Fuath
         if self.player_char.level.pro_level > 1 and not random.randint(0, 1):
@@ -772,7 +818,7 @@ class DungeonManager:
             special_event_dict = get_special_events()
             if "Final Boss" in special_event_dict:
                 dialog_lines = special_event_dict["Final Boss"]["Text"]
-                dialog_text = "\n".join(dialog_lines)
+                dialog_text = " ".join(line.strip() for line in dialog_lines if line is not None).strip()
                 self.presenter.show_message(dialog_text, "The Devil")
             
             # Clear event queue to remove any lingering keypresses from dialogs
@@ -819,6 +865,7 @@ class DungeonManager:
         # Check current tile (for stairs, shops, enemies you're standing on)
         current_tile = self.get_current_tile()
         if current_tile:
+            intro_text = current_tile.intro_text(self.game).strip('\n')
             tile_type = type(current_tile).__name__
 
             if 'StairsUp' in tile_type:
@@ -837,7 +884,7 @@ class DungeonManager:
                 if not (hasattr(current_tile, 'looted') and not current_tile.looted):
                     messages.append("You happen upon a strange metal! (Press O to take)")
             elif 'DeadBody' in tile_type:
-                messages.append("The body of a fallen soldier lies here. (Press O to investigate)")
+                messages.append("The body of a fallen soldier lies here.")
             elif 'FinalBlocker' in tile_type:
                 if not self.player_char.has_relics():
                     messages.append("An invisible force blocks your path northward.")
@@ -846,7 +893,11 @@ class DungeonManager:
             elif 'FinalRoom' in tile_type:
                 messages.append("The final chamber awaits. (Press O to proceed)")
             elif 'Boss' in tile_type:
-                messages.append("You sense a powerful presence nearby...")
+                if hasattr(current_tile, 'enemy') and current_tile.enemy:
+                    messages.append("You sense a powerful presence nearby...")
+                else:
+                    if intro_text:
+                        messages.append(intro_text)
             elif hasattr(current_tile, 'enemy') and current_tile.enemy:
                 messages.append(f"A {current_tile.enemy.name} blocks your path!")
 
@@ -911,7 +962,7 @@ class DungeonManager:
                 else:
                     messages.append("You see Unobtainium on the ground ahead! (Press O to take)")
 
-        return " ".join(messages) if messages else None
+        return messages if messages else None
 
     def _check_tile_effects(self):
         """Check for tile effects like encounters, traps, etc."""
@@ -932,11 +983,25 @@ class DungeonManager:
             self._interact_final_room(current_tile)
             return  # Don't check for other effects after final room interaction
 
+        # Display special event text BEFORE tile effects and combat
+        if hasattr(current_tile, 'special_text'):
+            try:
+                special = current_tile.special_text(self.game)
+                if special:
+                    self.add_message(special)
+            except:
+                pass
+
         # Apply tile-defined effects (original game behavior)
         # This enables effects like FirePath damage on entry.
         hp_before = getattr(self.player_char.health, 'current', None)
         try:
-            current_tile.modify_player(self.game, popup_class=ConfirmationPopup)
+            if 'UndergroundSpring' not in tile_type:
+                from .confirmation_popup import ConfirmationPopup
+                try:
+                    current_tile.modify_player(self.game, popup_class=ConfirmationPopup)
+                except TypeError:
+                    current_tile.modify_player(self.game)
         except AttributeError:
             pass
         except Exception as e:
@@ -945,6 +1010,8 @@ class DungeonManager:
             hp_after = getattr(self.player_char.health, 'current', None)
             if ('FirePath' in tile_type and hp_before is not None and hp_after is not None
                     and hp_after < hp_before):
+                damage = hp_before - hp_after
+                self.add_message(f"The heat sears you for {damage} damage!")
                 # Brief red flash when the floor burns the player
                 if hasattr(self.renderer, 'trigger_damage_flash'):
                     self.renderer.trigger_damage_flash()
@@ -954,6 +1021,20 @@ class DungeonManager:
         # Check if tile effect teleported player to town (e.g., "Bring Him Home" quest)
         if self.player_char.in_town():
             self.add_message("You've been teleported back to town!")
+            try:
+                from .confirmation_popup import ConfirmationPopup
+                popup = ConfirmationPopup(
+                    self.presenter,
+                    "You've been teleported back to town!",
+                    show_buttons=False
+                )
+                popup.show(
+                    flush_events=True,
+                    require_key_release=True,
+                    min_display_ms=300
+                )
+            except Exception:
+                pass
             self.running = False  # Exit dungeon mode
             return
 
@@ -964,6 +1045,13 @@ class DungeonManager:
             if callable(enemy) and not hasattr(enemy, 'name'):
                 enemy = enemy()
                 current_tile.enemy = enemy  # Update tile's enemy to the instance
+
+            if hasattr(enemy, "is_alive") and not enemy.is_alive():
+                current_tile.enemy = None
+                return
+            if hasattr(enemy, "health") and getattr(enemy.health, "current", 1) <= 0:
+                current_tile.enemy = None
+                return
             
             self.add_message(f"You've encountered a {enemy.name}!")
 
@@ -1007,16 +1095,6 @@ class DungeonManager:
             self.add_message("*** WARNING: Enemies beyond this point increase in difficulty. Plan accordingly. ***")
             current_tile._warning_shown = True
 
-        # Check for special tile effects
-        if hasattr(current_tile, 'special_text'):
-            try:
-                # Some tiles have special text
-                special = current_tile.special_text(self.game)
-                if special:
-                    self.add_message(special)
-            except:
-                pass
-
     def explore_dungeon(self):
         """
         Main dungeon exploration loop.
@@ -1039,7 +1117,10 @@ class DungeonManager:
         self.add_message(f"Facing: {self.player_char.facing}")
 
         # Show controls
-        self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, ESC=Menu")
+        if getattr(self.game, "debug_mode", False):
+            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, ESC=Menu, L=Debug Level Up")
+        else:
+            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, ESC=Menu")
 
         clock = pygame.time.Clock()
         self.running = True
@@ -1117,6 +1198,10 @@ class DungeonManager:
                 else:
                     # Placeholder until inventory/equipment/etc screens exist
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
+
+        # Debug level-up shortcut
+        elif key == pygame.K_l and getattr(self.game, "debug_mode", False):
+            self.game.debug_level_up()
 
         # Escape menu
         elif key == pygame.K_ESCAPE:
@@ -1288,6 +1373,8 @@ class DungeonManager:
                 print(f"Damage flash render error: {e}")
                 traceback.print_exc()
                 self._render_error_logged = True
+
+        self._cached_frame = screen.copy()
 
         # Clear dirty flags after a frame attempt.
         self.view_dirty = False

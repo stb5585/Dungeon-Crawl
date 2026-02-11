@@ -18,10 +18,9 @@ class ShopManager(TownScreenBase):
     
     def visit_blacksmith(self):
         """Visit Griswold's Blacksmith - weapons and shields."""
-        blacksmith_bg = self.screen.copy()
         if self.player_char.player_level() < 5:
             popup = ConfirmationPopup(self.presenter, "Sorry but the blacksmith is currently closed. Try again later.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(blacksmith_bg, (0, 0)))
+            popup.show()
             return
         
         # Check for unobtainium ultimate weapon quest
@@ -36,7 +35,6 @@ class ShopManager(TownScreenBase):
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Griswold's Blacksmith")
         shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
-        shop_bg = shop_screen.screen.copy()
 
         from .quest_manager import QuestManager
         qm = QuestManager(
@@ -50,7 +48,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.screen.blit(shop_bg, (0, 0)))
+                popup.show()
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
@@ -77,7 +75,6 @@ class ShopManager(TownScreenBase):
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Welcome to Ye Olde Item Shoppe.")
-        shop_bg = shop_screen.screen.copy()
         qm = QuestManager(
             self.presenter,
             self.player_char,
@@ -90,17 +87,19 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Good luck on your adventures!", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.screen.blit(shop_bg, (0, 0)))
+                popup.show()
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
-                shop_screen.set_options(["Potions", "Scrolls", "Back"])
+                shop_screen.set_options(["Potions", "Scrolls", "Misc", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Potions":
                     self.buy_potions()
                 elif buy_choice == "Scrolls":
                     self.buy_scrolls()
+                elif buy_choice == "Misc":
+                    self.buy_misc()
                 
                 # Always restore main options after buying or going back
                 shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
@@ -112,17 +111,15 @@ class ShopManager(TownScreenBase):
     
     def visit_jeweler(self):
         """Visit the Jeweler - rings and pendants."""
-        jeweler_bg = self.screen.copy()
         if self.player_char.player_level() < 10:
             popup = ConfirmationPopup(self.presenter, "Sorry but the jeweler is currently closed. Try again later.", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(jeweler_bg, (0, 0)))
+            popup.show()
             return
         
         from .quest_manager import QuestManager
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Come glimpse the finest jewelry in the land.")
-        shop_bg = shop_screen.screen.copy()
         qm = QuestManager(
             self.presenter,
             self.player_char,
@@ -135,7 +132,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "May fortune favor you!", show_buttons=False)
-                popup.show(background_draw_func=lambda: self.screen.blit(shop_bg, (0, 0)))
+                popup.show()
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
@@ -240,6 +237,15 @@ class ShopManager(TownScreenBase):
         """Buy scrolls from alchemist."""
         scroll_list = items_module.items_dict["Misc"]["Scroll"]
         self.buy_equipment(scroll_list, "Scroll", )
+
+    def buy_misc(self):
+        """Buy misc items from alchemist (excluding scrolls)."""
+        misc_dict = dict(items_module.items_dict.get("Misc", {}))
+        if "Scroll" in misc_dict:
+            misc_dict.pop("Scroll")
+        if not misc_dict:
+            return
+        self._buy_with_shop_screen(misc_dict, "Misc", )
     
     def buy_potions(self):
         """Buy potions from alchemist with level-based availability."""
@@ -296,7 +302,7 @@ class ShopManager(TownScreenBase):
             max_qty = min(self.player_char.gold // cost, 99) if cost > 0 else 99
             
             qty_popup = QuantityPopup(self.presenter, item.name, cost, max_qty)
-            quantity = qty_popup.show(background_draw_func=lambda: shop_screen.draw_all(do_flip=False))
+            quantity = qty_popup.show()
             
             if quantity is None or quantity == 0:
                 continue
@@ -315,8 +321,7 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Buy {quantity}x {item.name} for {total_cost}g?"
             )
-            shop_bg = shop_screen.screen.copy()
-            confirmed = confirm_popup.show(background_draw_func=lambda: self.presenter.screen.blit(shop_bg, (0, 0)))
+            confirmed = confirm_popup.show()
             if not confirmed:
                 continue
 
@@ -331,7 +336,7 @@ class ShopManager(TownScreenBase):
                 f"Purchased {quantity}x {item.name}!\n\nGold remaining: {self.player_char.gold}",
                 show_buttons=False
             )
-            summary_popup.show(background_draw_func=lambda: self.presenter.screen.blit(shop_bg, (0, 0)))
+            summary_popup.show()
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
@@ -448,10 +453,9 @@ class ShopManager(TownScreenBase):
     
     def sell_items(self):
         """Sell items from inventory using ShopScreen."""
-        background_surface = self.screen.copy()
         if not self.player_char.inventory:
             popup = ConfirmationPopup(self.presenter, "You have nothing to sell!", show_buttons=False)
-            popup.show(background_draw_func=lambda: self.screen.blit(background_surface, (0, 0)))
+            popup.show()
             return
         
         while True:
@@ -469,13 +473,12 @@ class ShopManager(TownScreenBase):
                     "You have no items to sell.",
                     show_buttons=False
                 )
-                popup.show(background_draw_func=lambda: self.screen.blit(background_surface, (0, 0)))
+                popup.show()
                 return
             
             # Use ShopScreen for selling
             shop_screen = ShopScreen(self.presenter, self.player_char, "Sell Items")
             shop_screen.update_item_list(sellable, "Sell")
-            shop_bg = shop_screen.screen.copy()
             
             result = shop_screen.navigate_items()
             
@@ -492,7 +495,7 @@ class ShopManager(TownScreenBase):
             # Use QuantityPopup for sell quantity selection
             from .confirmation_popup import QuantityPopup
             qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count)
-            quantity = qty_popup.show(background_draw_func=lambda: shop_screen.draw_all(do_flip=False))
+            quantity = qty_popup.show()
             
             if quantity is None or quantity == 0:
                 continue
@@ -506,7 +509,7 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Sell {quantity}x {item.name} for {total_gold}g?"
             )
-            confirm = confirm_popup.show(background_draw_func=lambda: self.screen.blit(shop_bg, (0, 0)))
+            confirm = confirm_popup.show()
             
             if confirm:
                 self.player_char.gold += total_gold
@@ -519,7 +522,7 @@ class ShopManager(TownScreenBase):
                     f"Sold {quantity}x {item.name} for {total_gold}g!\n\nGold: {self.player_char.gold}",
                     show_buttons=False
                 )
-                summary_popup.show(background_draw_func=lambda: self.screen.blit(shop_bg, (0, 0)))
+                summary_popup.show()
                 # Continue selling (will reload inventory)
             else:
                 # Continue browsing

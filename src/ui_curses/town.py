@@ -56,7 +56,6 @@ def ultimate(game):
         if make_options[make_idx] == 'Not Yet':
             ultimatebox.print_text_in_rectangle(
                 "I am sorry to hear that...please come back if you change your mind.")
-            game.stdscr.getch()
             ultimatebox.clear_rectangle()
             return
         else:
@@ -67,7 +66,6 @@ def ultimate(game):
             ultimatebox.clear_rectangle()
             ultimatebox.print_text_in_rectangle(
                 f"I present to you, {game.player_char.name}, the mighty {weapon.name}!")
-            game.stdscr.getch()
             ultimatebox.clear_rectangle()
             game.player_char.modify_inventory(weapon)
             del game.player_char.special_inventory['Unobtainium']
@@ -125,7 +123,6 @@ def turn_in_quest(game, quest, typ):
         game.player_char.level.exp_to_gain -= exp
     turninbox = menus.TextBox(game)
     turninbox.print_text_in_rectangle(reward_message)
-    game.stdscr.getch()
     turninbox.clear_rectangle()
     if game.player_char.quest_dict[typ][quest]['Type'] == 'Collect':
         item = game.player_char.quest_dict[typ][quest]['What']
@@ -145,15 +142,12 @@ def turn_in_quest(game, quest, typ):
             game.player_char.level_up(game, textbox=textbox, menu=stat_menu)
             if game.player_char.level.exp_to_gain == "MAX":
                 break
-    if game.debug_mode and quest == "Debug":
-        del game.player_char.quest_dict[typ][quest]
     if quest == "A Bad Dream":
         game.special_event("Busboy")
         if "Where's the Beef?" in game.player_char.quest_dict["Side"]:
             if not game.player_char.quest_dict["Side"]["Where's the Beef?"]["Turned In"]:
                 turninbox.print_text_in_rectangle(("I know the waitress asked you to get her some meat for her wedding.\n"
                                                    "She obviously doesn't need them anymore, so I can take them if you get them.\n"))
-                game.stdscr.getch()
                 turninbox.clear_rectangle()
                 game.player_char.quest_dict["Side"]["Where's the Beef?"]["Who"] = "Busboy"
                 end_text = "Thanks, this will help feed a lot of people. Here's something for your time."
@@ -231,7 +225,6 @@ def accept_quest(game, quest, typ):
         if quest_key == "Naivete":
             player_char.modify_inventory(items.EmptyVial(), rare=True)
         acceptquestbox.print_text_in_rectangle(message)
-        game.stdscr.getch()
         acceptquestbox.clear_rectangle()
         if quest[quest_key]['Type'] == 'Defeat':
             kill_list = [name for typ_dict in player_char.kill_dict.values() for name in typ_dict]
@@ -240,7 +233,6 @@ def accept_quest(game, quest, typ):
         accepted = True
     else:
         acceptquestbox.print_text_in_rectangle(RESPONSE_MAP[who][1])
-        game.stdscr.getch()
         acceptquestbox.clear_rectangle()
     confirm.clear_popup()
     menu.clear_popup()
@@ -282,9 +274,6 @@ def check_quests(game, quest_giver):
     if len(side_quests) > 0:
         for side_quest in side_quests:
             key = list(side_quest)[0]
-            # Skip Debug quest entirely (never show in production)
-            if key == "Debug":
-                continue
             if key in player_sides:
                 if game.player_char.quest_dict['Side'][key]['Completed'] and \
                         not game.player_char.quest_dict['Side'][key]['Turned In']:
@@ -350,7 +339,6 @@ def tavern_patrons(game):
             response = random.choice(random.choice(level_talks))
             textbox = menus.TextBox(game)
             textbox.print_text_in_rectangle(response)
-            game.stdscr.getch()
             textbox.clear_rectangle()
         patron_options = patron_list(game)
         menu.update_options(patron_options, options_message=patron_message, reset_current=False)
@@ -408,7 +396,6 @@ def tavern(game):
                             game.player_char.quest_dict['Bounty'][selection["enemy"].name] = [selection, 0, False]
                             tavernbox.print_text_in_rectangle(
                                 "Return here when the job is done and you will be rewarded.")
-                            game.stdscr.getch()
                             tavernbox.clear_rectangle()
                             game.delete_bounty(selection)
                             bounty_idx = bounty_options.index(selection["enemy"].name)
@@ -439,7 +426,6 @@ def tavern(game):
                     game.player_char.modify_inventory(reward)
                     bounty_gain += f"And you have been rewarded with a {reward.name}."
                 tavernbox.print_text_in_rectangle(bounty_gain)
-                game.stdscr.getch()
                 tavernbox.clear_rectangle()
                 del game.player_char.quest_dict['Bounty'][turn_in_choice]
                 if not game.player_char.max_level():
@@ -462,7 +448,6 @@ def tavern(game):
                     tavern_options.pop(1)
             elif tavern_options[tavern_idx] == "Leave":
                 tavernbox.print_text_in_rectangle("Come back whenever you'd like.")
-                game.stdscr.getch()
                 tavernbox.clear_rectangle()
                 return
             else:
@@ -486,7 +471,6 @@ def barracks(game):
         game.player_char.modify_inventory(items.JoffreysLetter(), rare=True)
         game.player_char.modify_inventory(items.GreatHealthPotion(), num=5)
         barracksbox.print_text_in_rectangle("You gain 5 Great Health Potions and Joffrey's Letter.")
-        game.stdscr.getch()
         barracksbox.clear_rectangle()
     while True:
         menu.update_options(barracks_options)
@@ -496,7 +480,6 @@ def barracks(game):
             if barracks_options[barrack_idx] == "Leave":
                 message = "Take care, soldier."
                 barracksbox.print_text_in_rectangle(message)
-                game.stdscr.getch()
                 barracksbox.clear_rectangle()
                 return
             if barracks_options[barrack_idx] == 'Storage':
@@ -516,7 +499,6 @@ def barracks(game):
                         if len(store_items) == 0:
                             barracksbox.print_text_in_rectangle(
                                 "You do not have anything to store at the moment.")
-                            game.stdscr.getch()
                             barracksbox.clear_rectangle()
                             continue
                         store_items.append('Go Back')
@@ -543,7 +525,6 @@ def barracks(game):
                                 else:
                                     barracksbox.print_text_in_rectangle(
                                         "You do not have that many, please enter a correct value.")
-                                    game.stdscr.getch()
                                     barracksbox.clear_rectangle()
                             if len(game.player_char.inventory) == 0:
                                 break
@@ -579,7 +560,6 @@ def barracks(game):
                                 else:
                                     barracksbox.print_text_in_rectangle(
                                         "You do not have that many, please enter a valid quantity.")
-                                    game.stdscr.getch()
                                     barracksbox.clear_rectangle()
                             menu.update_options(retrieve_items, options_message=retrieve_message)
                             if len(game.player_char.storage) == 0 and "Retrieve" in storage_options:
@@ -593,7 +573,6 @@ def barracks(game):
                 if not quest:
                     response = random.choice(random.choice(responses))
                     barracksbox.print_text_in_rectangle(response)
-                    game.stdscr.getch()
                     barracksbox.clear_rectangle()
 
 
@@ -624,7 +603,6 @@ def blacksmith(game):
                    "I am not sure if it will help you or not but I have an odd feeling you need this...\n"
                    "You gain Vulcan's Hammer.\n")
         blacksmithbox.print_text_in_rectangle(message)
-        game.stdscr.getch()
         blacksmithbox.clear_rectangle()
     while True:
         menu.update_itemdict(None)
@@ -632,7 +610,6 @@ def blacksmith(game):
         if blacksmith_choice == 'Leave':
             leave_message = "We're sorry to see you go. Come back anytime!"
             blacksmithbox.print_text_in_rectangle(leave_message)
-            game.stdscr.getch()
             blacksmithbox.clear_rectangle()
             return
         done = False
@@ -657,7 +634,6 @@ def blacksmith(game):
                 if not quest:
                     response = random.choice(random.choice(responses))
                     blacksmithbox.print_text_in_rectangle(response)
-                    game.stdscr.getch()
                     blacksmithbox.clear_rectangle()
                 done = True
             else:
@@ -679,7 +655,6 @@ def alchemist(game):
         if alchemist_choice == 'Leave':
             leave_message = "We're sorry to see you go. Come back anytime!"
             alchemistbox.print_text_in_rectangle(leave_message)
-            game.stdscr.getch()
             alchemistbox.clear_rectangle()
             return
         done = False
@@ -693,7 +668,6 @@ def alchemist(game):
                 if not quest:
                     response = random.choice(random.choice(responses))
                     alchemistbox.print_text_in_rectangle(response)
-                    game.stdscr.getch()
                     alchemistbox.clear_rectangle()
                 done = True
             else:
@@ -715,7 +689,6 @@ def jeweler(game):
         if jeweler_choice == 'Leave':
             leave_message = "We're sorry to see you go. Come back anytime!"
             jewelerbox.print_text_in_rectangle(leave_message)
-            game.stdscr.getch()
             jewelerbox.clear_rectangle()
             return
         done = False
@@ -729,7 +702,6 @@ def jeweler(game):
                 if not quest:
                     response = random.choice(random.choice(responses))
                     jewelerbox.print_text_in_rectangle(response)
-                    game.stdscr.getch()
                     jewelerbox.clear_rectangle()
                 done = True
             else:
@@ -753,7 +725,6 @@ def church(game):
                 else:
                     churchbox.print_text_in_rectangle(
                         "You need to be level 30 before you can promote your character.\n")
-                game.stdscr.getch()
                 churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Save':
             confirm = menus.ConfirmPopupMenu(game, "A save file under this name already exists. Are you sure you want to overwrite it?", box_height=8)
@@ -763,7 +734,6 @@ def church(game):
             if not quest:
                 response = random.choice(random.choice(responses))
                 churchbox.print_text_in_rectangle(response)
-                game.stdscr.getch()
                 churchbox.clear_rectangle()
         elif church_options[church_idx] == 'Quit Game':
             quit_confirm = menus.ConfirmPopupMenu(game, "Are you sure you want to quit? Any unsaved progress will be lost.", box_height=8)
@@ -772,7 +742,6 @@ def church(game):
                 return
         elif church_options[church_idx] == 'Leave':
             churchbox.print_text_in_rectangle("Let the light of Elysia guide you.")
-            game.stdscr.getch()
             churchbox.clear_rectangle()
             return
         else:
@@ -793,7 +762,6 @@ def secret_shop(game):
         secret_choice = menu.navigate_options()
         if secret_choice == 'Leave':
             secretshopbox.print_text_in_rectangle("We're sorry to see you go. Come back anytime!")
-            game.stdscr.getch()
             secretshopbox.clear_rectangle()
             game.player_char.move_south(game)
             return
@@ -839,11 +807,9 @@ def ultimate_armor_repo(game):
         ultimate_idx = popup.navigate_popup()
         if ultimate_options[ultimate_idx] == "Leave":
             ultimatebox.print_text_in_rectangle(no_message)
-            game.stdscr.getch()
             ultimatebox.clear_rectangle()
         else:
             ultimatebox.print_text_in_rectangle(armor_list[ultimate_idx].description)
-            game.stdscr.getch()
             ultimatebox.clear_rectangle()
             confirm_str = f"You have chosen an immaculate {ultimate_options[ultimate_idx].lower()} armor. Is this correct?"
             confirm = menus.ConfirmPopupMenu(game, confirm_str, box_height=8)
@@ -856,15 +822,12 @@ def ultimate_armor_repo(game):
                 ultimatebox.print_text_in_rectangle(f"I present to you the legendary armor, {chosen.name}!")
                 game.player_char.modify_inventory(chosen, 1)
                 tile.looted = True
-                game.stdscr.getch()
                 ultimatebox.clear_rectangle()
             else:
                 ultimatebox.print_text_in_rectangle(no_message)
-                game.stdscr.getch()
                 ultimatebox.clear_rectangle()
     else:
         ultimatebox.print_text_in_rectangle("Please, defeat him before it's too late...do not worry about me.")
-        game.stdscr.getch()
         ultimatebox.clear_rectangle()
     game.player_char.move_south(game)
 
@@ -897,7 +860,6 @@ def buy(game, menu, buy_choice, handed=None):
         typ, name, adj_cost, _ = [x.strip() for x in list(filter(None, item_str.split('  ')))]
         if int(adj_cost) > game.player_char.gold:
             buybox.print_text_in_rectangle("You do not have enough gold to purchase this item.")
-            game.stdscr.getch()
             buybox.clear_rectangle()
         else:
             popup = menus.ShopPopup(game, f"How many {name} do you want to buy?", box_height=7)
@@ -905,7 +867,6 @@ def buy(game, menu, buy_choice, handed=None):
             total_cost = int(adj_cost) * num
             if int(total_cost) > game.player_char.gold:
                 buybox.print_text_in_rectangle("You do not have enough gold to purchase this item.")
-                game.stdscr.getch()
                 buybox.clear_rectangle()
             elif num > 0:
                 item = [x for x in item_dict[typ] if x().name == name][0]()
@@ -921,7 +882,6 @@ def sell(game, menu):
     sellbox = menus.TextBox(game)
     if len(game.player_char.inventory) == 0:
         sellbox.print_text_in_rectangle("You don't have anything to sell.")
-        game.stdscr.getch()
         sellbox.clear_rectangle()
         return True
     while True:
@@ -962,14 +922,12 @@ def warp_point(game):
             game.player_char.world_dict[(3, 1, 5)].near = True
         message = "You step into the warp point, taking you deep into the dungeon."
         warpbox.print_text_in_rectangle(message)
-        game.stdscr.getch()
         warpbox.clear_rectangle()
         game.player_char.world_dict[(3, 0, 5)].warped = True
         game.player_char.change_location(3, 0, 5)
         return True
     message = "Not a problem, come back when you change your mind."
     warpbox.print_text_in_rectangle(message)
-    game.stdscr.getch()
     warpbox.clear_rectangle()
 
 
@@ -996,22 +954,30 @@ def town(game):
         game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
         game.player_char.modify_inventory(items.DeadBody(), subtract=True, rare=True)
         townbox.print_text_in_rectangle("You have completed the quest Rookie Mistake.")
-        game.stdscr.getch()
         townbox.clear_rectangle()
     while True:
         game.player_char.encumbered = game.player_char.current_weight() > game.player_char.max_weight()
         town_idx = menu.navigate_menu()
         if options[town_idx] == 'Dungeon':
             townbox.print_text_in_rectangle("You descend into the dungeon.")
-            game.stdscr.getch()
             townbox.clear_rectangle()
             game.player_char.change_location(5, 10, 1)
             break
         if options[town_idx] == 'Character Menu':
-            game.player_char.character_menu(game)
+            from src.core.player import actions_dict
+            char_menu = menus.CharacterMenu(game)
+            ui_factory = {
+                'InventoryPopup': menus.InventoryPopupMenu,
+                'ConfirmPopup': menus.ConfirmPopupMenu,
+                'TextBox': menus.TextBox,
+                'Popup': menus.PopupMenu,
+                'EquipmentPopup': menus.EquipPopupMenu,
+                'SpecialsPopup': menus.AbilitiesPopupMenu,
+                'QuestsPopup': menus.QuestListPopupMenu
+            }
+            game.player_char.character_menu(game, menu=char_menu, textbox=menus.TextBox(game), actions_dict=actions_dict, ui_factory=ui_factory)
         elif options[town_idx] == 'Old Warehouse':
             townbox.print_text_in_rectangle("Authorized personnel only. Please leave.")
-            game.stdscr.getch()
             townbox.clear_rectangle()
         elif options[town_idx] == 'Warp Point':
             if warp_point(game):
@@ -1019,11 +985,9 @@ def town(game):
         else:
             if game.player_char.player_level() < 5 and options[town_idx] == "Blacksmith":
                 townbox.print_text_in_rectangle("Sorry but the blacksmith is currently closed. Try again later.")
-                game.stdscr.getch()
                 townbox.clear_rectangle()
             elif game.player_char.player_level() < 10 and options[town_idx] == "Jeweler":
                 townbox.print_text_in_rectangle("Sorry but the jeweler is currently closed.    Try again later.")
-                game.stdscr.getch()
                 townbox.clear_rectangle()
             else:
                 locations[town_idx](game)

@@ -63,6 +63,11 @@ class DungeonHUD:
         # Health and Mana bars
         y_offset = self._render_resource_bars(player_char, y_offset)
         y_offset += 20
+
+        # Status icons (combat only)
+        if combat_mode:
+            y_offset = self._render_status_icons(player_char, y_offset)
+            y_offset += 15
         
         # # Stats
         # y_offset = self._render_stats(player_char, y_offset)
@@ -79,6 +84,111 @@ class DungeonHUD:
         
         # Quick info
         # y_offset = self._render_quick_info(player_char, y_offset)
+
+    def _effect_label(self, effect_name):
+        labels = {
+            "Berserk": "BRK",
+            "Blind": "BLD",
+            "Doom": "DOM",
+            "Poison": "PSN",
+            "Silence": "SIL",
+            "Sleep": "SLP",
+            "Stun": "STN",
+            "Bleed": "BLD",
+            "Disarm": "DSA",
+            "Prone": "PRN",
+            "Attack": "ATK",
+            "Defense": "DEF",
+            "Magic": "MAG",
+            "Magic Defense": "MDF",
+            "Speed": "SPD",
+            "DOT": "DOT",
+            "Ice Block": "ICE",
+            "Mana Shield": "MSH",
+            "Reflect": "RFL",
+            "Regen": "REG",
+            "Resist Fire": "RF",
+            "Resist Ice": "RI",
+            "Resist Electric": "RE",
+            "Resist Water": "RW",
+            "Resist Earth": "RTH",
+            "Resist Wind": "RWI",
+        }
+        return labels.get(effect_name, effect_name[:3].upper())
+
+    def _collect_status_icons(self, character):
+        icons = []
+        skip_effects = {
+            "DOT",
+            "Duplicates",
+            "Jump",
+            "Power Up",
+            "Shapeshifted",
+            "Steal Success",
+        }
+        positive_status = set()
+        positive_magic = {
+            "Duplicates",
+            "Ice Block",
+            "Mana Shield",
+            "Reflect",
+            "Regen",
+            "Resist Fire",
+            "Resist Ice",
+            "Resist Electric",
+            "Resist Water",
+            "Resist Earth",
+            "Resist Wind",
+        }
+
+        for name, effect in character.status_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), name in positive_status))
+        for name, effect in character.physical_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), False))
+        for name, effect in character.stat_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), effect.extra >= 0))
+        for name, effect in character.magic_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), name in positive_magic))
+        for name, effect in character.class_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), True))
+
+        return icons
+
+    def _render_status_icons(self, player_char, y_offset):
+        x_margin = self.hud_x + 20
+        icons = self._collect_status_icons(player_char)
+        if not icons:
+            return y_offset
+
+        icon_w = 36
+        icon_h = 18
+        padding = 6
+        max_width = self.hud_width - 40
+        per_row = max(1, max_width // (icon_w + padding))
+        font = pygame.font.Font(None, 16)
+
+        for idx, (label, is_positive) in enumerate(icons):
+            row = idx // per_row
+            col = idx % per_row
+            icon_x = x_margin + col * (icon_w + padding)
+            icon_y = y_offset + row * (icon_h + padding)
+            color = (70, 170, 90) if is_positive else (190, 70, 70)
+
+            rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
+            pygame.draw.rect(self.screen, color, rect, border_radius=4)
+            pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
+
+            text_surf = font.render(label, True, (255, 255, 255))
+            text_rect = text_surf.get_rect(center=rect.center)
+            self.screen.blit(text_surf, text_rect)
+
+        rows = (len(icons) + per_row - 1) // per_row
+        return y_offset + rows * (icon_h + padding)
     
     def _render_character_info(self, player_char, y_offset):
         """Render character name, race, class, and level."""

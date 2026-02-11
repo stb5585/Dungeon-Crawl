@@ -236,10 +236,14 @@ class TileStateSerializer:
             # Restore defeated flag
             if 'defeated' in state and hasattr(tile, 'defeated'):
                 tile.defeated = state['defeated']
-            
+
             # Restore enemy state if present
             if 'enemy_state' in state and hasattr(tile, 'enemy'):
                 tile.enemy = EnemyStateSerializer.deserialize(state['enemy_state'])
+
+            # If defeated, ensure the boss/enemy is cleared to prevent respawns
+            if getattr(tile, 'defeated', False) and hasattr(tile, 'enemy'):
+                tile.enemy = None
             
             # Restore special attributes
             if 'drink' in state and hasattr(tile, 'drink'):
@@ -330,10 +334,20 @@ class QuestDataSerializer:
                 for quest_name, quest_info in quests_by_category.items():
                     if isinstance(quest_info, list) and len(quest_info) >= 3:
                         bounty_data, count, completed = quest_info[0], quest_info[1], quest_info[2]
-                        # Serialize bounty data if it contains items
+                        # Serialize bounty data if it contains items/enemies
                         serialized_bounty = dict(bounty_data)
+                        
+                        # Serialize enemy to just its name
+                        if 'enemy' in serialized_bounty and serialized_bounty['enemy']:
+                            enemy = serialized_bounty['enemy']
+                            if hasattr(enemy, 'name'):
+                                serialized_bounty['enemy'] = enemy.name
+                            # else: already a string, keep as-is
+                        
+                        # Serialize reward item
                         if 'reward' in serialized_bounty and serialized_bounty['reward']:
                             serialized_bounty['reward'] = ItemSerializer.serialize(serialized_bounty['reward']())
+                        
                         serialized[quest_type][quest_name] = [serialized_bounty, count, completed]
                     else:
                         serialized[quest_type][quest_name] = quest_info
@@ -404,14 +418,41 @@ class QuestDataSerializer:
                 for quest_name, quest_info in quests_by_category.items():
                     if isinstance(quest_info, list) and len(quest_info) >= 3:
                         bounty_data, count, completed = quest_info[0], quest_info[1], quest_info[2]
-                        # Deserialize bounty data if it contains items
+                        # Deserialize bounty data if it contains items/enemies
                         deserialized_bounty = dict(bounty_data)
+                        
+                        # Deserialize enemy from name
+                        if 'enemy' in deserialized_bounty and deserialized_bounty['enemy']:
+                            enemy_name_or_str = deserialized_bounty['enemy']
+                            if isinstance(enemy_name_or_str, str):
+                                # Extract just the name if it's a full string representation
+                                # (e.g., "Alligator | Health: 87/87 | Mana: 28/28" -> "Alligator")
+                                enemy_name = enemy_name_or_str.split(' | ')[0].strip()
+                                
+                                # Reconstruct enemy from name
+                                from . import enemies as enemies_module
+                                if hasattr(enemies_module, enemy_name):
+                                    enemy_class = getattr(enemies_module, enemy_name)
+                                    deserialized_bounty['enemy'] = enemy_class()
+                                else:
+                                    # Keep as string if we can't find the class
+                                    deserialized_bounty['enemy'] = enemy_name
+                        
+                        # Deserialize reward item
                         if 'reward' in deserialized_bounty and deserialized_bounty['reward']:
                             if isinstance(deserialized_bounty['reward'], dict):
-                                # It's serialized, deserialize it
-                                deserialized_bounty['reward'] = ItemSerializer.deserialize(deserialized_bounty['reward'])
+                                # It's serialized, deserialize it to get the item class
+                                item_class_name = deserialized_bounty['reward'].get('class')
+                                if item_class_name:
+                                    # Convert to callable class reference
+                                    from . import items as items_module
+                                    if hasattr(items_module, item_class_name):
+                                        deserialized_bounty['reward'] = getattr(items_module, item_class_name)
+                                    else:
+                                        # Fallback: keep as None if class not found
+                                        deserialized_bounty['reward'] = None
                             else:
-                                # It's already an item or callable
+                                # It's already an item class or callable
                                 deserialized_bounty['reward'] = deserialized_bounty['reward']
                         quest_dict[quest_type][quest_name] = [deserialized_bounty, count, completed]
                     else:
@@ -516,6 +557,9 @@ class PlayerDataSerializer:
                     for name, skill in player.spellbook['Skills'].items()
                 },
             },
+            'spellbook_state': {
+                'Skills': {},
+            },
             
             # Character attributes
             'class_name': player.cls.name if player.cls else None,
@@ -537,6 +581,16 @@ class PlayerDataSerializer:
             'world_state': TileStateSerializer.serialize_tile_state(player.world_dict) if player.world_dict else {},
         }
         
+        # Persist stateful skill data (e.g., Jump modifications)
+        for name, skill in player.spellbook.get('Skills', {}).items():
+            if not skill:
+                continue
+            if skill.__class__.__name__ == "Jump":
+                data['spellbook_state']['Skills'][name] = {
+                    'modifications': getattr(skill, 'modifications', None),
+                    'unlocked_modifications': getattr(skill, 'unlocked_modifications', None),
+                }
+
         return data
     
     @staticmethod
@@ -638,6 +692,18 @@ class PlayerDataSerializer:
             name: AbilitySerializer.deserialize(ability_name)
             for name, ability_name in data['spellbook']['Skills'].items()
         }
+
+        # Restore stateful skill data (e.g., Jump modifications)
+        spellbook_state = data.get('spellbook_state', {})
+        skill_state = spellbook_state.get('Skills', {})
+        if skill_state:
+            for name, state in skill_state.items():
+                skill = player.spellbook['Skills'].get(name)
+                if skill and skill.__class__.__name__ == "Jump":
+                    if 'modifications' in state and state['modifications'] is not None:
+                        skill.modifications = state['modifications']
+                    if 'unlocked_modifications' in state and state['unlocked_modifications'] is not None:
+                        skill.unlocked_modifications = state['unlocked_modifications']
         
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
@@ -649,6 +715,29 @@ class PlayerDataSerializer:
             player.load_tiles()
             if 'world_state' in data:
                 TileStateSerializer.restore_tile_state(player.world_dict, data['world_state'])
+
+            # Fallback: if legacy saves lack tile state, mark boss rooms defeated
+            # when the player already has boss kills recorded.
+            if player.world_dict:
+                killed_names = set()
+                for _typ, name_counts in (player.kill_dict or {}).items():
+                    for name, count in name_counts.items():
+                        if count:
+                            killed_names.add(name)
+
+                if killed_names:
+                    for tile in player.world_dict.values():
+                        if hasattr(tile, 'defeated') and not getattr(tile, 'defeated', False):
+                            enemy = getattr(tile, 'enemy', None)
+                            enemy_name = None
+                            if isinstance(enemy, type):
+                                enemy_name = enemy.__name__
+                            elif hasattr(enemy, 'name'):
+                                enemy_name = enemy.name
+
+                            if enemy_name and enemy_name in killed_names:
+                                tile.defeated = True
+                                tile.enemy = None
         
         return player
 

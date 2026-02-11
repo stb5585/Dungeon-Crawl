@@ -216,6 +216,13 @@ class AbilityFactory:
             cost: int
             dmg_mod: float
             effects: list[Any] = field(default_factory=list)
+            charge_time: int | None = None
+            delay: int | None = None
+            telegraph_message: str | None = None
+            priority: str | None = None
+            prone_while_charging: bool | None = None
+            notes: str | None = None
+            raw_data: dict[str, Any] = field(default_factory=dict)
         
         name = ability_data.get('name', 'Unknown')
         description = ability_data.get('description', '')
@@ -223,6 +230,12 @@ class AbilityFactory:
         ability_type = ability_data.get('type', 'Skill')
         subtype = ability_data.get('subtype', 'Offensive')
         damage_mod = ability_data.get('damage_mod', 1.0)
+        charge_time = ability_data.get('charge_time')
+        delay = ability_data.get('delay')
+        telegraph_message = ability_data.get('telegraph_message')
+        priority = ability_data.get('priority')
+        prone_while_charging = ability_data.get('prone_while_charging')
+        notes = ability_data.get('notes')
         
         # Create effects
         effects = []
@@ -238,8 +251,19 @@ class AbilityFactory:
             description=description,
             cost=cost,
             dmg_mod=damage_mod,
-            effects=effects
+            effects=effects,
+            charge_time=charge_time,
+            delay=delay,
+            telegraph_message=telegraph_message,
+            priority=priority,
+            prone_while_charging=prone_while_charging,
+            notes=notes,
+            raw_data=ability_data
         )
+
+        # Keep raw/effect data for analytics or inspection
+        setattr(ability, "_data_driven_effects", effects)
+        setattr(ability, "_raw_data", ability_data)
         
         return ability
     

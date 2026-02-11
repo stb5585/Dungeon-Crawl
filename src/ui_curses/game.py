@@ -96,6 +96,31 @@ class Game:
     def update_loadfiles(self):
         self.load_files = SaveManager.list_saves()
 
+    def debug_level_up(self):
+        """Debug-only shortcut to trigger a single level-up."""
+        if not self.debug_mode or not self.player_char:
+            return
+        if self.player_char.max_level():
+            textbox = menus.TextBox(self)
+            textbox.print_text_in_rectangle("Already at max level.")
+            self.stdscr.getch()
+            textbox.clear_rectangle()
+            return
+        textbox = menus.TextBox(self)
+        stat_menu = menus.SelectionPopupMenu(
+            self,
+            "Pick the stat you would like to increase.",
+            [f'Strength - {self.player_char.stats.strength}',
+             f'Intelligence - {self.player_char.stats.intel}',
+             f'Wisdom - {self.player_char.stats.wisdom}',
+             f'Constitution - {self.player_char.stats.con}',
+             f'Charisma - {self.player_char.stats.charisma}',
+             f'Dexterity - {self.player_char.stats.dex}'],
+            box_height=12,
+            confirm=False
+        )
+        self.player_char.level_up(self, textbox=textbox, menu=stat_menu)
+
     def run(self):
         self.update_bounties()
         while not self.player_char.quit:
@@ -174,7 +199,6 @@ class Game:
 
         created = f"Welcome {name}, the {race.name} {cls.name}.\nReport to the barracks for your orders."
         enternamebox.print_text_in_rectangle(created)
-        self.stdscr.getch()
         enternamebox.clear_rectangle()
 
         # Define the player character
@@ -261,15 +285,36 @@ class Game:
             if self.player_char.state == "normal":
                 room.enemy = None
                 action_input = self.stdscr.getch()
+                if self.debug_mode and action_input in [ord('l'), ord('L')]:
+                    self.debug_level_up()
+                    dmenu.draw_all()
+                    dmenu.refresh_all()
+                    continue
                 for action in available_actions:
                     available_hotkeys = [x['hotkey'] for x in available_actions]
                     try:
                         if chr(action_input).lower() == action['hotkey']:
-                            # Try calling with game parameter first, fall back to without
-                            try:
-                                action['method'](self.player_char, self)
-                            except TypeError:
-                                action['method'](self.player_char)
+                            # Special handling for Character Menu
+                            if action['name'] == 'Character Menu':
+                                from src.core.player import actions_dict
+                                char_menu = menus.CharacterMenu(self)
+                                ui_factory = {
+                                    'InventoryPopup': menus.InventoryPopupMenu,
+                                    'ConfirmPopup': menus.ConfirmPopupMenu,
+                                    'TextBox': menus.TextBox,
+                                    'Popup': menus.PopupMenu,
+                                    'EquipmentPopup': menus.EquipPopupMenu,
+                                    'SpecialsPopup': menus.AbilitiesPopupMenu,
+                                    'QuestsPopup': menus.QuestListPopupMenu,
+                                    'JumpModsPopup': menus.JumpModsPopupMenu
+                                }
+                                action['method'](self.player_char, self, menu=char_menu, textbox=menus.TextBox(self), actions_dict=actions_dict, ui_factory=ui_factory)
+                            else:
+                                # Try calling with game parameter first, fall back to without
+                                try:
+                                    action['method'](self.player_char, self)
+                                except TypeError:
+                                    action['method'](self.player_char)
                             if chr(action_input).lower() in available_hotkeys and \
                                 ("Move" in action['name'] or "Open" in action['name'] or "stairs" in action['name']):
                                 return

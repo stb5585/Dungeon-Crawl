@@ -101,9 +101,10 @@ class Ability:
             ===================================
         """
         wrapped_description = wrap(self.description, 35, break_on_hyphens=False)
+        description_text = "\n".join(wrapped_description)
         str_text = (
             f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-            f"{wrapped_description}\n"
+            f"{description_text}\n"
             f"{35*'-'}\n"
             f"Type: {self.typ}\n"
             f"Sub-Type: {self.subtyp}\n"
@@ -747,17 +748,18 @@ class PiercingStrike(Offensive):
 
 class TrueStrike(Offensive):
     """
-    Attack that is guaranteed to hit.
+    Attack that is guaranteed to hit but deals 0.75x weapon damage.
     - Requires a weapon to use (unless Monk or Master Monk)
     """
 
     def __init__(self):
         super().__init__(
             name="True Strike",
-            description="Attack that is guaranteed to hit.",
+            description="Attack that is guaranteed to hit but deals 0.75x weapon damage.",
         )
         self.cost = 12
         self.weapon = True
+        self.dmg_mod = 0.75
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
@@ -770,6 +772,7 @@ class TrueStrike(Offensive):
 class TruePiercingStrike(Offensive):
     """
     Attack that is guaranteed to hit and that pierces the enemy's defenses, ignoring armor and defenses.
+    However it only deals 0.75x weapon damage.
     - Requires a weapon to use (unless Monk or Master Monk)
     """
 
@@ -777,11 +780,12 @@ class TruePiercingStrike(Offensive):
         super().__init__(
             name="True Piercing Strike",
             description="Attack that is guaranteed to hit and that pierces "
-            "the enemy's defenses, ignoring armor and defenses.",
+            "the enemy's defenses, ignoring armor and defenses. However it "
+            "only deals 0.75x weapon damage.",
         )
         self.cost = 15
         self.weapon = True
-        self.dmg_mod = 1.5
+        self.dmg_mod = 0.75
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
         user.mana.current -= self.cost
@@ -793,38 +797,630 @@ class TruePiercingStrike(Offensive):
 
 class Jump(Offensive):
     """
-    Jump into the air and bring down your weapon onto the enemy, delivering critical damage.
+    Jump into the air and bring down your weapon onto the enemy, delivering increased damage.
     Takes a turn to complete; user is prone while charging
     Add modifications to Jump to customize it to your liking
-    - Thrust: after landing the Jump, if enemy is still alive, thrust your spear into them at 3/4 weapon damage
-    - Defend: increased damage reduction when preparing to Jump
-    - Rend: chance to apply a bleed, dealing damage over time
-    -
+    - Crit (initial): increases the critical factor of the damage but reduces the dmg_mod to 1.5x weapon damage
+    
+    Lancer unlocks (Levels 1-30):
+    - Defend (Lancer Lv 5): increased damage reduction when preparing to Jump
+    - Quick Dive (Lancer Lv 10): removes charge time but reduces damage to 1.25x weapon damage
+    - Acrobat (Lancer Lv 15): gain evasion bonus while preparing to Jump
+    - Thrust (Lancer Lv 20): after landing the Jump, if enemy is still alive, thrust your spear into them at 0.75x weapon damage
+    - Rend (Lancer Lv 25): chance to apply a bleed, dealing damage over time
+    
+    Dragoon unlocks (Levels 1-50):
+    - Quake (Dragoon Lv 5): chance to stun enemy upon landing
+    - Soaring Strike (Dragoon Lv 10): takes two turns instead of one, but deals increased damage
+    - Retribution (Dragoon Lv 20): if you take damage while charging and it doesn't cancel, the Jump deals additional damage based on the damage taken
+    - Unstoppable (Dragoon Lv 30): Jump cannot be interrupted once started
+    
+    Special unlocks:
+    - Dragon's Fury (Boss: Red Dragon): deals additional random elemental damage
+    - Skyfall (Boss: Merzhin): brings down the ceiling on the enemy, dealing multiple additional hits (random smaller damage instances)
+    - Recover (Item: Dragon's Tear): regain a small amount of health and mana upon landing
     """
 
     def __init__(self):
         super().__init__(
             name="Jump",
             description="Leap into the air and bring down your weapon onto the enemy, "
-            "delivering critical damage.",
+            "delivering increased damage.",
         )
         self.cost = 10
         self.strikes = 1
-        self.crit = 2
+        self.crit = 1
         self.weapon = True
         self.dmg_mod = 2.0
+        self._yaml_charge_time = None
+        self._yaml_telegraph_message = None
+        self._yaml_prone_while_charging = None
+
+        # Load YAML-backed config when available
+        try:
+            from pathlib import Path
+            from src.core.data.ability_loader import AbilityFactory
+
+            file_path = Path(__file__).parent / "data" / "abilities" / "jump.yaml"
+            if file_path.exists():
+                yaml_ability = AbilityFactory.create_from_yaml(file_path)
+                if getattr(yaml_ability, "description", None):
+                    self.description = yaml_ability.description
+                if getattr(yaml_ability, "cost", None) is not None:
+                    self.cost = yaml_ability.cost
+                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
+                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
+                self._yaml_prone_while_charging = getattr(yaml_ability, "prone_while_charging", None)
+        except Exception:
+            pass
+        
+        # Jump modifications system - tracks which mods are toggled on/off
+        self.modifications = {
+            "Crit": True,  # Start with Crit enabled by default
+            "Thrust": False,
+            "Defend": False,
+            "Rend": False,
+            "Quake": False,
+            "Acrobat": False,
+            "Dragon's Fury": False,
+            "Soaring Strike": False,
+            "Quick Dive": False,
+            "Retribution": False,
+            "Unstoppable": False,
+            "Recover": False,
+            "Skyfall": False,
+        }
+        
+        # Tracks which modifications have been unlocked (available to toggle)
+        self.unlocked_modifications = {
+            "Crit": True,  # Start with Crit unlocked
+            "Thrust": False,
+            "Defend": False,
+            "Rend": False,
+            "Quake": False,
+            "Acrobat": False,
+            "Dragon's Fury": False,
+            "Soaring Strike": False,
+            "Quick Dive": False,
+            "Retribution": False,
+            "Unstoppable": False,
+            "Recover": False,
+            "Skyfall": False,
+        }
+        
+        # Unlock requirements for each modification
+        # Format: {'type': 'lancer_level'|'dragoon_level'|'boss'|'item', 'requirement': level_num|boss_name|item_name}
+        self.unlock_requirements = {
+            "Crit": {"type": "initial", "requirement": None},
+            # Lancer unlocks (levels 1-30)
+            "Defend": {"type": "lancer_level", "requirement": 5},
+            "Quick Dive": {"type": "lancer_level", "requirement": 10},
+            "Acrobat": {"type": "lancer_level", "requirement": 15},
+            "Thrust": {"type": "lancer_level", "requirement": 20},
+            "Rend": {"type": "lancer_level", "requirement": 25},
+            # Dragoon unlocks (levels 1-50)
+            "Quake": {"type": "dragoon_level", "requirement": 5},
+            "Soaring Strike": {"type": "dragoon_level", "requirement": 10},
+            "Retribution": {"type": "dragoon_level", "requirement": 20},
+            "Unstoppable": {"type": "dragoon_level", "requirement": 30},
+            # Special unlocks
+            "Skyfall": {"type": "boss", "requirement": "Merzhin"},
+            "Dragon's Fury": {"type": "boss", "requirement": "Red Dragon"},
+            "Recover": {"type": "item", "requirement": "Dragon's Tear"},
+        }
+        
+        # Charging state tracking
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        self.retribution_damage = 0
+        self.jump_charge_health = None
+        
+    def get_max_active_modifications(self, user: Character = None) -> int:
+        """
+        Calculate maximum number of modifications that can be active simultaneously based on level.
+        
+        Args:
+            user: The character (used to get level and check for ClassRing bonus)
+            
+        Returns:
+            int: Maximum number of active modifications allowed
+        """
+        if user is None:
+            return 5  # Default max if no user provided
+        
+        # Extract level from user object using Lancer/Dragoon progression
+        if hasattr(user, 'level'):
+            base_level = user.level.level if hasattr(user.level, 'level') else user.level
+        else:
+            base_level = 99  # Default if level not found
+
+        # Jump progression: Lancer levels are 1-30, Dragoon adds +30 offset
+        if hasattr(user, 'cls') and hasattr(user.cls, 'name'):
+            if "Dragoon" in user.cls.name:
+                user_level = 30 + int(base_level)
+            else:
+                user_level = int(base_level)
+        else:
+            user_level = int(base_level)
+        
+        # Start with 1 active mod, increase by 1 every 15 levels, cap at 5
+        # Level 1-14: 1 mod
+        # Level 15-29: 2 mods
+        # Level 30-44: 3 mods
+        # Level 45-59: 4 mods
+        # Level 60+: 5 mods
+        base_mods = 1
+        additional = user_level // 15
+        max_mods = min(base_mods + additional, 5)  # Cap at 5 active mods
+        
+        # Check for ClassRing bonus (+1 Jump Mod for Dragoon)
+        if hasattr(user, 'equipment') and 'Ring' in user.equipment:
+            ring = user.equipment['Ring']
+            if hasattr(ring, 'mod') and ring.mod == "+1 Jump Mod":
+                max_mods += 1  # ClassRing grants an extra slot (total of 6)
+        
+        return max_mods
+        
+    def unlock_modification(self, mod_name: str) -> bool:
+        """
+        Unlock a Jump modification, making it available to toggle.
+        
+        Args:
+            mod_name: Name of the modification to unlock
+            
+        Returns:
+            bool: True if successful, False if modification doesn't exist
+        """
+        if mod_name in self.unlocked_modifications:
+            self.unlocked_modifications[mod_name] = True
+            return True
+        return False
+    
+    def check_and_unlock_level_modifications(self, user_level: int, user_class: str = None) -> list:
+        """
+        Check and unlock any modifications that should be unlocked at the given level.
+        
+        Args:
+            user_level: The character's current level
+            user_class: The character's current class name (e.g., "Lancer", "Dragoon")
+            
+        Returns:
+            list: Names of newly unlocked modifications
+        """
+        # Coerce Level objects or other types to int
+        if hasattr(user_level, "level"):
+            user_level = user_level.level
+        
+        # Normalize class name
+        if hasattr(user_class, "name"):
+            user_class = user_class.name
+        if not user_class:
+            return []
+        user_class = str(user_class)
+        
+        newly_unlocked = []
+        for mod_name, req in self.unlock_requirements.items():
+            req_type = req["type"]
+            req_level = req["requirement"]
+            
+            # Check if this modification should be unlocked
+            should_unlock = False
+            
+            if req_type == "lancer_level" and "Lancer" in user_class and req_level <= user_level:
+                should_unlock = True
+            elif req_type == "dragoon_level" and "Dragoon" in user_class and req_level <= user_level:
+                should_unlock = True
+            
+            if should_unlock and not self.unlocked_modifications[mod_name]:
+                self.unlocked_modifications[mod_name] = True
+                newly_unlocked.append(mod_name)
+        
+        return newly_unlocked
+    
+    def unlock_boss_modification(self, boss_name: str) -> str:
+        """
+        Unlock a modification by defeating a specific boss.
+        
+        Args:
+            boss_name: Name of the defeated boss
+            
+        Returns:
+            str: Name of unlocked modification, or empty string if none
+        """
+        for mod_name, req in self.unlock_requirements.items():
+            if req["type"] == "boss" and req["requirement"] == boss_name:
+                if not self.unlocked_modifications[mod_name]:
+                    self.unlocked_modifications[mod_name] = True
+                    return mod_name
+        return ""
+    
+    def unlock_item_modification(self, item_name: str) -> str:
+        """
+        Unlock a modification by obtaining a special item.
+        
+        Args:
+            item_name: Name of the special item
+            
+        Returns:
+            str: Name of unlocked modification, or empty string if none
+        """
+        for mod_name, req in self.unlock_requirements.items():
+            if req["type"] == "item" and req["requirement"] == item_name:
+                if not self.unlocked_modifications[mod_name]:
+                    self.unlocked_modifications[mod_name] = True
+                    return mod_name
+        return ""
+    
+    def is_modification_unlocked(self, mod_name: str) -> bool:
+        """
+        Check if a modification is unlocked (available to toggle).
+        
+        Args:
+            mod_name: Name of the modification
+            
+        Returns:
+            bool: True if unlocked, False otherwise
+        """
+        return self.unlocked_modifications.get(mod_name, False)
+    
+    def get_unlocked_modifications(self) -> list:
+        """Return list of unlocked modification names."""
+        return [mod for mod, unlocked in self.unlocked_modifications.items() if unlocked]
+    
+    def get_active_count(self) -> int:
+        """Return the number of currently active modifications."""
+        return sum(1 for active in self.modifications.values() if active)
+    
+    def enforce_modification_limit(self, user: Character = None) -> list:
+        """
+        Enforce the modification limit by deactivating excess modifications.
+        Called when equipment changes (e.g., unequipping ClassRing).
+        
+        Args:
+            user: The character whose modification limit to enforce
+            
+        Returns:
+            list: Names of modifications that were deactivated
+        """
+        max_allowed = self.get_max_active_modifications(user)
+        current_active = self.get_active_count()
+        
+        deactivated = []
+        if current_active > max_allowed:
+            # Need to deactivate some modifications
+            # Deactivate from the end of the modification list (arbitrary choice)
+            excess = current_active - max_allowed
+            for mod_name in reversed(list(self.modifications.keys())):
+                if excess <= 0:
+                    break
+                if self.modifications[mod_name]:  # If active
+                    self.modifications[mod_name] = False
+                    deactivated.append(mod_name)
+                    excess -= 1
+        
+        return deactivated
+    
+    def set_modification(self, mod_name: str, active: bool, user: Character = None) -> tuple[bool, str]:
+        """
+        Enable or disable a Jump modification (if it's unlocked and within active limit).
+        
+        Args:
+            mod_name: Name of the modification
+            active: Whether to enable or disable it
+            user: The character (used to check active mod limit and ClassRing bonus)
+            
+        Returns:
+            tuple[bool, str]: (Success status, Error message if any)
+        """
+        if mod_name not in self.modifications:
+            return (False, "Modification doesn't exist")
+        
+        if not self.unlocked_modifications.get(mod_name, False):
+            return (False, "Modification not unlocked")
+
+        # If trying to activate, check the active mod limit
+        if active and not self.modifications[mod_name]:  # Not already active
+            current_active = self.get_active_count()
+            max_active = self.get_max_active_modifications(user)
+            
+            if current_active >= max_active:
+                # Extract level for error message using Lancer/Dragoon progression
+                if user and hasattr(user, 'level'):
+                    base_level = user.level.level if hasattr(user.level, 'level') else user.level
+                    if hasattr(user, 'cls') and hasattr(user.cls, 'name') and "Dragoon" in user.cls.name:
+                        user_level = 30 + int(base_level)
+                    else:
+                        user_level = int(base_level)
+                else:
+                    user_level = "?"
+                return (False, f"Maximum {max_active} modifications can be active (based on level {user_level})")
+        
+        self.modifications[mod_name] = active
+        
+        # Handle conflicting modifications
+        if active:
+            if mod_name == "Quick Dive" and self.modifications["Soaring Strike"]:
+                self.modifications["Soaring Strike"] = False
+            elif mod_name == "Soaring Strike" and self.modifications["Quick Dive"]:
+                self.modifications["Quick Dive"] = False
+            elif mod_name == "Crit":
+                # Crit conflicts with Soaring Strike (which has its own crit boost)
+                if self.modifications["Soaring Strike"]:
+                    self.modifications["Soaring Strike"] = False
+            elif mod_name == "Soaring Strike" and self.modifications["Crit"]:
+                self.modifications["Crit"] = False
+        
+        return (True, "")
+    
+    def get_active_modifications(self) -> list:
+        """Return list of active modification names."""
+        return [mod for mod, active in self.modifications.items() if active]
+    
+    def get_charge_time(self) -> int:
+        """Calculate how many turns the Jump takes based on modifications."""
+        if self.modifications["Quick Dive"]:
+            return 0  # Instant
+        elif self.modifications["Soaring Strike"]:
+            return 2  # Two turns to charge
+        else:
+            return self._yaml_charge_time if self._yaml_charge_time is not None else 1
+
+    def start_charge(self, user: Character, target: Character) -> str:
+        """
+        Begin charging the Jump ability.
+        
+        Args:
+            user: The character using Jump
+            target: The target of the Jump
+            
+        Returns:
+            str: Message describing the charge start
+        """
+        charge_time = self.get_charge_time()
+        
+        if charge_time == 0:
+            # Quick Dive - no charge needed
+            return ""
+        
+        self.charging = True
+        self.charge_turns = charge_time
+        self.charge_target = target
+        self.retribution_damage = 0
+        self.jump_charge_health = user.health.current
+        
+        if self._yaml_telegraph_message:
+            use_str = f"{user.name} is {self._yaml_telegraph_message}"
+        else:
+            use_str = f"{user.name} prepares to leap into the air"
+        if self.modifications["Soaring Strike"]:
+            use_str += ", gathering power for a devastating strike"
+        use_str += "!\n"
+        
+        # Apply Defend modification
+        if self.modifications["Defend"]:
+            if not hasattr(user, 'jump_defend_active'):
+                user.jump_defend_active = False
+            user.jump_defend_active = True
+            use_str += f"{user.name} assumes a defensive stance while preparing.\n"
+        
+        # Apply Acrobat modification
+        if self.modifications["Acrobat"]:
+            if not hasattr(user, 'jump_acrobat_active'):
+                user.jump_acrobat_active = False
+            user.jump_acrobat_active = True
+            use_str += f"{user.name} moves with enhanced agility.\n"
+        
+        return use_str
+    
+    def add_retribution_damage(self, damage: int) -> None:
+        """Add damage taken during charging for Retribution modification."""
+        if self.modifications["Retribution"]:
+            self.retribution_damage += damage
+    
+    def cancel_charge(self, user: Character) -> str:
+        """
+        Cancel the Jump charge (e.g., if interrupted).
+        
+        Args:
+            user: The character whose Jump was cancelled
+            
+        Returns:
+            str: Message describing the cancellation
+        """
+        if not self.modifications["Unstoppable"]:
+            self.charging = False
+            self.charge_turns = 0
+            self.charge_target = None
+            self.retribution_damage = 0
+            self.jump_charge_health = None
+            
+            # Remove temporary effects
+            if hasattr(user, 'jump_defend_active'):
+                user.jump_defend_active = False
+            if hasattr(user, 'jump_acrobat_active'):
+                user.jump_acrobat_active = False
+            if hasattr(user, 'class_effects') and "Jump" in user.class_effects:
+                user.class_effects["Jump"].active = False
+            
+            return f"{user.name}'s Jump was interrupted!\n"
+        else:
+            return f"{user.name}'s Jump cannot be stopped!\n"
+    
+    def execute_jump(self, user: Character, target: Character, cover: bool = False) -> str:
+        """
+        Execute the Jump attack after charging is complete.
+        
+        Args:
+            user: The character executing the Jump
+            target: The target of the Jump
+            cover: Whether the target is in cover
+            
+        Returns:
+            str: Combat result message
+        """
+        use_str = f"{user.name} descends from the air, weapon aimed at {target.name}!\n"
+        
+        # Calculate damage modifier
+        dmg_mod = self.dmg_mod
+        crit = self.crit
+        
+        # Crit modification: increase crit factor but reduce damage
+        if self.modifications["Crit"]:
+            dmg_mod = 1.5
+            crit = 2
+        
+        # Quick Dive reduces damage
+        if self.modifications["Quick Dive"]:
+            dmg_mod = 1.25
+        
+        # Soaring Strike increases damage and crit (overrides Crit mod)
+        if self.modifications["Soaring Strike"]:
+            dmg_mod = 3.0
+            crit = 3
+        
+        # Retribution adds bonus damage
+        if self.modifications["Retribution"] and self.retribution_damage > 0:
+            dmg_mod += (self.retribution_damage / 100)  # Scale retribution bonus
+            use_str += f"{user.name}'s fury from taking damage empowers the strike!\n"
+        
+        # Execute the main Jump attack
+        wd_str, hit, actual_crit = user.weapon_damage(
+            target, cover=cover, dmg_mod=dmg_mod, crit=crit
+        )
+        use_str += wd_str
+        
+        if hit and target.is_alive():
+            # Apply Quake modification (stun chance)
+            if self.modifications["Quake"]:
+                if not any([
+                    "Stun" in target.status_immunity,
+                    "Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]):
+                    if random.randint(user.stats.strength // 2, user.stats.strength) > random.randint(
+                        target.stats.con // 2, target.stats.con
+                    ):
+                        target.status_effects["Stun"].active = True
+                        target.status_effects["Stun"].duration = 1
+                        user._emit_status_event(target, "Stun", applied=True, duration=1, source="Jump (Quake)")
+                        use_str += f"The impact stuns {target.name}!\n"
+            
+            # Apply Rend modification (bleed chance)
+            if self.modifications["Rend"]:
+                if not target.physical_effects["Bleed"].active:
+                    if random.randint(0, 100) < 40:  # 40% chance
+                        bleed_dmg = int(user.stats.strength * 1.0)
+                        target.physical_effects["Bleed"].active = True
+                        target.physical_effects["Bleed"].duration = 2
+                        target.physical_effects["Bleed"].extra = bleed_dmg
+                        user._emit_status_event(target, "Bleed", applied=True, duration=2, source="Jump (Rend)")
+                        use_str += f"{target.name} is bleeding from the vicious strike!\n"
+            
+            # Apply Dragon's Fury modification (elemental damage)
+            if self.modifications["Dragon's Fury"]:
+                elements = ["Fire", "Ice", "Lightning"]
+                element = random.choice(elements)
+                elem_damage = int(user.stats.intel * random.uniform(0.5, 1.0))
+                elem_damage = max(1, elem_damage)
+                
+                # Check resistance
+                resistance = target.check_mod(mod="resist", typ=f"{element}", enemy=user)
+                elem_damage = max(1, elem_damage - resistance)
+
+                target.health.current -= elem_damage
+                use_str += f"Draconic {element.lower()} energy erupts for {elem_damage} damage!\n"
+            
+            # Apply Skyfall modification (multiple hits)
+            if self.modifications["Skyfall"]:
+                num_hits = random.randint(2, 4)
+                use_str += f"Debris rains down on {target.name}!\n"
+                for i in range(num_hits):
+                    if target.is_alive():
+                        sky_dmg = int(user.stats.strength * random.uniform(0.2, 0.4))
+                        sky_dmg = max(1, sky_dmg)
+                        target.health.current -= sky_dmg
+                        use_str += f"  Impact {i+1}: {sky_dmg} damage!\n"
+            
+            # Apply Thrust modification (follow-up attack)
+            if self.modifications["Thrust"] and target.is_alive():
+                use_str += f"{user.name} thrusts their weapon forward!\n"
+                thrust_str, _, _ = user.weapon_damage(
+                    target, cover=cover, dmg_mod=0.75
+                )
+                use_str += thrust_str
+        
+        # Apply Recover modification (heal on landing)
+        if self.modifications["Recover"]:
+            hp_recover = int(user.health.max * 0.05)  # 5% max HP
+            mp_recover = int(user.mana.max * 0.05)    # 5% max MP
+            
+            user.health.current = min(user.health.max, user.health.current + hp_recover)
+            user.mana.current = min(user.mana.max, user.mana.current + mp_recover)
+            
+            use_str += f"{user.name} recovers {hp_recover} HP and {mp_recover} MP!\n"
+        
+        # Clean up
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        self.retribution_damage = 0
+        
+        if hasattr(user, 'jump_defend_active'):
+            user.jump_defend_active = False
+        if hasattr(user, 'jump_acrobat_active'):
+            user.jump_acrobat_active = False
+        
+        return use_str
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = f"{user.name} leaps into the air, driving their weapon toward {target.name}.\n"
-        user.mana.current -= self.cost
-        for _ in range(self.strikes):
-            wd_str, _, _ = user.weapon_damage(
-                target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
-            )
-            use_str += wd_str
-            if not target.is_alive():
-                break
-        return use_str
+        """
+        Use the Jump ability. Handles both charging and execution phases.
+        
+        Args:
+            user: The character using Jump
+            target: The target of the Jump
+            cover: Whether the target is in cover
+            
+        Returns:
+            str: Combat result message
+        """
+        # Check if already charging
+        if self.charging:
+            # Interrupt if incapacitated (unless Unstoppable)
+            if not self.modifications["Unstoppable"] and user.incapacitated():
+                return self.cancel_charge(user)
+
+            # Interrupt if hit hard enough during charge (unless Unstoppable)
+            if not self.modifications["Unstoppable"] and self.jump_charge_health is not None:
+                damage_taken = max(0, self.jump_charge_health - user.health.current)
+                interrupt_threshold = max(1, int(user.health.max * 0.1))
+                if damage_taken >= interrupt_threshold:
+                    return self.cancel_charge(user)
+
+                if self.modifications["Retribution"] and damage_taken > self.retribution_damage:
+                    self.retribution_damage = damage_taken
+
+            self.charge_turns -= 1
+            if self.charge_turns <= 0:
+                # Execute the jump
+                return self.execute_jump(user, self.charge_target or target, cover)
+            else:
+                # Still charging
+                turns_left = self.charge_turns
+                return f"{user.name} continues to gather power... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
+        else:
+            # Start the charge
+            user.mana.current -= self.cost
+            
+            charge_time = self.get_charge_time()
+            
+            if charge_time == 0:
+                # Quick Dive - execute immediately
+                return self.execute_jump(user, target, cover)
+            else:
+                # Start charging for next turn
+                return self.start_charge(user, target)
 
 
 class Doublecast(Offensive):
@@ -923,11 +1519,11 @@ class MortalStrike(Offensive):
             target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
         )
         if hit and target.is_alive() and not target.physical_effects["Bleed"].active:
-            bleed_dmg = int(user.stats.strength * crit)
+            bleed_dmg = int(user.stats.strength * crit * 0.75)
             if random.randint(bleed_dmg // 2, bleed_dmg) > random.randint(
                 target.stats.con // 2, target.stats.con
             ):
-                bleed_dmg = random.randint(bleed_dmg // 4, bleed_dmg)
+                bleed_dmg = random.randint(max(1, bleed_dmg // 4), max(1, bleed_dmg))
                 target.physical_effects["Bleed"].active = True
                 target.physical_effects["Bleed"].duration = max(
                     user.stats.strength // 10, target.physical_effects["Bleed"].duration
@@ -979,7 +1575,7 @@ class BattleCry(Offensive):
 
 class Charge(Offensive):
     """
-    Can stun then attacks at 3/4 damage, as opposed to other abilities that attack then stun
+    Can stun then attacks at 1.25x damage, as opposed to other abilities that attack then stun
     - requires a weapon to use (unless Monk or Master Monk)
     """
 
@@ -991,11 +1587,52 @@ class Charge(Offensive):
         )
         self.cost = 10
         self.weapon = True
-        self.dmg_mod = 0.75
+        self.dmg_mod = 1.25
+        self._yaml_charge_time = None
+        self._yaml_telegraph_message = None
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
 
-    def use(self, user: Character, target: Character=None, cover:bool=False) -> str:
+        # Load YAML-backed config when available
+        try:
+            from pathlib import Path
+            from src.core.data.ability_loader import AbilityFactory
+
+            file_path = Path(__file__).parent / "data" / "abilities" / "charge.yaml"
+            if file_path.exists():
+                yaml_ability = AbilityFactory.create_from_yaml(file_path)
+                if getattr(yaml_ability, "description", None):
+                    self.description = yaml_ability.description
+                if getattr(yaml_ability, "cost", None) is not None:
+                    self.cost = yaml_ability.cost
+                if getattr(yaml_ability, "subtyp", None):
+                    self.subtyp = yaml_ability.subtyp
+                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
+                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
+        except Exception:
+            pass
+
+    def get_charge_time(self) -> int:
+        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
+
+    def start_charge(self, user: Character, target: Character) -> str:
+        self.charging = True
+        self.charge_turns = self.get_charge_time()
+        self.charge_target = target
+
+        if self._yaml_telegraph_message:
+            return f"{user.name} is {self._yaml_telegraph_message}!\n"
+        return f"{user.name} lowers their head, preparing to charge!\n"
+
+    def cancel_charge(self, user: Character) -> str:
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        return f"{user.name}'s Charge was interrupted!\n"
+
+    def execute_charge(self, user: Character, target: Character, cover: bool = False) -> str:
         use_str = ""
-        user.mana.current -= self.cost
         if not any(
             [
                 "Stun" in target.status_immunity,
@@ -1016,7 +1653,29 @@ class Charge(Offensive):
                 use_str += f"{user.name} stunned {target.name}.\n"
         wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
         use_str += wd_str
+
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
         return use_str
+
+    def use(self, user: Character, target: Character=None, cover:bool=False) -> str:
+        if self.charging:
+            if user.incapacitated():
+                return self.cancel_charge(user)
+
+            self.charge_turns -= 1
+            if self.charge_turns <= 0:
+                return self.execute_charge(user, self.charge_target or target, cover)
+            turns_left = self.charge_turns
+            return f"{user.name} continues charging... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
+
+        user.mana.current -= self.cost
+        charge_time = self.get_charge_time()
+        if charge_time > 0:
+            return self.start_charge(user, target)
+
+        return self.execute_charge(user, target, cover)
 
 
 # Defensive skills
@@ -1249,14 +1908,17 @@ class KidneyPunch(Stealth):
     def __init__(self):
         super().__init__(
             name="Kidney Punch",
-            description="Punch the enemy in the kidney, rendering them stunned.",
+            description="Punch the enemy in the kidney, rendering them stunned. Requires an off-hand weapon.",
         )
         self.cost = 12
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        offhand = user.equipment.get("OffHand") if hasattr(user, "equipment") else None
+        if not offhand or getattr(offhand, "typ", None) != "Weapon":
+            return f"{user.name} needs an off-hand weapon to use {self.name}.\n"
         user.mana.current -= self.cost
         use_str, hit, crit = user.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
+            target, dmg_mod=self.dmg_mod, cover=cover, use_offhand=False
         )
         # Check if target is a Crusader with Divine Aegis active (prevents stun)
         crusader_aegis_active = (
@@ -1352,6 +2014,10 @@ class Steal(Stealth):
                         user.modify_inventory(item)
                     except AttributeError:
                         pass
+                    steal_effect = user.status_effects.get("Steal Success")
+                    if steal_effect is not None:
+                        steal_effect.active = True
+                        steal_effect.duration = max(steal_effect.duration, 2)
                     return f"{user.name} steals {item_key} from {target.name}.\n"
                 return f"{target.name} doesn't have anything to steal.\n"
             else:
@@ -1360,6 +2026,10 @@ class Steal(Stealth):
                 )  # max of 5% of gold
                 user.gold += gold_amount
                 target.gold -= gold_amount
+                steal_effect = user.status_effects.get("Steal Success")
+                if steal_effect is not None:
+                    steal_effect.active = True
+                    steal_effect.duration = max(steal_effect.duration, 2)
                 return f"{user.name} steals {gold_amount} gold from {target.name}.\n"
         return "Steal fails.\n"
 
@@ -1425,7 +2095,7 @@ class PoisonStrike(Stealth):
             description="Attack the enemy with a chance to poison.",
         )
         self.cost = 14
-        self.damage = 0.05  # 5% of target's max health per turn
+        self.damage = 0.1  # 10% of target's max health per turn
         self.weapon = True
         self.dmg_mod = 1.5
 
@@ -2699,14 +3369,62 @@ class ArcaneBlast(PowerUp):
             " expense of all remaining mana. If the enemy remains, mana "
             "will regenerate over the next 4 turns.",
         )
+        self._yaml_charge_time = None
+        self._yaml_telegraph_message = None
+        self._charge_mana = None
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        # Load YAML-backed config when available
+        try:
+            from pathlib import Path
+            from src.core.data.ability_loader import AbilityFactory
+
+            file_path = Path(__file__).parent / "data" / "abilities" / "arcane_blast.yaml"
+            if file_path.exists():
+                yaml_ability = AbilityFactory.create_from_yaml(file_path)
+                if getattr(yaml_ability, "description", None):
+                    self.description = yaml_ability.description
+                if getattr(yaml_ability, "cost", None) is not None:
+                    self.cost = yaml_ability.cost
+                if getattr(yaml_ability, "subtyp", None):
+                    self.subtyp = yaml_ability.subtyp
+                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
+                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
+        except Exception:
+            pass
+
+    def get_charge_time(self) -> int:
+        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
+
+    def start_charge(self, user: Character, target: Character) -> str:
+        self.charging = True
+        self.charge_turns = self.get_charge_time()
+        self.charge_target = target
+        self._charge_mana = user.mana.current
+
+        if self._yaml_telegraph_message:
+            return f"{user.name} is {self._yaml_telegraph_message}!\n"
+        return f"{user.name} begins to channel arcane energy...\n"
+
+    def cancel_charge(self, user: Character) -> str:
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        self._charge_mana = None
+        return f"{user.name}'s Arcane Blast was interrupted!\n"
+
+    def execute_blast(self, user: Character, target: Character, cover: bool = False) -> str:
         use_str = ""
-        hit, message, damage = target.handle_defenses(user, user.mana.current, cover, typ="Magic")
+        mana_spent = self._charge_mana if self._charge_mana is not None else user.mana.current
+
+        hit, message, damage = target.handle_defenses(user, mana_spent, cover, typ="Magic")
         use_str += message
         hit, message, damage = target.damage_reduction(damage, user, typ=self.subtyp)
         use_str += message
         user.mana.current = 0
+
         if hit:
             variance = random.uniform(0.85, 1.15)
             damage = int(damage * variance)
@@ -2718,7 +3436,29 @@ class ArcaneBlast(PowerUp):
             user.class_effects["Power Up"].active = True
             user.class_effects["Power Up"].duration = 4
             user.class_effects["Power Up"].extra = max(1, user.mana.max // 10)
+
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        self._charge_mana = None
         return use_str
+
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        if self.charging:
+            if user.incapacitated():
+                return self.cancel_charge(user)
+
+            self.charge_turns -= 1
+            if self.charge_turns <= 0:
+                return self.execute_blast(user, self.charge_target or target, cover)
+            turns_left = self.charge_turns
+            return f"{user.name} continues channeling... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
+
+        charge_time = self.get_charge_time()
+        if charge_time > 0:
+            return self.start_charge(user, target)
+
+        return self.execute_blast(user, target, cover)
 
 
 # Passive ability for Summoner
@@ -3206,6 +3946,10 @@ class Shapeshift(Skill):
         user.invisible = s_creature.invisible
         user.sight = s_creature.sight
         user.spellbook["Skills"]["Shapeshift"] = Shapeshift()
+        # Apply cooldown
+        user.status_effects["Shapeshifted"].active = True
+        user.status_effects["Shapeshifted"].duration = 3
+        user._emit_status_event(user, "Shapeshifted", applied=True, duration=3, source="Shapeshift")
         return f"{user.name} changes shape, becoming a {s_creature.name}.\n"
 
 
@@ -4111,6 +4855,125 @@ class BreatheFire(Skill):
             result_msg += f"The breath weapon has no effect on {target.name}.\n"
         
         return result_msg
+
+
+class CrushingBlow(Skill):
+    """
+    Powerful overhead strike with a short wind-up.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Crushing Blow",
+            description="A devastating overhead strike that takes time to wind up but deals massive damage.",
+        )
+        self.cost = 25
+        self.weapon = True
+        self.dmg_mod = 3.0
+        self.crit = 2
+        self.subtyp = "Physical"
+
+        self._yaml_charge_time = None
+        self._yaml_telegraph_message = None
+        self._stun_chance = 0.5
+        self._stun_duration = 2
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+
+        # Load YAML-backed config when available
+        try:
+            from pathlib import Path
+            from src.core.data.ability_loader import AbilityFactory
+
+            file_path = Path(__file__).parent / "data" / "abilities" / "crushing_blow.yaml"
+            if file_path.exists():
+                yaml_ability = AbilityFactory.create_from_yaml(file_path)
+                if getattr(yaml_ability, "description", None):
+                    self.description = yaml_ability.description
+                if getattr(yaml_ability, "cost", None) is not None:
+                    self.cost = yaml_ability.cost
+                if getattr(yaml_ability, "subtyp", None):
+                    self.subtyp = yaml_ability.subtyp
+                if getattr(yaml_ability, "dmg_mod", None) is not None:
+                    self.dmg_mod = yaml_ability.dmg_mod
+
+                raw = getattr(yaml_ability, "_raw_data", None) or getattr(yaml_ability, "raw_data", {})
+                if raw:
+                    self.crit = raw.get("crit", self.crit)
+
+                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
+                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
+        except Exception:
+            pass
+
+    def get_charge_time(self) -> int:
+        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
+
+    def start_charge(self, user: Character, target: Character) -> str:
+        self.charging = True
+        self.charge_turns = self.get_charge_time()
+        self.charge_target = target
+
+        if self._yaml_telegraph_message:
+            return f"{user.name} is {self._yaml_telegraph_message}!\n"
+        return f"{user.name} raises their weapon for a crushing strike!\n"
+
+    def cancel_charge(self, user: Character) -> str:
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        return f"{user.name}'s Crushing Blow was interrupted!\n"
+
+    def execute_blow(self, user: Character, target: Character, cover: bool = False) -> str:
+        use_str = ""
+        wd_str, hit, _ = user.weapon_damage(
+            target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
+        )
+        use_str += wd_str
+
+        if hit and target.is_alive():
+            if not any(
+                [
+                    "Stun" in target.status_immunity,
+                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]
+            ):
+                if random.random() < self._stun_chance and not target.status_effects["Stun"].active:
+                    target.status_effects["Stun"].active = True
+                    target.status_effects["Stun"].duration = self._stun_duration
+                    user._emit_status_event(
+                        target,
+                        "Stun",
+                        applied=True,
+                        duration=self._stun_duration,
+                        source="Crushing Blow",
+                    )
+                    use_str += f"{target.name} is stunned!\n"
+
+        self.charging = False
+        self.charge_turns = 0
+        self.charge_target = None
+        return use_str
+
+    def use(self, user: Character, target: Character = None, cover: bool = False) -> str:
+        if self.charging:
+            if user.incapacitated():
+                return self.cancel_charge(user)
+
+            self.charge_turns -= 1
+            if self.charge_turns <= 0:
+                return self.execute_blow(user, self.charge_target or target, cover)
+            turns_left = self.charge_turns
+            return f"{user.name} continues winding up... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
+
+        user.mana.current -= self.cost
+        charge_time = self.get_charge_time()
+        if charge_time > 0:
+            return self.start_charge(user, target)
+
+        return self.execute_blow(user, target, cover)
 
 
 """
@@ -5572,7 +6435,7 @@ class Bless(SupportSpell):
             name="Bless",
             description="A prayer is spoken, bestowing a mighty blessing upon the caster's "
             "weapon, increasing melee damage.",
-            cost=8,
+            cost=12,
         )
 
     def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
@@ -5580,11 +6443,21 @@ class Bless(SupportSpell):
             target = caster
         if not (fam or special):
             caster.mana.current -= self.cost
-        amount = random.randint(target.combat.attack // 4, target.combat.attack // 2)
+        attack_amount = 10
+        defense_amount = 8
+        duration = 5
+
         target.stat_effects["Attack"].active = True
-        target.stat_effects["Attack"].duration = max(3, caster.stats.wisdom // 10)
-        target.stat_effects["Attack"].extra = amount
-        return f"{target.name}'s attack increases by {amount}.\n"
+        target.stat_effects["Attack"].duration = max(duration, target.stat_effects["Attack"].duration)
+        target.stat_effects["Attack"].extra = max(attack_amount, target.stat_effects["Attack"].extra)
+
+        target.stat_effects["Defense"].active = True
+        target.stat_effects["Defense"].duration = max(duration, target.stat_effects["Defense"].duration)
+        target.stat_effects["Defense"].extra = max(defense_amount, target.stat_effects["Defense"].extra)
+
+        return (
+            f"{target.name}'s attack increases by {attack_amount} and defense increases by {defense_amount}.\n"
+        )
 
 
 class Boost(SupportSpell):

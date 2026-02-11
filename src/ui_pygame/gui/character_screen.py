@@ -4,7 +4,7 @@ Character Screen for Pygame - matches curses terminal layout.
 
 import pygame
 
-from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, SimpleListPopupMenu
+from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu
 from .town_base import TownScreenBase
 
 
@@ -30,7 +30,6 @@ class CharacterScreen(TownScreenBase):
             "Exit Menu",
             "Key Items",
             "Specials",
-            "Class Menu",
             "Quit Game"
         ]
         
@@ -50,44 +49,19 @@ class CharacterScreen(TownScreenBase):
         self.exp_rect = pygame.Rect(self.menu_rect.right, self.info_rect.bottom, 2 * self.width // 5, exp_height)
         self.stats_rect = pygame.Rect(0, self.menu_rect.bottom, self.width, stats_height)
     
-    def _has_class_features(self, player_char):
-        """Check if player's class has special features (companions, summons, familiar, etc.)"""
-        cls = getattr(player_char, "cls", None)
-        if not cls:
-            return False
-        
-        # Check for class-specific attributes that indicate special features
-        cls_name = getattr(cls, "name", "").lower()
-        
-        # Classes with special features
-        special_classes = [
-            "warlock",      # familiars
-            "summoner",     # summons
-            "necromancer",  # minions
-            "ranger",       # companions
-            "druid",        # animal companion
-        ]
-        
-        # Check if class name matches special classes
-        for special in special_classes:
-            if special in cls_name:
-                return True
-        
-        # Check for actual features on the class object
-        if (hasattr(cls, "companions") or 
-            hasattr(cls, "summons") or 
-            hasattr(cls, "familiar") or 
-            hasattr(cls, "minions")):
-            return True
-        
-        # Check if player has any companions/summons/familiars
-        if (hasattr(player_char, "companions") and player_char.companions) or \
-           (hasattr(player_char, "summons") and player_char.summons) or \
-           (hasattr(player_char, "familiar") and player_char.familiar) or \
-           (hasattr(player_char, "minions") and player_char.minions):
-            return True
-        
-        return False
+    def _get_jump_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Jump" in skills:
+            return skills["Jump"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Jump":
+                return skill
+        return None
+
+    def _has_jump_mods(self, player_char):
+        """Check if player can configure Jump modifications."""
+        jump_skill = self._get_jump_skill(player_char)
+        return bool(jump_skill and hasattr(jump_skill, "modifications"))
     
     def _get_quests_list(self, player_char):
         """Get list of quests from player character."""
@@ -168,7 +142,7 @@ class CharacterScreen(TownScreenBase):
         # Location
         y += 50
 
-        location_text = self.normal_font.render(getattr(player_char, 'location', 'Town'), True, self.colors.WHITE)
+        location_text = self.large_font.render(getattr(player_char, 'location', 'Town'), True, self.colors.WHITE)
         self.screen.blit(location_text, (x, y))
 
         # Calculate weight from inventory, equipment, and special items
@@ -178,7 +152,7 @@ class CharacterScreen(TownScreenBase):
 
         # Show weight - use RED if encumbered
         weight_color = self.colors.RED if getattr(player_char, 'encumbered', False) else self.colors.WHITE
-        weight_text = self.normal_font.render(weight_max, True, weight_color)
+        weight_text = self.large_font.render(weight_max, True, weight_color)
         self.screen.blit(weight_text, (self.info_rect.right - weight_text.get_width() - 10, y))
 
         # Show encumbered warning if applicable
@@ -187,14 +161,14 @@ class CharacterScreen(TownScreenBase):
             self.screen.blit(encumb_text, (self.info_rect.right - encumb_text.get_width() - 10, y + 20))
 
         y += 40
-        class_text = self.normal_font.render(
+        class_text = self.large_font.render(
             f"{player_char.race.name} {player_char.cls.name}", True, self.colors.WHITE
         )
         self.screen.blit(class_text, (x, y))
 
         # Gold
         gold_amount = getattr(player_char, 'gold', 0)
-        gold_text = self.normal_font.render(f"{gold_amount}G", True, self.colors.GOLD)
+        gold_text = self.large_font.render(f"{gold_amount}G", True, self.colors.GOLD)
         self.screen.blit(gold_text, (self.info_rect.right - gold_text.get_width() - 10, y))
 
     def draw_exp(self, player_char):
@@ -228,8 +202,8 @@ class CharacterScreen(TownScreenBase):
         col_width = self.menu_rect.width // 4
         col1_x = self.menu_rect.centerx - col_width - 30
         col2_x = self.menu_rect.centerx + 30
-        y_start = self.menu_rect.centery - 4 * 18  # Center vertically for 8 options
-        line_height = 36
+        line_height = self.large_font.get_height() + 10
+        y_start = self.menu_rect.centery - (4 * line_height) // 2  # Center vertically for 8 options
 
         for i, option in enumerate(self.menu_options):
             if i < 4:
@@ -239,7 +213,7 @@ class CharacterScreen(TownScreenBase):
                 x = col2_x
                 y = y_start + (i - 4) * line_height
 
-            highlight_rect = pygame.Rect(x - 12, y - 3, col_width, line_height + 2)
+            highlight_rect = pygame.Rect(x - 12, y - 4, col_width, line_height + 4)
             if i == self.current_selection:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 text = self.large_font.render(option, True, self.colors.GOLD)
@@ -253,11 +227,14 @@ class CharacterScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.stats_rect, 2)
         
         # Three columns: base stats, combat stats, equipped gear
-        col1_x = self.stats_rect.left + 20
-        col2_x = self.stats_rect.left + self.stats_rect.width // 3 + 20
-        col3_x = self.stats_rect.left + 2 * self.stats_rect.width // 3 + 20
-        y_start = self.stats_rect.top + 20
-        line_height = 18
+        padding = 24
+        col_gap = 28
+        col_width = (self.stats_rect.width - (padding * 2) - (col_gap * 2)) // 3
+        col1_x = self.stats_rect.left + padding
+        col2_x = col1_x + col_width + col_gap
+        col3_x = col2_x + col_width + col_gap
+        y_start = self.stats_rect.top + 24
+        line_height = self.large_font.get_height() + 6
         
         # Column 1: Base Stats
         col1_y = y_start
@@ -274,13 +251,19 @@ class CharacterScreen(TownScreenBase):
             ("Dexterity:", str(player_char.stats.dex)),
         ]
         
+        max_label_width = 0
+        for label, _ in stats:
+            if label:
+                max_label_width = max(max_label_width, self.large_font.size(label)[0])
+        value_x = col1_x + max_label_width + 14
+
         for label, value in stats:
             if label:
-                label_text = self.normal_font.render(label, True, self.colors.WHITE)
+                label_text = self.large_font.render(label, True, self.colors.WHITE)
                 self.screen.blit(label_text, (col1_x, col1_y))
                 
-                value_text = self.normal_font.render(value, True, self.colors.WHITE)
-                self.screen.blit(value_text, (col1_x + 150, col1_y))
+                value_text = self.large_font.render(value, True, self.colors.WHITE)
+                self.screen.blit(value_text, (value_x, col1_y))
             col1_y += line_height
         
         # Column 2: Combat Stats
@@ -296,56 +279,82 @@ class CharacterScreen(TownScreenBase):
             ("Heal Modifier:", str(player_char.check_mod('heal'))),
         ]
         
+        max_label_width = 0
+        for label, _ in combat_stats:
+            if label:
+                max_label_width = max(max_label_width, self.large_font.size(label)[0])
+        combat_value_x = col2_x + max_label_width + 14
+
         for label, value in combat_stats:
             if label:
-                label_text = self.normal_font.render(label, True, self.colors.WHITE)
+                label_text = self.large_font.render(label, True, self.colors.WHITE)
                 self.screen.blit(label_text, (col2_x, col2_y))
                 
-                value_text = self.normal_font.render(value, True, self.colors.WHITE)
-                self.screen.blit(value_text, (col2_x + 150, col2_y))
+                value_text = self.large_font.render(value, True, self.colors.WHITE)
+                self.screen.blit(value_text, (combat_value_x, col2_y))
             col2_y += line_height
         
         # Column 3: Equipped Gear
         col3_y = y_start
         
         # Header
-        header_text = self.normal_font.render("Equipped Gear", True, self.colors.GOLD)
+        header_text = self.large_font.render("Equipped Gear", True, self.colors.GOLD)
         self.screen.blit(header_text, (col3_x, col3_y))
         col3_y += line_height + 5
         
         # Equipment slots
         equipment_slots = ["Weapon", "Armor", "OffHand", "Ring", "Pendant"]
+
+        max_slot_width = 0
+        for slot in equipment_slots:
+            max_slot_width = max(max_slot_width, self.large_font.size(f"{slot}:")[0])
+        gear_value_x = col3_x + max_slot_width + 12
         
         for slot in equipment_slots:
             item = player_char.equipment.get(slot)
             item_name = item.name if item else "(empty)"
             
-            label_text = self.normal_font.render(f"{slot}:", True, self.colors.WHITE)
+            label_text = self.large_font.render(f"{slot}:", True, self.colors.WHITE)
             self.screen.blit(label_text, (col3_x, col3_y))
             
-            value_text = self.normal_font.render(item_name, True, self.colors.WHITE)
-            self.screen.blit(value_text, (col3_x + 100, col3_y))
+            value_text = self.large_font.render(item_name, True, self.colors.WHITE)
+            self.screen.blit(value_text, (gear_value_x, col3_y))
             
             col3_y += line_height
         
         # Buffs
         col3_y += line_height
-        buffs_label = self.normal_font.render("Buffs:", True, self.colors.WHITE)
+        buffs_label = self.large_font.render("Buffs:", True, self.colors.WHITE)
         self.screen.blit(buffs_label, (col3_x, col3_y))
         col3_y += line_height
         
+        buff_names = []
         if hasattr(player_char, 'buffs') and player_char.buffs:
-            for buff in player_char.buffs[:3]:  # Show up to 3 buffs
-                buff_text = self.normal_font.render(buff.name, True, self.colors.WHITE)
+            for buff in player_char.buffs:
+                name = getattr(buff, "name", str(buff))
+                if name and name not in buff_names:
+                    buff_names.append(name)
+
+        pendant = player_char.equipment.get("Pendant") if hasattr(player_char, "equipment") else None
+        if pendant and getattr(pendant, "mod", None) == "Vision" and "Vision" not in buff_names:
+            buff_names.append("Vision")
+        if getattr(player_char, "sight", False) and "Vision" not in buff_names:
+            buff_names.append("Vision")
+
+        if buff_names:
+            for name in buff_names[:3]:  # Show up to 3 buffs
+                buff_text = self.large_font.render(name, True, self.colors.WHITE)
                 self.screen.blit(buff_text, (col3_x + 20, col3_y))
                 col3_y += line_height - 2
         else:
-            none_text = self.normal_font.render("None", True, self.colors.GRAY)
+            none_text = self.large_font.render("None", True, self.colors.GRAY)
             self.screen.blit(none_text, (col3_x + 20, col3_y))
 
         # Resistances
-        resistance_text = self.normal_font.render("Resistances", True, self.colors.GOLD)
-        self.screen.blit(resistance_text, (self.stats_rect.centerx - 50, self.stats_rect.bottom - 150))
+        resistance_text = self.large_font.render("Resistances", True, self.colors.GOLD)
+        row_height = self.large_font.get_height() + 18
+        resistance_title_y = self.stats_rect.bottom - (row_height * 2) - 32
+        self.screen.blit(resistance_text, (self.stats_rect.centerx - resistance_text.get_width() // 2, resistance_title_y))
 
         resistance_names = [
             "Fire", "Electric", "Earth", "Shadow", "Poison",
@@ -353,18 +362,17 @@ class CharacterScreen(TownScreenBase):
         ]
 
         col_width = self.stats_rect.width // 5
-        row_height = 50
 
         for i, resist_name in enumerate(resistance_names):
             row = i // 5
             col = i % 5
             col_x = self.stats_rect.left + col * col_width + 50
-            resist_y = self.stats_rect.bottom + (row + 1) * row_height - 150
+            resist_y = resistance_title_y + 24 + (row * row_height)
 
             resist_val = player_char.resistance.get(resist_name, 0.0)
             display = f"{resist_name}: {resist_val * 100:.1f}"
 
-            text = self.normal_font.render(display, True, self.colors.WHITE)
+            text = self.large_font.render(display, True, self.colors.WHITE)
             self.screen.blit(text, (col_x, resist_y))
 
     def draw_all(self, player_char, do_flip=True):
@@ -394,13 +402,12 @@ class CharacterScreen(TownScreenBase):
             "Specials",
         ]
         
-        # Only include Class Menu if class has special features
-        if self._has_class_features(player_char):
-            menu_options.insert(6, "Class Menu")
+        # Only include Jump Mods if player has Jump customization
+        if self._has_jump_mods(player_char):
+            menu_options.insert(6, "Jump Mods")
         
         menu_options.append("Quit Game")
         self.menu_options = menu_options
-        self.current_selection = 0
         
         while True:
             self.draw_all(player_char)
@@ -418,16 +425,20 @@ class CharacterScreen(TownScreenBase):
                         return "Exit Menu"
                     elif event.key == pygame.K_UP:
                         # Move up within column
-                        if self.current_selection > 0:
-                            self.current_selection -= 1
-                        else:
+                        if self.current_selection == 4:
                             self.current_selection = len(self.menu_options) - 1
+                        elif self.current_selection == 0:
+                            self.current_selection = 3
+                        else:
+                            self.current_selection -= 1
                     elif event.key == pygame.K_DOWN:
                         # Move down within column
-                        if self.current_selection < len(self.menu_options) - 1:
-                            self.current_selection += 1
-                        else:
+                        if self.current_selection == len(self.menu_options) - 1:
+                            self.current_selection = 4
+                        elif self.current_selection == 3:
                             self.current_selection = 0
+                        else:
+                            self.current_selection += 1
                     elif event.key == pygame.K_LEFT:
                         # Move from right column to left column
                         if self.current_selection >= rows:
@@ -467,13 +478,12 @@ class CharacterScreen(TownScreenBase):
                                 from .confirmation_popup import ConfirmationPopup
                                 # Capture current screen once to avoid redraw flicker
                                 self.draw_all(player_char, do_flip=False)
-                                background_surface = self.presenter.screen.copy()
                                 popup = ConfirmationPopup(
                                     self.presenter,
                                     "You do not have any key items.",
                                     show_buttons=False
                                 )
-                                popup.show(background_draw_func=lambda: self.presenter.screen.blit(background_surface, (0, 0)))
+                                popup.show()
                             else:
                                 popup = SimpleListPopupMenu(
                                     self.presenter,
@@ -490,13 +500,8 @@ class CharacterScreen(TownScreenBase):
                                 source_fn=self._get_specials_list,
                             )
                             _ = popup.show(player_char)
-                        elif chosen == "Class Menu":
-                            popup = SimpleListPopupMenu(
-                                self.presenter,
-                                self,
-                                title="Class Options",
-                                source_fn=lambda pc: [getattr(pc.cls, "name", "Class"), f"Level {pc.level.level}"]
-                            )
+                        elif chosen == "Jump Mods":
+                            popup = JumpModsPopupMenu(self.presenter, self, title="Jump Modifications")
                             _ = popup.show(player_char)
                         elif chosen == "Exit Menu":
                             return "Exit Menu"

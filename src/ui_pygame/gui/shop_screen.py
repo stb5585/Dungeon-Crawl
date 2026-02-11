@@ -82,7 +82,7 @@ class ShopScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.top_rect, 2)
         
         # Center the shop message
-        text = self.normal_font.render(self.shop_message, True, self.colors.GOLD)
+        text = self.large_font.render(self.shop_message, True, self.colors.GOLD)
         text_rect = text.get_rect(center=(self.width // 2, self.top_rect.centery))
         self.screen.blit(text, text_rect)
     
@@ -103,7 +103,7 @@ class ShopScreen(TownScreenBase):
             text = self.normal_font.render(option, True, color)
             text_x = self.options_rect.centerx - text.get_width() // 2
             text_y = self.options_rect.top + (idx + 1) * option_height
-            
+
             # Highlight background for selected
             if idx == self.current_option:
                 highlight_rect = pygame.Rect(
@@ -123,7 +123,7 @@ class ShopScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.desc_rect, 2)
         
         if self.item_list and 0 <= self.current_item < len(self.item_list):
-            display_str, item, cost, owned = self.item_list[self.current_item]
+            display_str, item, _, _ = self.item_list[self.current_item]
             
             # Don't show description for "Go Back" or "Next Page"
             if display_str in ["Go Back", "Next Page"]:
@@ -134,12 +134,12 @@ class ShopScreen(TownScreenBase):
                 lines = wrap(item.description, 60, break_on_hyphens=False)
                 
                 # Draw description lines centered vertically
-                line_height = self.small_font.get_height() + 2
+                line_height = self.normal_font.get_height() + 2
                 total_height = len(lines) * line_height
                 start_y = self.desc_rect.centery - total_height // 2
                 
                 for i, line in enumerate(lines):
-                    text = self.small_font.render(line, True, self.colors.WHITE)
+                    text = self.normal_font.render(line, True, self.colors.WHITE)
                     text_x = self.desc_rect.centerx - text.get_width() // 2
                     text_y = start_y + i * line_height
                     self.screen.blit(text, (text_x, text_y))
@@ -217,20 +217,20 @@ class ShopScreen(TownScreenBase):
             # Parse the item data
             if item:
                 # Type column
-                type_text = self.small_font.render(item.typ, True, color)
+                type_text = self.normal_font.render(item.typ, True, color)
                 self.screen.blit(type_text, (type_col_x, y))
                 
                 # Item name column
-                item_text = self.small_font.render(item.name, True, color)
+                item_text = self.normal_font.render(item.name, True, color)
                 self.screen.blit(item_text, (item_col_x, y))
                 
                 # Cost column (buy mode only)
                 if self.buy_or_sell == "Buy":
-                    cost_text = self.small_font.render(str(cost), True, color)
+                    cost_text = self.normal_font.render(str(cost), True, color)
                     self.screen.blit(cost_text, (cost_col_x, y))
                 
                 # Owned column
-                owned_text = self.small_font.render(f"x {owned}", True, color)
+                owned_text = self.normal_font.render(f"x {owned}", True, color)
                 self.screen.blit(owned_text, (owned_col_x, y))
     
     def draw_mod(self):
@@ -241,7 +241,7 @@ class ShopScreen(TownScreenBase):
         if not self.item_list or self.current_item >= len(self.item_list):
             return
         
-        display_str, item, cost, owned = self.item_list[self.current_item]
+        display_str, item, _, _ = self.item_list[self.current_item]
         
         # Skip for non-items
         if display_str in ["Go Back", "Next Page"] or not item:
@@ -252,7 +252,7 @@ class ShopScreen(TownScreenBase):
             return
         
         # Draw title
-        title = self.small_font.render("Equipment Modifications", True, self.colors.GOLD)
+        title = self.normal_font.render("Equipment Modifications", True, self.colors.GOLD)
         title_x = self.mod_rect.centerx - title.get_width() // 2
         self.screen.blit(title, (title_x, self.mod_rect.top + 10))
         
@@ -261,6 +261,13 @@ class ShopScreen(TownScreenBase):
             equip_slot = item.typ
             if item.typ == "Accessory":
                 equip_slot = item.subtyp
+
+            # Show not equippable message
+            if not self.player_char.cls.equip_check(item, equip_slot):
+                cant_text = self.normal_font.render("Can't Equip", True, self.colors.RED)
+                cant_rect = cant_text.get_rect(center=(self.mod_rect.centerx, self.mod_rect.centery))
+                self.screen.blit(cant_text, cant_rect)
+                return
             
             # Only recalculate if the item selection changed
             if self.current_item != self.cached_item_index:
@@ -271,7 +278,7 @@ class ShopScreen(TownScreenBase):
             
             if stat_diff_str:
                 lines = stat_diff_str.splitlines()
-                line_height = self.small_font.get_height() + 4
+                line_height = self.normal_font.get_height() + 4
                 
                 y = self.mod_rect.top + 40
                 for line in lines:
@@ -291,11 +298,11 @@ class ShopScreen(TownScreenBase):
                                 value_color = self.colors.WHITE
                             
                             # Draw stat name (left aligned)
-                            name_text = self.small_font.render(stat_name, True, self.colors.WHITE)
+                            name_text = self.normal_font.render(stat_name, True, self.colors.WHITE)
                             self.screen.blit(name_text, (self.mod_rect.left + 10, y))
                             
                             # Draw stat value (right aligned)
-                            value_text = self.small_font.render(stat_value, True, value_color)
+                            value_text = self.normal_font.render(stat_value, True, value_color)
                             value_x = self.mod_rect.right - value_text.get_width() - 10
                             self.screen.blit(value_text, (value_x, y))
                             

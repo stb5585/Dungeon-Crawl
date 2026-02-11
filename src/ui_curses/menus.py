@@ -178,6 +178,10 @@ class MainMenu:
             self.draw_all()
             self.refresh_all()
             key = self.game.stdscr.getch()
+            if self.game.debug_mode and key in [ord('l'), ord('L')]:
+                if hasattr(self.game, "debug_level_up"):
+                    self.game.debug_level_up()
+                continue
             if key == curses.KEY_UP:
                 self.current_option -= 1
                 if self.current_option < 0:
@@ -522,6 +526,95 @@ class CombatMenu:
         self.current_option = 0
         self.create_windows()
 
+    def _effect_label(self, effect_name):
+        labels = {
+            "Berserk": "BRK",
+            "Blind": "BLD",
+            "Doom": "DOM",
+            "Poison": "PSN",
+            "Silence": "SIL",
+            "Sleep": "SLP",
+            "Stun": "STN",
+            "Defend": "DEF",
+            "Steal Success": "STE",
+            "Bleed": "BLD",
+            "Disarm": "DSA",
+            "Prone": "PRN",
+            "Attack": "ATK",
+            "Defense": "DEF",
+            "Magic": "MAG",
+            "Magic Defense": "MDF",
+            "Speed": "SPD",
+            "DOT": "DOT",
+            "Duplicates": "DUP",
+            "Ice Block": "ICE",
+            "Mana Shield": "MSH",
+            "Reflect": "RFL",
+            "Regen": "REG",
+            "Resist Fire": "RF",
+            "Resist Ice": "RI",
+            "Resist Electric": "RE",
+            "Resist Water": "RW",
+            "Resist Earth": "RTH",
+            "Resist Wind": "RWI",
+            "Jump": "JMP",
+            "Power Up": "PWR",
+        }
+        return labels.get(effect_name, effect_name[:3].upper())
+
+    def _collect_status_icons(self, character):
+        icons = []
+        skip_effects = {
+            "DOT",
+            "Duplicates",
+            "Jump",
+            "Power Up",
+            "Shapeshifted",
+            "Steal Success",
+        }
+        positive_status = {"Defend", "Steal Success"}
+        positive_magic = {
+            "Duplicates",
+            "Ice Block",
+            "Mana Shield",
+            "Reflect",
+            "Regen",
+            "Resist Fire",
+            "Resist Ice",
+            "Resist Electric",
+            "Resist Water",
+            "Resist Earth",
+            "Resist Wind",
+        }
+
+        for name, effect in character.status_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), name in positive_status))
+        for name, effect in character.physical_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), False))
+        for name, effect in character.stat_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), effect.extra >= 0))
+        for name, effect in character.magic_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), name in positive_magic))
+        for name, effect in character.class_effects.items():
+            if effect.active and name not in skip_effects:
+                icons.append((self._effect_label(name), True))
+
+        return icons
+
+    def _format_status_icons(self, character):
+        icons = self._collect_status_icons(character)
+        if not icons:
+            return ""
+        parts = []
+        for label, is_positive in icons:
+            prefix = "+" if is_positive else "-"
+            parts.append(f"{prefix}{label}")
+        return " ".join(parts)
+
     def create_windows(self):
         self.enemy_win = curses.newwin(3 * self.height // 4, self.width, 0, 0)
         self.char_win = curses.newwin(self.height // 4, self.width // 2, 3 * self.height // 4, 0)
@@ -538,6 +631,14 @@ class CombatMenu:
         if not vision:
             enemy_text = enemy_text.split("|")[0].strip()
         self.enemy_win.addstr((3 * self.height // 4) - 2, (self.width // 2) - (len(enemy_text) // 2), enemy_text)
+
+        status_text = self._format_status_icons(enemy)
+        if status_text:
+            max_width = self.width - 4
+            if len(status_text) > max_width:
+                status_text = status_text[:max_width - 3] + "..."
+            self.enemy_win.addstr((3 * self.height // 4) - 1, (self.width // 2) - (len(status_text) // 2), status_text)
+
         enemy_picture = ascii_art(enemy.cls.picture)
         for i, line in enumerate(enemy_picture):  # 21 spaces from top to bottom text
             self.enemy_win.addstr(
@@ -571,6 +672,13 @@ class CombatMenu:
         # Display Mana bar below HP bar
         self.char_win.addstr(5, (self.width // 4) - (len(mana_bar) // 2), mana_bar)
         self.char_win.addstr(6, (self.width // 4) - (len(mana_text) // 2), mana_text)
+
+        status_text = self._format_status_icons(char)
+        if status_text:
+            max_width = (self.width // 2) - 4
+            if len(status_text) > max_width:
+                status_text = status_text[:max_width - 3] + "..."
+            self.char_win.addstr(8, (self.width // 4) - (len(status_text) // 2), status_text)
         self.char_win.box()
 
     def draw_options(self, options):
@@ -969,10 +1077,10 @@ class CharacterMenu:
     
     """
 
-    def __init__(self, game, options_list):
+    def __init__(self, game, options_list=None):
         self.game = game
         self.height, self.width = game.stdscr.getmaxyx()
-        self.options_list = options_list
+        self.options_list = options_list if options_list is not None else []
         self.current_option = 0
         self.rows, self.cols = (3, 2)
         self.create_windows()
@@ -982,6 +1090,11 @@ class CharacterMenu:
         self.player_loc_win = curses.newwin(self.height // 7, 2 * self.width // 5, 0, 3 * self.width // 5)  # top right top
         self.info_win = curses.newwin(self.height // 7 - 1, 2 * self.width // 5, self.height // 8 + 1, 3 * self.width // 5)  # top right bottom
         self.status_win = curses.newwin(3 * self.height // 4, self.width, self.height // 4, 0)  # bottom
+
+    def set_options(self, options_list):
+        """Set the options list for the menu."""
+        self.options_list = options_list
+        self.current_option = 0
 
     def refresh_all(self):
         self.options_win.refresh()
@@ -1454,7 +1567,6 @@ class SelectionPopupMenu(PopupMenu):
     def inspect_item(self, item):
         itembox = TextBox(self.game)
         itembox.print_text_in_rectangle(str(item()))
-        self.game.stdscr.getch()
         itembox.clear_rectangle()
 
 
@@ -1518,7 +1630,10 @@ class ShopPopup(PopupMenu):
 
 
 class ConfirmPopupMenu(PopupMenu):
-    def __init__(self, game, header_message, box_height=0):
+    def __init__(self, game, header_message, box_height=None):
+        if not box_height:
+            wrapped = wrap(header_message, 28, break_on_hyphens=False) if header_message else []
+            box_height = max(7, len(wrapped) + 6)
         super().__init__(game, header_message, box_height=box_height)
         self.options_list = ["Yes", "No"]
 
@@ -1602,7 +1717,6 @@ class InventoryPopupMenu(PopupMenu):
         if not self.options_list:
             box = TextBox(self.game)
             box.print_text_in_rectangle("You do not have any items in your inventory.")
-            self.game.stdscr.getch()
             box.clear_rectangle()
             return
         while True:
@@ -1638,7 +1752,6 @@ class InventoryPopupMenu(PopupMenu):
     def inspect_item(self, item):
         itembox = TextBox(self.game)
         itembox.print_text_in_rectangle(str(item))
-        self.game.stdscr.getch()
         itembox.clear_rectangle()
 
 
@@ -1717,7 +1830,6 @@ class EquipPopupMenu(PopupMenu):
             diff_str += f"{mod:<16}{value:>29}\n"
         itembox = TextBox(self.game)
         itembox.print_text_in_rectangle(diff_str)
-        self.game.stdscr.getch()
         confirm = ConfirmPopupMenu(self.game, confirm_str, box_height=7)
         if confirm.navigate_popup():
             self.game.player_char.equip(self.equip_type, item)
@@ -1772,7 +1884,6 @@ class AbilitiesPopupMenu(PopupMenu):
             if len(self.game.player_char.spellbook[self.ability_type]) == 0:
                 specialsbox = TextBox(self.game)
                 specialsbox.print_text_in_rectangle("You do not have any abilities.")
-                self.game.stdscr.getch()
                 specialsbox.clear_rectangle()
                 self.page -= 1
                 return
@@ -1786,7 +1897,6 @@ class AbilitiesPopupMenu(PopupMenu):
         ability = self.game.player_char.spellbook[self.ability_type][self.options_list[self.current_option]]
         abilitybox = TextBox(self.game)
         abilitybox.print_text_in_rectangle(str(ability))
-        self.game.stdscr.getch()
         abilitybox.clear_rectangle()
         if (hasattr(ability, "cast_out") or hasattr(ability, "use_out")) and \
             ability.cost <= self.game.player_char.mana.current and not self.game.player_char.in_town():
@@ -1799,8 +1909,128 @@ class AbilitiesPopupMenu(PopupMenu):
                 else:
                     message = ability.use_out(self.game)
                 abilitybox.print_text_in_rectangle(message)
-                self.game.stdscr.getch()
                 abilitybox.clear_rectangle()
+
+
+class JumpModsPopupMenu(PopupMenu):
+    """Popup menu for toggling Jump modifications."""
+
+    MOD_DESCRIPTIONS = {
+        "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
+        "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+        "Defend": "Increased damage reduction while preparing to Jump.",
+        "Rend": "Chance to apply Bleed, dealing damage over time.",
+        "Quake": "Chance to stun the enemy upon landing.",
+        "Acrobat": "Gain an evasion bonus while preparing to Jump.",
+        "Dragon's Fury": "Deals additional random elemental damage.",
+        "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
+        "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+        "Retribution": "Taking damage while charging boosts the Jump damage.",
+        "Unstoppable": "Jump cannot be interrupted once started.",
+        "Recover": "Regain a small amount of health and mana upon landing.",
+        "Skyfall": "Additional smaller hits fall on the target after landing.",
+    }
+
+    def __init__(self, game, header_message, box_height=20, box_width=50):
+        super().__init__(game, header_message, box_height=box_height, box_width=box_width)
+        self.jump_skill = None
+
+    def _get_jump_skill(self):
+        skills = getattr(self.game.player_char, "spellbook", {}).get("Skills", {})
+        if "Jump" in skills:
+            return skills["Jump"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Jump":
+                return skill
+        return None
+
+    def _build_options(self):
+        self.jump_skill = self._get_jump_skill()
+        if not self.jump_skill or not hasattr(self.jump_skill, "modifications"):
+            self.options_list = ["Jump not learned", "Go Back"]
+            return
+
+        options = []
+        # Only show unlocked modifications
+        unlocked_mods = self.jump_skill.get_unlocked_modifications() if hasattr(self.jump_skill, "get_unlocked_modifications") else list(self.jump_skill.modifications.keys())
+        
+        # Add active count info
+        active_count = self.jump_skill.get_active_count() if hasattr(self.jump_skill, "get_active_count") else 0
+        max_count = self.jump_skill.get_max_active_modifications(self.game.player_char) if hasattr(self.jump_skill, "get_max_active_modifications") else 99
+        options.append(f"Active: {active_count}/{max_count}")
+        options.append("---")
+        
+        for mod_name in unlocked_mods:
+            active = self.jump_skill.modifications.get(mod_name, False)
+            prefix = "[X]" if active else "[ ]"
+            options.append(f"{prefix} {mod_name}")
+        options.append("Go Back")
+        self.options_list = options
+
+    def _extract_mod_name(self, option: str) -> str:
+        return option.replace("[X] ", "").replace("[ ] ", "").strip()
+
+    def navigate_popup(self):
+        self._build_options()
+        self.draw_popup()
+        while True:
+            self.draw_popup()
+            self.popup_win.refresh()
+            key = self.game.stdscr.getch()
+
+            if key == curses.KEY_UP:
+                self.current_option -= 1
+                if self.current_option < 0:
+                    self.current_option = len(self.options_list) - 1
+            elif key == curses.KEY_DOWN:
+                self.current_option += 1
+                if self.current_option > len(self.options_list) - 1:
+                    self.current_option = 0
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                choice = self.options_list[self.current_option]
+                if choice == "Go Back":
+                    return
+
+                # Skip non-toggleable items
+                if choice.startswith("Active:") or choice == "---":
+                    continue
+
+                if not self.jump_skill or not hasattr(self.jump_skill, "modifications"):
+                    return
+
+                mod_name = self._extract_mod_name(choice)
+                if not mod_name:  # Empty after extraction
+                    continue
+                    
+                current = self.jump_skill.modifications.get(mod_name, False)
+                
+                # Toggle the modification
+                result = self.jump_skill.set_modification(mod_name, not current, self.game.player_char)
+                
+                # Handle the new tuple return format
+                if isinstance(result, tuple):
+                    success, error_msg = result
+                    if not success and error_msg:
+                        # Show error message
+                        box = TextBox(self.game)
+                        box.print_text_in_rectangle(error_msg)
+                        box.clear_rectangle()
+                    elif success:
+                        # Show description on successful toggle
+                        desc = self.MOD_DESCRIPTIONS.get(mod_name, "")
+                        if desc:
+                            box = TextBox(self.game)
+                            box.print_text_in_rectangle(desc)
+                            box.clear_rectangle()
+                else:
+                    # Backwards compatibility - old boolean return
+                    desc = self.MOD_DESCRIPTIONS.get(mod_name, "")
+                    if desc:
+                        box = TextBox(self.game)
+                        box.print_text_in_rectangle(desc)
+                        box.clear_rectangle()
+
+                self._build_options()
 
 
 class QuestPopupMenu(PopupMenu):
@@ -1828,6 +2058,7 @@ class QuestListPopupMenu(PopupMenu):
         super().__init__(game, header_message, box_height=20, box_width=50)
         self.scroll_offset = 0  # Tracks the starting index of visible quests
         self.max_visible_options = self.box_height - 10  # Adjusted for header, bounties, and gap
+        self.display_to_quest = {}
 
     def draw_popup(self):
         self.update_options()
@@ -1847,6 +2078,10 @@ class QuestListPopupMenu(PopupMenu):
                 self.popup_win.addstr(h_adjust, 16, f"{quest}: Complete")
             else:
                 self.popup_win.addstr(h_adjust, 16, f"{quest}: {info[1]}/{info[0]['num']}")
+            h_adjust += 1
+
+        if self.options_list:
+            self.popup_win.addstr(h_adjust, 2, "* = ready to turn in")
             h_adjust += 1
 
         # Add a gap
@@ -1909,30 +2144,36 @@ class QuestListPopupMenu(PopupMenu):
     def update_options(self):
         self.options_list = []
         self.completed = []
+        self.display_to_quest = {}
         for typ in ["Main", "Side"]:
             for quest, info in self.game.player_char.quest_dict[typ].items():
-                if info["Turned In"]:
+                if info["Completed"] and info["Turned In"]:
                     self.completed.append(quest)
                 else:
-                    self.options_list.append(quest)
+                    display = quest
+                    if info["Completed"] and not info["Turned In"]:
+                        display = f"{quest} *"
+                    self.options_list.append(display)
+                    self.display_to_quest[display] = quest
         if self.completed:
             self.options_list.append("Completed Quests")
         self.options_list.append("Go Back")
 
     def inspect_quests(self):
-        if self.options_list[self.current_option] in self.game.player_char.quest_dict["Main"]:
-            quest = self.game.player_char.quest_dict["Main"][self.options_list[self.current_option]]
+        option = self.options_list[self.current_option]
+        quest_name = self.display_to_quest.get(option, option)
+        if quest_name in self.game.player_char.quest_dict["Main"]:
+            quest = self.game.player_char.quest_dict["Main"][quest_name]
         else:
-            quest = self.game.player_char.quest_dict["Side"][self.options_list[self.current_option]]
+            quest = self.game.player_char.quest_dict["Side"][quest_name]
         questbox = TextBox(self.game)
         questbox.print_text_in_rectangle(self.quest_str_config(quest))
-        self.game.stdscr.getch()
         questbox.clear_rectangle()
 
     def quest_str_config(self, quest):
         completed = "Yes" if quest["Completed"] else "No"
         turned_in = "Yes" if quest["Turned In"] else "No"
-        what_str = quest["What"] if isinstance(quest["What"], str) else quest["What"]().name
+        what_str = quest["What"] if isinstance(quest["What"], str) else quest["What"].name
         quest_str =  (f"{self.options_list[self.current_option]}\n\n"
                       f"{quest['Type']} {what_str}\n"
                       f"Questgiver: {quest['Who']}\n")
@@ -1942,7 +2183,7 @@ class QuestListPopupMenu(PopupMenu):
                 current = sum([item in self.game.player_char.special_inventory for item in relics])
             else:
                 try:
-                    current = len(self.game.player_char.special_inventory[quest['What']().name])
+                    current = len(self.game.player_char.special_inventory[quest['What'].name])
                 except KeyError:
                     current = 0
             quest_str += f"Collected: {current}/{quest['Total']}\n"
@@ -1953,7 +2194,6 @@ class QuestListPopupMenu(PopupMenu):
     def completed_quests(self):
         questbox = TextBox(self.game)
         questbox.print_text_in_rectangle("\n".join(self.completed))
-        self.game.stdscr.getch()
         questbox.clear_rectangle()
 
 
@@ -1984,6 +2224,7 @@ class TextBox:
 
         # Refresh to show the changes
         self.win.refresh()
+        self.game.stdscr.getch()
 
     def clear_rectangle(self):
         if self.win:

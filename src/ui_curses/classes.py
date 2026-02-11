@@ -166,6 +166,4 @@ def promotion(game):
             promo_str = "If you change your mind, you know where to find us.\n"
         break
     promobox.print_text_in_rectangle(promo_str)
-    time.sleep(1)
-    game.stdscr.getch()
     promobox.clear_rectangle()

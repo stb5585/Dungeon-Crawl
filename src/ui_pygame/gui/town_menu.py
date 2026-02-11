@@ -68,6 +68,8 @@ class TownMenuScreen(TownScreenBase):
             "ENTER: Select",
             "ESC: Quit"
         ]
+        if getattr(self.presenter, "debug_mode", False):
+            instructions.append("L: Debug Level Up")
         instructions_y = self.height - 120
         for instruction in instructions:
             instr_text = self.small_font.render(instruction, True, self.colors.GRAY)
@@ -85,7 +87,6 @@ class TownMenuScreen(TownScreenBase):
         Returns:
             int: Index of selected option, or None if cancelled
         """
-        self.current_selection = 0
         
         while True:
             # Draw everything
@@ -106,6 +107,10 @@ class TownMenuScreen(TownScreenBase):
                         self.current_selection = (self.current_selection + 1) % len(options)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         return self.current_selection
+                    elif event.key == pygame.K_l and getattr(self.presenter, "debug_mode", False):
+                        game = getattr(self.presenter, "game", None)
+                        if game and hasattr(game, "debug_level_up"):
+                            game.debug_level_up()
                     elif event.key == pygame.K_ESCAPE:
                         # Return the last option (typically Quit)
                         return len(options) - 1

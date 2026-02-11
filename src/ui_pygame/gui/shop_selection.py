@@ -86,7 +86,6 @@ class ShopSelectionScreen(TownScreenBase):
         Returns:
             int: Index of selected option, or None if cancelled
         """
-        self.current_selection = 0
         
         while True:
             # Draw background and panel

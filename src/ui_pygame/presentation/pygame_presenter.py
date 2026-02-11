@@ -6,7 +6,7 @@ It subscribes to the event system for animations and real-time updates.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import pygame
 
@@ -102,6 +102,8 @@ class PygamePresenter(GamePresenter):
         # Clock for FPS control
         self.clock = pygame.time.Clock()
         self.fps = 60
+
+        self._background_provider: Callable[[], pygame.Surface] | None = None
         
         # Combat state
         self.player: Character | None = None
@@ -741,6 +743,25 @@ class PygamePresenter(GamePresenter):
         """Update the display."""
         pygame.display.flip()
         self.clock.tick(self.fps)
+
+    def set_background_provider(self, provider: Callable[[], pygame.Surface] | None) -> None:
+        """Set a callable that returns the most recent scene background."""
+        self._background_provider = provider
+
+    def get_background_surface(self) -> pygame.Surface:
+        """Return the latest cached background surface for popup overlays."""
+        if self._background_provider is None:
+            return self.screen.copy()
+
+        try:
+            surface = self._background_provider()
+        except Exception:
+            return self.screen.copy()
+
+        if surface is None or surface is self.screen:
+            return self.screen.copy()
+
+        return surface
         
     def get_player_action(self, prompt: str, options: list[str]) -> str:
         """Get player action through menu."""

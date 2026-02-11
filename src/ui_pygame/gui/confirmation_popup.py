@@ -10,13 +10,17 @@ class ConfirmationPopup:
     A Yes/No confirmation popup that appears over the current screen.
     """
     
-    def __init__(self, presenter, message, show_buttons=True):
+    def __init__(self, presenter, message: str, show_buttons: bool = True, slow_print: bool = False):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
         self.height = presenter.height
         self.message = message
         self.show_buttons = show_buttons
+        # Slow print (typewriter) if True; disabled if debug mode is enabled
+        self.slow_print = not getattr(presenter, "debug_mode", False) and slow_print
+        self._start_ms = 10
+        self._reveal_cps = 30  # characters per second
         
         # Colors
         self.BLACK = (0, 0, 0)
@@ -41,6 +45,8 @@ class ConfirmationPopup:
         self.popup_width = 500
         # First, wrap text to calculate required height
         wrapped_lines = self._wrap_text(message, self.popup_width - 40)
+        self._wrapped_lines = wrapped_lines
+        self._full_text = "\n".join(wrapped_lines)
         # Each line takes approximately 30 pixels in height, plus padding
         min_height = 150 if show_buttons else 180
         content_height = len(wrapped_lines) * 30
@@ -50,6 +56,21 @@ class ConfirmationPopup:
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
     
+    def _get_visible_lines(self):
+        if not self.slow_print or not self._full_text:
+            return self._wrapped_lines
+        elapsed_ms = max(0, pygame.time.get_ticks() - self._start_ms)
+        visible_chars = int((elapsed_ms / 1000.0) * self._reveal_cps)
+        visible_text = self._full_text[:visible_chars]
+        return visible_text.split("\n")
+
+    def _reveal_complete(self) -> bool:
+        if not self.slow_print:
+            return True
+        elapsed_ms = max(0, pygame.time.get_ticks() - self._start_ms)
+        visible_chars = int((elapsed_ms / 1000.0) * self._reveal_cps)
+        return visible_chars >= len(self._full_text)
+
     def draw_popup(self):
         """Draw the confirmation popup over the current screen."""
         # Draw semi-transparent overlay
@@ -64,7 +85,7 @@ class ConfirmationPopup:
         
         # Original compact confirmation layout
         y = self.popup_y + 30
-        message_lines = self._wrap_text(self.message, self.popup_width - 40)
+        message_lines = self._get_visible_lines()
         for line in message_lines:
             text = self.normal_font.render(line, True, self.WHITE)
             text_rect = text.get_rect(centerx=self.popup_x + self.popup_width // 2)
@@ -127,7 +148,7 @@ class ConfirmationPopup:
         
         return lines
     
-    def show(self, background_draw_func=None) -> bool:
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False, min_display_ms: int = 0) -> bool:
         """
         Show the popup and wait for user response.
         
@@ -137,6 +158,17 @@ class ConfirmationPopup:
         Returns:
             True if Yes (or any key if no buttons), False if No
         """
+        if flush_events:
+            pygame.event.clear()
+
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        start_ms = pygame.time.get_ticks()
+        self._start_ms = start_ms
+        input_armed = not require_key_release
+
         while True:
             # Draw background each frame
             if background_draw_func:
@@ -145,12 +177,23 @@ class ConfirmationPopup:
             # Draw popup on top
             self.draw_popup()
             
+            # Arm input once all keys are released (prevents buffered input from skipping popups)
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
+                    if self.slow_print and not self._reveal_complete():
+                        continue
+                    if min_display_ms and (pygame.time.get_ticks() - start_ms) < min_display_ms:
+                        continue
                     if self.show_buttons:
                         # Yes/No button behavior
                         if event.key == pygame.K_LEFT:
@@ -166,6 +209,16 @@ class ConfirmationPopup:
                         return True
             
             self.presenter.clock.tick(30)
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()
 
 
 def confirm_yes_no(presenter, message) -> bool:
@@ -315,6 +368,10 @@ class QuantityPopup:
         Returns:
             int: Selected quantity, or None if cancelled
         """
+        if background_draw_func is None:
+            background = self._get_background_surface()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
         while True:
             self.draw_popup(background_draw_func)
             pygame.display.flip()
@@ -362,3 +419,13 @@ class QuantityPopup:
                             return self.quantity
             
             self.presenter.clock.tick(30)
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()

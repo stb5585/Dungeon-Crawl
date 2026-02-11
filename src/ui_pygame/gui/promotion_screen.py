@@ -244,8 +244,7 @@ class PromotionScreen(TownScreenBase):
                             self.presenter,
                             f"Promote to {selected_name}?"
                         )
-                        promo_bg = self.screen.copy()
-                        if popup.show(background_draw_func=lambda: self.screen.blit(promo_bg, (0, 0))):
+                        if popup.show():
                             return selected_name
                     elif event.key == pygame.K_ESCAPE:
                         return None

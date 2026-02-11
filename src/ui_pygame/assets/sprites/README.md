@@ -1,68 +1,108 @@
 # Enemy Sprites
 
-This directory contains automatically generated sprite images converted from ASCII art.
+This directory contains automatically generated sprite images converted from ASCII art with full color support.
 
 ## Generation
 
-Sprites are generated from the ASCII art files in `../ascii_files/` using the converter script:
+Sprites are generated from the ASCII art files in `../../ascii_files/` using the new colored converter script:
 
 ```bash
-python3 utils/ascii_to_sprite.py
+python3 src/ui_pygame/assets/ascii_to_sprite_colored.py
 ```
 
 ## Sprite Sizes
 
-Each enemy has three sprite sizes:
-- **32x32 pixels** - Small icons for minimap or compact views
-- **64x64 pixels** - Medium size for general use
-- **128x128 pixels** - Large detailed sprites for combat or close-up views
+All sprite files are sized 128x128 pixels.
 
-## Naming Convention
+## Colored Sprite System (Improved)
 
-Files are named: `{enemy_name}_{size}.png`
+The new sprite generation system creates **fully colored sprites** instead of grayscale ones. This solves the previous limitation where blanket colorization would destroy sprite detail and outlines.
 
-Examples:
-- `goblin_32.png` - 32x32 goblin sprite
-- `skeleton_64.png` - 64x64 skeleton sprite
-- `reddragon_128.png` - 128x128 red dragon sprite
+### How It Works
 
-## Character Mapping
+ASCII characters are mapped to brightness levels, which are then converted to actual colors using enemy-type-specific color palettes:
 
-The ASCII art uses characters to represent different brightness levels:
-
-| Character | Brightness | Usage |
+| Character | Brightness | Typical Usage |
 |-----------|------------|-------|
 | ` ` (space) | Transparent | Background |
-| `.` | 30 | Very dark details |
+| `.` | 30 | Very dark shadows |
 | `:` | 60 | Dark details |
-| `-` | 90 | Medium-dark |
-| `=` | 120 | Medium |
-| `+` | 150 | Medium-light |
-| `*` | 180 | Light |
-| `#` | 210 | Very light |
-| `%` | 230 | Bright |
-| `@` | 255 | Brightest highlights |
+| `-` | 90 | Medium-dark shading |
+| `=` | 120 | Base medium tones |
+| `+` | 150 | Medium-light tones |
+| `*` | 180 | Light highlights |
+| `#` | 210 | Bright highlights |
+| `%` | 230 | Very bright details |
+| `@` | 255 | Brightest accents |
+
+### Color Palettes
+
+Each enemy type has a unique color palette with 4 color layers:
+
+1. **Shadow Color** - Used for darkest ASCII characters (., :)
+2. **Base Color** - Primary color for the enemy (=, +)
+3. **Highlight Color** - Used for lighter tones (*, #)
+4. **Accent Color** - Used for very bright details (@, %), often representing equipment/eyes
+
+Palettes are defined in `ascii_to_sprite_colored.py` for types:
+- `goblin`: Greenish with brown accents
+- `orc`: Gray with brown accents
+- `skeleton`: Pale white with dark gaps
+- `zombie`: Sickly green with red wounds
+- `spider`: Dark purple with purple accents
+- `wolf`: Brown with lighter fur
+- `dragon`: Red with gold accents
+- `demon`: Purple with orange fire
+- `slime`: Bright green with translucent highlights
+- And more...
+
+### Benefits Over Old System
+
+**Before:** Sprites were grayscale, then a single blanket color was applied via multiplicative blending. This made dark colors (like black) appear as a void, losing all detail.
+
+**Now:** Sprites are generated with full color information baked in:
+- ✓ Complex outlines and details remain visible
+- ✓ Clothing, armor, and equipment details show through
+- ✓ Natural color variety for realism
+- ✓ Eyes and highlights properly distinct
+- ✓ No more "void" appearance for dark enemies
 
 ## Usage in Game
 
-Sprites can be loaded in the Pygame GUI using:
+Sprites are automatically loaded during combat rendering in `src/ui_pygame/gui/combat_view.py`. The `_get_enemy_sprite()` method loads the PNG based on the enemy's `picture` attribute.
 
 ```python
-import pygame
-
-# Load a sprite
-sprite = pygame.image.load('sprites/goblin_64.png')
-
-# Blit to screen
-screen.blit(sprite, (x, y))
+# Sprites are loaded automatically
+# No manual colorization needed - sprites are pre-colored
+sprite = self._get_enemy_sprite(enemy)  # Already colored!
+self.screen.blit(sprite, position)
 ```
 
 ## Customization
 
-To regenerate sprites with different settings, edit `utils/ascii_to_sprite.py`:
+To modify sprite colors or add new palettes, edit `ascii_to_sprite_colored.py`:
 
-- `pixel_size`: Base pixel size for each character
-- `color_scheme`: Color palette ('monochrome', 'green', 'red', 'blue', 'orange', 'purple')
-- `sizes`: List of output sizes in pixels
+1. **Add new color palette** in `ENEMY_COLOR_PALETTES`:
+```python
+'custom_type': {
+    'base': (R, G, B),
+    'shadow': (R, G, B),
+    'highlight': (R, G, B),
+    'accent': (R, G, B),
+}
+```
 
-Then run the script again to regenerate all sprites.
+2. **Update color-to-enemy mapping** in `get_palette_for_enemy()` to apply your palette
+
+3. **Regenerate sprites**:
+```bash
+cd /home/tom/Projects/Dungeon-Crawl
+.venv/bin/python src/ui_pygame/assets/ascii_to_sprite_colored.py
+```
+
+## Technical Details
+
+- Input: ASCII art files from `ascii_files/` directory
+- Process: ASCII → Brightness levels → Color palette interpolation → PNG
+- Output: 128x128 RGBA PNG with transparency
+- Brightness interpolation: Pixels between brightness values smoothly interpolate between colors

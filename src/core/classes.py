@@ -254,7 +254,7 @@ class WeaponMaster(Job):
             description="Weapon Masters focus on the mastery of weapons and their"
             " skill with them. They can equip many weapons and learn "
             "the ability to dual wield one-handed weapons. Since Weapon"
-            " Masters really on dexterity, they lose the ability to "
+            " Masters really on agility, they lose the ability to "
             "wear heavy armor and shields.",
             str_plus=3,
             int_plus=0,
@@ -415,8 +415,7 @@ class Lancer(Job):
     Promotion: Warrior -> Lancer -> Dragoon
     Pros: Can use polearms as 1-handed weapons; charisma gain
     Cons: Cannot equip other 2-handed weapons or dual wield; loses access to light armor
-    Special Mechanic: Jump ability takes 2 turns to complete and is guaranteed to hit; during jump, cannot be target of
-      melee attacks and gains dodge bonus against magic attacks
+    Special Mechanic: Jump ability takes 1 turn to complete and can be modified by certain skills
     """
 
     def __init__(self):

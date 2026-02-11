@@ -106,8 +106,8 @@ class PygameGame:
             lines = []
 
         if lines:
-            # Join lines and let the popup handle text wrapping with pixel-based width
-            message = "\n".join(lines)
+            # Join lines into paragraphs and let the popup handle wrapping
+            message = " ".join(line.strip() for line in lines if line is not None).strip()
         else:
             message = name
 
@@ -126,8 +126,25 @@ class PygameGame:
             except Exception:
                 pass
         
-        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
-        popup.show(background_draw_func=draw_current_screen)
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False, slow_print=True)
+        popup.show(
+            background_draw_func=draw_current_screen,
+            flush_events=True,
+            require_key_release=True,
+            min_display_ms=300
+        )
+
+    def debug_level_up(self):
+        """Debug-only shortcut to trigger a single level-up."""
+        if not self.debug_mode or not self.player_char:
+            return
+        if self.player_char.max_level():
+            self.presenter.show_message("Already at max level.")
+            return
+        from .gui.level_up import LevelUpScreen
+
+        level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
+        level_up_screen.show_level_up(self.player_char, self)
     
     def initialize_managers(self):
         """Initialize location managers after player character is created."""
@@ -354,7 +371,7 @@ class PygameGame:
 
     def update_bounties(self):
         """Generate bounties (parity with text-mode game)."""
-        from ..core import town
+        from src.core import town
 
         bounty_board = town.BountyBoard()
         bounty_board.generate_bounties(self)
@@ -380,25 +397,25 @@ class PygameGame:
         
         for text in intro_texts:
             self.presenter.show_message(text, "The Story Begins...")
-    
+
     def town_menu(self):
         """Display town menu and handle selection."""
         # Build options list first so it can be reused for popups
         options = [
-            "Enter Dungeon",
-            "Visit Shop",
             "Visit Barracks",
+            "Visit Shop",
             "Visit Inn",
             "Visit Church",
+            "Enter Dungeon",
             "Character Menu",
         ]
-        
+
         # Add Warp Point or Old Warehouse based on player progress
         if getattr(self.player_char, 'warp_point', False):
-            options.append("Warp Point")
+            options.insert(5, "Warp Point")
         else:
-            options.append("Old Warehouse")
-        
+            options.insert(5, "Old Warehouse")
+
         options.append("Quit to Main Menu")
         
         # Create and use the new town menu screen
@@ -435,8 +452,20 @@ class PygameGame:
                 if popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))):
                     return "quit"
                 continue
+
+            elif choice_idx == 0:  # Visit Barracks
+                self.visit_barracks()
+
+            elif choice_idx == 1:  # Visit Shop
+                self.visit_shop()
+
+            elif choice_idx == 2:  # Visit Inn
+                self.visit_inn()
                 
-            elif choice_idx == 0:  # Enter Dungeon
+            elif choice_idx == 3:  # Visit Church
+                self.visit_church()
+
+            elif choice_idx == 4:  # Enter Dungeon
                 # Move player to dungeon entrance
                 if self.player_char.location_z == 0:
                     # Town is at (5, 10, 0), stairs up from dungeon are at (5, 10, 1)
@@ -445,26 +474,8 @@ class PygameGame:
                     self.player_char.location_z = 1  # First dungeon level (map_level_1.txt)
                     self.player_char.facing = "east"  # Face into dungeon (east has CavePath0)
                 return "dungeon"
-                
-            elif choice_idx == 1:  # Visit Shop
-                self.visit_shop()
-                
-            elif choice_idx == 2:  # Visit Barracks
-                self.visit_barracks()
-                
-            elif choice_idx == 3:  # Visit Inn
-                self.visit_inn()
-                
-            elif choice_idx == 4:  # Visit Church
-                self.visit_church()
-                
-            elif choice_idx == 5:  # Character Menu
-                self.show_character_info()
-                # Check if player quit while in character menu
-                if self.player_char.quit:
-                    return "quit"
-            
-            elif choice_idx == 6:  # Warp Point or Old Warehouse
+
+            elif choice_idx == 5:  # Warp Point or Old Warehouse
                 if getattr(self.player_char, 'warp_point', False):
                     result = self.use_warp_point()
                     if result == "dungeon":
@@ -472,7 +483,13 @@ class PygameGame:
                 else:
                     popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
                     popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
-    
+
+            elif choice_idx == 6:  # Character Menu
+                self.show_character_info()
+                # Check if player quit while in character menu
+                if self.player_char.quit:
+                    return "quit"
+
     def use_warp_point(self):
         """Use the warp point to teleport to dungeon level 5."""
         confirm = self.presenter.render_menu(
@@ -546,6 +563,9 @@ class PygameGame:
         """Enter first-person dungeon exploration mode."""
         # Use DungeonManager for exploration
         self.dungeon_manager.explore_dungeon()
+
+        if hasattr(self.presenter, "set_background_provider"):
+            self.presenter.set_background_provider(None)
         
         # After exiting dungeon (returned to town, quit, etc.)
         # Check if player quit the game
