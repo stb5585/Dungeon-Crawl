@@ -106,6 +106,11 @@ class Game:
             self.stdscr.getch()
             textbox.clear_rectangle()
             return
+        
+        # Add the experience needed to level up and reset exp_to_gain
+        self.player_char.level.exp += self.player_char.level.exp_to_gain
+        self.player_char.level.exp_to_gain = 0
+        
         textbox = menus.TextBox(self)
         stat_menu = menus.SelectionPopupMenu(
             self,
@@ -306,7 +311,8 @@ class Game:
                                     'EquipmentPopup': menus.EquipPopupMenu,
                                     'SpecialsPopup': menus.AbilitiesPopupMenu,
                                     'QuestsPopup': menus.QuestListPopupMenu,
-                                    'JumpModsPopup': menus.JumpModsPopupMenu
+                                    'JumpModsPopup': menus.JumpModsPopupMenu,
+                                    'TotemAspectsPopup': menus.TotemAspectsPopupMenu
                                 }
                                 action['method'](self.player_char, self, menu=char_menu, textbox=menus.TextBox(self), actions_dict=actions_dict, ui_factory=ui_factory)
                             else:
@@ -339,6 +345,13 @@ class Game:
                 flee = battle.execute_battle()
                 if flee:
                     return
+                # Check if player died
+                if not self.player_char.is_alive():
+                    if self.player_char.location_z == 7:
+                        # In funhouse - exit instead of going to town
+                        self.player_char.exit_funhouse()
+                    else:
+                        self.player_char.to_town()
             dmenu.draw_all()
             dmenu.refresh_all()
 

@@ -22,12 +22,14 @@
             "Before you lies the body of a warrior, battered, bloody, and broken...",
             "This must be the body of Joffrey, the one betrothed to the waitress at the tavern.",
             "You move the body for a proper burial and notice a crushed gold locket lying on the ground.",
-            "You should return this to its rightful owner..."
+            "You should return this to its rightful owner...",
+            "You pile stones on top of the body and say a few words in honor of the fallen.",
+            "Hopefully Joffrey can find peace in the afterlife."
             ]
     },
     "Busboy": {
         "Text": [
-            "The door to the tavern swings shut and you can no longer hear the waitress fleeing",
+            "The door to the tavern swings shut and you can no longer hear the waitress fleeing.",
             "Just then you hear the bartender from behind the bar. 'Hey, where are you going?!'",
             "'Damn, now whose gonna get this food and drink out to my patrons?!'",
             "You shrug your shoulders, not wanting to get caught up in all of the chaos.",
@@ -422,5 +424,25 @@
             "The shaman reemerges. 'Here, take these potions. They will cure all status effects.'",
             "'Good luck. I will do what I can from the shadows to help you.'"
         ]
+    },
+    "Funhouse Entry": {
+        "Text": [
+            "You step through the strange archway and reality twists around you...",
+            "Colors swirl, geometry bends impossibly, and gravity seems negotiable.",
+            "Before you stands a twisted carnival of mirrors, illusions, and impossible architecture.",
+            "In the center, you sense a powerful presence—the Jester's domain.",
+            "This place thrums with chaotic magical energy. You must navigate carefully.",
+            "Defeat the Jester and find your way out of this labyrinth of madness."
+        ]
+    },
+    "Jester Defeated": {
+        "Text": [
+            "With the Jester's final laugh echoing through the carnival, the illusions begin to crack and shatter.",
+            "The twisted landscape convulses, reality reasserting itself piece by piece.",
+            "The funhouse collapses around you like a house of cards, but you emerge unscathed.",
+            "As the last echoes fade, you find yourself back where you started, victorious.",
+            "The Jester has been defeated, and the funhouse is no more."
+        ]
     }
 }
+

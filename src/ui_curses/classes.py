@@ -151,6 +151,14 @@ def promotion(game):
                     f"{promoted_player.familiar.name} the {promoted_player.familiar.spec} familiar has "
                     "joined your team!\n"
                 )
+            if new_class.name == "Shaman":
+                # Initialize Totem aspects for newly promoted Shaman
+                if "Totem" in promoted_player.spellbook["Skills"]:
+                    totem = promoted_player.spellbook["Skills"]["Totem"]
+                    newly_unlocked = totem.check_and_unlock_aspects(promoted_player.level.level)
+                    if newly_unlocked:
+                        aspects_str = ", ".join(newly_unlocked)
+                        promo_str += f"Totem aspects unlocked: {aspects_str}.\n"
             if new_class.name == "Summoner":
                 summon = companions.Patagon()
                 summon.initialize_stats(game.player_char)

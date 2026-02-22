@@ -581,7 +581,7 @@ class PlayerDataSerializer:
             'world_state': TileStateSerializer.serialize_tile_state(player.world_dict) if player.world_dict else {},
         }
         
-        # Persist stateful skill data (e.g., Jump modifications)
+        # Persist stateful skill data (e.g., Jump modifications, Totem aspects)
         for name, skill in player.spellbook.get('Skills', {}).items():
             if not skill:
                 continue
@@ -589,6 +589,11 @@ class PlayerDataSerializer:
                 data['spellbook_state']['Skills'][name] = {
                     'modifications': getattr(skill, 'modifications', None),
                     'unlocked_modifications': getattr(skill, 'unlocked_modifications', None),
+                }
+            elif skill.__class__.__name__ == "Totem":
+                data['spellbook_state']['Skills'][name] = {
+                    'unlocked_aspects': getattr(skill, 'unlocked_aspects', None),
+                    'active_aspect': getattr(skill, 'active_aspect', None),
                 }
 
         return data
@@ -693,7 +698,7 @@ class PlayerDataSerializer:
             for name, ability_name in data['spellbook']['Skills'].items()
         }
 
-        # Restore stateful skill data (e.g., Jump modifications)
+        # Restore stateful skill data (e.g., Jump modifications, Totem aspects)
         spellbook_state = data.get('spellbook_state', {})
         skill_state = spellbook_state.get('Skills', {})
         if skill_state:
@@ -704,6 +709,11 @@ class PlayerDataSerializer:
                         skill.modifications = state['modifications']
                     if 'unlocked_modifications' in state and state['unlocked_modifications'] is not None:
                         skill.unlocked_modifications = state['unlocked_modifications']
+                elif skill and skill.__class__.__name__ == "Totem":
+                    if 'unlocked_aspects' in state and state['unlocked_aspects'] is not None:
+                        skill.unlocked_aspects = state['unlocked_aspects']
+                    if 'active_aspect' in state and state['active_aspect'] is not None:
+                        skill.active_aspect = state['active_aspect']
         
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))

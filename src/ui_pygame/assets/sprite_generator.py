@@ -395,6 +395,7 @@ def generate_all_sprites():
     
     # Player characters
     sprite_gen = SpriteGenerator("src/ui_pygame/assets/sprites")
+    enemy_gen = SpriteGenerator("src/ui_pygame/assets/sprites/enemies")
     
     # Player classes
     sprite_gen.create_humanoid_sprite("player_warrior", COLORS['player_blue'], 
@@ -408,15 +409,15 @@ def generate_all_sprites():
     sprite_gen.create_humanoid_sprite("player_default", COLORS['player_blue'])
     
     # Common enemies
-    sprite_gen.create_monster_sprite("goblin", "goblin", COLORS['goblin_green'])
-    sprite_gen.create_monster_sprite("orc", "goblin", COLORS['orc_gray'])
-    sprite_gen.create_monster_sprite("skeleton", "skeleton", COLORS['skeleton_white'])
-    sprite_gen.create_monster_sprite("zombie", "goblin", COLORS['undead_gray'])
-    sprite_gen.create_monster_sprite("spider", "spider", COLORS['spider_black'])
-    sprite_gen.create_monster_sprite("wolf", "quadruped", COLORS['beast_brown'])
-    sprite_gen.create_monster_sprite("slime", "blob", COLORS['slime_green'])
-    sprite_gen.create_monster_sprite("dragon", "dragon", COLORS['dragon_red'])
-    sprite_gen.create_monster_sprite("demon", "goblin", COLORS['demon_purple'])
+    enemy_gen.create_monster_sprite("goblin", "goblin", COLORS['goblin_green'])
+    enemy_gen.create_monster_sprite("orc", "goblin", COLORS['orc_gray'])
+    enemy_gen.create_monster_sprite("skeleton", "skeleton", COLORS['skeleton_white'])
+    enemy_gen.create_monster_sprite("zombie", "goblin", COLORS['undead_gray'])
+    enemy_gen.create_monster_sprite("spider", "spider", COLORS['spider_black'])
+    enemy_gen.create_monster_sprite("wolf", "quadruped", COLORS['beast_brown'])
+    enemy_gen.create_monster_sprite("slime", "blob", COLORS['slime_green'])
+    enemy_gen.create_monster_sprite("dragon", "dragon", COLORS['dragon_red'])
+    enemy_gen.create_monster_sprite("demon", "goblin", COLORS['demon_purple'])
     
     print(f"  ✓ Created {9} character sprites")
     

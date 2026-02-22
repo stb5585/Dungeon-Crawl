@@ -1,10 +1,10 @@
 # Enemy Sprites
 
-This directory contains automatically generated sprite images converted from ASCII art with full color support.
+Enemy sprites live in the `enemies/` subdirectory and are generated from ASCII art with full color support.
 
 ## Generation
 
-Sprites are generated from the ASCII art files in `../../ascii_files/` using the new colored converter script:
+Sprites are generated from the ASCII art files in `../../ascii_files/` using the colored converter script:
 
 ```bash
 python3 src/ui_pygame/assets/ascii_to_sprite_colored.py
@@ -12,7 +12,7 @@ python3 src/ui_pygame/assets/ascii_to_sprite_colored.py
 
 ## Sprite Sizes
 
-All sprite files are sized 128x128 pixels.
+All enemy sprite files are sized 128x128 pixels.
 
 ## Colored Sprite System (Improved)
 

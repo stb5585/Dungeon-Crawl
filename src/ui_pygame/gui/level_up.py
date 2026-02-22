@@ -196,6 +196,22 @@ class LevelUpScreen:
             if newly_unlocked:
                 for mod_name in newly_unlocked:
                     new_abilities.append(f"Jump Modification: {mod_name}")
+
+        # Unlock Totem aspects (Shaman)
+        totem_skill = None
+        skills = player_char.spellbook.get("Skills", {})
+        if "Totem" in skills:
+            totem_skill = skills["Totem"]
+        else:
+            for sk in skills.values():
+                if getattr(sk, "name", "") == "Totem":
+                    totem_skill = sk
+                    break
+        if totem_skill is not None and hasattr(totem_skill, "check_and_unlock_aspects"):
+            newly_unlocked = totem_skill.check_and_unlock_aspects(player_char.level.level)
+            if newly_unlocked:
+                for aspect in newly_unlocked:
+                    new_abilities.append(f"Totem Aspect: {aspect}")
         
         # Update exp requirement
         if not player_char.max_level():

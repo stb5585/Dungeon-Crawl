@@ -339,19 +339,29 @@ class ShopScreen(TownScreenBase):
         itemdict: Dictionary of items from items_module.items_dict
         buy_or_sell: "Buy" or "Sell"
         """
+        # Save cursor position if we're staying in the same mode
+        preserve_cursor = (self.buy_or_sell == buy_or_sell)
+        
         self.buy_or_sell = buy_or_sell
         self.item_list = []
-        self.current_item = 0
-        self.scroll_offset = 0
         
         if buy_or_sell == "Buy":
             self._build_buy_list(itemdict)
         else:
             self._build_sell_list(itemdict)
+        
+        # Reset or preserve cursor position
+        if not preserve_cursor or not self.item_list:
+            self.current_item = 0
+            self.scroll_offset = 0
+        else:
+            # Clamp to valid range in case list size changed
+            self.current_item = min(self.current_item, max(0, len(self.item_list) - 1))
+            self.scroll_offset = min(self.scroll_offset, max(0, len(self.item_list) - 1))
     
     def _build_buy_list(self, itemdict):
         """Build item list for buying."""
-        for typ, item_classes in itemdict.items():
+        for _, item_classes in itemdict.items():
             for item_class in item_classes:
                 item = item_class()
                 
@@ -391,7 +401,6 @@ class ShopScreen(TownScreenBase):
                 continue
             
             item = items_list[0]
-            typ = item.typ
             owned = len(items_list)
             
             # Calculate sell price (half value, adjusted by charisma)

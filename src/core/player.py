@@ -3,8 +3,10 @@ This module defines the player character and its attributes and actions.
 """
 
 import glob
+import json
 import os
 import random
+import xml.etree.ElementTree as ET
 
 import numpy
 
@@ -62,6 +64,116 @@ def load_char(char=None, filename=None, is_tmp=False):
     return player
 
 
+def _parse_tiled_properties(props):
+    if not props:
+        return {}
+    return {prop.get("name"): prop.get("value") for prop in props}
+
+
+def _extract_tile_type(tile_data):
+    tile_type = tile_data.get("type") or tile_data.get("class")
+    if tile_type:
+        return tile_type
+    props = _parse_tiled_properties(tile_data.get("properties"))
+    return props.get("tile") or props.get("type") or props.get("class")
+
+
+def _load_tiled_tileset(tileset_entry, map_dir):
+    if "source" in tileset_entry:
+        tileset_path = os.path.join(map_dir, tileset_entry["source"])
+        
+        # Check if it's XML or JSON based on file content
+        with open(tileset_path, "r", encoding="utf-8") as tileset_file:
+            first_line = tileset_file.readline().strip()
+            tileset_file.seek(0)  # Reset to beginning
+            
+            if first_line.startswith("<?xml") or first_line.startswith("<tileset"):
+                # Parse XML tileset
+                tree = ET.parse(tileset_file)
+                root = tree.getroot()
+                
+                # Convert XML to the expected dict format
+                tileset_data = {"tiles": []}
+                for tile_elem in root.findall("tile"):
+                    tile_id = int(tile_elem.get("id", 0))
+                    tile_type = tile_elem.get("type", "")
+                    if tile_type:
+                        tileset_data["tiles"].append({
+                            "id": tile_id,
+                            "type": tile_type
+                        })
+                return tileset_data, tileset_entry["firstgid"]
+            else:
+                # Parse JSON tileset
+                tileset_data = json.load(tileset_file)
+                return tileset_data, tileset_entry["firstgid"]
+    
+    return tileset_entry, tileset_entry.get("firstgid", 1)
+
+
+def _load_tiled_map(map_file, z, map_tiles):
+    with open(map_file, "r", encoding="utf-8") as file_handle:
+        map_data = json.load(file_handle)
+
+    map_dir = os.path.dirname(map_file)
+    map_props = _parse_tiled_properties(map_data.get("properties"))
+    default_tile = map_props.get("default_tile", "Wall")
+
+    gid_to_type = {}
+    for tileset_entry in map_data.get("tilesets", []):
+        tileset_data, first_gid = _load_tiled_tileset(tileset_entry, map_dir)
+        for tile in tileset_data.get("tiles", []):
+            tile_type = _extract_tile_type(tile)
+            if not tile_type:
+                continue
+            gid_to_type[first_gid + tile["id"]] = tile_type
+
+    tile_layer = next(
+        (layer for layer in map_data.get("layers", []) if layer.get("type") == "tilelayer"),
+        None,
+    )
+    if not tile_layer:
+        raise ValueError(f"No tile layer found in {map_file}")
+
+    width = map_data.get("width", 0)
+    height = map_data.get("height", 0)
+    world_dict = {}
+
+    def add_tile(x, y, gid):
+        if gid == 0:
+            tile_name = default_tile
+        else:
+            tile_name = gid_to_type.get(gid)
+        if not tile_name:
+            raise ValueError(f"Missing tile mapping for gid {gid} in {map_file}")
+        tile = getattr(map_tiles, tile_name)(x, y, z)
+        world_dict[(x, y, z)] = tile
+
+    if "data" in tile_layer:
+        data = tile_layer["data"]
+        for y in range(height):
+            row_offset = y * width
+            for x in range(width):
+                add_tile(x, y, data[row_offset + x])
+    else:
+        for chunk in tile_layer.get("chunks", []):
+            chunk_width = chunk["width"]
+            chunk_height = chunk["height"]
+            chunk_data = chunk["data"]
+            for y in range(chunk_height):
+                row_offset = y * chunk_width
+                for x in range(chunk_width):
+                    map_x = chunk["x"] + x
+                    map_y = chunk["y"] + y
+                    if map_x < 0 or map_y < 0:
+                        continue
+                    if width and height and (map_x >= width or map_y >= height):
+                        continue
+                    add_tile(map_x, map_y, chunk_data[row_offset + x])
+
+    return world_dict
+
+
 class Player(Character):
     """
     Player character class
@@ -111,13 +223,40 @@ class Player(Character):
         Function that allows the player_char to view the current dungeon level in terminal
         20 x 20 grid
         """
+        def is_direction_visible_from_current(direction: str) -> bool:
+            current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
+            if not current_tile:
+                return True
+
+            blocked = getattr(current_tile, 'blocked', None)
+            if blocked and blocked.lower() == direction:
+                if hasattr(current_tile, 'open') and getattr(current_tile, 'open', False):
+                    return True
+                return False
+
+            return True
+
+        visible_adjacent = set()
+        adjacent_dirs = {
+            'north': (0, -1),
+            'south': (0, 1),
+            'east': (1, 0),
+            'west': (-1, 0),
+        }
+        for direction, (dx, dy) in adjacent_dirs.items():
+            if not is_direction_visible_from_current(direction):
+                continue
+            pos = (self.location_x + dx, self.location_y + dy, self.location_z)
+            if pos in self.world_dict:
+                visible_adjacent.add((pos[0], pos[1]))
+
         map_size = (20, 20)
         map_array = numpy.zeros(map_size).astype(str)
         for tile in self.world_dict:
             if self.location_z == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
-                if self.world_dict[tile].near or self.cls.name == "Seeker":
-                    if 'Stairs' in str(self.world_dict[tile]):
+                if self.world_dict[tile].near or self.cls.name == "Seeker" or (tile[0], tile[1]) in visible_adjacent:
+                    if 'Stairs' in str(self.world_dict[tile]) or 'Ladder' in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u25E3"
                     elif "Door" in str(self.world_dict[tile]):
                         # Special handling for OreVaultDoor - only show as door if detected or open
@@ -167,9 +306,31 @@ class Player(Character):
             
         world_dict = {}
         map_files = glob.glob('map_files/map_level_*')
+        files_by_level = {}
         for map_file in map_files:
-            z = map_file.split('_')[-1]
-            z = int(z.split('.')[0])
+            base_name = os.path.basename(map_file)
+            root_name, ext = os.path.splitext(base_name)
+            if ext not in {".txt", ".json"}:
+                continue
+            try:
+                z = int(root_name.split('_')[-1])
+            except ValueError:
+                continue
+            existing = files_by_level.get(z)
+            if not existing or (ext == ".json" and existing["ext"] != ".json"):
+                files_by_level[z] = {"path": map_file, "ext": ext}
+
+        # Optional side-area map: funhouse challenge level (level 4 boss area).
+        funhouse_path = os.path.join('map_files', 'map_funhouse.json')
+        if os.path.exists(funhouse_path) and 7 not in files_by_level:
+            files_by_level[7] = {"path": funhouse_path, "ext": ".json"}
+
+        for z in sorted(files_by_level):
+            map_file = files_by_level[z]["path"]
+            ext = files_by_level[z]["ext"]
+            if ext == ".json":
+                world_dict.update(_load_tiled_map(map_file, z, map_tiles))
+                continue
             with open(map_file, 'r', encoding="utf-8") as f:
                 rows = f.readlines()
             x_max = len(rows[0].split('\t'))  # Assumes all rows contain the same number of tabs
@@ -193,14 +354,14 @@ class Player(Character):
                 for action in ["Flee", "Use Item"]:
                     if action in action_list:
                         action_list.pop(action_list.index(action))
-        if self.physical_effects["Disarm"].active:
+        if self.is_disarmed():
             action_list.insert(1, "Pickup Weapon")
         if "Summon" in self.spellbook["Skills"] and \
             any([x.is_alive() for x in self.summons.values()]) and \
                 not self.status_effects["Silence"].active:
             action_list.insert(1, "Summon")
-        if self.cls.name in ["Shaman", "Soulcatcher"]:
-            action_list.insert(1, "Totem")
+        # Note: Totem was previously duplicated here for Shaman/Soulcatcher
+        # It's already accessible via the Skills submenu, so no need for separate action
         return action_list
 
     def has_relics(self):
@@ -236,6 +397,15 @@ class Player(Character):
 
     def to_town(self):
         (self.location_x, self.location_y, self.location_z) = (5, 10, 0)
+
+    def exit_funhouse(self):
+        """Exit the funhouse and return to the saved location."""
+        if hasattr(self, 'funhouse_return') and self.funhouse_return:
+            self.location_x, self.location_y, self.location_z, self.facing = self.funhouse_return
+            self.funhouse_return = None
+        else:
+            # Fallback: return to town if no saved location
+            self.to_town()
 
     def town_heal(self):
         self.state = 'normal'
@@ -328,6 +498,17 @@ class Player(Character):
 
         has_jump_mods = bool(jump_skill and hasattr(jump_skill, "modifications"))
 
+        totem_skill = None
+        skills = getattr(self, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            totem_skill = skills["Totem"]
+        else:
+            for skill in skills.values():
+                if getattr(skill, "name", "") == "Totem":
+                    totem_skill = skill
+                    break
+        has_totem_aspects = bool(totem_skill and hasattr(totem_skill, "get_unlocked_aspects"))
+
         character_options = [
             actions_dict.get('ViewInventory'),
             actions_dict.get("ViewKeyItems"),
@@ -340,6 +521,10 @@ class Player(Character):
         if has_jump_mods:
             character_options.append(actions_dict.get("JumpMods"))
             options.append("Jump Mods")
+
+        if has_totem_aspects:
+            character_options.append(actions_dict.get("TotemAspects"))
+            options.append("Totem Aspects")
 
         character_options.extend(["Exit Menu", actions_dict.get('Quit')])
         options.extend(["Exit Menu", "Quit Game"])
@@ -375,6 +560,9 @@ class Player(Character):
                     elif action['name'] == 'Jump Mods':
                         popup = ui_factory['JumpModsPopup'](game, action['name'])
                         action['method'](self, game, jump_popup=popup)
+                    elif action['name'] == 'Totem Aspects':
+                        popup = ui_factory['TotemAspectsPopup'](game, action['name'])
+                        action['method'](self, game, totem_popup=popup)
                     elif action['name'] == 'Quit':
                         confirm_popup = ui_factory['ConfirmPopup']
                         quit_textbox = ui_factory['TextBox'](game)
@@ -556,6 +744,12 @@ class Player(Character):
                 level_str += self.familiar.level_up()
             elif skill_name in ["Transform", "Purity of Body"]:
                 level_str += skill_gain.use(self)
+            elif skill_name == 'Totem':
+                # Initialize aspect unlocking for new Totem
+                newly_unlocked = skill_gain.check_and_unlock_aspects(self.level.level)
+                if newly_unlocked:
+                    aspects_str = ", ".join(newly_unlocked)
+                    level_str += f"Totem aspects unlocked: {aspects_str}.\n"
         # Unlock Jump modifications (Lancer/Dragoon)
         jump_skill = None
         skills = self.spellbook.get("Skills", {})
@@ -579,6 +773,24 @@ class Player(Character):
             if newly_unlocked:
                 mods_str = ", ".join(newly_unlocked)
                 level_str += f"New Jump modifications unlocked: {mods_str}.\n"
+        
+        # Unlock Totem aspects (Shaman)
+        totem_skill = None
+        skills = self.spellbook.get("Skills", {})
+        if "Totem" in skills:
+            totem_skill = skills["Totem"]
+        else:
+            for sk in skills.values():
+                if getattr(sk, "name", "") == "Totem":
+                    totem_skill = sk
+                    break
+        if totem_skill is not None:
+            newly_unlocked = []
+            if hasattr(totem_skill, "check_and_unlock_aspects"):
+                newly_unlocked = totem_skill.check_and_unlock_aspects(self.level.level)
+            if newly_unlocked:
+                aspects_str = ", ".join(newly_unlocked)
+                level_str += f"New Totem aspects unlocked: {aspects_str}.\n"
         if not self.max_level():
             self.level.exp_to_gain += (self.exp_scale ** self.level.pro_level) * self.level.level
         else:
@@ -635,8 +847,12 @@ class Player(Character):
             locked = int('Locked' in str(tile))
             plus = int('ChestRoom2' in str(tile))
             gold = random.randint(5, 50) * (self.location_z + locked + plus) * self.stats.charisma
-            if not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10:
-                enemy = enemies.Mimic(self.location_z + locked + plus)
+            # FunhouseMimicChest always spawns a Mimic (level 4 difficulty); other chests have a random chance
+            is_funhouse_mimic = 'FunhouseMimicChest' in str(tile)
+            if is_funhouse_mimic or (not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10):
+                # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
+                mimic_level = 4 if is_funhouse_mimic else (self.location_z + locked + plus)
+                enemy = enemies.Mimic(mimic_level)
                 tile.enemy = enemy
                 if textbox:
                     textbox.print_text_in_rectangle("There is a Mimic in the chest!")
@@ -651,6 +867,14 @@ class Player(Character):
                         f"{self.name} opens the chest, containing {gold} gold and a {loot.name}.")
                 self.modify_inventory(loot, 1)
                 self.gold += gold
+                
+                # Funhouse Mimic Chest also drops a Jester Token
+                if is_funhouse_mimic:
+                    token = items.JesterToken()
+                    self.modify_inventory(token, 1)
+                    if textbox:
+                        textbox.print_text_in_rectangle(
+                            f"A shimmering {token.name} manifests as the Mimic dissolves!")
         elif 'Door' in str(tile):
             tile.open = True
             if hasattr(tile, "locked"):
@@ -812,6 +1036,12 @@ class Player(Character):
         if jump_popup is None:
             raise ValueError("UI component 'jump_popup' must be provided by the frontend.")
         jump_popup.navigate_popup()
+
+    def totem_aspects_menu(self, game, totem_popup=None):
+        """Totem aspects menu logic, now UI-agnostic. UI component must be provided by the frontend."""
+        if totem_popup is None:
+            raise ValueError("UI component 'totem_popup' must be provided by the frontend.")
+        totem_popup.navigate_popup()
 
     def save(self, game=None, tmp=False, filepath=None, confirm_popup=None, save_popup=None):
         """
@@ -1441,11 +1671,12 @@ class Player(Character):
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
+        disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
         if self.cls.name == "Soulcatcher" and self.power_up:
             if enemy:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
         if mod == 'weapon':
-            weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
+            weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             if 'Monk' in self.cls.name:
                 class_mod += self.stats.wisdom
             if self.cls.name in ["Thief", "Rogue", "Assassin", "Ninja"]:
@@ -1465,7 +1696,7 @@ class Player(Character):
             if 'Physical Damage' in self.equipment['Ring'].mod:
                 weapon_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            total_mod = weapon_mod + class_mod + self.combat.attack
+            total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
@@ -1716,6 +1947,11 @@ actions_dict = {
     'JumpMods': {
         'method': Player.jump_mods_menu,
         'name': 'Jump Mods',
+        'hotkey': None
+    },
+    'TotemAspects': {
+        'method': Player.totem_aspects_menu,
+        'name': 'Totem Aspects',
         'hotkey': None
     },
     'Flee': {

@@ -293,7 +293,7 @@ def convert_ascii_files_to_sprites(ascii_dir, output_dir, size=128):
 if __name__ == "__main__":
     # Convert all ASCII files
     ascii_directory = "ascii_files"
-    sprite_output = "src/ui_pygame/assets/sprites"
+    sprite_output = "src/ui_pygame/assets/sprites/enemies"
     
     if os.path.exists(ascii_directory):
         converted, failed = convert_ascii_files_to_sprites(ascii_directory, sprite_output)

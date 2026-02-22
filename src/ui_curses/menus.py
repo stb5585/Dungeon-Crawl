@@ -787,6 +787,7 @@ class LocationMenu:
         self.options_message = options_message
         self.content = None
         self.current_option = 0
+        self.scroll_offset = 0
         self.create_windows()
 
     def create_windows(self):
@@ -800,16 +801,43 @@ class LocationMenu:
 
     def draw_options(self):
         self.options_win.erase()
+        
+        # Calculate available space for displaying options
+        # Reserve space for: optional message (3 lines), box border, scroll indicators
+        base_y = (3 * self.height // 8) - (len(self.options_list) // 2) - 2
         if self.options_message:
-            self.options_win.addstr((3 * self.height // 8) - (len(self.options_list) // 2) - 2,
-                                    (self.width // 2) - (len(self.options_message) // 2), self.options_message, curses.A_BOLD)
-        for idx, line in enumerate(self.options_list):
-            if idx == self.current_option:
+            self.options_win.addstr(base_y, (self.width // 2) - (len(self.options_message) // 2), 
+                                    self.options_message, curses.A_BOLD)
+            start_y = base_y + 2
+        else:
+            start_y = base_y
+        
+        # Calculate max visible options based on window height
+        max_visible = (11 * self.height // 12) - start_y - 4  # Reserve space for borders and indicators
+        
+        # Determine which options to display (windowed view)
+        visible_options = self.options_list[self.scroll_offset:self.scroll_offset + max_visible]
+        
+        # Draw visible options
+        for idx, line in enumerate(visible_options):
+            display_y = start_y + idx
+            actual_idx = idx + self.scroll_offset
+            
+            if actual_idx == self.current_option:
                 self.options_win.attron(curses.A_REVERSE)
-            self.options_win.addstr(
-                (3 * self.height // 8) - (len(self.options_list) // 2) + idx, (self.width // 2) - (len(line) // 2), line)
-            if idx == self.current_option:
+            self.options_win.addstr(display_y, (self.width // 2) - (len(line) // 2), line)
+            if actual_idx == self.current_option:
                 self.options_win.attroff(curses.A_REVERSE)
+        
+        # Draw scroll indicators
+        if self.scroll_offset > 0:
+            # Up arrow indicator
+            self.options_win.addstr(start_y - 1, (self.width // 2) - 3, "↑ More", curses.A_BOLD)
+        if self.scroll_offset + max_visible < len(self.options_list):
+            # Down arrow indicator
+            indicator_y = min(start_y + len(visible_options), (11 * self.height // 12) - 2)
+            self.options_win.addstr(indicator_y, (self.width // 2) - 3, "↓ More", curses.A_BOLD)
+        
         self.options_win.box()
 
     def draw_all(self):
@@ -823,10 +851,20 @@ class LocationMenu:
     def update_options(self, options, options_message=None, reset_current=True):
         if reset_current:
             self.current_option = 0
+            self.scroll_offset = 0
+        else:
+            # Clamp current_option and scroll_offset to valid ranges when list size changes
+            self.current_option = min(self.current_option, max(0, len(options) - 1))
+            self.scroll_offset = min(self.scroll_offset, max(0, len(options) - 1))
         self.options_list = options
         self.options_message = options_message
 
     def navigate_menu(self):
+        # Calculate max visible items (same as in draw_options)
+        base_y = (3 * self.height // 8) - (len(self.options_list) // 2) - 2
+        start_y = base_y + 2 if self.options_message else base_y
+        max_visible = (11 * self.height // 12) - start_y - 4
+        
         while True:
             self.draw_all()
             self.refresh_all()
@@ -835,10 +873,20 @@ class LocationMenu:
                 self.current_option -= 1
                 if self.current_option < 0:
                     self.current_option = len(self.options_list) - 1
+                    # Jump to bottom, adjust scroll
+                    self.scroll_offset = max(0, len(self.options_list) - max_visible)
+                elif self.current_option < self.scroll_offset:
+                    # Scroll up
+                    self.scroll_offset = self.current_option
             elif key == curses.KEY_DOWN:
                 self.current_option += 1
-                if self.current_option > len(self.options_list) - 1:
+                if self.current_option >= len(self.options_list):
+                    # Wrap to top
                     self.current_option = 0
+                    self.scroll_offset = 0
+                elif self.current_option >= self.scroll_offset + max_visible:
+                    # Scroll down
+                    self.scroll_offset = self.current_option - max_visible + 1
             elif key == curses.KEY_ENTER or key in [10, 13]:
                 return self.current_option
 
@@ -2032,6 +2080,95 @@ class JumpModsPopupMenu(PopupMenu):
 
                 self._build_options()
 
+
+class TotemAspectsPopupMenu(PopupMenu):
+    """Popup menu for selecting active Totem aspects."""
+
+    def __init__(self, game, header_message, box_height=16, box_width=50):
+        super().__init__(game, header_message, box_height=box_height, box_width=box_width)
+        self.totem_skill = None
+
+    def _get_totem_skill(self):
+        skills = getattr(self.game.player_char, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            return skills["Totem"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Totem":
+                return skill
+        return None
+
+    def _build_options(self):
+        self.totem_skill = self._get_totem_skill()
+        if not self.totem_skill or not hasattr(self.totem_skill, "get_unlocked_aspects"):
+            self.options_list = ["Totem not learned", "Go Back"]
+            return
+
+        options = []
+        active_aspect = getattr(self.totem_skill, "active_aspect", "")
+        if active_aspect:
+            options.append(f"Active: {active_aspect}")
+            options.append("---")
+
+        unlocked = self.totem_skill.get_unlocked_aspects(self.game.player_char)
+        for aspect in unlocked:
+            prefix = "[X]" if aspect == active_aspect else "[ ]"
+            options.append(f"{prefix} {aspect}")
+
+        options.append("Go Back")
+        self.options_list = options
+
+    def _extract_aspect_name(self, option: str) -> str:
+        return option.replace("[X] ", "").replace("[ ] ", "").strip()
+
+    def navigate_popup(self):
+        self._build_options()
+        self.draw_popup()
+        while True:
+            self.draw_popup()
+            self.popup_win.refresh()
+            key = self.game.stdscr.getch()
+
+            if key == curses.KEY_UP:
+                self.current_option -= 1
+                if self.current_option < 0:
+                    self.current_option = len(self.options_list) - 1
+            elif key == curses.KEY_DOWN:
+                self.current_option += 1
+                if self.current_option > len(self.options_list) - 1:
+                    self.current_option = 0
+            elif key == curses.KEY_ENTER or key in [10, 13]:
+                choice = self.options_list[self.current_option]
+                if choice == "Go Back":
+                    return None
+
+                if choice.startswith("Active:") or choice == "---":
+                    continue
+
+                if not self.totem_skill:
+                    return None
+
+                aspect = self._extract_aspect_name(choice)
+                if not aspect:
+                    continue
+
+                success, error_msg = self.totem_skill.set_active_aspect(aspect)
+                if not success:
+                    if error_msg:
+                        box = TextBox(self.game)
+                        box.print_text_in_rectangle(error_msg)
+                        box.clear_rectangle()
+                    continue
+
+                desc = ""
+                if hasattr(self.totem_skill, "aspects"):
+                    desc = self.totem_skill.aspects.get(aspect, {}).get("description", "")
+                if desc:
+                    box = TextBox(self.game)
+                    box.print_text_in_rectangle(desc)
+                    box.clear_rectangle()
+
+                self._build_options()
+                return aspect
 
 class QuestPopupMenu(PopupMenu):
     def __init__(self, game, box_height=20, box_width=30):

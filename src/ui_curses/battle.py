@@ -279,45 +279,53 @@ class BattleManager:
             ))
             result = self.attacker.enter_defensive_stance(duration=1, source="Defend")
         elif action == "Cast Spell":
-            # Emit spell cast event
-            event_bus.emit(create_combat_event(
-                EventType.SPELL_CAST,
-                actor=self.attacker,
-                target=self.defender,
-                spell_name=choice
-            ))
-            result = f"{self.attacker.name} casts {choice}.\n"
-            result += self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
-        elif action == "Use Skill":
-            if choice == "Remove Shield":
-                choice = "Mana Shield"
-            skill = self.attacker.spellbook['Skills'][choice]
-
-            # Emit skill use event
-            event_bus.emit(create_combat_event(
-                EventType.SKILL_USE,
-                actor=self.attacker,
-                target=self.defender,
-                skill_name=skill.name
-            ))
-
-            result = f"{self.attacker.name} uses {skill.name}.\n"
-            if skill.name == 'Smoke Screen':
-                result += skill.use(self.attacker, target=self.defender)
-                self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
-                result += flee_str
-            elif skill.name == "Slot Machine":
-                result += skill.use(self.game, self.attacker, target=self.defender)
-            elif skill.name in ["Doublecast", "Triplecast"]:
-                result += skill.use(self.attacker, self.defender, game=self.game)
-            elif "Jump" in skill.name:
-                charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
-                if charge_time > 0:
-                    self.attacker.class_effects["Jump"].active = True
-                    result += f"{self.attacker.name} prepares to leap into the air.\n"
-                result += skill.use(self.attacker, target=self.defender)
+            # Check for Silence
+            if self.attacker.status_effects["Silence"].active:
+                result = f"{self.attacker.name} is silenced and cannot cast spells!\n"
             else:
-                result += skill.use(self.attacker, target=self.defender)
+                # Emit spell cast event
+                event_bus.emit(create_combat_event(
+                    EventType.SPELL_CAST,
+                    actor=self.attacker,
+                    target=self.defender,
+                    spell_name=choice
+                ))
+                result = f"{self.attacker.name} casts {choice}.\n"
+                result += self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
+        elif action == "Use Skill":
+            # Check for Silence
+            if self.attacker.status_effects["Silence"].active:
+                result = f"{self.attacker.name} is silenced and cannot use skills!\n"
+            else:
+                if choice == "Remove Shield":
+                    choice = "Mana Shield"
+                skill = self.attacker.spellbook['Skills'][choice]
+
+                # Emit skill use event
+                event_bus.emit(create_combat_event(
+                    EventType.SKILL_USE,
+                    actor=self.attacker,
+                    target=self.defender,
+                    skill_name=skill.name
+                ))
+
+                result = f"{self.attacker.name} uses {skill.name}.\n"
+                if skill.name == 'Smoke Screen':
+                    result += skill.use(self.attacker, target=self.defender)
+                    self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
+                    result += flee_str
+                elif skill.name == "Slot Machine":
+                    result += skill.use(self.game, self.attacker, target=self.defender)
+                elif skill.name in ["Doublecast", "Triplecast"]:
+                    result += skill.use(self.attacker, self.defender, game=self.game)
+                elif "Jump" in skill.name:
+                    charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
+                    if charge_time > 0:
+                        self.attacker.class_effects["Jump"].active = True
+                        result += f"{self.attacker.name} prepares to leap into the air.\n"
+                    result += skill.use(self.attacker, target=self.defender)
+                else:
+                    result += skill.use(self.attacker, target=self.defender)
         elif action == "Use Item":
             itm = self.attacker.inventory[re.split(r"\s{2,}", choice)[0]][0]
             target = self.attacker
@@ -342,7 +350,19 @@ class BattleManager:
             self.summon_active = False
             self.attacker = self.player_char
         elif action == "Totem":
-            pass
+            totem_skill = None
+            skills = self.attacker.spellbook.get("Skills", {})
+            if "Totem" in skills:
+                totem_skill = skills["Totem"]
+            else:
+                for sk in skills.values():
+                    if getattr(sk, "name", "") == "Totem":
+                        totem_skill = sk
+                        break
+            if totem_skill:
+                result = totem_skill.use(self.attacker, target=self.defender)
+            else:
+                result = f"{self.attacker.name} does not know how to summon a totem.\n"
         self.print_text(result)
         self.logger.log_event("Action", self.attacker, action=action, outcome=result)
 

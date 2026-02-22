@@ -166,7 +166,9 @@ class Character:
                               "Resist Electric": StatusEffect(False, 0, 0),
                               "Resist Water": StatusEffect(False, 0, 0),
                               "Resist Earth": StatusEffect(False, 0, 0),
-                              "Resist Wind": StatusEffect(False, 0, 0)}
+                              "Resist Wind": StatusEffect(False, 0, 0),
+                              "Totem": StatusEffect(False, 0),
+                              "Astral Shift": StatusEffect(False, 0)}
         self.class_effects = {"Jump": StatusEffect(False, 0),
                               "Power Up": StatusEffect(False, 0, 0)}
         self.status_immunity = []
@@ -188,6 +190,9 @@ class Character:
 
         # Defensive stance settings
         self.defensive_stance_reduction = 0.25
+        
+        # Passive ability tracking
+        self.maelstrom_hits = 0  # Track consecutive hits for Maelstrom Weapon ability
     
     def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
@@ -298,6 +303,17 @@ class Character:
                 return effect_dict
         raise NotImplementedError(f"{effect} does not exist in character attributes.")
 
+    def can_be_disarmed(self) -> bool:
+        weapon = self.equipment.get("Weapon") if isinstance(self.equipment, dict) else None
+        if weapon is None:
+            return False
+        if getattr(weapon, "subtyp", None) in ["Natural", "Summon", "None"]:
+            return False
+        return bool(getattr(weapon, "disarm", True))
+
+    def is_disarmed(self) -> bool:
+        return bool(self.physical_effects["Disarm"].active and self.can_be_disarmed())
+
     def hit_chance(self, defender: Character, typ='weapon'):
         """
         Calculate hit chance based on various factors.
@@ -316,7 +332,7 @@ class Character:
             hit_mod *= 1 + (0.25 * ('Accuracy' in self.equipment['Ring'].mod))  # accuracy adds 25% chance to hit
             hit_mod *= 1 - (0.5 * self.status_effects["Blind"].active)  # blind lowers accuracy by 50%
             hit_mod *= 1 - (1 / 10) * defender.flying  # flying lowers accuracy by 10%
-            hit_mod *= 1 - (0.25 * (self.physical_effects["Disarm"].active))
+            hit_mod *= 1 - (0.25 * self.is_disarmed())
             hit_mod *= 1- (0.15 * (self.status_effects['Berserk'].active))  # berserk status lowers hit chance by 15%
         hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
         hit_mod *= 1 - (1 / 3) * defender.invisible  # invisible lowers accuracy by 33.3%
@@ -352,6 +368,12 @@ class Character:
             crit_chance += self.equipment[att].crit
         if self.cls.name == "Seeker":
             crit_chance += (0.1 * self.power_up)
+        
+        # Maelstrom Weapon: Add bonus critical chance for consecutive hits
+        if "Maelstrom Weapon" in self.spellbook["Skills"]:
+            maelstrom_bonus = self.maelstrom_hits * 0.05  # 5% per hit
+            crit_chance += maelstrom_bonus
+        
         return crit_chance
 
     def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False, use_offhand=True) -> tuple[str, bool, int]:
@@ -416,6 +438,9 @@ class Character:
             # combat
             if dodge:
                 hits[i] = False
+                # Reset Maelstrom Weapon on dodge/miss
+                if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                    self.maelstrom_hits = 0
                 if 'Parry' in defender.spellbook['Skills']:
                     weapon_dam_str += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
                     counter_str, _, _ = defender.weapon_damage(self)
@@ -441,6 +466,9 @@ class Character:
                     chance = defender.magic_effects["Duplicates"].duration - self.check_mod("luck", luck_factor=15)
                     if random.randint(0, max(0, chance)):
                         hits[i] = False
+                        # Reset Maelstrom Weapon on duplicate hit
+                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                            self.maelstrom_hits = 0
                         weapon_dam_str += (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
                                            f"vanishes from existence.\n")
                         defender.magic_effects["Duplicates"].duration -= 1
@@ -460,6 +488,9 @@ class Character:
                             ))
                         except:
                             pass
+                        # Reset Maelstrom Weapon on critical hit
+                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                            self.maelstrom_hits = 0
                     if cover:
                         weapon_dam_str += (f"{defender.familiar.name} steps in front of the attack, "
                                            f"taking the damage for {defender.name}.\n")
@@ -509,6 +540,9 @@ class Character:
                             defender.mana.current -= mana_loss
                             damage = 0
                             hits[i] = False
+                            # Reset Maelstrom Weapon when attack is absorbed by shield
+                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                                self.maelstrom_hits = 0
                     elif defender.cls.name == "Crusader" and defender.power_up and \
                         defender.class_effects["Power Up"].active:
                         if damage >= defender.class_effects["Power Up"].extra:
@@ -522,6 +556,9 @@ class Character:
                             defender.class_effects["Power Up"].extra -= damage
                             damage = 0
                             hits[i] = False
+                            # Reset Maelstrom Weapon when attack is absorbed by shield
+                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                                self.maelstrom_hits = 0
                     elif defender.cls.name == "Templar" and defender.power_up and \
                         defender.class_effects["Power Up"].active:
                         ref_dam = int(0.25 * damage)
@@ -530,6 +567,16 @@ class Character:
                         # Emit reflected damage event
                         defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
                         weapon_dam_str += f"{ref_dam} is reflected back at {self.name}.\n"
+                    elif defender.magic_effects["Totem"].active and \
+                         isinstance(defender.magic_effects["Totem"].extra, dict) and \
+                         defender.magic_effects["Totem"].extra.get("secondary") == "reflect":
+                        # Earth Aspect totem reflects 25% damage back at the attacker
+                        ref_dam = int(0.25 * damage)
+                        damage -= ref_dam
+                        self.health.current -= ref_dam
+                        # Emit reflected damage event
+                        defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
+                        weapon_dam_str += f"{ref_dam} bounces off the totem's barrier back to {self.name}.\n"
                     if damage > 0:
                         e_resist = 0
                         if self.equipment[att].element:
@@ -548,12 +595,24 @@ class Character:
                             weapon_dam_str += (
                                 f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
                             )
+                        
+                        # Apply Astral Shift damage reduction (25%)
+                        if defender.magic_effects["Astral Shift"].active and damage > 0:
+                            astral_reduction = int(damage * 0.25)
+                            damage = max(0, damage - astral_reduction)
+                            weapon_dam_str += f"{defender.name}'s astral form deflects {astral_reduction} damage.\n"
+                        
                         defender.health.current -= damage
                         if damage > 0:
                             damage_msg = f"{self.name} {typ} {defender.name} for {damage} damage"
                             if crits[i] > 1:
                                 damage_msg += " (Critical hit!)"
                             weapon_dam_str += damage_msg + ".\n"
+                            
+                            # Update Maelstrom Weapon counter for non-critical hits
+                            if "Maelstrom Weapon" in self.spellbook["Skills"] and crits[i] == 1:
+                                self.maelstrom_hits += 1
+                            
                             # Emit damage event
                             damage_type = "Physical"
                             if self.equipment[att].element:
@@ -579,11 +638,20 @@ class Character:
                         else:
                             weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
                             hits[i] = False
+                            # Reset Maelstrom Weapon when no damage is dealt
+                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                                self.maelstrom_hits = 0
                     else:
                         weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
                         hits[i] = False
+                        # Reset Maelstrom Weapon when no damage is dealt
+                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                            self.maelstrom_hits = 0
                 else:
                     weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
+                    # Reset Maelstrom Weapon on complete miss
+                    if "Maelstrom Weapon" in self.spellbook["Skills"]:
+                        self.maelstrom_hits = 0
             if hits[i]:
                 # Call special_effect for armor (thorns/reflection) and weapon (life steal, instant death, etc.)
                 from .combat.combat_result import CombatResult, CombatResultGroup
@@ -924,11 +992,16 @@ class Character:
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
+        disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
+        
+        # Totem bonus: +15% attack and defense when active
+        totem_bonus = 1.15 if self.magic_effects["Totem"].active else 1.0
+        
         if mod == 'weapon':
-            weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
+            weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            total_mod = weapon_mod + class_mod + self.combat.attack
-            return max(0, int(total_mod * (1 + berserk_per)))
+            total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
+            return max(0, int(total_mod * (1 + berserk_per) * totem_bonus))
         if mod == 'shield':
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
@@ -948,7 +1021,7 @@ class Character:
             if self.turtle:
                 class_mod += 99
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
-            return max(0, (armor_mod * int(not ignore)) + class_mod + self.combat.defense)
+            return max(0, int((armor_mod * int(not ignore)) + class_mod + self.combat.defense) * totem_bonus)
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':

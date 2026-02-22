@@ -4,7 +4,7 @@ Character Screen for Pygame - matches curses terminal layout.
 
 import pygame
 
-from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu
+from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, TotemAspectsPopupMenu, SimpleListPopupMenu
 from .town_base import TownScreenBase
 
 
@@ -62,6 +62,20 @@ class CharacterScreen(TownScreenBase):
         """Check if player can configure Jump modifications."""
         jump_skill = self._get_jump_skill(player_char)
         return bool(jump_skill and hasattr(jump_skill, "modifications"))
+
+    def _get_totem_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            return skills["Totem"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Totem":
+                return skill
+        return None
+
+    def _has_totem_aspects(self, player_char):
+        """Check if player can configure Totem aspects."""
+        totem_skill = self._get_totem_skill(player_char)
+        return bool(totem_skill and hasattr(totem_skill, "get_unlocked_aspects"))
     
     def _get_quests_list(self, player_char):
         """Get list of quests from player character."""
@@ -140,27 +154,22 @@ class CharacterScreen(TownScreenBase):
         self.screen.blit(name_text, (x, y))
 
         # Location
-        y += 50
+        y += 48
 
-        location_text = self.large_font.render(getattr(player_char, 'location', 'Town'), True, self.colors.WHITE)
+        if player_char.location_z == 0:
+            location_str = "Town"
+        else:
+            location_str = f"Dungeon Level {player_char.location_z}"
+        
+        location_text = self.large_font.render(location_str, True, self.colors.WHITE)
         self.screen.blit(location_text, (x, y))
-
-        # Calculate weight from inventory, equipment, and special items
-        weight = player_char.current_weight()
-        max_weight = player_char.max_weight()
-        weight_max = f"Weight/Max: {int(weight)}/{int(max_weight)}"
-
-        # Show weight - use RED if encumbered
-        weight_color = self.colors.RED if getattr(player_char, 'encumbered', False) else self.colors.WHITE
-        weight_text = self.large_font.render(weight_max, True, weight_color)
-        self.screen.blit(weight_text, (self.info_rect.right - weight_text.get_width() - 10, y))
 
         # Show encumbered warning if applicable
         if getattr(player_char, 'encumbered', False):
             encumb_text = self.small_font.render("ENCUMBERED", True, self.colors.RED)
             self.screen.blit(encumb_text, (self.info_rect.right - encumb_text.get_width() - 10, y + 20))
 
-        y += 40
+        y += 38
         class_text = self.large_font.render(
             f"{player_char.race.name} {player_char.cls.name}", True, self.colors.WHITE
         )
@@ -199,7 +208,7 @@ class CharacterScreen(TownScreenBase):
         self.draw_semi_transparent_panel(self.menu_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.menu_rect, 2)
 
-        col_width = self.menu_rect.width // 4
+        col_width = self.menu_rect.width // 3
         col1_x = self.menu_rect.centerx - col_width - 30
         col2_x = self.menu_rect.centerx + 30
         line_height = self.large_font.get_height() + 10
@@ -227,8 +236,8 @@ class CharacterScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.stats_rect, 2)
         
         # Three columns: base stats, combat stats, equipped gear
-        padding = 24
-        col_gap = 28
+        padding = 20
+        col_gap = 10
         col_width = (self.stats_rect.width - (padding * 2) - (col_gap * 2)) // 3
         col1_x = self.stats_rect.left + padding
         col2_x = col1_x + col_width + col_gap
@@ -278,21 +287,36 @@ class CharacterScreen(TownScreenBase):
             ("Spell Modifier:", str(player_char.check_mod('magic'))),
             ("Heal Modifier:", str(player_char.check_mod('heal'))),
         ]
-        
+
         max_label_width = 0
-        for label, _ in combat_stats:
+        max_value_width = 0
+        for label, value in combat_stats:
             if label:
                 max_label_width = max(max_label_width, self.large_font.size(label)[0])
+            if value:
+                max_value_width = max(max_value_width, len(value))
         combat_value_x = col2_x + max_label_width + 14
 
         for label, value in combat_stats:
             if label:
                 label_text = self.large_font.render(label, True, self.colors.WHITE)
                 self.screen.blit(label_text, (col2_x, col2_y))
-                
-                value_text = self.large_font.render(value, True, self.colors.WHITE)
+                r_adjusted_value = f"{value:>{max_value_width}}" if max_value_width > 0 else value
+                value_text = self.large_font.render(r_adjusted_value, True, self.colors.WHITE)
                 self.screen.blit(value_text, (combat_value_x, col2_y))
             col2_y += line_height
+        
+        # Weight (at bottom of combat stats column)
+        col2_y += line_height  # Add spacing
+        weight = player_char.current_weight()
+        max_weight = player_char.max_weight()
+        weight_color = self.colors.RED if getattr(player_char, 'encumbered', False) else self.colors.WHITE
+        
+        weight_label_text = self.large_font.render("Weight/Max:", True, self.colors.WHITE)
+        self.screen.blit(weight_label_text, (col2_x, col2_y))
+        
+        weight_value_text = self.large_font.render(f"{int(weight)}/{int(max_weight)}", True, weight_color)
+        self.screen.blit(weight_value_text, (combat_value_x, col2_y))
         
         # Column 3: Equipped Gear
         col3_y = y_start
@@ -366,8 +390,8 @@ class CharacterScreen(TownScreenBase):
         for i, resist_name in enumerate(resistance_names):
             row = i // 5
             col = i % 5
-            col_x = self.stats_rect.left + col * col_width + 50
-            resist_y = resistance_title_y + 24 + (row * row_height)
+            col_x = self.stats_rect.left + col * col_width + padding
+            resist_y = resistance_title_y + 32 + (row * row_height)
 
             resist_val = player_char.resistance.get(resist_name, 0.0)
             display = f"{resist_name}: {resist_val * 100:.1f}"
@@ -405,6 +429,10 @@ class CharacterScreen(TownScreenBase):
         # Only include Jump Mods if player has Jump customization
         if self._has_jump_mods(player_char):
             menu_options.insert(6, "Jump Mods")
+
+        # Only include Totem Aspects if player has Totem customization
+        if self._has_totem_aspects(player_char):
+            menu_options.insert(7, "Totem Aspects")
         
         menu_options.append("Quit Game")
         self.menu_options = menu_options
@@ -502,6 +530,9 @@ class CharacterScreen(TownScreenBase):
                             _ = popup.show(player_char)
                         elif chosen == "Jump Mods":
                             popup = JumpModsPopupMenu(self.presenter, self, title="Jump Modifications")
+                            _ = popup.show(player_char)
+                        elif chosen == "Totem Aspects":
+                            popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
                             _ = popup.show(player_char)
                         elif chosen == "Exit Menu":
                             return "Exit Menu"

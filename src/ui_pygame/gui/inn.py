@@ -60,9 +60,8 @@ class InnManager(TownScreenBase):
 
         return random.choice(combined_pool) if combined_pool else None
     
-    def talk_to_patrons(self):
-        """Talk to tavern patrons and access their quests."""
-        # Build patron list similar to town.patron_list
+    def _build_patron_list(self):
+        """Build the list of available patrons based on quest state."""
         options = ["Barkeep"]
         if 'A Bad Dream' in self.player_char.quest_dict.get('Main', {}):
             if not self.player_char.quest_dict['Main']['A Bad Dream'].get('Turned In'):
@@ -82,10 +81,15 @@ class InnManager(TownScreenBase):
                     else:
                         options.append("Hooded Figure")
         options.append('Back')
-
+        return options
+    
+    def talk_to_patrons(self):
+        """Talk to tavern patrons and access their quests."""
         patrons_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog - Patrons")
         
         while True:
+            # Rebuild patron list each iteration to reflect quest state changes
+            options = self._build_patron_list()
             choice = patrons_screen.navigate(options, reset_cursor=False)
             if choice is None or (choice is not None and options[choice] == 'Back'):
                 return

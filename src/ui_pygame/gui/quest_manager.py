@@ -228,7 +228,43 @@ class QuestManager:
         while not self.player_char.max_level() and self.player_char.level.exp_to_gain <= 0:
             level_up_screen.show_level_up(self.player_char, None)
         qdata['Turned In'] = True
+        
+        # Quest-specific post-turn-in events
+        self._handle_quest_events(quest_name)
 
+    def _handle_quest_events(self, quest_name: str) -> None:
+        """Handle special events triggered by specific quest turn-ins."""
+        if quest_name == "A Bad Dream":
+            # Show Busboy special event
+            from src.core.data.data_loader import get_special_events
+            special_events = get_special_events()
+            busboy_text = special_events.get("Busboy", {}).get("Text", [])
+            if busboy_text:
+                formatted_text = "\n".join(busboy_text)
+                wrapped_text = "\n".join(textwrap.wrap(formatted_text, width=self.wrap_width))
+                if self.quest_text_renderer:
+                    self.quest_text_renderer(wrapped_text)
+                else:
+                    popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
+                    popup.show()
+            
+            # Transfer "Where's the Beef?" quest to Busboy if it exists
+            if "Where's the Beef?" in self.player_char.quest_dict.get("Side", {}):
+                beef_quest = self.player_char.quest_dict["Side"]["Where's the Beef?"]
+                if not beef_quest.get("Turned In"):
+                    beef_quest["Who"] = "Busboy"
+                    beef_quest["End Text"] = "Thanks, this will help feed a lot of people. Here's something for your time."
+                    beef_quest["Help Text"] = "You can get meat from pretty much any animal. Not really a time to be picky..."
+                    
+                    transfer_msg = ("I know the waitress asked you to get her some meat for her wedding.\n"
+                                  "She obviously doesn't need them anymore, so I can take them if you get them.")
+                    wrapped_transfer = "\n".join(textwrap.wrap(transfer_msg, width=self.wrap_width))
+                    if self.quest_text_renderer:
+                        self.quest_text_renderer(wrapped_transfer)
+                    else:
+                        popup = ConfirmationPopup(self.presenter, wrapped_transfer, show_buttons=False)
+                        popup.show()
+    
     def _already_killed(self, enemy_name: str) -> bool:
         kill_dict = getattr(self.player_char, 'kill_dict', {})
         for typ_dict in kill_dict.values():

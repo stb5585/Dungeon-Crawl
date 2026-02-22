@@ -172,7 +172,13 @@ class SpriteManager:
             # Fall back to default
             if sprite_name is None:
                 sprite_name = ENEMY_SPRITE_MAP['default']
-        
+
+        if is_player:
+            return self.load_sprite(sprite_name, "sprites")
+
+        enemy_sprite = self.load_sprite(sprite_name, "sprites/enemies")
+        if enemy_sprite is not None:
+            return enemy_sprite
         return self.load_sprite(sprite_name, "sprites")
         
     def get_effect_sprite(self, effect_name: str) -> pygame.Surface | None:
@@ -262,7 +268,9 @@ class SpriteManager:
         # Load common enemy sprites
         common_enemies = ['goblin', 'orc', 'skeleton', 'zombie', 'spider', 'wolf', 'slime']
         for sprite_name in common_enemies:
-            self.load_sprite(sprite_name, "sprites")
+            enemy_sprite = self.load_sprite(sprite_name, "sprites/enemies")
+            if enemy_sprite is None:
+                self.load_sprite(sprite_name, "sprites")
             
         # Load all effects
         effects = ['fireball', 'ice_shard', 'lightning', 'heal', 'poison', 'magic']
@@ -311,7 +319,7 @@ if __name__ == "__main__":
     warrior = manager.load_sprite("player_warrior", "sprites")
     print(f"✓ Loaded player_warrior: {warrior.get_size() if warrior else 'FAILED'}")
     
-    goblin = manager.load_sprite("goblin", "sprites")
+    goblin = manager.load_sprite("goblin", "sprites/enemies")
     print(f"✓ Loaded goblin: {goblin.get_size() if goblin else 'FAILED'}")
     
     fireball = manager.load_sprite("fireball", "effects")

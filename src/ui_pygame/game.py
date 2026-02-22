@@ -5,6 +5,7 @@ Uses Pygame for graphical presentation instead of curses text interface.
 """
 
 import sys
+import signal
 
 import pygame
 
@@ -33,6 +34,17 @@ from .gui.shop_selection import ShopSelectionScreen
 
 # Use enhanced combat by default
 USE_ENHANCED_COMBAT = True
+
+
+def signal_handler(sig, frame):
+    """Handle Ctrl+C gracefully."""
+    print("\nExiting game...")
+    pygame.quit()
+    sys.exit(0)
+
+
+# Set up signal handler for Ctrl+C
+signal.signal(signal.SIGINT, signal_handler)
 
 
 class PygameGame:
@@ -141,6 +153,11 @@ class PygameGame:
         if self.player_char.max_level():
             self.presenter.show_message("Already at max level.")
             return
+        
+        # Add the experience needed to level up and reset exp_to_gain
+        self.player_char.level.exp += self.player_char.level.exp_to_gain
+        self.player_char.level.exp_to_gain = 0
+        
         from .gui.level_up import LevelUpScreen
 
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
@@ -153,6 +170,67 @@ class PygameGame:
         self.inn_manager = InnManager(self.presenter, self.player_char)
         self.barracks_manager = BarracksManager(self.presenter, self.player_char)
         self.dungeon_manager = DungeonManager(self.presenter, self.player_char, self)
+
+    def _build_player_character(self, race_name, class_name, name="Hero"):
+        """Build a player character from selected race/class and name."""
+        from src.core.player import Player
+
+        race_ctor = self.races_dict.get(race_name)
+        class_entry = self.classes_dict.get(class_name, {})
+        class_ctor = class_entry.get("class") if isinstance(class_entry, dict) else None
+
+        if race_ctor is None:
+            race_name, race_ctor = next(iter(self.races_dict.items()))
+        race = race_ctor()
+
+        if class_ctor is None:
+            class_name = race.cls_res["Base"][0]
+            class_ctor = self.classes_dict[class_name]["class"]
+        char_class = class_ctor()
+
+        location_x, location_y, location_z = (5, 10, 0)
+        stats_tuple = tuple(map(
+            lambda x, y: x + y,
+            (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
+            (char_class.str_plus, char_class.int_plus, char_class.wis_plus,
+             char_class.con_plus, char_class.cha_plus, char_class.dex_plus)
+        ))
+        hp = stats_tuple[3] * 2
+        mp = stats_tuple[1] * 2
+        attack = race.base_attack + char_class.att_plus
+        defense = race.base_defense + char_class.def_plus
+        magic = race.base_magic + char_class.magic_plus
+        magic_def = race.base_magic_def + char_class.magic_def_plus
+        gold = stats_tuple[4] * 25
+
+        player_char = Player(
+            location_x, location_y, location_z,
+            level=Level(),
+            health=Resource(hp, hp),
+            mana=Resource(mp, mp),
+            stats=Stats(stats_tuple[0], stats_tuple[1], stats_tuple[2],
+                       stats_tuple[3], stats_tuple[4], stats_tuple[5]),
+            combat=Combat(attack=attack, defense=defense, magic=magic, magic_def=magic_def),
+            gold=gold,
+            resistance=race.resistance
+        )
+        player_char.name = name or "Hero"
+        player_char.race = race
+        player_char.cls = char_class
+        player_char.equipment = char_class.equipment
+
+        from ..core import abilities
+        if "1" in abilities.spell_dict.get(char_class.name, {}):
+            spell_gain = abilities.spell_dict[char_class.name]["1"]()
+            player_char.spellbook['Spells'][spell_gain.name] = spell_gain
+
+        player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]
+        player_char.load_tiles()
+        return player_char
+
+    def create_default_character(self, name="Hero"):
+        """Create a default preview character for quick UI testing."""
+        return self._build_player_character(race_name="Human", class_name="Warrior", name=name)
         
     def main_menu(self):
         """Display main menu and handle selection."""
@@ -244,50 +322,7 @@ class PygameGame:
             name = "Hero"  # Default name
         
         # Create player character using the same logic as the original game
-        from ..core.player import Player
-        
-        location_x, location_y, location_z = (5, 10, 0)
-        stats_tuple = tuple(map(
-            lambda x, y: x + y,
-            (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
-            (char_class.str_plus, char_class.int_plus, char_class.wis_plus, 
-             char_class.con_plus, char_class.cha_plus, char_class.dex_plus)
-        ))
-        hp = stats_tuple[3] * 2  # starting HP equal to constitution x 2
-        mp = stats_tuple[1] * 2  # starting MP equal to intel x 2
-        attack = race.base_attack + char_class.att_plus
-        defense = race.base_defense + char_class.def_plus
-        magic = race.base_magic + char_class.magic_plus
-        magic_def = race.base_magic_def + char_class.magic_def_plus
-        gold = stats_tuple[4] * 25  # starting gold equal to charisma x 25
-        
-        player_char = Player(
-            location_x, location_y, location_z,
-            level=Level(),
-            health=Resource(hp, hp),
-            mana=Resource(mp, mp),
-            stats=Stats(stats_tuple[0], stats_tuple[1], stats_tuple[2], 
-                       stats_tuple[3], stats_tuple[4], stats_tuple[5]),
-            combat=Combat(attack=attack, defense=defense, magic=magic, magic_def=magic_def),
-            gold=gold,
-            resistance=race.resistance
-        )
-        player_char.name = name
-        player_char.race = race
-        player_char.cls = char_class
-        player_char.equipment = char_class.equipment
-        
-        # Add starting spell if available
-        from ..core import abilities
-        if "1" in abilities.spell_dict.get(char_class.name, {}):
-            spell_gain = abilities.spell_dict[char_class.name]["1"]()
-            player_char.spellbook['Spells'][spell_gain.name] = spell_gain
-        
-        # Add starting items
-        player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]
-        
-        # Load world tiles
-        player_char.load_tiles()
+        player_char = self._build_player_character(race_name, class_name, name=name)
         
         self.presenter.show_message(
             f"Character Created!\n\n"
@@ -611,11 +646,26 @@ def main():
     
     parser = argparse.ArgumentParser(description='Dungeon Crawl GUI Game')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode (disable random combat)')
+    parser.add_argument(
+        '--character-menu',
+        action='store_true',
+        help='Launch directly into Character Menu using a default Human Warrior character'
+    )
+    parser.add_argument(
+        '--preview-name',
+        default='Menu Preview',
+        help='Character name used with --character-menu (default: Menu Preview)'
+    )
     args = parser.parse_args()
     
     try:
         game = PygameGame(debug_mode=args.debug)
-        game.main_menu()
+        if args.character_menu:
+            game.player_char = game.create_default_character(name=args.preview_name)
+            game.initialize_managers()
+            game.show_character_info()
+        else:
+            game.main_menu()
     except KeyboardInterrupt:
         print("\nGame interrupted by user")
     except Exception as e:

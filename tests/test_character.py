@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pytest
 
 from src.core.enemies import Goblin
+from src.core import items
 from tests.test_framework import TestGameState
 
 
@@ -93,6 +94,62 @@ class TestCharacterMethods:
         assert isinstance(result_str, str)
         assert isinstance(hit, bool)
         assert isinstance(crit, (int, float))
+
+    def test_disarm_reduces_enemy_weapon_mod_total(self):
+        """Disarm should reduce total weapon attack output, not only base weapon damage."""
+        enemy = Goblin()
+        enemy.status_effects["Berserk"].active = False
+        enemy.magic_effects["Totem"].active = False
+        enemy.stat_effects["Attack"].active = False
+
+        enemy.physical_effects["Disarm"].active = False
+        armed_mod = enemy.check_mod("weapon")
+
+        enemy.physical_effects["Disarm"].active = True
+        disarmed_mod = enemy.check_mod("weapon")
+
+        expected_armed = enemy.combat.attack + enemy.equipment["Weapon"].damage
+        expected_disarmed = int(enemy.combat.attack * 0.5)
+
+        assert armed_mod == expected_armed
+        assert disarmed_mod == expected_disarmed
+        assert disarmed_mod < armed_mod
+
+    def test_disarm_reduces_player_weapon_mod_total(self):
+        """Player check_mod override should apply the same disarm weapon penalty."""
+        player = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
+        player.status_effects["Berserk"].active = False
+        player.stat_effects["Attack"].active = False
+
+        player.physical_effects["Disarm"].active = False
+        armed_mod = player.check_mod("weapon")
+
+        player.physical_effects["Disarm"].active = True
+        disarmed_mod = player.check_mod("weapon")
+
+        expected_armed = player.combat.attack + player.equipment["Weapon"].damage
+        expected_disarmed = int(player.combat.attack * 0.5)
+
+        assert armed_mod == expected_armed
+        assert disarmed_mod == expected_disarmed
+        assert disarmed_mod < armed_mod
+
+    def test_fist_weapon_not_penalized_by_disarm(self):
+        """Fist weapons are not disarmable and should not lose attack from disarm state."""
+        player = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
+        player.equipment["Weapon"] = items.BrassKnuckles()
+        player.status_effects["Berserk"].active = False
+        player.stat_effects["Attack"].active = False
+
+        assert player.can_be_disarmed() is False
+
+        player.physical_effects["Disarm"].active = False
+        armed_mod = player.check_mod("weapon")
+
+        player.physical_effects["Disarm"].active = True
+        disarmed_mod = player.check_mod("weapon")
+
+        assert disarmed_mod == armed_mod
 
 
 class TestCombatAPIContract:

@@ -8,9 +8,11 @@ from typing import TYPE_CHECKING
 
 import random
 import re
+import sys
 
 import pygame
 
+from src.core import enemies
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import Player
@@ -199,6 +201,9 @@ class GUICombatManager:
                     self.combat_view.enemy_dies(enemy)
                     break
                 
+                # Check for Mad Waitress form change (below 10% health)
+                self._check_enemy_form_change(player_char, enemy)
+                
                 # Switch to enemy turn
                 attacker, defender = enemy, player_char
             
@@ -218,8 +223,13 @@ class GUICombatManager:
                 if not player_char.is_alive():
                     break
                 
+                # Check if enemy died (e.g., from self-damaging skills like Widow's Wail)
+                if not enemy.is_alive():
+                    self.combat_view.enemy_dies(enemy)
+                    break
+                
                 # Switch to player turn
-                attacker, defender = player_char, enemy
+                attacker, _ = player_char, enemy
             
             # Advance turn counter in logger
             self.logger.next_turn()
@@ -270,6 +280,20 @@ class GUICombatManager:
                 )
                 return True
         
+        # Check if player is berserked (auto-attack, no choice)
+        if player_char.status_effects.get('Berserk') and player_char.status_effects['Berserk'].active:
+            self.combat_view.add_combat_message(f"{player_char.name} is BERSERKED and attacks wildly!")
+            
+            # Force attack action
+            action_result = self._execute_action("Attack", player_char, enemy)
+            
+            # Process status effects after attack
+            effect_messages = self._process_status_effects(player_char)
+            for msg in effect_messages:
+                self.combat_view.add_combat_message(msg)
+            
+            return True
+        
         # Check if player is stunned or asleep
         if player_char.status_effects.get('Stun') and player_char.status_effects['Stun'].active:
             self.combat_view.add_combat_message(f"{player_char.name} is stunned and cannot act!")
@@ -282,6 +306,14 @@ class GUICombatManager:
         if player_char.status_effects.get('Sleep') and player_char.status_effects['Sleep'].active:
             self.combat_view.add_combat_message(f"{player_char.name} is asleep and cannot act!")
             # Process status effects (tick down duration)
+            effect_messages = self._process_status_effects(player_char)
+            for msg in effect_messages:
+                self.combat_view.add_combat_message(msg)
+            return True  # Skip turn
+
+        if player_char.physical_effects.get('Prone') and player_char.physical_effects['Prone'].active:
+            self.combat_view.add_combat_message(f"{player_char.name} is prone and cannot act!")
+            # Process status effects (attempt recovery)
             effect_messages = self._process_status_effects(player_char)
             for msg in effect_messages:
                 self.combat_view.add_combat_message(msg)
@@ -300,8 +332,8 @@ class GUICombatManager:
             # Handle input
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
-                    return False
+                    pygame.quit()
+                    sys.exit(0)
                 
                 elif event.type == pygame.KEYDOWN:
                     # Grid navigation: 3 actions per row
@@ -361,6 +393,71 @@ class GUICombatManager:
         
         return True
     
+    def _check_enemy_form_change(self, player_char, enemy):
+        """
+        Check if Mad Waitress should change form/state when health drops below 10%.
+        When the transition happens, she becomes sane, changes sprite back to waitress.png,
+        and attacks herself once before dying.
+        """
+        # Only applies to Mad Waitress (NightHag2)
+        if not isinstance(enemy, enemies.NightHag2):
+            return
+        
+        # Check if already transitioned
+        if getattr(enemy, '_form_changed', False):
+            return
+        
+        # Check health threshold (below 10%)
+        health_pct = enemy.health.current / enemy.health.max
+        if health_pct >= 0.1:
+            return
+        
+        # Perform transition
+        enemy._form_changed = True
+        
+        # Collect transition messages to display in popup
+        transition_messages = [
+            "The Mad Waitress momentarily comes to her senses...",
+            "Her eyes clear. She sees what she has become.",
+            "",
+            "Recognizing the horror of her actions,",
+            "she takes her own life, finally finding peace with Joffrey..."
+        ]
+        
+        # Change name and sprite back to normal Waitress
+        enemy.name = "Waitress"
+        self.combat_view.reload_enemy_sprite(enemy)
+        
+        # Waitress takes her own life - deal lethal damage
+        damage = enemy.health.current
+        enemy.health.current = 0
+        
+        # Show popup with the wail/transition narrative
+        from .confirmation_popup import ConfirmationPopup
+        popup_text = "\n".join(transition_messages)
+        popup = ConfirmationPopup(self.presenter, popup_text, show_buttons=False)
+        popup.show()
+
+        # Show combat log messages for the self-attack
+        self.combat_view.add_combat_message(
+            f"{enemy.name} turns her weapon on herself in despair!"
+        )
+        self.combat_view.add_combat_message(
+            f"{enemy.name} takes {damage} damage from the attack!"
+        )
+        
+        # Enemy is now dead
+        self.combat_view.enemy_dies(enemy)
+    
+    def _preserve_waitress_for_transition(self, enemy) -> None:
+        """Prevent killing the Mad Waitress before her transition triggers."""
+        if not isinstance(enemy, enemies.NightHag2):
+            return
+        if getattr(enemy, '_form_changed', False):
+            return
+        if enemy.health.current <= 0:
+            enemy.health.current = 1
+    
     def _execute_action(self, action, player_char, enemy):
         """Execute a player action."""
         if action == "Attack":
@@ -411,11 +508,16 @@ class GUICombatManager:
                 self.combat_view.enemy_take_damage(enemy)
                 self.combat_view.show_damage_flash(False)
             
+            self._preserve_waitress_for_transition(enemy)
+            return "action_taken"
+            
         elif action == "Flee":
             success, message = player_char.flee(enemy)
             self.combat_view.add_combat_message(message)
             if success:
                 return "flee"
+            return "action_taken"  # Failed flee still uses turn
+            
         elif action == "Defend":
             message = player_char.enter_defensive_stance(duration=1, source="Defend")
             self.combat_view.add_combat_message(message.strip())
@@ -426,6 +528,7 @@ class GUICombatManager:
                 action="Defend",
                 outcome="Success"
             )
+            return "action_taken"
         
         elif action == "Items":
             # Show item selection menu
@@ -446,6 +549,11 @@ class GUICombatManager:
             return None  # Cancelled, don't count as action
             
         elif action == "Spells":
+            # Check for Silence
+            if player_char.status_effects["Silence"].active:
+                self.combat_view.add_combat_message(f"{player_char.name} is silenced and cannot cast spells!")
+                return None
+            
             # Show spell selection menu
             selected_spell = self._select_spell(player_char, enemy)
             if selected_spell:
@@ -465,6 +573,7 @@ class GUICombatManager:
                         action=f"Cast {selected_spell}",
                         outcome="Success"
                     )
+                    self._preserve_waitress_for_transition(enemy)
                     return "action_taken"
                 else:
                     self.combat_view.add_combat_message("Not enough mana!")
@@ -472,6 +581,11 @@ class GUICombatManager:
             return None  # Cancelled
             
         elif action == "Skills":
+            # Check for Silence
+            if player_char.status_effects["Silence"].active:
+                self.combat_view.add_combat_message(f"{player_char.name} is silenced and cannot use skills!")
+                return None
+            
             # Show skill selection menu
             selected_skill = self._select_skill(player_char, enemy)
             if selected_skill:
@@ -502,13 +616,49 @@ class GUICombatManager:
                         action=f"Used {selected_skill}",
                         outcome="Success"
                     )
+                    self._preserve_waitress_for_transition(enemy)
                     return "action_taken"
                 else:
                     self.combat_view.add_combat_message("Not enough mana!")
                     return None
             return None  # Cancelled
-        
-        return "action_taken"
+    
+    def _select_totem_aspect(self, player_char, enemy, totem_skill):
+        """Show Totem aspect selection menu and return aspect name."""
+        if not totem_skill or not hasattr(totem_skill, "get_unlocked_aspects"):
+            return None
+
+        aspects = totem_skill.get_unlocked_aspects(player_char)
+        if not aspects:
+            self.combat_view.add_combat_message("No Totem aspects unlocked!")
+            pygame.time.wait(500)
+            return None
+
+        selected = 0
+        active = getattr(totem_skill, "active_aspect", "")
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            options = []
+            for aspect in aspects:
+                suffix = " (Active)" if aspect == active else ""
+                options.append(f"{aspect}{suffix}")
+
+            self._render_selection_menu("Select Totem Aspect", options, selected)
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(aspects)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(aspects)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return aspects[selected]
     
     def _select_item(self, player_char, enemy):
         """Show item selection menu and return selected item."""
@@ -539,7 +689,8 @@ class GUICombatManager:
             # Handle input
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return None
+                    pygame.quit()
+                    sys.exit(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -577,7 +728,8 @@ class GUICombatManager:
             # Handle input
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return None
+                    pygame.quit()
+                    sys.exit(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -615,7 +767,8 @@ class GUICombatManager:
             # Handle input
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return None
+                    pygame.quit()
+                    sys.exit(0)
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -709,6 +862,23 @@ class GUICombatManager:
             for msg in effect_messages:
                 self.combat_view.add_combat_message(msg)
             return  # Skip turn
+
+        if enemy.physical_effects.get('Prone') and enemy.physical_effects['Prone'].active:
+            self.combat_view.add_combat_message(f"{enemy.name} is prone and cannot act!")
+
+            # Log prone turn
+            self.logger.log_event(
+                event_type="status",
+                actor=enemy,
+                action="Prone",
+                outcome="Skip turn"
+            )
+
+            # Process status effects (attempt recovery)
+            effect_messages = self._process_status_effects(enemy)
+            for msg in effect_messages:
+                self.combat_view.add_combat_message(msg)
+            return  # Skip turn
         
         # Render current state and pause before enemy acts (with animation updates)
         enemy_clock = pygame.time.Clock()
@@ -778,6 +948,7 @@ class GUICombatManager:
             skill_obj = enemy.spellbook['Skills'].get(choice)
             if skill_obj and enemy.mana.current >= skill_obj.cost:
                 result = None
+                enemy_name_before = enemy.name
                 self.combat_view.add_combat_message(f"{enemy.name} uses {choice}.")
                 if skill_obj.name == 'Smoke Screen':
                     result = skill_obj.use(enemy, target=player_char)
@@ -796,6 +967,10 @@ class GUICombatManager:
                 else:
                     result = skill_obj.use(enemy, target=player_char)
 
+                # Check if enemy shapeshifted (name changed)
+                if enemy.name != enemy_name_before:
+                    self.combat_view.reload_enemy_sprite(enemy)
+
                 message = self._result_to_message(result)
                 if message:
                     for line in str(message).split("\n"):
@@ -805,7 +980,7 @@ class GUICombatManager:
                     event_type="skill",
                     actor=enemy,
                     target=player_char,
-                    action=f"Used {choice}",
+                    action=f"Used {skill_obj.name}",
                     outcome="Success"
                 )
                 return None
@@ -1019,7 +1194,8 @@ class GUICombatManager:
                 # Handle events to prevent window freeze
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        return True
+                        pygame.quit()
+                        sys.exit(0)
 
             self._pause_with_events(900)
             
@@ -1062,8 +1238,8 @@ class GUICombatManager:
         while elapsed < duration_ms:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
-                    return
+                    pygame.quit()
+                    sys.exit(0)
             pause_clock.tick(60)
             elapsed += pause_clock.get_time()
 
@@ -1085,6 +1261,21 @@ class GUICombatManager:
         
         for effect_dict, category_name in effect_dicts:
             for effect_name, effect_obj in effect_dict.items():
+                if effect_obj.active:
+                    if effect_name == "Prone":
+                        if effect_obj.duration <= 0:
+                            effect_obj.active = False
+                            messages.append(f"{character.name} is no longer prone.")
+                        elif (not random.randint(0, effect_obj.duration)
+                              or random.randint(0, character.check_mod("luck", luck_factor=10))):
+                            effect_obj.active = False
+                            effect_obj.duration = 0
+                            messages.append(f"{character.name} is no longer prone.")
+                        else:
+                            effect_obj.duration -= 1
+                            messages.append(f"{character.name} is still prone.")
+                        continue
+
                 if effect_obj.active and effect_obj.duration > 0:
                     # Add message about active effect
                     if effect_name not in silent_effects:

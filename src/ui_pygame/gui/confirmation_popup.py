@@ -161,6 +161,7 @@ class ConfirmationPopup:
         if flush_events:
             pygame.event.clear()
 
+        background = None
         if background_draw_func is None:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
@@ -168,6 +169,13 @@ class ConfirmationPopup:
         start_ms = pygame.time.get_ticks()
         self._start_ms = start_ms
         input_armed = not require_key_release
+
+        def finish(result: bool) -> bool:
+            if background_draw_func is not None:
+                background_draw_func()
+            elif background is not None:
+                self.screen.blit(background, (0, 0))
+            return result
 
         while True:
             # Draw background each frame
@@ -201,12 +209,12 @@ class ConfirmationPopup:
                         elif event.key == pygame.K_RIGHT:
                             self.current_selection = 1
                         elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                            return self.current_selection == 0  # True for Yes, False for No
+                            return finish(self.current_selection == 0)  # True for Yes, False for No
                         elif event.key == pygame.K_ESCAPE:
-                            return False  # ESC = No
+                            return finish(False)  # ESC = No
                     else:
                         # Message only - any key to dismiss
-                        return True
+                        return finish(True)
             
             self.presenter.clock.tick(30)
 
@@ -242,7 +250,7 @@ class QuantityPopup:
     UP/DOWN adjusts ones place, LEFT/RIGHT adjusts tens place.
     """
     
-    def __init__(self, presenter, item_name, unit_cost=0, max_quantity=999, action="buy"):
+    def __init__(self, presenter, item_name, unit_cost=0, max_quantity=999, action="buy", default_quantity=0):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
@@ -250,7 +258,7 @@ class QuantityPopup:
         self.item_name = item_name
         self.unit_cost = unit_cost
         self.max_quantity = max_quantity
-        self.action = action  # "buy", "store", "retrieve"
+        self.action = action  # "buy", "store", "retrieve", "sell"
         
         # Colors
         self.BLACK = (0, 0, 0)
@@ -266,9 +274,10 @@ class QuantityPopup:
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
         
-        # State - quantity as [tens, ones]
-        self.tens = 0
-        self.ones = 0
+        # State - quantity as [tens, ones], initialized from default_quantity
+        default_quantity = min(default_quantity, max_quantity)  # Clamp to max
+        self.tens = (default_quantity // 10) % 10
+        self.ones = default_quantity % 10
         self.selected_place = 0  # 0 = ones, 1 = tens
         
         # Calculate popup position (centered)
@@ -306,6 +315,8 @@ class QuantityPopup:
             title = f"Store {self.item_name}"
         elif self.action == "retrieve":
             title = f"Retrieve {self.item_name}"
+        elif self.action == "sell":
+            title = f"Sell {self.item_name}"
         else:
             title = f"Buy {self.item_name}"
         
@@ -344,13 +355,20 @@ class QuantityPopup:
         ones_text = self.title_font.render(str(self.ones), True, ones_color)
         self.screen.blit(ones_text, (ones_x - ones_text.get_width() // 2, qty_y))
         
-        # Total cost (only for buy action)
+        # Total cost/value
         cost_y = self.popup_y + 160
-        if self.action == "buy" and self.unit_cost > 0:
-            total_cost = self.quantity * self.unit_cost
-            cost_text = self.normal_font.render(f"Total Cost: {total_cost}g", True, self.GOLD)
-            cost_rect = cost_text.get_rect(centerx=self.popup_rect.centerx, top=cost_y)
-            self.screen.blit(cost_text, cost_rect)
+        if self.unit_cost > 0:
+            total_value = self.quantity * self.unit_cost
+            if self.action == "sell":
+                cost_text = self.normal_font.render(f"Total Value: {total_value}g", True, self.GOLD)
+            elif self.action == "buy":
+                cost_text = self.normal_font.render(f"Total Cost: {total_value}g", True, self.GOLD)
+            else:
+                cost_text = None
+            
+            if cost_text:
+                cost_rect = cost_text.get_rect(centerx=self.popup_rect.centerx, top=cost_y)
+                self.screen.blit(cost_text, cost_rect)
         
         # Instructions
         instr_y = self.popup_y + 220
@@ -368,9 +386,17 @@ class QuantityPopup:
         Returns:
             int: Selected quantity, or None if cancelled
         """
+        background = None
         if background_draw_func is None:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        def finish(result):
+            if background_draw_func is not None:
+                background_draw_func()
+            elif background is not None:
+                self.screen.blit(background, (0, 0))
+            return result
 
         while True:
             self.draw_popup(background_draw_func)
@@ -383,7 +409,7 @@ class QuantityPopup:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        return None
+                        return finish(None)
                     elif event.key == pygame.K_UP:
                         # Increase current digit (clamp to 0-9)
                         if self.selected_place == 0:  # Ones
@@ -416,7 +442,7 @@ class QuantityPopup:
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         # Confirm selection
                         if self.quantity > 0:
-                            return self.quantity
+                            return finish(self.quantity)
             
             self.presenter.clock.tick(30)
 

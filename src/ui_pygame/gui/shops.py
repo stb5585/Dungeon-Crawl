@@ -458,6 +458,9 @@ class ShopManager(TownScreenBase):
             popup.show()
             return
         
+        # Create ShopScreen once outside the loop to preserve cursor position
+        shop_screen = ShopScreen(self.presenter, self.player_char, "Sell Items")
+        
         while True:
             # Build sellable inventory (exclude ultimate items)
             sellable = {}
@@ -476,8 +479,7 @@ class ShopManager(TownScreenBase):
                 popup.show()
                 return
             
-            # Use ShopScreen for selling
-            shop_screen = ShopScreen(self.presenter, self.player_char, "Sell Items")
+            # Update the item list (preserves cursor position)
             shop_screen.update_item_list(sellable, "Sell")
             
             result = shop_screen.navigate_items()
@@ -494,7 +496,7 @@ class ShopManager(TownScreenBase):
             
             # Use QuantityPopup for sell quantity selection
             from .confirmation_popup import QuantityPopup
-            qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count)
+            qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count, action="sell", default_quantity=count)
             quantity = qty_popup.show()
             
             if quantity is None or quantity == 0:

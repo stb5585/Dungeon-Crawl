@@ -1825,7 +1825,7 @@ class Lycan(Job):
             magic_plus=2,
             magic_def_plus=3,
             equipment={
-                "Weapon": items.Maul(),
+                "Weapon": items.SpikeMaul(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.StuddedLeather(),
                 "Pendant": items.NoPendant(),

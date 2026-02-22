@@ -1728,7 +1728,7 @@ class Disarm(Defensive):
             user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
-        if target.equipment["Weapon"].subtyp not in ["Natural", "Summon", "None"]:
+        if target.can_be_disarmed():
             if not target.physical_effects["Disarm"].active:
                 chance = target.check_mod("luck", enemy=user, luck_factor=10)
                 max_stat = max(user.stats.strength, user.stats.dex)
@@ -1742,7 +1742,7 @@ class Disarm(Defensive):
                     return f"{target.name} is disarmed.\n"
                 return f"{user.name} fails to disarm the {target.name}.\n"
             return f"{target.name} is already disarmed.\n"
-        return f"The {target.name} cannot be disarmed.\n"
+        return f"{target.name} cannot be disarmed.\n"
 
 
 class Cover(Defensive):
@@ -2401,7 +2401,7 @@ class HealthDrain(Drain):
             return "It has no effect.\n"
         drain = random.randint(
             (user.health.current + user.stats.charisma) // 5,
-            (user.health.current + user.stats.charisma) // 1.5,
+            int((user.health.current + user.stats.charisma) / 1.5),
         )
         chance = target.check_mod("luck", enemy=user, luck_factor=10)
         if (
@@ -2436,7 +2436,7 @@ class ManaDrain(Drain):
             return "It has no effect.\n"
         drain = random.randint(
             (user.mana.current + user.stats.charisma) // 5,
-            (user.mana.current + user.stats.charisma) // 1.5,
+            int((user.mana.current + user.stats.charisma) / 1.5),
         )
         chance = target.check_mod("luck", enemy=user, luck_factor=10)
         if (
@@ -2622,25 +2622,212 @@ class Transform4(Transform):
 
 class Totem(Class):
     """
-    Summon a totem, a sacred symbol of your clan, that performs various functions depending on its design and enchantments.
-    TODO
-    Totem designs/enhancements
-    - increase/decrease stat(s)/attribute(s)
-    - increase/decrease resistance(s)
-    - drain health and/or mana
-    - deal elemental damage
-    - cause/prevent status effects
-    - resurrect player
-    - absorbs damage
+    Summon a totem, a sacred symbol of your clan, channeling spiritual energy through sacred aspects.
+    
+    Sacred Aspects (unlock through Shaman progression):
+    - Earth Aspect (Lv 1): Guardian totem. +20% Defense, reflects 25% damage back at attackers
+    - Water Aspect (Lv 10): Healing totem. +50% healing effectiveness, dispels negative effects
+    - Fire Aspect (Lv 15): Primal totem. +25% Attack, adds elemental fire damage to attacks
+    - Wind Aspect (Lv 20): Swift totem. +15% Dodge, +10% Critical strike chance
+    - Soul Aspect (Soulcatcher ClassRing): Masterful totem. +20% Weapon damage, +20% Critical damage
+    
+    You may only have one aspect active at a time. Choose your aspect wisely before combat.
+    Duration: 5-8 turns depending on wisdom.
     """
 
     def __init__(self):
         super().__init__(
             name="Totem",
-            description="Summon a totem, a sacred symbol of your clan, that performs "
-            "various functions depending on its design and enchantments.",
+            description="Summon a totem channeling a sacred aspect. Choose Earth for defense, "
+            "Water for healing, Fire for offense, Wind for mobility, or Soul for weapon mastery. "
+            "Only one aspect active at a time.",
+        )
+        self.cost = 12  # Base cost; varies per aspect
+        self.combat = True
+        self.passive = False  # Can be actively summoned in combat
+        
+        # Aspect definitions: cost, attack bonus, defense bonus, secondary effect, description
+        self.aspects = {
+            "Earth": {
+                "cost": 12,
+                "attack_bonus": 0.0,
+                "defense_bonus": 0.20,
+                "secondary": "reflect",  # Reflects 25% damage
+                "description": "+20% Defense. Reflects 25% of damage back at attackers."
+            },
+            "Water": {
+                "cost": 14,
+                "attack_bonus": 0.0,
+                "defense_bonus": 0.0,
+                "secondary": "healing",  # +50% healing effectiveness, cleanse
+                "description": "+50% healing effectiveness. Cleanses negative status effects."
+            },
+            "Fire": {
+                "cost": 16,
+                "attack_bonus": 0.25,
+                "defense_bonus": 0.0,
+                "secondary": "elemental",  # Fire damage on attacks
+                "description": "+25% Attack damage. Adds elemental fire damage to your attacks."
+            },
+            "Wind": {
+                "cost": 15,
+                "attack_bonus": 0.0,
+                "defense_bonus": 0.0,
+                "secondary": "speed",  # +15% dodge, +10% crit
+                "description": "+15% Dodge chance and +10% Critical strike chance. Enhanced precision and evasion."
+            },
+            "Soul": {
+                "cost": 18,
+                "attack_bonus": 0.20,
+                "defense_bonus": 0.0,
+                "secondary": "crit_damage",  # +20% critical damage, embodies captured souls
+                "description": "+20% Weapon damage and +20% Critical damage. Embodies the essence of conquered foes."
+            }
+        }
+        
+        # Unlock requirements: aspect name -> shaman level required (Soul requires ClassRing)
+        self.unlock_requirements = {
+            "Earth": 1,
+            "Water": 10,
+            "Fire": 20,
+            "Wind": 30,
+            "Soul": 999  # Special unlock via ClassRing, not by level
+        }
+        
+        # Tracking active aspect and unlocked aspects
+        self.active_aspect = "Earth"  # Default to Earth
+        self.unlocked_aspects = {"Earth": True}  # Earth is always unlocked
+        self.duration_base = 5
+    
+    def calculate_duration(self, user: Character) -> int:
+        """Calculate how long the totem lasts based on user's wisdom."""
+        return self.duration_base + (user.stats.wisdom // 15)
+    
+    def is_aspect_unlocked(self, aspect: str) -> bool:
+        """Check if an aspect is unlocked."""
+        return self.unlocked_aspects.get(aspect, False)
+    
+    def check_and_unlock_aspects(self, user_level: int) -> list:
+        """Check and unlock any aspects available at the given level."""
+        newly_unlocked = []
+        for aspect, required_level in self.unlock_requirements.items():
+            if required_level <= user_level and not self.unlocked_aspects.get(aspect, False):
+                self.unlocked_aspects[aspect] = True
+                newly_unlocked.append(aspect)
+        return newly_unlocked
+    
+    def get_unlocked_aspects(self, user: Character = None) -> list:
+        """
+        Return list of unlocked aspect names.
+        
+        Args:
+            user: Optional Character to check for Soul Aspect unlock via ClassRing
+        """
+        unlocked = [aspect for aspect, unlocked_flag in self.unlocked_aspects.items() if unlocked_flag]
+        
+        # Check if user has ClassRing and is a Soulcatcher - if so, Soul Aspect is available
+        if user is not None:
+            try:
+                ring = user.equipment.get("Ring")
+                if ring and ring.name == "Class Ring" and user.cls.name == "Soulcatcher":
+                    if "Soul" not in unlocked:
+                        unlocked.append("Soul")
+            except (AttributeError, KeyError):
+                pass
+        
+        return unlocked
+    
+    def set_active_aspect(self, aspect: str) -> tuple[bool, str]:
+        """
+        Set the active aspect for the totem.
+        
+        Args:
+            aspect: Name of the aspect to activate
+            
+        Returns:
+            tuple[bool, str]: (Success status, Error message if any)
+        """
+        if aspect not in self.aspects:
+            return (False, f"Unknown aspect: {aspect}")
+        
+        if not self.is_aspect_unlocked(aspect):
+            return (False, f"{aspect} Aspect is not yet unlocked")
+        
+        self.active_aspect = aspect
+        self.cost = self.aspects[aspect]["cost"]
+        return (True, "")
+    
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        """Summon the totem with the currently active aspect."""
+        user.mana.current -= self.cost
+        
+        duration = self.calculate_duration(user)
+        aspect = self.aspects[self.active_aspect]
+        
+        # Activate the Totem magic effect
+        user.magic_effects["Totem"].active = True
+        user.magic_effects["Totem"].duration = duration
+        
+        # Store aspect info in the effect's extra field for gameplay mechanics
+        user.magic_effects["Totem"].extra = {
+            "aspect": self.active_aspect,
+            "attack_bonus": aspect["attack_bonus"],
+            "defense_bonus": aspect["defense_bonus"],
+            "secondary": aspect["secondary"]
+        }
+        
+        use_str = f"{user.name} drives a {self.active_aspect.lower()} totem into the ground!\n"
+        use_str += f"{aspect['description']}\n"
+        
+        # Describe the benefits
+        if aspect["attack_bonus"] > 0:
+            use_str += f"Attack increased by {int(aspect['attack_bonus'] * 100)}%.\n"
+        if aspect["defense_bonus"] > 0:
+            use_str += f"Defense increased by {int(aspect['defense_bonus'] * 100)}%.\n"
+        
+        # Secondary effect descriptions
+        if aspect["secondary"] == "reflect":
+            use_str += "Attacks against you are reflected back at the attacker.\n"
+        elif aspect["secondary"] == "healing":
+            use_str += "Healing spells and effects are significantly more effective.\n"
+        elif aspect["secondary"] == "elemental":
+            use_str += "Your attacks burn with primal fire.\n"
+        elif aspect["secondary"] == "speed":
+            use_str += "Your reflexes and precision are heightened, granting increased dodge and critical strike chance.\n"
+        elif aspect["secondary"] == "crit_damage":
+            use_str += "The captured essence of fallen foes empowers your weapon with devastating critical strikes.\n"
+        
+        use_str += f"The totem emanates power for {duration} turns.\n"
+        
+        # Emit status event for the totem
+        user._emit_status_event(user, "Totem", applied=True, duration=duration, source=f"{self.active_aspect} Totem")
+        
+        return use_str
+
+
+class MaelstromWeapon(Class):
+    """
+    Shaman passive ability: Maelstrom Weapon
+    
+    Each successive hit increases critical strike chance.
+    The critical strike chance boost resets on a critical hit or a miss.
+    
+    Mechanics:
+    - Gain 5% critical strike chance per consecutive hit
+    - Max 6 consecutive hits = 30% bonus crit chance
+    - Resets when: landing a critical strike, missing an attack, or being hit
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Maelstrom Weapon",
+            description="Successive strikes channel maelstrom energy into your weapon, "
+            "increasing critical strike chance with each hit. The energy "
+            "dissipates on a critical strike or if you miss.",
         )
         self.passive = True
+        self.crit_bonus_per_hit = 0.05  # 5% per hit
+        self.max_hits = 6  # Max bonus of 30%
 
 
 class Familiar(Class):
@@ -3842,13 +4029,14 @@ class AcidSpit(Skill):
             if damage > 0:
                 use_str += f"{target.name} takes {damage} damage from the acid.\n"
                 target.health.current -= damage
-                target.magic_effects["DOT"].active = True
-                target.magic_effects["DOT"].duration = 2
-                target.magic_effects["DOT"].extra = max(
-                    damage, target.magic_effects["DOT"].extra
-                )
-                user._emit_status_event(target, "DOT", applied=True, duration=2, source="Acid Splash")
-                use_str += f"{target.name} is covered in a corrosive substance.\n"
+                if not random.randint(0, target.stats.con // 2):
+                    target.magic_effects["DOT"].active = True
+                    target.magic_effects["DOT"].duration = 2
+                    target.magic_effects["DOT"].extra = max(
+                        damage, target.magic_effects["DOT"].extra
+                    )
+                    user._emit_status_event(target, "DOT", applied=True, duration=2, source="Acid Splash")
+                    use_str += f"{target.name} is covered in a corrosive substance.\n"
             else:
                 use_str += "The acid is ineffective.\n"
         else:
@@ -3945,12 +4133,16 @@ class Shapeshift(Skill):
         user.flying = s_creature.flying
         user.invisible = s_creature.invisible
         user.sight = s_creature.sight
+        # Update name and picture for proper sprite rendering
+        old_name = user.name
+        user.name = s_creature.name
+        user.picture = s_creature.picture
         user.spellbook["Skills"]["Shapeshift"] = Shapeshift()
         # Apply cooldown
         user.status_effects["Shapeshifted"].active = True
         user.status_effects["Shapeshifted"].duration = 3
         user._emit_status_event(user, "Shapeshifted", applied=True, duration=3, source="Shapeshift")
-        return f"{user.name} changes shape, becoming a {s_creature.name}.\n"
+        return f"{old_name} changes shape, becoming a {s_creature.name}.\n"
 
 
 class Trip(Skill):
@@ -5705,6 +5897,17 @@ class Hydration(HealSpell):
         )
         self.turns = 2
 
+    def hot(self, caster: Character, heal: int) -> None:
+        """Apply heal-over-time effect using Regen magic effect."""
+        caster.magic_effects["Regen"].active = True
+        caster.magic_effects["Regen"].duration = max(
+            self.turns, caster.magic_effects["Regen"].duration
+        )
+        caster.magic_effects["Regen"].extra = max(
+            heal, caster.magic_effects["Regen"].extra
+        )
+        caster._emit_status_event(caster, "Regen", applied=True, duration=caster.magic_effects["Regen"].duration, source="Heal")
+
 
 class EarthSpell(Attack):
     """
@@ -6804,7 +7007,146 @@ class MirrorImage2(MirrorImage):
         self.duplicates = 4
 
 
+class AstralShift(IllusionSpell):
+    """
+    Partially shifts the character into the astral plane, reducing damage taken by 25%.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Astral Shift",
+            description="Partially shift into the astral plane, reducing physical and magical damage by 25%.",
+            cost=18,
+        )
+        self.duration_base = 4
+
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
+        target = caster
+        if not cover:
+            caster.mana.current -= self.cost
+        
+        duration = self.duration_base + (caster.stats.wisdom // 20)
+        
+        target.magic_effects["Astral Shift"].active = True
+        target.magic_effects["Astral Shift"].duration = max(duration, target.magic_effects["Astral Shift"].duration)
+        
+        caster._emit_status_event(target, "Astral Shift", applied=True, duration=duration, source="Astral Shift")
+        
+        return f"{target.name} shifts partially into the astral plane, reducing damage taken by 25%.\n"
+
+
 # Status spells
+class Hex(StatusSpell):
+    """
+    Applies a hex that can inflict poison, blind, and silence.
+    Each effect has its own resistance check.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Hex",
+            description="Afflict the target with a hex that can poison, blind, and silence.",
+            cost=14,
+        )
+        self.turns = 3
+
+    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
+        if target is None:
+            return "No target specified.\n"
+        caster.mana.current -= self.cost
+        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
+            return "It has no effect.\n"
+
+        cast_message = f"{caster.name} curses {target.name} with a hex.\n"
+        applied = False
+
+        # Poison: Con vs caster Int
+        if not any(
+            [
+                "Poison" in target.status_immunity,
+                f"Status-Poison" in target.equipment["Pendant"].mod,
+                "Status-All" in target.equipment["Pendant"].mod,
+            ]
+        ):
+            if not target.status_effects["Poison"].active:
+                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
+                    target.stats.con // 2, target.stats.con
+                ):
+                    poison_damage = max(1, caster.stats.intel // 4)
+                    target.status_effects["Poison"].active = True
+                    target.status_effects["Poison"].duration = max(
+                        self.turns, target.status_effects["Poison"].duration
+                    )
+                    target.status_effects["Poison"].extra = max(
+                        poison_damage, target.status_effects["Poison"].extra
+                    )
+                    caster._emit_status_event(
+                        target,
+                        "Poison",
+                        applied=True,
+                        duration=target.status_effects["Poison"].duration,
+                        source="Hex",
+                    )
+                    cast_message += f"{target.name} is poisoned.\n"
+                    applied = True
+
+        # Blind: Con vs caster Int
+        if not any(
+            [
+                "Blind" in target.status_immunity,
+                "Status-Blind" in target.equipment["Pendant"].mod,
+                "Status-All" in target.equipment["Pendant"].mod,
+            ]
+        ):
+            if not target.status_effects["Blind"].active:
+                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
+                    target.stats.con // 2, target.stats.con
+                ):
+                    target.status_effects["Blind"].active = True
+                    target.status_effects["Blind"].duration = max(
+                        self.turns, target.status_effects["Blind"].duration
+                    )
+                    caster._emit_status_event(
+                        target,
+                        "Blind",
+                        applied=True,
+                        duration=target.status_effects["Blind"].duration,
+                        source="Hex",
+                    )
+                    cast_message += f"{target.name} is blinded.\n"
+                    applied = True
+
+        # Silence: Wis vs caster Int
+        if not any(
+            [
+                "Silence" in target.status_immunity,
+                f"Status-Silence" in target.equipment["Pendant"].mod,
+                "Status-All" in target.equipment["Pendant"].mod,
+            ]
+        ):
+            if not target.status_effects["Silence"].active:
+                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
+                    target.stats.wisdom // 2, target.stats.wisdom
+                ):
+                    target.status_effects["Silence"].active = True
+                    target.status_effects["Silence"].duration = max(
+                        self.turns, target.status_effects["Silence"].duration
+                    )
+                    caster._emit_status_event(
+                        target,
+                        "Silence",
+                        applied=True,
+                        duration=target.status_effects["Silence"].duration,
+                        source="Hex",
+                    )
+                    cast_message += f"{target.name} is silenced.\n"
+                    applied = True
+
+        if not applied:
+            cast_message += "The hex has no effect.\n"
+        return cast_message
+
+
 class BlindingFog(StatusSpell):
     """
     Rank 1 Enemy Spell
@@ -7350,8 +7692,9 @@ skill_dict = {
         "1": Totem,
         "4": ElementalStrike,
         "6": PiercingStrike,
-        "14": DoubleStrike,
+        "10": MaelstromWeapon,
         "19": TrueStrike,
+        "24": DoubleStrike,
     },
     "Soulcatcher": {
         "1": AbsorbEssence,
@@ -7456,7 +7799,9 @@ spell_dict = {
     "Lycan": {"8": Dispel},
     "Diviner": {"3": Enfeeble, "14": Dispel, "23": Berserk},
     "Geomancer": {"1": Vulcanize, "10": WeakenMind, "15": Boost},
-    "Shaman": {"9": Hydration},
+    "Shaman": {"2": Hex,
+               "9": Hydration,
+               "16": AstralShift},
     "Soulcatcher": {"6": Dispel, "12": Desoul},
     "Ranger": {},
     "Beast Master": {},

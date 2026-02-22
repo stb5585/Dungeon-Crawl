@@ -19,7 +19,10 @@ if TYPE_CHECKING:
 def random_item(z: int) -> Item:
     """
     Returns a random item based on the given integer.
+    Clamps z to the valid range [1, 8].
     """
+    # Clamp z to valid range to prevent KeyError
+    z = max(1, min(z, 8))
 
     random_dict = {"1":[],"2":[],"3":[],"4":[],"5":[],"6":[],"7":[],"8":[]}
     buckets = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
@@ -104,6 +107,8 @@ class Weapon(Item):
         self.off = off
         self.typ = "Weapon"
         self.disarm = True
+        if subtyp == 'Fist':
+            self.disarm = False
         self.ignore = False
         self.element = None
 
@@ -494,7 +499,7 @@ class Khopesh(Weapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if not result.target.physical_effects["Disarm"].active:
-            if result.target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
+            if result.target.can_be_disarmed():
                 chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
                 if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
                         > random.randint(result.target.check_mod("speed", enemy=result.actor) // 2, 
@@ -956,7 +961,7 @@ class Ranseur(Weapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if not result.target.physical_effects["Disarm"].active:
-            if result.target.equipment['Weapon'].subtyp not in ["Natural", "None", "Summon"]:
+            if result.target.can_be_disarmed():
                 chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=10)
                 if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
                         > random.randint(result.target.check_mod("speed", enemy=result.actor) // 2,
@@ -1128,7 +1133,7 @@ class Sledgehammer(Weapon):
         self.weight = 20
 
 
-class Maul(Weapon):
+class SpikeMaul(Weapon):
 
     def __init__(self):
         super().__init__(name="Spike Maul", description="A spike maul is similar to a sledgehammer except for having a"
@@ -2837,7 +2842,7 @@ class ClassRing(Accessory):
             "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",
             "Lycan": "A ring that grants an attack bonus immediately after transforming when worn by a Lycan.",
             "Geomancer": "A ring that boosts the terrain effect of spells when worn by a Geomancer.",
-            "Soulcatcher": "A ring that grants a chance on miss or crit to not reset Maelstrom Weapon buff when worn by a Soulcatcher.",
+            "Soulcatcher": "A ring that unlocks the Soul Aspect of the Totem ability when worn by a Soulcatcher, granting +20% Weapon damage and +20% Critical damage.",
             "Beast Master": "A ring that increases defense for you and your companion when covering the other when worn by a Beast Master.",
         }
         return descriptions.get(cls_name, self.description)
@@ -2926,8 +2931,14 @@ class ClassRing(Accessory):
             player_char.equipment["Ring"].mod = "Terrain Master"
         
         elif cls_name == "Soulcatcher":
-            # Chance on miss or crit to not reset Maelstrom Weapon buff
-            player_char.equipment["Ring"].mod = "Soul Persistence"
+            # Unlock Soul Aspect of Totem ability
+            try:
+                if "Totem" in player_char.spellbook:
+                    totem = player_char.spellbook["Totem"]
+                    totem.unlocked_aspects["Soul"] = True
+                player_char.equipment["Ring"].mod = "Soul Aspect Unlock"
+            except (AttributeError, KeyError):
+                player_char.equipment["Ring"].mod = "Soul Aspect Unlock"
         
         elif cls_name == "Beast Master":
             # Increased defense for wearer and companion when covering the other
@@ -3695,6 +3706,18 @@ class CrypticKey(Misc):
                          value=0, rarity=0, subtyp='Key')
 
 
+class JesterToken(Misc):
+    """
+    A shimmering token from the funhouse; collect all four to unlock the Jester's chamber
+    """
+
+    def __init__(self):
+        super().__init__(name="Jester Token", 
+                         description="A carnival token that shimmers with magical energy. These are required to breach "
+                                     "the Jester's inner sanctum.",
+                         value=0, rarity=0, subtyp='Quest')
+
+
 class Scroll(Misc):
     """
     Scrolls allow for a one-time use of a spell; scrolls can only be used in combat
@@ -4327,7 +4350,7 @@ items_dict = {
             'Polearm': [Framea, Partisan, Halberd, Naginata, Trident, Ranseur],
             'Staff': [Quarterstaff, Baston, IronshodStaff, SerpentStaff, HolyStaff,
                     RuneStaff, MithrilshodStaff, Khatvanga],
-            'Hammer': [Sledgehammer, Maul, EarthHammer, GreatMaul, Streithammer]}},
+            'Hammer': [Sledgehammer, SpikeMaul, EarthHammer, GreatMaul, Streithammer]}},
     'OffHand': {
         'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, Svalinn], 
         'Tome': [Book, TomeKnowledge, InfernalGrimoire, ElementalPrimer, TreatiseBalance, DragonRouge,

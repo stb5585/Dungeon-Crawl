@@ -7,6 +7,7 @@ It subscribes to the event system for animations and real-time updates.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
+import sys
 
 import pygame
 
@@ -91,7 +92,7 @@ class PygamePresenter(GamePresenter):
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Dungeon Crawl - Combat")
+        pygame.display.set_caption("Dungeon Crawl - Combat")  # TODO: what is this?
         
         # Fonts
         self.title_font = pygame.font.Font(None, 48)
@@ -117,7 +118,6 @@ class PygamePresenter(GamePresenter):
         self.shake_duration = 0
         
         # Sprite manager
-        # self.sprite_manager = get_sprite_manager() if SPRITES_AVAILABLE else None
         self.sprite_manager = None  # Temporarily disable sprite manager usage
         
         # Event system
@@ -769,7 +769,8 @@ class PygamePresenter(GamePresenter):
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return "quit"
+                    pygame.quit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
                         selected = (selected - 1) % len(options)
@@ -791,8 +792,7 @@ class PygamePresenter(GamePresenter):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    import sys
-                    sys.exit()
+                    sys.exit(0)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         return text if text else default

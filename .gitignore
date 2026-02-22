@@ -53,6 +53,7 @@ backup_saves/*
 # ignore old files
 docs/archive/
 old_assets/
+map_files/text_files/
 
 # ignore system files
 .DS_Store

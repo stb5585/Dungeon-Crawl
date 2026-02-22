@@ -1484,6 +1484,117 @@ class JumpModsPopupMenu(BasePopupMenu):
         return None
 
 
+class TotemAspectsPopupMenu(BasePopupMenu):
+    """Popup menu for selecting active Totem aspects."""
+
+    def __init__(self, presenter, parent_screen, title="Totem Aspects"):
+        super().__init__(presenter, parent_screen, title=title)
+        self.totem_skill = None
+
+    def _get_totem_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            return skills["Totem"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Totem":
+                return skill
+        return None
+
+    def build_items(self, player_char):
+        self.totem_skill = self._get_totem_skill(player_char)
+        self.items = []
+
+        if not self.totem_skill or not hasattr(self.totem_skill, "get_unlocked_aspects"):
+            self.items.append({"is_header": True, "text": "Totem not learned"})
+            self.selected_index = 0
+            self.scroll_offset = 0
+            return
+
+        active = getattr(self.totem_skill, "active_aspect", "")
+        header_text = f"Active Aspect: {active}" if active else "Active Aspect: None"
+        self.items.append({"is_header": True, "text": header_text})
+
+        unlocked = self.totem_skill.get_unlocked_aspects(player_char)
+        for aspect in unlocked:
+            prefix = "[X]" if aspect == active else "[ ]"
+            self.items.append({
+                "is_header": False,
+                "text": f"{prefix} {aspect}",
+                "value": aspect,
+            })
+
+        self.selected_index = 1 if len(self.items) > 1 else 0
+        self.scroll_offset = 0
+
+    def item_display_text(self, item):
+        if isinstance(item, dict):
+            return item.get("text", "")
+        return str(item)
+
+    def draw_details(self, player_char):
+        item = self.items[self.selected_index] if self.items else None
+        x = self.details_rect.left + 16
+        y = self.details_rect.top + 12
+
+        if item is None:
+            self.screen.blit(self.normal_font.render("No items", True, self.GRAY), (x, y))
+            return
+
+        is_header = isinstance(item, dict) and item.get("is_header")
+        value = item.get("value") if isinstance(item, dict) else item
+        text_label = item.get("text") if isinstance(item, dict) else None
+
+        if is_header:
+            header_text = self.large_font.render(text_label or "", True, self.GOLD)
+            self.screen.blit(header_text, (x, y))
+            return
+
+        aspect = str(value)
+        name_text = self.large_font.render(aspect, True, self.WHITE)
+        self.screen.blit(name_text, (x, y))
+        y += name_text.get_height() + 8
+
+        if self.totem_skill and hasattr(self.totem_skill, "aspects"):
+            aspect_data = self.totem_skill.aspects.get(aspect, {})
+            cost = aspect_data.get("cost")
+            if cost is not None:
+                cost_text = self.normal_font.render(f"Mana Cost: {cost}", True, self.LIGHT_GRAY)
+                self.screen.blit(cost_text, (x, y))
+                y += self.line_height + 6
+
+            desc = aspect_data.get("description", "")
+            if desc:
+                max_width = self.details_rect.width - 32
+                words = desc.split()
+                line = ""
+                for w in words:
+                    test = f"{line} {w}".strip()
+                    if self.normal_font.size(test)[0] <= max_width:
+                        line = test
+                    else:
+                        self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+                        y += self.line_height
+                        line = w
+                if line:
+                    self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+
+    def on_select(self, player_char, item):
+        if not self.totem_skill or not hasattr(self.totem_skill, "set_active_aspect"):
+            return None
+        if isinstance(item, dict) and item.get("is_header"):
+            return None
+
+        aspect = item.get("value") if isinstance(item, dict) else str(item)
+        result = self.totem_skill.set_active_aspect(aspect)
+        if isinstance(result, tuple):
+            success, _ = result
+            if not success:
+                return None
+
+        self.build_items(player_char)
+        return None
+
+
 class SelectionPopup(BasePopupMenu):
     """Generic selection popup: header + options, returns selected item."""
     def __init__(self, presenter, parent_screen, title="Select", header_message=None, options=None):

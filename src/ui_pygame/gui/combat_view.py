@@ -116,6 +116,7 @@ class CombatView:
         # Sprite cache
         self.sprite_cache = {}
         self.sprite_dir = 'src/ui_pygame/assets/sprites'
+        self.enemy_sprite_dir = 'src/ui_pygame/assets/sprites/enemies'
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
@@ -225,6 +226,7 @@ class CombatView:
             "Power Up",
             "Shapeshifted",
             "Steal Success",
+            "Totem",
         }
         positive_status = {"Defend", "Steal Success"}
         positive_magic = {
@@ -240,6 +242,10 @@ class CombatView:
             "Resist Earth",
             "Resist Wind",
         }
+
+        if character.magic_effects.get("Totem") and character.magic_effects["Totem"].active:
+            icons.append(("ATK", True))
+            icons.append(("DEF", True))
 
         for name, effect in character.status_effects.items():
             if effect.active and name not in skip_effects:
@@ -284,6 +290,14 @@ class CombatView:
             text_rect = text_surf.get_rect(center=rect.center)
             self.screen.blit(text_surf, text_rect)
     
+    def reload_enemy_sprite(self, enemy):
+        """Force reload of enemy sprite (e.g., after shapeshifting)."""
+        sprite_name = enemy.name.lower().replace(" ", "_")
+        cache_key = f"{sprite_name}"
+        # Remove old cached sprite if exists
+        if cache_key in self.sprite_cache:
+            del self.sprite_cache[cache_key]
+    
     def _get_enemy_sprite(self, enemy):
         """
         Load enemy sprite from file based on enemy type.
@@ -294,15 +308,7 @@ class CombatView:
         Returns:
             pygame.Surface or None if sprite not found
         """
-        # Try to get sprite name from picture attribute first
-        sprite_name = None
-        
-        if hasattr(enemy, 'picture') and enemy.picture:
-            # Remove .txt extension from picture filename
-            sprite_name = enemy.picture.replace('.txt', '')
-        elif hasattr(enemy, 'enemy_typ'):
-            # Fallback to enemy_typ (won't work for specific enemies, but better than nothing)
-            sprite_name = enemy.enemy_typ.lower()
+        sprite_name = enemy.name.lower().replace(" ", "_")
         
         if not sprite_name:
             return None
@@ -316,7 +322,9 @@ class CombatView:
         
         # Build sprite filename
         sprite_filename = f"{sprite_name}.png"
-        sprite_path = os.path.join(self.sprite_dir, sprite_filename)
+        sprite_path = os.path.join(self.enemy_sprite_dir, sprite_filename)
+        if not os.path.exists(sprite_path):
+            sprite_path = os.path.join(self.sprite_dir, sprite_filename)
         
         # Try to load sprite
         if os.path.exists(sprite_path):
@@ -696,13 +704,6 @@ class CombatView:
                              (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
             pygame.draw.circle(self.screen, (0, 0, 0),
                              (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
-
-        # Status icons under the enemy sprite
-        icons = self._collect_status_icons(enemy)
-        if icons:
-            icon_y = int(center_y + enemy_size + 20)
-            icon_x = int(center_x - 150)
-            self._render_status_icons(icons, icon_x, icon_y, max_width=300)
         
         # Enemy name label at top of sprite
         font = pygame.font.Font(None, 36)

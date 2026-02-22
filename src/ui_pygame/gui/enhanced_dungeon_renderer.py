@@ -12,6 +12,11 @@ from PIL import Image
 from src.core.player import DIRECTIONS
 
 
+LAYER1_SIZE = 512
+LAYER2_SIZE = 256
+LAYER3_SIZE = 128
+
+
 class EnhancedDungeonRenderer:
     """
     Advanced dungeon renderer using tileset-based approach.
@@ -81,6 +86,16 @@ class EnhancedDungeonRenderer:
         self._stairs_up_cache = {}
         self._stairs_down_base = None
         self._stairs_down_cache = {}
+        self._ladder_up_base = None
+        self._ladder_up_cache = {}
+        self._ladder_down_base = None
+        self._ladder_down_cache = {}
+        self._boulder_sword_base = None
+        self._boulder_sword_cache = {}
+        self._boulder_base = None
+        self._boulder_cache = {}
+        self._dead_body_base = None
+        self._dead_body_cache = {}
         # Chest tiles (lazy-loaded)
         self._chest_locked_base = None
         self._chest_locked_cache = {}
@@ -91,6 +106,9 @@ class EnhancedDungeonRenderer:
         # Altar tiles (lazy-loaded) - for RelicRoom
         self._altar_bases = {}  # relic_num -> base image
         self._altar_caches = {}  # relic_num -> {depth -> scaled surface}
+        # Enemy sprites (lazy-loaded) - for BossRoom
+        self._enemy_sprite_cache = {}  # enemy_name -> base image
+        self._enemy_sprite_scaled = {}  # (enemy_name, depth) -> scaled surface
 
         # Color palette with atmospheric depth
         self.colors = {
@@ -176,6 +194,8 @@ class EnhancedDungeonRenderer:
             'ceiling': 'ceilings/stone.png',
             'floor_fire': 'floors/firepath.png',  # FirePath floor
             'floor_spring': 'special_tiles/underground_spring.png',  # Underground Spring floor
+            'ladder_down': 'floors/dirt_pit.png',  # LadderDown floor pit
+            'ceiling_pit': 'ceilings/stone_pit.png',  # LadderUp ceiling
         }
 
         # Load base texture and scale to required sizes
@@ -185,16 +205,16 @@ class EnhancedDungeonRenderer:
             try:
                 base_image = pygame.image.load(full_path).convert_alpha()
                 # Store base image and create scaled versions for each layer
-                tiles[tex_type][512] = base_image
+                tiles[tex_type][LAYER1_SIZE] = base_image
                 # Scale for Layer 2 (256x256)
-                tiles[tex_type][256] = pygame.transform.smoothscale(base_image, (256, 256))
+                tiles[tex_type][LAYER2_SIZE] = pygame.transform.smoothscale(base_image, (LAYER2_SIZE, LAYER2_SIZE))
                 # Scale for Layer 3 (128x128)
-                tiles[tex_type][128] = pygame.transform.smoothscale(base_image, (128, 128))
+                tiles[tex_type][LAYER3_SIZE] = pygame.transform.smoothscale(base_image, (LAYER3_SIZE, LAYER3_SIZE))
             except Exception as e:
-                print(f"Warning: Could not load texture {full_path}: {e}")
-                tiles[tex_type][512] = None
-                tiles[tex_type][256] = None
-                tiles[tex_type][128] = None
+                print(f"[DEBUG] Warning: Could not load texture {full_path}: {e}")
+                tiles[tex_type][LAYER1_SIZE] = None
+                tiles[tex_type][LAYER2_SIZE] = None
+                tiles[tex_type][LAYER3_SIZE] = None
 
         # Pre-generate perspective tiles for each layer
         # Layer 1: 512x512 (foreground)
@@ -231,6 +251,7 @@ class EnhancedDungeonRenderer:
             floor_tex = self.tiles.get('floor_spring', {}).get(base_size)
             if floor_tex:
                 return floor_tex
+
         
         # Default to regular floor
         return self.tiles.get('floor', {}).get(base_size)
@@ -254,21 +275,23 @@ class EnhancedDungeonRenderer:
         # Layer 2 (2 tiles away): 0.4 darkness
         # Layer 3 (3 tiles away): 0.8 darkness (very dark)
         if layer == 1:
-            base_size = 512
+            base_size = LAYER1_SIZE
             darkness = 0.0  # Walls at 1 tile distance - full brightness
         elif layer == 2:
-            base_size = 256
+            base_size = LAYER2_SIZE
             darkness = 0.4  # Walls at 2 tiles distance - half brightness
         else:  # layer == 3
-            base_size = 128
+            base_size = LAYER3_SIZE
             darkness = 0.8  # Walls at 3 tiles distance - very dark
 
         # Get textures at the appropriate size for this layer
         wall_tex = textures.get('wall', {}).get(base_size)
         floor_tex = textures.get('floor', {}).get(base_size)
         ceiling_tex = textures.get('ceiling', {}).get(base_size)
+        ceiling_pit_tex = textures.get('ceiling_pit', {}).get(base_size)
         floor_fire_tex = textures.get('floor_fire', {}).get(base_size)
         floor_spring_tex = textures.get('floor_spring', {}).get(base_size)
+        ladder_down_tex = textures.get('ladder_down', {}).get(base_size)
 
         if not wall_tex:
             return tiles
@@ -304,6 +327,16 @@ class EnhancedDungeonRenderer:
             tiles['floor_spring'] = self._create_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer)
             tiles['floor_spring_left'] = self._create_side_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer, 'left')
             tiles['floor_spring_right'] = self._create_side_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer, 'right')
+
+        if ceiling_pit_tex:
+            tiles['ceiling_pit'] = self._create_floor_ceiling(ceiling_pit_tex, base_size, 'ceiling', darkness, layer)
+            tiles['ceiling_pit_left'] = self._create_side_floor_ceiling(ceiling_pit_tex, base_size, 'ceiling', darkness, layer, 'left')
+            tiles['ceiling_pit_right'] = self._create_side_floor_ceiling(ceiling_pit_tex, base_size, 'ceiling', darkness, layer, 'right')
+
+        if ladder_down_tex:
+            tiles['ladder_down'] = self._create_floor_ceiling(ladder_down_tex, base_size, 'floor', darkness, layer)
+            tiles['ladder_down_left'] = self._create_side_floor_ceiling(ladder_down_tex, base_size, 'floor', darkness, layer, 'left')
+            tiles['ladder_down_right'] = self._create_side_floor_ceiling(ladder_down_tex, base_size, 'floor', darkness, layer, 'right')
 
         return tiles
 
@@ -449,7 +482,7 @@ class EnhancedDungeonRenderer:
 
         return wall_surf
 
-    def _create_floor_ceiling(self, texture, base_size, type_name, darkness, layer):
+    def _create_floor_ceiling(self, texture, base_size, type_name, darkness, layer, debug_string=""):
         """Create perspective-transformed floor or ceiling using PIL.
 
         Floor/ceiling need to narrow toward the back to create depth perspective.
@@ -739,7 +772,7 @@ class EnhancedDungeonRenderer:
         - Depth 2: Two tiles ahead
         - Depth 3: Three tiles ahead
         """
-        from ...core.player import DIRECTIONS
+        from src.core.player import DIRECTIONS
 
         x, y, z = player_char.location_x, player_char.location_y, player_char.location_z
         facing = player_char.facing
@@ -888,6 +921,9 @@ class EnhancedDungeonRenderer:
         left_tile = tiles.get('left')
         right_tile = tiles.get('right')
 
+        # calculate base size for this layer
+        base_size = self._get_base_size(depth)
+
         # For side corridors, check if there's a wall when you step into the corridor
         # If the side is open (no wall blocking), check one step into that direction
         # to see if there's a back wall (player would hit a wall if they moved that way)
@@ -989,7 +1025,6 @@ class EnhancedDungeonRenderer:
         else:
             # Open corridor to the left - use flat tiles for proper grid-based rendering
             # Get base textures (not perspective-transformed)
-            base_size = 512 if depth == 1 else (256 if depth == 2 else 128)
             darkness_level = self._get_layer_darkness(depth)
 
             ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
@@ -1053,7 +1088,6 @@ class EnhancedDungeonRenderer:
         else:
             # Open corridor to the right - use flat tiles for proper grid-based rendering
             # Get base textures (not perspective-transformed)
-            base_size = 512 if depth == 1 else (256 if depth == 2 else 128)
             darkness_level = self._get_layer_darkness(depth)
 
             ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
@@ -1107,7 +1141,7 @@ class EnhancedDungeonRenderer:
         floor_x = comp_x
         floor_y = comp_y + top_h + center_h
         
-        # Determine which floor tile to render based on map position offset for this depth
+        # Determine which floor tile to render based on center tile type at this depth
         tile_for_floor = self._get_floor_source_tile(depth)
         if tile_for_floor:
             tile_type_name = type(tile_for_floor).__name__
@@ -1115,6 +1149,8 @@ class EnhancedDungeonRenderer:
                 floor_key = 'floor_fire'
             elif 'UndergroundSpring' in tile_type_name:
                 floor_key = 'floor_spring'
+            elif 'LadderDown' in tile_type_name:
+                floor_key = 'ladder_down'
             else:
                 floor_key = 'floor'
         else:
@@ -1130,13 +1166,21 @@ class EnhancedDungeonRenderer:
             self.screen.blit(scaled_floor, (floor_x, floor_y))
 
         # Render ceiling (top section - full width)
-        ceiling_cached = cache.get('ceiling_strip')
+        # Check if current tile is LadderUp to use ceiling_pit instead
+        tile_for_ceiling = self._get_floor_source_tile(depth)
+        if tile_for_ceiling:
+            tile_type_name = type(tile_for_ceiling).__name__
+            ceiling_key = 'ceiling_pit' if 'LadderUp' in tile_type_name else 'ceiling'
+        else:
+            ceiling_key = 'ceiling'
+        
+        ceiling_cached = cache.get(ceiling_key + '_strip')
         if ceiling_cached:
             ceiling_x = comp_x
             ceiling_y = comp_y
             self.screen.blit(ceiling_cached, (ceiling_x, ceiling_y))
-        elif 'ceiling' in layer_tiles:
-            ceiling_surf = layer_tiles['ceiling']
+        elif ceiling_key in layer_tiles:
+            ceiling_surf = layer_tiles[ceiling_key]
             ceiling_x = comp_x
             ceiling_y = comp_y
             scaled_ceiling = pygame.transform.scale(ceiling_surf, (comp_width, top_h))
@@ -1186,6 +1230,19 @@ class EnhancedDungeonRenderer:
                 # Pass the zone rect for proper positioning and sizing
                 self._render_tile_contents(center_tile, comp_x + left_w, comp_y + top_h, 
                                           center_w, center_h, darkness_level, depth)
+
+        # Render current tile contents (when standing on the tile at depth 1)
+        # This handles ladders, stairs when player is standing on them
+        if depth == 1:
+            current_tile = self._get_floor_source_tile(depth)
+            if current_tile and not self._is_wall(current_tile):
+                # Check if current tile has special content that needs rendering
+                tile_type = type(current_tile).__name__
+                if 'Ladder' in tile_type or 'Stairs' in tile_type or 'Boulder' in tile_type or 'DeadBody' in tile_type:
+                    darkness_level = self._get_layer_darkness(depth)
+                    # Use depth=0 to indicate "current tile under feet" for larger rendering
+                    self._render_tile_contents(current_tile, comp_x + left_w, comp_y + top_h, 
+                                              center_w, center_h, darkness_level, 0)
 
         # Render recursive corridors LAST so they appear on top
         if left_recursive:
@@ -1305,6 +1362,158 @@ class EnhancedDungeonRenderer:
         self._stairs_down_cache[depth] = scaled
         return scaled
 
+    def _get_ladder_down_tile(self, depth):
+        """Load and scale the ladder down tile for the given depth."""
+        size_map = {1: 512, 2: 256, 3: 128}
+
+        # Load base image lazily
+        if self._ladder_down_base is None:
+            ladder_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'ladder_down.png')
+            if os.path.exists(ladder_path):
+                try:
+                    self._ladder_down_base = pygame.image.load(ladder_path).convert_alpha()
+                except Exception as e:
+                    self._ladder_down_base = None
+            else:
+                self._ladder_down_base = None
+
+        if depth not in size_map or self._ladder_down_base is None:
+            return None
+
+        # Return cached scaled tile if available
+        if depth in self._ladder_down_cache:
+            return self._ladder_down_cache[depth]
+
+        target_size = size_map[depth]
+        scaled = pygame.transform.smoothscale(self._ladder_down_base, (target_size, target_size))
+        self._ladder_down_cache[depth] = scaled
+        return scaled
+
+    def _get_ladder_up_tile(self, depth):
+        """Load and scale the ladder up tile for the given depth."""
+        size_map = {1: 512, 2: 256, 3: 128}
+
+        # Load base image lazily
+        if self._ladder_up_base is None:
+            ladder_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'ladder_up.png')
+            if os.path.exists(ladder_path):
+                try:
+                    self._ladder_up_base = pygame.image.load(ladder_path).convert_alpha()
+                except Exception as e:
+                    print(f"Failed to load ladder up tile {ladder_path}: {e}")
+                    self._ladder_up_base = None
+            else:
+                self._ladder_up_base = None
+
+        if depth not in size_map or self._ladder_up_base is None:
+            return None
+
+        # Return cached scaled tile if available
+        if depth in self._ladder_up_cache:
+            return self._ladder_up_cache[depth]
+
+        target_size = size_map[depth]
+        scaled = pygame.transform.smoothscale(self._ladder_up_base, (target_size, target_size))
+        self._ladder_up_cache[depth] = scaled
+        return scaled
+
+    def _get_boulder_tile(self, depth, has_sword=True):
+        """Load and scale the boulder tile for the given depth."""
+        size_map = {1: 512, 2: 256, 3: 128}
+        if depth not in size_map:
+            return None
+
+        if has_sword:
+            if self._boulder_sword_base is None:
+                boulder_path = os.path.join(
+                    'src/ui_pygame/assets',
+                    'dungeon_tiles',
+                    'special_tiles',
+                    'boulder_sword.png'
+                )
+                if os.path.exists(boulder_path):
+                    try:
+                        self._boulder_sword_base = pygame.image.load(boulder_path).convert_alpha()
+                    except Exception:
+                        self._boulder_sword_base = None
+                else:
+                    self._boulder_sword_base = None
+
+            if self._boulder_sword_base is None:
+                return None
+
+            if depth in self._boulder_sword_cache:
+                return self._boulder_sword_cache[depth]
+
+            target_size = size_map[depth]
+            scaled = pygame.transform.smoothscale(self._boulder_sword_base, (target_size, target_size))
+            self._boulder_sword_cache[depth] = scaled
+            return scaled
+
+        if self._boulder_base is None:
+            boulder_path = os.path.join(
+                'src/ui_pygame/assets',
+                'dungeon_tiles',
+                'special_tiles',
+                'boulder.png'
+            )
+            if os.path.exists(boulder_path):
+                try:
+                    self._boulder_base = pygame.image.load(boulder_path).convert_alpha()
+                except Exception:
+                    self._boulder_base = None
+            else:
+                self._boulder_base = None
+
+        if self._boulder_base is None:
+            return None
+
+        if depth in self._boulder_cache:
+            return self._boulder_cache[depth]
+
+        target_size = size_map[depth]
+        scaled = pygame.transform.smoothscale(self._boulder_base, (target_size, target_size))
+        self._boulder_cache[depth] = scaled
+        return scaled
+
+    def _get_dead_body_tile(self, depth, is_quest_completed=False):
+        """Load and scale the dead body sprite for the given depth.
+        
+        If is_quest_completed is True, loads burial_site.png instead of dead_body.png
+        """
+        size_map = {1: 512, 2: 256, 3: 128}
+        if depth not in size_map:
+            return None
+
+        # Choose the sprite based on quest completion
+        sprite_filename = 'burial_site.png' if is_quest_completed else 'dead_body.png'
+        cache_key = (sprite_filename, depth)  # Include sprite filename in cache key
+
+        # Check if we've already cached this sprite at this depth
+        if cache_key in self._dead_body_cache:
+            return self._dead_body_cache[cache_key]
+
+        # Load the appropriate sprite
+        dead_body_path = os.path.join(
+            'src/ui_pygame/assets',
+            'dungeon_tiles',
+            'special_tiles',
+            sprite_filename
+        )
+        
+        if not os.path.exists(dead_body_path):
+            return None
+        
+        try:
+            base_sprite = pygame.image.load(dead_body_path).convert_alpha()
+        except Exception:
+            return None
+
+        target_size = size_map[depth]
+        scaled = pygame.transform.smoothscale(base_sprite, (target_size, target_size))
+        self._dead_body_cache[cache_key] = scaled
+        return scaled
+
     def _render_door(self, door_tile_obj, x, y, width, height, darkness, depth):
         """Render a door (open or closed) using the appropriate pre-made tile."""
         # Determine if door is open based on door object attributes
@@ -1358,7 +1567,7 @@ class EnhancedDungeonRenderer:
         check_tile = tiles_dict.get(f'center_{side}')
 
         # Get base textures for this depth (not perspective-transformed)
-        base_size = 512 if depth == 1 else (256 if depth == 2 else 128)
+        base_size = self._get_base_size(depth)
         darkness = self._get_layer_darkness(depth)
 
         ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
@@ -1448,6 +1657,16 @@ class EnhancedDungeonRenderer:
             self._render_stairs_up(x, y, width, height, darkness, depth)
         elif 'StairsDown' in tile_type:
             self._render_stairs_down(x, y, width, height, darkness, depth)
+        elif 'LadderUp' in tile_type:
+            self._render_ladder_up(x, y, width, height, darkness, depth)
+        elif 'LadderDown' in tile_type:
+            self._render_ladder_down(x, y, width, height, darkness, depth)
+        elif 'Boulder' in tile_type:
+            is_looted = bool(getattr(tile, 'read', False))
+            self._render_boulder(x, y, width, height, darkness, depth, is_looted)
+        elif 'DeadBody' in tile_type:
+            is_quest_completed = bool(getattr(tile, 'read', False))
+            self._render_dead_body(x, y, width, height, darkness, depth, is_quest_completed)
         elif 'Chest' in tile_type:
             is_open = bool(getattr(tile, 'opened', False) or getattr(tile, 'open', False))
             is_locked = bool(getattr(tile, 'locked', False))
@@ -1466,7 +1685,247 @@ class EnhancedDungeonRenderer:
             # Render Unobtainium ore on the ground unless already looted
             is_looted = bool(getattr(tile, 'visited', False))
             self._render_unobtainium(x, y, width, height, darkness, depth, is_looted)
+        elif 'BossRoom' in tile_type:
+            # Render boss enemy sprite if enemy exists and is alive
+            enemy = getattr(tile, 'enemy', None)
+            defeated = getattr(tile, 'defeated', False)
+            
+            # Only render if not defeated
+            if enemy and not defeated:
+                # Render enemy at one depth further for proper perspective
+                enemy_depth = min(depth + 1, 3)
+                # If enemy is still a class (not yet instantiated), create temp instance for name
+                if callable(enemy):
+                    try:
+                        temp_enemy = enemy()
+                        self._render_boss_enemy(x, y, width, height, darkness, enemy_depth, temp_enemy)
+                    except:
+                        pass  # Skip if we can't instantiate
+                # If enemy is an instance, check if alive
+                elif hasattr(enemy, 'is_alive') and enemy.is_alive():
+                    self._render_boss_enemy(x, y, width, height, darkness, enemy_depth, enemy)
         # Additional tile contents (enemies, relics, etc.) can be added here as needed
+
+    def _render_ladder_up(self, x, y, width, height, darkness, depth):
+        """Render a ladder up in the forward/center view.
+        
+        depth=0: Standing on ladder tile (skip rendering - you see the floor beneath)
+        depth=1: Viewing ladder from adjacent space (render at normal size, 100%)
+        depth=2+: Viewing from distance (render smaller for perspective)
+        """
+        if depth == 0:
+            # Don't render stairs/ladders when standing on them
+            return
+        elif depth == 1:
+            # Viewing from adjacent space - render at normal size
+            ladder_tile = self._get_ladder_up_tile(depth)
+            size_factor = 1.0  # 100% normal size
+        else:
+            # Viewing from distance - render smaller for perspective
+            next_depth = depth + 1 if depth < 3 else depth
+            ladder_tile = self._get_ladder_up_tile(next_depth)
+            size_factor = 0.85 if depth == 2 else 0.9  # Scaled down when viewing from distance
+        
+        if ladder_tile:
+            ladder_width = int(width * size_factor)
+            ladder_height = int(height * size_factor)
+            ladder_x = x + (width - ladder_width) // 2
+            ladder_y = y + (height - ladder_height) // 2
+            
+            ladder_surf = pygame.transform.smoothscale(ladder_tile, (ladder_width, ladder_height))
+            ladder_surf = self._apply_darkness_to_surface(ladder_surf, darkness)
+            self.screen.blit(ladder_surf, (ladder_x, ladder_y))
+
+    def _render_ladder_down(self, x, y, width, height, darkness, depth):
+        """Render a ladder down sprite on top of the pit floor texture.
+        
+        depth=0: Standing on ladder tile (skip rendering - you see the pit floor beneath)
+        depth=1+: Viewing from distance (render at tile size)
+        """
+        if depth == 0:
+            # Don't render stairs/ladders when standing on them
+            return
+        
+        # Viewing from normal distance
+        ladder_tile = self._get_ladder_down_tile(depth)
+        size_factor = 1.0  # Full size
+        
+        if ladder_tile:
+            ladder_width = int(width * size_factor)
+            ladder_height = int(height * size_factor)
+            ladder_x = x + (width - ladder_width) // 2
+            ladder_y = y + (height - ladder_height) // 2
+            
+            ladder_surf = pygame.transform.smoothscale(ladder_tile, (ladder_width, ladder_height))
+            ladder_surf = self._apply_darkness_to_surface(ladder_surf, darkness)
+            self.screen.blit(ladder_surf, (ladder_x, ladder_y))
+        else:
+            # Fallback: Draw a simple colored representation
+            ladder_color = self._apply_darkness(self.colors.get('stairs_down', (200, 120, 80)), darkness)
+            pygame.draw.rect(self.screen, ladder_color, pygame.Rect(x, y, width, height))
+
+    def _render_boulder(self, x, y, width, height, darkness, depth, is_looted):
+        """Render a boulder tile; show sword before looting, plain after."""
+        depth_for_tile = 1 if depth <= 0 else depth
+        boulder_tile = self._get_boulder_tile(depth_for_tile, has_sword=not is_looted)
+
+        if depth <= 0:
+            size_ratio = 1.0
+        elif depth == 1:
+            size_ratio = 0.6
+        elif depth == 2:
+            size_ratio = 0.4
+        else:
+            size_ratio = 0.2
+
+        boulder_size = max(8, int(height * size_ratio))
+        boulder_x = x + (width - boulder_size) // 2
+        boulder_y = y + height - boulder_size
+        if depth == 0:
+            boulder_y += int(height * 0.5)  # Lower slightly when standing on it
+
+        if boulder_tile:
+            boulder_surf = pygame.transform.smoothscale(boulder_tile, (boulder_size, boulder_size))
+            boulder_surf = self._apply_darkness_to_surface(boulder_surf, darkness)
+            self.screen.blit(boulder_surf, (boulder_x, boulder_y))
+            return
+
+        fallback_color = (120, 110, 100)
+        boulder_color = self._apply_darkness(fallback_color, darkness)
+        boulder_rect = pygame.Rect(boulder_x, boulder_y, boulder_size, boulder_size)
+        pygame.draw.rect(self.screen, boulder_color, boulder_rect)
+
+    def _render_dead_body(self, x, y, width, height, darkness, depth, is_quest_completed=False):
+        """Render a dead body sprite on the floor for depth perception."""
+        # Skip sprite rendering when standing on the tile (depth=0); floor texture is sufficient
+        if depth <= 0:
+            return
+        
+        # Map depth to tile size and render parameters
+        depth_for_tile = 1 if depth <= 0 else depth
+        dead_body_tile = self._get_dead_body_tile(depth_for_tile, is_quest_completed)
+
+        # Size the sprite based on viewing depth
+        if depth <= 0:
+            size_ratio = 1.4  # Larger when standing on it for depth perception
+        elif depth == 1:
+            size_ratio = 0.9  # Normal size when viewing from adjacent
+        elif depth == 2:
+            size_ratio = 0.65  # Smaller at distance
+        else:
+            size_ratio = 0.45  # Very small when far away
+
+        body_size = max(8, int(height * size_ratio))
+        body_x = x + (width - body_size) // 2
+        
+        # Position varies by depth for better 3D effect
+        # When standing on it (depth=0), position it lower to create depth
+        # When viewing from adjacent (depth=1+), position higher
+        if depth <= 0:
+            body_y = y + int(height * 0.72)  # Much lower when standing on it
+        elif depth == 1:
+            body_y = y + int(height * 0.65)  # Normal position when adjacent
+        else:
+            body_y = y + int(height * 0.60)  # Slightly higher when far away
+
+        if dead_body_tile:
+            body_surf = pygame.transform.smoothscale(dead_body_tile, (body_size, body_size))
+            body_surf = self._apply_darkness_to_surface(body_surf, darkness)
+            self.screen.blit(body_surf, (body_x, body_y))
+    
+    def _get_enemy_sprite(self, enemy_name, depth):
+        """Load and cache enemy sprite for the given enemy and depth.
+        
+        Args:
+            enemy_name: Name of the enemy (e.g., 'Minotaur', 'Barghest')
+            depth: Depth level (1, 2, 3)
+        
+        Returns:
+            Scaled pygame.Surface or None if not found
+        """
+        size_map = {1: 512, 2: 256, 3: 128}
+        
+        if depth not in size_map:
+            return None
+        
+        # Check if we already have the scaled version cached
+        cache_key = (enemy_name, depth)
+        if cache_key in self._enemy_sprite_scaled:
+            return self._enemy_sprite_scaled[cache_key]
+        
+        # Load base sprite if not already cached
+        if enemy_name not in self._enemy_sprite_cache:
+            sprite_filename = f"{enemy_name.lower().replace(' ', '_')}.png"
+            sprite_path = os.path.join('src/ui_pygame/assets/sprites/enemies', sprite_filename)
+            
+            if os.path.exists(sprite_path):
+                try:
+                    base_sprite = pygame.image.load(sprite_path).convert_alpha()
+                    self._enemy_sprite_cache[enemy_name] = base_sprite
+                except Exception as e:
+                    print(f"Failed to load enemy sprite {sprite_path}: {e}")
+                    self._enemy_sprite_cache[enemy_name] = None
+            else:
+                self._enemy_sprite_cache[enemy_name] = None
+        
+        base_sprite = self._enemy_sprite_cache.get(enemy_name)
+        if base_sprite is None:
+            return None
+        
+        # Scale to appropriate size for depth
+        target_size = size_map[depth]
+        scaled_sprite = pygame.transform.smoothscale(base_sprite, (target_size, target_size))
+        self._enemy_sprite_scaled[cache_key] = scaled_sprite
+        
+        return scaled_sprite
+    
+    def _render_boss_enemy(self, x, y, width, height, darkness, depth, enemy):
+        """Render boss enemy sprite in the dungeon view.
+        
+        Args:
+            x, y: Position to render
+            width, height: Render area dimensions
+            darkness: Darkness level (0.0 to 1.0)
+            depth: Distance from player (1=adjacent, 2=far, 3=very far)
+            enemy: Enemy object with name attribute
+        """
+        if depth == 0:
+            # Don't render enemy when standing on the tile
+            return
+        
+        if not enemy or not hasattr(enemy, 'name'):
+            return
+        
+        enemy_name = enemy.name
+        depth_for_sprite = min(depth, 3)
+        enemy_sprite = self._get_enemy_sprite(enemy_name, depth_for_sprite)
+        
+        if not enemy_sprite:
+            # Fallback: render a colored rectangle
+            enemy_color = self._apply_darkness((200, 50, 50), darkness)
+            enemy_rect = pygame.Rect(x + width // 4, y + height // 4, width // 2, height // 2)
+            pygame.draw.rect(self.screen, enemy_color, enemy_rect)
+            return
+        
+        # Size and position based on depth
+        if depth == 1:
+            size_ratio = 0.8  # 80% of view when adjacent
+            y_offset = 0.45  # Position lower in view, closer to floor
+        elif depth == 2:
+            size_ratio = 0.5  # 50% at medium distance
+            y_offset = 0.5  # Positioned in middle-lower area
+        else:
+            size_ratio = 0.3  # 30% when far
+            y_offset = 0.55  # Positioned in middle area
+        
+        sprite_size = int(min(width, height) * size_ratio)
+        sprite_x = x + (width - sprite_size) // 2
+        sprite_y = y + int(height * y_offset)
+        
+        # Scale and render
+        sprite_surf = pygame.transform.smoothscale(enemy_sprite, (sprite_size, sprite_size))
+        sprite_surf = self._apply_darkness_to_surface(sprite_surf, darkness)
+        self.screen.blit(sprite_surf, (sprite_x, sprite_y))
 
     def _render_chest(self, x, y, width, height, darkness, depth, is_open=False, is_locked=False):
         """Render a chest using pre-made tiles, bottom-aligned to sit on the floor."""
@@ -1518,7 +1977,6 @@ class EnhancedDungeonRenderer:
 
     def _get_chest_locked_tile(self, depth):
         """Load and scale the locked chest tile for the given depth."""
-        size_map = {1: 512, 2: 256, 3: 128}
 
         # Lazy-load base image
         if self._chest_locked_base is None:
@@ -1532,20 +1990,19 @@ class EnhancedDungeonRenderer:
             else:
                 self._chest_locked_base = None
 
-        if depth not in size_map or self._chest_locked_base is None:
+        if self._chest_locked_base is None:
             return None
 
         if depth in self._chest_locked_cache:
             return self._chest_locked_cache[depth]
 
-        target_size = size_map[depth]
+        target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(self._chest_locked_base, (target_size, target_size))
         self._chest_locked_cache[depth] = scaled
         return scaled
 
     def _get_chest_unlocked_tile(self, depth):
         """Load and scale the unlocked (closed) chest tile for the given depth."""
-        size_map = {1: 512, 2: 256, 3: 128}
 
         if self._chest_unlocked_base is None:
             chest_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'closed_unlocked_chest.png')
@@ -1558,20 +2015,19 @@ class EnhancedDungeonRenderer:
             else:
                 self._chest_unlocked_base = None
 
-        if depth not in size_map or self._chest_unlocked_base is None:
+        if self._chest_unlocked_base is None:
             return None
 
         if depth in self._chest_unlocked_cache:
             return self._chest_unlocked_cache[depth]
 
-        target_size = size_map[depth]
+        target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(self._chest_unlocked_base, (target_size, target_size))
         self._chest_unlocked_cache[depth] = scaled
         return scaled
 
     def _get_chest_open_tile(self, depth):
         """Load and scale the open chest tile for the given depth."""
-        size_map = {1: 512, 2: 256, 3: 128}
 
         if self._chest_open_base is None:
             chest_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'opened_chest.png')
@@ -1584,20 +2040,19 @@ class EnhancedDungeonRenderer:
             else:
                 self._chest_open_base = None
 
-        if depth not in size_map or self._chest_open_base is None:
+        if self._chest_open_base is None:
             return None
 
         if depth in self._chest_open_cache:
             return self._chest_open_cache[depth]
 
-        target_size = size_map[depth]
+        target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(self._chest_open_base, (target_size, target_size))
         self._chest_open_cache[depth] = scaled
         return scaled
     
     def _get_altar_tile(self, relic_num, depth, is_collected):
         """Load and scale the altar tile for the given relic number and depth."""
-        size_map = {1: 512, 2: 256, 3: 128}
         
         # Determine which altar image to use
         if is_collected:
@@ -1629,7 +2084,7 @@ class EnhancedDungeonRenderer:
                 self._altar_bases[cache_key] = None
         
         base_img = self._altar_bases.get(cache_key)
-        if depth not in size_map or base_img is None:
+        if base_img is None:
             return None
         
         # Check cache for this specific altar and depth
@@ -1640,7 +2095,7 @@ class EnhancedDungeonRenderer:
             return self._altar_caches[cache_key][depth]
         
         # Scale and cache
-        target_size = size_map[depth]
+        target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(base_img, (target_size, target_size))
         self._altar_caches[cache_key][depth] = scaled
         return scaled
@@ -1675,6 +2130,10 @@ class EnhancedDungeonRenderer:
         
     def _render_stairs_up(self, x, y, width, height, darkness, depth):
         """Render ascending stairs using the pre-made tile."""
+        if depth == 0:
+            # Don't render stairs/ladders when standing on them
+            return
+        
         stairs_tile = self._get_stairs_up_tile(depth)
 
         if stairs_tile:
@@ -1696,6 +2155,10 @@ class EnhancedDungeonRenderer:
     
     def _render_stairs_down(self, x, y, width, height, darkness, depth):
         """Render descending stairs using the pre-made tile."""
+        if depth == 0:
+            # Don't render stairs/ladders when standing on them
+            return
+        
         stairs_tile = self._get_stairs_down_tile(depth)
 
         if stairs_tile:
@@ -1717,7 +2180,6 @@ class EnhancedDungeonRenderer:
 
     def _get_unobtainium_tile(self, depth):
         """Load and scale the Unobtainium sprite for the given depth."""
-        size_map = {1: 256, 2: 192, 3: 128}
 
         # Lazy-load base image
         if not hasattr(self, '_unobtainium_base'):
@@ -1736,13 +2198,13 @@ class EnhancedDungeonRenderer:
             else:
                 self._unobtainium_base = None
 
-        if depth not in size_map or self._unobtainium_base is None:
+        if self._unobtainium_base is None:
             return None
 
         if depth in self._unobtainium_cache:
             return self._unobtainium_cache[depth]
 
-        target_size = size_map[depth]
+        target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(self._unobtainium_base, (target_size, target_size))
         self._unobtainium_cache[depth] = scaled
         return scaled
@@ -1924,6 +2386,10 @@ class EnhancedDungeonRenderer:
             # Show as wall if not open and not detected
             return not (is_open or is_detected)
 
+        # Chest tiles should always render, even if impassable (enter=False)
+        if 'Chest' in tile_type or 'Relic' in tile_type:
+            return False
+
         # Wall tiles have enter=False, walkable tiles have enter=True
         # If no enter attribute, assume it's a wall (safer default)
         enter = getattr(tile, 'enter', False)
@@ -1984,6 +2450,10 @@ class EnhancedDungeonRenderer:
             return 0.4
         else:
             return 0.8
+
+    def _get_base_size(self, depth: int) -> int:
+        base_size = LAYER1_SIZE if depth == 1 else (LAYER2_SIZE if depth == 2 else LAYER3_SIZE)
+        return base_size
 
     def _lerp_color(self, color1, color2, t):
         """Linear interpolation between two colors."""

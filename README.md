@@ -27,6 +27,9 @@ Standard Library
 
 EXECUTION:
 - source launch.sh (play the game)
+- source launch_gui.sh (play the Pygame GUI)
+- source launch_gui_character_menu.sh (open Character Menu directly with default preview character)
+- python game_pygame.py --character-menu (direct Character Menu preview)
 - python3 tools/dev_tools.py --help (test new systems)
  
 DESCRIPTION:

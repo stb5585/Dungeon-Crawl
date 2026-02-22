@@ -138,6 +138,38 @@ class StairsDown(MapTile):
         return self.adjacent_moves(player_char, [actions_dict['StairsDown'], actions_dict['CharacterMenu']])
 
 
+class LadderUp(MapTile):
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += (f"{game.player_char.name} sees a sturdy ladder leading up.\n"
+                      f"(Enter 'u' to use)\n")
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions_dict['StairsUp'], actions_dict['CharacterMenu']])
+
+
+class LadderDown(MapTile):
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += (f"{game.player_char.name} sees a sturdy ladder leading down.\n"
+                      f"(Enter 'j' to use)\n")
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions_dict['StairsDown'], actions_dict['CharacterMenu']])
+
+
 class SpecialTile(MapTile):
 
     def __init__(self, x, y, z):
@@ -307,6 +339,39 @@ class CavePath2(CavePath):
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy(str(self.z + 1))
         player_char.state = 'fight'
+
+
+class FunhousePath(CavePath):
+
+    def enter_combat(self, player_char):
+        self.enemy = enemies.funhouse_enemy()
+        player_char.state = 'fight'
+
+
+class MirrorWall(MapTile):
+    """A confusing mirror wall that redirects the player's movement."""
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.blocked = None
+        self.enter = False
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += f"{game.player_char.name} sees only endless reflections and twisted corridors.\n"
+        intro_str += "Which way is forward?\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+        # Disorient the player: reverse their facing direction
+        reverse_map = {"north": "south", "south": "north", "east": "west", "west": "east"}
+        original_facing = game.player_char.facing
+        game.player_char.facing = reverse_map.get(original_facing, original_facing)
+
+    def available_actions(self, player_char):
+        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
 
 
 class BossPath(CavePath):
@@ -665,11 +730,46 @@ class JesterBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Jester
+        self.tokens_required = 4
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return "The twisted carnival around you suddenly snaps back to reality. You have vanquished the Jester.\n"
         return super().intro_text(game)
+    
+    def modify_player(self, game):
+        """Check for tokens before allowing combat with Jester."""
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+        
+        # Count Jester Tokens in inventory
+        token_count = len([item for items in game.player_char.inventory.values() for item in items 
+                          if hasattr(item, 'name') and item.name == "Jester Token"])
+        
+        if token_count < self.tokens_required:
+            # Not enough tokens - turn player away
+            msg = f"The Jester emerges from the shadows, blocking your path.\n"
+            msg += f"'Not ready yet, carnival wanderer! Return when you've collected more of my tokens.'\n"
+            msg += f"Tokens collected: {token_count}/{self.tokens_required}\n"
+            if hasattr(game, 'add_message'):
+                game.add_message(msg)
+            return
+        
+        # Enough tokens - proceed with normal combat startup
+        if not self.defeated:
+            self.generate_enemy()
+            if self.enemy.is_alive():
+                self.enter_combat(game.player_char)
+    
+    def special_text(self, game):
+        """Handle victory condition and exit the funhouse."""
+        if not self.enemy and game.player_char.location_z == 7:
+            # Jester defeated - exit the funhouse
+            game.player_char.exit_funhouse()
+            if hasattr(game, 'special_event'):
+                game.special_event("Jester Defeated")
+        else:
+            super().special_text(game)
 
 
 class DomingoBossRoom(BossRoom):
@@ -722,6 +822,7 @@ class ChestRoom(MapTile):
         self.open = False
         self.locked = False
         self.loot = None
+        self.enter = False
         self.generate_loot()  # Generate loot when chest is created
 
     def available_actions(self, player_char):
@@ -1074,6 +1175,10 @@ class UnobtainiumRoom(SpecialTile):
 
 class RelicRoom(SpecialTile):
 
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = False
+
     def intro_text(self, game):
         intro_str = super().intro_text(game)
         intro_str += "An empty altar stands in the center of the room.\n"
@@ -1100,6 +1205,11 @@ class RelicRoom(SpecialTile):
 
 class DeadBody(SpecialTile):
 
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = None
+        self.defeated = False
+
     def intro_text(self, game):
         intro_str = super().intro_text(game)
         if not self.read:
@@ -1116,7 +1226,7 @@ class DeadBody(SpecialTile):
     def modify_player(self, game):
         self.adjacent_visited(game.player_char)
         self.visited = True
-        if 'Something to Cry About' in game.player_char.quest_dict['Side']:
+        if 'Something to Cry About' in game.player_char.quest_dict['Side'] and not self.defeated:
             if not game.player_char.quest_dict['Side']['Something to Cry About']['Completed']:
                 game.special_event("Waitress")
                 self.enter_combat(game.player_char)
@@ -1279,3 +1389,68 @@ class WarpPoint(MapTile):
 
     def available_actions(self, player_char):
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+
+class FunhouseTeleporter(SpecialTile):
+
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+
+        # Already in the funhouse; no further teleporting needed.
+        if game.player_char.location_z == 7:
+            return
+
+        # Save return point for potential future exit logic.
+        game.player_char.funhouse_return = (
+            game.player_char.location_x,
+            game.player_char.location_y,
+            game.player_char.location_z,
+            game.player_char.facing,
+        )
+
+        # Move player into the dedicated funhouse challenge level (level 4 boss area).
+        game.player_char.location_x = 0
+        game.player_char.location_y = 9
+        game.player_char.location_z = 7
+        game.player_char.facing = "north"
+        
+        # Trigger funhouse entry special event
+        game.special_event("Funhouse Entry")
+
+class FunhouseMimicChest(ChestRoom):
+    """A special chest for the funhouse that guarantees a Mimic encounter and drops a Jester Token."""
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.locked = False
+        self.enemy = None
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        if not self.open:
+            intro_str += f"{game.player_char.name} finds a peculiar chest adorned with strange patterns. (Enter 'o' to open)\n"
+        else:
+            intro_str += "This chest has already been opened.\n"
+        return intro_str
+
+    def available_actions(self, player_char):
+        if not self.open:
+            if player_char.state == 'fight':
+                action_list = ["Attack", "Use Item", "Flee"]
+                if not player_char.status_effects["Silence"].active:
+                    if player_char.usable_abilities("Spells"):
+                        action_list.insert(1, "Cast Spell")
+                    if player_char.usable_abilities("Skills"):
+                        action_list.insert(1, "Use Skill")
+                action_list = player_char.additional_actions(action_list)
+                return action_list
+            return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
+        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+    def generate_loot(self):
+        """Generate level 4 loot for the funhouse chest (not scaled to z=7)."""
+        if self.loot is None:
+            # Generate loot at level 4 difficulty (not at zone level)
+            self.loot = items.random_item(4)
+

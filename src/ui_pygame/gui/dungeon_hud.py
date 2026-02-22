@@ -333,6 +333,7 @@ class DungeonHUD:
         """Render minimap showing nearby explored areas."""
         x_margin = self.hud_x + 20
         minimap_size = min(200, self.hud_width - 40)
+        visible_adjacent = self._get_visible_adjacent_positions(player_char)
         
         # Title
         map_title = self.stat_font.render("Map", True, (150, 150, 255))
@@ -360,6 +361,7 @@ class DungeonHUD:
                 
                 if tile:
                     tile_type = type(tile).__name__
+                    is_directly_visible = (tile_x, tile_y) in visible_adjacent
                     
                     if dx == 0 and dy == 0:
                         # Player position - draw base tile first, then player marker with arrow
@@ -397,17 +399,29 @@ class DungeonHUD:
                         
                         pygame.draw.polygon(self.screen, (0, 0, 0), points)
                         
-                    elif getattr(tile, 'visited', False):
-                        # Visited tile
+                    elif getattr(tile, 'visited', False) or getattr(tile, 'near', False) or is_directly_visible:
+                        # Explored tile (visited/near) or directly visible adjacent tile
+                        is_visited = getattr(tile, 'visited', False)
+                        is_near = getattr(tile, 'near', False)
                         if tile_type == 'FakeWall':
-                            # Hidden passage - show in special color (purple/magenta)
-                            pygame.draw.rect(self.screen, (150, 100, 150), tile_rect)
+                            # Keep FakeWall hidden unless actually visited
+                            if is_visited:
+                                pygame.draw.rect(self.screen, (150, 100, 150), tile_rect)
+                            else:
+                                pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
                         elif not getattr(tile, 'enter', True):
                             # Wall
-                            pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
+                            wall_color = (80, 80, 90) if is_visited else (70, 70, 80)
+                            pygame.draw.rect(self.screen, wall_color, tile_rect)
                         else:
                             # Corridor
-                            pygame.draw.rect(self.screen, (120, 120, 130), tile_rect)
+                            if is_visited:
+                                corridor_color = (120, 120, 130)
+                            elif is_near:
+                                corridor_color = (105, 105, 115)
+                            else:
+                                corridor_color = (95, 95, 105)
+                            pygame.draw.rect(self.screen, corridor_color, tile_rect)
                         
                         # Draw icons for special features on visited tiles
                         if 'Chest' in tile_type and not getattr(tile, 'opened', False):
@@ -437,6 +451,17 @@ class DungeonHUD:
                                      (center_x, center_y + icon_size // 2),
                                      (center_x - icon_size // 2, center_y)]
                             pygame.draw.polygon(self.screen, (0, 255, 255), points)
+
+                        if 'RelicRoom' in tile_type and getattr(tile, 'read', False):
+                            # Relic altar (collected) - gold diamond
+                            icon_size = tile_size // 3
+                            center_x = screen_x + tile_size // 2
+                            center_y = screen_y + tile_size // 2
+                            points = [(center_x, center_y - icon_size // 2),
+                                     (center_x + icon_size // 2, center_y),
+                                     (center_x, center_y + icon_size // 2),
+                                     (center_x - icon_size // 2, center_y)]
+                            pygame.draw.polygon(self.screen, (255, 215, 0), points)
 
                         if 'UndergroundSpring' in tile_type:
                             # Spring marker - cyan circle
@@ -470,8 +495,8 @@ class DungeonHUD:
                             star_lines = [star_points[star_order[i]] for i in range(len(star_order))]
                             pygame.draw.polygon(self.screen, (50, 255, 50), star_lines)
                         
-                        if 'StairsDown' in tile_type:
-                            # Stairs down - red downward arrow
+                        if 'StairsDown' in tile_type or 'LadderDown' in tile_type:
+                            # Stairs/Ladder down - red downward arrow
                             icon_size = tile_size // 3
                             center_x = screen_x + tile_size // 2
                             center_y = screen_y + tile_size // 2
@@ -480,8 +505,8 @@ class DungeonHUD:
                                      (center_x + icon_size // 2, center_y - icon_size // 3)]
                             pygame.draw.polygon(self.screen, (255, 50, 50), points)
                         
-                        if 'StairsUp' in tile_type:
-                            # Stairs up - green upward arrow
+                        if 'StairsUp' in tile_type or 'LadderUp' in tile_type:
+                            # Stairs/Ladder up - green upward arrow
                             icon_size = tile_size // 3
                             center_x = screen_x + tile_size // 2
                             center_y = screen_y + tile_size // 2
@@ -491,11 +516,47 @@ class DungeonHUD:
                             pygame.draw.polygon(self.screen, (50, 255, 50), points)
                     
                     elif getattr(tile, 'near', False):
-                        # Nearby but not visited - FakeWall looks like normal wall
                         pygame.draw.rect(self.screen, (50, 50, 60), tile_rect)
         
         y_offset += minimap_size + 5
         return y_offset
+
+    def _get_visible_adjacent_positions(self, player_char):
+        """Return adjacent N/S/E/W positions visible from the player's current tile."""
+        visible = set()
+        player_x, player_y, player_z = player_char.location_x, player_char.location_y, player_char.location_z
+        current_tile = player_char.world_dict.get((player_x, player_y, player_z))
+
+        directions = {
+            'north': (0, -1),
+            'south': (0, 1),
+            'east': (1, 0),
+            'west': (-1, 0),
+        }
+
+        for direction, (dx, dy) in directions.items():
+            if not self._is_direction_visible_from_tile(current_tile, direction):
+                continue
+
+            tile_x = player_x + dx
+            tile_y = player_y + dy
+            if player_char.world_dict.get((tile_x, tile_y, player_z)) is not None:
+                visible.add((tile_x, tile_y))
+
+        return visible
+
+    def _is_direction_visible_from_tile(self, current_tile, direction):
+        """Return whether a cardinal direction is visible from the current tile."""
+        if not current_tile:
+            return True
+
+        blocked = getattr(current_tile, 'blocked', None)
+        if blocked and blocked.lower() == direction:
+            if hasattr(current_tile, 'open') and getattr(current_tile, 'open', False):
+                return True
+            return False
+
+        return True
     
     def _render_compass(self, player_char, y_offset):
         """Render compass showing current facing direction."""

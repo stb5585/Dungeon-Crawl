@@ -124,6 +124,54 @@ class DungeonManager:
         return self.player_char.world_dict.get(
             (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)
         )
+    
+    def _check_random_cry(self):
+        """
+        Check if player should hear random cries on floor 2 during "Something to Cry About" quest.
+        Cries get louder as player gets closer to the dead body location.
+        """
+        # Only trigger on floor 2 (location_z == 2)
+        if self.player_char.location_z != 2:
+            return
+        
+        # Check if quest "Something to Cry About" is active and not completed
+        if 'Something to Cry About' not in self.player_char.quest_dict.get('Side', {}):
+            return
+        
+        if self.player_char.quest_dict['Side']['Something to Cry About'].get('Completed'):
+            return
+        
+        # Dead body is at approximately (18, 12, 2) - you can adjust these coords if needed
+        dead_body_x, dead_body_y = 18, 12
+        player_x = self.player_char.location_x
+        player_y = self.player_char.location_y
+        
+        # Calculate distance to dead body
+        distance = ((player_x - dead_body_x) ** 2 + (player_y - dead_body_y) ** 2) ** 0.5
+        
+        # Only trigger if within 30 tiles of dead body
+        if distance > 30:
+            return
+        
+        # Random chance increases as player gets closer
+        # At 5 tiles: 60% chance, at 10 tiles: 40% chance, at 20 tiles: 20% chance
+        base_chance = max(0.1, (30 - distance) / 50)  # Scales from 10% to 60%
+        
+        if random.random() > base_chance:
+            return
+        
+        # Generate cry message based on distance
+        cries = [
+            "*Heart-wrenching sobs echo through the dungeon...*",
+            "*A mournful wail reverberates in the distance...*",
+            "*The anguished cry of a broken soul pierces the air...*",
+            "*You hear desperate weeping somewhere nearby...*",
+            "*A wail of grief and despair fills the dungeon...*",
+            "*Anguished sobbing echoes through the corridors...*",
+        ]
+        
+        cry = random.choice(cries)
+        self.add_message(cry)
 
     def _load_dungeon_background(self):
         """Load and scale the dungeon background once."""
@@ -217,6 +265,11 @@ class DungeonManager:
         """Mark the 3D view and UI overlays to redraw next frame."""
         self.view_dirty = True
         self.ui_dirty = True
+
+    def _refresh_cached_frame(self):
+        """Ensure cached background reflects the current tile before popups/combat."""
+        if self.view_dirty or self.ui_dirty or self._cached_view is None:
+            self._render()
 
     def move_forward(self):
         """Move one tile forward if the path is clear."""
@@ -347,8 +400,9 @@ class DungeonManager:
     def use_stairs_up(self):
         """Use stairs to go up a level."""
         current_tile = self.get_current_tile()
+        tile_type = type(current_tile).__name__
 
-        if 'StairsUp' not in str(type(current_tile)):
+        if 'StairsUp' not in tile_type and 'LadderUp' not in tile_type:
             self.add_message("There are no stairs here!")
             return False
 
@@ -373,8 +427,9 @@ class DungeonManager:
     def use_stairs_down(self):
         """Use stairs to go down a level."""
         current_tile = self.get_current_tile()
+        tile_type = type(current_tile).__name__
 
-        if 'StairsDown' not in str(type(current_tile)):
+        if 'StairsDown' not in tile_type and 'LadderDown' not in tile_type:
             self.add_message("There are no stairs here!")
             return False
 
@@ -502,17 +557,21 @@ class DungeonManager:
                 self.add_message("The chest is locked! You need a Key or Lockpick skill.")
                 return
 
-        # Check for Mimic (same logic as curses version)
+        # Check for Mimic (FunhouseMimicChest always spawns one; other chests have random chance)
         locked = int('Locked' in tile_type)
         plus = int('ChestRoom2' in tile_type)
-        if not random.randint(0, 9 + self.player_char.check_mod('luck', luck_factor=3)) and self.player_char.level.level >= 10:
+        is_funhouse_mimic = 'FunhouseMimicChest' in tile_type
+        if is_funhouse_mimic or (not random.randint(0, 9 + self.player_char.check_mod('luck', luck_factor=3)) and self.player_char.level.level >= 10):
             print("[DEBUG] Mimic encounter triggered in chest interaction.")
             from src.core import enemies
-            enemy = enemies.Mimic(self.player_char.location_z + locked + plus)
+            # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
+            mimic_level = 4 if is_funhouse_mimic else (self.player_char.location_z + locked + plus)
+            enemy = enemies.Mimic(mimic_level)
             chest_tile.enemy = enemy
             self.add_message("There is a Mimic in the chest!")
             # Start combat with the Mimic
             self.player_char.state = 'fight'
+            self._refresh_cached_frame()
             victory = self.combat_manager.start_combat(self.player_char, enemy, chest_tile)
             if not getattr(enemy, "is_alive", lambda: True)():
                 chest_tile.enemy = None
@@ -535,6 +594,13 @@ class DungeonManager:
             # Then add to inventory
             self.player_char.modify_inventory(loot_item)
             self.add_message(f"Obtained {loot_item.name}!")
+            
+            # Funhouse Mimic Chest also drops a Jester Token
+            if is_funhouse_mimic:
+                from src.core import items as items_module
+                token = items_module.JesterToken()
+                self.player_char.modify_inventory(token)
+                self.add_message(f"A shimmering {token.name} manifests as the Mimic dissolves!")
         else:
             self.loot_popup.show_loot([], "Empty Chest")
 
@@ -718,6 +784,7 @@ class DungeonManager:
                 enemy = enemies.Fuath()
 
                 # Start combat
+                self._refresh_cached_frame()
                 combat_won = self.combat_manager.start_combat(
                     self.player_char,
                     enemy,
@@ -773,14 +840,38 @@ class DungeonManager:
 
     def _interact_dead_body(self, body_tile):
         """Handle dead body interaction."""
-        # Check for quest item
+        # Check for quest item pickup
         if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
             if not hasattr(body_tile, 'read') or not body_tile.read:
+                self.game.special_event("Dead Body")
                 self.add_message("You found a Lucky Locket on the body!")
                 self.player_char.modify_inventory(items.LuckyLocket(), rare=True, quest=True)
                 self.player_char.quest_dict["Main"]["A Bad Dream"]["Completed"] = True
                 body_tile.read = True
                 self.add_message("Quest completed: A Bad Dream")
+                return
+        
+        # Trigger Waitress encounter if "A Bad Dream" has been turned in
+        if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
+            if self.player_char.quest_dict["Main"]["A Bad Dream"].get("Turned In"):
+                if not self.player_char.quest_dict["Main"]["A Bad Dream"].get("Waitress Defeated", False):
+                    self.game.special_event("Waitress")
+                    self.add_message("The Waitress appears, overcome with grief and rage!")
+                    
+                    enemy = enemies.NightHag2()
+                    
+                    # Start combat
+                    self._refresh_cached_frame()
+                    combat_won = self.combat_manager.start_combat(
+                        self.player_char,
+                        enemy,
+                        body_tile
+                    )
+                    
+                    if combat_won:
+                        # Mark the encounter as complete
+                        self.player_char.quest_dict["Main"]["A Bad Dream"]["Waitress Defeated"] = True
+                    return
 
         # Check for Something to Cry About quest
         if "Something to Cry About" in self.player_char.quest_dict.get("Side", {}):
@@ -790,6 +881,7 @@ class DungeonManager:
                 enemy = enemies.NightHag2()
 
                 # Start combat
+                self._refresh_cached_frame()
                 combat_won = self.combat_manager.start_combat(
                     self.player_char,
                     enemy,
@@ -832,6 +924,7 @@ class DungeonManager:
             self.combat_manager.player_world_dict = self.player_char.world_dict
             
             # Start combat
+            self._refresh_cached_frame()
             combat_won = self.combat_manager.start_combat(
                 self.player_char,
                 devil,
@@ -870,8 +963,12 @@ class DungeonManager:
 
             if 'StairsUp' in tile_type:
                 messages.append("You see stairs leading upward.")
+            elif 'LadderUp' in tile_type:
+                messages.append("A sturdy ladder leads upward.")
             elif 'StairsDown' in tile_type:
                 messages.append("You see stairs descending into darkness.")
+            elif 'LadderDown' in tile_type:
+                messages.append("A sturdy ladder descends into darkness.")
             elif 'SecretShop' in tile_type:
                 messages.append("You've found a secret shop! (Press O to enter)")
             elif 'UltimateArmorShop' in tile_type:
@@ -1063,6 +1160,7 @@ class DungeonManager:
             self.combat_manager.player_world_dict = self.player_char.world_dict
 
             # Initiate combat
+            self._refresh_cached_frame()
             combat_won = self.combat_manager.start_combat(
                 self.player_char,
                 enemy,
@@ -1074,14 +1172,14 @@ class DungeonManager:
                 current_tile.enemy = None
                 self.add_message("You emerge victorious!")
             elif not self.player_char.is_alive():
-                # Player died - return to town instead of quitting
-                self.add_message("You were defeated... You awaken safely back in town.")
-                # Move player to town and reset state
-                try:
+                # Player died - return to town or exit funhouse
+                if self.player_char.location_z == 7:
+                    # In funhouse - exit instead of going to town
+                    self.add_message("You were defeated... The funhouse spits you back out.")
+                    self.player_char.exit_funhouse()
+                else:
+                    self.add_message("You were defeated... You awaken safely back in town.")
                     self.player_char.to_town()
-                except Exception:
-                    # Fallback to default town location if method not available
-                    self.player_char.location_x, self.player_char.location_y, self.player_char.location_z = (5, 10, 0)
                 self.player_char.state = 'normal'
                 # End dungeon exploration loop (return control to town menu)
                 self.running = False
@@ -1127,6 +1225,10 @@ class DungeonManager:
 
         # Initialize animation timer (torch flicker, subtle post-effects, etc.)
         self._next_anim_tick = pygame.time.get_ticks() + self._anim_interval_ms
+        
+        # Initialize cry timer for floor 2 quest
+        self._last_cry_time = 0
+        self._cry_interval = 8000  # Check every 8 seconds
 
         while self.running:
             # Handle events
@@ -1143,6 +1245,11 @@ class DungeonManager:
             if now >= self._next_anim_tick:
                 self._mark_view_dirty()
                 self._next_anim_tick = now + self._anim_interval_ms
+            
+            # Check for random cries on floor 2 during "Something to Cry About" quest
+            if now >= self._last_cry_time + self._cry_interval:
+                self._check_random_cry()
+                self._last_cry_time = now
 
             # Keep UI refreshing while a damage flash is active so the fade animates
             if getattr(self.renderer, '_damage_flash_active', False):
@@ -1212,9 +1319,10 @@ class DungeonManager:
         menu_options = [
             "Resume Exploration",
             "Character Menu",
-            "Save and Quit",
-            "Quit Game (No Save)"
         ]
+        if getattr(self.game, "debug_mode", False):
+            menu_options.append("Save Game")
+        menu_options.append("Quit Game (No Save)")
 
         choice = self._popup_menu("Dungeon Menu", menu_options)
 
@@ -1235,17 +1343,14 @@ class DungeonManager:
                 else:
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
 
-        elif choice == 2:  # Save and Quit
+        elif menu_options[choice] == "Save Game":
             from .confirmation_popup import ConfirmationPopup
-            popup = ConfirmationPopup(self.presenter, "Save your progress before quitting?")
+            popup = ConfirmationPopup(self.presenter, "Save your progress?")
             if popup.show():
-                # Save the game
                 self.game.save_game()
                 self.add_message("Game saved!")
-                self.running = False
-                self.player_char.quit = True
 
-        elif choice == 3:  # Quit without saving
+        elif menu_options[choice] == "Quit Game (No Save)":
             from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "Quit without saving? Progress will be lost.")
             if popup.show():

@@ -118,7 +118,7 @@ class BarracksManager(TownScreenBase):
                 continue
             
             # Move to storage
-            self.player_char.modify_inventory(item, num=quantity, storage=True)
+            self.player_char.modify_inventory(item, num=quantity, storage=True, subtract=True)
             popup = ConfirmationPopup(self.presenter, f"Stored {quantity}x {item.name}", show_buttons=False)
             popup.show()
     

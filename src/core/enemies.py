@@ -14,35 +14,38 @@ def random_enemy(level):
     """
     Takes the current level a player is on and returns a random enemy
     """
+    monsters = {
+      '0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
+      '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
+          Panther(), TwistedDwarf(), BattleToad(), Satyr()],
+      '2': [Panther(), TwistedDwarf(), BattleToad(), Satyr(), Gnoll(), GiantOwl(), Orc(), Vampire(),
+          VampireBat(), Direwolf(), RedSlime(), GiantSnake(), GiantScorpion(), Warrior(), Harpy(), Naga(),
+          Wererat(), Xorn(), SteelPredator()],
+      '3': [Clannfear(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre(), BlackSlime(), GoldenEagle(),
+          PitViper(), Alligator(), Disciple(), Werewolf(), Antlion(), InvisibleStalker(), NightHag(),
+          Treant(), Ankheg()],
+      '4': [Antlion(), InvisibleStalker(), NightHag(), BrownSlime(), Troll(), Gargoyle(), Conjurer(),
+          Chimera(), Dragonkin(), Griffin(), DrowAssassin(), Cyborg(), DarkKnight(), FireMyrmidon(),
+          IceMyrmidon(), StormMyrmidon(), WaterMyrmidon(), EarthMyrmidon(), WindMyrmidon(),
+          DisplacerBeast()],
+      '5': [FireMyrmidon(), IceMyrmidon(), StormMyrmidon(), WaterMyrmidon(), EarthMyrmidon(), WindMyrmidon(),
+          DisplacerBeast(), ShadowSerpent(), Aboleth(), Beholder(), Behemoth(), Basilisk(),
+          Hydra(), Lich(), MindFlayer(), Sandworm(), Warforged(), Wyrm(), Wyvern(), Archvile(),
+          BrainGorger()],
+      '6': [Beholder(), Behemoth(), Lich(), MindFlayer(), Wyvern(), Archvile(), BrainGorger()],
+    }
 
-    monsters = {'0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
-                '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
-                      Panther(), TwistedDwarf(), BattleToad(), Satyr()],
-                '2': [Panther(), TwistedDwarf(), BattleToad(), Satyr(), Gnoll(), GiantOwl(), Orc(), Vampire(),
-                      VampireBat(), Direwolf(), RedSlime(), GiantSnake(), GiantScorpion(), Warrior(), Harpy(), Naga(),
-                      Wererat(), Xorn(), SteelPredator()],
-                '3': [Clannfear(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre(), BlackSlime(), GoldenEagle(),
-                      PitViper(), Alligator(), Disciple(), Werewolf(), Antlion(), InvisibleStalker(), NightHag(),
-                      Treant(), Ankheg()],
-                '4': [Antlion(), InvisibleStalker(), NightHag(), BrownSlime(), Troll(), Gargoyle(), Conjurer(),
-                      Chimera(), Dragonkin(), Griffin(), DrowAssassin(), Cyborg(), DarkKnight(), Myrmidon(),
-                      DisplacerBeast()],
-                '5': [Myrmidon(), DisplacerBeast(), ShadowSerpent(), Aboleth(), Beholder(), Behemoth(), Basilisk(),
-                      Hydra(), Lich(), MindFlayer(), Sandworm(), Warforged(), Wyrm(), Wyvern(), Archvile(),
-                      BrainGorger()],
-                '6': [Beholder(), Behemoth(), Lich(), MindFlayer(), Wyvern(), Archvile(), BrainGorger()]}
+    if level not in monsters:
+      level = max(monsters, key=int)
 
     random_monster = random.choice(monsters[level])
     # random_monster = Test()
-    if random_monster.name == "Myrmidon":
-        random_monster = random.choice([FireMyrmidon(),
-                                        IceMyrmidon(),
-                                        ElectricMyrmidon(),
-                                        WaterMyrmidon(),
-                                        EarthMyrmidon(),
-                                        WindMyrmidon()])
 
     return random_monster
+
+
+def funhouse_enemy():
+    return random.choice([Puppet(), Harlequin(), Trickster()])
 
 
 class Enemy(Character):
@@ -79,7 +82,6 @@ class Enemy(Character):
         self.enemy_typ = ""
         self.action_stack = []
         self.picture = "test.txt"
-        self.color = (150, 150, 150)  # Default gray, overridden by subclasses
 
     def __str__(self):
         return (f"{self.name} | "
@@ -157,7 +159,7 @@ class Enemy(Character):
             for skill_name, _ in self.spellbook['Skills'].items():
                 if any([self.spellbook['Skills'][skill_name].passive,
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
-                        self.spellbook["Skills"][skill_name].weapon and self.physical_effects["Disarm"].active,
+                        self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
                         self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
                             self.health.current > self.health.max * 0.25,
                         self.tunnel]):
@@ -168,7 +170,7 @@ class Enemy(Character):
                     skill_list.append(skill_name)
             if skill_list:
                 action_list.append("Use Skill")
-        if self.physical_effects["Disarm"].active:
+        if self.is_disarmed():
             action_list.append("Pickup Weapon")
         if self.tunnel:
             action_list.extend(["Surface", "Nothing"])
@@ -288,7 +290,7 @@ class Enemy(Character):
             for skill_name, _ in self.spellbook['Skills'].items():
                 if any([self.spellbook['Skills'][skill_name].passive,
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
-                        self.spellbook["Skills"][skill_name].weapon and self.physical_effects["Disarm"].active,
+                        self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
                         self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
                             self.health.current > self.health.max * 0.25 and
                             not self.status_effects.get("Steal Success", StatusEffect()).active,
@@ -301,7 +303,7 @@ class Enemy(Character):
             if skill_list:
                 action_list.append("Use Skill")
         
-        if self.physical_effects["Disarm"].active:
+        if self.is_disarmed():
             action_list.append("Pickup Weapon")
         if self.tunnel:
             action_list.extend(["Surface", "Nothing"])
@@ -703,14 +705,13 @@ class Mimic(Aberration):
         self.level.pro_level = z
         self.sight = True
         self.picture = "mimic.txt"
-        self.color = (150, 75, 0)  # Brown
 
 
 # Starting enemies
 class GreenSlime(Slime):
 
     def __init__(self):
-        super().__init__(name='Green Slime', health=random.randint(7, 14), mana=25, strength=6, intel=15, wisdom=15,
+        super().__init__(name='Green Slime', health=random.randint(6, 9), mana=25, strength=6, intel=15, wisdom=15,
                          con=8, charisma=1, dex=6, attack=3, defense=7, magic=8, magic_def=99,
                          exp=random.randint(1, 20))
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
@@ -725,7 +726,6 @@ class GreenSlime(Slime):
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 0
-        self.color = (0, 200, 0)  # Green
 
 
 class GiantRat(Animal):
@@ -743,7 +743,6 @@ class GiantRat(Animal):
         ]
         self.level.pro_level = 0
         self.picture = "giantrat.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Goblin(Humanoid):
@@ -765,7 +764,6 @@ class Goblin(Humanoid):
         ]
         self.level.pro_level = 0
         self.picture = "goblin.txt"
-        self.color = (0, 100, 0)  # Dark green
 
 
 class Goblin2(Goblin):
@@ -822,7 +820,6 @@ class Bandit(Humanoid):
         ]
         self.level.pro_level = 0
         self.picture = "fighter.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Skeleton(Undead):
@@ -841,7 +838,6 @@ class Skeleton(Undead):
         ]
         self.level.pro_level = 0
         self.picture = "skeleton.txt"
-        self.color = (255, 255, 255)  # White
 
 
 class Scarecrow(Construct):
@@ -863,7 +859,6 @@ class Scarecrow(Construct):
         ]
         self.level.pro_level = 0
         self.picture = "scarecrow.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 # Level 1
@@ -882,7 +877,6 @@ class GiantCentipede(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "centipede.txt"
-        self.color = (165, 42, 42)  # Brown
 
 
 class GiantHornet(Animal):
@@ -903,7 +897,6 @@ class GiantHornet(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "hornet.txt"
-        self.color = (255, 215, 0)  # Gold
 
 
 class ElectricBat(Animal):
@@ -931,7 +924,6 @@ class ElectricBat(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "bat.txt"
-        self.color = (150, 150, 200)  # Ethereal blue
 
 
 class Zombie(Undead):
@@ -951,7 +943,6 @@ class Zombie(Undead):
         ]
         self.level.pro_level = 1
         self.picture = "zombie.txt"
-        self.color = (105, 105, 105)  # Gray
 
 
 class Imp(Fiend):
@@ -976,7 +967,6 @@ class Imp(Fiend):
         ]
         self.level.pro_level = 1
         self.picture = "imp.txt"
-        self.color = (139, 0, 0)  # Dark Red
 
 
 class GiantSpider(Animal):
@@ -997,7 +987,6 @@ class GiantSpider(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "spider.txt"
-        self.color = (25, 25, 25)  # Dark Gray
 
 
 class Quasit(Fiend):
@@ -1031,7 +1020,6 @@ class Quasit(Fiend):
         ]
         self.level.pro_level = 1
         self.picture = "quasit.txt"
-        self.color = (144, 238, 144)  # Light Green
 
 
 class Panther(Animal):
@@ -1063,7 +1051,6 @@ class Panther(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "panther.txt"
-        self.color = (10, 10, 10)  # Black
 
 
 class Panther2(Panther):
@@ -1094,7 +1081,6 @@ class TwistedDwarf(Humanoid):
         ]
         self.level.pro_level = 1
         self.picture = "dwarf.txt"
-        self.color = (160, 82, 45)  # Sienna
 
 
 class BattleToad(Animal):
@@ -1117,7 +1103,6 @@ class BattleToad(Animal):
         ]
         self.level.pro_level = 1
         self.picture = "battletoad.txt"
-        self.color = (144, 238, 144)  # Light Green
 
 
 class Satyr(Fey):
@@ -1146,7 +1131,6 @@ class Satyr(Fey):
         ]
         self.level.pro_level = 1
         self.picture = "satyr.txt"
-        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Minotaur(Monster):
@@ -1181,7 +1165,6 @@ class Minotaur(Monster):
         self.level.pro_level = 1
         self.sight = True
         self.picture = "minotaur.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Barghest(Fiend):
@@ -1220,7 +1203,6 @@ class Barghest(Fiend):
         self.level.pro_level = 2
         self.sight = True
         self.picture = "barghest.txt"
-        self.color = (105, 105, 105)  # Dark Gray
 
 
 # Level 2
@@ -1245,7 +1227,6 @@ class Gnoll(Humanoid):
         ]
         self.level.pro_level = 2
         self.picture = "gnoll.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class GiantSnake(Animal):
@@ -1267,7 +1248,6 @@ class GiantSnake(Animal):
         ]
         self.level.pro_level = 2
         self.picture = "snake.txt"
-        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Orc(Humanoid):
@@ -1288,7 +1268,6 @@ class Orc(Humanoid):
         ]
         self.level.pro_level = 2
         self.picture = "orc.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class GiantOwl(Animal):
@@ -1310,7 +1289,6 @@ class GiantOwl(Animal):
         ]
         self.level.pro_level = 2
         self.picture = "giantowl.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Vampire(Undead):
@@ -1342,7 +1320,6 @@ class Vampire(Undead):
         ]
         self.level.pro_level = 2
         self.picture = "vampire.txt"
-        self.color = (10, 10, 10)  # Black
 
 
 class VampireBat(Animal):
@@ -1369,7 +1346,6 @@ class VampireBat(Animal):
         ]
         self.level.pro_level = 2
         self.picture = "bat.txt"
-        self.color = (10, 10, 10)  # Black
 
 
 class Direwolf(Animal):
@@ -1393,7 +1369,6 @@ class Direwolf(Animal):
         ]
         self.level.pro_level = 2
         self.picture = "direwolf.txt"
-        self.color = (105, 105, 105)  # Dark Gray
 
 
 class Direwolf2(Direwolf):
@@ -1442,7 +1417,6 @@ class Wererat(Monster):
         ]
         self.level.pro_level = 2
         self.picture = "giantrat.txt"
-        self.color = (100, 149, 237)  # Cornflower Blue
 
 
 class Bandit2(Bandit):
@@ -1486,7 +1460,6 @@ class RedSlime(Slime):
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 2
-        self.color = (255, 0, 0)  # Red
 
 
 class GiantScorpion(Animal):
@@ -1507,7 +1480,6 @@ class GiantScorpion(Animal):
         ]
         self.level.pro_level = 2
         self.picture = "giantscorpion.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Warrior(Humanoid):
@@ -1534,7 +1506,6 @@ class Warrior(Humanoid):
         ]
         self.level.pro_level = 2
         self.picture = "fighter.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Harpy(Monster):
@@ -1543,7 +1514,7 @@ class Harpy(Monster):
         super().__init__(name='Harpy', health=random.randint(18, 25), mana=23, strength=18, intel=13, wisdom=13,
                          con=14, charisma=14, dex=23, attack=12, defense=15, magic=18, magic_def=14,
                          exp=random.randint(65, 115))
-        self.equipment = {'Weapon': items.Mace(), 'Armor': items.NoArmor(), 'OffHand': items.Claw2(),
+        self.equipment = {'Weapon': items.Claw2(), 'Armor': items.NoArmor(), 'OffHand': items.Claw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(50, 75)
         self.inventory['Feather'] = [items.Feather]
@@ -1557,7 +1528,6 @@ class Harpy(Monster):
         ]
         self.level.pro_level = 2
         self.picture = "harpy.txt"
-        self.color = (139, 69, 19)  # Brown
 
 
 class Naga(Monster):
@@ -1583,7 +1553,6 @@ class Naga(Monster):
         ]
         self.level.pro_level = 2
         self.picture = "naga.txt"
-        self.color = (0, 100, 0)  # Dark Green
 
 
 class Clannfear(Fiend):
@@ -1607,7 +1576,6 @@ class Clannfear(Fiend):
         ]
         self.level.pro_level = 2
         self.picture = "clannfear.txt"
-        self.color = (85, 107, 47)  # Greenish Brown
 
 
 class Xorn(Elemental):
@@ -1638,7 +1606,6 @@ class Xorn(Elemental):
         ]
         self.level.pro_level = 2
         self.picture = "xorn.txt"
-        self.color = (190, 69, 19)  # Brownish Red
 
 
 class SteelPredator(Construct):
@@ -1671,7 +1638,6 @@ class SteelPredator(Construct):
         ]
         self.level.pro_level = 2
         self.picture = "steelpredator.txt"
-        self.color = (192, 192, 192)  # Metallic Silver
 
 
 class Pseudodragon(Dragon):
@@ -1701,7 +1667,6 @@ class Pseudodragon(Dragon):
         self.level.pro_level = 2
         self.sight = True
         self.picture = "pseudodragon.txt"
-        self.color = (255, 215, 0)  # Golden Red
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target, typ="Fire")
@@ -1742,7 +1707,6 @@ class Nightmare(Fiend):
         self.level.pro_level = 3
         self.sight = True
         self.picture = "nightmare.txt"
-        self.color = (48, 25, 52)  # Blackish Purple
 
     def special_attack(self, target):
         return super().special_attack(target)
@@ -1770,7 +1734,6 @@ class Direbear(Animal):
         ]
         self.level.pro_level = 3
         self.picture = "direbear.txt"
-        self.color = (210, 180, 140)  # Light Brown
 
 
 class Direbear2(Direbear):
@@ -1801,7 +1764,6 @@ class Ghoul(Undead):
         ]
         self.level.pro_level = 3
         self.picture = "ghoul.txt"
-        self.color = (173, 216, 230)  # Bluish white
 
 
 class PitViper(Animal):
@@ -1823,7 +1785,6 @@ class PitViper(Animal):
         ]
         self.level.pro_level = 3
         self.picture = "snake.txt"
-        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Disciple(Humanoid):
@@ -1854,7 +1815,6 @@ class Disciple(Humanoid):
         ]
         self.level.pro_level = 3
         self.picture = "disciple.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class BlackSlime(Slime):
@@ -1880,7 +1840,6 @@ class BlackSlime(Slime):
             {"ability": "Stupefy", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
-        self.color = (10, 10, 10)  # Black
 
 
 class Ogre(Monster):
@@ -1889,7 +1848,7 @@ class Ogre(Monster):
         super().__init__(name='Ogre', health=random.randint(40, 50), mana=40, strength=24, intel=18, wisdom=14, con=20,
                          charisma=10, dex=14, attack=28, defense=27, magic=30, magic_def=31,
                          exp=random.randint(215, 295))
-        self.equipment = {'Weapon': items.Maul(), 'Armor': items.Cuirboulli(), 'OffHand': items.NoOffHand(),
+        self.equipment = {'Weapon': items.SpikeMaul(), 'Armor': items.Cuirboulli(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(50, 75)
         self.spellbook = {"Spells": {'Magic Missile': abilities.MagicMissile(),
@@ -1906,7 +1865,6 @@ class Ogre(Monster):
         ]
         self.level.pro_level = 3
         self.picture = "ogre.txt"
-        self.color = (210, 180, 140)  # Tan-White
 
 
 class Alligator(Animal):
@@ -1926,7 +1884,6 @@ class Alligator(Animal):
         ]
         self.level.pro_level = 3
         self.picture = "alligator.txt"
-        self.color = (85, 107, 47)  # Brownish Green
 
 
 class Troll(Humanoid):
@@ -1946,7 +1903,6 @@ class Troll(Humanoid):
         ]
         self.level.pro_level = 3
         self.picture = "troll.txt"
-        self.color = (34, 139, 34)  # Forest Green
 
 
 class GoldenEagle(Animal):
@@ -1969,7 +1925,6 @@ class GoldenEagle(Animal):
         ]
         self.level.pro_level = 3
         self.picture = "goldeneagle.txt"
-        self.color = (255, 215, 0)  # Golden Yellow
 
 
 class EvilCrusader(Humanoid):
@@ -2001,7 +1956,6 @@ class EvilCrusader(Humanoid):
         ]
         self.level.pro_level = 3
         self.picture = "skeleton.txt"
-        self.color = (169, 169, 169)  # Dark Gray
 
 
 class Werewolf(Monster):
@@ -2028,7 +1982,6 @@ class Werewolf(Monster):
         ]
         self.level.pro_level = 3
         self.picture = "werewolf.txt"
-        self.color = (139, 69, 19)  # Dark Brown
 
 
 class Werewolf2(Werewolf):
@@ -2068,7 +2021,6 @@ class Antlion(Animal):
         ]
         self.level.pro_level = 3
         self.picture = "antlion.txt"
-        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class InvisibleStalker(Elemental):
@@ -2108,7 +2060,6 @@ class InvisibleStalker(Elemental):
         ]
         self.level.pro_level = 3
         self.picture = "assassin.txt"
-        self.color = (10, 10, 10)  # Black
 
 
 class NightHag(Fey):
@@ -2139,7 +2090,6 @@ class NightHag(Fey):
         ]
         self.level.pro_level = 3
         self.picture = "nighthag.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class NightHag2(NightHag):
@@ -2149,7 +2099,7 @@ class NightHag2(NightHag):
 
     def __init__(self):
         super().__init__()
-        self.name = "Waitress"
+        self.name = "Mad Waitress"
         self.health = Resource(500, 500)
         self.mana = Resource(300, 300)
         self.stats = Stats(18, 24, 30, 15, 15, 20)
@@ -2159,6 +2109,8 @@ class NightHag2(NightHag):
         self.inventory['Brass Key'] = [items.BrassKey]
         self.spellbook['Skills']["Widow's Wail"] = abilities.WidowsWail()
         self.status_immunity = ["Death", "Stone"]
+        # Track form state for sanity transition
+        self._form_changed = False
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
@@ -2204,7 +2156,6 @@ class Treant(Fey):
         ]
         self.level.pro_level = 3
         self.picture = "treant.txt"
-        self.color = (34, 139, 34)  # Forest Green
 
 
 class Ankheg(Monster):
@@ -2230,7 +2181,6 @@ class Ankheg(Monster):
         ]
         self.level.pro_level = 3
         self.picture = "ankheg.txt"
-        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Fuath(Monster):
@@ -2259,7 +2209,6 @@ class Fuath(Monster):
         ]
         self.level.pro_level = 3
         self.picture = "fuath.txt"
-        self.color = (0, 128, 128)  # Bluish-Green
 
 
 class Cockatrice(Monster):
@@ -2291,7 +2240,6 @@ class Cockatrice(Monster):
         self.level.pro_level = 3
         self.sight = True
         self.picture = "cockatrice.txt"
-        self.color = (245, 245, 220)  # Dirty white
 
 
 class Wendigo(Fey):
@@ -2332,7 +2280,6 @@ class Wendigo(Fey):
         self.level.pro_level = 4
         self.sight = True
         self.picture = "wendigo.txt"
-        self.color = (169, 169, 169)  # Light Gray
 
 
 # Level 4
@@ -2354,7 +2301,6 @@ class BrownSlime(Slime):
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
-        self.color = (139, 69, 19)  # Dark Brown
 
 
 class Gargoyle(Elemental):
@@ -2378,7 +2324,6 @@ class Gargoyle(Elemental):
         ]
         self.level.pro_level = 4
         self.picture = "gargoyle.txt"
-        self.color = (112, 128, 144)  # Slate Gray
 
 
 class Conjurer(Humanoid):
@@ -2418,7 +2363,6 @@ class Conjurer(Humanoid):
         ]
         self.level.pro_level = 4
         self.picture = "disciple.txt"
-        self.color = (0, 0, 139)  # Dark Blue
 
 
 class Chimera(Monster):
@@ -2445,7 +2389,6 @@ class Chimera(Monster):
         ]
         self.level.pro_level = 4
         self.picture = "chimera.txt"
-        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Dragonkin(Dragon):
@@ -2474,7 +2417,6 @@ class Dragonkin(Dragon):
         ]
         self.level.pro_level = 4
         self.picture = "dragonkin.txt"
-        self.color = (207, 33, 33)  # Reddish-Gold
 
 
 class Griffin(Monster):
@@ -2497,7 +2439,6 @@ class Griffin(Monster):
         ]
         self.level.pro_level = 4
         self.picture = "griffin.txt"
-        self.color = (139, 69, 19)  # Dark Brown
 
 
 class DrowAssassin(Humanoid):
@@ -2529,7 +2470,6 @@ class DrowAssassin(Humanoid):
         self.level.pro_level = 4
         self.sight = True
         self.picture = "assassin.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Cyborg(Construct):
@@ -2555,7 +2495,6 @@ class Cyborg(Construct):
         ]
         self.level.pro_level = 4
         self.picture = "cyborg.txt"
-        self.color = (192, 192, 192)  # Silver Gray
 
     def special_effects(self, target):
         """25% chance to detonate if health below 25%"""
@@ -2589,7 +2528,6 @@ class DarkKnight(Fiend):
         ]
         self.level.pro_level = 4
         self.picture = "darkknight.txt"
-        self.color = (25, 25, 112)  # Midnight Blue
 
 
 class Myrmidon(Elemental):
@@ -2616,6 +2554,7 @@ class FireMyrmidon(Myrmidon):
 
     def __init__(self):
         super().__init__()
+        self.name = "Fire Myrmidon"
         self.spellbook = {"Spells": {'Scorch': abilities.Scorch()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam()}}
         self.resistance['Fire'] = 1.5
@@ -2625,7 +2564,6 @@ class FireMyrmidon(Myrmidon):
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Scorch", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (255, 69, 0)  # Fire Red
 
 
 class IceMyrmidon(Myrmidon):
@@ -2635,6 +2573,7 @@ class IceMyrmidon(Myrmidon):
 
     def __init__(self):
         super().__init__()
+        self.name = "Ice Myrmidon"
         self.spellbook = {"Spells": {'Ice Lance': abilities.IceLance()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'True Strike': abilities.TrueStrike()}}
@@ -2646,16 +2585,16 @@ class IceMyrmidon(Myrmidon):
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Ice Lance", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (0, 191, 255)  # Deep Sky Blue
 
 
-class ElectricMyrmidon(Myrmidon):
+class StormMyrmidon(Myrmidon):
     """
     Electric elemental; gains Piercing Strike
     """
 
     def __init__(self):
         super().__init__()
+        self.name = "Storm Myrmidon"
         self.spellbook = {"Spells": {'Shock': abilities.Shock()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'Piercing Strike': abilities.PiercingStrike()}}
@@ -2667,7 +2606,6 @@ class ElectricMyrmidon(Myrmidon):
             {"ability": "Piercing Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Shock", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (255, 255, 0)  # Yellow
 
 
 class WaterMyrmidon(Myrmidon):
@@ -2677,6 +2615,7 @@ class WaterMyrmidon(Myrmidon):
 
     def __init__(self):
         super().__init__()
+        self.name = "Water Myrmidon"
         self.spellbook = {"Spells": {'Water Jet': abilities.WaterJet()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'Parry': abilities.Parry()}}
@@ -2687,7 +2626,6 @@ class WaterMyrmidon(Myrmidon):
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
             {"ability": "Water Jet", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (127, 255, 212)  # Aquamarine
 
 
 class EarthMyrmidon(Myrmidon):
@@ -2697,6 +2635,7 @@ class EarthMyrmidon(Myrmidon):
 
     def __init__(self):
         super().__init__()
+        self.name = "Earth Myrmidon"
         self.spellbook = {"Spells": {'Tremor': abilities.Tremor()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'Shield Block': abilities.ShieldBlock(),
@@ -2709,7 +2648,6 @@ class EarthMyrmidon(Myrmidon):
             {"ability": "Goad", "priority": ActionPriority.NORMAL},
             {"ability": "Tremor", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (160, 82, 45)  # Sienna Brown
 
 
 class WindMyrmidon(Myrmidon):
@@ -2719,6 +2657,7 @@ class WindMyrmidon(Myrmidon):
 
     def __init__(self):
         super().__init__()
+        self.name = "Wind Myrmidon"
         self.spellbook = {"Spells": {'Gust': abilities.Gust()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'Double Strike': abilities.DoubleStrike()}}
@@ -2730,7 +2669,6 @@ class WindMyrmidon(Myrmidon):
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Gust", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (135, 206, 250)  # Light Sky Blue
 
 
 class DisplacerBeast(Fey):
@@ -2756,7 +2694,6 @@ class DisplacerBeast(Fey):
         ]
         self.level.pro_level = 4
         self.picture = "displacerbeast.txt"
-        self.color = (128, 0, 128)  # Purple
 
 
 class Golem(Construct):
@@ -2789,7 +2726,6 @@ class Golem(Construct):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "golem.txt"
-        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class IronGolem(Golem):
@@ -2821,7 +2757,6 @@ class IronGolem(Golem):
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
-        self.color = (184, 184, 184)  # Iron Gray
 
     def special_effects(self, target):
         """If health below 10%, turtle and heal for 25% of max health"""
@@ -2888,7 +2823,6 @@ class Jester(Humanoid):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "jester.txt"
-        self.color = (255, 20, 147)  # Deep Pink
 
     def special_effects(self, target):
         """Randomizes stats and resistances"""
@@ -2917,6 +2851,110 @@ class Jester(Humanoid):
         return special_str
 
 
+def _funhouse_resistances(low=-0.5, high=0.5):
+    return {
+        'Fire': round(random.uniform(low, high), 2),
+        'Ice': round(random.uniform(low, high), 2),
+        'Electric': round(random.uniform(low, high), 2),
+        'Water': round(random.uniform(low, high), 2),
+        'Earth': round(random.uniform(low, high), 2),
+        'Wind': round(random.uniform(low, high), 2),
+        'Shadow': round(random.uniform(low, high), 2),
+        'Holy': round(random.uniform(low, high), 2),
+        'Poison': round(random.uniform(low, high), 2),
+        'Physical': round(random.uniform(low, high), 2)
+    }
+
+
+def _funhouse_tricks():
+    spellbook = {"Spells": {}, "Skills": {}}
+    trick_pool = [
+        ("Gold Toss", abilities.GoldToss(), "Skills"),
+        ("Smoke Screen", abilities.SmokeScreen(), "Skills"),
+        ("Double Strike", abilities.DoubleStrike(), "Skills"),
+        ("Silence", abilities.Silence(), "Spells"),
+        ("Mirror Image", abilities.MirrorImage2(), "Spells"),
+    ]
+    random.shuffle(trick_pool)
+    for name, ability, bucket in trick_pool[:random.randint(2, 3)]:
+        spellbook[bucket][name] = ability
+    return spellbook
+
+
+class FunhouseMinion(Humanoid):
+    def __init__(self, name, health_range, mana_range, stat_range, combat_range, exp_range):
+        super().__init__(name=name,
+                         health=random.randint(*health_range),
+                         mana=random.randint(*mana_range),
+                         strength=random.randint(*stat_range),
+                         intel=random.randint(*stat_range),
+                         wisdom=random.randint(*stat_range),
+                         con=random.randint(*stat_range),
+                         charisma=random.randint(*stat_range),
+                         dex=random.randint(*stat_range),
+                         attack=random.randint(*combat_range),
+                         defense=random.randint(*combat_range),
+                         magic=random.randint(*combat_range),
+                         magic_def=random.randint(*combat_range),
+                         exp=random.randint(*exp_range))
+        self.gold = random.randint(200, 900)
+        self.equipment = {
+            'Weapon': items.Kris(),
+            'Armor': items.Cuirboulli(),
+            'OffHand': items.NoOffHand(),
+            'Ring': items.NoRing(),
+            'Pendant': items.NoPendant()
+        }
+        self.spellbook = _funhouse_tricks()
+        self.resistance = _funhouse_resistances()
+        self.action_stack = [{"ability": "Attack", "priority": ActionPriority.NORMAL}]
+        for ability_name in list(self.spellbook["Skills"].keys()) + list(self.spellbook["Spells"].keys()):
+            self.action_stack.append({"ability": ability_name, "priority": ActionPriority.NORMAL})
+        self.level.pro_level = 4
+
+
+class Puppet(FunhouseMinion):
+    def __init__(self):
+        super().__init__(
+            name="Puppet",
+            health_range=(120, 220),
+            mana_range=(40, 120),
+            stat_range=(8, 22),
+            combat_range=(18, 38),
+            exp_range=(1200, 2200),
+        )
+
+
+class Harlequin(FunhouseMinion):
+    def __init__(self):
+        super().__init__(
+            name="Harlequin",
+            health_range=(150, 260),
+            mana_range=(60, 140),
+            stat_range=(10, 26),
+            combat_range=(22, 42),
+            exp_range=(1600, 2600),
+        )
+        self.stats.dex += random.randint(4, 8)
+        self.combat.attack += random.randint(4, 8)
+
+
+class Trickster(FunhouseMinion):
+    def __init__(self):
+        super().__init__(
+            name="Trickster",
+            health_range=(140, 240),
+            mana_range=(80, 180),
+            stat_range=(9, 24),
+            combat_range=(20, 40),
+            exp_range=(1500, 2600),
+        )
+        self.stats.intel += random.randint(4, 10)
+        self.stats.wisdom += random.randint(4, 10)
+        self.combat.magic += random.randint(4, 8)
+        self.combat.magic_def += random.randint(4, 8)
+
+
 # Level 5
 class ShadowSerpent(Elemental):
 
@@ -2941,7 +2979,6 @@ class ShadowSerpent(Elemental):
         ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Aboleth(Slime):
@@ -2970,7 +3007,6 @@ class Aboleth(Slime):
                               "else": ActionPriority.NORMAL}}
         ]
         self.level.pro_level = 5
-        self.color = (144, 238, 144)  # Light Green
 
 
 class Beholder(Aberration):
@@ -3005,7 +3041,6 @@ class Beholder(Aberration):
         ]
         self.level.pro_level = 5
         self.picture = "beholder.txt"
-        self.color = (139, 0, 139)  # Dark Magenta
 
 
 class Behemoth(Aberration):
@@ -3036,7 +3071,6 @@ class Behemoth(Aberration):
         self.status_immunity = ["Death", "Stone"]
         self.level.pro_level = 5
         self.picture = "behemoth.txt"
-        self.color = (139, 0, 0)  # Dark Red
 
     def special_effects(self, target):
         """Has a 60% chance to cast Meteor on death"""
@@ -3087,7 +3121,6 @@ class Lich(Undead):
         ]
         self.level.pro_level = 5
         self.picture = "lich.txt"
-        self.color = (216, 191, 216)  # Purple-White
 
 
 class Basilisk(Monster):
@@ -3112,7 +3145,6 @@ class Basilisk(Monster):
         ]
         self.level.pro_level = 5
         self.picture = "snake.txt"
-        self.color = (127, 255, 212)  # Aquamarine
 
 
 class MindFlayer(Aberration):
@@ -3147,7 +3179,6 @@ class MindFlayer(Aberration):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "mindflayer.txt"
-        self.color = (148, 0, 211)  # Dark Violet
 
 
 class Sandworm(Monster):
@@ -3182,7 +3213,6 @@ class Sandworm(Monster):
         ]
         self.level.pro_level = 5
         self.picture = "naga.txt"
-        self.color = (210, 180, 140)  # Tan-Brown
 
 
 class Warforged(Construct):
@@ -3207,7 +3237,6 @@ class Warforged(Construct):
         ]
         self.level.pro_level = 5
         self.picture = "golem.txt"
-        self.color = (192, 192, 192)  # Silver Gray
 
     def special_effects(self, target):
         """if health is below 10%, turtle and heal for 25% of max health"""
@@ -3248,7 +3277,6 @@ class Wyrm(Dragon):
         ]
         self.level.pro_level = 5
         self.picture = "wyrm.txt"
-        self.color = (0, 100, 0)  # Dark Green
 
 
 class Hydra(Monster):
@@ -3276,7 +3304,6 @@ class Hydra(Monster):
         ]
         self.level.pro_level = 5
         self.picture = "hydra.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Wyvern(Dragon):
@@ -3299,7 +3326,6 @@ class Wyvern(Dragon):
         self.flying = True
         self.level.pro_level = 5
         self.picture = "wyvern.txt"
-        self.color = (50, 10, 10)  # Reddish Black
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target, typ="Wind")
@@ -3338,7 +3364,6 @@ class Archvile(Fiend):
         ]
         self.level.pro_level = 5
         self.picture = "archvile.txt"
-        self.color = (255, 69, 0)  # Light Red
 
 
 class BrainGorger(Aberration):
@@ -3375,7 +3400,6 @@ class BrainGorger(Aberration):
         ]
         self.level.pro_level = 5
         self.picture = "braingorger.txt"
-        self.color = (48, 25, 52)  # Dark Purple
 
 
 class Domingo(Aberration):
@@ -3431,7 +3455,6 @@ class Domingo(Aberration):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "domingo.txt"
-        self.color = (75, 0, 130)  # Indigo
 
 
 class RedDragon(Dragon):
@@ -3478,7 +3501,6 @@ class RedDragon(Dragon):
         self.level.pro_level = 5
         self.sight = True
         self.picture = "reddragon.txt"
-        self.color = (210, 0, 0)  # Red
 
     def special_attack(self, target):
         return abilities.BreatheFire().use(self, target)
@@ -3541,7 +3563,6 @@ class Merzhin(Humanoid):
         self.level.pro_level = 6
         self.sight = True
         self.picture = "merzhin.txt"
-        self.color = (0, 191, 255)  # Deep Sky Blue
 
 
 # Final Boss Guard
@@ -3584,7 +3605,6 @@ class Cerberus(Fiend):
         self.level.pro_level = 6
         self.sight = True
         self.picture = "cerberus.txt"
-        self.color = (139, 0, 0)  # Dark Red
 
 
 # Final Boss
@@ -3637,15 +3657,15 @@ class Devil(Fiend):
         self.level.pro_level = 99
         self.sight = True
         self.picture = "devil.txt"
-        self.color = (178, 34, 34)  # Firebrick Red
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
+        disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
         if mod == 'weapon':
-            weapon_mod = (self.equipment['Weapon'].damage * int(not self.physical_effects["Disarm"].active))
+            weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            total_mod = weapon_mod + class_mod + self.combat.attack
+            total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'offhand':
             off_mod = self.equipment['OffHand'].damage
