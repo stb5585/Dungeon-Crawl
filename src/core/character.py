@@ -945,7 +945,6 @@ class Character:
                 if self.stat_effects[stat].active:
                     self.stat_effects[stat].duration -= 1
                     if not self.stat_effects[stat].duration:
-                        # status_text += f"Bonus to {stat.lower()} for {self.name} has ended.\n"
                         default(effect=stat)
             if self.magic_effects["Regen"].active:
                 self.magic_effects["Regen"].duration -= 1
@@ -994,8 +993,9 @@ class Character:
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
         
-        # Totem bonus: +15% attack and defense when active
-        totem_bonus = 1.15 if self.magic_effects["Totem"].active else 1.0
+        # Totem bonus: +15% attack and defense when active (guard missing key)
+        totem = self.magic_effects.get("Totem")
+        totem_bonus = 1.15 if (totem and getattr(totem, "active", False)) else 1.0
         
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
