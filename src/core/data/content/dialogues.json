@@ -1,0 +1,144 @@
+{
+  "patron_dialogues": {
+    "Barkeep": {
+      "1": [
+        "If you want to access the character menu, you can do so by hitting the (c) button.",
+        "Make sure to stop by from time to time. You never know who might show up.",
+        "Equipment vendors will show you how an item can improve or hurt your fighting ability. If an item type doesn't show any change, your class can't use it.",
+        "Heavier armor provides better protection but lowers your mobility in combat. Choose carefully."
+      ],
+      "5": [
+        "How did you like that stat bonus at level 4? You get another every 4th level, so plan your promotions accordingly.",
+        "If you get a quest from someone, come back and talk with them after it is completed and they will likely reward you for your efforts."
+      ],
+      "10": [
+        "Locked chests contain more powerful items compared with unlocked ones, however you need a key or a lockpick to get to the treasure.",
+        "Boss enemies have true sight, so that Invisibility Pendant is useless against them.",
+        "Some status effects last until the end of combat or until healed. Make sure to stock up on potions!"
+      ]
+    },
+    "Waitress": {
+      "1": [
+        "Entering the town will replenish your health and mana. Seems like you could take advantage of that.",
+        "Sorry, I can't talk now! I am getting married and need to make as much money as I can."
+      ],
+      "5": [
+        "Some spells can be cast outside of battle. You can do so in the Character Menu after inspecting the spell."
+      ],
+      "10": [
+        "(sobbing) I can't believe it...a week before our wedding and my husband to be decides to join the fight against the prime evil...I want to be mad but he says he can't stand by when I am in danger. My hero..."
+      ],
+      "25": [
+        "Joffrey returned yesterday bloodied but resolute. He has gained much experience and hopes to have found the source of our suffering by month's end. I gave him my lucky pendant to return to me when his mission is complete."
+      ]
+    },
+    "Soldier": {
+      "10": [
+        "You may find locked doors along your path while exploring the dungeon. You can't open these with just any old key, you need an actual Old Key.",
+        "Watch your carry weight in the Character Menu. If you try to carry more than you can manage, you will become encumbered, which affects your speed in combat.",
+        "Check the shops periodically, you may notice new items available to buy."
+      ],
+      "25": [
+        "I just finished my shift guarding the old warehouse behind the barracks. They won't tell us what's in there but I have seen several scientists come and go."
+      ],
+      "65": [
+        "The Devil is immune to normal weapons but legend says there is a material that will do the job."
+      ]
+    },
+    "Drunkard": {
+      "8": [
+        "(hic)...I am not as think as you drunk I am...(hic)"
+      ],
+      "25": [
+        "Do you see (hic) that person in the corner? What's their deal, TAKE THE HOOD OFF ALREADY!...ah whatever..."
+      ],
+      "30": [
+        "(hic)...I heard tell there were secret passages...(hic) in the dungeon."
+      ],
+      "65": [
+        "We are all praying for your success and survival!",
+        "Rutger used to talk about a so-called Master key, that could open any lock. I wonder how much truth was in that."
+      ]
+    },
+    "Busboy": {
+      "1": [
+        "The waitress left crying some time ago...sounds like her fiance was killed in the dungeons.",
+        "Entering the town will replenish your health and mana. Seems like you could take advantage of that.",
+        "Some spells can be cast outside of battle. You can do so in the Character Menu after inspecting the spell.",
+        "The guy in the corner gives me the creeps...tips well though."
+      ]
+    },
+    "Hooded Figure": {
+      "25": [
+        "..."
+      ],
+      "35": [
+        "Hmm...interesting..."
+      ],
+      "50": [
+        "Your power has grown...I am impressed."
+      ],
+      "60": [
+        "Have you defeated the Red Dragon yet?"
+      ]
+    }
+  },
+  "response_map": {
+    "Barkeep": [
+      "Great, come back to me when it is completed.",
+      "That's a shame, come back if you change your mind."
+    ],
+    "Waitress": [
+      "Oh, that's truly wonderful! I'll be waiting to hear from you.",
+      "I understand, it was stupid of me to even ask..."
+    ],
+    "Busboy": [
+      "Good to hear. Now excuse me, I have to get back to work.",
+      "Pfft, why did I even bother?"
+    ],
+    "Soldier": [
+      "Excellent, your efforts will not go unnoticed.",
+      "Do not waste my time if you are not dedicated to the cause."
+    ],
+    "Drunkard": [
+      "Well fine then, go...wait, oh you said yes...(hic) well thanks! I'll be right here, as always...(hic)",
+      "Oh I see, your time (hic) is too precious, huh?"
+    ],
+    "Hooded Figure": [
+      "Splendid, I will await your return.",
+      "Pity, you showed so much promise. Be gone then..."
+    ],
+    "Griswold": [
+      "Finally someone with some stones! I knew I liked you!",
+      "Accept or not, at least keep an eye out..."
+    ],
+    "Alchemist": [
+      "Our arrangement will be mutually beneficial, you will see.",
+      "It's a shame you deny me this request."
+    ],
+    "Jeweler": [
+      "You will not be disappointed!",
+      "Not sure of your reasoning but fair enough."
+    ],
+    "Priest": [
+      "The light of Elysia will guide your efforts.",
+      "Patience is a virtue I hold sacred. I will wait as long as I need."
+    ],
+    "Sergeant": [
+      "Outstanding! Return to me when you have completed the quest.",
+      "You came a long way for nothing..."
+    ]
+  },
+  "tavern_flavor_dialogues": [
+    "I heard there are powerful artifacts deep in the dungeon...",
+    "Many adventurers have entered the dungeon, but few return.",
+    "They say the evil grows stronger with each passing day.",
+    "Be careful down there, adventurer. The monsters are cunning.",
+    "I lost my brother to the dungeon. Please, be safe.",
+    "The blacksmith Griswold is the best in the kingdom!",
+    "If you need potions, visit the alchemist. They saved my life once.",
+    "I've heard rumors of a secret shop somewhere in the depths...",
+    "The Bounty Board offers rewards for hunting dangerous creatures.",
+    "Some say there's treasure beyond imagination in the depths."
+  ]
+}

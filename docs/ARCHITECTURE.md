@@ -305,42 +305,109 @@ Subscribe to events:
 3. Comprehensive test suite
 4. Documentation for library usage
 
-## File Organization (Proposed)
+## File Organization (Current - January 2026) ✅
 
 ```
 dungeon-crawl/
-├── core/                    # Engine (UI-agnostic)
-│   ├── combat/
-│   │   ├── action_queue.py
-│   │   ├── battle_manager.py
-│   │   └── turn_manager.py
-│   ├── character/
-│   │   ├── base.py
+├── src/
+│   ├── core/                    # Engine (UI-agnostic) ✅
+│   │   ├── abilities.py
+│   │   ├── battle.py
+│   │   ├── character.py
+│   │   ├── classes.py
+│   │   ├── combat_result.py
+│   │   ├── companions.py
+│   │   ├── enemies.py
+│   │   ├── items.py
+│   │   ├── map_tiles.py
 │   │   ├── player.py
-│   │   └── enemy.py
-│   ├── abilities/
-│   │   ├── factory.py
-│   │   └── loader.py
-│   └── events/
-│       ├── bus.py
-│       └── types.py
-├── data/                    # Definitions
-│   ├── abilities/
-│   ├── enemies/
-│   ├── items/
-│   └── maps/
-├── presentation/            # UI layer
+│   │   ├── races.py
+│   │   ├── save_system.py
+│   │   ├── town.py
+│   │   ├── tutorial.py
+│   │   ├── combat/
+│   │   │   ├── action_queue.py
+│   │   │   └── enhanced_manager.py
+│   │   └── events/
+│   │       ├── bus.py
+│   │       └── __init__.py
+│   ├── ui_curses/               # Terminal UI ✅
+│   │   ├── game.py
+│   │   ├── map_tiles.py
+│   │   ├── menus.py
+│   │   └── town.py
+│   └── ui_pygame/               # GUI (In Development) ⏳
+│       ├── game.py
+│       ├── gui/
+│       │   ├── barracks.py
+│       │   ├── character_screen.py
+│       │   ├── church.py
+│       │   ├── combat_manager.py
+│       │   ├── combat_view.py
+│       │   ├── confirmation_popup.py
+│       │   ├── dungeon_manager.py
+│       │   ├── enhanced_dungeon_renderer.py
+│       │   ├── inn.py
+│       │   ├── level_up.py
+│       │   ├── map_view.py
+│       │   ├── popup_menus.py
+│       │   ├── shop_screen.py
+│       │   ├── shops.py
+│       │   ├── town_manager.py
+│       │   └── ultimate_armor.py
+│       └── presentation/
+│           └── pygame_presenter.py
+├── data/                        # YAML Definitions ✅
+│   ├── abilities/               # 18 charging abilities
+│   └── ability_loader.py
+├── presentation/                # Abstract UI Layer ✅
 │   ├── interface.py
-│   ├── curses_presenter.py
-│   └── pygame_presenter.py  (future)
-├── analytics/               # Balance tools
-│   ├── simulator.py
-│   ├── metrics.py
-│   └── visualizer.py
-├── effects/                 # Current (keep)
-├── tests/
-└── legacy/                  # Old code during migration
+│   ├── null_presenter.py
+│   ├── console_presenter.py
+│   ├── event_driven_presenter.py
+│   └── mock_presenter.py
+├── analytics/                   # Balance Tools ✅
+│   ├── combat_simulator.py
+│   └── __init__.py
+├── effects/                     # Effect System ✅
+│   ├── base.py
+│   ├── buff.py
+│   ├── composite.py
+│   ├── damage.py
+│   ├── debuff.py
+│   ├── healing.py
+│   ├── summon.py
+│   └── ...
+├── events/                      # Event Bus ✅
+│   ├── event_bus.py
+│   └── __init__.py
+├── assets/                      # Sprites & Graphics
+│   ├── backgrounds/
+│   ├── dungeon_tiles/
+│   ├── effects/
+│   ├── sprites/
+│   └── ui/
+├── docs/                        # Documentation ✅
+│   ├── ARCHITECTURE.md
+│   ├── EVENT_EMISSIONS.md
+│   ├── NEW_SYSTEMS.md
+│   ├── PHASE_2.md
+│   ├── PRE_PHASE_3_CLEANUP.md
+│   └── README.md
+├── tests/                       # Test Suite ✅
+├── tools/                       # Dev Utilities ✅
+├── _old_code_archive/           # Archived Files ✅
+├── game_curses.py              # Terminal Entry Point ✅
+├── game_pygame.py              # GUI Entry Point ✅
+└── pyproject.toml              # Modern Packaging ✅
 ```
+
+**Key Changes (January 2026)**:
+- ✅ **Reorganized into src/** - All game code now in `src/core/`, `src/ui_curses/`, `src/ui_pygame/`
+- ✅ **UI Separation** - Clear boundary between game logic (core) and UI layers
+- ✅ **Import System Fixed** - All modules use proper relative imports
+- ✅ **Pygame UI Started** - GUI implementation in progress in `src/ui_pygame/`
+- ✅ **Backward Compatibility** - Both curses and pygame versions fully functional
 
 ## Testing Strategy
 
@@ -394,7 +461,7 @@ During migration:
 1. **Multiplayer**: Scope for Phase 7+?
 2. **Mobile**: After GUI or parallel track?
 3. **AI Difficulty**: Rule-based or ML? (Start rule-based)
-4. **Save Format**: Current dill or JSON for cross-platform?
+4. **Save Format**: JSON for cross-platform compatibility
 5. **Modding Support**: Plugin architecture? Scripting language?
 
 ## Conclusion

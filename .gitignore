@@ -43,9 +43,34 @@ modify_save.py
 fixes.txt
 notes.txt
 launch.sh
-launch_debug.sh
+launch*.sh
 composition_patterns.py
 
 # ignore save_files
 save_files/*
 backup_saves/*
+
+# ignore old files
+docs/archive/
+old_assets/
+map_files/text_files/
+
+# ignore system files
+.DS_Store
+Thumbs.db
+
+# ignore log files
+*.log
+logs/
+*.out
+*.err
+
+# ignore temporary files
+tmp/
+temp/
+tmp_files/
+*.tmp
+*.temp
+
+# Old code archive (marked for deletion)
+_old_code_archive/

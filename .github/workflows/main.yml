@@ -1,6 +1,8 @@
 name: Game CI
 
-on: [push, pull_request]  # Runs when you push code or make a PR
+on:
+  push:
+  pull_request:
 
 jobs:
   build:
@@ -8,29 +10,65 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3  # Pulls the latest code
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11.11"  # Adjust based on your game
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt  # Install game dependencies
-          pip install pytest  # Install testing framework
+          python -m pip install --upgrade pip
+          python -m pip install .
+          python -m pip install pytest pytest-cov
 
       - name: Run Tests
-        run: pytest tests/  # Runs your tests (if you have any)
+        env:
+          # Prevent CI from writing .pyc/__pycache__ into the repo workspace
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPYCACHEPREFIX: /tmp/pycache
+        run: |
+          pytest tests/ -v
 
       - name: Check for syntax errors
-        run: python -m compileall .  # Catches syntax issues
+        env:
+          # Ensure compileall doesn't create __pycache__ in the repo
+          PYTHONDONTWRITEBYTECODE: "1"
+          PYTHONPYCACHEPREFIX: /tmp/pycache
+        run: |
+          python -m compileall .
 
-      - name: Package Game
-        run: tar -czf dungeon_crawl.tar.gz .  # Creates a compressed archive
+      - name: Package Game (stable snapshot)
+        run: |
+          set -euo pipefail
+
+          STAGE_DIR="/tmp/dungeon_crawl_pkg"
+          rm -rf "${STAGE_DIR}"
+          mkdir -p "${STAGE_DIR}"
+
+          # Create a stable snapshot of the repo (avoids tar "file changed as we read it")
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.venv' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='.coverage' \
+            --exclude='htmlcov' \
+            --exclude='*.egg-info' \
+            --exclude='dist' \
+            --exclude='build' \
+            --exclude='*.tar.gz' \
+            ./ "${STAGE_DIR}/"
+
+          tar -C "${STAGE_DIR}" -czf dungeon_crawl.tar.gz .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dungeon_crawl_build
           path: dungeon_crawl.tar.gz
+          if-no-files-found: error

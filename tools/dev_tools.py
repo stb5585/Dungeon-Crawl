@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 def test_ability_loader(args):
     """Test loading abilities from data files."""
-    from data.ability_loader import AbilityFactory
+    from src.core.data.ability_loader import AbilityFactory
     
     print("Testing Ability Loader...")
     print("=" * 60)
@@ -41,7 +41,7 @@ def test_ability_loader(args):
 
 def test_event_system(args):
     """Test the event system."""
-    from events import EventBus, EventType, ConsoleEventLogger
+    from src.core.events import EventBus, EventType, ConsoleEventLogger
     
     print("Testing Event System...")
     print("=" * 60)
@@ -78,7 +78,7 @@ def test_event_system(args):
 
 def run_balance_test(args):
     """Run combat balance simulations."""
-    from analytics import CombatSimulator
+    from src.core.analytics.combat_simulator import CombatSimulator
     
     print("Running Balance Tests...")
     print("=" * 60)
@@ -95,7 +95,7 @@ def run_balance_test(args):
 
 def test_action_queue(args):
     """Test the action queue system."""
-    from combat import ActionQueue, ActionType, ActionPriority
+    from src.core.combat import ActionQueue, ActionType, ActionPriority
     
     print("Testing Action Queue System...")
     print("=" * 60)
@@ -154,7 +154,7 @@ def test_action_queue(args):
 
 def test_effects(args):
     """Test the effect system."""
-    from effects import (
+    from src.core.effects import (
         DamageEffect,
         AttackBuffEffect,
         CompositeEffect,
@@ -184,7 +184,7 @@ def test_effects(args):
     print(f"  Created composite with {len(composite.effects)} effects")
     
     print("\nExample: Chance Effect (30% to apply status)")
-    from effects import StatusEffect
+    from src.core.effects import StatusEffect
     status = StatusEffect(name="Stun", duration=2)
     chance_effect = ChanceEffect(status, chance=0.3)
     print(f"  Created chance effect with {chance_effect.chance * 100}% probability")
@@ -192,7 +192,7 @@ def test_effects(args):
 
 def generate_sample_abilities(args):
     """Generate sample ability YAML files."""
-    from data.ability_loader import save_example_abilities
+    from src.core.data.ability_loader import save_example_abilities
     
     output_dir = args.output or 'data/abilities'
     
@@ -212,25 +212,25 @@ def main():
         epilog="""
 Examples:
   # Test loading abilities from data files
-  python dev_tools.py abilities --directory data/abilities
+  python tools/dev_tools.py abilities --directory src/core/data/abilities
   
   # Test a specific ability file
-  python dev_tools.py abilities --file data/abilities/fireball.yaml
+  python tools/dev_tools.py abilities --file src/core/data/abilities/fireball.yaml
   
   # Test the event system with verbose logging
-  python dev_tools.py events --verbose
+  python tools/dev_tools.py events --verbose
   
   # Test the action queue system
-  python dev_tools.py queue
+  python tools/dev_tools.py queue
   
   # Test the effect system
-  python dev_tools.py effects
+  python tools/dev_tools.py effects
   
   # Run balance simulations (placeholder)
-  python dev_tools.py balance --iterations 1000
+  python tools/dev_tools.py balance --iterations 1000
   
   # Generate sample ability YAML files
-  python dev_tools.py generate --output data/abilities
+  python tools/dev_tools.py generate --output src/core/data/abilities
         """
     )
     

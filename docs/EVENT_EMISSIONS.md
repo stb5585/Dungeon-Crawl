@@ -97,7 +97,7 @@ All event emissions use try/except blocks to ensure they never crash the game:
 
 ```python
 try:
-    from events import get_event_bus, create_combat_event, EventType
+    from .events.event_bus import get_event_bus, create_combat_event, EventType
     event_bus = get_event_bus()
     event_bus.emit(create_combat_event(
         EventType.COMBAT_START,
@@ -139,7 +139,7 @@ Combat Start
 Any system can subscribe to combat events:
 
 ```python
-from events import get_event_bus, EventType
+from .events.event_bus import get_event_bus, EventType
 
 def on_damage(event):
     print(f"{event.actor.name} dealt {event.data['damage']} damage!")
@@ -168,7 +168,7 @@ event_bus.clear_history()
 Use the built-in console logger for debugging:
 
 ```python
-from events import ConsoleEventLogger, get_event_bus
+from .events.event_bus import ConsoleEventLogger, get_event_bus
 
 event_bus = get_event_bus()
 logger = ConsoleEventLogger(event_bus)
@@ -243,7 +243,7 @@ Event emissions can be tested with:
 
 ```bash
 python3 -c "
-from events import get_event_bus, EventType, ConsoleEventLogger
+from .events.event_bus import get_event_bus, EventType, ConsoleEventLogger
 from battle import BattleManager
 from combat.enhanced_manager import EnhancedBattleManager
 

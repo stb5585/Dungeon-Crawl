@@ -12,9 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from character import Character, Stats, Combat, Resource, Level
-from races import Human
-from classes import Fighter
+
+from src.core.enemies import Goblin
+from src.core import items
+from tests.test_framework import TestGameState
 
 
 class TestCharacterCreation:
@@ -22,19 +23,19 @@ class TestCharacterCreation:
     
     def test_create_basic_character(self):
         """Test creating a basic character."""
-        char = Character(
+        char = TestGameState.create_player(
             name="TestHero",
-            race=Human(),
-            cls=Fighter()
+            class_name="Warrior",
+            race_name="Human"
         )
         assert char.name == "TestHero"
         assert char.race.name == "Human"
-        assert char.cls.name == "Fighter"
+        assert char.cls.name == "Warrior"
         assert char.is_alive()
     
     def test_character_has_required_attributes(self):
         """Verify character has all required attributes for combat."""
-        char = Character(name="Test", race=Human(), cls=Fighter())
+        char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         
         # Core attributes
         assert hasattr(char, 'name')
@@ -62,7 +63,7 @@ class TestCharacterMethods:
     
     def test_check_active_method(self):
         """Test if check_active method exists or needs to be added."""
-        char = Character(name="Test", race=Human(), cls=Fighter())
+        char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         
         # This will fail if method doesn't exist
         if hasattr(char, 'check_active'):
@@ -74,16 +75,16 @@ class TestCharacterMethods:
     
     def test_incapacitated_method(self):
         """Test incapacitated method."""
-        char = Character(name="Test", race=Human(), cls=Fighter())
+        char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         assert hasattr(char, 'incapacitated')
         result = char.incapacitated()
         assert isinstance(result, bool)
     
     def test_weapon_damage_signature(self):
         """Verify weapon_damage has the expected signature."""
-        char = Character(name="Attacker", race=Human(), cls=Fighter())
-        target = Character(name="Defender", race=Human(), cls=Fighter())
-        
+        char = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
+        target = Goblin()
+
         # Should accept target as first positional argument
         # Should return tuple of (str, bool, int)
         result = char.weapon_damage(target)
@@ -94,13 +95,69 @@ class TestCharacterMethods:
         assert isinstance(hit, bool)
         assert isinstance(crit, (int, float))
 
+    def test_disarm_reduces_enemy_weapon_mod_total(self):
+        """Disarm should reduce total weapon attack output, not only base weapon damage."""
+        enemy = Goblin()
+        enemy.status_effects["Berserk"].active = False
+        enemy.magic_effects["Totem"].active = False
+        enemy.stat_effects["Attack"].active = False
+
+        enemy.physical_effects["Disarm"].active = False
+        armed_mod = enemy.check_mod("weapon")
+
+        enemy.physical_effects["Disarm"].active = True
+        disarmed_mod = enemy.check_mod("weapon")
+
+        expected_armed = enemy.combat.attack + enemy.equipment["Weapon"].damage
+        expected_disarmed = int(enemy.combat.attack * 0.5)
+
+        assert armed_mod == expected_armed
+        assert disarmed_mod == expected_disarmed
+        assert disarmed_mod < armed_mod
+
+    def test_disarm_reduces_player_weapon_mod_total(self):
+        """Player check_mod override should apply the same disarm weapon penalty."""
+        player = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
+        player.status_effects["Berserk"].active = False
+        player.stat_effects["Attack"].active = False
+
+        player.physical_effects["Disarm"].active = False
+        armed_mod = player.check_mod("weapon")
+
+        player.physical_effects["Disarm"].active = True
+        disarmed_mod = player.check_mod("weapon")
+
+        expected_armed = player.combat.attack + player.equipment["Weapon"].damage
+        expected_disarmed = int(player.combat.attack * 0.5)
+
+        assert armed_mod == expected_armed
+        assert disarmed_mod == expected_disarmed
+        assert disarmed_mod < armed_mod
+
+    def test_fist_weapon_not_penalized_by_disarm(self):
+        """Fist weapons are not disarmable and should not lose attack from disarm state."""
+        player = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
+        player.equipment["Weapon"] = items.BrassKnuckles()
+        player.status_effects["Berserk"].active = False
+        player.stat_effects["Attack"].active = False
+
+        assert player.can_be_disarmed() is False
+
+        player.physical_effects["Disarm"].active = False
+        armed_mod = player.check_mod("weapon")
+
+        player.physical_effects["Disarm"].active = True
+        disarmed_mod = player.check_mod("weapon")
+
+        assert disarmed_mod == armed_mod
+
 
 class TestCombatAPIContract:
     """Test the API contract between combat systems and character."""
     
     def test_enemy_has_combat_attributes(self):
         """Verify enemies have all required combat attributes."""
-        from enemies import Goblin
+        from src.core.enemies import Goblin
         
         enemy = Goblin()
         assert hasattr(enemy, 'name')
@@ -114,29 +171,17 @@ class TestCombatAPIContract:
     
     def test_player_has_combat_attributes(self):
         """Verify player has all required combat attributes."""
-        from player import Player
-        from game import Game
+        # Use TestGameState to properly create a player
+        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
         
-        # Create minimal game context
-        class MockGame:
-            def __init__(self):
-                self.level = 1
-                self.difficulty = 'Normal'
+        # Basic attributes
+        assert hasattr(player, 'name')
+        assert hasattr(player, 'health')
+        assert hasattr(player, 'cls')
         
-        try:
-            player = Player("TestPlayer", Human(), Fighter())
-            
-            # Basic attributes
-            assert hasattr(player, 'name')
-            assert hasattr(player, 'health')
-            assert hasattr(player, 'cls')
-            
-            # Combat methods
-            assert hasattr(player, 'weapon_damage')
-            assert hasattr(player, 'is_alive')
-            
-        except Exception as e:
-            pytest.skip(f"Player creation requires game context: {e}")
+        # Combat methods
+        assert hasattr(player, 'weapon_damage')
+        assert hasattr(player, 'is_alive')
 
 
 class TestEnhancedCombatRequirements:
@@ -144,7 +189,7 @@ class TestEnhancedCombatRequirements:
     
     def test_character_needs_check_active(self):
         """Document that check_active method is needed."""
-        char = Character(name="Test", race=Human(), cls=Fighter())
+        char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         
         if not hasattr(char, 'check_active'):
             # This is expected - we need to add it
@@ -157,7 +202,7 @@ class TestEnhancedCombatRequirements:
     
     def test_character_has_speed_stat(self):
         """Verify characters have speed/dex stat for turn order."""
-        char = Character(name="Test", race=Human(), cls=Fighter())
+        char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         
         # Check for speed or dexterity stat
         assert hasattr(char, 'stats')

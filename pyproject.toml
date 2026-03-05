@@ -24,18 +24,17 @@ classifiers = [
 ]
 
 dependencies = [
-    "dill>=0.3.9",
     "numpy>=2.2.0",
     "pyyaml>=6.0.2",
+    "pygame>=2.5.0",  # For GUI and asset/sprite rendering
+    "Pillow>=10.0.0",  # For perspective transforms and image processing
+    "scipy==1.17.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.2",
     "pytest-cov>=4.1.0",
-]
-gui = [
-    "pygame>=2.5.0",  # For future Phase 3 GUI
 ]
 
 [project.urls]
@@ -44,11 +43,12 @@ Repository = "https://github.com/stb5585/Dungeon-Crawl"
 Issues = "https://github.com/stb5585/Dungeon-Crawl/issues"
 
 [project.scripts]
-dungeon-crawl = "game:main"
+dungeon-crawl-curses = "game_curses:main"
+dungeon-crawl-pygame = "game_pygame:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["combat*", "effects*", "events*", "presentation*", "analytics*", "data*"]
+include = ["src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

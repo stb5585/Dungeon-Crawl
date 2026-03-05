@@ -18,7 +18,7 @@ print("=" * 60)
 # Test 1: Import the enhanced manager
 print("\n[Test 1] Importing EnhancedBattleManager...")
 try:
-    from combat.enhanced_manager import EnhancedBattleManager
+    from src.ui_curses.enhanced_manager import EnhancedBattleManager
     print("✅ Successfully imported EnhancedBattleManager")
 except Exception as e:
     print(f"❌ Failed to import: {e}")
@@ -27,7 +27,7 @@ except Exception as e:
 # Test 2: Import dependencies
 print("\n[Test 2] Checking dependencies...")
 try:
-    from combat import ActionQueue, ActionType, ActionPriority
+    from src.core.combat import ActionQueue, ActionType, ActionPriority
     print("✅ Action queue components imported")
 except Exception as e:
     print(f"❌ Failed to import action queue: {e}")
