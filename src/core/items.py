@@ -1523,7 +1523,11 @@ class DemonClaw2(DemonClaw):
         self.special = True
 
     def special_effect(self, results: CombatResultGroup) -> None:
-        result = abilities.Desoul().cast(result, special=True)
+        if results.results:
+            caster = results.results[0].actor
+            target = results.results[0].target
+            if caster and target:
+                abilities.Desoul().cast(caster, target, special=True)
         return results
 
 
@@ -2963,7 +2967,7 @@ class VisionPendant(Accessory):
 class RubyLocket(Accessory):
 
     def __init__(self):
-        super().__init__(name="Ruby Locket", description="A ruby necklace that improves the wearer's magic damage.",
+        super().__init__(name="Ruby Locket", description="A ruby necklace that improves the wearer's magic defense.",
                          value=1800, rarity=0.85, mod="+10 Magic Defense", subtyp="Pendant", unequip=False)
         self.weight = 0.2
 
@@ -3068,7 +3072,7 @@ class SapphireLocket(Accessory):
 
     def __init__(self):
         super().__init__(name="Sapphire Locket", description="A sapphire necklace that greatly improves the wearer's "
-                                                             "magic damage.",
+                                                             "magic defense.",
                          value=16000, rarity=0.5, mod="+20 Magic Defense", subtyp="Pendant", unequip=False)
         self.weight = 0.2
 
@@ -3227,6 +3231,16 @@ class RibbonPendant(Accessory):
                          value=150000, rarity=0.01, mod="Status-All", subtyp="Pendant", unequip=False)
 
 
+
+class MagicPendant(Accessory):
+
+    def __init__(self):
+        super().__init__(name="Magic Pendant", description="An amulet that makes the wearer harder to hit with magic spells.",
+                         value=150000, rarity=0.01, mod="Magic Dodge", subtyp="Pendant", unequip=False)
+        self.weight = 0.2
+
+
+# Potions
 class HealthPotion(Potion):
 
     def __init__(self):
@@ -4065,11 +4079,11 @@ class TicketPiece(Misc):
                          value=0, rarity=0, subtyp="Quest")
 
 
-class DeadBody(Misc):
+class DeadSoldier(Misc):
 
     def __init__(self):
-        super().__init__(name="Dead Body", description="The partially eaten body of a very green warrior. He never "
-                                                       "stood a chance...",
+        super().__init__(name="Dead Soldier", description="The partially eaten body of a very green soldier. He never "
+                                                          "stood a chance...",
                          value=0, rarity=0, subtyp="Quest")
         self.weight = 100
 
@@ -4285,6 +4299,40 @@ class Excaliper(Misc):
                         value=0, rarity=0, subtyp="Special")
 
 
+class ChaliceMap(Misc):
+    """
+    A worn map tied to the Golden Chalice questline.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Chalice Map",
+            description="A weathered map whose ink appears almost completely faded.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
+
+
+class GoldenChalice(Misc):
+    """
+    Quest item to complete "The Holy Grail of Quests"; requires visiting several locations in town and in the dungeon to uncover the hidden location
+
+    Places to visit with quest active to get location:
+    - talk with Hooded Figure at tavern in town; tells player to locate map last seen with adventurer carrying an ugly sword
+    - revisit boulder where Excaliper was found; find map hidden in crevice
+    - visit Sergeant at barracks with map in inventory; Sergeant tells player to find the adventurer
+    - find adventurer at secret location at 3:12,14; adventurer gives player the location of the Golden Chalice
+    - visit location at 6:2,17 to find Golden Chalice and complete quest
+    """
+
+    def __init__(self):
+        super().__init__(name="Golden Chalice", description="A golden chalice that once held the Holy Grail. It is said "
+                                                          "that the chalice can grant immense power to those who drink "
+                                                          "from it, but it is also cursed with a terrible thirst.",
+                         value=0, rarity=0, subtyp="Special")
+
+
 # Ability-related items
 class Joker(Misc):
     """
@@ -4331,7 +4379,7 @@ class DragonTear(Misc):
         super().__init__(name="Dragon's Tear", 
                          description="A crystallized tear shed by a dragon. Said to contain the essence "
                                    "of draconic vitality and regeneration. Extremely rare.",
-                         value=0, rarity=0.01, subtyp="Special")
+                         value=0, rarity=0.01, subtyp="Ability")
         self.restricted_classes = ["Lancer", "Dragoon"]
 
 

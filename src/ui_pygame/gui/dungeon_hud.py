@@ -69,10 +69,6 @@ class DungeonHUD:
             y_offset = self._render_status_icons(player_char, y_offset)
             y_offset += 15
         
-        # # Stats
-        # y_offset = self._render_stats(player_char, y_offset)
-        # y_offset += 20
-        
         # Minimap
         y_offset = self._render_minimap(player_char, y_offset)
         y_offset += 40
@@ -81,9 +77,6 @@ class DungeonHUD:
         if not combat_mode:
             y_offset = self._render_compass(player_char, y_offset)
             y_offset += 20
-        
-        # Quick info
-        # y_offset = self._render_quick_info(player_char, y_offset)
 
     def _effect_label(self, effect_name):
         labels = {
@@ -94,7 +87,7 @@ class DungeonHUD:
             "Silence": "SIL",
             "Sleep": "SLP",
             "Stun": "STN",
-            "Bleed": "BLD",
+            "Bleed": "RND",
             "Disarm": "DSA",
             "Prone": "PRN",
             "Attack": "ATK",
@@ -157,6 +150,16 @@ class DungeonHUD:
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
 
+        # Maelstrom Weapon passive stack indicator (display current consecutive hit stacks)
+        try:
+            maelstrom_hits = int(getattr(character, "maelstrom_hits", 0))
+            skills = getattr(character, "spellbook", {}).get("Skills", {})
+            has_maelstrom = "Maelstrom Weapon" in skills
+            if has_maelstrom and maelstrom_hits > 0:
+                icons.append((f"MW{maelstrom_hits}", True))
+        except (AttributeError, TypeError, ValueError):
+            pass
+
         return icons
 
     def _render_status_icons(self, player_char, y_offset):
@@ -200,7 +203,9 @@ class DungeonHUD:
         y_offset += 35
         
         # Race and Class
-        info_text = f"{player_char.race.name} {player_char.cls.name}"
+        race_name = player_char.race.name if getattr(player_char, "race", None) else "Unknown"
+        class_name = player_char.cls.name if getattr(player_char, "cls", None) else "Unknown"
+        info_text = f"{race_name} {class_name}"
         info_surface = self.stat_font.render(info_text, True, self.text_color)
         self.screen.blit(info_surface, (x_margin, y_offset))
         y_offset += 30
@@ -362,6 +367,28 @@ class DungeonHUD:
                 if tile:
                     tile_type = type(tile).__name__
                     is_directly_visible = (tile_x, tile_y) in visible_adjacent
+                    is_discovered_explorable = bool(
+                        getattr(tile, 'near', False)
+                        and getattr(tile, 'enter', True)
+                        and tile_type != 'FakeWall'
+                    )
+                    is_discovered_special = bool(
+                        getattr(tile, 'near', False) and (
+                            any(
+                                marker in tile_type
+                                for marker in (
+                                    'Chest',
+                                    'Stairs',
+                                    'Ladder',
+                                    'Door',
+                                    'WarpPoint',
+                                    'UndergroundSpring',
+                                    'SecretShop',
+                                    'Relic',
+                                )
+                            )
+                        )
+                    )
                     
                     if dx == 0 and dy == 0:
                         # Player position - draw base tile first, then player marker with arrow
@@ -399,16 +426,23 @@ class DungeonHUD:
                         
                         pygame.draw.polygon(self.screen, (0, 0, 0), points)
                         
-                    elif getattr(tile, 'visited', False) or getattr(tile, 'near', False) or is_directly_visible:
-                        # Explored tile (visited/near) or directly visible adjacent tile
+                    elif getattr(tile, 'visited', False) or is_directly_visible or is_discovered_explorable or is_discovered_special:
+                        # Explored tile (visited) or directly visible adjacent tile
                         is_visited = getattr(tile, 'visited', False)
                         is_near = getattr(tile, 'near', False)
+                        is_fire_path = tile_type in ('FirePath', 'FirePathSpecial')
                         if tile_type == 'FakeWall':
                             # Keep FakeWall hidden unless actually visited
                             if is_visited:
                                 pygame.draw.rect(self.screen, (150, 100, 150), tile_rect)
                             else:
                                 pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
+                        elif is_fire_path and is_visited:
+                            # Discovered FirePath tiles render as red heat zones on the minimap
+                            pygame.draw.rect(self.screen, (175, 55, 55), tile_rect)
+                        elif is_discovered_special and not is_visited:
+                            # Persist discovered special tiles without re-enabling broad near-tile shading
+                            pygame.draw.rect(self.screen, (100, 100, 110), tile_rect)
                         elif not getattr(tile, 'enter', True):
                             # Wall
                             wall_color = (80, 80, 90) if is_visited else (70, 70, 80)
@@ -515,9 +549,6 @@ class DungeonHUD:
                                      (center_x + icon_size // 2, center_y + icon_size // 3)]
                             pygame.draw.polygon(self.screen, (50, 255, 50), points)
                     
-                    elif getattr(tile, 'near', False):
-                        pygame.draw.rect(self.screen, (50, 50, 60), tile_rect)
-        
         y_offset += minimap_size + 5
         return y_offset
 
@@ -535,26 +566,49 @@ class DungeonHUD:
         }
 
         for direction, (dx, dy) in directions.items():
-            if not self._is_direction_visible_from_tile(current_tile, direction):
-                continue
-
             tile_x = player_x + dx
             tile_y = player_y + dy
+            adjacent_tile = player_char.world_dict.get((tile_x, tile_y, player_z))
+            if adjacent_tile is None:
+                continue
+            if not self._is_direction_visible_from_tile(current_tile, direction, adjacent_tile):
+                continue
             if player_char.world_dict.get((tile_x, tile_y, player_z)) is not None:
                 visible.add((tile_x, tile_y))
 
         return visible
 
-    def _is_direction_visible_from_tile(self, current_tile, direction):
+    def _is_direction_visible_from_tile(self, current_tile, direction, adjacent_tile=None):
         """Return whether a cardinal direction is visible from the current tile."""
         if not current_tile:
             return True
+
+        opposite = {
+            'north': 'south',
+            'south': 'north',
+            'east': 'west',
+            'west': 'east',
+        }
+
+        # Closed doors block line of sight
+        if 'Door' in type(current_tile).__name__ and not getattr(current_tile, 'open', False):
+            return False
+        if adjacent_tile and 'Door' in type(adjacent_tile).__name__ and not getattr(adjacent_tile, 'open', False):
+            return False
 
         blocked = getattr(current_tile, 'blocked', None)
         if blocked and blocked.lower() == direction:
             if hasattr(current_tile, 'open') and getattr(current_tile, 'open', False):
                 return True
             return False
+
+        if adjacent_tile:
+            adjacent_blocked = getattr(adjacent_tile, 'blocked', None)
+            opposite_direction = opposite.get(direction)
+            if adjacent_blocked and opposite_direction and adjacent_blocked.lower() == opposite_direction:
+                if hasattr(adjacent_tile, 'open') and getattr(adjacent_tile, 'open', False):
+                    return True
+                return False
 
         return True
     

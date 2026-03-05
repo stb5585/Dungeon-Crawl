@@ -436,8 +436,12 @@ class CharacterScreen(TownScreenBase):
         
         menu_options.append("Quit Game")
         self.menu_options = menu_options
+        started_in_town = player_char.in_town()
         
         while True:
+            if not started_in_town and player_char.in_town():
+                return "Exit Menu"
+
             self.draw_all(player_char)
             
             for event in pygame.event.get():
@@ -489,7 +493,9 @@ class CharacterScreen(TownScreenBase):
                         # Open popup overlays for relevant menus; keep loop after closing
                         if chosen == "Inventory":
                             popup = InventoryPopupMenu(self.presenter, self)
-                            _ = popup.show(player_char)
+                            popup_result = popup.show(player_char)
+                            if popup_result and popup_result[0] == "exit_to_town":
+                                return "Exit Menu"
                         elif chosen == "Equipment":
                             popup = EquipmentPopupMenu(self.presenter, self)
                             _ = popup.show(player_char)

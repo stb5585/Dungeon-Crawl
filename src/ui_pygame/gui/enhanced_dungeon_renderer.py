@@ -1187,7 +1187,22 @@ class EnhancedDungeonRenderer:
             self.screen.blit(scaled_ceiling, (ceiling_x, ceiling_y))
 
         # Render back wall (center - if blocked) - fills middle section
-        if center_tile is None or self._is_wall(center_tile):
+        # Check if center tile at depth=2 (adjacent) is a SecretShop - render its visual
+        if depth == 2:
+            adjacent_center = tiles.get('center')
+            if adjacent_center and 'SecretShop' in type(adjacent_center).__name__:
+                # Render the secret shop visual at depth 2 (adjacent view)
+                darkness_level = self._get_layer_darkness(depth)
+                self._render_secret_shop(comp_x + left_w, comp_y + top_h, center_w, center_h, 
+                                        darkness_level, depth)
+                return  # Don't render normal back wall for secret shop
+        
+        if center_tile and 'SecretShop' in type(center_tile).__name__ and depth == 1:
+            # Keep this for backward compatibility if somehow player stands on it
+            darkness_level = self._get_layer_darkness(depth)
+            self._render_secret_shop(comp_x + left_w, comp_y + top_h, center_w, center_h, 
+                                    darkness_level, depth)
+        elif center_tile is None or self._is_wall(center_tile):
             # Use darkness of the layer BEYOND this wall (next depth)
             next_darkness = self._get_layer_darkness(depth)
             back_cached = cache.get('back_center')
@@ -1714,17 +1729,17 @@ class EnhancedDungeonRenderer:
         depth=2+: Viewing from distance (render smaller for perspective)
         """
         if depth == 0:
-            # Don't render stairs/ladders when standing on them
+            # Don't render ladders when standing on them
             return
         elif depth == 1:
             # Viewing from adjacent space - render at normal size
             ladder_tile = self._get_ladder_up_tile(depth)
-            size_factor = 1.0  # 100% normal size
+            size_factor = 0.8  # 100% normal size
         else:
             # Viewing from distance - render smaller for perspective
             next_depth = depth + 1 if depth < 3 else depth
             ladder_tile = self._get_ladder_up_tile(next_depth)
-            size_factor = 0.85 if depth == 2 else 0.9  # Scaled down when viewing from distance
+            size_factor = 0.6 if depth == 2 else 0.4  # Scaled down when viewing from distance
         
         if ladder_tile:
             ladder_width = int(width * size_factor)
@@ -1743,7 +1758,7 @@ class EnhancedDungeonRenderer:
         depth=1+: Viewing from distance (render at tile size)
         """
         if depth == 0:
-            # Don't render stairs/ladders when standing on them
+            # Don't render ladders when standing on them
             return
         
         # Viewing from normal distance
@@ -1763,6 +1778,22 @@ class EnhancedDungeonRenderer:
             # Fallback: Draw a simple colored representation
             ladder_color = self._apply_darkness(self.colors.get('stairs_down', (200, 120, 80)), darkness)
             pygame.draw.rect(self.screen, ladder_color, pygame.Rect(x, y, width, height))
+
+    def _render_secret_shop(self, x, y, width, height, darkness, depth):
+        """Render the secret shop visual overlay in the center view."""
+        try:
+            shop_image_path = 'src/ui_pygame/assets/dungeon_tiles/special_tiles/secret_shop.png'
+            if os.path.exists(shop_image_path):
+                shop_image = pygame.image.load(shop_image_path).convert_alpha()
+                # Scale to fit the center area
+                scaled_shop = pygame.transform.smoothscale(shop_image, (width, height))
+                # Apply darkness if needed
+                if darkness > 0:
+                    scaled_shop = self._apply_darkness_to_surface(scaled_shop, darkness)
+                # Render on top of the normal background
+                self.screen.blit(scaled_shop, (x, y))
+        except Exception as e:
+            print(f"Warning: Could not render secret shop visual: {e}")
 
     def _render_boulder(self, x, y, width, height, darkness, depth, is_looted):
         """Render a boulder tile; show sword before looting, plain after."""
@@ -2209,6 +2240,22 @@ class EnhancedDungeonRenderer:
         self._unobtainium_cache[depth] = scaled
         return scaled
 
+    def _render_secret_shop(self, x, y, width, height, darkness, depth):
+        """Render the secret shop visual overlay."""
+        try:
+            shop_image_path = 'src/ui_pygame/assets/dungeon_tiles/special_tiles/secret_shop.png'
+            if os.path.exists(shop_image_path):
+                shop_image = pygame.image.load(shop_image_path).convert_alpha()
+                # Scale to fit the center area
+                scaled_shop = pygame.transform.smoothscale(shop_image, (width, height))
+                # Apply darkness if needed
+                if darkness > 0:
+                    scaled_shop = self._apply_darkness_to_surface(scaled_shop, darkness)
+                # Render on top of the normal background
+                self.screen.blit(scaled_shop, (x, y))
+        except Exception as e:
+            print(f"Warning: Could not render secret shop visual: {e}")
+
     def _render_unobtainium(self, x, y, width, height, darkness, depth, is_looted):
         """Render an Unobtainium ore on the ground, bottom-aligned to the floor line."""
         if is_looted:
@@ -2387,7 +2434,7 @@ class EnhancedDungeonRenderer:
             return not (is_open or is_detected)
 
         # Chest tiles should always render, even if impassable (enter=False)
-        if 'Chest' in tile_type or 'Relic' in tile_type:
+        if 'Chest' in tile_type or 'Relic' in tile_type or 'Boulder' in tile_type:
             return False
 
         # Wall tiles have enter=False, walkable tiles have enter=True
@@ -2460,7 +2507,7 @@ class EnhancedDungeonRenderer:
         t = max(0, min(1, t))
         return tuple(int(c1 + (c2 - c1) * t) for c1, c2 in zip(color1, color2))
 
-    def render_message_area(self, messages):
+    def render_message_area(self, messages, scroll_offset=0, lines_per_page=4):
         """Render message log at bottom of screen."""
         msg_height = 100
 
@@ -2469,14 +2516,29 @@ class EnhancedDungeonRenderer:
         msg_surface.fill((20, 20, 25, 200))
         self.screen.blit(msg_surface, (0, self.view_height - msg_height))
 
-        # Render messages (last 4-5 messages)
+        # Render message slice based on scroll offset.
         font = pygame.font.Font(None, 24)
         y_offset = self.view_height - msg_height + 10
+        max_scroll = max(0, len(messages) - lines_per_page)
+        scroll_offset = max(0, min(scroll_offset, max_scroll))
+        visible_messages = messages[scroll_offset:scroll_offset + lines_per_page]
 
-        for msg in messages[-4:]:  # Show last 4 messages
+        for msg in visible_messages:
             text_surface = font.render(msg, True, (220, 220, 220))
             self.screen.blit(text_surface, (10, y_offset))
             y_offset += 22
+
+        if len(messages) > lines_per_page:
+            indicator_font = pygame.font.Font(None, 18)
+            if scroll_offset > 0:
+                up = indicator_font.render("^", True, (210, 210, 210))
+                self.screen.blit(up, (self.view_width - 22, self.view_height - msg_height + 8))
+            if scroll_offset < max_scroll:
+                down = indicator_font.render("v", True, (210, 210, 210))
+                self.screen.blit(down, (self.view_width - 22, self.view_height - 22))
+
+            hint = indicator_font.render("PgUp/PgDn or Mouse Wheel", True, (170, 170, 170))
+            self.screen.blit(hint, (self.view_width - hint.get_width() - 30, self.view_height - 22))
 
     def _get_bg_surface(self, depth, w, h, alpha, dark_bg):
         key = (depth, w, h, alpha, dark_bg)

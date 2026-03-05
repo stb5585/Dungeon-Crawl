@@ -146,6 +146,19 @@ class EnhancedBattleManager(BaseBattleManager):
             return f"{self.enemy.name} is preparing {action_name}!"
         else:
             return f"{self.enemy.name} is preparing something..."
+
+    def _get_active_charging_skill(self, actor: Character) -> tuple[str, object] | None:
+        """Return currently charging skill info for an actor, if any."""
+        if not self.charging_ability:
+            return None
+
+        ability_name, skill_obj = self.charging_ability
+        actor_skills = actor.spellbook.get('Skills', {})
+
+        if skill_obj in actor_skills.values() and getattr(skill_obj, 'charging', False):
+            return ability_name, skill_obj
+
+        return None
     
     def _schedule_player_action(self) -> None:
         """Schedule the player's chosen action."""
@@ -153,6 +166,21 @@ class EnhancedBattleManager(BaseBattleManager):
         if self.player_char in self.charging_actions:
             action_name, turns_left = self.charging_actions[self.player_char]
             self.print_text(f"Continuing to charge {action_name}... ({turns_left} turns remaining)")
+            return
+
+        # Continue already-started charging skills (e.g., Charge)
+        charging_skill = self._get_active_charging_skill(self.player_char)
+        if charging_skill:
+            ability_name, _ = charging_skill
+            self.action_queue.schedule(
+                actor=self.player_char,
+                action_type=ActionType.SKILL,
+                callback=self._create_action_callback("Use Skill", ability_name),
+                target=self.enemy,
+                priority=ActionPriority.NORMAL,
+                action="Use Skill",
+                choice=ability_name
+            )
             return
         
         # Process status effects
@@ -226,6 +254,21 @@ class EnhancedBattleManager(BaseBattleManager):
         """Schedule the enemy's action using their AI."""
         # Check for charging
         if self.enemy in self.charging_actions:
+            return
+
+        # Continue already-started charging skills (e.g., Charge)
+        charging_skill = self._get_active_charging_skill(self.enemy)
+        if charging_skill:
+            ability_name, _ = charging_skill
+            self.action_queue.schedule(
+                actor=self.enemy,
+                action_type=ActionType.SKILL,
+                callback=self._create_action_callback("Use Skill", ability_name),
+                target=self.player_char,
+                priority=ActionPriority.NORMAL,
+                action="Use Skill",
+                choice=ability_name
+            )
             return
         
         # Process status effects

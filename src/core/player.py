@@ -184,6 +184,13 @@ class Player(Character):
     power_up(bool): switch for power-up for retrieving Power Core
     """
 
+    ABSORB_ESSENCE_MAX_PROCS_PER_FLOOR = 3
+    ABSORB_ESSENCE_MAX_PROCS_PER_ENEMY_PER_FLOOR = 1
+    ABSORB_ESSENCE_MAX_STAT_GAINS = 12
+    ABSORB_ESSENCE_MAX_HEALTH_GAINS = 60
+    ABSORB_ESSENCE_MAX_MANA_GAINS = 60
+    ABSORB_ESSENCE_MAX_LEVEL_GAINS = 3
+
     def __init__(self, location_x, location_y, location_z, level, health, mana, stats, combat, gold, resistance):
         super().__init__(name="", health=health, mana=mana, stats=stats, combat=combat)
         self.location_x = location_x
@@ -210,6 +217,23 @@ class Player(Character):
         self.transform_type = self.cls
         self.encumbered = False
         self.power_up = False
+        self.absorb_essence_state = {
+            'floor': self.location_z,
+            'procs_this_floor': 0,
+            'procs_by_enemy': {},
+            'stat_gains': {
+                'strength': 0,
+                'intel': 0,
+                'wisdom': 0,
+                'con': 0,
+                'charisma': 0,
+                'dex': 0,
+            },
+            'health_gains': 0,
+            'mana_gains': 0,
+            'level_gains': 0,
+            'dragon_gold_claimed': False,
+        }
 
     def __str__(self):
         return (
@@ -340,6 +364,7 @@ class Player(Character):
                     tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
                     tile = getattr(map_tiles, tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
+
         self.world_dict = world_dict
 
     def additional_actions(self, action_list):
@@ -852,7 +877,7 @@ class Player(Character):
             if is_funhouse_mimic or (not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10):
                 # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
                 mimic_level = 4 if is_funhouse_mimic else (self.location_z + locked + plus)
-                enemy = enemies.Mimic(mimic_level)
+                enemy = enemies.Mimic(mimic_level, player_level=self.player_level())
                 tile.enemy = enemy
                 if textbox:
                     textbox.print_text_in_rectangle("There is a Mimic in the chest!")
@@ -870,7 +895,8 @@ class Player(Character):
                 
                 # Funhouse Mimic Chest also drops a Jester Token
                 if is_funhouse_mimic:
-                    token = items.JesterToken()
+                    from src.core.items import JesterToken
+                    token = JesterToken()
                     self.modify_inventory(token, 1)
                     if textbox:
                         textbox.print_text_in_rectangle(
@@ -916,17 +942,25 @@ class Player(Character):
                         try:
                             quest_what = info['What']
                             # Handle different types of 'What': class, instance, or string
+                            quest_item_name = None
+                            quest_item_class_name = None
                             if isinstance(quest_what, str):
+                                # JSON quests may store class name (e.g. ElementalMote) or display name.
                                 quest_item_name = quest_what
+                                quest_item_class_name = quest_what
                             elif callable(quest_what):
-                                # It's a class, instantiate it
+                                # It's a class, instantiate for display name and use class name too.
                                 quest_item_name = quest_what().name
+                                quest_item_class_name = quest_what.__name__
                             else:
-                                # It's already an instance
+                                # It's already an instance.
                                 quest_item_name = quest_what.name
+                                quest_item_class_name = quest_what.__class__.__name__
                             
-                            is_completed = info['Completed']
-                            if quest_item_name == item.name and not is_completed:
+                            is_completed = info.get('Completed', False)
+                            item_class_name = item.__class__.__name__
+                            matches_item = item.name == quest_item_name or item_class_name == quest_item_class_name
+                            if matches_item and not is_completed:
                                 rarity = item.rarity
                                 if item.name == "Bird Fat" and "Summoner" not in self.cls.name:
                                     rarity = 0.75
@@ -939,12 +973,19 @@ class Player(Character):
                             pass
                     if quest_found:
                         break
+                # No matching active quest -> do not drop quest item.
+                if not quest_found:
+                    drop[i] = False
+                    rare[i] = False
             elif 'Boss' in str(tile):
                 if item.subtyp == "Special":
                     drop[i] = True if item.rarity > random.random() else False
                     rare[i] = True
                 else:
                     drop[i] = True  # all non-quest, non-special items will drop from bosses
+            elif item.subtyp == "Ability":
+                drop[i] = True if item.rarity > random.random() else False
+                rare[i] = True
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 if item.rarity > (random.random() / chance):
@@ -1399,47 +1440,130 @@ class Player(Character):
     def class_upgrades(self, game, enemy):
         upgrade_str = ""
         if self.cls.name == "Soulcatcher":
-            limiter = 1  # TODO 
-            chance = max(limiter, 19 - self.check_mod('luck', enemy=enemy, luck_factor=20))
-            if not random.randint(0, chance):  # 5% chance on kill
-                upgrade_str += f"You absorb part of the {enemy.name}'s soul.\n"
-                if enemy.name in ['Behemoth', 'Golem', 'Iron Golem']:
+            state = getattr(self, 'absorb_essence_state', None)
+            if not isinstance(state, dict):
+                self.absorb_essence_state = {}
+                state = self.absorb_essence_state
+
+            state.setdefault('floor', self.location_z)
+            state.setdefault('procs_this_floor', 0)
+            state.setdefault('procs_by_enemy', {})
+            state.setdefault('stat_gains', {
+                'strength': 0,
+                'intel': 0,
+                'wisdom': 0,
+                'con': 0,
+                'charisma': 0,
+                'dex': 0,
+            })
+            state.setdefault('health_gains', 0)
+            state.setdefault('mana_gains', 0)
+            state.setdefault('level_gains', 0)
+            state.setdefault('dragon_gold_claimed', False)
+
+            if state['floor'] != self.location_z:
+                state['floor'] = self.location_z
+                state['procs_this_floor'] = 0
+                state['procs_by_enemy'] = {}
+
+            if state['procs_this_floor'] >= self.ABSORB_ESSENCE_MAX_PROCS_PER_FLOOR:
+                return upgrade_str
+
+            enemy_proc_count = state['procs_by_enemy'].get(enemy.name, 0)
+            if enemy_proc_count >= self.ABSORB_ESSENCE_MAX_PROCS_PER_ENEMY_PER_FLOOR:
+                return upgrade_str
+
+            luck_bonus = min(4, self.check_mod('luck', enemy=enemy, luck_factor=20))
+            chance = max(12, 19 - luck_bonus)
+            if not random.randint(0, chance):
+                applied = False
+
+                if enemy.name in ['Behemoth', 'Golem', 'Iron Golem'] and \
+                        state['stat_gains']['strength'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 strength.\n"
                     self.stats.strength += 1
-                if enemy.name in ['Lich', 'Brain Gorger']:
+                    state['stat_gains']['strength'] += 1
+                    applied = True
+
+                if enemy.name in ['Lich', 'Brain Gorger'] and \
+                        state['stat_gains']['intel'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 intelligence.\n"
                     self.stats.intel += 1
-                if enemy.name in ['Aboleth', 'Hydra']:
+                    state['stat_gains']['intel'] += 1
+                    applied = True
+
+                if enemy.name in ['Aboleth', 'Hydra'] and \
+                        state['stat_gains']['wisdom'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 wisdom.\n"
                     self.stats.wisdom += 1
-                if enemy.name in ['Warforged', 'Archvile']:
+                    state['stat_gains']['wisdom'] += 1
+                    applied = True
+
+                if enemy.name in ['Warforged', 'Archvile'] and \
+                        state['stat_gains']['con'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 constitution.\n"
                     self.stats.con += 1
-                if enemy.name in ['Beholder', 'Wyrm']:
+                    state['stat_gains']['con'] += 1
+                    applied = True
+
+                if enemy.name in ['Beholder', 'Wyrm'] and \
+                        state['stat_gains']['charisma'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 charisma.\n"
                     self.stats.charisma += 1
-                if enemy.name in ['Shadow Serpent', 'Wyvern']:
+                    state['stat_gains']['charisma'] += 1
+                    applied = True
+
+                if enemy.name in ['Shadow Serpent', 'Wyvern'] and \
+                        state['stat_gains']['dex'] < self.ABSORB_ESSENCE_MAX_STAT_GAINS:
                     upgrade_str += "Gain 1 dexterity.\n"
                     self.stats.dex += 1
-                if enemy.name in ['Basilisk', 'Sandworm']:
-                    upgrade_str += "Gain 5 hit points.\n"
-                    self.health.max += 5
-                if enemy.name == 'Mind Flayer':
-                    upgrade_str += "Gain 5 mana points.\n"
-                    self.mana.max += 5
-                if enemy.name in ['Jester', 'Domingo', 'Cerberus']:
-                    if not self.max_level():
-                        upgrade_str += "Gain enough experience to level.\n"
-                        self.level.exp += self.level.exp_to_gain
-                        self.level.exp_to_gain = 0
-                        self.level_up(game)
-                if enemy.name == 'Red Dragon':
+                    state['stat_gains']['dex'] += 1
+                    applied = True
+
+                if enemy.name in ['Basilisk', 'Sandworm'] and \
+                        state['health_gains'] < self.ABSORB_ESSENCE_MAX_HEALTH_GAINS:
+                    hp_gain = min(5, self.ABSORB_ESSENCE_MAX_HEALTH_GAINS - state['health_gains'])
+                    if hp_gain > 0:
+                        upgrade_str += f"Gain {hp_gain} hit points.\n"
+                        self.health.max += hp_gain
+                        self.health.current += hp_gain
+                        state['health_gains'] += hp_gain
+                        applied = True
+
+                if enemy.name == 'Mind Flayer' and state['mana_gains'] < self.ABSORB_ESSENCE_MAX_MANA_GAINS:
+                    mana_gain = min(5, self.ABSORB_ESSENCE_MAX_MANA_GAINS - state['mana_gains'])
+                    if mana_gain > 0:
+                        upgrade_str += f"Gain {mana_gain} mana points.\n"
+                        self.mana.max += mana_gain
+                        self.mana.current += mana_gain
+                        state['mana_gains'] += mana_gain
+                        applied = True
+
+                if enemy.name in ['Jester', 'Domingo', 'Cerberus'] and \
+                        state['level_gains'] < self.ABSORB_ESSENCE_MAX_LEVEL_GAINS and \
+                        not self.max_level():
+                    upgrade_str += "Gain enough experience to level.\n"
+                    self.level.exp += self.level.exp_to_gain
+                    self.level.exp_to_gain = 0
+                    self.level_up(game)
+                    state['level_gains'] += 1
+                    applied = True
+
+                if enemy.name == 'Red Dragon' and not state['dragon_gold_claimed']:
                     upgrade_str += "You find a cache of gold, doubling your current stash.\n"
                     self.gold *= 2
+                    state['dragon_gold_claimed'] = True
+                    applied = True
+
+                if applied:
+                    upgrade_str = f"You absorb part of the {enemy.name}'s soul.\n" + upgrade_str
+                    state['procs_this_floor'] += 1
+                    state['procs_by_enemy'][enemy.name] = enemy_proc_count + 1
         if self.cls.name == "Lycan" and enemy.name == 'Red Dragon':
             upgrade_str += f"{self.name} has harnessed the power of the Red Dragon and can now transform into one!\n"
             self.spellbook['Skills']['Transform'] = abilities.Transform4()
             self.spellbook['Skills']['Transform'].use(self)
+        return upgrade_str
 
     def familiar_turn(self, enemy):
         familiar_str = ""
@@ -1604,7 +1728,9 @@ class Player(Character):
             if textbox:
                 textbox.print_text_in_rectangle(endcombat_str)
             self.level.exp += enemy.experience
-            self.class_upgrades(game, enemy)
+            upgrade_message = self.class_upgrades(game, enemy)
+            if upgrade_message and textbox:
+                textbox.print_text_in_rectangle(upgrade_message)
             if not self.max_level():
                 self.level.exp_to_gain -= enemy.experience
                 while self.level.exp_to_gain <= 0:
@@ -1638,6 +1764,16 @@ class Player(Character):
                     if self.quest_dict['Main'][quest]['What'] == enemy.name and \
                         not self.quest_dict['Main'][quest]['Completed']:
                         self.quest_dict['Main'][quest]['Completed'] = True
+                        quest_message += f"You have completed the quest {quest}.\n"
+
+                for quest in self.quest_dict['Side']:
+                    quest_info = self.quest_dict['Side'][quest]
+                    if (
+                        quest_info.get('Type') == 'Defeat'
+                        and quest_info.get('What') == enemy.name
+                        and not quest_info.get('Completed')
+                    ):
+                        quest_info['Completed'] = True
                         quest_message += f"You have completed the quest {quest}.\n"
         elif item is not None:
             for quest in self.quest_dict['Side']:

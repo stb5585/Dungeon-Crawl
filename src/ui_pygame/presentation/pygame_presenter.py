@@ -14,14 +14,14 @@ import pygame
 from src.core.events import get_event_bus, EventType
 from .interface import GamePresenter
 
-# TODO: Re-enable sprite manager when available
-# Import sprite manager
-# try:
-#     from src.ui_pygame.assets.sprite_manager import get_sprite_manager
-#     SPRITES_AVAILABLE = True
-# except ImportError:
-SPRITES_AVAILABLE = False
-# print("Warning: Sprite manager not available")
+# Import asset managers
+try:
+    from src.ui_pygame.assets.sound_manager import get_sound_manager
+    SOUND_AVAILABLE = True
+except ImportError:
+    SOUND_AVAILABLE = False
+    print("Warning: Sound manager not available")
+
 
 if TYPE_CHECKING:
     from src.core.character import Character
@@ -123,6 +123,12 @@ class PygamePresenter(GamePresenter):
         # Event system
         self.event_bus = get_event_bus()
         self._subscribe_to_events()
+        
+        # Sound manager
+        if SOUND_AVAILABLE:
+            self.sound_manager = get_sound_manager(event_bus=self.event_bus)
+        else:
+            self.sound_manager = None
         
         # Combat log with scrolling
         self.combat_log: list[str] = []
@@ -447,6 +453,9 @@ class PygamePresenter(GamePresenter):
         selected_index: int = 0,
         use_grid: bool = False,
         max_visible: int | None = None,
+        image_path: str = "",
+        split_layout: bool = False,
+        background_draw_func: Callable[[], None] | None = None,
     ) -> int:
         """Render a menu and return selected option index.
         
@@ -456,6 +465,150 @@ class PygamePresenter(GamePresenter):
             selected_index: Initially selected option
             use_grid: If True, render options in a 2-column grid layout
         """
+        if split_layout:
+            selected = selected_index
+            scroll_offset = 0
+
+            def wrap_text(text: str, max_width: int) -> list[str]:
+                lines: list[str] = []
+                for paragraph in text.split('\n'):
+                    if not paragraph.strip():
+                        lines.append("")
+                        continue
+                    words = paragraph.split()
+                    current_line: list[str] = []
+                    for word in words:
+                        current_line.append(word)
+                        test_line = " ".join(current_line)
+                        if self.normal_font.size(test_line)[0] > max_width:
+                            current_line.pop()
+                            if current_line:
+                                lines.append(" ".join(current_line))
+                            current_line = [word]
+                    if current_line:
+                        lines.append(" ".join(current_line))
+                return lines
+
+            loaded_image = None
+            if image_path:
+                try:
+                    import os
+                    if os.path.exists(image_path):
+                        loaded_image = pygame.image.load(image_path).convert_alpha()
+                except Exception:
+                    loaded_image = None
+
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        import sys
+                        sys.exit()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key in (pygame.K_UP, pygame.K_w):
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
+                            selected = (selected - 1) % len(options)
+                        elif event.key in (pygame.K_DOWN, pygame.K_s):
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
+                            selected = (selected + 1) % len(options)
+                        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_confirm")
+                            return selected
+                        elif event.key == pygame.K_ESCAPE:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_cancel")
+                            return None
+
+                        visible_count = max_visible or 6
+                        if selected < scroll_offset:
+                            scroll_offset = selected
+                        elif selected >= scroll_offset + visible_count:
+                            scroll_offset = selected - visible_count + 1
+
+                if background_draw_func:
+                    background_draw_func()
+                else:
+                    self.screen.fill(BLACK)
+
+                overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 150))
+                self.screen.blit(overlay, (0, 0))
+
+                outer_rect = pygame.Rect(
+                    int(self.width * 0.06),
+                    int(self.height * 0.08),
+                    int(self.width * 0.88),
+                    int(self.height * 0.84),
+                )
+                left_rect = pygame.Rect(
+                    outer_rect.x + 10,
+                    outer_rect.y + 10,
+                    int(outer_rect.width * 0.42) - 15,
+                    outer_rect.height - 20,
+                )
+                right_rect = pygame.Rect(
+                    left_rect.right + 10,
+                    outer_rect.y + 10,
+                    outer_rect.right - (left_rect.right + 20),
+                    outer_rect.height - 20,
+                )
+
+                pygame.draw.rect(self.screen, (18, 18, 24), outer_rect)
+                pygame.draw.rect(self.screen, WHITE, outer_rect, 2)
+                pygame.draw.rect(self.screen, (10, 10, 15), left_rect)
+                pygame.draw.rect(self.screen, DARK_GRAY, left_rect, 2)
+                pygame.draw.rect(self.screen, (22, 22, 30), right_rect)
+                pygame.draw.rect(self.screen, DARK_GRAY, right_rect, 2)
+
+                if loaded_image is not None:
+                    iw, ih = loaded_image.get_size()
+                    scale = min(left_rect.width / iw, left_rect.height / ih)
+                    scaled = pygame.transform.smoothscale(loaded_image, (int(iw * scale), int(ih * scale)))
+                    image_rect = scaled.get_rect(center=left_rect.center)
+                    self.screen.blit(scaled, image_rect)
+
+                y = right_rect.top + 16
+                prompt_lines = wrap_text(title, right_rect.width - 30)
+                for line in prompt_lines:
+                    if line:
+                        text = self.normal_font.render(line, True, WHITE)
+                        self.screen.blit(text, (right_rect.left + 15, y))
+                    y += 28
+                y += 10
+
+                visible_count = max_visible or 6
+                end = min(len(options), scroll_offset + visible_count)
+                option_y = y
+                for idx in range(scroll_offset, end):
+                    option = options[idx]
+                    is_selected = idx == selected
+                    if is_selected:
+                        box_rect = pygame.Rect(right_rect.left + 12, option_y - 4, right_rect.width - 24, 40)
+                        pygame.draw.rect(self.screen, (45, 45, 65), box_rect)
+                        pygame.draw.rect(self.screen, GOLD, box_rect, 2)
+                    color = GOLD if is_selected else WHITE
+                    option_text = self.large_font.render(option, True, color)
+                    self.screen.blit(option_text, (right_rect.left + 24, option_y + 2))
+                    option_y += 46
+
+                if len(options) > visible_count:
+                    if scroll_offset > 0:
+                        up = self.small_font.render("▲", True, GRAY)
+                        self.screen.blit(up, (right_rect.right - 30, y - 18))
+                    if end < len(options):
+                        down = self.small_font.render("▼", True, GRAY)
+                        self.screen.blit(down, (right_rect.right - 30, option_y - 4))
+
+                help_text = self.small_font.render("UP/DOWN: Navigate  ENTER: Select  ESC: Cancel", True, GRAY)
+                help_rect = help_text.get_rect(centerx=right_rect.centerx, bottom=right_rect.bottom - 12)
+                self.screen.blit(help_text, help_rect)
+
+                pygame.display.flip()
+                self.clock.tick(30)
+
         selected = selected_index
         scroll_offset = 0
         
@@ -475,38 +628,58 @@ class PygamePresenter(GamePresenter):
                         current_col = selected % cols
                         
                         if event.key == pygame.K_UP:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             current_row = (current_row - 1) % rows
                             selected = current_row * cols + current_col
                             if selected >= len(options):
                                 selected = len(options) - 1
                         elif event.key == pygame.K_DOWN:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             current_row = (current_row + 1) % rows
                             selected = min(current_row * cols + current_col, len(options) - 1)
                         elif event.key == pygame.K_LEFT:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             if current_col > 0:
                                 selected -= 1
                             else:
                                 # Wrap to previous row, last column
                                 selected = max(0, selected - 1)
                         elif event.key == pygame.K_RIGHT:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             if current_col < cols - 1 and selected + 1 < len(options):
                                 selected += 1
                             else:
                                 # Wrap to next row, first column
                                 selected = min(len(options) - 1, selected + 1)
                         elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_confirm")
                             return selected
                         elif event.key == pygame.K_ESCAPE:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_cancel")
                             return None  # Cancel
                     else:
                         # list navigation: up/down only (supports optional scrolling window)
                         if event.key == pygame.K_UP:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             selected = (selected - 1) % len(options)
                         elif event.key == pygame.K_DOWN:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_select")
                             selected = (selected + 1) % len(options)
                         elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_confirm")
                             return selected
                         elif event.key == pygame.K_ESCAPE:
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_cancel")
                             return None  # Cancel
 
                         # Maintain scroll window if max_visible provided
@@ -593,17 +766,164 @@ class PygamePresenter(GamePresenter):
             pygame.display.flip()
             self.clock.tick(30)  # 30 FPS for menus
         
-    def show_message(self, message: str, title: str = ""):
-        """Display a message box and wait for keypress."""
+    def show_message(
+        self,
+        message: str,
+        title: str = "",
+        image_path: str = "",
+        split_layout: bool = False,
+        background_draw_func: Callable[[], None] | None = None,
+        min_display_seconds: float = 0.0,
+    ):
+        """Display a message box with optional image and wait for keypress."""
+        if split_layout:
+            def wrap_text(text: str, max_width: int) -> list[str]:
+                lines: list[str] = []
+                for paragraph in text.split('\n'):
+                    if not paragraph.strip():
+                        lines.append("")
+                        continue
+                    words = paragraph.split()
+                    current_line: list[str] = []
+                    for word in words:
+                        current_line.append(word)
+                        test_line = " ".join(current_line)
+                        if self.normal_font.size(test_line)[0] > max_width:
+                            current_line.pop()
+                            if current_line:
+                                lines.append(" ".join(current_line))
+                            current_line = [word]
+                    if current_line:
+                        lines.append(" ".join(current_line))
+                return lines
+
+            loaded_image = None
+            if image_path:
+                try:
+                    import os
+                    if os.path.exists(image_path):
+                        loaded_image = pygame.image.load(image_path).convert_alpha()
+                except Exception:
+                    loaded_image = None
+
+            min_display_ms = max(0, int(min_display_seconds * 1000))
+            unlock_time = pygame.time.get_ticks() + min_display_ms
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        import sys
+                        sys.exit()
+                    if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) and pygame.time.get_ticks() >= unlock_time:
+                        waiting = False
+
+                if background_draw_func:
+                    background_draw_func()
+                else:
+                    self.screen.fill(BLACK)
+
+                overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 150))
+                self.screen.blit(overlay, (0, 0))
+
+                outer_rect = pygame.Rect(
+                    int(self.width * 0.06),
+                    int(self.height * 0.08),
+                    int(self.width * 0.88),
+                    int(self.height * 0.84),
+                )
+                left_rect = pygame.Rect(
+                    outer_rect.x + 10,
+                    outer_rect.y + 10,
+                    int(outer_rect.width * 0.42) - 15,
+                    outer_rect.height - 20,
+                )
+                right_rect = pygame.Rect(
+                    left_rect.right + 10,
+                    outer_rect.y + 10,
+                    outer_rect.right - (left_rect.right + 20),
+                    outer_rect.height - 20,
+                )
+
+                pygame.draw.rect(self.screen, (18, 18, 24), outer_rect)
+                pygame.draw.rect(self.screen, WHITE, outer_rect, 2)
+                pygame.draw.rect(self.screen, (10, 10, 15), left_rect)
+                pygame.draw.rect(self.screen, DARK_GRAY, left_rect, 2)
+                pygame.draw.rect(self.screen, (22, 22, 30), right_rect)
+                pygame.draw.rect(self.screen, DARK_GRAY, right_rect, 2)
+
+                if loaded_image is not None:
+                    iw, ih = loaded_image.get_size()
+                    scale = min(left_rect.width / iw, left_rect.height / ih)
+                    scaled = pygame.transform.smoothscale(loaded_image, (int(iw * scale), int(ih * scale)))
+                    image_rect = scaled.get_rect(center=left_rect.center)
+                    self.screen.blit(scaled, image_rect)
+
+                y = right_rect.top + 16
+                if title:
+                    for line in title.split('\n'):
+                        if line:
+                            title_text = self.title_font.render(line, True, GOLD)
+                            title_rect = title_text.get_rect(centerx=right_rect.centerx, top=y)
+                            self.screen.blit(title_text, title_rect)
+                        y += 34
+                    y += 6
+
+                wrapped = wrap_text(message, right_rect.width - 30)
+                max_lines = max(3, (right_rect.height - 110) // 28)
+                for line in wrapped[:max_lines]:
+                    if line:
+                        text = self.normal_font.render(line, True, WHITE)
+                        self.screen.blit(text, (right_rect.left + 15, y))
+                    y += 28
+
+                if pygame.time.get_ticks() >= unlock_time:
+                    help_label = "Press any key to continue..."
+                else:
+                    help_label = "Please wait..."
+                help_text = self.small_font.render(help_label, True, GRAY)
+                help_rect = help_text.get_rect(centerx=right_rect.centerx, bottom=right_rect.bottom - 12)
+                self.screen.blit(help_text, help_rect)
+
+                pygame.display.flip()
+                self.clock.tick(30)
+            return
+
         self.screen.fill(BLACK)
+        
+        # Load and display image if provided
+        image = None
+        if image_path:
+            try:
+                import os
+                if os.path.exists(image_path):
+                    image = pygame.image.load(image_path)
+                    # Scale image to fit in upper portion of screen
+                    img_width, img_height = image.get_size()
+                    max_width = self.width // 3
+                    max_height = self.height // 3
+                    scale = min(max_width / img_width, max_height / img_height)
+                    new_width = int(img_width * scale)
+                    new_height = int(img_height * scale)
+                    image = pygame.transform.scale(image, (new_width, new_height))
+                    # Center horizontally, place in upper portion
+                    img_rect = image.get_rect(centerx=self.width // 2, top=80)
+                    self.screen.blit(image, img_rect)
+                    y = img_rect.bottom + 30
+            except Exception as e:
+                print(f"Warning: Could not load image {image_path}: {e}")
+                y = 200
+        else:
+            y = 200
         
         if title:
             title_text = self.title_font.render(title, True, GOLD)
-            title_rect = title_text.get_rect(centerx=self.width // 2, top=200)
+            title_rect = title_text.get_rect(centerx=self.width // 2, top=y)
             self.screen.blit(title_text, title_rect)
-            y = 300
+            y = title_rect.bottom + 30
         else:
-            y = 250
+            y += 50
             
         # Handle explicit newlines first, then word wrap each paragraph
         lines = []
@@ -642,6 +962,8 @@ class PygamePresenter(GamePresenter):
         pygame.display.flip()
         
         # Wait for keypress
+        min_display_ms = max(0, int(min_display_seconds * 1000))
+        unlock_time = pygame.time.get_ticks() + min_display_ms
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -649,7 +971,7 @@ class PygamePresenter(GamePresenter):
                     pygame.quit()
                     import sys
                     sys.exit()
-                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                if (event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN) and pygame.time.get_ticks() >= unlock_time:
                     waiting = False
             self.clock.tick(30)
 
@@ -728,6 +1050,8 @@ class PygamePresenter(GamePresenter):
         
     def cleanup(self):
         """Clean up Pygame resources."""
+        if self.sound_manager:
+            self.sound_manager.cleanup()
         pygame.quit()
         
     # Abstract method implementations

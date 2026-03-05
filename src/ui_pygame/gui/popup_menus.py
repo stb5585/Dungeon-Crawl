@@ -5,6 +5,7 @@ Docstring for gui.popup_menus
 import pygame
 
 from src.core import items
+from src.core import map_tiles
 from .confirmation_popup import ConfirmationPopup
 
 
@@ -80,6 +81,13 @@ class BasePopupMenu:
         """Override for how to show each row's text."""
         return str(item)
 
+    def handle_key_down(self, player_char, event) -> bool:
+        """Subclass hook for custom key handling. Return True if handled."""
+        return False
+
+    def help_footer(self) -> str:
+        return "Arrows: Navigate  Enter: Select  Esc: Close  PgUp/PgDn: Scroll"
+
     def draw_background(self, background_surface):
         # Blit pre-rendered background and a semi-transparent overlay
         self.screen.blit(background_surface, (0, 0))
@@ -102,7 +110,7 @@ class BasePopupMenu:
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.details_rect, 2)
 
         # Help footer
-        help_str = "Arrows: Navigate  Enter: Select  Esc: Close  PgUp/PgDn: Scroll"
+        help_str = self.help_footer()
         help_text = self.small_font.render(help_str, True, self.WHITE)
         self.screen.blit(help_text, (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12))
 
@@ -239,6 +247,11 @@ class BasePopupMenu:
                     import sys
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
+                    if self.handle_key_down(player_char, event):
+                        self.parent_screen.draw_all(player_char, do_flip=False)
+                        background_surface = self.screen.copy()
+                        menu_surface_ref[0] = None
+                        continue
                     if event.key == pygame.K_ESCAPE:
                         running = False
                         result = None
@@ -308,6 +321,36 @@ class BasePopupMenu:
 class InventoryPopupMenu(BasePopupMenu):
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Inventory")
+        self.sort_modes = ["Name", "Type", "Quantity", "Combat"]
+        self.sort_mode_idx = 0
+
+    def _is_combat_usable(self, item) -> bool:
+        subtyp = getattr(item, "subtyp", None)
+        return (
+            subtyp in ("Health", "Mana", "Elixir", "Status")
+            or (subtyp == "Scroll" and getattr(item, "name", "") != "Sanctuary Scroll")
+        )
+
+    def _current_mode(self) -> str:
+        return self.sort_modes[self.sort_mode_idx]
+
+    def _cycle_mode(self):
+        self.sort_mode_idx = (self.sort_mode_idx + 1) % len(self.sort_modes)
+
+    def _sort_inventory_items(self, items):
+        mode = self._current_mode()
+        if mode == "Combat":
+            combat_items = [entry for entry in items if self._is_combat_usable(entry[1])]
+            non_combat_items = [entry for entry in items if not self._is_combat_usable(entry[1])]
+            return sorted(combat_items, key=lambda entry: str(getattr(entry[1], "name", "")).lower()) + non_combat_items
+        if mode == "Type":
+            return sorted(items, key=lambda entry: (
+                str(getattr(entry[1], "subtyp", "")),
+                str(getattr(entry[1], "name", "")).lower(),
+            ))
+        if mode == "Quantity":
+            return sorted(items, key=lambda entry: (-entry[2], str(getattr(entry[1], "name", "")).lower()))
+        return sorted(items, key=lambda entry: str(getattr(entry[1], "name", "")).lower())
 
     def build_items(self, player_char):
         items = []
@@ -326,10 +369,13 @@ class InventoryPopupMenu(BasePopupMenu):
             for name, item_list in grouped.items():
                 # Use first item as representative
                 items.append((category, item_list[0], len(item_list)))
+
+        items = self._sort_inventory_items(items)
         
         self.items = items
-        self.selected_index = 0
+        self.selected_index = 0 if items else -1
         self.scroll_offset = 0
+        self.title = f"Inventory [{self._current_mode()}]"
 
     def item_display_text(self, item):
         category, obj, count = item
@@ -373,7 +419,10 @@ class InventoryPopupMenu(BasePopupMenu):
                 attrs.append((key.capitalize(), val))
 
         for label, val in attrs:
-            line = f"{label}: {val}"
+            if label == "Value":
+                line = f"{label}: {val}G"
+            else:
+                line = f"{label}: {val}"
             # Handle newlines in value
             if isinstance(val, str) and "\n" in val:
                 self.screen.blit(self.normal_font.render(label + ":", True, self.WHITE), (x, y))
@@ -433,7 +482,7 @@ class InventoryPopupMenu(BasePopupMenu):
     def draw_details_extra(self, player_char, item, x, y):
         category, obj, count = item
         # Show simple computed lines
-        for label, val in (("Category", category), ("Gold Value", getattr(obj, "value", "?"))):
+        for label, val in (("Category", category),):
             text = self.normal_font.render(f"{label}: {val}", True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
@@ -521,6 +570,8 @@ class InventoryPopupMenu(BasePopupMenu):
                 break
             if action == "Use":
                 self._use_item(player_char, obj, category, background_surface=action_bg)
+                if player_char.in_town():
+                    return ("exit_to_town", item)
             elif action == "Drop":
                 self._drop_item(player_char, obj, category, background_surface=action_bg)
 
@@ -534,6 +585,19 @@ class InventoryPopupMenu(BasePopupMenu):
         
         # Return None to keep inventory open
         return None
+
+    def handle_key_down(self, player_char, event) -> bool:
+        if event.key in (pygame.K_s,):
+            self._cycle_mode()
+            self.build_items(player_char)
+            if self.items and self.selected_index < 0:
+                self.selected_index = 0
+            self._ensure_visible()
+            return True
+        return False
+
+    def help_footer(self) -> str:
+        return "Arrows: Navigate  Enter: Select  S: Cycle Sort/Filter  Esc: Close  PgUp/PgDn: Scroll"
     
     def _equip_item(self, player_char, item, category):
         """Equip an item from inventory with class restrictions respected."""
@@ -809,6 +873,7 @@ class EquipmentPopupMenu(BasePopupMenu):
     def _get_equippable_items_for_slot(self, player_char, slot):
         """Get all items from inventory that can be equipped in the given slot."""
         equippable = []
+        seen_item_names = set()
         
         # Map slot to item types
         slot_to_typ = {
@@ -827,15 +892,21 @@ class EquipmentPopupMenu(BasePopupMenu):
         for category, items_list in player_char.inventory.items():
             for inv_item in items_list:
                 item_typ = getattr(inv_item, "typ", None)
+                item_name = getattr(inv_item, "name", str(inv_item))
+
+                if item_name in seen_item_names:
+                    continue
                 
                 # Direct type match
                 if item_typ == target_typ:
                     equippable.append(inv_item)
+                    seen_item_names.add(item_name)
                 # Handle accessories (Ring/Pendant)
                 elif item_typ == "Accessory":
                     subtyp = getattr(inv_item, "subtyp", None)
                     if (subtyp == "Ring" and slot == "Ring") or (subtyp == "Pendant" and slot == "Pendant"):
                         equippable.append(inv_item)
+                        seen_item_names.add(item_name)
         
         return equippable
     
@@ -1030,7 +1101,7 @@ class QuestPopupMenu(BasePopupMenu):
         if quest_type == "Bounty":
             self._draw_bounty_details(quest_data, x, y)
         else:
-            self._draw_quest_details(quest_data, x, y)
+            self._draw_quest_details(player_char, quest_data, x, y)
     
     def _draw_bounty_details(self, quest_data, x, y):
         """Draw bounty quest details."""
@@ -1067,7 +1138,7 @@ class QuestPopupMenu(BasePopupMenu):
             self.screen.blit(text, (x, y))
             y += self.line_height
     
-    def _draw_quest_details(self, quest_data, x, y):
+    def _draw_quest_details(self, player_char, quest_data, x, y):
         """Draw regular quest details."""
         if not isinstance(quest_data, dict):
             return
@@ -1082,31 +1153,77 @@ class QuestPopupMenu(BasePopupMenu):
         if quest_type == 'Defeat':
             what = quest_data.get('What', 'Unknown')
             total = quest_data.get('Total', 1)
-            text = self.normal_font.render(f"Defeat: {what} ({total})", True, self.WHITE)
+            objective = f"Defeat: {what}" if total == 1 else f"Defeat: {what} ({total})"
+            text = self.normal_font.render(objective, True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
         elif quest_type == 'Collect':
             what = quest_data.get('What')
-            # Handle both item class objects and item instances
+
+            # Resolve a readable target name and aliases for progress matching.
             item_name = None
-            
-            # Check if it's already an item instance (after deserialization)
-            if hasattr(what, 'name') and not callable(what):
-                item_name = what.name
-            else:
-                # It's an item class, instantiate it
+            target_names = set()
+            target_classes = set()
+
+            if isinstance(what, str):
+                if what == 'Relics':
+                    item_name = 'Relics'
+                    target_names.add('Relics')
+                    target_classes.add('Relics')
+                else:
+                    target_names.add(what)
+                    target_classes.add(what)
+                    item_cls = getattr(items, what, None)
+                    if item_cls and callable(item_cls):
+                        try:
+                            item_obj = item_cls()
+                            item_name = getattr(item_obj, 'name', what)
+                            target_names.add(item_name)
+                            target_classes.add(item_cls.__name__)
+                        except Exception:
+                            item_name = what
+                    else:
+                        item_name = what
+            elif callable(what):
                 try:
-                    instance = what()
-                    item_name = getattr(instance, 'name', what.__name__ if hasattr(what, '__name__') else None)
-                except:
-                    item_name = what.__name__ if hasattr(what, '__name__') else None
-            
-            # Last resort
-            if item_name is None:
+                    item_obj = what()
+                    item_name = getattr(item_obj, 'name', getattr(what, '__name__', str(what)))
+                except Exception:
+                    item_name = getattr(what, '__name__', str(what))
+                target_names.add(item_name)
+                target_classes.add(getattr(what, '__name__', item_name))
+            elif hasattr(what, 'name'):
+                item_name = what.name
+                target_names.add(item_name)
+                target_classes.add(what.__class__.__name__)
+            else:
                 item_name = str(what)
-            
+                target_names.add(item_name)
+                target_classes.add(item_name)
+
             total = quest_data.get('Total', 1)
-            text = self.normal_font.render(f"Collect: {item_name} ({total})", True, self.WHITE)
+            text = self.normal_font.render(f"Collect: {item_name}", True, self.WHITE)
+            self.screen.blit(text, (x, y))
+            y += self.line_height
+
+            # Progress (parity with bounty-style visibility).
+            if isinstance(what, str) and what == 'Relics':
+                relics = ["Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas"]
+                current = sum(1 for relic in relics if relic in player_char.special_inventory)
+            else:
+                current = 0
+                for inventory_name in ('special_inventory', 'inventory'):
+                    inventory = getattr(player_char, inventory_name, {})
+                    for key, item_list in inventory.items():
+                        if not item_list:
+                            continue
+                        sample = item_list[0]
+                        sample_name = getattr(sample, 'name', key)
+                        sample_class = sample.__class__.__name__
+                        if key in target_names or sample_name in target_names or sample_class in target_classes:
+                            current += len(item_list)
+
+            text = self.normal_font.render(f"Collected: {current}/{total}", True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
         elif quest_type == 'Locate':
@@ -1320,6 +1437,33 @@ class SimpleListPopupMenu(BasePopupMenu):
             self.screen.blit(cost_text, (x, y))
 
     def on_select(self, player_char, item):
+        value = item.get("value") if isinstance(item, dict) else item
+        if getattr(value, "name", "") == "Chalice Map":
+            try:
+                map_tiles.reveal_chalice_map_on_inspect(player_char, value)
+                progress = map_tiles.get_chalice_progress(player_char) or {}
+                if progress.get("Revealed"):
+                    self.presenter.show_message(
+                        "Hidden ink blooms across the parchment, revealing the altar location on the sixth floor.",
+                        title="Chalice Map",
+                        image_path=map_tiles.CHALICE_ALTAR_IMAGE_PATH,
+                        split_layout=True,
+                    )
+                elif progress.get("Adventurer"):
+                    self.presenter.show_message(
+                        "The map's markings are faint. Keep inspecting it to draw out the hidden ink.",
+                        title="Chalice Map",
+                        split_layout=True,
+                    )
+                else:
+                    self.presenter.show_message(
+                        "The map is too faded to read. You need another clue before its markings can be revealed.",
+                        title="Chalice Map",
+                        split_layout=True,
+                    )
+            except Exception:
+                pass
+            return None
         return ("list_item_selected", item)
 
 

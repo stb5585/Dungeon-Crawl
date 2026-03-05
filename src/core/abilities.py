@@ -656,7 +656,7 @@ class ShieldSlam(Offensive):
                     if random.randint(0, user.stats.strength) > random.randint(
                         target.stats.strength // 2, target.stats.strength
                     ):
-                        turns = max(1, user.stats.strength // 8)
+                        turns = random.randint(1, max(1, user.stats.strength // 8))
                         target.status_effects["Stun"].active = True
                         target.status_effects["Stun"].duration = turns
                         user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Shield Bash")
@@ -1966,7 +1966,7 @@ class SmokeScreen(Stealth):
         )
         self.cost = 5
 
-    def use(self, user: Character) -> str:
+    def use(self, user: Character, target: Character=None) -> str:
         user.mana.current -= self.cost
         use_str = ""
         return use_str
@@ -2409,7 +2409,8 @@ class HealthDrain(Drain):
             > random.randint(0, target.stats.wisdom // 2) + chance
         ):
             drain = drain // 2
-        drain = min(drain, target.health.current)
+        health_cap = max(1, int(target.health.max * 0.18))
+        drain = min(drain, health_cap, target.health.current)
         target.health.current -= drain
         user.health.current += drain
         user.health.current = min(user.health.current, user.health.max)
@@ -2444,7 +2445,8 @@ class ManaDrain(Drain):
             > random.randint(0, target.stats.wisdom // 2) + chance
         ):
             drain = drain // 2
-        drain = min(drain, target.mana.current)
+        mana_cap = max(1, int(target.mana.max * 0.22))
+        drain = min(drain, mana_cap, target.mana.current)
         target.mana.current -= drain
         user.mana.current += drain
         user.mana.current = min(user.mana.current, user.mana.max)
@@ -2467,6 +2469,7 @@ class HealthManaDrain(Drain):
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
+        # Keep this skill equivalent to using HealthDrain + ManaDrain together.
         use_str = HealthDrain().use(user, target, special=True)
         use_str += ManaDrain().use(user, target, special=True)
         return use_str
@@ -2627,8 +2630,8 @@ class Totem(Class):
     Sacred Aspects (unlock through Shaman progression):
     - Earth Aspect (Lv 1): Guardian totem. +20% Defense, reflects 25% damage back at attackers
     - Water Aspect (Lv 10): Healing totem. +50% healing effectiveness, dispels negative effects
-    - Fire Aspect (Lv 15): Primal totem. +25% Attack, adds elemental fire damage to attacks
-    - Wind Aspect (Lv 20): Swift totem. +15% Dodge, +10% Critical strike chance
+    - Fire Aspect (Lv 20): Primal totem. +25% Attack, adds elemental fire damage to attacks
+    - Wind Aspect (Lv 30): Swift totem. +15% Dodge, +10% Critical strike chance
     - Soul Aspect (Soulcatcher ClassRing): Masterful totem. +20% Weapon damage, +20% Critical damage
     
     You may only have one aspect active at a time. Choose your aspect wisely before combat.
@@ -2697,11 +2700,11 @@ class Totem(Class):
         # Tracking active aspect and unlocked aspects
         self.active_aspect = "Earth"  # Default to Earth
         self.unlocked_aspects = {"Earth": True}  # Earth is always unlocked
-        self.duration_base = 5
+        self.duration_base = 5  # Base duration in turns, modified by wisdom
     
     def calculate_duration(self, user: Character) -> int:
         """Calculate how long the totem lasts based on user's wisdom."""
-        return self.duration_base + (user.stats.wisdom // 15)
+        return self.duration_base + (user.stats.wisdom // 10)  # +1 turn per 10 wisdom
     
     def is_aspect_unlocked(self, aspect: str) -> bool:
         """Check if an aspect is unlocked."""
@@ -2908,8 +2911,9 @@ class AbsorbEssence(Class):
         super().__init__(
             name="Absorb Essence",
             description="When a Soulcatcher kills an enemy, there is a chance that "
-            "they may absorb part of the enemy's essence, increasing "
-            "a random statistic.",
+            "they may absorb part of the enemy's essence. Different monster types "
+            "improve different stats, allowing the Soulcatcher to grow stronger with"
+            " each victory.",
         )
         self.passive = True
 
@@ -4082,7 +4086,7 @@ class Howl(Skill):
         self.cost = 10
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        turns = max(1, user.stats.strength // 10)
+        turns = 1
         use_str = f"{user.name} howls at the moon.\n"
         user.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -4436,7 +4440,7 @@ class Stomp(Skill):
                         if random.randint(
                             user.stats.strength // 2, user.stats.strength
                         ) > random.randint(target.stats.con // 2, target.stats.con):
-                            turns = max(2, user.stats.strength // 10)
+                            turns = 1 + int(crit > 1)
                             target.status_effects["Stun"].active = True
                             target.status_effects["Stun"].duration = turns
                             user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Stomp")
@@ -4534,7 +4538,7 @@ class Detonate(Skill):
         )
 
     def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = f"{user.name} explodes, sending shrapnel in all directions."
+        use_str = f"{user.name} explodes, sending shrapnel in all directions.\n"
         resist = target.check_mod("resist", enemy=user, typ="Physical")
         damage = max(
             user.health.current // 2, int(user.health.current * (1 - resist))
@@ -4846,6 +4850,21 @@ class Tunnel(Skill):
         user.mana.current -= self.cost
         user.tunnel = True
         return f"{user.name} tunnels into the ground.\n"
+
+
+class Surface(Skill):
+    """Exit from tunneled underground state."""
+
+    def __init__(self):
+        super().__init__(
+            name="Surface",
+            description="Emerge from underground, becoming targetable again.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
+        user.tunnel = False
+        return f"{user.name} surfaces from underground.\n"
 
 
 class GoblinPunch(Skill):
@@ -6161,7 +6180,7 @@ class Terrify(ShadowSpell):
                 if random.randint(0, (caster.stats.charisma * crit)) > random.randint(
                     target.stats.wisdom // 2, target.stats.wisdom
                 ):
-                    turns = max(crit, caster.stats.charisma // 10)
+                    turns = 1 + int(crit > 1)
                     target.status_effects["Stun"].active = True
                     target.status_effects["Stun"].duration = turns
                     caster._emit_status_event(target, "Stun", applied=True, duration=turns, source="Terrify")

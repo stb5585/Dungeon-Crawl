@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="50" columns="0">
+<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="51" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="BarghestBossRoom">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/barghest_room.png"/>
@@ -150,5 +150,11 @@
   </tile>
   <tile id="49" type="MirrorWall">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/mirror_wall.png"/>
+  </tile>
+  <tile id="50" type="GoldenChaliceRoom">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/golden_chalice.png"/>
+  </tile>
+  <tile id="51" type="IncubusLair">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/incubus_lair.png"/>
   </tile>
 </tileset>

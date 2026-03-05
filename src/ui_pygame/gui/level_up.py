@@ -19,6 +19,7 @@ class LevelUpScreen:
         self.presenter = presenter
         self.width = screen.get_width()
         self.height = screen.get_height()
+        self._popup_background = None
         
         # Colors
         self.bg_color = (20, 20, 30)
@@ -47,10 +48,13 @@ class LevelUpScreen:
         """
         # Calculate gains
         level_info = self._calculate_level_up(player_char)
+
+        # Capture current scene so level-up overlays preserve the prior background
+        self._popup_background = self._get_background_surface()
         
         # Show level up information popup
         popup = LevelUpPopup(self.presenter, level_info)
-        popup.show(background_draw_func=lambda: self.screen.fill(self.bg_color))
+        popup.show(background_draw_func=self._draw_popup_background)
         
         # Handle stat selection every 4 levels
         if player_char.level.level % 4 == 0:
@@ -346,9 +350,22 @@ class LevelUpScreen:
     
     def _draw_level_up_background(self, player_char):
         """Draw the level up info as background for the popup."""
-        # This method will be called to redraw the background
-        # For now, just fill with a dark background
-        self.screen.fill(self.bg_color)
+        self._draw_popup_background()
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface.copy()
+            except Exception:
+                pass
+        return self.screen.copy()
+
+    def _draw_popup_background(self):
+        if self._popup_background is None:
+            self._popup_background = self._get_background_surface()
+        self.screen.blit(self._popup_background, (0, 0))
     
     def _show_stat_confirmation(self, stat_name, stat_options):
         """Show confirmation of stat increase using a popup."""
@@ -363,7 +380,7 @@ class LevelUpScreen:
         
         message = f"{stat_name} increased to {new_value}!"
         popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
-        popup.show(background_draw_func=lambda: self.screen.fill(self.bg_color))
+        popup.show(background_draw_func=self._draw_popup_background)
     
     def _wait_for_continue(self):
         """Wait for player to press a key."""

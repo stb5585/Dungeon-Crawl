@@ -62,6 +62,8 @@ class BattleManager:
         self.summon_active: bool = False
         self.summon: Character | None = None
         self.attacker, self.defender = self.determine_initiative()
+        # Track charging abilities across turns
+        self.charging_ability = None  # (ability_name, skill_obj) tuple when charging
 
     def render_screen(self) -> None:
         """Renders the battle screen."""
@@ -197,6 +199,12 @@ class BattleManager:
             combat_text = ""
             if self.attacker.status_effects["Berserk"].active:
                 action = "Attack"
+            elif self.charging_ability and self.attacker == self.player_char:
+                # Continue a charging ability
+                ability_name, skill_obj = self.charging_ability
+                action = "Use Skill"
+                choice = ability_name
+                # Will be handled in execute_action
             elif self.attacker.class_effects["Jump"].active:
                 # If incapacitated while charging, cancel the Jump
                 if self.attacker.incapacitated():
@@ -277,7 +285,7 @@ class BattleManager:
                 actor=self.attacker,
                 target=self.defender
             ))
-            result = self.attacker.enter_defensive_stance(duration=1, source="Defend")
+            result = self.attacker.enter_defensive_stance(duration=2, source="Defend")
         elif action == "Cast Spell":
             # Check for Silence
             if self.attacker.status_effects["Silence"].active:
@@ -315,7 +323,7 @@ class BattleManager:
                     self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
                     result += flee_str
                 elif skill.name == "Slot Machine":
-                    result += skill.use(self.game, self.attacker, target=self.defender)
+                    result += skill.use(self.attacker, target=self.defender)
                 elif skill.name in ["Doublecast", "Triplecast"]:
                     result += skill.use(self.attacker, self.defender, game=self.game)
                 elif "Jump" in skill.name:
@@ -324,6 +332,15 @@ class BattleManager:
                         self.attacker.class_effects["Jump"].active = True
                         result += f"{self.attacker.name} prepares to leap into the air.\n"
                     result += skill.use(self.attacker, target=self.defender)
+                # Handle Charge and other charging abilities
+                elif hasattr(skill, 'get_charge_time') and skill.get_charge_time() > 0:
+                    result += skill.use(self.attacker, target=self.defender)
+                    # Track that this ability is charging
+                    if getattr(skill, 'charging', False):
+                        self.charging_ability = (choice, skill)
+                    else:
+                        # Charging is complete, clear the tracking variable
+                        self.charging_ability = None
                 else:
                     result += skill.use(self.attacker, target=self.defender)
         elif action == "Use Item":

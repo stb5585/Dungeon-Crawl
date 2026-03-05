@@ -199,6 +199,8 @@ class TileStateSerializer:
                 state['drink'] = tile.drink
             if hasattr(tile, 'nimue'):
                 state['nimue'] = tile.nimue
+            if hasattr(tile, 'nimue_met_before'):
+                state['nimue_met_before'] = tile.nimue_met_before
             
             tile_states[str(pos)] = state
         
@@ -250,6 +252,8 @@ class TileStateSerializer:
                 tile.drink = state['drink']
             if 'nimue' in state and hasattr(tile, 'nimue'):
                 tile.nimue = state['nimue']
+            if 'nimue_met_before' in state and hasattr(tile, 'nimue_met_before'):
+                tile.nimue_met_before = state['nimue_met_before']
 
 
 class EnemyStateSerializer:
@@ -576,6 +580,7 @@ class PlayerDataSerializer:
             # Derived data - serialize quest_dict properly
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
             'kill_dict': player.kill_dict,
+            'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
             
             # World state (tile visited flags, defeated enemies, open doors, etc.)
             'world_state': TileStateSerializer.serialize_tile_state(player.world_dict) if player.world_dict else {},
@@ -718,6 +723,7 @@ class PlayerDataSerializer:
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
         player.kill_dict = data.get('kill_dict', {})
+        player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
         player.intro_shown = data.get('intro_shown', False)
         
         # Load world tiles and restore saved world state (unless skipped for transform)

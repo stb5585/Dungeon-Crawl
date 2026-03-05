@@ -43,6 +43,8 @@ python pygame_game.py
 - Floating damage text animations
 - Screen shake on damage/crits
 - Color-coded damage types (8 types)
+- Sound effects and background music
+- Event-driven audio system
 
 ### 🔄 In Progress
 
@@ -54,10 +56,10 @@ python pygame_game.py
 
 - Spell effect animations
 - Particle systems for magic
-- Sound effects and music
 - Main menu polish
 - Game over screens
 - Save/Load integration
+- Sound volume settings menu
 
 ## Controls
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 
 import pygame
 
@@ -105,7 +106,9 @@ class CombatView:
         
         # Combat log
         self.combat_log = []
-        self.max_log_lines = 5
+        self.max_log_lines = 200
+        self.log_lines_per_page = 5
+        self.log_scroll_offset = 0
 
         # Status icon colors
         self.status_colors = {
@@ -148,10 +151,27 @@ class CombatView:
         cleaned_lines = self._filter_status_message(str(message))
         if not cleaned_lines:
             return
+        was_at_bottom = self.log_scroll_offset >= self._max_log_scroll()
         for line in cleaned_lines:
             self.combat_log.append(line)
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
+        if was_at_bottom:
+            self.log_scroll_offset = self._max_log_scroll()
+        else:
+            self.log_scroll_offset = min(self.log_scroll_offset, self._max_log_scroll())
+
+    def _max_log_scroll(self):
+        return max(0, len(self.combat_log) - self.log_lines_per_page)
+
+    def scroll_log(self, delta: int):
+        """Scroll combat log by delta lines (negative=older, positive=newer)."""
+        self.log_scroll_offset = max(0, min(self._max_log_scroll(), self.log_scroll_offset + delta))
+
+    def reset_combat_log(self):
+        """Clear combat log history and reset scrolling."""
+        self.combat_log.clear()
+        self.log_scroll_offset = 0
 
     def _filter_status_message(self, message):
         """Remove status-effect log lines to keep the log focused on actions."""
@@ -192,7 +212,7 @@ class CombatView:
             "Stun": "STN",
             "Defend": "DEF",
             "Steal Success": "STE",
-            "Bleed": "BLD",
+            "Bleed": "RND",
             "Disarm": "DSA",
             "Prone": "PRN",
             "Attack": "ATK",
@@ -410,6 +430,34 @@ class CombatView:
         center_y = self.combat_height // 3
 
         is_flying = getattr(enemy, "flying", False)
+        is_tunneled = getattr(enemy, "tunnel", False)
+        
+        # If enemy is tunneled, show a "burrowed" message instead of sprite
+        if is_tunneled:
+            font = pygame.font.Font(None, 40)
+            text_surf = font.render(f"{enemy.name} is underground", True, (150, 100, 50))
+            text_rect = text_surf.get_rect(center=(center_x, center_y))
+            self.screen.blit(text_surf, text_rect)
+            
+            # Show HP bar if visible
+            if has_sight:
+                bar_width = 200
+                bar_height = 20
+                bar_x = center_x - bar_width // 2
+                bar_y = center_y + 60
+                
+                # Background
+                pygame.draw.rect(self.screen, (50, 50, 50), 
+                               (bar_x, bar_y, bar_width, bar_height))
+                # HP fill
+                hp_pct = max(0, enemy.health.current / enemy.health.max) if enemy.health.max else 0
+                filled_width = int(bar_width * hp_pct)
+                pygame.draw.rect(self.screen, (0, 200, 0),
+                               (bar_x, bar_y, filled_width, bar_height))
+                # Border
+                pygame.draw.rect(self.screen, (255, 255, 255),
+                               (bar_x, bar_y, bar_width, bar_height), 2)
+            return
         
         # Get animator for this enemy
         animator = self._get_sprite_animator(enemy)
@@ -593,11 +641,12 @@ class CombatView:
         font = pygame.font.Font(None, 20)
         y = log_y + 10
         line_height = 22
-        max_lines = 5  # Limit to 5 lines total to fit in box
+        max_lines = self.log_lines_per_page
         lines_rendered = 0
-        
-        # Process messages in reverse to get most recent first
-        for message in reversed(self.combat_log):
+
+        start = self.log_scroll_offset
+        end = start + max_lines
+        for message in self.combat_log[start:end]:
             if lines_rendered >= max_lines:
                 break
                 
@@ -613,7 +662,7 @@ class CombatView:
                 y += line_height
                 lines_rendered += 1
     
-    def show_damage_flash(self, is_player_hit):
+    def show_damage_flash(self, is_player_hit, event_handler=None):
         """Flash the screen to indicate damage."""
         flash_surface = pygame.Surface((self.combat_width, self.combat_height))
         flash_surface.set_alpha(100)
@@ -625,7 +674,19 @@ class CombatView:
         
         self.screen.blit(flash_surface, (0, 0))
         pygame.display.flip()
-        pygame.time.wait(150)  # Brief flash
+
+        # Brief pause while still pumping events to keep the window responsive.
+        flash_clock = pygame.time.Clock()
+        elapsed = 0
+        while elapsed < 150:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                if event_handler is not None:
+                    event_handler(event)
+            flash_clock.tick(60)
+            elapsed += flash_clock.get_time()
 
     def render_enemy_in_dungeon(self, player_char, enemy):
         """Render the enemy as if it's standing in the dungeon ahead of the player."""
@@ -777,11 +838,12 @@ class CombatView:
         font = pygame.font.Font(None, 22)
         y = log_y + 10
         line_height = 25
-        max_lines = 5
+        max_lines = self.log_lines_per_page
         lines_rendered = 0
         
-        # Show most recent messages (last 5), oldest to newest from top to bottom
-        messages_to_show = self.combat_log[-max_lines:] if len(self.combat_log) > max_lines else self.combat_log
+        max_scroll = self._max_log_scroll()
+        self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
+        messages_to_show = self.combat_log[self.log_scroll_offset:self.log_scroll_offset + max_lines]
         
         for message in messages_to_show:
             if lines_rendered >= max_lines:
@@ -798,6 +860,18 @@ class CombatView:
                 self.screen.blit(msg_surf, (15, y))
                 y += line_height
                 lines_rendered += 1
+
+        if len(self.combat_log) > max_lines:
+            indicator_font = pygame.font.Font(None, 18)
+            if self.log_scroll_offset > 0:
+                up_surf = indicator_font.render("^", True, (210, 210, 210))
+                self.screen.blit(up_surf, (view_width - 24, log_y + 8))
+            if self.log_scroll_offset < max_scroll:
+                down_surf = indicator_font.render("v", True, (210, 210, 210))
+                self.screen.blit(down_surf, (view_width - 24, log_y + log_height - 22))
+
+            hint = indicator_font.render("PgUp/PgDn or Mouse Wheel", True, (170, 170, 170))
+            self.screen.blit(hint, (view_width - hint.get_width() - 34, log_y + log_height - 22))
 
     def _render_action_menu_overlay(self, actions, selected_action):
         """Render action menu as semi-transparent overlay."""

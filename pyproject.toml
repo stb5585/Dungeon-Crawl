@@ -28,6 +28,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "pygame>=2.5.0",  # For GUI and asset/sprite rendering
     "Pillow>=10.0.0",  # For perspective transforms and image processing
+    "scipy==1.17.0",
 ]
 
 [project.optional-dependencies]

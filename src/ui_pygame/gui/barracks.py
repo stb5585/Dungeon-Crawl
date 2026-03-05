@@ -3,6 +3,8 @@ Barracks system for GUI - handles quests and storage.
 Implements the core barracks logic from town.py adapted for Pygame presenter.
 """
 
+from src.core import items
+from src.core.data.data_loader import get_special_events
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
 from .town_base import TownScreenBase
@@ -20,6 +22,39 @@ class BarracksManager(TownScreenBase):
         barracks_options = ["Quests", "Storage", "Leave"]
         
         barracks_screen = LocationMenuScreen(self.presenter, "Barracks")
+        barracks_screen.options_list = barracks_options
+
+        # Pre-render barracks frame so entry popups draw over the proper background.
+        barracks_screen.draw_all()
+        barracks_background = self.presenter.screen.copy()
+        draw_barracks_background = lambda: self.presenter.screen.blit(barracks_background, (0, 0))
+
+        # Curses parity: if player has Brass Key, resolve Joffrey's Key handoff.
+        if "Brass Key" in self.player_char.special_inventory:
+            # Show special event text over barracks background.
+            try:
+                lines = get_special_events().get("Joffrey's Key", {}).get("Text", [])
+            except Exception:
+                lines = []
+            event_message = " ".join(line.strip() for line in lines if line is not None).strip() or "Joffrey's Key"
+            event_popup = ConfirmationPopup(self.presenter, event_message, show_buttons=False, slow_print=True)
+            event_popup.show(
+                background_draw_func=draw_barracks_background,
+                flush_events=True,
+                require_key_release=True,
+                min_display_ms=300,
+            )
+
+            self.player_char.modify_inventory(items.BrassKey(), subtract=True, rare=True)
+            self.player_char.modify_inventory(items.JoffreysLetter(), rare=True)
+            self.player_char.modify_inventory(items.GreatHealthPotion(), num=5)
+
+            reward_popup = ConfirmationPopup(
+                self.presenter,
+                "You gain 5 Great Health Potions and Joffrey's Letter.",
+                show_buttons=False,
+            )
+            reward_popup.show(background_draw_func=draw_barracks_background)
         
         while True:
             choice_idx = barracks_screen.navigate(barracks_options, reset_cursor=False)

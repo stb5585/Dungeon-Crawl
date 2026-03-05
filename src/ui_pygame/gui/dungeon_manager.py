@@ -10,7 +10,7 @@ import traceback
 
 import pygame
 
-from src.core import items, enemies, companions
+from src.core import items, enemies, companions, map_tiles
 from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
 from .character_screen import CharacterScreen
@@ -61,6 +61,8 @@ class DungeonManager:
         # Message log
         self.messages = []
         self.max_messages = 50
+        self.message_lines_per_page = 4
+        self.message_scroll_offset = 0
 
         # Control state
         self.running = True
@@ -92,6 +94,7 @@ class DungeonManager:
 
     def add_message(self, message: str):
         """Add a message to the message log."""
+        was_at_bottom = self.message_scroll_offset >= self._max_message_scroll()
         # Split long messages into multiple lines if needed
         max_length = 60
         if len(message) > max_length:
@@ -116,7 +119,26 @@ class DungeonManager:
         if len(self.messages) > self.max_messages:
             self.messages = self.messages[-self.max_messages:]
 
+        if was_at_bottom:
+            self.message_scroll_offset = self._max_message_scroll()
+        else:
+            self.message_scroll_offset = min(self.message_scroll_offset, self._max_message_scroll())
+
         # Messages affect the UI overlay.
+        self.ui_dirty = True
+
+    def _max_message_scroll(self) -> int:
+        return max(0, len(self.messages) - self.message_lines_per_page)
+
+    def scroll_message_log(self, delta: int):
+        """Scroll dungeon navigation log by delta lines (negative=older, positive=newer)."""
+        self.message_scroll_offset = max(0, min(self._max_message_scroll(), self.message_scroll_offset + delta))
+        self.ui_dirty = True
+
+    def reset_message_log(self):
+        """Clear navigation history and reset scroll state."""
+        self.messages = []
+        self.message_scroll_offset = 0
         self.ui_dirty = True
 
     def get_current_tile(self):
@@ -172,6 +194,124 @@ class DungeonManager:
         
         cry = random.choice(cries)
         self.add_message(cry)
+
+    def _animate_nimue_materialization(self):
+        """Animate Nimue's sprite materializing from the spring."""
+        # Try to load Nimue sprite
+        nimue_path = os.path.join(
+            os.path.dirname(__file__), "..", "assets", "sprites", "npcs", "nimue.png"
+        )
+        nimue_path = os.path.abspath(nimue_path)
+        
+        if not os.path.exists(nimue_path):
+            # Sprite not found, skip animation
+            return
+        
+        try:
+            nimue_sprite = pygame.image.load(nimue_path).convert_alpha()
+        except Exception:
+            # Failed to load sprite, skip animation
+            return
+        
+        # Scale sprite to reasonable size (512x512)
+        sprite_width = 512
+        sprite_height = 768
+        nimue_sprite = pygame.transform.scale(nimue_sprite, (sprite_width, sprite_height))
+        
+        screen = self.presenter.screen
+        clock = pygame.time.Clock()
+        
+        # Animation parameters
+        duration_ms = 2000  # 2 seconds for materialization
+        start_time = pygame.time.get_ticks()
+        
+        while True:
+            now = pygame.time.get_ticks()
+            elapsed = now - start_time
+            progress = min(1.0, elapsed / duration_ms)
+            
+            # Render current dungeon view as background
+            self._render()
+            
+            # Draw dimming overlay
+            overlay = pygame.Surface((self.presenter.width, self.presenter.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, int(100 * progress)))  # Slight darkening
+            screen.blit(overlay, (0, 0))
+            
+            # Calculate sprite alpha and scale (materialization effect)
+            # Start from 0 alpha and scale from smaller to full size
+            alpha = int(255 * progress)
+            scale_start = 0.5  # Start at 50% size
+            scale = scale_start + (1.0 - scale_start) * progress
+            
+            # Create scaled sprite with alpha
+            scaled_sprite = pygame.transform.scale(
+                nimue_sprite, 
+                (int(sprite_width * scale), int(sprite_height * scale))
+            )
+            scaled_sprite.set_alpha(alpha)
+            
+            # Center sprite on the dungeon view area (not the entire screen)
+            # Dungeon view is 65% of width on the left side
+            view_width = int(self.presenter.width * 0.65)
+            sprite_rect = scaled_sprite.get_rect(
+                center=(view_width // 2, self.presenter.height // 2)
+            )
+            screen.blit(scaled_sprite, sprite_rect)
+            
+            pygame.display.flip()
+            
+            # Check for quit events
+            for _ in pygame.event.get(pygame.QUIT):
+                pygame.quit()
+                sys.exit()
+            
+            if progress >= 1.0:
+                break
+            clock.tick(60)
+        
+        # Brief pause to let animation complete
+        pygame.time.wait(500)
+
+    def _dungeon_dialog_background(self):
+        """Draw current dungeon frame as dialogue background."""
+        self._render()
+
+    def _show_dungeon_dialogue(self, message: str, title: str = "", image_path: str = ""):
+        """Show split dialogue panel with optional NPC image on the left."""
+        self.presenter.show_message(
+            message,
+            title=title,
+            image_path=image_path,
+            split_layout=True,
+            background_draw_func=self._dungeon_dialog_background,
+        )
+
+    def _show_dungeon_choice(self, prompt: str, options: list[str], image_path: str = ""):
+        """Show split choice panel with optional NPC image on the left."""
+        return self.presenter.render_menu(
+            prompt,
+            options,
+            image_path=image_path,
+            split_layout=True,
+            background_draw_func=self._dungeon_dialog_background,
+        )
+
+    def _show_special_event_dialogue(self, event_name: str, title: str = "", image_path: str = ""):
+        """Show special event text using split dialogue layout."""
+        try:
+            lines = get_special_events().get(event_name, {}).get("Text", [])
+            message = " ".join(line.strip() for line in lines if line is not None).strip() if lines else event_name
+        except Exception:
+            message = event_name
+        self.presenter.show_message(
+            message,
+            title=title or event_name,
+            image_path=image_path,
+            split_layout=True,
+            background_draw_func=self._dungeon_dialog_background,
+            min_display_seconds=2.0,
+        )
 
     def _load_dungeon_background(self):
         """Load and scale the dungeon background once."""
@@ -411,6 +551,8 @@ class DungeonManager:
         self._show_dungeon_loading_screen(loading_text)
 
         self.player_char.location_z = target_level
+        if 'StairsUp' in tile_type:
+            self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self.add_message(f"You climb the stairs upward...")
 
@@ -437,11 +579,78 @@ class DungeonManager:
         self._show_dungeon_loading_screen(f"Descending to level {target_level}...")
 
         self.player_char.location_z = target_level
+        if 'StairsDown' in tile_type:
+            self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self.add_message(f"You descend the stairs deeper into the dungeon...")
         self.add_message(f"Now on dungeon level {self.player_char.location_z}")
 
         return True
+
+    def _is_walkable_spawn_tile(self, tile):
+        """Check if tile can be used as a post-stairs spawn location."""
+        if tile is None:
+            return False
+
+        tile_type = type(tile).__name__
+
+        # Do not spawn directly onto stair tiles
+        if any(name in tile_type for name in ('StairsUp', 'StairsDown')):
+            return False
+
+        if not getattr(tile, "enter", True):
+            return False
+
+        if 'Door' in tile_type:
+            if getattr(tile, "locked", False):
+                return False
+            if hasattr(tile, "open") and not tile.open:
+                return False
+
+        return True
+
+    def _move_to_adjacent_from_stairs(self):
+        """After changing floor, move player from stairs tile to a valid adjacent tile."""
+        x = self.player_char.location_x
+        y = self.player_char.location_y
+        z = self.player_char.location_z
+
+        walkable_neighbors = []
+        for direction in ("north", "east", "south", "west"):
+            dx, dy = DIRECTIONS[direction]['move']
+            pos = (x + dx, y + dy, z)
+            candidate_tile = self.player_char.world_dict.get(pos)
+            if self._is_walkable_spawn_tile(candidate_tile):
+                walkable_neighbors.append((direction, dx, dy, candidate_tile))
+
+        # Most stair endpoints have exactly one enterable adjacent tile.
+        if len(walkable_neighbors) == 1:
+            _, dx, dy, candidate_tile = walkable_neighbors[0]
+            self.player_char.location_x = x + dx
+            self.player_char.location_y = y + dy
+            candidate_tile.visited = True
+            candidate_tile.adjacent_visited(self.player_char)
+            return
+
+        facing = self.player_char.facing
+        right_turn = {'north': 'east', 'east': 'south', 'south': 'west', 'west': 'north'}
+        left_turn = {'north': 'west', 'west': 'south', 'south': 'east', 'east': 'north'}
+        back_turn = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
+
+        candidate_order = [facing, right_turn[facing], left_turn[facing], back_turn[facing]]
+
+        for direction in candidate_order:
+            dx, dy = DIRECTIONS[direction]['move']
+            pos = (x + dx, y + dy, z)
+            candidate_tile = self.player_char.world_dict.get(pos)
+            if self._is_walkable_spawn_tile(candidate_tile):
+                self.player_char.location_x = x + dx
+                self.player_char.location_y = y + dy
+
+                # Mark destination tile as visited for consistency with normal movement
+                candidate_tile.visited = True
+                candidate_tile.adjacent_visited(self.player_char)
+                return
 
     def interact(self):
         """Interact with the tile ahead (or current tile for some types)."""
@@ -495,16 +704,28 @@ class DungeonManager:
             return
 
         tile_type = type(current_tile).__name__
+        
+        # Check for adjacent SecretShop tiles (since SecretShop is non-enterable)
+        adjacent_secret_shop = None
+        if 'SecretShop' not in tile_type:
+            # Check all adjacent tiles for secret shops
+            dx, dy = DIRECTIONS[self.player_char.facing]['move']
+            adjacent_pos = (self.player_char.location_x + dx, self.player_char.location_y + dy, self.player_char.location_z)
+            adjacent_tile = self.player_char.world_dict.get(adjacent_pos)
+            if adjacent_tile and 'SecretShop' in type(adjacent_tile).__name__:
+                adjacent_secret_shop = adjacent_tile
 
-        if 'SecretShop' in tile_type:
+        if 'SecretShop' in tile_type or adjacent_secret_shop:
             # Show special message on first discovery
-            if not hasattr(current_tile, 'read') or not current_tile.read:
+            shop_tile = current_tile if 'SecretShop' in tile_type else adjacent_secret_shop
+            if not hasattr(shop_tile, 'read') or not shop_tile.read:
                 self.presenter.show_message(
                     "You've discovered a secret shop!\n\n"
                     "A mysterious merchant appears from the shadows...\n\n"
-                    "\"Welcome, traveler. I have rare goods for sale.\""
+                    "\"Welcome, traveler. I have rare goods for sale.\"",
+                    image_path="src/ui_pygame/assets/dungeon_tiles/special_tiles/secret_shop.png"
                 )
-                current_tile.read = True
+                shop_tile.read = True
 
             self.add_message("Entering secret shop...")
             self.shop_manager.visit_secret_shop()
@@ -521,6 +742,10 @@ class DungeonManager:
             self._interact_dead_body(current_tile)
         elif 'FinalRoom' in tile_type:
             self._interact_final_room(current_tile)
+        elif 'IncubusLair' in tile_type:
+            self._interact_incubus_lair(current_tile)
+        elif 'GoldenChaliceRoom' in tile_type:
+            self._interact_golden_chalice_room(current_tile)
         else:
             self.add_message("There's nothing to interact with here.")
 
@@ -566,7 +791,7 @@ class DungeonManager:
             from src.core import enemies
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
             mimic_level = 4 if is_funhouse_mimic else (self.player_char.location_z + locked + plus)
-            enemy = enemies.Mimic(mimic_level)
+            enemy = enemies.Mimic(mimic_level, player_level=self.player_char.player_level())
             chest_tile.enemy = enemy
             self.add_message("There is a Mimic in the chest!")
             # Start combat with the Mimic
@@ -716,9 +941,9 @@ class DungeonManager:
 
     def _handle_warp_point(self, warp_tile):
         """Handle warp point interaction - return to town."""
-        choice = self.presenter.render_menu(
+        choice = self._show_dungeon_choice(
             "You've found a warp point!\n\nDo you want to return to town?",
-            ["Yes", "No"]
+            ["Yes", "No"],
         )
 
         if choice == 0:  # Yes
@@ -735,29 +960,55 @@ class DungeonManager:
 
     def _interact_boulder(self, boulder_tile):
         """Handle boulder interaction - can find Excaliper sword."""
-        if hasattr(boulder_tile, 'read') and boulder_tile.read:
+        progress = map_tiles.get_chalice_progress(self.player_char)
+        map_ready = bool(progress and progress.get("Hooded") and not progress.get("Map"))
+        has_excaliper = "Excaliper" in self.player_char.special_inventory
+
+        # Backfill old saves/states where Excaliper was already obtained but tile wasn't marked read.
+        if has_excaliper and hasattr(boulder_tile, 'read') and not boulder_tile.read:
+            boulder_tile.read = True
+
+        if hasattr(boulder_tile, 'read') and boulder_tile.read and not map_ready:
             self.add_message("Just a broken boulder where you found that sword.")
             return
 
         # Check if player has drunk from the spring
         spring_tile = self.player_char.world_dict.get((4, 9, 3))
         if spring_tile and hasattr(spring_tile, 'drink') and spring_tile.drink:
-            self.add_message("You find a magnificent sword embedded in the boulder!")
-            self.add_message("You obtained: Excaliper!")
-            self.player_char.modify_inventory(items.Excaliper(), rare=True)
-            boulder_tile.read = True
+            if not getattr(boulder_tile, 'read', False):
+                self.game.special_event("Boulder")
+                self.add_message("You find a magnificent sword embedded in the boulder!")
+                self.add_message("You obtained: Excaliper!")
+                self.player_char.modify_inventory(items.Excaliper(), rare=True)
+                boulder_tile.read = True
         else:
             self.add_message("An oddly placed boulder. Nothing seems special about it.")
+
+        if map_ready and getattr(boulder_tile, 'read', False):
+            self.game.special_event("Chalice Map")
+            self.add_message("You find a weathered map tucked inside a crevice.")
+            self.player_char.modify_inventory(items.ChaliceMap(), rare=True, quest=True)
+            progress["Map"] = True
+            map_tiles.sync_chalice_map_description(self.player_char)
+            chalice_quest = self.player_char.quest_dict["Side"]["The Holy Grail of Quests"]
+            chalice_quest["Help Text"] = "Bring the map to the Sergeant at the barracks for help deciphering it."
 
     def _interact_underground_spring(self, spring_tile):
         """Handle underground spring interaction."""
         from .confirmation_popup import ConfirmationPopup
+
+        nimue_image_path = os.path.join("src", "ui_pygame", "assets", "sprites", "npcs", "nimue.png")
         popup = ConfirmationPopup(
             self.presenter,
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
             show_buttons=True,
         )
-        if not popup.show():
+        if not popup.show(
+            background_draw_func=self._dungeon_dialog_background,
+            flush_events=True,
+            require_key_release=True,
+            min_display_ms=300,
+        ):
             return
 
         # Check for Naivete quest
@@ -768,13 +1019,17 @@ class DungeonManager:
                 self.player_char.modify_inventory(items.SpringWater(), rare=True)
                 self.player_char.quest_dict["Side"]["Naivete"]["Completed"] = True
                 self.add_message("Quest completed: Naivete")
-                from .confirmation_popup import ConfirmationPopup
                 popup = ConfirmationPopup(
                     self.presenter,
                     "You fill the empty vial with Spring Water.\n\nItem received: Spring Water",
                     show_buttons=False,
                 )
-                popup.show()
+                popup.show(
+                    background_draw_func=self._dungeon_dialog_background,
+                    flush_events=True,
+                    require_key_release=True,
+                    min_display_ms=300,
+                )
 
         # Random encounter with Fuath
         if self.player_char.level.pro_level > 1 and not random.randint(0, 1):
@@ -793,6 +1048,7 @@ class DungeonManager:
 
                 if combat_won and "Summoner" in self.player_char.cls.name:
                     if "Fuath" not in self.player_char.summons:
+                        self.game.special_event("Fuath")
                         self.add_message("The Fuath pledges loyalty to you!")
                         summon = companions.Fuath()
                         summon.initialize_stats(self.player_char)
@@ -813,10 +1069,54 @@ class DungeonManager:
             spring_tile.nimue = False
 
         if not spring_tile.nimue and "Excaliper" in self.player_char.special_inventory:
-            self.add_message("A beautiful woman rises from the spring!")
-            self.add_message("She takes the Excaliper and vanishes...")
+            # Play Nimue materialization animation before showing event text
+            self._animate_nimue_materialization()
+
+            self._show_special_event_dialogue("Nimue", title="Nimue", image_path=nimue_image_path)
             self.player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
             spring_tile.nimue = True
+            # Track this as first meeting - don't offer quests yet
+            if not hasattr(spring_tile, 'nimue_met_before'):
+                spring_tile.nimue_met_before = False
+
+        # Offer Nimue quests only on subsequent visits after first meeting
+        if spring_tile.nimue:
+            if not hasattr(spring_tile, 'nimue_met_before'):
+                spring_tile.nimue_met_before = True
+
+            # Check if this is a return visit (not the first meeting)
+            if hasattr(spring_tile, 'nimue_met_before') and spring_tile.nimue_met_before:
+                from .quest_manager import QuestManager
+                from .confirmation_popup import ConfirmationPopup
+
+                qm = QuestManager(
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text: self._show_dungeon_dialogue(
+                        text,
+                        title="Nimue",
+                        image_path=nimue_image_path,
+                    ),
+                    quest_choice_renderer=lambda prompt, options: self._show_dungeon_choice(
+                        prompt,
+                        options,
+                        image_path=nimue_image_path,
+                    ),
+                    renderer_preserve_formatting=True,
+                )
+                did_action, showed_message = qm.check_and_offer(
+                    "Nimue",
+                    show_help=False,
+                    suppress_no_quests_message=True,
+                )
+
+                if not did_action and not showed_message:
+                    hint = qm.get_random_help_hint("Nimue")
+                    if hint:
+                        self.add_message(hint)
+            
+            # Mark that we've met Nimue before for next visit
+            spring_tile.nimue_met_before = True
 
         # Check for Excalibur upgrade
         if spring_tile.nimue:
@@ -824,7 +1124,7 @@ class DungeonManager:
                 self.add_message("The Lady of the Lake appears and upgrades your Excalibur!")
                 self.player_char.modify_inventory(items.Excalibur2())
                 self.player_char.modify_inventory(items.Excalibur(), subtract=True)
-            elif "Excalibur" == self.player_char.equipment.get('Weapon', items.Stick()).name:
+            elif "Excalibur" == self.player_char.equipment.get('Weapon').name:
                 self.add_message("The Lady of the Lake appears and upgrades your Excalibur!")
                 self.player_char.equipment['Weapon'] = items.Excalibur2()
 
@@ -834,6 +1134,7 @@ class DungeonManager:
             self.add_message("The ground here is already cleared.")
             return
 
+        self.game.special_event("Unobtainium")
         self.add_message("You spot Unobtainium on the ground and pick it up!")
         self.player_char.modify_inventory(items.Unobtainium(), rare=True, quest=True)
         unobtainium_tile.visited = True
@@ -951,6 +1252,84 @@ class DungeonManager:
             self.player_char.location_y += 1
             self._mark_view_dirty()
 
+    def _interact_incubus_lair(self, incubus_tile):
+        """Handle Incubus lair interaction - spawn Incubus if quest is active."""
+        # Check if quest is active
+        if "Oedipal Complex" not in self.player_char.quest_dict.get("Side", {}):
+            self.add_message("The oppressive atmosphere fades as you approach.")
+            return
+
+        quest_data = self.player_char.quest_dict["Side"]["Oedipal Complex"]
+        
+        # If quest already completed, show victory message
+        if quest_data["Completed"]:
+            self.add_message("Only ash remains of the once mighty Incubus.")
+            return
+
+        # If already defeated in this encounter, don't respawn
+        if hasattr(incubus_tile, 'defeated') and incubus_tile.defeated:
+            self.add_message("The Incubus has been vanquished.")
+            return
+
+        # Spawn Incubus for battle
+        self.add_message("A demonic figure materializes before you!")
+        self.add_message("The Incubus: 'You dare challenge ME, the father of Merzhin?'")
+        
+        incubus_tile.enter_combat(self.player_char)
+        enemy = incubus_tile.enemy
+        
+        self.player_char.state = 'fight'
+        self._refresh_cached_frame()
+        
+        combat_won = self.combat_manager.start_combat(
+            self.player_char,
+            enemy,
+            incubus_tile
+        )
+        
+        if combat_won:
+            # Complete quest
+            if incubus_tile.defeat_incubus(self.game):
+                self.add_message("Quest completed: Oedipal Complex")
+                self.add_message("You have proven your worthiness to Nimue!")
+        elif not self.player_char.is_alive():
+            self.add_message("You were defeated by the Incubus...")
+        else:
+            self.add_message("You escaped from the Incubus.")
+
+    def _interact_golden_chalice_room(self, chalice_tile):
+        """Handle Golden Chalice room interaction."""
+        # Check if quest is active
+        if "The Holy Grail of Quests" not in self.player_char.quest_dict.get("Side", {}):
+            self.add_message("An invisible force prevents you from approaching the chalice.")
+            return
+
+        quest_data = self.player_char.quest_dict["Side"]["The Holy Grail of Quests"]
+        
+        # If quest already completed, show empty pedestal message
+        if quest_data["Completed"]:
+            self.add_message("An empty pedestal stands where the chalice once rested.")
+            return
+
+        # Prompt player to take the chalice
+        from .confirmation_popup import ConfirmationPopup
+        popup = ConfirmationPopup(
+            self.presenter,
+            "A golden chalice rests on the pedestal, radiating holy light.\n\n"
+            "Do you wish to take it?",
+            show_buttons=True,
+        )
+        
+        if popup.show():
+            if chalice_tile.pickup_chalice_action(self.game):
+                self.add_message("You obtain the Golden Chalice!")
+                self.add_message("Quest completed: The Holy Grail of Quests")
+                self.add_message("You can feel its blessing preparing you for the trials ahead.")
+            else:
+                self.add_message("Something prevents you from taking the chalice.")
+        else:
+            self.add_message("You decide to leave the chalice for now.")
+
     def _get_tile_intro(self):
         """Get intro text for current tile and tile ahead."""
         messages = []
@@ -989,7 +1368,7 @@ class DungeonManager:
                     messages.append("The way to the final chamber has opened!")
             elif 'FinalRoom' in tile_type:
                 messages.append("The final chamber awaits. (Press O to proceed)")
-            elif 'Boss' in tile_type:
+            elif 'Boss' in tile_type or 'Lair' in tile_type:
                 if hasattr(current_tile, 'enemy') and current_tile.enemy:
                     messages.append("You sense a powerful presence nearby...")
                 else:
@@ -1066,6 +1445,13 @@ class DungeonManager:
         current_tile = self.get_current_tile()
         if not current_tile:
             return
+
+        # Golden Chalice quest progression hooks
+        try:
+            map_tiles.update_chalice_location(self.game)
+            map_tiles.handle_chalice_adventurer(self.game)
+        except Exception:
+            pass
 
         # Check for stairs - automatically use them when stepping on them
         tile_type = type(current_tile).__name__
@@ -1167,6 +1553,11 @@ class DungeonManager:
                 current_tile
             )
 
+            if self.player_char.in_town():
+                self.player_char.state = 'normal'
+                self.running = False
+                return
+
             if combat_won:
                 # Enemy defeated - clear from tile
                 current_tile.enemy = None
@@ -1231,11 +1622,21 @@ class DungeonManager:
         self._cry_interval = 8000  # Check every 8 seconds
 
         while self.running:
+            if self.player_char.in_town():
+                self.running = False
+                break
+
             # Handle events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
                     self.player_char.quit = True
+
+                elif event.type == pygame.MOUSEWHEEL:
+                    if event.y > 0:
+                        self.scroll_message_log(-1)
+                    elif event.y < 0:
+                        self.scroll_message_log(1)
 
                 elif event.type == pygame.KEYDOWN:
                     self._handle_keypress(event.key)
@@ -1262,6 +1663,9 @@ class DungeonManager:
 
             # Keep event loop responsive; redraws are conditional.
             clock.tick(60)
+
+        if self.player_char.in_town() or self.player_char.quit:
+            self.reset_message_log()
 
         return not self.player_char.quit  # Return True if player didn't quit game
 
@@ -1290,6 +1694,12 @@ class DungeonManager:
         # Interact
         elif key == pygame.K_o:
             self.interact()
+
+        elif key == pygame.K_PAGEUP:
+            self.scroll_message_log(-1)
+
+        elif key == pygame.K_PAGEDOWN:
+            self.scroll_message_log(1)
 
         # Character menu
         elif key == pygame.K_c:
@@ -1459,7 +1869,11 @@ class DungeonManager:
 
         # --- UI overlays (cheap) ---
         try:
-            self.renderer.render_message_area(self.messages)
+            self.renderer.render_message_area(
+                self.messages,
+                scroll_offset=self.message_scroll_offset,
+                lines_per_page=self.message_lines_per_page,
+            )
         except Exception as e:
             print(f"Message render error: {e}")
 

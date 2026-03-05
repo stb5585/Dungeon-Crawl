@@ -559,54 +559,57 @@
   },
   "Nimue": {
     "Main": {
-      "1": {
-        "": {
+    },
+    "Side": {
+      "55": {
+        "Oedipal Complex": {
+          "Who": "Nimue",
+          "Type": "Defeat",
+          "What": "Incubus",
+          "Total": 1,
+          "Start Text": "Legend says that Merzhin was sired from the union of a virgin and a demon, resulting in a powerful being with the cunning of a demon and the resilience of a human. The Incubus is said to be Merzhin's father, and it is rumored that he still lurks in the depths below. If you can find and defeat him, I will reward you with something that may help you on your quest.",
+          "End Text": "You have defeated the Incubus, a feat that many have attempted but few have accomplished. This creature is a powerful foe, and you should be proud of your victory. As a reward, take this pendant. It is said to make you harder to hit by magic, which may come in handy as you face the challenges ahead.",
+          "Help Text": "The Incubus is a master of illusion and manipulation, using sleep and terror to frighten his foes. Be cautious of his abilities that can drain your health and mana.",
+          "Reward": ["MagicPendant"],
+          "Reward Number": 1,
+          "Experience": 10000,
+          "Completed": false,
+          "Turned In": false,
+          "Requires": null
+        }
+      },
+      "60": {
+        "The Holy Grail of Quests": {
+          "Who": "Nimue",
+          "Type": "Locate",
+          "What": "Golden Chalice",
+          "Total": 1,
+          "Start Text": "Your strength and courage have both been tested. Now you must seek that which was lost—the Golden Chalice, a sacred vessel imbued with ancient power. It lies hidden somewhere in the depths below, guarded by trials and riddles. Many have sought it; few have found it. If you can locate this relic and bring it to me, you will have proven yourself worthy of Merzhin's defeat. The chalice will amplify your spirit and prepare you for the trials ahead.",
+          "End Text": "You have found the Golden Chalice! Its holy radiance fills my spring, and I can feel the balance of power shifting in your favor. You are truly ready now. When you wish to enter the Realm of Cambion and face Merzhin, return to me. The chalice's blessing will guide you through his illusions.",
+          "Help Text": "The Golden Chalice was lost in the deepest levels long ago. Speak with the travelers and keepers of knowledge throughout the dungeon—they may provide clues to its location. Search wisely.",
+          "Reward": ["AbilityUpgrade"],
+          "Reward Number": 1,
+          "Experience": 15000,
+          "Completed": false,
+          "Turned In": false,
+          "Requires": "Oedipal Complex"
+        }
+      },
+      "65": {
+        "The Wizard's Folly": {
           "Who": "Nimue",
           "Type": "Defeat",
           "What": "Merzhin",
           "Total": 1,
-          "Start Text": "As I mentioned previously, Merzhin is a powerful wizard and I have grown tired of his games.I would like you to enter the Realm of Cambion, locate him, and deal with him once and for all.Be warned, he is a master of the illusion and the path to him is filled with tricks and deception.",
-          "End Text": "",
-          "Help Text": "",
-          "Reward": [],
+          "Start Text": "You have proven yourself worthy. Now I shall grant you passage to the Realm of Cambion, where Merzhin awaits. He is a master of illusion and deception—the funhouse you see before you is his domain. Navigate his tricks, find him in the labyrinth, and defeat him. Only then will you have my eternal gratitude. Be warned: nothing in his realm is as it seems.",
+          "End Text": "At last, Merzhin has been vanquished! His illusions fade and his realm crumbles. You have done what I could not—freed me from his relentless torment. Take this blade, forged from the waters of my spring. It carries my blessing and will serve you well in the battles to come. May the waters guide you, champion.",
+          "Help Text": "Merzhin resides deep within the funhouse on the 7th level—the Realm of Cambion. His mastery of illusion makes him a formidable foe. Trust nothing you see, and be prepared for his mind games.",
+          "Reward": ["Excalibur"],
           "Reward Number": 1,
-          "Experience": 5000,
+          "Experience": 50000,
           "Completed": false,
-          "Turned In": false
-        }
-      }
-    },
-    "Side": {
-      "1": {
-        "": {
-          "Who": "Nimue",
-          "Type": "Collect",
-          "What": "",
-          "Total": 1,
-          "Start Text": "",
-          "End Text": "",
-          "Help Text": "",
-          "Reward": [],
-          "Reward Number": 1,
-          "Experience": 150,
-          "Completed": false,
-          "Turned In": false
-        }
-      },
-      "60": {
-        "": {
-          "Who": "Nimue",
-          "Type": "Locate",
-          "What": "",
-          "Total": 1,
-          "Start Text": "",
-          "End Text": "",
-          "Help Text": "",
-          "Reward": ["Spell Upgrade"],
-          "Reward Number": 1,
-          "Experience": 5000,
-          "Completed": false,
-          "Turned In": false
+          "Turned In": false,
+          "Requires": "The Holy Grail of Quests"
         }
       }
     }

@@ -7,7 +7,7 @@ import time
 
 import curses
 
-from src.core import abilities, items, player
+from src.core import abilities, items, player, map_tiles
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import classes_dict
 from src.core.data.data_loader import get_special_events
@@ -270,10 +270,37 @@ class Game:
             (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z)
             ]
         try:
+            map_tiles.update_chalice_location(self)
+            map_tiles.handle_chalice_adventurer(self)
+        except Exception:
+            pass
+        try:
             room.special_text(self)
         except AttributeError:
             pass
-        room.modify_player(self)
+        
+        # Special handling for UndergroundSpring to provide UI components
+        if isinstance(room, map_tiles.UndergroundSpring):
+            confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
+            confirm_popup = menus.ConfirmPopupMenu(self, header_message=confirm_message, box_height=8)
+            textbox = menus.TextBox(self)
+            
+            def battle_handler(game, enemy):
+                """Handle Fuath battle in curses UI"""
+                battle_ui = menus.CombatMenu(game)
+                battle_popup = menus.CombatPopupMenu(game)
+                textbox_inner = menus.TextBox(game)
+                if USE_ENHANCED_COMBAT:
+                    battle = EnhancedBattleManager(game, enemy, use_queue=True,
+                                                   battle_ui=battle_ui, battle_popup=battle_popup, textbox=textbox_inner)
+                else:
+                    battle = BattleManager(game, enemy,
+                                          battle_ui=battle_ui, battle_popup=battle_popup, textbox=textbox_inner)
+                battle.execute_battle()
+            
+            room.modify_player(self, confirm_popup=confirm_popup, textbox=textbox, battle_manager=battle_handler)
+        else:
+            room.modify_player(self)
         if self.player_char.in_town() or "Shop" in str(room):
             return
         dmenu = menus.DungeonMenu(self)

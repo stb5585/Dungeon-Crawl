@@ -525,7 +525,7 @@ class Hala(Summons):
 class Grigori(Summons):
     """
     Summon creature
-    A angelic spirit known as the Watcher 
+    An angelic spirit known as the Watcher 
 
     Abilities:
     Level 1 (start)

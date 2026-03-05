@@ -229,6 +229,311 @@ class ConfirmationPopup:
         return self.screen.copy()
 
 
+class ChoicePopup:
+    """Popup for selecting one option from a list."""
+
+    def __init__(self, presenter, title: str, options: list[str], header_message: str | None = None):
+        self.presenter = presenter
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.title = title
+        self.options = options
+        self.header_message = header_message or ""
+
+        # Colors
+        self.BLACK = (0, 0, 0)
+        self.WHITE = (255, 255, 255)
+        self.GOLD = (218, 165, 32)
+        self.GRAY = (128, 128, 128)
+        self.BORDER_COLOR = (200, 200, 200)
+        self.HIGHLIGHT_BG = (60, 60, 80)
+        self.POPUP_BG = (20, 20, 30)
+
+        # Fonts
+        self.title_font = presenter.title_font
+        self.normal_font = presenter.normal_font
+        self.small_font = presenter.small_font
+
+        # State
+        self.current_selection = 0
+
+        # Layout
+        self.popup_width = 520
+        max_content_width = self.popup_width - 60
+        header_lines = self._wrap_text(self.header_message, max_content_width) if self.header_message else []
+        self._header_lines = header_lines
+        line_height = 30
+        min_height = 220
+        content_height = (len(header_lines) + len(self.options)) * line_height + 120
+        self.popup_height = max(min_height, content_height)
+        self.popup_x = (self.width - self.popup_width) // 2
+        self.popup_y = (self.height - self.popup_height) // 2
+        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+
+    def _wrap_text(self, text: str, max_width: int) -> list[str]:
+        if not text:
+            return []
+        words = text.split()
+        lines = []
+        current_line = []
+        for word in words:
+            current_line.append(word)
+            line = " ".join(current_line)
+            if self.normal_font.size(line)[0] > max_width:
+                current_line.pop()
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [word]
+        if current_line:
+            lines.append(" ".join(current_line))
+        return lines
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()
+
+    def draw_popup(self, background_surface, do_flip: bool = True):
+        self.screen.blit(background_surface, (0, 0))
+
+        overlay = pygame.Surface((self.width, self.height))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+
+        title_text = self.title_font.render(self.title, True, self.GOLD)
+        title_rect = title_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 20)
+        self.screen.blit(title_text, title_rect)
+
+        y = self.popup_y + 70
+        for line in self._header_lines:
+            text = self.normal_font.render(line, True, self.WHITE)
+            text_rect = text.get_rect(centerx=self.popup_rect.centerx)
+            text_rect.y = y
+            self.screen.blit(text, text_rect)
+            y += 28
+
+        y += 10
+        for i, option in enumerate(self.options):
+            if i == self.current_selection:
+                option_rect = pygame.Rect(self.popup_x + 60, y - 4, self.popup_width - 120, 28)
+                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, option_rect)
+                pygame.draw.rect(self.screen, self.GOLD, option_rect, 2)
+                color = self.GOLD
+            else:
+                color = self.WHITE
+            text = self.normal_font.render(option, True, color)
+            text_rect = text.get_rect(centerx=self.popup_rect.centerx)
+            text_rect.y = y
+            self.screen.blit(text, text_rect)
+            y += 30
+
+        instr = "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel"
+        instr_text = self.small_font.render(instr, True, self.GRAY)
+        instr_rect = instr_text.get_rect(centerx=self.popup_rect.centerx, bottom=self.popup_rect.bottom - 10)
+        self.screen.blit(instr_text, instr_rect)
+
+        if do_flip:
+            pygame.display.flip()
+
+    def show(self) -> int | None:
+        background = self._get_background_surface()
+        clock = self.presenter.clock
+
+        if not self.options:
+            return None
+
+        while True:
+            self.draw_popup(background)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        self.current_selection = (self.current_selection - 1) % len(self.options)
+                    elif event.key == pygame.K_DOWN:
+                        self.current_selection = (self.current_selection + 1) % len(self.options)
+                    elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        return self.current_selection
+                    elif event.key == pygame.K_ESCAPE:
+                        return None
+
+            clock.tick(30)
+
+
+class RewardSelectionPopup:
+    """Popup for selecting a reward with details and inline confirmation."""
+
+    def __init__(self, presenter, title: str, items: list, detail_provider):
+        self.presenter = presenter
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.title = title
+        self.items = items
+        self.detail_provider = detail_provider
+
+        # Colors
+        self.BLACK = (0, 0, 0)
+        self.WHITE = (255, 255, 255)
+        self.GOLD = (218, 165, 32)
+        self.GRAY = (128, 128, 128)
+        self.BORDER_COLOR = (200, 200, 200)
+        self.HIGHLIGHT_BG = (60, 60, 80)
+        self.POPUP_BG = (20, 20, 30)
+
+        # Fonts
+        self.title_font = presenter.title_font
+        self.normal_font = presenter.normal_font
+        self.small_font = presenter.small_font
+
+        # State
+        self.selected_index = 0
+
+        # Layout
+        self.popup_rect = pygame.Rect(self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4)
+        self.list_rect = pygame.Rect(self.popup_rect.left + 24, self.popup_rect.top + 72, self.popup_rect.width * 2 // 5, self.popup_rect.height - 120)
+        self.details_rect = pygame.Rect(self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40, self.popup_rect.top + 72, self.popup_rect.width * 3 // 5 - 64, self.popup_rect.height - 160)
+        self.line_height = 24
+
+    def _get_background_surface(self):
+        if hasattr(self.presenter, "get_background_surface"):
+            try:
+                surface = self.presenter.get_background_surface()
+                if surface is not None:
+                    return surface
+            except Exception:
+                pass
+        return self.screen.copy()
+
+    def _wrap_text(self, text: str, max_width: int) -> list[str]:
+        if not text:
+            return []
+        lines = []
+        for paragraph in text.split("\n"):
+            if not paragraph.strip():
+                lines.append("")
+                continue
+            words = paragraph.split()
+            current_line = []
+            for word in words:
+                current_line.append(word)
+                line = " ".join(current_line)
+                if self.normal_font.size(line)[0] > max_width:
+                    current_line.pop()
+                    if current_line:
+                        lines.append(" ".join(current_line))
+                    current_line = [word]
+            if current_line:
+                lines.append(" ".join(current_line))
+        return lines
+
+    def draw_popup(self, background_surface, do_flip: bool = True):
+        self.screen.blit(background_surface, (0, 0))
+
+        overlay = pygame.Surface((self.width, self.height))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 2)
+
+        title_text = self.title_font.render(self.title, True, self.GOLD)
+        self.screen.blit(title_text, (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16))
+
+        pygame.draw.rect(self.screen, self.BLACK, self.list_rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.list_rect, 2)
+        pygame.draw.rect(self.screen, self.BLACK, self.details_rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.details_rect, 2)
+
+        # List
+        y = self.list_rect.top + 8
+        text_max_width = self.list_rect.width - 32
+        for idx, item in enumerate(self.items):
+            name = getattr(item, "name", str(item))
+            if self.normal_font.size(name)[0] > text_max_width:
+                while name and self.normal_font.size(name + "...")[0] > text_max_width:
+                    name = name[:-1]
+                name = f"{name}..."
+            row_rect = pygame.Rect(self.list_rect.left + 8, y - 2, self.list_rect.width - 16, self.line_height)
+            if idx == self.selected_index:
+                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, row_rect)
+                color = self.GOLD
+            else:
+                color = self.WHITE
+            text = self.normal_font.render(name, True, color)
+            self.screen.blit(text, (self.list_rect.left + 16, y))
+            y += self.line_height
+
+        # Details
+        if self.items:
+            current_item = self.items[self.selected_index]
+            details = self.detail_provider(current_item)
+            x = self.details_rect.left + 12
+            y = self.details_rect.top + 10
+            max_width = self.details_rect.width - 24
+            for line in self._wrap_text(details, max_width):
+                text = self.normal_font.render(line, True, self.WHITE)
+                self.screen.blit(text, (x, y))
+                y += self.line_height
+
+        help_str = "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel"
+        help_text = self.small_font.render(help_str, True, self.GRAY)
+        self.screen.blit(help_text, (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12))
+
+        if do_flip:
+            pygame.display.flip()
+
+    def show(self) -> int | None:
+        background = self._get_background_surface()
+        clock = self.presenter.clock
+
+        if not self.items:
+            return None
+
+        while True:
+            self.draw_popup(background)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        self.selected_index = (self.selected_index - 1) % len(self.items)
+                    elif event.key == pygame.K_DOWN:
+                        self.selected_index = (self.selected_index + 1) % len(self.items)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        current_item = self.items[self.selected_index]
+                        name = getattr(current_item, "name", str(current_item))
+                        confirm_popup = ConfirmationPopup(self.presenter, f"Take {name}?", show_buttons=True)
+                        choice = confirm_popup.show(
+                            background_draw_func=lambda: self.draw_popup(background, do_flip=False),
+                            flush_events=True,
+                            require_key_release=True,
+                        )
+                        if choice:
+                            return self.selected_index
+                    elif event.key == pygame.K_ESCAPE:
+                        return None
+
+            clock.tick(30)
+
+
 def confirm_yes_no(presenter, message) -> bool:
     """
     Convenience helper for simple Yes/No confirmations.

@@ -9,6 +9,7 @@ import curses
 
 from src.core.save_system import SaveManager
 from src.core.character import scaled_decay_function
+from src.core import map_tiles
 
 
 # functions
@@ -537,7 +538,7 @@ class CombatMenu:
             "Stun": "STN",
             "Defend": "DEF",
             "Steal Success": "STE",
-            "Bleed": "BLD",
+            "Bleed": "RND",
             "Disarm": "DSA",
             "Prone": "PRN",
             "Attack": "ATK",
@@ -602,6 +603,16 @@ class CombatMenu:
         for name, effect in character.class_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
+
+        # Maelstrom Weapon passive stack indicator (Soulcatcher/Shaman)
+        try:
+            maelstrom_hits = int(getattr(character, "maelstrom_hits", 0))
+            skills = getattr(character, "spellbook", {}).get("Skills", {})
+            has_maelstrom = "Maelstrom Weapon" in skills
+            if has_maelstrom and maelstrom_hits > 0:
+                icons.append((f"MW{maelstrom_hits}", True))
+        except (AttributeError, TypeError, ValueError):
+            pass
 
         return icons
 
@@ -1720,34 +1731,85 @@ class InventoryPopupMenu(PopupMenu):
         super().__init__(game, header_message)
         self.pages = [0]
         self.page = 0
+        self.sort_modes = ["Name", "Type", "Quantity", "Combat"]
+        self.sort_mode_idx = 0
+
+    def _is_combat_usable(self, item) -> bool:
+        subtyp = getattr(item, "subtyp", None)
+        return (
+            subtyp in ("Health", "Mana", "Elixir", "Status")
+            or (subtyp == "Scroll" and getattr(item, "name", "") != "Sanctuary Scroll")
+        )
+
+    def _sorted_inventory_keys(self, inventory_dict):
+        keys = list(inventory_dict.keys())
+        mode = self.sort_modes[self.sort_mode_idx]
+        if mode == "Combat":
+            combat_keys = [
+                key for key in keys
+                if inventory_dict.get(key) and self._is_combat_usable(inventory_dict[key][0])
+            ]
+            non_combat_keys = [
+                key for key in keys
+                if not (inventory_dict.get(key) and self._is_combat_usable(inventory_dict[key][0]))
+            ]
+            return sorted(combat_keys, key=lambda key: str(key).lower()) + non_combat_keys
+        if mode == "Type":
+            return sorted(keys, key=lambda key: (
+                str(getattr(inventory_dict[key][0], "subtyp", "")),
+                str(key).lower(),
+            ))
+        if mode == "Quantity":
+            return sorted(keys, key=lambda key: (-len(inventory_dict[key]), str(key).lower()))
+        return sorted(keys, key=lambda key: str(key).lower())
+
+    def cycle_sort_mode(self):
+        self.sort_mode_idx = (self.sort_mode_idx + 1) % len(self.sort_modes)
+        self.page = 0
+        self.current_option = 0
 
     def draw_popup(self):
         self.update_itemlist()
         self.popup_win.erase()
+        line_offset = 0
         for i, line in enumerate(self.header_message):
             self.popup_win.addstr(1 + i, (self.box_width // 2) - (len(line) // 2), line, curses.A_BOLD)
+            line_offset = i + 1
+        list_start = 3 + line_offset
+        if self.header_message and self.header_message[0] == "Inventory":
+            sort_line = f"Sort: {self.sort_modes[self.sort_mode_idx]} (press S)"
+            self.popup_win.addstr(2 + line_offset, max(2, (self.box_width // 2) - (len(sort_line) // 2)), sort_line)
+            list_start += 1
         # Display item list
         for idx, item in enumerate(self.options_list):
             if idx == self.current_option:
                 self.popup_win.attron(curses.A_REVERSE)
             length = '' if not len(item[1]) else len(item[1])
             item_str = f"{item[0]:24}{length:2}"
-            self.popup_win.addstr(3 + idx, 2, item_str)
+            self.popup_win.addstr(list_start + idx, 2, item_str)
             if idx == self.current_option:
                 self.popup_win.attroff(curses.A_REVERSE)
         self.popup_win.box()   
 
     def update_itemlist(self):
         self.options_list = []
-        start_item_idx = self.pages[self.page] * 14
         if self.header_message[0] == "Inventory":
-            inv_len = len(self.game.player_char.inventory)
+            sorted_keys = self._sorted_inventory_keys(self.game.player_char.inventory)
+            inv_len = len(sorted_keys)
+            total_pages = max(1, (inv_len + 13) // 14)
+            self.pages = list(range(total_pages))
+            self.page = min(self.page, total_pages - 1)
+            start_item_idx = self.page * 14
             if inv_len > 0:
-                inventory_keys = list(self.game.player_char.inventory.keys())[start_item_idx:start_item_idx+14]
+                inventory_keys = sorted_keys[start_item_idx:start_item_idx+14]
                 for key in inventory_keys:
                     self.options_list.append((key, self.game.player_char.inventory[key]))
         elif self.header_message[0] == "Key Items":
             inv_len = len(self.game.player_char.special_inventory)
+            total_pages = max(1, (inv_len + 13) // 14)
+            self.pages = list(range(total_pages))
+            self.page = min(self.page, total_pages - 1)
+            start_item_idx = self.page * 14
             if inv_len > 0:
                 inventory_keys = list(self.game.player_char.special_inventory.keys())[start_item_idx:start_item_idx+14]
                 for key in inventory_keys:
@@ -1781,6 +1843,8 @@ class InventoryPopupMenu(PopupMenu):
                 self.current_option += 1
                 if self.current_option > len(self.options_list) - 1:
                     self.current_option = 0
+            elif key in (ord('s'), ord('S')) and self.header_message and self.header_message[0] == "Inventory":
+                self.cycle_sort_mode()
 
             # Confirm selection
             if key == ord('\n'):  # Enter key
@@ -1798,7 +1862,17 @@ class InventoryPopupMenu(PopupMenu):
                     return item
 
     def inspect_item(self, item):
+        try:
+            map_tiles.reveal_chalice_map_on_inspect(self.game.player_char, item)
+        except Exception:
+            pass
         itembox = TextBox(self.game)
+        if getattr(item, "name", "") == "Chalice Map":
+            preview = map_tiles.chalice_map_preview_text(self.game.player_char)
+            if preview:
+                itembox.print_text_in_rectangle(preview)
+                itembox.clear_rectangle()
+                return
         itembox.print_text_in_rectangle(str(item))
         itembox.clear_rectangle()
 

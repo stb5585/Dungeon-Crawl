@@ -1,5 +1,52 @@
 # Dungeon Crawl - Changelog
 
+## [Unreleased] - 2026-02-22
+
+### Added
+
+#### Sound System (2026-02-22) 🔊
+- **Complete sound manager with event-driven audio**
+  - SoundManager class with pygame.mixer integration
+  - Automatic pygame.mixer initialization (44.1kHz, 16-bit, stereo)
+  - 16 simultaneous sound channels
+  - Sound effect caching for performance
+  - Graceful handling of missing audio files
+  
+- **Event-driven sound effects**
+  - Combat sounds: hit, heavy_hit, critical_hit, victory, defeat, flee
+  - Spell sounds: cast, fire, ice, lightning, heal, buff, debuff
+  - Status effects: poison, stun, burn
+  - Character events: heal, level_up, player_death, enemy_death
+  - UI sounds: menu_select, menu_confirm, menu_cancel
+  
+- **Background music support**
+  - Looping music with fade in/out transitions
+  - Separate music directory structure
+  - Designed for location-based and combat music
+  
+- **Volume controls**
+  - Independent master, SFX, and music volume
+  - Enable/disable sound system
+  - Volume ranges from 0.0 to 1.0
+  
+- **Development tools**
+  - `tools/generate_placeholder_sounds.py` - Creates simple beep sounds for testing
+  - Generates 30+ sound effects as sine wave tones
+  - Requires numpy and scipy for tone generation
+  
+- **Documentation**
+  - `docs/SOUND_SYSTEM.md` - Comprehensive sound system guide
+  - `assets/sounds/README.md` - Sound effects catalog
+  - `assets/music/README.md` - Music tracks guide
+
+#### Map and Sprite Tooling (2026-02-22)
+- **Enemy sprites**: 42 new 32x32 enemy sprites for pygame UI
+- **Tiled integration tools**
+  - `tools/generate_tiled_tileset.py` - Creates Tiled .tsx tilesets
+  - `tools/convert_maps_to_tiled_json.py` - Converts text maps to Tiled JSON
+  - `tools/sprite_sheet_extractor.py` - Extracts sprites from sheets
+  - `tools/sprite_merger.py` - Combines sprites into composite images
+
 ## [Unreleased] - 2026-01-28
 
 ### Major Reorganization - Code Structure Overhaul ✅

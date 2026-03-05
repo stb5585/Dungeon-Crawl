@@ -213,13 +213,15 @@ class Enemy(Character):
             # Determine action type and check availability
             if ability_name == "Attack":
                 action_type = "Attack"
-                usable = True
+                usable = not self.tunnel
             elif ability_name in self.spellbook.get("Spells", {}):
                 if self._should_skip_reapply_debuff(ability_name, target):
                     continue
                 spell = self.spellbook["Spells"][ability_name]
                 # Skip passive spells and check mana
                 if spell.passive or self.mana.current < spell.cost:
+                    continue
+                if self.tunnel and spell.subtyp not in ["Heal", "Support"]:
                     continue
                 action_type = "Cast Spell"
                 usable = True
@@ -230,13 +232,16 @@ class Enemy(Character):
                 # Skip passive skills and check mana/target constraints
                 if skill.passive or self.mana.current < skill.cost:
                     continue
+                if self.tunnel and ability_name != "Surface":
+                    continue
                 if ability_name == "Backstab" and not target.incapacitated():
                     continue
                 if ability_name == "Smoke Screen":
                     steal_ready = bool(self.status_effects.get("Steal Success", StatusEffect()).active)
                     if not steal_ready and self.health.current > self.health.max * 0.25:
                         continue
-                if ability_name == "Tunnel" and self.health.current > self.health.max * 0.25:
+                if ability_name == "Tunnel" and (self.health.current > self.health.max * 0.25 or self.tunnel):
+                    # Don't use Tunnel if health is above 25% OR if already tunneled
                     continue
                 if ability_name == "Disarm" and not self._target_has_weapon(target):
                     continue
@@ -327,6 +332,12 @@ class Enemy(Character):
     def _resolve_priority_condition(self, condition, fallback_priority, target, tile):
         if not isinstance(condition, dict):
             return fallback_priority
+
+        if condition.get("tunneled") is not None:
+            is_tunneled = bool(getattr(self, "tunnel", False))
+            if is_tunneled:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
 
         target_status = condition.get("target_status")
         if target_status:
@@ -680,14 +691,21 @@ class Mimic(Aberration):
     gold: 
     """
 
-    def __init__(self, z):
-        super().__init__(name='Mimic', health=20 + (random.randint(10, 40) * z), mana=10 + (random.randint(20, 35) * z),
-                         strength=(15 + (5 * (z - 1))), intel=(6 + (3 * (z - 1))), wisdom=(11 + (5 * (z - 1))),
-                         con=(13 + (5 * (z - 1))), charisma=(8 + (4 * (z - 1))), dex=(12 + (4 * (z - 1))),
-                         attack=(random.randint(10, 20) * z), defense=(random.randint(6, 15) * z),
-                         magic=(random.randint(8, 16) * z), magic_def=(random.randint(4, 12) * z), 
-                         exp=25 + (random.randint(25, 50) * z))
-        self.gold = 50 + (random.randint(50, 100) * z)
+    def __init__(self, z, player_level: int | None = None):
+        # Keep dungeon-depth baseline, but prevent chest mimics from becoming trivial
+        # when encountered on lower floors later in progression.
+        progression_tier = 0
+        if player_level is not None:
+            progression_tier = max(1, min(10, (int(player_level) + 4) // 8))
+        effective_level = max(int(z), progression_tier)
+
+        super().__init__(name='Mimic', health=20 + (random.randint(10, 40) * effective_level), mana=10 + (random.randint(20, 35) * effective_level),
+                         strength=(15 + (5 * (effective_level - 1))), intel=(6 + (3 * (effective_level - 1))), wisdom=(11 + (5 * (effective_level - 1))),
+                         con=(13 + (5 * (effective_level - 1))), charisma=(8 + (4 * (effective_level - 1))), dex=(12 + (4 * (effective_level - 1))),
+                         attack=(random.randint(10, 20) * effective_level), defense=(random.randint(6, 15) * effective_level),
+                         magic=(random.randint(8, 16) * effective_level), magic_def=(random.randint(4, 12) * effective_level), 
+                         exp=25 + (random.randint(25, 50) * effective_level))
+        self.gold = 50 + (random.randint(50, 100) * effective_level)
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook = {"Spells": {},
@@ -702,7 +720,7 @@ class Mimic(Aberration):
             {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
             {"ability": "Slot Machine", "priority": ActionPriority.NORMAL}
         ]
-        self.level.pro_level = z
+        self.level.pro_level = effective_level
         self.sight = True
         self.picture = "mimic.txt"
 
@@ -1047,7 +1065,7 @@ class Panther(Animal):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.HIGH,
-                              "else": ActionPriority.LOW}}
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 1
         self.picture = "panther.txt"
@@ -1160,7 +1178,7 @@ class Minotaur(Monster):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.NORMAL,
-                              "else": ActionPriority.LOW}}
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 1
         self.sight = True
@@ -1223,7 +1241,7 @@ class Gnoll(Humanoid):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.NORMAL,
-                              "else": ActionPriority.LOW}}
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 2
         self.picture = "gnoll.txt"
@@ -1502,7 +1520,7 @@ class Warrior(Humanoid):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.HIGH,
-                              "else": ActionPriority.LOW}}
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 2
         self.picture = "fighter.txt"
@@ -1686,10 +1704,10 @@ class Nightmare(Fiend):
         self.gold = 2500
         self.inventory['Item'] = [items.random_item(4)]
         self.inventory['Old Key'] = [items.OldKey]
-        self.spellbook = {'Spells': {"Sleep": abilities.Sleep(),
-                                     "Nightmare Fuel": abilities.NightmareFuel()},
+        self.spellbook = {'Spells': {"Sleep": abilities.Sleep()},
                           'Skills': {'Stomp': abilities.Stomp(),
-                                     'True Strike': abilities.TrueStrike()}}
+                                     'True Strike': abilities.TrueStrike(),
+                                     "Nightmare Fuel": abilities.NightmareFuel()}}
         self.resistance['Fire'] = 1.
         self.resistance['Ice'] = -0.25
         self.resistance['Physical'] = 0.5
@@ -2009,13 +2027,18 @@ class Antlion(Animal):
         self.gold = random.randint(40, 52)
         self.spellbook = {"Spells": {},
                           "Skills": {'Double Strike': abilities.DoubleStrike(),
-                                     "Tunnel": abilities.Tunnel()}}
+                                     "Tunnel": abilities.Tunnel(),
+                                     "Surface": abilities.Surface()}}
         self.resistance['Physical'] = 0.25
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Tunnel", "priority": ActionPriority.LOW,
              "priority_if": {"self_hp_pct_lt": 0.25,
+                              "priority": ActionPriority.HIGH,
+                              "else": ActionPriority.SKIP}},
+            {"ability": "Surface", "priority": ActionPriority.NORMAL,
+             "priority_if": {"tunneled": True,
                               "priority": ActionPriority.HIGH,
                               "else": ActionPriority.SKIP}}
         ]
@@ -2218,7 +2241,7 @@ class Cockatrice(Monster):
 
     def __init__(self):
         super().__init__(name='Cockatrice', health=580, mana=99, strength=30, intel=16, wisdom=15, con=16, charisma=16,
-                         dex=22, attack=80, defense=65, magic=72, magic_def=69,
+                         dex=22, attack=53, defense=48, magic=71, magic_def=62,
                          exp=3500)
         self.equipment = {'Weapon': items.Claw3(), 'Armor': items.NoArmor(), 'OffHand': items.DragonTail(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -2249,7 +2272,7 @@ class Wendigo(Fey):
 
     def __init__(self):
         super().__init__(name='Wendigo', health=750, mana=130, strength=32, intel=16, wisdom=19, con=21, charisma=14,
-                         dex=22, attack=92, defense=84, magic=93, magic_def=95,
+                         dex=22, attack=64, defense=48, magic=71, magic_def=62,
                          exp=6000)
         self.equipment = {'Weapon': items.Bite2(), 'Armor': items.NoArmor(), 'OffHand': items.DemonClaw2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -2412,7 +2435,7 @@ class Dragonkin(Dragon):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.HIGH,
-                              "else": ActionPriority.LOW}},
+                              "else": ActionPriority.SKIP}},
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 4
@@ -2499,7 +2522,7 @@ class Cyborg(Construct):
     def special_effects(self, target):
         """25% chance to detonate if health below 25%"""
         special_str = ""
-        if self.health.current < int(self.health.current * 0.25) and not random.randint(0, 3):
+        if self.is_alive() and self.health.current < int(self.health.current * 0.25) and not random.randint(0, 3):
             special_str += abilities.Detonate().use(self, target=target)
         return special_str
 
@@ -2524,7 +2547,7 @@ class DarkKnight(Fiend):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": {"target_has_weapon": True,
                               "priority": ActionPriority.HIGH,
-                              "else": ActionPriority.LOW}}
+                              "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 4
         self.picture = "darkknight.txt"
@@ -2703,7 +2726,7 @@ class Golem(Construct):
 
     def __init__(self):
         super().__init__(name='Golem', health=1200, mana=100, strength=32, intel=25, wisdom=30, con=35, charisma=21,
-                         dex=20, attack=100, defense=88, magic=68, magic_def=82,
+                         dex=14, attack=50, defense=48, magic=35, magic_def=46,
                          exp=8000)
         self.equipment = {'Weapon': items.Laser(), 'Armor': items.StoneArmor2(), 'OffHand': items.Laser(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -2738,12 +2761,13 @@ class IronGolem(Golem):
         self.name = "Iron Golem"
         self.health = Resource(1250, 1250)
         self.mana = Resource(250, 250)
-        self.stats = Stats(35, 25, 35, 40, 21, 20)
-        self.combat = Combat(115, 108, 89, 99)
+        self.stats = Stats(35, 25, 35, 40, 21, 16)
+        self.combat = Combat(65, 62, 45, 66)
         self.experience = 12000
         self.equipment = {'Weapon': items.Laser2(), 'Armor': items.StoneArmor2(), 'OffHand': items.ForceField2(),
-                          'Ring': items.BarrierRing(), 'Pendant': items.NoPendant()}
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.inventory['Aard of Being'] = [items.AardBeing]
+        self.inventory['Old Key'] = [items.OldKey]
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
         self.spellbook["Skills"]["Triple Strike"] = abilities.TripleStrike()
         self.resistance['Fire'] = 1.0
@@ -2761,7 +2785,7 @@ class IronGolem(Golem):
     def special_effects(self, target):
         """If health below 10%, turtle and heal for 25% of max health"""
         special_str = ""
-        if not self.incapacitated():
+        if self.is_alive() and not self.incapacitated():
             if self.health.current < int(self.health.max * 0.1) and not self.turtle and not self.turtled:
                 self.turtle = True
                 self.turtled = True
@@ -2826,6 +2850,8 @@ class Jester(Humanoid):
 
     def special_effects(self, target):
         """Randomizes stats and resistances"""
+        if not self.is_alive():
+            return ""
         special_str = "Jester: The wheel of time stops for no one! HAHA!\n"
         special_str += "The Jester's stats and resistances have been randomized.\n"
         self.stats = Stats(strength=random.randint(10, 50),
@@ -2953,6 +2979,47 @@ class Trickster(FunhouseMinion):
         self.stats.wisdom += random.randint(4, 10)
         self.combat.magic += random.randint(4, 8)
         self.combat.magic_def += random.randint(4, 8)
+
+
+class Incubus(Fiend):
+    """
+    Father of Merzhin; must locate and defeat to gain access to Realm of Cambion
+    """
+
+    def __init__(self):
+        super().__init__(name='Incubus', health=1250, mana=320, strength=26, intel=38, wisdom=34, con=38, charisma=46,
+                         dex=40, attack=74, defense=80, magic=84, magic_def=86,
+                         exp=22000)
+        self.equipment = {'Weapon': items.Rondel(), 'Armor': items.StuddedLeather(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = 15000
+        self.inventory['Item'] = [items.random_item(6)]
+        self.spellbook = {"Spells": {'Sleep': abilities.Sleep(),
+                                     'Terrify': abilities.Terrify()},
+                          "Skills": {'Double Strike': abilities.DoubleStrike(),
+                                     'Mana Drain': abilities.ManaDrain()}}
+        self.resistance['Shadow'] = 0.5
+        self.resistance['Holy'] = -0.25
+        self.status_immunity = ["Death", "Stone"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.LOW,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.LOW}},
+            {"ability": "Mana Drain", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_mana": True,
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.SKIP}},
+            {"ability": "Terrify", "priority": ActionPriority.LOW,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.LOW}}
+        ]
+        self.level.pro_level = 5
+        self.sight = True
+        self.picture = "incubus.txt"
 
 
 # Level 5
@@ -3194,7 +3261,8 @@ class Sandworm(Monster):
         self.spellbook = {"Spells": {'Earthquake': abilities.Earthquake(),
                                      'Sandstorm': abilities.Sandstorm()},
                           "Skills": {'Consume Item': abilities.ConsumeItem(),
-                                     "Tunnel": abilities.Tunnel()}}
+                                     "Tunnel": abilities.Tunnel(),
+                                     "Surface": abilities.Surface()}}
         self.resistance['Electric'] = 0.5
         self.resistance['Water'] = -0.25
         self.resistance['Earth'] = 1
@@ -3209,7 +3277,11 @@ class Sandworm(Monster):
             {"ability": "Tunnel", "priority": ActionPriority.LOW,
              "priority_if": {"self_hp_pct_lt": 0.25,
                               "priority": ActionPriority.HIGH,
-                              "else": ActionPriority.SKIP}}
+                              "else": ActionPriority.SKIP}},
+            {"ability": "Surface", "priority": ActionPriority.NORMAL,
+            "priority_if": {"tunneled": True,
+                            "priority": ActionPriority.HIGH,
+                            "else": ActionPriority.SKIP}}
         ]
         self.level.pro_level = 5
         self.picture = "naga.txt"
@@ -3241,7 +3313,7 @@ class Warforged(Construct):
     def special_effects(self, target):
         """if health is below 10%, turtle and heal for 25% of max health"""
         special_str = ""
-        if not self.incapacitated():
+        if self.is_alive() and not self.incapacitated():
             if self.health.current < int(self.health.max * 0.1) and not self.turtle:
                 self.turtle = True
                 special_str += f"{self.name} curls up into a ball for protection.\n"

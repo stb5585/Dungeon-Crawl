@@ -6,7 +6,7 @@ import time
 from textwrap import wrap
 
 from src.core import classes, items
-from src.core.town import quest_dict, PATRON_DIALOGUES, RESPONSE_MAP
+from src.core.town import quest_dict, PATRON_DIALOGUES, RESPONSE_MAP, get_holy_grail_rotation_hints
 from . import menus
 
 
@@ -106,7 +106,7 @@ def turn_in_quest(game, quest, typ):
         reward_message = f"You received {exp} experience and gain access to the Warp Point.\n"
     elif reward == "Izulu":
         game.special_event("Izulu")
-        from ..core.companions import Izulu
+        from src.core.companions import Izulu
         summon = Izulu()
         summon.initialize_stats(game.player_char)
         game.player_char.summons[summon.name] = summon
@@ -249,6 +249,24 @@ def check_quests(game, quest_giver):
     side_quests = [sides[x] for x in sides if game.player_char.player_level() >= int(x)]
     quest = False
     responses = [["I have no new quests for you at this time."]]
+    
+    def can_offer_quest(quest_key, quest_data):
+        """Check if quest can be offered based on prerequisites."""
+        required_quest = quest_data.get('Requires')
+        if required_quest:
+            # Look for the required quest in both Main and Side
+            for quest_type in ['Main', 'Side']:
+                if required_quest in game.player_char.quest_dict.get(quest_type, {}):
+                    req_data = game.player_char.quest_dict[quest_type][required_quest]
+                    if not req_data.get('Turned In', False):
+                        return False
+                    # Required quest is turned in, can proceed
+                    return True
+            # Required quest not found in player's quest dict - cannot offer
+            return False
+        # No requirements, can offer
+        return True
+    
     if len(main_quests) > 0:
         for main_quest in main_quests:
             key = list(main_quest)[0]
@@ -268,6 +286,9 @@ def check_quests(game, quest_giver):
                 if not game.player_char.quest_dict['Main'][key]['Turned In']:
                     responses.append([game.player_char.quest_dict['Main'][key]['Help Text']])
             else:
+                # Check prerequisites before offering
+                if not can_offer_quest(key, main_quest[key]):
+                    continue
                 quest = accept_quest(game, main_quest, "Main")
             if quest:
                 return quest, responses
@@ -283,6 +304,9 @@ def check_quests(game, quest_giver):
                     responses.append([game.player_char.quest_dict['Side'][key]['Help Text']])
             else:
                 if key == "Pandora's Box" and "Ultima" not in game.player_char.spellbook["Spells"]:
+                    continue
+                # Check prerequisites before offering
+                if not can_offer_quest(key, side_quest[key]):
                     continue
                 quest = accept_quest(game, side_quest, "Side")
             if quest:
@@ -332,10 +356,30 @@ def tavern_patrons(game):
             return
         quest, _ = check_quests(game, patron_options[patron_idx])
         if not quest:
+            if patron_options[patron_idx] == "Hooded Figure":
+                quest_data = game.player_char.quest_dict.get("Side", {}).get("The Holy Grail of Quests")
+                if quest_data and not quest_data.get("Completed") and not quest_data.get("Turned In"):
+                    progress = quest_data.setdefault("Chalice Progress", {})
+                    for key in ("Hooded", "Map", "Sergeant", "Adventurer", "Revealed", "Spawned"):
+                        progress.setdefault(key, False)
+                    if not progress.get("Hooded"):
+                        response = ("The Hooded Figure murmurs that a map to the Golden Chalice was last seen "
+                                    "with an adventurer carrying an ugly sword.")
+                        quest_data["Help Text"] = "Revisit the boulder where you found Excaliper; the map may be hidden there."
+                        progress["Hooded"] = True
+                        textbox = menus.TextBox(game)
+                        textbox.print_text_in_rectangle(response)
+                        textbox.clear_rectangle()
+                        patron_options = patron_list(game)
+                        menu.update_options(patron_options, options_message=patron_message, reset_current=False)
+                        continue
             talks = PATRON_DIALOGUES[patron_options[patron_idx]]
             level_talks = [talks[x] for x in talks if game.player_char.player_level() >= int(x)]
             if patron_options[patron_idx] == "Drunkard" and game.player_char.player_level() >= 65:
                 level_talks = [talks[65]]
+            rotation_hints = get_holy_grail_rotation_hints(game.player_char, patron_options[patron_idx])
+            if rotation_hints:
+                level_talks = level_talks + [rotation_hints]
             response = random.choice(random.choice(level_talks))
             textbox = menus.TextBox(game)
             textbox.print_text_in_rectangle(response)
@@ -571,6 +615,24 @@ def barracks(game):
             else:
                 quest, responses = check_quests(game, 'Sergeant')
                 if not quest:
+                    quest_data = game.player_char.quest_dict.get("Side", {}).get("The Holy Grail of Quests")
+                    if quest_data and not quest_data.get("Completed") and not quest_data.get("Turned In"):
+                        progress = quest_data.setdefault("Chalice Progress", {})
+                        for key in ("Hooded", "Map", "Sergeant", "Adventurer", "Revealed", "Spawned"):
+                            progress.setdefault(key, False)
+                        if not progress.get("Sergeant"):
+                            if "Chalice Map" in game.player_char.special_inventory or progress.get("Map"):
+                                progress["Map"] = True
+                                response = ("The Sergeant studies your map and frowns. "
+                                            "'There's a hidden route somewhere on the third floor. Find the adventurer there.'")
+                                quest_data["Help Text"] = "Search the third floor for a secret path; an adventurer there can help decipher the map."
+                                progress["Sergeant"] = True
+                                barracksbox.print_text_in_rectangle(response)
+                                barracksbox.clear_rectangle()
+                                continue
+                    rotation_hints = get_holy_grail_rotation_hints(game.player_char, "Sergeant")
+                    if rotation_hints:
+                        responses = responses + [rotation_hints]
                     response = random.choice(random.choice(responses))
                     barracksbox.print_text_in_rectangle(response)
                     barracksbox.clear_rectangle()
@@ -949,10 +1011,10 @@ def town(game):
     game.player_char.mana.current = game.player_char.mana.max
     menu = menus.TownMenu(game, options)
     townbox = menus.TextBox(game)
-    if "Dead Body" in game.player_char.special_inventory and \
+    if "Dead Soldier" in game.player_char.special_inventory and \
         not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
         game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
-        game.player_char.modify_inventory(items.DeadBody(), subtract=True, rare=True)
+        game.player_char.modify_inventory(items.DeadSoldier(), subtract=True, rare=True)
         townbox.print_text_in_rectangle("You have completed the quest Rookie Mistake.")
         townbox.clear_rectangle()
     while True:

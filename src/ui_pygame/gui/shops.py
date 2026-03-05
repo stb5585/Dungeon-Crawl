@@ -233,10 +233,10 @@ class ShopManager(TownScreenBase):
         pendant_list = items_module.items_dict["Accessory"]["Pendant"]
         self.buy_equipment(pendant_list, "Pendant", )
     
-    def buy_scrolls(self):
+    def buy_scrolls(self, background_image="town.png"):
         """Buy scrolls from alchemist."""
         scroll_list = items_module.items_dict["Misc"]["Scroll"]
-        self.buy_equipment(scroll_list, "Scroll", )
+        self.buy_equipment(scroll_list, "Scroll", background_image=background_image)
 
     def buy_misc(self):
         """Buy misc items from alchemist (excluding scrolls)."""
@@ -247,7 +247,7 @@ class ShopManager(TownScreenBase):
             return
         self._buy_with_shop_screen(misc_dict, "Misc", )
     
-    def buy_potions(self):
+    def buy_potions(self, background_image="town.png"):
         """Buy potions from alchemist with level-based availability."""
         # Get potion items from items_dict
         potion_dict = {"Misc": []}
@@ -267,22 +267,25 @@ class ShopManager(TownScreenBase):
             potion_dict["Misc"].append(items_module.SuperManaPotion)
         
         # Use the new shop screen
-        self._buy_with_shop_screen(potion_dict, "Potions", )
+        self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
     
-    def buy_equipment(self, item_list, category_name):
+    def buy_equipment(self, item_list, category_name, background_image="town.png"):
         """Generic equipment buying interface using ShopScreen."""
         # Build item dictionary
         itemdict = {category_name: item_list}
         
         # Use the new shop screen
-        self._buy_with_shop_screen(itemdict, category_name, )
+        self._buy_with_shop_screen(itemdict, category_name, background_image=background_image)
     
-    def _buy_with_shop_screen(self, itemdict, category_name):
+    def _buy_with_shop_screen(self, itemdict, category_name, background_image="town.png"):
         """Use the new ShopScreen interface for buying items."""
         from .confirmation_popup import QuantityPopup
         
-        shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}")
+        shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}", background_image=background_image, options_list=[])
         shop_screen.update_item_list(itemdict, "Buy")
+        
+        # Create background function for popups
+        bg_func = lambda: shop_screen.draw_all(do_flip=False)
         
         while True:
             result = shop_screen.navigate_items()
@@ -302,7 +305,7 @@ class ShopManager(TownScreenBase):
             max_qty = min(self.player_char.gold // cost, 99) if cost > 0 else 99
             
             qty_popup = QuantityPopup(self.presenter, item.name, cost, max_qty)
-            quantity = qty_popup.show()
+            quantity = qty_popup.show(background_draw_func=bg_func)
             
             if quantity is None or quantity == 0:
                 continue
@@ -316,12 +319,11 @@ class ShopManager(TownScreenBase):
                 continue
             
             # Confirm purchase via popup
-            shop_screen.draw_all(do_flip=False)
             confirm_popup = ConfirmationPopup(
                 self.presenter,
                 f"Buy {quantity}x {item.name} for {total_cost}g?"
             )
-            confirmed = confirm_popup.show()
+            confirmed = confirm_popup.show(background_draw_func=bg_func)
             if not confirmed:
                 continue
 
@@ -329,14 +331,13 @@ class ShopManager(TownScreenBase):
             self.player_char.gold -= total_cost
             self.player_char.modify_inventory(item, num=quantity)
 
-            # Show transaction summary in popup using captured background
-            shop_screen.draw_all(do_flip=False)
+            # Show transaction summary in popup
             summary_popup = ConfirmationPopup(
                 self.presenter,
                 f"Purchased {quantity}x {item.name}!\n\nGold remaining: {self.player_char.gold}",
                 show_buttons=False
             )
-            summary_popup.show()
+            summary_popup.show(background_draw_func=bg_func)
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
@@ -451,15 +452,25 @@ class ShopManager(TownScreenBase):
         # No available items found
         return False
     
-    def sell_items(self):
+    def sell_items(self, background_image="town.png"):
         """Sell items from inventory using ShopScreen."""
+        # Create background function for popups
+        bg_func = None
+        if background_image != "town.png":
+            # For non-town shops, we'll set up bg_func after creating shop_screen
+            pass
+        
         if not self.player_char.inventory:
             popup = ConfirmationPopup(self.presenter, "You have nothing to sell!", show_buttons=False)
-            popup.show()
+            popup.show(background_draw_func=bg_func if bg_func else None)
             return
         
         # Create ShopScreen once outside the loop to preserve cursor position
-        shop_screen = ShopScreen(self.presenter, self.player_char, "Sell Items")
+        shop_screen = ShopScreen(self.presenter, self.player_char, "Sell Items", background_image=background_image, options_list=[])
+        
+        # Now set up background function for popups if using custom background
+        if background_image != "town.png":
+            bg_func = lambda: shop_screen.draw_all(do_flip=False)
         
         while True:
             # Build sellable inventory (exclude ultimate items)
@@ -470,13 +481,13 @@ class ShopManager(TownScreenBase):
             
             if not sellable:
                 # Capture current shop background to avoid flicker
-                self.draw_background()
+                shop_screen.draw_all(do_flip=False)
                 popup = ConfirmationPopup(
                     self.presenter,
                     "You have no items to sell.",
                     show_buttons=False
                 )
-                popup.show()
+                popup.show(background_draw_func=bg_func if bg_func else None)
                 return
             
             # Update the item list (preserves cursor position)
@@ -496,8 +507,9 @@ class ShopManager(TownScreenBase):
             
             # Use QuantityPopup for sell quantity selection
             from .confirmation_popup import QuantityPopup
+            shop_screen.draw_all(do_flip=False)
             qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count, action="sell", default_quantity=count)
-            quantity = qty_popup.show()
+            quantity = qty_popup.show(background_draw_func=bg_func if bg_func else None)
             
             if quantity is None or quantity == 0:
                 continue
@@ -511,7 +523,7 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Sell {quantity}x {item.name} for {total_gold}g?"
             )
-            confirm = confirm_popup.show()
+            confirm = confirm_popup.show(background_draw_func=bg_func if bg_func else None)
             
             if confirm:
                 self.player_char.gold += total_gold
@@ -524,7 +536,7 @@ class ShopManager(TownScreenBase):
                     f"Sold {quantity}x {item.name} for {total_gold}g!\n\nGold: {self.player_char.gold}",
                     show_buttons=False
                 )
-                summary_popup.show()
+                summary_popup.show(background_draw_func=bg_func if bg_func else None)
                 # Continue selling (will reload inventory)
             else:
                 # Continue browsing
@@ -532,113 +544,156 @@ class ShopManager(TownScreenBase):
     
     def visit_secret_shop(self):
         """Visit the secret shop in the dungeon - sells everything."""
-        secret_options = ["Weapons", "Shields & Tomes", "Armor", "Accessories", "Potions & Scrolls", "Leave"]
+        # Use ShopScreen with dungeon background
+        shop_screen = ShopScreen(
+            self.presenter, 
+            self.player_char, 
+            "Secret Shop - Rare Goods for Sale",
+            background_image="dungeon.png"
+        )
+        shop_screen.set_options(["Buy", "Sell", "Leave"])
+        
+        # Create background function for popups
+        bg_func = lambda: shop_screen.draw_all(do_flip=False)
         
         while True:
-            choice = self.presenter.render_menu(
-                f"Secret Shop - Gold: {self.player_char.gold}",
-                secret_options
-            )
+            choice = shop_screen.navigate_options()
             
-            if choice is None or choice == 5:  # Leave
-                self.presenter.show_message("Come back anytime!")
+            if choice is None or choice == "Leave":
+                popup = ConfirmationPopup(self.presenter, "Come back anytime!", show_buttons=False)
+                popup.show(background_draw_func=bg_func)
                 break
-            elif choice == 0:  # Weapons
-                self._buy_secret_weapons()
-            elif choice == 1:  # Shields & Tomes
-                self._buy_secret_offhand()
-            elif choice == 2:  # Armor
-                self._buy_secret_armor()
-            elif choice == 3:  # Accessories
-                self._buy_secret_accessories()
-            elif choice == 4:  # Potions & Scrolls
-                self._buy_secret_consumables()
+            elif choice == "Buy":
+                # Show buy submenu
+                shop_screen.set_options(["Weapons", "Shields & Tomes", "Armor", "Accessories", "Potions & Scrolls", "Back"])
+                buy_choice = shop_screen.navigate_options()
+                
+                if buy_choice == "Weapons":
+                    self._buy_secret_weapons(shop_screen)
+                elif buy_choice == "Shields & Tomes":
+                    self._buy_secret_offhand(shop_screen)
+                elif buy_choice == "Armor":
+                    self._buy_secret_armor(shop_screen)
+                elif buy_choice == "Accessories":
+                    self._buy_secret_accessories(shop_screen)
+                elif buy_choice == "Potions & Scrolls":
+                    self._buy_secret_consumables(shop_screen)
+                
+                # Restore main menu
+                shop_screen.set_options(["Buy", "Sell", "Leave"])
+                shop_screen.shop_message = "Secret Shop - Rare Goods for Sale"
+            elif choice == "Sell":
+                self.sell_items(background_image="dungeon.png")
+                # Restore shop message after selling
+                shop_screen.shop_message = "Secret Shop - Rare Goods for Sale"
     
-    def _buy_secret_weapons(self):
+    def _buy_secret_weapons(self, shop_screen):
         """Buy weapons from secret shop."""
-        handed_choice = self.presenter.render_menu(
-            "Choose weapon type:",
-            ["1-Handed", "2-Handed", "Back"]
-        )
+        # Use shop screen for weapon type selection
+        shop_screen.shop_message = "Choose weapon type"
+        shop_screen.set_options(["1-Handed", "2-Handed", "Back"])
         
-        if handed_choice is None or handed_choice == 2:
+        handed_choice = shop_screen.navigate_options()
+        
+        if handed_choice is None or handed_choice == "Back":
             return
         
-        handed = "1-Handed" if handed_choice == 0 else "2-Handed"
+        handed = handed_choice
         weapon_dict = items_module.items_dict["Weapon"][handed]
         
         # Choose weapon subtype
         subtypes = list(weapon_dict.keys())
         subtypes.append("Back")
         
-        subtype_choice = self.presenter.render_menu(
-            f"Choose {handed} weapon type:",
-            subtypes
-        )
+        shop_screen.shop_message = f"Choose {handed} weapon type"
+        shop_screen.set_options(subtypes)
+        subtype_choice = shop_screen.navigate_options()
         
-        if subtype_choice is None or subtype_choice == len(subtypes) - 1:
+        if subtype_choice is None or subtype_choice == "Back":
             return
         
-        subtype = subtypes[subtype_choice]
+        subtype = subtype_choice
         item_list = weapon_dict[subtype]
         
-        self.buy_equipment(item_list, f"{handed} {subtype}")
+        self.buy_equipment(item_list, f"{handed} {subtype}", background_image="dungeon.png")
     
-    def _buy_secret_offhand(self):
+    def _buy_secret_offhand(self, shop_screen):
         """Buy shields, tomes, and rods from secret shop."""
-        offhand_options = ["Shields", "Tomes", "Rods", "Back"]
+        shop_screen.shop_message = "Choose off-hand type"
+        shop_screen.set_options(["Shields", "Tomes", "Rods", "Back"])
         
-        choice = self.presenter.render_menu("Choose off-hand type:", offhand_options)
+        choice = shop_screen.navigate_options()
         
-        if choice is None or choice == 3:
+        if choice is None or choice == "Back":
+
             return
         
-        offhand_types = ["Shield", "Tome", "Rod"]
+        offhand_types = {"Shields": "Shield", "Tomes": "Tome", "Rods": "Rod"}
         offhand_type = offhand_types[choice]
         item_list = items_module.items_dict["OffHand"][offhand_type]
         
-        self.buy_equipment(item_list, offhand_type)
+        self.buy_equipment(item_list, offhand_type, background_image="dungeon.png")
     
-    def _buy_secret_armor(self):
+    def _buy_secret_armor(self, shop_screen):
         """Buy armor from secret shop."""
-        armor_options = ["Cloth", "Light", "Medium", "Heavy", "Back"]
+        shop_screen.shop_message = "Choose armor type"
+        shop_screen.set_options(["Cloth", "Light", "Medium", "Heavy", "Back"])
         
-        choice = self.presenter.render_menu("Choose armor type:", armor_options)
+        choice = shop_screen.navigate_options()
         
-        if choice is None or choice == 4:
+        if choice is None or choice == "Back":
             return
         
-        armor_types = ["Cloth", "Light", "Medium", "Heavy"]
-        armor_type = armor_types[choice]
+        armor_type = choice
         item_list = items_module.items_dict["Armor"][armor_type]
         
-        self.buy_equipment(item_list, f"{armor_type} Armor")
+        self.buy_equipment(item_list, f"{armor_type} Armor", background_image="dungeon.png")
     
-    def _buy_secret_accessories(self):
+    def _buy_secret_accessories(self, shop_screen):
         """Buy accessories from secret shop."""
-        acc_options = ["Rings", "Pendants", "Back"]
+        shop_screen.shop_message = "Choose accessory type"
+        shop_screen.set_options(["Rings", "Pendants", "Back"])
         
-        choice = self.presenter.render_menu("Choose accessory type:", acc_options)
+        choice = shop_screen.navigate_options()
         
-        if choice is None or choice == 2:
+        if choice is None or choice == "Back":
             return
         
-        acc_types = ["Ring", "Pendant"]
+        acc_types = {"Rings": "Ring", "Pendants": "Pendant"}
         acc_type = acc_types[choice]
         item_list = items_module.items_dict["Accessory"][acc_type]
         
-        self.buy_equipment(item_list, acc_type)
+        self.buy_equipment(item_list, acc_type, background_image="dungeon.png")
     
-    def _buy_secret_consumables(self):
+    def _buy_secret_consumables(self, shop_screen):
         """Buy potions and scrolls from secret shop."""
-        consumable_options = ["Potions", "Scrolls", "Back"]
+        shop_screen.shop_message = "Choose consumable type"
+        shop_screen.set_options(["Potions", "Stat Potions", "Scrolls", "Keys", "Back"])
         
-        choice = self.presenter.render_menu("Choose consumable type:", consumable_options)
+        choice = shop_screen.navigate_options()
         
-        if choice is None or choice == 2:
+        if choice is None or choice == "Back":
             return
         
-        if choice == 0:  # Potions
-            self.buy_potions()
+        if choice == "Potions":
+            self.buy_potions(background_image="dungeon.png")
+        elif choice == "Stat Potions":
+            self._buy_secret_stat_potions()
+        elif choice == "Keys":
+            self._buy_secret_keys()
         else:  # Scrolls
-            self.buy_scrolls()
+            self.buy_scrolls(background_image="dungeon.png")
+
+    def _buy_secret_stat_potions(self):
+        """Buy stat potions from secret shop."""
+        stat_potions = items_module.items_dict["Potion"].get("Stat", [])
+        if not stat_potions:
+            return
+        self.buy_equipment(stat_potions, "Stat Potions", background_image="dungeon.png")
+
+    def _buy_secret_keys(self):
+        """Buy key items from secret shop."""
+        key_items = items_module.items_dict.get("Misc", {}).get("Key", [])
+        if not key_items:
+            return
+        self.buy_equipment(key_items, "Keys", background_image="dungeon.png")

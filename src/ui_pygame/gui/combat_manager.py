@@ -43,6 +43,8 @@ class GUICombatManager:
         self.player_world_dict = None
         self._combat_background = None
         self.available_actions = []
+        # Track charging abilities across turns
+        self.charging_ability = None  # (ability_name, skill_obj) tuple when charging
     
     def _result_to_message(self, result):
         """Convert a combat result (string or CombatResult object) to a message string."""
@@ -84,6 +86,84 @@ class GUICombatManager:
             except Exception:
                 pass
         return self.screen.copy()
+
+    def _handle_combat_log_scroll_event(self, event) -> bool:
+        """Handle combat-log scrolling input. Returns True when handled."""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_PAGEUP:
+                self.combat_view.scroll_log(-1)
+                return True
+            if event.key == pygame.K_PAGEDOWN:
+                self.combat_view.scroll_log(1)
+                return True
+        elif event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:
+                self.combat_view.scroll_log(-1)
+            elif event.y < 0:
+                self.combat_view.scroll_log(1)
+            return True
+        return False
+
+    def _show_slot_machine_reveal(self, user: Character, target: Character) -> str:
+        """Animate a Slot Machine spin popup and reveal digits left-to-right."""
+        digits = [str(random.randint(0, 9)) for _ in range(3)]
+        clock = pygame.time.Clock()
+
+        def draw_overlay(revealed_count: int) -> None:
+            self._render_combat_frame(user, target, [], -1)
+
+            overlay = pygame.Surface((self.combat_view.combat_width, self.combat_view.combat_height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 165))
+            self.screen.blit(overlay, (0, 0))
+
+            popup_width = min(420, self.combat_view.combat_width - 40)
+            popup_height = 170
+            popup_x = (self.combat_view.combat_width - popup_width) // 2
+            popup_y = (self.combat_view.combat_height - popup_height) // 2
+            popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
+
+            pygame.draw.rect(self.screen, (26, 26, 34), popup_rect)
+            pygame.draw.rect(self.screen, (200, 200, 220), popup_rect, 2)
+
+            title_font = pygame.font.Font(None, 42)
+            value_font = pygame.font.Font(None, 64)
+            subtitle_font = pygame.font.Font(None, 26)
+
+            title_text = title_font.render("Slot Machine", True, (235, 215, 80))
+            title_rect = title_text.get_rect(center=(popup_rect.centerx, popup_rect.top + 34))
+            self.screen.blit(title_text, title_rect)
+
+            slots = [digits[i] if i < revealed_count else "?" for i in range(3)]
+            slot_text = value_font.render("  ".join(slots), True, (255, 255, 255))
+            slot_rect = slot_text.get_rect(center=(popup_rect.centerx, popup_rect.centery + 8))
+            self.screen.blit(slot_text, slot_rect)
+
+            subtitle = subtitle_font.render("Reels spinning...", True, (170, 170, 190))
+            subtitle_rect = subtitle.get_rect(center=(popup_rect.centerx, popup_rect.bottom - 26))
+            self.screen.blit(subtitle, subtitle_rect)
+
+            pygame.display.flip()
+
+        for reveal_idx in range(1, 4):
+            frames = 10
+            for _ in range(frames):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit(0)
+                draw_overlay(reveal_idx)
+                clock.tick(30)
+
+        final_frames = 12
+        for _ in range(final_frames):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+            draw_overlay(3)
+            clock.tick(30)
+
+        return "".join(digits)
         
     def start_combat(self, player_char: Player, enemy: Character, tile: MapTile) -> bool:
         """
@@ -124,16 +204,35 @@ class GUICombatManager:
         else:
             available_actions = ["Attack", "Flee"]
 
+        # Remove duplicate actions while preserving order.
+        deduped_actions = []
+        seen_actions = set()
+        for action_name in available_actions:
+            normalized_action = str(action_name).strip()
+            if not normalized_action or normalized_action in seen_actions:
+                continue
+            seen_actions.add(normalized_action)
+            deduped_actions.append(normalized_action)
+        available_actions = deduped_actions
+
+        # Add Defend option to combat actions
+        if "Defend" not in available_actions and "Attack" in available_actions:
+            available_actions.insert(1, "Defend")
+        
+        # Add Pickup Weapon option if player is disarmed
+        if player_char.is_disarmed() and "Pickup Weapon" not in available_actions:
+            available_actions.insert(2 if "Defend" in available_actions else 1, "Pickup Weapon")
+
         self.available_actions = available_actions
         
         # Initialize combat state
         self.running = True
-        self.combat_view.combat_log.clear()
+        self.combat_view.reset_combat_log()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         
         # Initialize combat state
         self.running = True
-        self.combat_view.combat_log.clear()
+        self.combat_view.reset_combat_log()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         self._combat_background = self._capture_background()
         
@@ -144,6 +243,11 @@ class GUICombatManager:
         # Show initial combat screen with brief transition delay (with animation updates)
         init_clock = pygame.time.Clock()
         for _ in range(48):  # 800ms at 60fps
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                self._handle_combat_log_scroll_event(event)
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             init_clock.tick(60)
@@ -185,7 +289,7 @@ class GUICombatManager:
         fled = False
         
         # Main combat loop
-        while self.running and player_char.is_alive() and enemy.is_alive() and not fled:
+        while self.running and player_char.is_alive() and enemy.is_alive() and not fled and not player_char.in_town():
             # Player turn
             if attacker == player_char:
                 action_result = self._player_turn(player_char, enemy, available_actions)
@@ -195,8 +299,11 @@ class GUICombatManager:
                 elif not action_result:  # Closed combat
                     fled = True
                     break
-                    
-                # Check if enemy died
+                
+                # Trigger special effects if enemy health drops below threshold (while still alive)
+                self._trigger_enemy_special_effects(player_char, enemy)
+                
+                # Check if enemy died from special effects (e.g., self-healing that prevents death)
                 if not enemy.is_alive():
                     self.combat_view.enemy_dies(enemy)
                     break
@@ -222,6 +329,11 @@ class GUICombatManager:
                 # Check if player died
                 if not player_char.is_alive():
                     break
+
+                # Prevent Mad Waitress from dying before her forced transition,
+                # including self-inflicted lethal damage from Widow's Wail.
+                self._preserve_waitress_for_transition(enemy)
+                self._check_enemy_form_change(player_char, enemy)
                 
                 # Check if enemy died (e.g., from self-damaging skills like Widow's Wail)
                 if not enemy.is_alive():
@@ -232,10 +344,16 @@ class GUICombatManager:
                 attacker, _ = player_char, enemy
             
             # Advance turn counter in logger
+            self._refresh_combat_background(player_char, enemy)
             self.logger.next_turn()
             
             # Small delay between turns (with animation updates)
             for _ in range(18):  # 300ms at 60fps
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit(0)
+                    self._handle_combat_log_scroll_event(event)
                 self._render_combat_frame(player_char, enemy, [], -1)
                 pygame.display.flip()
                 clock.tick(60)
@@ -250,6 +368,32 @@ class GUICombatManager:
         Returns:
             str/bool: "flee" if fled, False if cancelled, True if action taken
         """
+        # Check if a charging ability is active (e.g., Charge, Minotaur's Charge)
+        if self.charging_ability:
+            ability_name, skill_obj = self.charging_ability
+            # Continue the charge
+            result = skill_obj.use(player_char, target=enemy)
+            
+            # Display result
+            if result:
+                for line in result.strip().split('\n'):
+                    if line.strip():
+                        self.combat_view.add_combat_message(line)
+            
+            # Check if charging is complete
+            if not getattr(skill_obj, 'charging', False):
+                self.charging_ability = None
+            
+            # Log skill usage
+            self.logger.log_event(
+                event_type="skill",
+                actor=player_char,
+                target=enemy,
+                action=f"Charging {ability_name}",
+                outcome="Charging"
+            )
+            return True
+        
         # Check if Jump is active (charging)
         if player_char.class_effects.get("Jump") and player_char.class_effects["Jump"].active:
             # Automatically execute Jump
@@ -334,6 +478,9 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+
+                if self._handle_combat_log_scroll_event(event):
+                    continue
                 
                 elif event.type == pygame.KEYDOWN:
                     # Grid navigation: 3 actions per row
@@ -392,6 +539,21 @@ class GUICombatManager:
             self.combat_view.add_combat_message(msg)
         
         return True
+    
+    def _trigger_enemy_special_effects(self, player_char, enemy):
+        """
+        Trigger enemy special effects if health drops below threshold while alive.
+        This must be called DURING combat, not after death.
+        """
+        if not enemy.is_alive() or not hasattr(enemy, 'special_effects'):
+            return
+        
+        # Trigger special effects (will only activate if conditions are met, e.g., below 10% health)
+        result = enemy.special_effects(player_char)
+        if result:
+            for line in result.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
     
     def _check_enemy_form_change(self, player_char, enemy):
         """
@@ -506,7 +668,7 @@ class GUICombatManager:
             # Show damage flash if hit
             if damage_dealt > 0:
                 self.combat_view.enemy_take_damage(enemy)
-                self.combat_view.show_damage_flash(False)
+                self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
             
             self._preserve_waitress_for_transition(enemy)
             return "action_taken"
@@ -518,8 +680,24 @@ class GUICombatManager:
                 return "flee"
             return "action_taken"  # Failed flee still uses turn
             
+        elif action == "Pickup Weapon":
+            if player_char.is_disarmed():
+                message = f"{player_char.name} picks up their weapon."
+                player_char.physical_effects["Disarm"].active = False
+                self.combat_view.add_combat_message(message)
+                self.logger.log_event(
+                    event_type="action",
+                    actor=player_char,
+                    action="Pickup Weapon",
+                    outcome="Success"
+                )
+                return "action_taken"
+            else:
+                self.combat_view.add_combat_message("Not disarmed!")
+                return None
+            
         elif action == "Defend":
-            message = player_char.enter_defensive_stance(duration=1, source="Defend")
+            message = player_char.enter_defensive_stance(duration=2, source="Defend")
             self.combat_view.add_combat_message(message.strip())
             self.logger.log_event(
                 event_type="defend",
@@ -603,8 +781,26 @@ class GUICombatManager:
                             for line in result.strip().split('\n'):
                                 if line.strip():
                                     self.combat_view.add_combat_message(line)
-                    else:
+                    # Special handling for Charge and other charging abilities
+                    elif hasattr(skill_obj, 'get_charge_time') and skill_obj.get_charge_time() > 0:
+                        charge_time = skill_obj.get_charge_time()
                         result = skill_obj.use(player_char, target=enemy)
+                        if result:
+                            for line in result.strip().split('\n'):
+                                if line.strip():
+                                    self.combat_view.add_combat_message(line)
+                        # Track that this ability is charging
+                        if getattr(skill_obj, 'charging', False):
+                            self.charging_ability = (selected_skill, skill_obj)
+                    else:
+                        if skill_obj.name == "Slot Machine":
+                            result = skill_obj.use(
+                                player_char,
+                                target=enemy,
+                                slot_machine_callback=lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy),
+                            )
+                        else:
+                            result = skill_obj.use(player_char, target=enemy)
                         message = self._result_to_message(result)
                         self.combat_view.add_combat_message(message)
                     
@@ -631,7 +827,7 @@ class GUICombatManager:
         aspects = totem_skill.get_unlocked_aspects(player_char)
         if not aspects:
             self.combat_view.add_combat_message("No Totem aspects unlocked!")
-            pygame.time.wait(500)
+            self._pause_with_events(500)
             return None
 
         selected = 0
@@ -671,18 +867,20 @@ class GUICombatManager:
         
         if not items:
             self.combat_view.add_combat_message("No usable items!")
-            pygame.time.wait(500)
+            self._pause_with_events(500)
             return None
         
         # Create selection menu
         selected = 0
+        scroll_offset = 0
         while True:
             # Render combat with item menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
             self._render_selection_menu(
                 "Select Item",
                 [f"{name} ({count})" for name, _, count in items],
-                selected
+                selected,
+                scroll_offset
             )
             pygame.display.flip()
             
@@ -698,8 +896,19 @@ class GUICombatManager:
                         selected = (selected - 1) % len(items)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         selected = (selected + 1) % len(items)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(items) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                         return items[selected][1]  # Return the item object
+                    
+                    # Update scroll to keep selection visible
+                    max_visible = 12  # items per screen
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
     
     def _select_spell(self, player_char, enemy):
         """Show spell selection menu and return selected spell name."""
@@ -709,10 +918,11 @@ class GUICombatManager:
         
         if not spells:
             self.combat_view.add_combat_message("No spells learned!")
-            pygame.time.wait(500)
+            self._pause_with_events(500)
             return None
         
         selected = 0
+        scroll_offset = 0
         while True:
             # Render combat with spell menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
@@ -722,7 +932,7 @@ class GUICombatManager:
                 cost = spell.cost
                 spell_options.append(f"{spell_name} (MP: {cost})")
             
-            self._render_selection_menu("Select Spell", spell_options, selected)
+            self._render_selection_menu("Select Spell", spell_options, selected, scroll_offset)
             pygame.display.flip()
             
             # Handle input
@@ -737,8 +947,19 @@ class GUICombatManager:
                         selected = (selected - 1) % len(spells)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         selected = (selected + 1) % len(spells)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(spells) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                         return spells[selected]  # Return spell name
+                    
+                    # Update scroll to keep selection visible
+                    max_visible = 12  # items per screen
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
     
     def _select_skill(self, player_char, enemy):
         """Show skill selection menu and return selected skill name."""
@@ -748,10 +969,11 @@ class GUICombatManager:
         
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
-            pygame.time.wait(500)
+            self._pause_with_events(500)
             return None
         
         selected = 0
+        scroll_offset = 0
         while True:
             # Render combat with skill menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
@@ -761,7 +983,7 @@ class GUICombatManager:
                 cost = skill.cost
                 skill_options.append(f"{skill_name} (MP: {cost})")
             
-            self._render_selection_menu("Select Skill", skill_options, selected)
+            self._render_selection_menu("Select Skill", skill_options, selected, scroll_offset)
             pygame.display.flip()
             
             # Handle input
@@ -776,11 +998,22 @@ class GUICombatManager:
                         selected = (selected - 1) % len(skills)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         selected = (selected + 1) % len(skills)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(skills) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                         return skills[selected]  # Return skill name
+                    
+                    # Update scroll to keep selection visible
+                    max_visible = 12  # items per screen
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
     
-    def _render_selection_menu(self, title, options, selected):
-        """Render a selection menu overlay on combat screen."""
+    def _render_selection_menu(self, title, options, selected, scroll_offset=0):
+        """Render a selection menu overlay on combat screen with scrolling support."""
         # Create semi-transparent overlay
         overlay = pygame.Surface((self.combat_view.combat_width, self.combat_view.combat_height))
         overlay.set_alpha(200)
@@ -789,7 +1022,8 @@ class GUICombatManager:
         
         # Menu dimensions
         menu_width = 400
-        menu_height = min(500, 100 + len(options) * 35)
+        max_visible = 12
+        menu_height = min(500, 100 + max_visible * 30)
         menu_x = (self.combat_view.combat_width - menu_width) // 2
         menu_y = (self.combat_view.combat_height - menu_height) // 2
         
@@ -805,23 +1039,46 @@ class GUICombatManager:
         title_rect = title_surf.get_rect(center=(menu_x + menu_width // 2, menu_y + 30))
         self.screen.blit(title_surf, title_rect)
         
-        # Options
+        # Options - only render visible ones
         font_medium = pygame.font.Font(None, 24)
         option_y = menu_y + 70
         
-        for i, option in enumerate(options):
+        # Clamp scroll_offset
+        max_scroll = max(0, len(options) - max_visible)
+        scroll_offset = max(0, min(scroll_offset, max_scroll))
+        
+        start_idx = scroll_offset
+        end_idx = min(len(options), scroll_offset + max_visible)
+        
+        for i in range(start_idx, end_idx):
+            option = options[i]
             # Highlight selected option
             if i == selected:
-                highlight_rect = pygame.Rect(menu_x + 10, option_y - 3, menu_width - 20, 30)
+                highlight_rect = pygame.Rect(menu_x + 10, option_y - 3, menu_width - 30, 30)
                 pygame.draw.rect(self.screen, (80, 80, 100), highlight_rect)
+            
+            # Truncate text if too long
+            if len(option) > 40:
+                option = option[:37] + "..."
             
             option_surf = font_medium.render(f"{i+1}. {option}", True, (255, 255, 255))
             self.screen.blit(option_surf, (menu_x + 20, option_y))
-            option_y += 35
+            option_y += 30
+        
+        # Scrollbar (if needed)
+        if len(options) > max_visible:
+            scrollbar_height = int((menu_height - 120) * max_visible / len(options))
+            scrollbar_height = max(20, scrollbar_height)
+            scrollbar_y = menu_y + 70 + int((menu_height - 120 - scrollbar_height) * scroll_offset / max_scroll)
+            pygame.draw.rect(self.screen, (150, 150, 180), 
+                           pygame.Rect(menu_x + menu_width - 16, scrollbar_y, 6, scrollbar_height))
         
         # Instructions
         font_small = pygame.font.Font(None, 18)
-        instructions = "Up/Down or W/S: Navigate | Enter/Space: Select | Esc: Cancel"
+        if len(options) > max_visible:
+            instructions = "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel"
+        else:
+            instructions = "Up/Down or W/S: Navigate | Enter/Space: Select | Esc: Cancel"
         instr_surf = font_small.render(instructions, True, (180, 180, 180))
         instr_rect = instr_surf.get_rect(center=(menu_x + menu_width // 2, menu_y + menu_height - 20))
         self.screen.blit(instr_surf, instr_rect)
@@ -879,10 +1136,44 @@ class GUICombatManager:
             for msg in effect_messages:
                 self.combat_view.add_combat_message(msg)
             return  # Skip turn
+
+        # Continue already-started charging skills before selecting a new action.
+        # This keeps telegraphed enemy abilities (e.g., Crushing Blow/Charge) deterministic
+        # and prevents normal attacks from replacing the charged resolution turn.
+        charging_skill_name = None
+        charging_skill_obj = None
+        for skill_name, skill in enemy.spellbook.get('Skills', {}).items():
+            if getattr(skill, 'charging', False):
+                charging_skill_name = skill_name
+                charging_skill_obj = skill
+                break
+
+        if charging_skill_obj is not None:
+            self.combat_view.add_combat_message(f"{enemy.name} continues {charging_skill_obj.name}.")
+            result = charging_skill_obj.use(enemy, target=player_char)
+            message = self._result_to_message(result)
+            if message:
+                for line in str(message).split("\n"):
+                    if line.strip():
+                        self.combat_view.add_combat_message(line)
+
+            self.logger.log_event(
+                event_type="skill",
+                actor=enemy,
+                target=player_char,
+                action=f"Used {charging_skill_name} (charge)",
+                outcome="Success"
+            )
+            return None
         
         # Render current state and pause before enemy acts (with animation updates)
         enemy_clock = pygame.time.Clock()
         for _ in range(30):  # 500ms at 60fps
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                self._handle_combat_log_scroll_event(event)
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             enemy_clock.tick(60)
@@ -911,7 +1202,7 @@ class GUICombatManager:
             self.combat_view.add_combat_message(f"{enemy.name} picks up their weapon.")
             return None
         if action == "Defend":
-            message = enemy.enter_defensive_stance(duration=1, source="Defend")
+            message = enemy.enter_defensive_stance(duration=2, source="Defend")
             self.combat_view.add_combat_message(message.strip())
             self.logger.log_event(
                 event_type="defend",
@@ -956,7 +1247,11 @@ class GUICombatManager:
                     if flee_str:
                         result = f"{result}\n{flee_str}" if result else flee_str
                 elif skill_obj.name == "Slot Machine":
-                    result = skill_obj.use(self.game, enemy, target=player_char)
+                    result = skill_obj.use(
+                        enemy,
+                        target=player_char,
+                        slot_machine_callback=lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy),
+                    )
                 elif skill_obj.name in ["Doublecast", "Triplecast"]:
                     result = skill_obj.use(enemy, player_char, game=self.game)
                 elif "Jump" in skill_obj.name:
@@ -1056,11 +1351,16 @@ class GUICombatManager:
         
         # Show damage flash if hit
         if damage_dealt > 0:
-            self.combat_view.show_damage_flash(True)
+            self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
         
         # Render updated state and show result (with animation updates)
         result_clock = pygame.time.Clock()
         for _ in range(48):  # 800ms at 60fps
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                self._handle_combat_log_scroll_event(event)
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             result_clock.tick(60)
@@ -1092,17 +1392,34 @@ class GUICombatManager:
         
         # Render HUD (right 1/3) with combat mode indicator
         self.hud.render_hud(player_char, combat_mode=True, enemy=enemy)
+
+    def _refresh_combat_background(self, player_char, enemy):
+        """Render and cache the latest combat frame for popups/overlays."""
+        self._render_combat_frame(player_char, enemy, [], -1)
+        pygame.display.flip()
+        self._combat_background = self.screen.copy()
     
     def _handle_combat_end(self, player_char, enemy, fled):
         """Handle end of combat and show results."""
         end_messages = []
-        background = self._combat_background
-        draw_background = None
-        if background is not None:
+
+        def _show_end_popup(message_text: str) -> None:
+            self._refresh_combat_background(player_char, enemy)
+            background = self._combat_background if self._combat_background is not None else self._capture_background()
             draw_background = lambda: self.screen.blit(background, (0, 0))
+            from .confirmation_popup import ConfirmationPopup
+            popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)
+            popup.show(background_draw_func=draw_background)
 
         # Clear status effects at end of combat
         player_char.effects(end=True)
+        if player_char.in_town():
+            # Sanctuary or similar movement effect ended combat by relocating the player.
+            self.logger.end_battle(result="Escaped", winner=None, boss=False)
+            self.combat_view.reset_combat_log()
+            self._combat_background = None
+            return False
+
         if not player_char.is_alive():
             end_messages.append("You have been defeated!")
 
@@ -1119,10 +1436,9 @@ class GUICombatManager:
 
             self._pause_with_events(900)
 
-            # Show defeat message in popup
-            from .confirmation_popup import ConfirmationPopup
-            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
-            popup.show(background_draw_func=draw_background)
+            # Show defeat message in popup over current post-combat frame
+            _show_end_popup("\n".join(end_messages))
+            self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
         
@@ -1131,14 +1447,6 @@ class GUICombatManager:
             
             # Log victory
             self.logger.end_battle(result="Victory", winner=player_char.name, boss="Boss" in str(self.current_tile))
-            
-            # Trigger enemy death special effects (like Behemoth's Meteor)
-            if hasattr(enemy, 'special_effects'):
-                result = enemy.special_effects(player_char)
-                if result:
-                    for line in result.strip().split('\n'):
-                        if line:
-                            end_messages.append(line)
             
             # Handle loot drops (gold, exp, and items)
             tile = getattr(self, 'current_tile', None)
@@ -1196,17 +1504,17 @@ class GUICombatManager:
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit(0)
+                    self._handle_combat_log_scroll_event(event)
 
             self._pause_with_events(900)
             
-            # Show all end messages in popup
-            from .confirmation_popup import ConfirmationPopup
-            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
-            popup.show(background_draw_func=draw_background)
+            # Show all end messages in popup over current post-combat frame
+            _show_end_popup("\n".join(end_messages))
             
             # Handle level up screen if needed
             if level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)
+            self.combat_view.reset_combat_log()
             self._combat_background = None
             return True
         
@@ -1221,13 +1529,13 @@ class GUICombatManager:
 
             self._pause_with_events(700)
             
-            # Show flee message in popup
-            from .confirmation_popup import ConfirmationPopup
-            popup = ConfirmationPopup(self.presenter, "\n".join(end_messages), show_buttons=False)
-            popup.show(background_draw_func=draw_background)
+            # Show flee message in popup over current post-combat frame
+            _show_end_popup("\n".join(end_messages))
+            self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
 
+        self.combat_view.reset_combat_log()
         self._combat_background = None
         return True
 
@@ -1240,6 +1548,7 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+                self._handle_combat_log_scroll_event(event)
             pause_clock.tick(60)
             elapsed += pause_clock.get_time()
 

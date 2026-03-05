@@ -18,7 +18,8 @@ class ShopScreen(TownScreenBase):
     Pygame shop interface that matches the curses terminal layout.
     """
     
-    def __init__(self, presenter, player_char, shop_message):
+    def __init__(self, presenter, player_char, shop_message, background_image="town.png", options_list=None):
+        self.background_image = background_image  # Set before super().__init__ so _load_background can use it
         super().__init__(presenter)
         self.player_char = player_char
         self.shop_message = shop_message
@@ -26,7 +27,7 @@ class ShopScreen(TownScreenBase):
         # State
         self.current_option = 0
         self.current_item = 0
-        self.options_list = ["Buy", "Sell", "Quests", "Leave"]
+        self.options_list = options_list if options_list is not None else ["Buy", "Sell", "Quests", "Leave"]
         self.item_list = []  # List of tuples: (display_string, item_object, cost, owned_count)
         self.buy_or_sell = None
         self.scroll_offset = 0
@@ -38,6 +39,29 @@ class ShopScreen(TownScreenBase):
         # Calculate window positions (matching curses layout)
         self.calculate_window_rects()
 
+    def _load_background(self):
+        """Load and scale the background image (town or dungeon)."""
+        import os
+        bg_path = os.path.join("src", "ui_pygame", "assets", "backgrounds", self.background_image)
+        if os.path.exists(bg_path):
+            try:
+                import pygame
+                bg_image = pygame.image.load(bg_path)
+                # Scale to fit screen while maintaining aspect ratio
+                bg_width, bg_height = bg_image.get_size()
+                scale_x = self.width / bg_width
+                scale_y = self.height / bg_height
+                scale = max(scale_x, scale_y)  # Use max to cover entire screen
+                
+                new_width = int(bg_width * scale)
+                new_height = int(bg_height * scale)
+                self.background = pygame.transform.scale(bg_image, (new_width, new_height))
+            except Exception as e:
+                print(f"Warning: Could not load background {self.background_image}: {e}")
+                self.background = None
+        else:
+            print(f"Warning: Background not found at {bg_path}")
+    
     def set_options(self, options_list, reset_cursor=True):
         """Replace options and optionally reset the selection index."""
         self.options_list = options_list
@@ -370,10 +394,19 @@ class ShopScreen(TownScreenBase):
                     if self.player_char.cls.name not in item.restriction:
                         continue
                 
+                # Old Key should only be sold in the Secret Shop
+                if self.player_char.in_town() and item.name == "Old Key":
+                    continue
+
                 # Check rarity for town shops
                 if self.player_char.in_town():
                     min_rarity = max(0.4, (1.0 - (0.02 * self.player_char.player_level())))
                     if item.rarity < min_rarity:
+                        continue
+                elif self.background_image == "dungeon.png":
+                    # Secret shop: strictly mid-rare items
+                    in_secret_rarity_band = 0.2 <= item.rarity <= 0.5
+                    if not in_secret_rarity_band:
                         continue
                 
                 # Calculate adjusted cost based on charisma
@@ -436,6 +469,9 @@ class ShopScreen(TownScreenBase):
         # Handle empty item list
         if not self.item_list:
             return None
+        
+        # Calculate max visible items (must match draw_shop_list)
+        max_visible = 19
             
         while True:
             self.draw_all()
@@ -450,14 +486,18 @@ class ShopScreen(TownScreenBase):
                         return None
                     elif event.key == pygame.K_UP:
                         self.current_item = (self.current_item - 1) % len(self.item_list)
-                        # Adjust scroll offset
+                        # Adjust scroll offset to keep current item visible
                         if self.current_item < self.scroll_offset:
                             self.scroll_offset = self.current_item
+                        elif self.current_item >= self.scroll_offset + max_visible:
+                            self.scroll_offset = self.current_item - max_visible + 1
                     elif event.key == pygame.K_DOWN:
                         self.current_item = (self.current_item + 1) % len(self.item_list)
-                        # Adjust scroll offset
-                        if self.current_item >= self.scroll_offset + 19:
-                            self.scroll_offset = self.current_item - 18
+                        # Adjust scroll offset to keep current item visible
+                        if self.current_item >= self.scroll_offset + max_visible:
+                            self.scroll_offset = self.current_item - max_visible + 1
+                        elif self.current_item < self.scroll_offset:
+                            self.scroll_offset = self.current_item
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         display_str, item, cost, owned = self.item_list[self.current_item]
                         return (display_str, item, cost, owned)

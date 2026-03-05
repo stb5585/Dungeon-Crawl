@@ -471,11 +471,11 @@ class PygameGame:
             pass
 
         # Check for Rookie Mistake quest completion upon entering town
-        if ("Dead Body" in self.player_char.special_inventory and 
+        if ("Dead Soldier" in self.player_char.special_inventory and 
                 'Rookie Mistake' in self.player_char.quest_dict.get('Side', {}) and
                 not self.player_char.quest_dict['Side']['Rookie Mistake']['Completed']):
             self.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
-            self.player_char.modify_inventory(items.DeadBody(), subtract=True, rare=True)
+            self.player_char.modify_inventory(items.DeadSoldier(), subtract=True, rare=True)
             popup = ConfirmationPopup(self.presenter, "You have completed the quest Rookie Mistake.", show_buttons=False)
             popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
 

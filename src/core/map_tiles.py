@@ -2,6 +2,7 @@
 """ map manager """
 
 import random
+from textwrap import wrap
 
 from . import companions, enemies, items, town
 from .player import DIRECTIONS, actions_dict
@@ -20,6 +21,153 @@ def check_fake_wall(tile, game):
         except KeyError:
             continue
     return ""
+
+
+CHALICE_QUEST_NAME = "The Holy Grail of Quests"
+CHALICE_PROGRESS_KEY = "Chalice Progress"
+CHALICE_ADVENTURER_POS = (12, 14, 3)
+CHALICE_LOCATION_POS = (2, 17, 6)
+CHALICE_ALTAR_IMAGE_PATH = "src/ui_pygame/assets/sprites/key_items/chalice_map.png"
+CHALICE_MAP_BLANK_DESC = "A weathered map whose ink appears almost completely faded."
+CHALICE_MAP_METHOD_DESC = (
+    "A weathered map with barely visible marks. The hidden adventurer showed you a trick to reveal it—"
+    "inspect it closely."
+)
+CHALICE_MAP_REVEALED_DESC = (
+    "The hidden ink has surfaced. The map marks a sealed altar on the sixth floor."
+)
+CHALICE_MAP_REVEALED_ASCII = (
+    "Map Fragment\n"
+    "+------------------+\n"
+    "| Floor 6          |\n"
+    "|                  |\n"
+    "|  x=2, y=17   X   |\n"
+    "|              altar|\n"
+    "+------------------+"
+)
+
+
+def _ensure_chalice_progress(quest_data: dict | None) -> dict | None:
+    if not quest_data:
+        return None
+    progress = quest_data.setdefault(CHALICE_PROGRESS_KEY, {})
+    for key in ("Hooded", "Map", "Sergeant", "Adventurer", "Revealed", "Spawned"):
+        progress.setdefault(key, False)
+    return progress
+
+
+def get_chalice_progress(player_char):
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    return _ensure_chalice_progress(quest_data)
+
+
+def _set_chalice_map_description(player_char, text: str):
+    map_items = player_char.special_inventory.get("Chalice Map", [])
+    if not map_items:
+        return
+    wrapped = "\n".join(wrap(text, 35, break_on_hyphens=False))
+    for map_item in map_items:
+        map_item.description = wrapped
+
+
+def sync_chalice_map_description(player_char):
+    """Keep Chalice Map description aligned with quest progression."""
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    if not progress or "Chalice Map" not in player_char.special_inventory:
+        return
+
+    if progress.get("Revealed") or (quest_data and quest_data.get("Completed")):
+        _set_chalice_map_description(player_char, CHALICE_MAP_REVEALED_DESC)
+    elif progress.get("Adventurer"):
+        _set_chalice_map_description(player_char, CHALICE_MAP_METHOD_DESC)
+    else:
+        _set_chalice_map_description(player_char, CHALICE_MAP_BLANK_DESC)
+
+
+def reveal_chalice_map_on_inspect(player_char, item) -> bool:
+    """Reveal Chalice location when an instructed player inspects the map."""
+    if not item or getattr(item, "name", "") != "Chalice Map":
+        return False
+
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    if not progress:
+        return False
+
+    revealed_now = False
+    if progress.get("Adventurer") and not progress.get("Revealed"):
+        progress["Revealed"] = True
+        if quest_data is not None:
+            quest_data["Help Text"] = "The map reveals the altar at 6:2,17. Seek the Golden Chalice there."
+        revealed_now = True
+
+    sync_chalice_map_description(player_char)
+    return revealed_now
+
+
+def chalice_map_preview_text(player_char) -> str:
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    if not progress:
+        return ""
+    if not progress.get("Adventurer"):
+        return "The map is too faded to decipher."
+    if not progress.get("Revealed"):
+        return "Most of the ink is still hidden. Inspect the map carefully to reveal the altar location."
+    return CHALICE_MAP_REVEALED_ASCII
+
+
+def _replace_tile(world_dict, pos, new_tile):
+    old_tile = world_dict.get(pos)
+    if old_tile:
+        for attr in ("visited", "near", "open", "read", "blocked", "enter", "defeated"):
+            if hasattr(old_tile, attr) and hasattr(new_tile, attr):
+                setattr(new_tile, attr, getattr(old_tile, attr))
+    world_dict[pos] = new_tile
+
+
+def update_chalice_location(game):
+    """Hide or reveal the Golden Chalice altar based on quest progression."""
+    player_char = game.player_char
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    sync_chalice_map_description(player_char)
+    pos = CHALICE_LOCATION_POS
+    tile = player_char.world_dict.get(pos)
+    if tile is None:
+        return
+
+    should_reveal = bool(progress and (progress.get("Revealed") or quest_data.get("Completed")))
+    if should_reveal:
+        if not isinstance(tile, GoldenChaliceRoom):
+            _replace_tile(player_char.world_dict, pos, GoldenChaliceRoom(*pos))
+            if progress is not None:
+                progress["Spawned"] = True
+            if (player_char.location_x, player_char.location_y, player_char.location_z) == pos:
+                game.special_event("Chalice Revealed")
+    else:
+        if isinstance(tile, GoldenChaliceRoom):
+            _replace_tile(player_char.world_dict, pos, CavePath(*pos))
+
+
+def handle_chalice_adventurer(game):
+    """Trigger the hidden adventurer clue for the Golden Chalice quest."""
+    player_char = game.player_char
+    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    if not progress:
+        return
+    if progress.get("Adventurer"):
+        return
+    if (player_char.location_x, player_char.location_y, player_char.location_z) != CHALICE_ADVENTURER_POS:
+        return
+    if not progress.get("Sergeant"):
+        return
+    progress["Adventurer"] = True
+    quest_data["Help Text"] = "Inspect the Chalice Map to reveal where the hidden altar lies."
+    sync_chalice_map_description(player_char)
+    game.special_event("Chalice Adventurer")
 
 
 # objects
@@ -241,10 +389,6 @@ class CavePath(MapTile):
         expected_level = max(1, (self.z + 1) * 10)
         level_diff = max(0, player_level - expected_level)
 
-        # If vastly overleveled, skip random encounters entirely
-        if level_diff >= 30:
-            return
-
         extra_roll = min(10, level_diff // 5)
 
         if all([not random.randint(0, 4 + extra_roll),
@@ -260,6 +404,9 @@ class CavePath(MapTile):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
                     action_list.insert(1, "Use Skill")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
@@ -272,6 +419,9 @@ class EmptyCavePath(CavePath):
     """
     Cave Path with no random enemies
     """
+
+    def modify_player(self, game, textbox=None):
+        return super().modify_player(game, textbox)
 
     def enter_combat(self, player_char):
         pass
@@ -318,7 +468,7 @@ class CavePath1(CavePath):
             "Rookie Mistake" in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
                 game.special_event("Rookie")
-                game.player_char.modify_inventory(items.DeadBody(), rare=True)
+                game.player_char.modify_inventory(items.DeadSoldier(), rare=True)
                 quest_message = "You found the rookie! He's dead...\n"
                 if textbox:
                     textbox.print_text_in_rectangle(quest_message)
@@ -496,6 +646,10 @@ class UndergroundSpring(SpecialTile):
                 game.special_event("Nimue")
                 player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
                 self.nimue = True
+                # Track this as first meeting - don't offer quests yet
+                if not hasattr(self, 'nimue_met_before'):
+                    self.nimue_met_before = False
+            
             if self.nimue:
                 if "Excalibur" in player_char.inventory or \
                     "Excalibur" == player_char.equipment['Weapon'].name:
@@ -505,18 +659,22 @@ class UndergroundSpring(SpecialTile):
                         player_char.modify_inventory(items.Excalibur(), subtract=True)
                     else:
                         player_char.equipment['Weapon'] = items.Excalibur2()
-                # UI hook: handle further quest logic
-        # TODO: handle additional quest/response UI hooks as needed
-                """ TODO
-                quest, responses = town.check_quests(game, "Nimue")
-                if not quest:
-                    response = random.choice(random.choice(responses))
-                    springbox.print_text_in_rectangle(response)
-                    springbox.clear_rectangle()
-                confirm.header_message = "Do you wish to enter the Realm of Cambion?\n"
-                if confirm.navigate_popup():
-                    player_char.location_x, player_char.location_y, player_char.location_z = (4, 9, 7)
-                """
+                
+                # Offer Nimue quests only on subsequent visits (curses UI)
+                if textbox:
+                    # Check if this is a return visit (not the first meeting)
+                    if hasattr(self, 'nimue_met_before') and self.nimue_met_before:
+                        # Import here to avoid circular dependency
+                        from src.ui_curses import town as curses_town
+                        quest, responses = curses_town.check_quests(game, "Nimue")
+                        if not quest:
+                            import random
+                            response = random.choice(random.choice(responses))
+                            textbox.print_text_in_rectangle(response)
+                            textbox.clear_rectangle()
+                    
+                    # Mark that we've met Nimue before for next visit
+                    self.nimue_met_before = True
 
     def enter_combat(self, player_char):
         player_char.state = "fight"
@@ -536,6 +694,9 @@ class UndergroundSpring(SpecialTile):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
                     action_list.insert(1, "Use Skill")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
@@ -545,6 +706,7 @@ class Boulder(SpecialTile):
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+        self.enter = False
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
@@ -562,6 +724,16 @@ class Boulder(SpecialTile):
             game.special_event("Boulder")
             game.player_char.modify_inventory(items.Excaliper(), rare=True)
             self.read = True
+
+        quest_data = game.player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+        progress = _ensure_chalice_progress(quest_data)
+        if progress and progress.get("Hooded") and not progress.get("Map"):
+            if self.read:
+                game.special_event("Chalice Map")
+                game.player_char.modify_inventory(items.ChaliceMap(), rare=True, quest=True)
+                progress["Map"] = True
+                sync_chalice_map_description(game.player_char)
+                quest_data["Help Text"] = "Bring the map to the Sergeant at the barracks for help deciphering it."
 
 
 class Portal(EmptyCavePath):
@@ -863,6 +1035,9 @@ class UnlockedChestRoom(ChestRoom):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
                         action_list.insert(1, "Use Skill")
+                action_list.insert(1, "Defend")
+                if player_char.is_disarmed():
+                    action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
             return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
@@ -903,6 +1078,9 @@ class LockedChestRoom(ChestRoom):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
                         action_list.insert(1, "Use Skill")
+                action_list.insert(1, "Defend")
+                if player_char.is_disarmed():
+                    action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
             return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
@@ -1203,6 +1381,120 @@ class RelicRoom(SpecialTile):
                 textbox.clear_rectangle()
 
 
+class IncubusLair(BossRoom):
+    """Encounter with the Incubus (father of Merzhin) - required for Oedipal Complex quest."""
+    
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Incubus
+        self.defeated = False
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        # Check if quest is active
+        if "Oedipal Complex" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["Oedipal Complex"]["Completed"]:
+                intro_str += "A deep, primal presence emanates from the shadows. Eyes glow red in the darkness.\n"
+            else:
+                intro_str += "The faint charred remains of a demonic entity scatter the floor.\n"
+        else:
+            intro_str += "The air here feels heavy and oppressive.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.adjacent_visited(game.player_char)
+        self.visited = True
+        quest_data = game.player_char.quest_dict.get("Side", {}).get("Oedipal Complex")
+        if not quest_data:
+            return
+        if quest_data.get("Completed") or self.defeated:
+            return
+        if game.player_char.state == "fight":
+            return
+
+        # Spawn and enter combat only when the quest is active/incomplete.
+        self.generate_enemy()
+        if self.enemy and self.enemy.is_alive():
+            self.enter_combat(game.player_char)
+
+    def special_text(self, game):
+        # Only trigger if quest is active and not yet completed
+        if "Oedipal Complex" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["Oedipal Complex"]["Completed"]:
+                if not self.defeated:
+                    return "The Incubus emerges from the shadows to challenge you!"
+        return ""
+
+    def enter_combat(self, player_char):
+        player_char.state = "fight"
+
+    def defeat_incubus(self, game):
+        """Complete the Oedipal Complex quest when Incubus is defeated."""
+        if "Oedipal Complex" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["Oedipal Complex"]["Completed"]:
+                game.player_char.quest_dict["Side"]["Oedipal Complex"]["Completed"] = True
+                game.special_event("Incubus Defeated")
+                self.defeated = True
+                self.enter = False
+                return True
+        return False
+
+    def available_actions(self, player_char):
+        if player_char.state == 'fight':
+            action_list = ["Attack", "Use Item"]
+            if not player_char.status_effects["Silence"].active:
+                if player_char.usable_abilities("Spells"):
+                    action_list.insert(1, "Cast Spell")
+                if player_char.usable_abilities("Skills"):
+                    action_list.insert(1, "Use Skill")
+            action_list = player_char.additional_actions(action_list)
+            return action_list
+        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+
+class GoldenChaliceRoom(SpecialTile):
+    """Location of the Golden Chalice - required for The Holy Grail of Quests."""
+    
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = True
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
+                intro_str += "A golden chalice filled with a mysterious liquid sits on a pedestal, glowing faintly.\n"
+            else:
+                intro_str += "An empty pedestal stands where the chalice once rested.\n"
+        else:
+            intro_str += "A golden chalice sits on a pedestal, but something feels... forbidden about disturbing it.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.adjacent_visited(game.player_char)
+        self.visited = True
+
+    def special_text(self, game):
+        # Only allow pickup if quest is active
+        if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
+                return "The chalice is yours to take!"
+            return ""
+        return "An invisible force prevents you from taking the chalice."
+
+    def pickup_chalice_action(self, game):
+        """Actually pick up the chalice when player confirms."""
+        if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
+            if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
+                game.special_event("Golden Chalice")
+                game.player_char.modify_inventory(items.GoldenChalice(), rare=True, quest=True)
+                game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"] = True
+                self.read = True
+                self.enter = False
+                return True
+        return False
+
+
 class DeadBody(SpecialTile):
 
     def __init__(self, x, y, z):
@@ -1251,6 +1543,21 @@ class DeadBody(SpecialTile):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
                     action_list.insert(1, "Use Skill")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
+            action_list.insert(1, "Defend")
+            if player_char.is_disarmed():
+                action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
@@ -1322,6 +1629,10 @@ class FinalRoom(SpecialTile):
 
 
 class SecretShop(SpecialTile):
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = False  # Cannot enter - interact from adjacent space
 
     def modify_player(self, game):
         self.visited = True
@@ -1443,6 +1754,9 @@ class FunhouseMimicChest(ChestRoom):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
                         action_list.insert(1, "Use Skill")
+                action_list.insert(1, "Defend")
+                if player_char.is_disarmed():
+                    action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
             return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])

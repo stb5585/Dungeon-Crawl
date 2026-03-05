@@ -123,22 +123,13 @@
     },
     "Nimue": {
         "Text": [
-            "Before your eyes appears the most beautiful creature you have ever seen.",
-            "'Greeting, my name is Nimue. I am the Maid of this spring.'",
-            "You notice a faint aura resonating from your bag, as if you carry something of value to her.",
-            "'Finally, a worthy champion...you have brought me the sword of legend. May I see it?'",
-            "Sword of legend?...you are uncertain what she could be referring to...perhaps the broken sword?",
-            "You take out what's left of Excaliper and hand it over. Her joyous expression quickly changes.",
-            "'Oh pity, this is not but a cheap knock-off...and it's broken...curses.'",
-            "'Whoever forged this weapon was not much of a blacksmith, yet possessed the magical acumen to trick me.'",
-            "'I'd bet anything Merzhin was involved. Ever since I spurred his advances, he has been a very naughty boy.'",
-            "The remains of Excaliper vanish from her hands. 'Oh well, you can still be of use to me.'",
-            "Her words are somewhat unsettling as you ponder what she means. You thoughts are quickly disturbed.",
-            "'I see you seek to end the blight of this land, perhaps we can be of assistance to each other.'",
-            "'Merzhin is a powerful wizard and he has become a thorn in my side. I would like you to deal with him.'",
-            "'His domain is not of this plane, residing in the Realm of Cambion. Luckily I can teleport you there.'",
-            "You are uncertain if you want to get involved. 'I can make it worth your time. Think on it for a bit.'",
-            "'If you wish to summon me, just drink from the spring and I will appear. Until then...'. She disappears."
+            "A beautiful maiden emerges from the spring. 'I am Nimue, Maid of this water.'",
+            "She senses something in your possession. 'You carry a broken sword...Merzhin's handiwork, no doubt.",
+            "That wizard has become a thorn in my side. He resides in the Realm of Cambion.",
+            "I can offer you passage there to defeat him, if you prove yourself worthy.",
+            "In the meantime, I will take this piece of the sword. It is a poor substitute for the real thing but it will do for now.",
+            "If you wish to summon me again, drink from the spring. But first...reconsider your path.'",
+            "She vanishes into the water."
         ]
     },
     "Minotaur": {
@@ -443,6 +434,46 @@
             "As the last echoes fade, you find yourself back where you started, victorious.",
             "The Jester has been defeated, and the funhouse is no more."
         ]
+    },
+    "Incubus Defeated": {
+        "Text": [
+            "The Incubus lets out a final, otherworldly scream as your blow strikes true.",
+            "Its demonic form wavers, then shatters like glass into shadow and ash.",
+            "The oppressive presence lifts. The air grows clear and breathable once more.",
+            "You have proven yourself equal to a being of pure malice and cunning.",
+            "A sense of accomplishment fills you. Nimue will be pleased with your victory."
+        ]
+    },
+    "Golden Chalice": {
+        "Text": [
+            "You reach out and grasp the Golden Chalice. It is warm to the touch.",
+            "As your fingers close around it, the chalice pulses with ancient power.",
+            "The pedestal crumbles to dust, as if it no longer has purpose.",
+            "You feel the blessing of the chalice settle into your very being.",
+            "This sacred vessel will grant you the strength needed to face Merzhin himself."
+        ]
+    },
+    "Chalice Map": {
+        "Text": [
+            "You notice a loose stone in the boulder's crevice and pry it free.",
+            "A weathered map lies folded inside, marked with a strange altar symbol.",
+            "Most of the ink has faded to near-blank.",
+            "Maybe someone in town can help decipher it."
+        ]
+    },
+    "Chalice Adventurer": {
+        "Text": [
+            "A weary adventurer emerges from the shadows, clutching an ugly sword.",
+            "'I knew someone would come... the map is real,' they whisper.",
+            "'The ink is hidden. Study the map closely and the altar marks will surface,' they add before slipping away.",
+            "Inspect the Chalice Map to reveal the Golden Chalice location."
+        ]
+    },
+    "Chalice Revealed": {
+        "Text": [
+            "The ground trembles beneath your feet.",
+            "An ancient altar rises from the stone, revealing a gleaming chalice.",
+            "The Golden Chalice has revealed itself at last."
+        ]
     }
 }
-

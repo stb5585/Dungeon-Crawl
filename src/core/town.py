@@ -74,6 +74,38 @@ def get_quest_dict():
     return _quest_dict_cache
 
 
+def get_holy_grail_rotation_hints(player_char, speaker: str) -> list[str]:
+    """Return repeatable Holy Grail progression hints for non-quest-giver dialogue rotation."""
+    quest_data = player_char.quest_dict.get("Side", {}).get("The Holy Grail of Quests")
+    if not quest_data or quest_data.get("Completed") or quest_data.get("Turned In"):
+        return []
+
+    progress = quest_data.setdefault("Chalice Progress", {})
+    for key in ("Hooded", "Map", "Sergeant", "Adventurer", "Revealed", "Spawned"):
+        progress.setdefault(key, False)
+
+    hints: list[str] = []
+    if speaker == "Hooded Figure" and progress.get("Hooded") and not progress.get("Map"):
+        hints.append(
+            "The Hooded Figure murmurs that a map to the Golden Chalice was last seen with an adventurer carrying an ugly sword."
+        )
+        hints.append("Revisit the boulder where you found Excaliper; the map may be hidden there.")
+
+    if speaker == "Sergeant" and (progress.get("Map") or "Chalice Map" in player_char.special_inventory):
+        if not progress.get("Adventurer"):
+            hints.append(
+                "The Sergeant studies your map and mutters, 'There's a hidden route somewhere on the third floor. Find the adventurer there.'"
+            )
+            hints.append("Search the third floor for a secret path; an adventurer there can help you decipher the map.")
+        elif not progress.get("Revealed"):
+            hints.append("The Sergeant says the hidden adventurer's trick should make the ink emerge if you inspect the Chalice Map carefully.")
+            hints.append("Inspect the Chalice Map from your Key Items to reveal the hidden altar location.")
+        else:
+            hints.append("The Sergeant nods. 'The map marks somewhere on the sixth floor. Go claim the Golden Chalice.'")
+
+    return hints
+
+
 # For backward compatibility, create module-level variable
 quest_dict = get_quest_dict()
 
