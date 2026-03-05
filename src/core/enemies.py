@@ -7,6 +7,7 @@ from textwrap import wrap
 from . import abilities, items
 from .character import Character, Combat, Resource, Stats, StatusEffect
 from .combat.action_queue import ActionPriority
+from .constants import ENEMY_LOW_HEALTH_THRESHOLD
 
 
 # Functions
@@ -161,7 +162,7 @@ class Enemy(Character):
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
                         self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
-                            self.health.current > self.health.max * 0.25,
+                            self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD,
                         self.tunnel]):
                     continue
                 if self._should_skip_reapply_debuff(skill_name, target):
@@ -238,9 +239,9 @@ class Enemy(Character):
                     continue
                 if ability_name == "Smoke Screen":
                     steal_ready = bool(self.status_effects.get("Steal Success", StatusEffect()).active)
-                    if not steal_ready and self.health.current > self.health.max * 0.25:
+                    if not steal_ready and self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD:
                         continue
-                if ability_name == "Tunnel" and (self.health.current > self.health.max * 0.25 or self.tunnel):
+                if ability_name == "Tunnel" and (self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD or self.tunnel):
                     # Don't use Tunnel if health is above 25% OR if already tunneled
                     continue
                 if ability_name == "Disarm" and not self._target_has_weapon(target):
@@ -297,7 +298,7 @@ class Enemy(Character):
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
                         self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
-                            self.health.current > self.health.max * 0.25 and
+                            self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD and
                             not self.status_effects.get("Steal Success", StatusEffect()).active,
                         self.tunnel]):
                     continue

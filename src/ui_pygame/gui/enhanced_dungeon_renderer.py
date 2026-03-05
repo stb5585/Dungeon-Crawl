@@ -368,7 +368,7 @@ class EnhancedDungeonRenderer:
             B = np.array(B).reshape(8)
             res = np.linalg.solve(A, B)
             return tuple(res)
-        except:
+        except Exception:
             # Fallback: just return identity-ish transform
             return (1, 0, 0, 0, 1, 0, 0, 0)
 
@@ -1714,7 +1714,7 @@ class EnhancedDungeonRenderer:
                     try:
                         temp_enemy = enemy()
                         self._render_boss_enemy(x, y, width, height, darkness, enemy_depth, temp_enemy)
-                    except:
+                    except Exception:
                         pass  # Skip if we can't instantiate
                 # If enemy is an instance, check if alive
                 elif hasattr(enemy, 'is_alive') and enemy.is_alive():

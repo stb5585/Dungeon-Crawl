@@ -69,7 +69,7 @@ if os.path.exists(sound_file):
             result = subprocess.run(['paplay', sound_file], capture_output=True, timeout=2)
             if result.returncode == 0:
                 print("  ✓ File played with paplay!")
-        except:
+        except Exception:
             print("  ✗ Could not play file")
     except subprocess.TimeoutExpired:
         print("  ⏱ Playback timed out")

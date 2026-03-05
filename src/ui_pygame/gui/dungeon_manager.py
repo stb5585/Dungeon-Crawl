@@ -1472,7 +1472,7 @@ class DungeonManager:
                 special = current_tile.special_text(self.game)
                 if special:
                     self.add_message(special)
-            except:
+            except Exception:
                 pass
 
         # Apply tile-defined effects (original game behavior)

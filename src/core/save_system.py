@@ -369,7 +369,7 @@ class QuestDataSerializer:
                                 try:
                                     instance = what()
                                     serialized_quest['What'] = ItemSerializer.serialize(instance)
-                                except:
+                                except Exception:
                                     serialized_quest['What'] = what.__name__
                             elif isinstance(what, str):
                                 # Already a string, leave it
@@ -392,7 +392,7 @@ class QuestDataSerializer:
                                         try:
                                             instance = r()
                                             serialized_rewards.append(ItemSerializer.serialize(instance))
-                                        except:
+                                        except Exception:
                                             serialized_rewards.append(r.__name__)
                                     else:
                                         # It's an instance or something else

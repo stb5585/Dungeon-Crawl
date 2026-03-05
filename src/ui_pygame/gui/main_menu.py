@@ -32,7 +32,7 @@ class MainMenuScreen:
         # Try to load a monospaced font for ASCII art
         try:
             self.ascii_font = pygame.font.Font(pygame.font.match_font('courier', bold=True), 16)
-        except:
+        except Exception:
             # Fallback to default monospace
             self.ascii_font = pygame.font.SysFont('monospace', 16, bold=True)
         

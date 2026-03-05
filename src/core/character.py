@@ -7,6 +7,27 @@ import random
 from dataclasses import dataclass
 from math import exp
 
+from .constants import (
+    ACCURACY_RING_BONUS,
+    ARMOR_SCALING_FACTOR,
+    ASTRAL_SHIFT_REDUCTION,
+    BASE_CRIT_PER_POINT,
+    BASE_FLEE_CHANCE,
+    BERSERK_HIT_PENALTY,
+    BLIND_ACCURACY_PENALTY,
+    DAMAGE_VARIANCE_HIGH,
+    DAMAGE_VARIANCE_LOW,
+    DISARM_HIT_PENALTY,
+    ENCUMBERED_HIT_MULTIPLIER,
+    FLYING_ACCURACY_PENALTY,
+    INVISIBLE_ACCURACY_PENALTY,
+    MAELSTROM_CRIT_PER_HIT,
+    MAX_DODGE_CHANCE,
+    MAX_FLEE_CHANCE,
+    PRO_LEVEL_HIT_MODIFIER,
+    SEEKER_CRIT_BONUS,
+)
+
 
 # functions
 def sigmoid(x):
@@ -207,7 +228,7 @@ class Character:
                 damage_type=damage_type,
                 is_critical=is_critical
             ))
-        except:
+        except Exception:
             pass
     
     def _emit_healing_event(self, amount: int, source: str = "Unknown") -> None:
@@ -222,7 +243,7 @@ class Character:
                 amount=amount,
                 source=source
             ))
-        except:
+        except Exception:
             pass
     
     def _emit_status_event(self, target: Character, status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
@@ -238,7 +259,7 @@ class Character:
                 duration=duration,
                 source=source
             ))
-        except:
+        except Exception:
             pass
 
     def enter_defensive_stance(self, duration: int = 1, reduction: float | None = None, source: str = "Defend") -> str:
@@ -329,16 +350,16 @@ class Character:
                           random.randint(defender.check_mod("speed", enemy=defender) // 4,
                                          defender.check_mod("speed", enemy=defender) // 2))  # base hit percentage
         if typ == 'weapon':
-            hit_mod *= 1 + (0.25 * ('Accuracy' in self.equipment['Ring'].mod))  # accuracy adds 25% chance to hit
-            hit_mod *= 1 - (0.5 * self.status_effects["Blind"].active)  # blind lowers accuracy by 50%
-            hit_mod *= 1 - (1 / 10) * defender.flying  # flying lowers accuracy by 10%
-            hit_mod *= 1 - (0.25 * self.is_disarmed())
-            hit_mod *= 1- (0.15 * (self.status_effects['Berserk'].active))  # berserk status lowers hit chance by 15%
-        hit_mod += 0.05 * (self.level.pro_level - defender.level.pro_level)  # makes it easier to hit lower level creatures
-        hit_mod *= 1 - (1 / 3) * defender.invisible  # invisible lowers accuracy by 33.3%
+            hit_mod *= 1 + (ACCURACY_RING_BONUS * ('Accuracy' in self.equipment['Ring'].mod))
+            hit_mod *= 1 - (BLIND_ACCURACY_PENALTY * self.status_effects["Blind"].active)
+            hit_mod *= 1 - FLYING_ACCURACY_PENALTY * defender.flying
+            hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
+            hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects['Berserk'].active))
+        hit_mod += PRO_LEVEL_HIT_MODIFIER * (self.level.pro_level - defender.level.pro_level)
+        hit_mod *= 1 - INVISIBLE_ACCURACY_PENALTY * defender.invisible
         if hasattr(self, "encumbered"):
             if self.encumbered:
-                hit_mod *= 0.75  # lower hit chance by 75% if encumbered
+                hit_mod *= ENCUMBERED_HIT_MULTIPLIER
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker, spell=False):
@@ -359,19 +380,19 @@ class Character:
         if hasattr(self, "encumbered"):
             if self.encumbered:
                 chance /= 2  # lower dodge chance by half if encumbered
-        return min(0.75, chance)  # max of 75%
+        return min(MAX_DODGE_CHANCE, chance)
     
     def critical_chance(self, att):
-        base_crit = 0.005 * (self.check_mod("speed") + self.check_mod("luck", luck_factor=10))
+        base_crit = BASE_CRIT_PER_POINT * (self.check_mod("speed") + self.check_mod("luck", luck_factor=10))
         crit_chance = base_crit
         if self.equipment[att] is not None:
             crit_chance += self.equipment[att].crit
         if self.cls.name == "Seeker":
-            crit_chance += (0.1 * self.power_up)
+            crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
         
         # Maelstrom Weapon: Add bonus critical chance for consecutive hits
         if "Maelstrom Weapon" in self.spellbook["Skills"]:
-            maelstrom_bonus = self.maelstrom_hits * 0.05  # 5% per hit
+            maelstrom_bonus = self.maelstrom_hits * MAELSTROM_CRIT_PER_HIT
             crit_chance += maelstrom_bonus
         
         return crit_chance
@@ -386,6 +407,7 @@ class Character:
         cover(bool): whether the attack can be blocked by a familiar or pet
         hit(bool): guarantees hit if target doesn't dodge
         """
+        from .combat.combat_result import CombatResult, CombatResultGroup
 
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
@@ -399,22 +421,16 @@ class Character:
             hits.append(hit)
             crits.append(1)
             ignore = ignore or self.equipment[att].ignore
-            dodge = False
+            damage = 0
             # attacker variables
             typ = 'attacks'
             if self.equipment[att].subtyp == 'Natural':
                 typ = self.equipment[att].att_name
                 if typ == 'leers':
                     hits[i] = True
-                    # Create CombatResult and call special_effect for Leer/Gaze attack
-                    from .combat.combat_result import CombatResult, CombatResultGroup
                     result = CombatResult(
-                        action="Leer",
-                        actor=self,
-                        target=defender,
-                        hit=True,
-                        crit=1,
-                        damage=0
+                        action="Leer", actor=self, target=defender,
+                        hit=True, crit=1, damage=0
                     )
                     results = CombatResultGroup()
                     results.add(result)
@@ -431,266 +447,384 @@ class Character:
                 dodge = defender.dodge_chance(self) > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
                 hits[i] = hit_per > random.random()
+            else:
+                dodge = False
             if defender.incapacitated():
                 dodge = False
                 hits[i] = True
 
-            # combat
+            # --- Phase 1: Dodge / Parry ---
             if dodge:
                 hits[i] = False
-                # Reset Maelstrom Weapon on dodge/miss
-                if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                    self.maelstrom_hits = 0
-                if 'Parry' in defender.spellbook['Skills']:
-                    weapon_dam_str += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
-                    counter_str, _, _ = defender.weapon_damage(self)
-                    weapon_dam_str += counter_str
-                    if not self.is_alive():
-                        return weapon_dam_str, any(hits), max(crits)
-                else:
-                    # Emit dodge event
-                    try:
-                        from .events.event_bus import get_event_bus, create_combat_event, EventType
-                        event_bus = get_event_bus()
-                        event_bus.emit(create_combat_event(
-                            EventType.DODGE,
-                            actor=defender,
-                            target=self,
-                            damage=damage
-                        ))
-                    except:
-                        pass
-                    weapon_dam_str += f"{defender.name} evades {self.name}'s attack.\n"
-            else:
-                if hits[i] and defender.magic_effects["Duplicates"].active:
-                    chance = defender.magic_effects["Duplicates"].duration - self.check_mod("luck", luck_factor=15)
-                    if random.randint(0, max(0, chance)):
-                        hits[i] = False
-                        # Reset Maelstrom Weapon on duplicate hit
-                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                            self.maelstrom_hits = 0
-                        weapon_dam_str += (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
-                                           f"vanishes from existence.\n")
-                        defender.magic_effects["Duplicates"].duration -= 1
-                        if not defender.magic_effects["Duplicates"].duration:
-                            defender.magic_effects["Duplicates"].active = False
-                if hits[i]:
-                    if crits[i] > 1:
-                        # Emit critical hit event
-                        try:
-                            from .events.event_bus import get_event_bus, create_combat_event, EventType
-                            event_bus = get_event_bus()
-                            event_bus.emit(create_combat_event(
-                                EventType.CRITICAL_HIT,
-                                actor=self,
-                                target=defender,
-                                multiplier=crits[i]
-                            ))
-                        except:
-                            pass
-                        # Reset Maelstrom Weapon on critical hit
-                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                            self.maelstrom_hits = 0
-                    if cover:
-                        weapon_dam_str += (f"{defender.familiar.name} steps in front of the attack, "
-                                           f"taking the damage for {defender.name}.\n")
-                        damage = 0
-                    elif ((defender.equipment['OffHand'].subtyp == 'Shield' or
-                           'Dodge' in defender.equipment['Ring'].mod) and
-                          not defender.magic_effects["Mana Shield"].active and \
-                            not (defender.cls.name == "Crusader" and defender.power_up and 
-                                 defender.class_effects["Power Up"].active)) and not defender.incapacitated():
-                        blk_chance = defender.check_mod('shield', enemy=self) / 100
-                        if blk_chance > random.random():
-                            blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage)
-                            if 'Shield Block' in defender.spellbook['Skills']:
-                                blk_per *= 1.25
-                            if blk_per > 0:
-                                blk_per = min(1, blk_per)
-                                damage *= (1 - blk_per)
-                                damage = int(damage)
-                                # Emit block event
-                                try:
-                                    from .events.event_bus import get_event_bus, create_combat_event, EventType
-                                    event_bus = get_event_bus()
-                                    event_bus.emit(create_combat_event(
-                                        EventType.BLOCK,
-                                        actor=defender,
-                                        target=self,
-                                        damage_blocked=int(dmg * crit_per * blk_per)
-                                    ))
-                                except:
-                                    pass
-                                blocked_pct = round(blk_per * 100)
-                                if blocked_pct > 0:
-                                    weapon_dam_str += (f"{defender.name} blocks {self.name}'s attack and mitigates "
-                                                       f"{blocked_pct} percent of the damage.\n")
-                    elif defender.magic_effects["Mana Shield"].active:
-                        mana_loss = damage // defender.magic_effects["Mana Shield"].duration
-                        if mana_loss > defender.mana.current:
-                            abs_dam = defender.mana.current * defender.magic_effects["Mana Shield"].duration
-                            weapon_dam_str += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
-                            damage -= abs_dam
-                            defender.mana.current = 0
-                            self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
-                            defender.magic_effects["Mana Shield"].active = False
-                            weapon_dam_str += f"The mana shield dissolves around {defender.name}.\n"
-                        else:
-                            weapon_dam_str += f"The mana shield around {defender.name} absorbs {damage} damage.\n"
-                            defender.mana.current -= mana_loss
-                            damage = 0
-                            hits[i] = False
-                            # Reset Maelstrom Weapon when attack is absorbed by shield
-                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                                self.maelstrom_hits = 0
-                    elif defender.cls.name == "Crusader" and defender.power_up and \
-                        defender.class_effects["Power Up"].active:
-                        if damage >= defender.class_effects["Power Up"].extra:
-                            weapon_dam_str += (f"The shield around {defender.name} absorbs "
-                                       f"{defender.class_effects['Power Up'].extra} damage.\n")
-                            damage -= defender.class_effects["Power Up"].extra
-                            defender.class_effects["Power Up"].active = False
-                            weapon_dam_str += f"The shield dissolves around {defender.name}.\n"
-                        else:
-                            weapon_dam_str += f"The shield around {defender.name} absorbs {damage} damage.\n"
-                            defender.class_effects["Power Up"].extra -= damage
-                            damage = 0
-                            hits[i] = False
-                            # Reset Maelstrom Weapon when attack is absorbed by shield
-                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                                self.maelstrom_hits = 0
-                    elif defender.cls.name == "Templar" and defender.power_up and \
-                        defender.class_effects["Power Up"].active:
-                        ref_dam = int(0.25 * damage)
-                        damage -= ref_dam
-                        self.health.current -= ref_dam
-                        # Emit reflected damage event
-                        defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
-                        weapon_dam_str += f"{ref_dam} is reflected back at {self.name}.\n"
-                    elif defender.magic_effects["Totem"].active and \
-                         isinstance(defender.magic_effects["Totem"].extra, dict) and \
-                         defender.magic_effects["Totem"].extra.get("secondary") == "reflect":
-                        # Earth Aspect totem reflects 25% damage back at the attacker
-                        ref_dam = int(0.25 * damage)
-                        damage -= ref_dam
-                        self.health.current -= ref_dam
-                        # Emit reflected damage event
-                        defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
-                        weapon_dam_str += f"{ref_dam} bounces off the totem's barrier back to {self.name}.\n"
-                    if damage > 0:
-                        e_resist = 0
-                        if self.equipment[att].element:
-                            e_resist = defender.check_mod('resist', enemy=self, typ=self.equipment[att].element)
-                        p_resist = defender.check_mod('resist', enemy=self, typ='Physical',
-                                                      ultimate=self.equipment[att].ultimate)
-                        dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
-                        damage = max(0, int(damage * (1 - p_resist) * (1 - e_resist) * (1 - (dam_red / (dam_red + 50)))))
-                        variance = random.uniform(0.85, 1.15)
-                        damage = int(damage * variance)
+                self._reset_maelstrom()
+                msg, aborted = self._handle_dodge(defender, damage, typ)
+                weapon_dam_str += msg
+                if aborted:
+                    return weapon_dam_str, any(hits), max(crits)
+                continue
 
-                        defensive_reduction = defender.get_defensive_reduction() if hasattr(defender, "get_defensive_reduction") else 0.0
-                        if defensive_reduction > 0 and damage > 0:
-                            reduced = max(1, int(damage * defensive_reduction))
-                            damage = max(0, damage - reduced)
-                            weapon_dam_str += (
-                                f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
-                            )
-                        
-                        # Apply Astral Shift damage reduction (25%)
-                        if defender.magic_effects["Astral Shift"].active and damage > 0:
-                            astral_reduction = int(damage * 0.25)
-                            damage = max(0, damage - astral_reduction)
-                            weapon_dam_str += f"{defender.name}'s astral form deflects {astral_reduction} damage.\n"
-                        
-                        defender.health.current -= damage
-                        if damage > 0:
-                            damage_msg = f"{self.name} {typ} {defender.name} for {damage} damage"
-                            if crits[i] > 1:
-                                damage_msg += " (Critical hit!)"
-                            weapon_dam_str += damage_msg + ".\n"
-                            
-                            # Update Maelstrom Weapon counter for non-critical hits
-                            if "Maelstrom Weapon" in self.spellbook["Skills"] and crits[i] == 1:
-                                self.maelstrom_hits += 1
-                            
-                            # Emit damage event
-                            damage_type = "Physical"
-                            if self.equipment[att].element:
-                                damage_type = self.equipment[att].element
-                            self._emit_damage_event(defender, damage, damage_type=damage_type, is_critical=(crits[i] > 1))
-                            if defender.status_effects["Sleep"].active and \
-                                not random.randint(0, defender.status_effects["Sleep"].duration):
-                                    weapon_dam_str += f"The attack awakens {defender.name}!\n"
-                                    self._emit_status_event(defender, "Sleep", applied=False, source="Awakened by Damage")
-                                    defender.status_effects["Sleep"].active = False
-                                    defender.status_effects["Sleep"].duration = 0
-                            if self.cls.name in "Ninja" and self.power_up:
-                                dam_abs = self.class_effects["Power Up"].active * damage
-                                self.health.current += dam_abs
-                                self._emit_healing_event(dam_abs, source="Ninja Life Steal")
-                                weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
-                            if self.cls.name in "Lycan" and self.power_up:
-                                dam_abs = damage // 2
-                                self.health.current += dam_abs
-                                if dam_abs > 0:
-                                    self._emit_healing_event(dam_abs, source="Lycan Life Steal")
-                                    weapon_dam_str += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
-                        else:
-                            weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
-                            hits[i] = False
-                            # Reset Maelstrom Weapon when no damage is dealt
-                            if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                                self.maelstrom_hits = 0
-                    else:
-                        weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
-                        hits[i] = False
-                        # Reset Maelstrom Weapon when no damage is dealt
-                        if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                            self.maelstrom_hits = 0
-                else:
-                    weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
-                    # Reset Maelstrom Weapon on complete miss
-                    if "Maelstrom Weapon" in self.spellbook["Skills"]:
-                        self.maelstrom_hits = 0
-            if hits[i]:
-                # Call special_effect for armor (thorns/reflection) and weapon (life steal, instant death, etc.)
-                from .combat.combat_result import CombatResult, CombatResultGroup
-                result = CombatResult(
-                    action=att,
-                    actor=self,
-                    target=defender,
-                    hit=True,
-                    crit=crits[i],
-                    damage=damage if 'damage' in locals() else 0
+            # --- Phase 2: Duplicates check ---
+            if hits[i] and defender.magic_effects["Duplicates"].active:
+                hits[i], msg = self._handle_duplicates(defender, typ)
+                weapon_dam_str += msg
+                if not hits[i]:
+                    continue
+
+            if not hits[i]:
+                weapon_dam_str += f"{self.name} {typ} {defender.name} but misses entirely.\n"
+                self._reset_maelstrom()
+                continue
+
+            # --- Phase 3: Critical hit event ---
+            if crits[i] > 1:
+                self._emit_crit_event(defender, crits[i])
+                self._reset_maelstrom()
+
+            # --- Phase 4: Absorption layers (cover, block, shields, reflect) ---
+            damage, msg, absorbed = self._apply_absorption(
+                defender, damage, dmg, crit_per, att, cover, crits[i]
+            )
+            weapon_dam_str += msg
+            if absorbed:
+                hits[i] = False
+                self._reset_maelstrom()
+
+            # --- Phase 5: Resistance / armor / damage reduction ---
+            if damage > 0:
+                damage, msg = self._apply_damage_reduction(
+                    defender, damage, att, ignore
                 )
-                results = CombatResultGroup()
-                results.add(result)
-                
-                # Armor special effects (thorns, reflection)
-                defender.equipment['Armor'].special_effect(results)
-                
-                # Weapon special effects (life steal, elemental effects, instant death)
-                if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
-                    self.equipment[att].special_effect(results)
-                
-                # Process special effect results
-                for res in results.results:
-                    if 'Drain' in res.extra and res.extra['Drain']:
-                        drain_amount = res.actor.health.current - (res.actor.health.current - res.damage)
-                        weapon_dam_str += f"{res.actor.name} drains {drain_amount} health from {res.target.name}.\n"
-                    if 'Instant Death' in res.extra and res.extra['Instant Death']:
-                        res.target.health.current = 0
-                        weapon_dam_str += f"{res.target.name} is instantly killed!\n"
-                
+                weapon_dam_str += msg
+
+            # --- Phase 6: Apply damage and on-hit effects ---
+            if damage > 0:
+                defender.health.current -= damage
+                weapon_dam_str += self._build_damage_message(
+                    defender, damage, typ, crits[i], att
+                )
+                weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
+            else:
+                defender.health.current -= damage  # 0 damage still needs to be "applied" for consistency
+                weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
+                hits[i] = False
+                self._reset_maelstrom()
+
+            # --- Phase 7: Equipment special effects on successful hit ---
+            if hits[i]:
+                weapon_dam_str += self._apply_equipment_effects(
+                    defender, att, damage, crits[i]
+                )
                 if self.cls.name == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1
             else:
                 if self.cls.name == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = False
-                    self.class_effects["Power Up"].duration = 0    
+                    self.class_effects["Power Up"].duration = 0
 
         return weapon_dam_str, any(hits), max(crits)
+
+    # ------------------------------------------------------------------ #
+    #  weapon_damage helper methods                                       #
+    # ------------------------------------------------------------------ #
+
+    def _reset_maelstrom(self) -> None:
+        """Reset Maelstrom Weapon consecutive-hit counter."""
+        if "Maelstrom Weapon" in self.spellbook["Skills"]:
+            self.maelstrom_hits = 0
+
+    def _handle_dodge(self, defender: Character, damage: int, typ: str) -> tuple[str, bool]:
+        """
+        Handle dodge/parry outcome.
+
+        Returns:
+            (message, aborted) – *aborted* is True when the attacker died
+            from a parry counter-attack and the caller should return early.
+        """
+        msg = ""
+        if 'Parry' in defender.spellbook['Skills']:
+            msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
+            counter_str, _, _ = defender.weapon_damage(self)
+            msg += counter_str
+            if not self.is_alive():
+                return msg, True
+        else:
+            try:
+                from .events.event_bus import get_event_bus, create_combat_event, EventType
+                event_bus = get_event_bus()
+                event_bus.emit(create_combat_event(
+                    EventType.DODGE, actor=defender, target=self, damage=damage
+                ))
+            except Exception:
+                pass
+            msg += f"{defender.name} evades {self.name}'s attack.\n"
+        return msg, False
+
+    def _handle_duplicates(self, defender: Character, typ: str) -> tuple[bool, str]:
+        """
+        Check if the attack hits a mirror-image duplicate.
+
+        Returns:
+            (still_hit, message)
+        """
+        chance = defender.magic_effects["Duplicates"].duration - self.check_mod("luck", luck_factor=15)
+        if random.randint(0, max(0, chance)):
+            self._reset_maelstrom()
+            msg = (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
+                   f"vanishes from existence.\n")
+            defender.magic_effects["Duplicates"].duration -= 1
+            if not defender.magic_effects["Duplicates"].duration:
+                defender.magic_effects["Duplicates"].active = False
+            return False, msg
+        return True, ""
+
+    def _emit_crit_event(self, defender: Character, crit_mult: int) -> None:
+        """Emit a CRITICAL_HIT event."""
+        try:
+            from .events.event_bus import get_event_bus, create_combat_event, EventType
+            event_bus = get_event_bus()
+            event_bus.emit(create_combat_event(
+                EventType.CRITICAL_HIT, actor=self, target=defender, multiplier=crit_mult
+            ))
+        except Exception:
+            pass
+
+    def _apply_absorption(
+        self, defender: Character, damage: int, raw_dmg: int,
+        crit_per: float, att: str, cover: bool, crit: int
+    ) -> tuple[int, str, bool]:
+        """
+        Apply cover, shield block, mana shield, class shields, and reflect.
+
+        Returns:
+            (remaining_damage, message, fully_absorbed)
+        """
+        msg = ""
+        absorbed = False
+
+        if cover:
+            msg += (f"{defender.familiar.name} steps in front of the attack, "
+                    f"taking the damage for {defender.name}.\n")
+            return 0, msg, False  # damage zeroed but hit still counts
+
+        # Shield block
+        can_block = (
+            (defender.equipment['OffHand'].subtyp == 'Shield' or
+             'Dodge' in defender.equipment['Ring'].mod) and
+            not defender.magic_effects["Mana Shield"].active and
+            not (defender.cls.name == "Crusader" and defender.power_up and
+                 defender.class_effects["Power Up"].active) and
+            not defender.incapacitated()
+        )
+        if can_block:
+            blk_chance = defender.check_mod('shield', enemy=self) / 100
+            if blk_chance > random.random():
+                blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage) if damage else 0
+                if 'Shield Block' in defender.spellbook['Skills']:
+                    blk_per *= 1.25
+                if blk_per > 0:
+                    blk_per = min(1, blk_per)
+                    damage = int(damage * (1 - blk_per))
+                    try:
+                        from .events.event_bus import get_event_bus, create_combat_event, EventType
+                        event_bus = get_event_bus()
+                        event_bus.emit(create_combat_event(
+                            EventType.BLOCK, actor=defender, target=self,
+                            damage_blocked=int(raw_dmg * crit_per * blk_per)
+                        ))
+                    except Exception:
+                        pass
+                    blocked_pct = round(blk_per * 100)
+                    if blocked_pct > 0:
+                        msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
+                                f"{blocked_pct} percent of the damage.\n")
+            return damage, msg, False
+
+        # Mana Shield
+        if defender.magic_effects["Mana Shield"].active:
+            damage, shield_msg, absorbed = self._apply_mana_shield(defender, damage)
+            return damage, msg + shield_msg, absorbed
+
+        # Crusader absorb shield
+        if (defender.cls.name == "Crusader" and defender.power_up and
+                defender.class_effects["Power Up"].active):
+            damage, shield_msg, absorbed = self._apply_crusader_shield(defender, damage)
+            return damage, msg + shield_msg, absorbed
+
+        # Templar reflect
+        if (defender.cls.name == "Templar" and defender.power_up and
+                defender.class_effects["Power Up"].active):
+            ref_dam = int(0.25 * damage)
+            damage -= ref_dam
+            self.health.current -= ref_dam
+            defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
+            msg += f"{ref_dam} is reflected back at {self.name}.\n"
+            return damage, msg, False
+
+        # Totem reflect
+        if (defender.magic_effects["Totem"].active and
+                isinstance(defender.magic_effects["Totem"].extra, dict) and
+                defender.magic_effects["Totem"].extra.get("secondary") == "reflect"):
+            ref_dam = int(0.25 * damage)
+            damage -= ref_dam
+            self.health.current -= ref_dam
+            defender._emit_damage_event(self, ref_dam, damage_type="Reflected", is_critical=False)
+            msg += f"{ref_dam} bounces off the totem's barrier back to {self.name}.\n"
+            return damage, msg, False
+
+        return damage, msg, False
+
+    def _apply_mana_shield(self, defender: Character, damage: int) -> tuple[int, str, bool]:
+        """Handle Mana Shield absorption. Returns (damage, msg, fully_absorbed)."""
+        msg = ""
+        mana_loss = damage // defender.magic_effects["Mana Shield"].duration
+        if mana_loss > defender.mana.current:
+            abs_dam = defender.mana.current * defender.magic_effects["Mana Shield"].duration
+            msg += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
+            damage -= abs_dam
+            defender.mana.current = 0
+            self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
+            defender.magic_effects["Mana Shield"].active = False
+            msg += f"The mana shield dissolves around {defender.name}.\n"
+            return damage, msg, False
+        else:
+            msg += f"The mana shield around {defender.name} absorbs {damage} damage.\n"
+            defender.mana.current -= mana_loss
+            return 0, msg, True
+
+    def _apply_crusader_shield(self, defender: Character, damage: int) -> tuple[int, str, bool]:
+        """Handle Crusader Power Up absorb shield. Returns (damage, msg, fully_absorbed)."""
+        msg = ""
+        if damage >= defender.class_effects["Power Up"].extra:
+            msg += (f"The shield around {defender.name} absorbs "
+                    f"{defender.class_effects['Power Up'].extra} damage.\n")
+            damage -= defender.class_effects["Power Up"].extra
+            defender.class_effects["Power Up"].active = False
+            msg += f"The shield dissolves around {defender.name}.\n"
+            return damage, msg, False
+        else:
+            msg += f"The shield around {defender.name} absorbs {damage} damage.\n"
+            defender.class_effects["Power Up"].extra -= damage
+            return 0, msg, True
+
+    def _apply_damage_reduction(
+        self, defender: Character, damage: int, att: str, ignore: bool
+    ) -> tuple[int, str]:
+        """Apply resistance, armor, defensive stance, and astral shift reductions."""
+        msg = ""
+
+        # Elemental + physical resistance
+        e_resist = 0
+        if self.equipment[att].element:
+            e_resist = defender.check_mod('resist', enemy=self, typ=self.equipment[att].element)
+        p_resist = defender.check_mod(
+            'resist', enemy=self, typ='Physical', ultimate=self.equipment[att].ultimate
+        )
+        dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
+        damage = max(0, int(
+            damage * (1 - p_resist) * (1 - e_resist) * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
+        ))
+        variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
+        damage = int(damage * variance)
+
+        # Defensive stance
+        defensive_reduction = (
+            defender.get_defensive_reduction()
+            if hasattr(defender, "get_defensive_reduction") else 0.0
+        )
+        if defensive_reduction > 0 and damage > 0:
+            reduced = max(1, int(damage * defensive_reduction))
+            damage = max(0, damage - reduced)
+            msg += f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
+
+        # Astral Shift (25%)
+        if defender.magic_effects["Astral Shift"].active and damage > 0:
+            astral_reduction = int(damage * ASTRAL_SHIFT_REDUCTION)
+            damage = max(0, damage - astral_reduction)
+            msg += f"{defender.name}'s astral form deflects {astral_reduction} damage.\n"
+
+        return damage, msg
+
+    def _build_damage_message(
+        self, defender: Character, damage: int, typ: str, crit: int, att: str
+    ) -> str:
+        """Build the main damage-dealt message string."""
+        msg = f"{self.name} {typ} {defender.name} for {damage} damage"
+        if crit > 1:
+            msg += " (Critical hit!)"
+        msg += ".\n"
+        return msg
+
+    def _apply_on_hit_effects(self, defender: Character, damage: int, crit: int, att: str = 'Weapon') -> str:
+        """Apply post-damage triggers: Maelstrom tracking, sleep wakeup, life steal."""
+        msg = ""
+
+        # Update Maelstrom Weapon counter for non-critical hits
+        if "Maelstrom Weapon" in self.spellbook["Skills"] and crit == 1:
+            self.maelstrom_hits += 1
+
+        # Emit damage event
+        damage_type = "Physical"
+        if self.equipment[att].element:
+            damage_type = self.equipment[att].element
+        self._emit_damage_event(defender, damage, damage_type=damage_type, is_critical=(crit > 1))
+
+        # Sleep wakeup
+        if defender.status_effects["Sleep"].active and \
+                not random.randint(0, defender.status_effects["Sleep"].duration):
+            msg += f"The attack awakens {defender.name}!\n"
+            self._emit_status_event(defender, "Sleep", applied=False, source="Awakened by Damage")
+            defender.status_effects["Sleep"].active = False
+            defender.status_effects["Sleep"].duration = 0
+
+        # Ninja life steal
+        if self.cls.name == "Ninja" and self.power_up:
+            dam_abs = self.class_effects["Power Up"].active * damage
+            self.health.current += dam_abs
+            self._emit_healing_event(dam_abs, source="Ninja Life Steal")
+            msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
+
+        # Lycan life steal
+        if self.cls.name == "Lycan" and self.power_up:
+            dam_abs = damage // 2
+            self.health.current += dam_abs
+            if dam_abs > 0:
+                self._emit_healing_event(dam_abs, source="Lycan Life Steal")
+                msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
+
+        return msg
+
+    def _apply_equipment_effects(
+        self, defender: Character, att: str, damage: int, crit: int
+    ) -> str:
+        """Process armor/weapon special effects on a successful hit."""
+        from .combat.combat_result import CombatResult, CombatResultGroup
+
+        msg = ""
+        result = CombatResult(
+            action=att, actor=self, target=defender,
+            hit=True, crit=crit, damage=damage
+        )
+        results = CombatResultGroup()
+        results.add(result)
+
+        # Armor special effects (thorns, reflection)
+        defender.equipment['Armor'].special_effect(results)
+
+        # Weapon special effects (life steal, elemental effects, instant death)
+        if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
+            self.equipment[att].special_effect(results)
+
+        # Process special effect results
+        for res in results.results:
+            if 'Drain' in res.extra and res.extra['Drain']:
+                drain_amount = res.actor.health.current - (res.actor.health.current - res.damage)
+                msg += f"{res.actor.name} drains {drain_amount} health from {res.target.name}.\n"
+            if 'Instant Death' in res.extra and res.extra['Instant Death']:
+                res.target.health.current = 0
+                msg += f"{res.target.name} is instantly killed!\n"
+
+        return msg
 
     def handle_defenses(self, attacker, damage, cover=False, typ="Physical"):
         """
@@ -772,11 +906,11 @@ class Character:
         else:
             chance = (self.check_mod('luck', enemy=enemy, luck_factor=10) + \
                 (self.stat_effects["Speed"].active * self.stat_effects["Speed"].extra))
-            chance = (chance / 100) + 0.2  # base 20% + chance
+            chance = (chance / 100) + BASE_FLEE_CHANCE
             speed_factor = (self.check_mod("speed", enemy=enemy) - enemy.check_mod("speed", enemy=enemy)) / \
                 (self.check_mod("speed", enemy=enemy) + enemy.check_mod("speed", enemy=enemy) + 1)
             pro_diff = self.level.pro_level / max(enemy.level.pro_level, 1)
-            flee_chance = min(0.95, chance + speed_factor * pro_diff)  # capped at 95%
+            flee_chance = min(MAX_FLEE_CHANCE, chance + speed_factor * pro_diff)
             if random.random() < flee_chance or enemy.incapacitated() or blind:
                 flee_message = f"{self.name} flees from the {enemy.name}."
                 self.state = 'normal'
@@ -972,7 +1106,7 @@ class Character:
                     mana_regen = min(int(self.mana.max * 0.10), self.mana.max - self.mana.current)
                     self.health.current += health_regen
                     self.mana.current += mana_regen
-                    status_text += f"{self.name} regens {health_regen} health and {mana_gain} mana.\n"
+                    status_text += f"{self.name} regens {health_regen} health and {mana_regen} mana.\n"
                 if not self.class_effects["Power Up"].duration:
                     if self.cls.name == "Crusader" and self.power_up:
                         status_text += (f"The shield around {self.name} explodes, dealing "

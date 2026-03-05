@@ -570,8 +570,6 @@ class InventoryPopupMenu(BasePopupMenu):
                 break
             if action == "Use":
                 self._use_item(player_char, obj, category, background_surface=action_bg)
-                if player_char.in_town():
-                    return ("exit_to_town", item)
             elif action == "Drop":
                 self._drop_item(player_char, obj, category, background_surface=action_bg)
 
@@ -1286,7 +1284,7 @@ class QuestPopupMenu(BasePopupMenu):
                         try:
                             instance = r()
                             name = getattr(instance, 'name', r.__name__ if hasattr(r, '__name__') else None)
-                        except:
+                        except Exception:
                             name = r.__name__ if hasattr(r, '__name__') else None
 
                     # Last resort

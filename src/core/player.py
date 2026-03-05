@@ -8,6 +8,19 @@ import os
 import random
 import xml.etree.ElementTree as ET
 
+from .constants import (
+    BASE_CRIT_PER_POINT,
+    EXP_SCALE_BASE,
+    LEVELUP_ATK_LUCK_FACTOR,
+    LEVELUP_DEF_LUCK_FACTOR,
+    LEVELUP_LUCK_DIVISOR_BASE,
+    LEVELUP_LUCK_FACTOR_HP_MP,
+    LEVELUP_MAG_LUCK_FACTOR,
+    LEVELUP_MDEF_LUCK_FACTOR,
+    LEVELUP_STAT_DIVISOR,
+    TOWN_LOCATION,
+)
+
 import numpy
 
 from . import abilities, enemies
@@ -197,9 +210,9 @@ class Player(Character):
         self.location_y = location_y
         self.location_z = location_z
         self.facing = "east"
-        self.previous_location = (5, 10, 0)  # starts at town location
+        self.previous_location = TOWN_LOCATION  # starts at town location
         self.state = "normal"
-        self.exp_scale = 25
+        self.exp_scale = EXP_SCALE_BASE
         self.gold = gold
         self.level = level
         self.resistance = resistance
@@ -418,10 +431,10 @@ class Player(Character):
                     (self.level.level == 30 and self.level.pro_level < 3)])
 
     def in_town(self):
-        return (self.location_x, self.location_y, self.location_z) == (5, 10, 0)
+        return (self.location_x, self.location_y, self.location_z) == TOWN_LOCATION
 
     def to_town(self):
-        (self.location_x, self.location_y, self.location_z) = (5, 10, 0)
+        (self.location_x, self.location_y, self.location_z) = TOWN_LOCATION
 
     def exit_funhouse(self):
         """Exit the funhouse and return to the saved location."""
@@ -620,10 +633,10 @@ class Player(Character):
     def combat_str(self):
         combat_message = ""
         main_dmg = self.check_mod('weapon')
-        main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
+        main_crit = int((self.equipment['Weapon'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
         if self.equipment['OffHand'].typ == 'Weapon':
             off_dmg = self.check_mod('offhand')
-            off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+            off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
             combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>3}/{str(off_dmg):>3}\n"
             combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):2}%/{str(off_crit):>2}%\n"
         else:
@@ -691,7 +704,7 @@ class Player(Character):
             textbox: Optional TextBox UI component
             menu: Optional SelectionPopupMenu UI component
         """
-        dv = max(1, 5 - self.check_mod('luck', luck_factor=8))
+        dv = max(1, LEVELUP_LUCK_DIVISOR_BASE - self.check_mod('luck', luck_factor=LEVELUP_LUCK_FACTOR_HP_MP))
         health_gain = random.randint(self.stats.con // dv, self.stats.con)
         self.health.max += health_gain
         mana_gain = random.randint(self.stats.intel // dv, self.stats.intel)
@@ -703,17 +716,17 @@ class Player(Character):
         level_str = (f"You have gained a level.\n"
                      f"You are now level {self.level.level}.\n"
                      f"You have gained {health_gain} health points and {mana_gain} mana points.\n")
-        attack_gain = random.randint(0, self.check_mod("luck", luck_factor=12) +
-                                    (self.stats.strength // 12) + max(1, self.cls.att_plus // 2))
+        attack_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_ATK_LUCK_FACTOR) +
+                                    (self.stats.strength // LEVELUP_STAT_DIVISOR) + max(1, self.cls.att_plus // 2))
         self.combat.attack += attack_gain
-        defense_gain = random.randint(0, self.check_mod("luck", luck_factor=15) + 
-                                    (self.stats.con // 12) + max(1, self.cls.def_plus // 2))
+        defense_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_DEF_LUCK_FACTOR) + 
+                                    (self.stats.con // LEVELUP_STAT_DIVISOR) + max(1, self.cls.def_plus // 2))
         self.combat.defense += defense_gain
-        magic_gain = random.randint(0, self.check_mod("luck", luck_factor=12) +
-                                    (self.stats.intel // 12) + max(1, self.cls.int_plus // 2))
+        magic_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_MAG_LUCK_FACTOR) +
+                                    (self.stats.intel // LEVELUP_STAT_DIVISOR) + max(1, self.cls.int_plus // 2))
         self.combat.magic += magic_gain
-        magic_def_gain = random.randint(0, self.check_mod("luck", luck_factor=15) +
-                                    (self.stats.wisdom // 12) + max(1, self.cls.wis_plus // 2))
+        magic_def_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_MDEF_LUCK_FACTOR) +
+                                    (self.stats.wisdom // LEVELUP_STAT_DIVISOR) + max(1, self.cls.wis_plus // 2))
         self.combat.magic_def += magic_def_gain
         if attack_gain > 0:
             level_str += f"You have gained {attack_gain} attack.\n"
@@ -1232,12 +1245,12 @@ class Player(Character):
         try:
             # Get current stats with original equipment
             main_dmg = self.check_mod('weapon')
-            main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
+            main_crit = int((self.equipment['Weapon'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
             attack = f"{str(main_dmg)}"
             crit = f"{str(main_crit)}%"
             if self.equipment['OffHand'].typ == 'Weapon':
                 off_dmg = self.check_mod('offhand')
-                off_crit = int((self.equipment['OffHand'].crit  + (0.005 * self.check_mod("speed"))) * 100)
+                off_crit = int((self.equipment['OffHand'].crit  + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
                 attack = f"{str(main_dmg)}/{str(off_dmg)}"
                 crit = f"{str(main_crit)}%/{str(off_crit)}%"
             armor = self.check_mod('armor')
@@ -1278,7 +1291,7 @@ class Player(Character):
             new_main_dmg = self.check_mod('weapon')
             if new_main_dmg != main_dmg:
                 diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}"
-            new_main_crit = int((self.equipment['Weapon'].crit + (0.005 * self.check_mod("speed"))) * 100)
+            new_main_crit = int((self.equipment['Weapon'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
             if new_main_crit != main_crit:
                 diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%"
             if equip_slot == 'Weapon':
@@ -1288,14 +1301,14 @@ class Player(Character):
                         diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%"
                     else:
                         new_off_dmg = self.check_mod('offhand')
-                        new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+                        new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
                         if new_main_dmg != main_dmg or new_off_dmg != off_dmg:
                             diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
                         if new_main_crit != main_crit or new_off_crit != off_crit:
                             diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
                 elif item.subtyp in self.cls.restrictions["OffHand"] and buy:
                     new_off_dmg = self.check_mod('offhand')
-                    new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+                    new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
                     if original_offhand and original_offhand.typ == "Weapon":
                         diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
                         diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
@@ -1305,7 +1318,7 @@ class Player(Character):
             if equip_slot == 'OffHand':
                 if item.typ == "Weapon":
                     new_off_dmg = self.check_mod('offhand')
-                    new_off_crit = int((self.equipment['OffHand'].crit + (0.005 * self.check_mod("speed"))) * 100)
+                    new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
                     diff_dict["Attack"] = f"{main_dmg} -> {main_dmg}/{new_off_dmg}"
                     diff_dict["Critical Chance"] = f"{main_crit}% -> {main_crit}%/{new_off_crit}%"
                     if original_offhand and original_offhand.typ == 'Weapon':

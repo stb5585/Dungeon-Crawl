@@ -493,9 +493,7 @@ class CharacterScreen(TownScreenBase):
                         # Open popup overlays for relevant menus; keep loop after closing
                         if chosen == "Inventory":
                             popup = InventoryPopupMenu(self.presenter, self)
-                            popup_result = popup.show(player_char)
-                            if popup_result and popup_result[0] == "exit_to_town":
-                                return "Exit Menu"
+                            popup.show(player_char)
                         elif chosen == "Equipment":
                             popup = EquipmentPopupMenu(self.presenter, self)
                             _ = popup.show(player_char)

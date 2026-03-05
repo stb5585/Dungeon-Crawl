@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from ..effects import (
+from src.core.effects import (
     DamageEffect,
     HealEffect,
     StatusEffect,
@@ -27,7 +27,7 @@ from ..effects import (
 if TYPE_CHECKING:
     from typing import Any
 
-    from ..effects.base import Effect
+    from src.core.effects.base import Effect
 
 
 class EffectFactory:
@@ -134,7 +134,7 @@ class EffectFactory:
         amount = data.get('amount', 0)
         duration = data.get('duration', 3)
         
-        from effects.buffs import AttackDebuffEffect, DefenseDebuffEffect, MagicDebuffEffect
+        from src.core.effects.buffs import AttackDebuffEffect, DefenseDebuffEffect, MagicDebuffEffect
         
         if stat == 'attack':
             return AttackDebuffEffect(amount, duration)

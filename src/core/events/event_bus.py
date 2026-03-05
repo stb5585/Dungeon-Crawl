@@ -124,9 +124,10 @@ class EventBus:
     event types and receive callbacks when those events are emitted.
     """
     
-    def __init__(self):
+    def __init__(self, max_history: int = 1000):
         self._subscribers: dict[EventType, list[Callable]] = {}
         self._history: list[GameEvent] = []
+        self._max_history: int = max_history
         self._enabled: bool = True
     
     def subscribe(self, event_type: EventType, callback: Callable[[GameEvent], None]) -> None:
@@ -166,8 +167,10 @@ class EventBus:
         if not self._enabled:
             return
         
-        # Store in history
+        # Store in history (bounded)
         self._history.append(event)
+        if len(self._history) > self._max_history:
+            self._history = self._history[-self._max_history:]
         
         # Notify subscribers
         if event.type in self._subscribers:

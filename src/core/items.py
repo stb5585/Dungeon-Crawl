@@ -16,6 +16,38 @@ if TYPE_CHECKING:
 
 
 # Functions
+_rarity_table_cache: dict[str, list] | None = None
+_RARITY_BUCKETS = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
+
+
+def _build_rarity_table() -> dict[str, list]:
+    """Build and cache the rarity-bucketed loot table from items_dict."""
+    global _rarity_table_cache
+    if _rarity_table_cache is not None:
+        return _rarity_table_cache
+
+    rarity_table: dict[str, list] = {str(i): [] for i in range(1, 9)}
+    for typ, typ_dict in items_dict.items():
+        if typ == "Weapon":
+            for handed in ["1-Handed", "2-Handed"]:
+                for lst in items_dict[typ][handed].values():
+                    for item_cls in lst:
+                        rarity = np.digitize(item_cls().rarity, _RARITY_BUCKETS)
+                        rarity_table[str(rarity)].append(item_cls)
+        elif typ == "Accessory":
+            for acc in ["Ring", "Pendant"]:
+                for item_cls in items_dict[typ][acc]:
+                    rarity = np.digitize(item_cls().rarity, _RARITY_BUCKETS)
+                    rarity_table[str(rarity + 1)].append(item_cls)
+        else:
+            for value in typ_dict.values():
+                for item_cls in value:
+                    rarity = np.digitize(item_cls().rarity, _RARITY_BUCKETS)
+                    rarity_table[str(rarity + 1)].append(item_cls)
+    _rarity_table_cache = rarity_table
+    return _rarity_table_cache
+
+
 def random_item(z: int) -> Item:
     """
     Returns a random item based on the given integer.
@@ -23,27 +55,8 @@ def random_item(z: int) -> Item:
     """
     # Clamp z to valid range to prevent KeyError
     z = max(1, min(z, 8))
-
-    random_dict = {"1":[],"2":[],"3":[],"4":[],"5":[],"6":[],"7":[],"8":[]}
-    buckets = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
-    for typ, typ_dict in items_dict.items():
-        if typ == "Weapon":
-            for handed in ["1-Handed", "2-Handed"]:
-                for lst in items_dict[typ][handed].values():
-                    for item in lst:
-                        rarity = np.digitize(item().rarity, buckets)
-                        random_dict[str(rarity)].append(item)
-        elif typ == "Accessory":
-            for acc in ["Ring", "Pendant"]:
-                for item in items_dict[typ][acc]:
-                    rarity = np.digitize(item().rarity, buckets)
-                    random_dict[str(rarity+1)].append(item)
-        else:
-            for value in typ_dict.values():
-                for item in value:
-                    rarity = np.digitize(item().rarity, buckets)
-                    random_dict[str(rarity+1)].append(item)
-    return random.choice(random_dict[str(z)])
+    rarity_table = _build_rarity_table()
+    return random.choice(rarity_table[str(z)])
 
 
 def remove_equipment(typ: str) -> Item:

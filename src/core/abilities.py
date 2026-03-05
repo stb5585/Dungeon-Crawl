@@ -7,6 +7,7 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from .combat.combat_result import CombatResult
+from .constants import ARMOR_SCALING_FACTOR, DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 from . import enemies
 
 if TYPE_CHECKING:
@@ -287,324 +288,37 @@ Skill section
 """
 
 
-class Offensive(Skill):
-    """
-    Child class of Skill that handles offensive skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Offensive', meaning they work to damage the enemy
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Offensive"
+def _skill_subtype(cls_name: str, subtyp: str, description: str) -> type:
+    """Generate a Skill subclass whose only distinction is *subtyp*."""
+    def _init(self, name: str = "", description: str = "", **kwargs):
+        Skill.__init__(self, name, description, **kwargs)
+        self.subtyp = subtyp
+    return type(cls_name, (Skill,), {
+        "__init__": _init,
+        "__doc__": description,
+    })
 
 
-class Defensive(Skill):
-    """
-    Child class of Skill that handles defensive skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Defensive', meaning they work to protect the user
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Defensive"
-
-
-class Stealth(Skill):
-    """
-    Child class of Skill that handles stealth skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Stealth', meaning they use subterfuge to surprise the enemy
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Stealth"
-
-
-class Enhance(Skill):
-    """
-    Child class of Skill that handles enhance skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Enhance', meaning they enhance the user's abilities or equipment
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Enhance"
-
-
-class Drain(Skill):
-    """
-    Child class of Skill that handles drain skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Drain', meaning they drain the enemy's health or mana
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Drain"
-
-
-class Class(Skill):
-    """
-    Child class of Skill that handles class skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Class', meaning they are specific to a class
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Class"
-
-
-class Truth(Skill):
-    """
-    Child class of Skill that handles truth skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Truth', meaning they reveal secrets or hidden truths
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Truth"
-
-
-class MartialArts(Skill):
-    """
-    Child class of Skill that handles martial arts skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Martial Arts', meaning they are specific to hand-to-hand combat
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Martial Arts"
-
-
-class Luck(Skill):
-    """
-    Child class of Skill that handles luck skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Luck', meaning they are based on chance
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Luck"
-
-
-class PowerUp(Skill):
-    """
-    Child class of Skill that handles power-up skills
-
-    Attributes:
-        name: name of the ability
-        description: description of the ability that explains what it does in so many words
-        cost: amount of mana required to cast spell; default is 0
-        combat: boolean indicating whether the ability can only be cast in combat
-        passive: boolean indicating whether the ability is passively active
-        typ: the type of these abilities is 'Skill'
-        subtyp: the subtype of these abilities is 'Power Up', meaning they are obtained through training
-        dmg_mod: damage modifier for the ability
-        result: the result of the ability
-        weapon: boolean indicating whether the ability is a weapon skill
-    ------------------------------------------------------------
-    Methods:
-        __init__: initializes the ability with the given attributes
-        __str__: returns a string representation of the ability
-        special_effect: applies a special effect to the ability
-        use: applies the skill to the target
-    """
-
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            ):
-        super().__init__(name, description)
-        self.subtyp = "Power Up"
+Offensive = _skill_subtype("Offensive", "Offensive",
+    "Skill subtype for offensive skills that work to damage the enemy.")
+Defensive = _skill_subtype("Defensive", "Defensive",
+    "Skill subtype for defensive skills that work to protect the user.")
+Stealth = _skill_subtype("Stealth", "Stealth",
+    "Skill subtype for stealth skills that use subterfuge to surprise the enemy.")
+Enhance = _skill_subtype("Enhance", "Enhance",
+    "Skill subtype for enhance skills that enhance the user's abilities or equipment.")
+Drain = _skill_subtype("Drain", "Drain",
+    "Skill subtype for drain skills that drain the enemy's health or mana.")
+Class = _skill_subtype("Class", "Class",
+    "Skill subtype for class-specific skills.")
+Truth = _skill_subtype("Truth", "Truth",
+    "Skill subtype for truth skills that reveal secrets or hidden truths.")
+MartialArts = _skill_subtype("MartialArts", "Martial Arts",
+    "Skill subtype for martial arts skills specific to hand-to-hand combat.")
+Luck = _skill_subtype("Luck", "Luck",
+    "Skill subtype for luck-based skills.")
+PowerUp = _skill_subtype("PowerUp", "Power Up",
+    "Skill subtype for power-up skills obtained through training.")
 
 
 # Skills #
@@ -640,7 +354,7 @@ class ShieldSlam(Offensive):
         else:
             # Calculate damage based on strength and shield weight
             damage = max(1, user.stats.strength + user.equipment["OffHand"].weight)
-            variance = random.uniform(0.85, 1.15)
+            variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
             damage = int(damage * variance)
             
             target.health.current -= damage
@@ -3617,7 +3331,7 @@ class ArcaneBlast(PowerUp):
         user.mana.current = 0
 
         if hit:
-            variance = random.uniform(0.85, 1.15)
+            variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
             damage = int(damage * variance)
             if damage > 0:
                 target.health.current -= damage
@@ -4023,8 +3737,8 @@ class AcidSpit(Skill):
             return "It has no effect.\n"
         dmg = (user.stats.intel // 2) + user.combat.magic
         dam_red = target.check_mod("magic def", enemy=user)
-        damage = int(dmg * (1 - (dam_red / (dam_red + 50))))
-        variance = random.uniform(0.85, 1.15)
+        damage = int(dmg * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
+        variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
         if user.hit_chance(target, typ="magic"):
             if target.dodge_chance(user, spell=True):
@@ -4208,7 +3922,7 @@ class NightmareFuel(Skill):
             ):
                 if random.random() > 0.5:  # 50% chance to crit
                     crit = 2
-                variance = random.uniform(0.85, 1.15)
+                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                 damage = int(
                     target.status_effects["Sleep"].duration
                     * user.stats.intel
@@ -5048,8 +4762,7 @@ class BreatheFire(Skill):
         base_damage = int((user.stats.strength + user.stats.intel) * 1.5)
         
         # Add some variance
-        import random
-        variance = random.uniform(0.85, 1.15)
+        variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(base_damage * variance)
         
         # Apply target's damage reduction for this element type
@@ -5252,7 +4965,7 @@ class Attack(Spell):
                     target.health.current -= damage
                     cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
                 else:
-                    variance = random.uniform(0.85, 1.15)
+                    variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                     damage = int(damage * variance)
                     if damage <= 0:
                         cast_message += (
@@ -5486,8 +5199,8 @@ class MagicMissile(Attack):
                         _, message, damage = target.handle_crusader_shield(damage)
                         cast_message += message
                     dam_red = target.check_mod("magic def", enemy=caster)
-                    damage = int(damage * (1 - (dam_red / (dam_red + 50))))
-                    variance = random.uniform(0.85, 1.15)
+                    damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
+                    variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                     damage = int(damage * variance)
                     if damage <= 0:
                         cast_message += (
@@ -6394,8 +6107,8 @@ class Smite(HolySpell):
                 target.health.current -= damage
                 cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
             else:
-                damage = int(damage * (1 - (dam_red / (dam_red + 50))))
-                variance = random.uniform(0.85, 1.15)
+                damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
+                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                 damage = int(damage * variance)
                 if damage <= 0:
                     damage = 0
@@ -6523,8 +6236,8 @@ class TurnUndead(HolySpell):
                 resist = target.check_mod("resist", enemy=caster, typ="Holy")
                 damage = int(self.dmg_mod * spell_mod)
                 damage *= crit
-                damage = int(damage * (1 - resist) * (1 - (dam_red / (dam_red + 50))))
-                variance = random.uniform(0.85, 1.15)
+                damage = int(damage * (1 - resist) * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
+                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                 damage = int(damage * variance)
                 target.health.current -= damage
                 damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"

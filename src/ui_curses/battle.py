@@ -9,6 +9,8 @@ import re
 from typing import TYPE_CHECKING
 
 from src.core.combat.battle_logger import BattleLogger
+from src.core.combat.initiative import determine_initiative
+from src.core.constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 
 if TYPE_CHECKING:
     from typing import Any
@@ -105,26 +107,7 @@ class BattleManager:
 
     def determine_initiative(self) -> tuple[Character, Character]:
         """Determine who goes first using each character's dexterity plus luck."""
-        if self.player_char.encumbered:
-            first = self.enemy
-        elif self.player_char.invisible and not self.enemy.sight:
-            if self.player_char.cls.name == "Shadowcaster" and self.player_char.power_up:
-                self.player_char.class_effects["Power Up"].active = True
-                self.player_char.class_effects["Power Up"].duration = 1
-            first = self.player_char
-        elif self.enemy.invisible and not self.player_char.sight:
-            first = self.enemy
-        else:
-            p_chance = self.player_char.check_mod("speed", enemy=self.enemy) + \
-                    self.player_char.check_mod('luck', enemy=self.enemy, luck_factor=10)
-            e_chance = self.enemy.check_mod("speed", enemy=self.player_char) + \
-                    self.enemy.check_mod('luck', enemy=self.player_char, luck_factor=10)
-            total_chance = p_chance + e_chance
-            chance_list = [p_chance / total_chance, e_chance / total_chance]
-            first = random.choices([self.player_char, self.enemy], chance_list)[0]
-
-        second = self.enemy if first == self.player_char else self.player_char
-        return first, second
+        return determine_initiative(self.player_char, self.enemy)
 
     def execute_battle(self) -> bool:
         """Handles the entire battle flow."""
@@ -255,7 +238,7 @@ class BattleManager:
                 is_special=False
             ))
 
-            if not random.randint(0, 9 - self.attacker.check_mod("luck", luck_factor=20)):
+            if not random.randint(0, max(1, SPECIAL_ATTACK_ROLL_MAX - self.attacker.check_mod("luck", luck_factor=SPECIAL_ATTACK_LUCK_FACTOR))):
                 try:
                     result = self.attacker.special_attack(target=self.defender)
                     # Mark as special attack

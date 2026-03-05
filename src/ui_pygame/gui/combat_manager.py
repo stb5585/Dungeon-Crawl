@@ -15,6 +15,8 @@ import pygame
 from src.core import enemies
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
+from src.core.combat.initiative import determine_initiative
+from src.core.constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from src.core.player import Player
 from .combat_view import CombatView
 from .level_up import LevelUpScreen
@@ -229,11 +231,6 @@ class GUICombatManager:
         self.running = True
         self.combat_view.reset_combat_log()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
-        
-        # Initialize combat state
-        self.running = True
-        self.combat_view.reset_combat_log()
-        self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         self._combat_background = self._capture_background()
         
         # Initialize battle logger
@@ -252,28 +249,11 @@ class GUICombatManager:
             pygame.display.flip()
             init_clock.tick(60)
         
-        # Determine who goes first (using speed + luck modifiers)
-        # Encumbered player always loses initiative
+        # Determine who goes first (shared initiative logic)
+        first, _second = determine_initiative(player_char, enemy)
+        player_initiative = (first == player_char)
         if player_char.encumbered:
-            first = enemy
-            player_initiative = False
             self.combat_view.add_combat_message("You are ENCUMBERED! Enemy strikes first!")
-        else:
-            p_chance = player_char.check_mod("speed", enemy=enemy) + \
-                       player_char.check_mod('luck', enemy=enemy, luck_factor=10)
-            e_chance = enemy.check_mod("speed", enemy=player_char) + \
-                       enemy.check_mod('luck', enemy=player_char, luck_factor=10)
-            
-            total_chance = p_chance + e_chance
-            if total_chance > 0:
-                chance_list = [p_chance / total_chance, e_chance / total_chance]
-                import random
-                first = random.choices([player_char, enemy], chance_list)[0]
-            else:
-                # Fallback to simple dex comparison
-                first = player_char if player_char.stats.dex >= enemy.stats.dex else enemy
-            
-            player_initiative = (first == player_char)
         
         # Start logging battle
         self.logger.start_battle(player_char, enemy, player_initiative, boss)
@@ -1302,7 +1282,7 @@ class GUICombatManager:
 
         # Enemy attacks using weapon_damage method (same as battle.py)
         player_hp_before = player_char.health.current
-        if not random.randint(0, 9 - enemy.check_mod("luck", luck_factor=20)):
+        if not random.randint(0, SPECIAL_ATTACK_ROLL_MAX - enemy.check_mod("luck", luck_factor=SPECIAL_ATTACK_LUCK_FACTOR)):
             try:
                 message = enemy.special_attack(target=player_char)
                 hit = True
