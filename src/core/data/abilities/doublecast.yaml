@@ -1,0 +1,12 @@
+name: Doublecast
+description: Cast multiple spells in a single turn.
+type: Skill
+subtype: Offensive
+cost: 10
+weapon: false
+effects:
+  - type: doublecast
+    cast_count: 2
+    exclude_spells:
+      - Magic Missile
+    ability_cost: 10

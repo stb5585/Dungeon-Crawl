@@ -366,11 +366,12 @@ class DungeonHUD:
                 
                 if tile:
                     tile_type = type(tile).__name__
+                    is_funhouse_wall = tile_type in ('FunhouseWall', 'MirrorWall')
                     is_directly_visible = (tile_x, tile_y) in visible_adjacent
                     is_discovered_explorable = bool(
                         getattr(tile, 'near', False)
                         and getattr(tile, 'enter', True)
-                        and tile_type != 'FakeWall'
+                        and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
                     )
                     is_discovered_special = bool(
                         getattr(tile, 'near', False) and (
@@ -393,7 +394,7 @@ class DungeonHUD:
                     if dx == 0 and dy == 0:
                         # Player position - draw base tile first, then player marker with arrow
                         if getattr(tile, 'visited', False):
-                            if not getattr(tile, 'enter', True):
+                            if is_funhouse_wall or not getattr(tile, 'enter', True):
                                 pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
                             else:
                                 pygame.draw.rect(self.screen, (120, 120, 130), tile_rect)
@@ -437,6 +438,9 @@ class DungeonHUD:
                                 pygame.draw.rect(self.screen, (150, 100, 150), tile_rect)
                             else:
                                 pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
+                        elif is_funhouse_wall:
+                            wall_color = (130, 90, 145) if is_visited else (85, 70, 95)
+                            pygame.draw.rect(self.screen, wall_color, tile_rect)
                         elif is_fire_path and is_visited:
                             # Discovered FirePath tiles render as red heat zones on the minimap
                             pygame.draw.rect(self.screen, (175, 55, 55), tile_rect)

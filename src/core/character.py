@@ -10,31 +10,74 @@ from math import exp
 from .constants import (
     ACCURACY_RING_BONUS,
     ARMOR_SCALING_FACTOR,
+    MAGIC_DEF_SCALING_FACTOR,
     ASTRAL_SHIFT_REDUCTION,
     BASE_CRIT_PER_POINT,
     BASE_FLEE_CHANCE,
     BERSERK_HIT_PENALTY,
+    BLIND_RAGE_HIT_PENALTY,
     BLIND_ACCURACY_PENALTY,
+    DWARF_HANGOVER_DODGE_MULTIPLIER,
+    ELF_BLIND_PENALTY_MULTIPLIER,
+    ELF_HEALING_RECEIVED_MULTIPLIER,
+    ELF_INVISIBLE_PENALTY_MULTIPLIER,
+    GNOME_ENCUMBERED_DODGE_MULTIPLIER,
+    GNOME_ENCUMBERED_HIT_MULTIPLIER,
+    HALF_ELF_CRIT_SPIKE_MULTIPLIER,
+    HALF_ELF_HEALING_RECEIVED_MULTIPLIER,
     DAMAGE_VARIANCE_HIGH,
     DAMAGE_VARIANCE_LOW,
     DISARM_HIT_PENALTY,
     ENCUMBERED_HIT_MULTIPLIER,
     FLYING_ACCURACY_PENALTY,
+    HALF_ORC_BLIND_RAGE_CHANCE,
+    HALF_ORC_BLIND_RAGE_DURATION,
+    HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER,
+    HUMAN_STATUS_RESIST_MULTIPLIER,
     INVISIBLE_ACCURACY_PENALTY,
     MAELSTROM_CRIT_PER_HIT,
     MAX_DODGE_CHANCE,
     MAX_FLEE_CHANCE,
     PRO_LEVEL_HIT_MODIFIER,
     SEEKER_CRIT_BONUS,
+    WEAPON_CRIT_WEIGHT,
+    MAX_CRIT_CHANCE,
 )
+
+POISON_HEALING_MULTIPLIER = 0.70
+BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER = 1.20
+STUN_IMMUNITY_TURNS_AFTER_EXPIRY = 1
+STUN_LEVEL_DIFF_SCALE = 0.04
+STUN_LEVEL_DIFF_CAP = 8
+STUN_LEVEL_DIFF_MULT_MIN = 0.70
+STUN_LEVEL_DIFF_MULT_MAX = 1.30
+
+
+def _combat_level(ch: object) -> int:
+    """
+    Best-effort combat level accessor.
+
+    Player: ``player.level.level``
+    Enemy: often ``enemy.level`` (int)
+    """
+    lvl = getattr(ch, "level", 1)
+    if hasattr(lvl, "level"):
+        try:
+            return int(lvl.level)
+        except Exception:
+            return 1
+    try:
+        return int(lvl)
+    except Exception:
+        return 1
 
 
 # functions
-def sigmoid(x):
+def sigmoid(x: float) -> float:
     return 1 / (1 + exp(-x))
 
 
-def scaled_decay_function(x, rate=0.1):
+def scaled_decay_function(x: float, rate: float = 0.1) -> float:
     """
     Returns a value between 0 and 1 that decreases as x increases.
     Used for shop price adjustments based on charisma.
@@ -160,6 +203,8 @@ class Character:
                           'Skills': {}}
         self.status_effects = {"Berserk": StatusEffect(False, 0),
                                 "Blind": StatusEffect(False, 0),
+                                "Blind Rage": StatusEffect(False, 0),
+                                "Hangover": StatusEffect(False, 0),
                                 "Doom": StatusEffect(False, 0),
                                 "Poison": StatusEffect(False, 0, 0),
                                 "Silence": StatusEffect(False, 0),
@@ -203,6 +248,7 @@ class Character:
                            'Holy': 0.,
                            "Poison": 0.,
                            'Physical': 0.}
+        self.anti_magic_active = False
         self.flying = False
         self.invisible = False
         self.sight = False
@@ -211,9 +257,14 @@ class Character:
 
         # Defensive stance settings
         self.defensive_stance_reduction = 0.25
-        
+
         # Passive ability tracking
         self.maelstrom_hits = 0  # Track consecutive hits for Maelstrom Weapon ability
+        # Evasive Guard (Footpad): stacks build when hit, reset on dodge.
+        self.evasive_guard_stacks = 0
+
+    def abilities_suppressed(self) -> bool:
+        return bool(self.status_effects["Silence"].active or getattr(self, "anti_magic_active", False))
     
     def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
@@ -262,6 +313,30 @@ class Character:
         except Exception:
             pass
 
+    def _emit_status_tick_event(
+        self,
+        target: Character,
+        status_name: str,
+        amount: int,
+        kind: str,
+        source: str = "Unknown",
+    ) -> None:
+        """Emit a status tick (damage/heal) event for analytics/tests."""
+        try:
+            from .events.event_bus import get_event_bus, create_combat_event, EventType
+            event_bus = get_event_bus()
+            event_bus.emit(create_combat_event(
+                EventType.STATUS_TICK,
+                actor=self,
+                target=target,
+                status_name=status_name,
+                amount=amount,
+                kind=kind,
+                source=source,
+            ))
+        except Exception:
+            pass
+
     def enter_defensive_stance(self, duration: int = 1, reduction: float | None = None, source: str = "Defend") -> str:
         """
         Put the character into a defensive stance for a number of turns.
@@ -293,12 +368,12 @@ class Character:
             reduction += 0.15
         return min(0.75, reduction)
 
-    def incapacitated(self):
+    def incapacitated(self) -> bool:
         return any([self.status_effects["Sleep"].active,
                     self.physical_effects["Prone"].active,
                     self.status_effects["Stun"].active])
 
-    def check_active(self):
+    def check_active(self) -> tuple[bool, str]:
         """
         Check if the character can act in combat this turn.
         
@@ -313,7 +388,107 @@ class Character:
             return False, f"{self.name} is encased in ice and does nothing.\n"
         return True, ""
 
-    def effect_handler(self, effect):
+    def healing_received_multiplier(self) -> float:
+        """Return multiplier applied to healing received (e.g., poison reduces healing)."""
+        mult = 1.0
+        if self.status_effects.get("Poison") and self.status_effects["Poison"].active:
+            mult *= POISON_HEALING_MULTIPLIER
+        # Racial traits (7 sins / 7 virtues)
+        try:
+            race_name = getattr(getattr(self, "race", None), "name", None)
+            if race_name == "Elf":
+                mult *= ELF_HEALING_RECEIVED_MULTIPLIER
+            elif race_name == "Half Elf":
+                mult *= HALF_ELF_HEALING_RECEIVED_MULTIPLIER
+        except Exception:
+            pass
+        return mult
+
+    # ── Economy helpers (used by both UIs) ────────────────────────────
+    def shop_price_scale(self) -> float:
+        """Return multiplicative scale applied to shop buy prices based on charisma (race-aware)."""
+        cha = int(getattr(self.stats, "charisma", 0) or 0)
+        try:
+            if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                from .constants import GNOME_GOLD_CHARISMA_MULTIPLIER
+                cha = int(cha * GNOME_GOLD_CHARISMA_MULTIPLIER)
+        except Exception:
+            pass
+        return scaled_decay_function(cha // 2)
+
+    def shop_sell_price_multiplier(self) -> float:
+        """Return multiplicative scale applied to shop sell prices based on charisma (race-aware)."""
+        cha = int(getattr(self.stats, "charisma", 0) or 0)
+        try:
+            if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                from .constants import GNOME_GOLD_CHARISMA_MULTIPLIER
+                cha = int(cha * GNOME_GOLD_CHARISMA_MULTIPLIER)
+        except Exception:
+            pass
+        return 1.0 + (0.025 * cha)
+
+    def apply_stun(
+        self,
+        duration: int,
+        *,
+        source: str = "Unknown",
+        applier: Character | None = None,
+    ) -> bool:
+        """
+        Apply stun with basic stun-lock prevention.
+
+        Uses ``status_effects["Stun"].extra`` as a short post-stun immunity
+        counter (decremented in ``effects()`` each turn when not stunned).
+        """
+        stun = self.status_effects.get("Stun")
+        if stun is None:
+            return False
+        if stun.active:
+            return False
+        if stun.extra > 0:
+            return False
+
+        stun.active = True
+        stun.duration = max(int(duration), stun.duration)
+        stun.extra = 0
+
+        try:
+            (applier or self)._emit_status_event(
+                self, "Stun", applied=True, duration=stun.duration, source=source
+            )
+        except Exception:
+            pass
+        return True
+
+    def stun_contest_success(
+        self,
+        applier: Character | None,
+        attacker_roll: int,
+        defender_roll: int,
+    ) -> bool:
+        """
+        Resolve a stun contest roll with level-difference bias.
+
+        The caller computes rolls (STR vs CON, SPD vs CON, etc.). This helper
+        biases the attacker's roll based on applier-vs-target level gap.
+        """
+        if applier is None:
+            return attacker_roll > defender_roll
+
+        diff = _combat_level(applier) - _combat_level(self)
+        diff = max(-STUN_LEVEL_DIFF_CAP, min(STUN_LEVEL_DIFF_CAP, diff))
+        mult = 1.0 + (diff * STUN_LEVEL_DIFF_SCALE)
+        mult = max(STUN_LEVEL_DIFF_MULT_MIN, min(STUN_LEVEL_DIFF_MULT_MAX, mult))
+        adj_attacker = int(attacker_roll * mult)
+        # Racial status-resist tuning: Humans are slightly more susceptible to control.
+        try:
+            if getattr(getattr(self, "race", None), "name", None) == "Human":
+                defender_roll = int(defender_roll * HUMAN_STATUS_RESIST_MULTIPLIER)
+        except Exception:
+            pass
+        return adj_attacker > defender_roll
+
+    def effect_handler(self, effect: str) -> dict[str, StatusEffect]:
         effect_dicts = [self.status_effects,
                         self.physical_effects,
                         self.stat_effects,
@@ -335,7 +510,7 @@ class Character:
     def is_disarmed(self) -> bool:
         return bool(self.physical_effects["Disarm"].active and self.can_be_disarmed())
 
-    def hit_chance(self, defender: Character, typ='weapon'):
+    def hit_chance(self, defender: Character, typ: str = 'weapon') -> float:
         """
         Calculate hit chance based on various factors.
 
@@ -345,57 +520,108 @@ class Character:
             Spell attack: enemy status effects
         """
 
-        hit_mod = sigmoid(random.randint(self.check_mod("speed", enemy=defender) // 2,
-                                         self.check_mod("speed", enemy=defender)) /
-                          random.randint(defender.check_mod("speed", enemy=defender) // 4,
-                                         defender.check_mod("speed", enemy=defender) // 2))  # base hit percentage
+        # Defensive guard: speed stats can be 0 in synthetic/summon test states.
+        a_speed = self.check_mod("speed", enemy=defender)
+        d_speed = defender.check_mod("speed", enemy=self)
+        num = random.randint(a_speed // 2, a_speed)
+        den = random.randint(d_speed // 4, d_speed // 2)
+        hit_mod = sigmoid(num / max(1, den))  # base hit percentage
         if typ == 'weapon':
             hit_mod *= 1 + (ACCURACY_RING_BONUS * ('Accuracy' in self.equipment['Ring'].mod))
-            hit_mod *= 1 - (BLIND_ACCURACY_PENALTY * self.status_effects["Blind"].active)
+            blind_pen = BLIND_ACCURACY_PENALTY
+            try:
+                if getattr(getattr(self, "race", None), "name", None) == "Elf":
+                    blind_pen *= ELF_BLIND_PENALTY_MULTIPLIER
+            except Exception:
+                pass
+            hit_mod *= 1 - (blind_pen * self.status_effects["Blind"].active)
             hit_mod *= 1 - FLYING_ACCURACY_PENALTY * defender.flying
             hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
             hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects['Berserk'].active))
+            hit_mod *= 1 - (BLIND_RAGE_HIT_PENALTY * (self.status_effects["Blind Rage"].active))
         hit_mod += PRO_LEVEL_HIT_MODIFIER * (self.level.pro_level - defender.level.pro_level)
-        hit_mod *= 1 - INVISIBLE_ACCURACY_PENALTY * defender.invisible
+        invis_pen = INVISIBLE_ACCURACY_PENALTY
+        try:
+            if getattr(getattr(self, "race", None), "name", None) == "Elf":
+                invis_pen *= ELF_INVISIBLE_PENALTY_MULTIPLIER
+        except Exception:
+            pass
+        hit_mod *= 1 - invis_pen * defender.invisible
         if hasattr(self, "encumbered"):
             if self.encumbered:
                 hit_mod *= ENCUMBERED_HIT_MULTIPLIER
+                try:
+                    if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                        hit_mod *= GNOME_ENCUMBERED_HIT_MULTIPLIER
+                except Exception:
+                    pass
         return max(0, hit_mod)
 
-    def dodge_chance(self, attacker, spell=False):
+    def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
         a_stat = attacker.check_mod("speed", enemy=self)
         d_stat = self.check_mod("speed", enemy=attacker)
         if spell:
             a_stat = attacker.stats.intel
-            d_stat = self.stats.wisdom
+            # Spells are avoided via mental defense; low CHA/WIS should matter.
+            cha_term = max(-5, min(5, int(self.stats.charisma) - 10))
+            d_stat = max(0, int(self.stats.wisdom) + cha_term)
         armor_factor = {"None": 1, "Natural": 1, "Cloth": 1, "Light": 2, "Medium": 3, "Heavy": 4}
         a_chance = random.randint(a_stat // 2, a_stat) + \
             attacker.check_mod('luck', enemy=self, luck_factor=10)
         d_chance = random.randint(0, d_stat // 2) + self.check_mod('luck', enemy=attacker, luck_factor=15) + \
             (self.stat_effects["Speed"].active * self.stat_effects["Speed"].extra)
-        chance = max(0, (d_chance - a_chance) / (a_chance + d_chance) / armor_factor[self.equipment['Armor'].subtyp])
+        denom = a_chance + d_chance
+        if denom <= 0:
+            return 0.0
+        af = armor_factor.get(getattr(self.equipment.get("Armor"), "subtyp", "None"), 1)
+        chance = max(0, (d_chance - a_chance) / denom / af)
         chance += 0.1 * ('Dodge' in self.equipment['Ring'].mod + "Evasion" in self.spellbook['Skills'])
+        if spell:
+            pendant_mod = getattr(self.equipment.get("Pendant"), "mod", "")
+            chance += 0.25 * ("Magic Dodge" in pendant_mod)
+        # Footpad-line passive: scale *weapon* dodge slightly with DEX so "glass cannon"
+        # races/classes have a defensive path that doesn't require changing race resistances.
+        # We intentionally do not apply this to spell-avoidance, which is governed by WIS/CHA.
+        if (not spell) and "Quickstep" in self.spellbook.get("Skills", {}):
+            dex = int(getattr(self.stats, "dex", 10))
+            # +0.00 at DEX<=10, up to +0.15 at DEX>=25
+            chance += min(0.15, max(0.0, (dex - 10) / 100))
         if self.cls.name == "Seeker" or (self.cls.name == "Templar" and self.class_effects["Power Up"].active):
             chance += (0.25 * self.power_up)
+        # Dwarf Gluttony (in-combat hangover): reduced dodge while active.
+        try:
+            if self.status_effects.get("Hangover") and self.status_effects["Hangover"].active:
+                chance *= DWARF_HANGOVER_DODGE_MULTIPLIER
+        except Exception:
+            pass
         if hasattr(self, "encumbered"):
             if self.encumbered:
                 chance /= 2  # lower dodge chance by half if encumbered
+                try:
+                    if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                        chance *= GNOME_ENCUMBERED_DODGE_MULTIPLIER
+                except Exception:
+                    pass
         return min(MAX_DODGE_CHANCE, chance)
     
-    def critical_chance(self, att):
-        base_crit = BASE_CRIT_PER_POINT * (self.check_mod("speed") + self.check_mod("luck", luck_factor=10))
+    def critical_chance(self, att: str) -> float:
+        base_crit = BASE_CRIT_PER_POINT * (
+            self.check_mod("speed") + self.check_mod("luck", luck_factor=10)
+        )
         crit_chance = base_crit
-        if self.equipment[att] is not None:
-            crit_chance += self.equipment[att].crit
+        if self.equipment.get(att) is not None:
+            crit_chance += float(getattr(self.equipment[att], "crit", 0.0) or 0.0) * WEAPON_CRIT_WEIGHT
         if self.cls.name == "Seeker":
             crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
         
         # Maelstrom Weapon: Add bonus critical chance for consecutive hits
         if "Maelstrom Weapon" in self.spellbook["Skills"]:
-            maelstrom_bonus = self.maelstrom_hits * MAELSTROM_CRIT_PER_HIT
+            # Backward compatibility for older runtime/save objects missing this field.
+            maelstrom_hits = int(getattr(self, "maelstrom_hits", 0) or 0)
+            maelstrom_bonus = maelstrom_hits * MAELSTROM_CRIT_PER_HIT
             crit_chance += maelstrom_bonus
         
-        return crit_chance
+        return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
     def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False, use_offhand=True) -> tuple[str, bool, int]:
         """
@@ -440,6 +666,12 @@ class Character:
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
             crit_per = random.uniform(1, crits[i])
+            # Half Elf racial sin: slightly reduced crit spike potential.
+            try:
+                if getattr(getattr(self, "race", None), "name", None) == "Half Elf" and crit_per > 1.0:
+                    crit_per = 1.0 + ((crit_per - 1.0) * HALF_ELF_CRIT_SPIKE_MULTIPLIER)
+            except Exception:
+                pass
             damage = max(0, int(dmg * crit_per))
 
             # defender variables
@@ -498,11 +730,39 @@ class Character:
 
             # --- Phase 6: Apply damage and on-hit effects ---
             if damage > 0:
+                # Half Orc racial virtue: reduced critical damage taken (weapon crits only).
+                try:
+                    if (
+                        crits[i] > 1
+                        and getattr(getattr(defender, "race", None), "name", None) == "Half Orc"
+                    ):
+                        damage = max(0, int(damage * HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER))
+                except Exception:
+                    pass
                 defender.health.current -= damage
                 weapon_dam_str += self._build_damage_message(
                     defender, damage, typ, crits[i], att
                 )
                 weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
+                # Evasive Guard: build stacks when you get hit; capped at 3.
+                # This encourages "stay in the fight" play without altering race resistances.
+                if "Evasive Guard" in defender.spellbook.get("Skills", {}):
+                    defender.evasive_guard_stacks = min(3, int(getattr(defender, "evasive_guard_stacks", 0)) + 1)
+                # Half Orc racial sin: small chance on taking damage to enter Blind Rage
+                # (retains control, but reduced hit chance for a few turns).
+                try:
+                    if (
+                        damage > 0
+                        and getattr(getattr(defender, "race", None), "name", None) == "Half Orc"
+                        and random.random() < HALF_ORC_BLIND_RAGE_CHANCE
+                    ):
+                        br = defender.status_effects.get("Blind Rage")
+                        if br is not None:
+                            br.active = True
+                            br.duration = max(int(br.duration or 0), HALF_ORC_BLIND_RAGE_DURATION)
+                            weapon_dam_str += f"{defender.name} flies into a blind rage!\n"
+                except Exception:
+                    pass
             else:
                 defender.health.current -= damage  # 0 damage still needs to be "applied" for consistency
                 weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
@@ -531,6 +791,8 @@ class Character:
     def _reset_maelstrom(self) -> None:
         """Reset Maelstrom Weapon consecutive-hit counter."""
         if "Maelstrom Weapon" in self.spellbook["Skills"]:
+            if not hasattr(self, "maelstrom_hits"):
+                self.maelstrom_hits = 0
             self.maelstrom_hits = 0
 
     def _handle_dodge(self, defender: Character, damage: int, typ: str) -> tuple[str, bool]:
@@ -542,12 +804,24 @@ class Character:
             from a parry counter-attack and the caller should return early.
         """
         msg = ""
+        # Evasive Guard stacks decay whenever the defender successfully dodges.
+        if "Evasive Guard" in defender.spellbook.get("Skills", {}):
+            defender.evasive_guard_stacks = max(
+                0, int(getattr(defender, "evasive_guard_stacks", 0) or 0) - 1
+            )
         if 'Parry' in defender.spellbook['Skills']:
-            msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
-            counter_str, _, _ = defender.weapon_damage(self)
-            msg += counter_str
-            if not self.is_alive():
-                return msg, True
+            # Parry counter-attack chance scales with defender DEX.
+            # This makes high-DEX archetypes more resilient without changing race resistances.
+            dex = int(getattr(defender.stats, "dex", 10))
+            parry_chance = max(0.10, min(0.85, 0.25 + (dex - 10) * 0.03))
+            if random.random() < parry_chance:
+                msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
+                counter_str, _, _ = defender.weapon_damage(self)
+                msg += counter_str
+                if not self.is_alive():
+                    return msg, True
+            else:
+                msg += f"{defender.name} evades {self.name}'s attack.\n"
         else:
             try:
                 from .events.event_bus import get_event_bus, create_combat_event, EventType
@@ -727,6 +1001,17 @@ class Character:
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
 
+        # Bleed makes melee hits more punishing (before defensive stance reductions).
+        if (
+            damage > 0
+            and hasattr(defender, "physical_effects")
+            and defender.physical_effects.get("Bleed")
+            and defender.physical_effects["Bleed"].active
+        ):
+            bonus = max(1, int(damage * (BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER - 1.0)))
+            damage += bonus
+            msg += f"{defender.name}'s bleeding leaves them vulnerable (+{bonus} damage).\n"
+
         # Defensive stance
         defensive_reduction = (
             defender.get_defensive_reduction()
@@ -742,6 +1027,20 @@ class Character:
             astral_reduction = int(damage * ASTRAL_SHIFT_REDUCTION)
             damage = max(0, damage - astral_reduction)
             msg += f"{defender.name}'s astral form deflects {astral_reduction} damage.\n"
+
+        # Footpad-line passive damage reduction (weapon hits only): stackable proc, DEX-scaling.
+        # Stacks build when hit (max 3) and reset on dodge.
+        # Applied late so it plays nicely with armor/resists/stance and stays readable.
+        if damage > 0 and "Evasive Guard" in defender.spellbook.get("Skills", {}):
+            dex = int(getattr(defender.stats, "dex", 10))
+            stacks = int(getattr(defender, "evasive_guard_stacks", 0) or 0)
+            if stacks > 0:
+                # Per-stack reduction: 3% base + 0.2% per DEX above 10, capped at 8%.
+                per_stack = min(0.08, max(0.03, 0.03 + max(0, dex - 10) * 0.002))
+                guard_red = min(0.25, per_stack * min(3, stacks))
+                reduced = max(1, int(damage * guard_red))
+                damage = max(0, damage - reduced)
+                msg += f"{defender.name}'s evasive guard reduces damage by {reduced}.\n"
 
         return damage, msg
 
@@ -761,6 +1060,8 @@ class Character:
 
         # Update Maelstrom Weapon counter for non-critical hits
         if "Maelstrom Weapon" in self.spellbook["Skills"] and crit == 1:
+            if not hasattr(self, "maelstrom_hits"):
+                self.maelstrom_hits = 0
             self.maelstrom_hits += 1
 
         # Emit damage event
@@ -780,6 +1081,8 @@ class Character:
         # Ninja life steal
         if self.cls.name == "Ninja" and self.power_up:
             dam_abs = self.class_effects["Power Up"].active * damage
+            dam_abs = int(dam_abs * self.healing_received_multiplier())
+            dam_abs = min(dam_abs, self.health.max - self.health.current)
             self.health.current += dam_abs
             self._emit_healing_event(dam_abs, source="Ninja Life Steal")
             msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
@@ -787,6 +1090,8 @@ class Character:
         # Lycan life steal
         if self.cls.name == "Lycan" and self.power_up:
             dam_abs = damage // 2
+            dam_abs = int(dam_abs * self.healing_received_multiplier())
+            dam_abs = min(dam_abs, self.health.max - self.health.current)
             self.health.current += dam_abs
             if dam_abs > 0:
                 self._emit_healing_event(dam_abs, source="Lycan Life Steal")
@@ -803,7 +1108,7 @@ class Character:
         msg = ""
         result = CombatResult(
             action=att, actor=self, target=defender,
-            hit=True, crit=crit, damage=damage
+            hit=True, crit=crit, damage=damage, healing=0
         )
         results = CombatResultGroup()
         results.add(result)
@@ -826,7 +1131,7 @@ class Character:
 
         return msg
 
-    def handle_defenses(self, attacker, damage, cover=False, typ="Physical"):
+    def handle_defenses(self, attacker: Character, damage: int, cover: bool = False, typ: str = "Physical") -> tuple[bool, str, int]:
         """
         Stub method for handling defensive calculations.
         
@@ -863,7 +1168,7 @@ class Character:
         
         return (hit, message, damage)
 
-    def damage_reduction(self, damage, attacker, typ="Physical"):
+    def damage_reduction(self, damage: int, attacker: Character, typ: str = "Physical") -> tuple[bool, str, int]:
         """
         Stub method for calculating damage reduction.
         
@@ -884,6 +1189,13 @@ class Character:
             resist = self.check_mod('resist', enemy=attacker, typ=typ)
         
         final_damage = int(damage * (1 - resist))
+
+        # Magic defense reduction: allow primary stats (WIS/CHA) to matter for
+        # survival even on physical builds, by reducing incoming elemental/magic damage.
+        if typ != "Physical" and final_damage > 0:
+            mdef = int(self.check_mod("magic def", enemy=attacker) or 0)
+            if mdef > 0:
+                final_damage = int(final_damage * (1 - (mdef / (mdef + MAGIC_DEF_SCALING_FACTOR))))
         
         message = ""
         if resist > 0 and final_damage < damage:
@@ -892,7 +1204,7 @@ class Character:
         
         return True, message, final_damage
 
-    def flee(self, enemy, smoke=False):
+    def flee(self, enemy: Character, smoke: bool = False) -> tuple[bool, str]:
         blind = enemy.status_effects["Blind"].active
         success = False
         flee_message = f"{self.name} couldn't escape from the {enemy.name}."
@@ -917,10 +1229,11 @@ class Character:
                 success = True
         return success, flee_message
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         return self.health.current > 0
 
-    def modify_inventory(self, item, num=1, subtract=False, rare=False, quest=False, storage=False):
+    def modify_inventory(self, item: object, num: int = 1, subtract: bool = False,
+                         rare: bool = False, quest: bool = False, storage: bool = False) -> None:
         inventory = self.special_inventory if rare else self.inventory
         if subtract:
             for _ in range(num):
@@ -948,7 +1261,7 @@ class Character:
         if hasattr(self, 'max_weight'):
             self.encumbered = self.current_weight() > self.max_weight()
 
-    def effects(self, end=False):
+    def effects(self, end: bool = False) -> str | None:
         """
         Silence, Blind, and Disarm can be indefinite unless cured (duration=-1)
         """
@@ -990,10 +1303,13 @@ class Character:
                 self.magic_effects["Ice Block"].duration -= 1
                 gain_perc = 0.10 * (1 + (self.stats.intel / 30))
                 health_gain = min(self.health.max - self.health.current, int(self.health.max * gain_perc))
+                health_gain = int(health_gain * self.healing_received_multiplier())
                 self.health.current += health_gain
                 mana_gain = min(self.mana.max - self.mana.current, int(self.mana.max * gain_perc))
                 self.mana.current += mana_gain 
                 status_text += f"{self.name} regens {health_gain} health and {mana_gain} mana.\n"
+                if health_gain > 0:
+                    self._emit_status_tick_event(self, "Ice Block", health_gain, "healing", source="Ice Block")
                 if not self.magic_effects["Ice Block"].duration:
                     status_text += f"The ice block around {self.name} melts.\n"
                     default(effect="Ice Block")
@@ -1010,10 +1326,12 @@ class Character:
                     status_text += f"{self.name} is still prone.\n"
             if self.status_effects["Poison"].active:
                 self.status_effects["Poison"].duration -= 1
-                poison_damage = max(1, int(self.status_effects["Poison"].extra * 1.25))
-                if not random.randint(0, self.stats.con // 10):
+                poison_damage = max(1, int(self.status_effects["Poison"].extra * 1.50))
+                resist_div = max(0, self.stats.con // 15)
+                if not random.randint(0, resist_div):
                     self.health.current -= poison_damage
                     status_text += f"The poison damages {self.name} for {poison_damage} health points.\n"
+                    self._emit_status_tick_event(self, "Poison", poison_damage, "damage", source="Poison")
                 else:
                     status_text += f"{self.name} resisted the poison.\n"
                 if not self.status_effects["Poison"].duration:
@@ -1021,21 +1339,29 @@ class Character:
                     status_text += f"The poison has left {self.name}.\n"
             if self.magic_effects["DOT"].active:
                 self.magic_effects["DOT"].duration -= 1
-                dot_damage = self.magic_effects["DOT"].extra
-                if not random.randint(0, self.check_mod("magic def") // dot_damage):
-                    self.health.current -= dot_damage
-                    status_text += f"The magic damages {self.name} for {dot_damage} health points.\n"
-                else:
-                    status_text += f"{self.name} resisted the magic.\n"
-                if not self.magic_effects["DOT"].duration:
+                dot_damage = int(self.magic_effects["DOT"].extra or 0)
+                if dot_damage <= 0:
+                    # Defensive guard: DOT should always have positive damage,
+                    # but some effect paths may leave .extra unset/zero.
                     default(effect="DOT")
-                    status_text += f"The magic affecting {self.name} has worn off.\n"
+                    self.magic_effects["DOT"].duration = 0
+                else:
+                    if not random.randint(0, self.check_mod("magic def") // dot_damage):
+                        self.health.current -= dot_damage
+                        status_text += f"The magic damages {self.name} for {dot_damage} health points.\n"
+                        self._emit_status_tick_event(self, "DOT", dot_damage, "damage", source="DOT")
+                    else:
+                        status_text += f"{self.name} resisted the magic.\n"
+                    if not self.magic_effects["DOT"].duration:
+                        default(effect="DOT")
+                        status_text += f"The magic affecting {self.name} has worn off.\n"
             if self.physical_effects["Bleed"].active:
                 self.physical_effects["Bleed"].duration -= 1
                 bleed_damage = max(1, int(self.physical_effects["Bleed"].extra * 0.75))
                 if not random.randint(0, self.stats.con // 10):
                     self.health.current -= bleed_damage
                     status_text += f"The bleed damages {self.name} for {bleed_damage} health points.\n"
+                    self._emit_status_tick_event(self, "Bleed", bleed_damage, "damage", source="Bleed")
                 else:
                     status_text += f"{self.name} resisted the bleed.\n"
                 if not self.physical_effects["Bleed"].duration:
@@ -1046,11 +1372,30 @@ class Character:
                 if not self.status_effects["Blind"].duration:
                     status_text += f"{self.name} regains sight and is no longer blind.\n"
                     default(effect="Blind")
+            if self.status_effects["Blind Rage"].active:
+                self.status_effects["Blind Rage"].duration -= 1
+                if not self.status_effects["Blind Rage"].duration:
+                    status_text += f"{self.name} calms down.\n"
+                    default(effect="Blind Rage")
+            if self.status_effects["Hangover"].active:
+                self.status_effects["Hangover"].duration -= 1
+                if not self.status_effects["Hangover"].duration:
+                    status_text += f"{self.name} shakes off the hangover.\n"
+                    default(effect="Hangover")
+            if (not self.status_effects["Stun"].active) and self.status_effects["Stun"].extra > 0:
+                # Post-stun immunity countdown (stun-lock prevention).
+                self.status_effects["Stun"].extra -= 1
             if self.status_effects["Stun"].active:
                 self.status_effects["Stun"].duration -= 1
                 if not self.status_effects["Stun"].duration:
                     status_text += f"{self.name} is no longer stunned.\n"
-                    default(effect="Stun")
+                    if self.status_effects["Stun"].active:
+                        self._emit_status_event(self, "Stun", applied=False, source="Duration Expired")
+                    self.status_effects["Stun"].active = False
+                    self.status_effects["Stun"].duration = 0
+                    self.status_effects["Stun"].extra = max(
+                        self.status_effects["Stun"].extra, STUN_IMMUNITY_TURNS_AFTER_EXPIRY
+                    )
             if self.status_effects["Sleep"].active:
                 self.status_effects["Sleep"].duration -= 1
                 if not self.status_effects["Sleep"].duration:
@@ -1075,6 +1420,16 @@ class Character:
                 if not self.magic_effects["Reflect"].duration:
                     status_text += f"{self.name} is no longer reflecting magic.\n"
                     default(effect="Reflect")
+            if self.magic_effects["Totem"].active:
+                self.magic_effects["Totem"].duration -= 1
+                if not self.magic_effects["Totem"].duration:
+                    status_text += f"{self.name}'s totem crumbles to dust.\n"
+                    default(effect="Totem")
+            if self.magic_effects["Astral Shift"].active:
+                self.magic_effects["Astral Shift"].duration -= 1
+                if not self.magic_effects["Astral Shift"].duration:
+                    status_text += f"{self.name} fully returns from the astral plane.\n"
+                    default(effect="Astral Shift")
             for stat in ["Attack", "Defense", "Magic", "Magic Defense", "Speed"]:
                 if self.stat_effects[stat].active:
                     self.stat_effects[stat].duration -= 1
@@ -1083,9 +1438,12 @@ class Character:
             if self.magic_effects["Regen"].active:
                 self.magic_effects["Regen"].duration -= 1
                 heal = self.magic_effects["Regen"].extra
+                heal = int(heal * self.healing_received_multiplier())
                 heal = min(heal, self.health.max - self.health.current)
                 self.health.current += heal
                 status_text += f"{self.name}'s health has regenerated by {heal}.\n"
+                if heal > 0:
+                    self._emit_status_tick_event(self, "Regen", heal, "healing", source="Regen")
                 if not self.magic_effects["Regen"].duration:
                     status_text += "Regeneration spell ends.\n"
                     default(effect="Regen")
@@ -1101,12 +1459,19 @@ class Character:
                     mana_regen = max(1, min(self.class_effects["Power Up"].extra, missing_mana)) if missing_mana > 0 else 0
                     self.mana.current += mana_regen
                     status_text += f"{self.name} regens {mana_regen} mana.\n"
+                    if mana_regen > 0:
+                        self._emit_status_tick_event(self, "Power Up", mana_regen, "mana", source="Power Up")
                 if self.cls.name == "Archbishop" and self.power_up:
                     health_regen = min(int(self.health.max * 0.10), self.health.max - self.health.current)
+                    health_regen = int(health_regen * self.healing_received_multiplier())
                     mana_regen = min(int(self.mana.max * 0.10), self.mana.max - self.mana.current)
                     self.health.current += health_regen
                     self.mana.current += mana_regen
                     status_text += f"{self.name} regens {health_regen} health and {mana_regen} mana.\n"
+                    if health_regen > 0:
+                        self._emit_status_tick_event(self, "Power Up", health_regen, "healing", source="Power Up")
+                    if mana_regen > 0:
+                        self._emit_status_tick_event(self, "Power Up", mana_regen, "mana", source="Power Up")
                 if not self.class_effects["Power Up"].duration:
                     if self.cls.name == "Crusader" and self.power_up:
                         status_text += (f"The shield around {self.name} explodes, dealing "
@@ -1114,15 +1479,16 @@ class Character:
                     default(effect="Power Up")
             return status_text
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         special_str = ""
         return special_str
 
-    def familiar_turn(self, target):
+    def familiar_turn(self, target: Character) -> str:
         familiar_str = ""
         return familiar_str
 
-    def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
+    def check_mod(self, mod: str, enemy: Character | None = None, typ: str | None = None,
+                  luck_factor: int = 1, ultimate: bool = False, ignore: bool = False) -> int | float:
         class_mod = 0
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
@@ -1165,7 +1531,9 @@ class Character:
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
-            m_def_mod = self.stats.wisdom
+            # Wisdom is the primary magic-defense stat; charisma provides a secondary
+            # willpower component so "dump CHA/WIS" has a tangible downside.
+            m_def_mod = int(self.stats.wisdom) + (int(self.stats.charisma) // 2)
             if self.turtle:
                 class_mod += 99
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
@@ -1189,15 +1557,18 @@ class Character:
                     res_mod = -0.25
             return res_mod
         if mod == 'luck':
-            luck_mod = self.stats.charisma // luck_factor
-            return luck_mod
+            # "Luck" also acts as a general-purpose saving-throw modifier in many effects.
+            # Include wisdom so low WIS/CHA builds pay a consistent penalty in combat.
+            lf = max(1, int(luck_factor))
+            base = int(self.stats.charisma) + int(self.stats.wisdom)
+            return max(0, (base * 2) // lf)
         if mod == "speed":
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
             return speed_mod
         return 0
 
-    def buff_str(self):
+    def buff_str(self) -> str:
         buffs = []
         if self.equipment['Ring'].mod in ["Accuracy", "Dodge"]:
             buffs.append(self.equipment['Ring'].mod)
@@ -1215,8 +1586,8 @@ class Character:
             buffs.append("None")
         return ", ".join(buffs)
 
-    def level_up(self):
+    def level_up(self) -> None:
         raise NotImplementedError
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         raise NotImplementedError

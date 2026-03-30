@@ -1,0 +1,8 @@
+name: Gold Toss
+description: >-
+  Toss a handful of gold at the enemy, dealing damage equal to the amount of gold thrown.
+type: Skill
+cost: 0
+subtype: Luck
+effects:
+  - type: gold_toss

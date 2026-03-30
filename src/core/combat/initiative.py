@@ -31,7 +31,11 @@ def determine_initiative(
     Returns:
         (first, second) - ordered pair of combatants.
     """
-    if getattr(player, "encumbered", False):
+    # Dwarf Gluttony (out-of-combat hangover): can cause auto-loss of initiative
+    # for a number of steps after using combat consumables.
+    if getattr(player, "dwarf_hangover_steps", 0) > 0:
+        first = enemy
+    elif getattr(player, "encumbered", False):
         first = enemy
     elif player.invisible and not enemy.sight:
         # Shadowcaster surprise activation

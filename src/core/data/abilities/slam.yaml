@@ -1,0 +1,14 @@
+name: Slam
+type: Skill
+subtype: Offensive
+description: Slam into the enemy, dealing great damage with a chance for prone.
+cost: 12
+weapon: true
+damage_mod: 1.5
+effects:
+  - type: physical_effect_apply
+    effect_name: Prone
+    requires_crit: true
+    duration_stat: strength
+    duration_divisor: 10
+    duration_min: 2

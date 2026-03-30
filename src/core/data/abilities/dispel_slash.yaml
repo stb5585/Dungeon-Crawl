@@ -1,0 +1,9 @@
+name: Dispel Slash
+type: Skill
+subtype: Enhance
+description: A strike that dispels all magical effects on the target.
+cost: 20
+weapon: true
+crit_override: 2
+effects:
+  - type: full_dispel

@@ -1,0 +1,9 @@
+name: Inspect
+type: Skill
+subtype: Truth
+description: >-
+  Your attention to detail allows you to inspect aspects of the enemy,
+  possibly revealing a tender spot.
+cost: 5
+effects:
+  - type: inspect

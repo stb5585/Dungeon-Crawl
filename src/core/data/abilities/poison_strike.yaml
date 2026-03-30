@@ -1,0 +1,11 @@
+name: Poison Strike
+description: >-
+  Attack the enemy with a chance to poison.
+type: Skill
+cost: 14
+subtype: Stealth
+weapon: true
+damage_mod: 1.5
+effects:
+  - type: poison_strike
+    damage_pct: 0.1

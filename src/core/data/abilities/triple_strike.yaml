@@ -1,0 +1,8 @@
+name: Triple Strike
+type: Skill
+subtype: Offensive
+description: Strike the enemy three times in quick succession.
+cost: 26
+weapon: true
+damage_mod: 0.9
+strikes: 3

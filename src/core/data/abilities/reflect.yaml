@@ -1,0 +1,13 @@
+name: Reflect
+type: Support
+subtype: Support
+description: "A magical shield surrounds the user, reflecting incoming spells back at the caster."
+cost: 14
+wizard_free_cast: true
+effects:
+  - type: magic_effect_apply
+    effect_name: Reflect
+    duration: 4
+    duration_stat: intel
+    duration_stat_divisor: 10
+    duration_stat_mode: max

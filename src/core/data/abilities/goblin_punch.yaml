@@ -1,0 +1,10 @@
+name: Goblin Punch
+description: >-
+  Attack the target multiple times with a flurry of punches, dealing
+  damage based on the strength difference between the user and target.
+type: Skill
+cost: 0
+ice_block_check: true
+effects:
+  - type: goblin_punch
+    max_punches: 5

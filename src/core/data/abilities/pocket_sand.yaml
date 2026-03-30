@@ -1,0 +1,11 @@
+name: Pocket Sand
+type: StatusSkill
+subtype: Stealth
+description: Throw sand in the target's eyes to blind them.
+cost: 8
+status_name: Blind
+actor_use_check_mod: speed
+target_use_check_mod: speed
+duration: 3
+skip_if_active: true
+ice_block_check: true

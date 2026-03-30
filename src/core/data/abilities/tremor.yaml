@@ -1,0 +1,8 @@
+name: Tremor
+type: Spell
+subtype: Earth
+description: The ground shakes, causing objects to fall and damage the enemy.
+cost: 3
+damage_mod: 1.5
+crit: 8
+school: Elemental

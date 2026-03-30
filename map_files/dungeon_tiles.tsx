@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="51" columns="0">
+<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="58" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="BarghestBossRoom">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/barghest_room.png"/>
@@ -148,7 +148,7 @@
   <tile id="48" type="FunhouseMimicChest">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/funhouse_mimic_chest.png"/>
   </tile>
-  <tile id="49" type="MirrorWall">
+  <tile id="49" type="FunhouseWall">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/mirror_wall.png"/>
   </tile>
   <tile id="50" type="GoldenChaliceRoom">
@@ -156,5 +156,20 @@
   </tile>
   <tile id="51" type="IncubusLair">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/incubus_lair.png"/>
+  </tile>
+  <tile id="52" type="MerzhinBossRoom">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/merzhin_room.png"/>
+  </tile>
+  <tile id="53" type="Trap">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/trap_room.png"/>
+  </tile>
+  <tile id="54" type="AntiMagicSwitch">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/anti_magic_switch.png"/>
+  </tile>
+  <tile id="55" type="CirceBossRoom">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/circe_room.png"/>
+  </tile>
+  <tile id="56" type="FunhouseEmptyPath">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/funhouse_empty_path.png"/>
   </tile>
 </tileset>

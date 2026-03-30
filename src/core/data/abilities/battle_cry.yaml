@@ -1,0 +1,17 @@
+name: Battle Cry
+type: Skill
+subtype: Offensive
+description: Let out a battle cry, boosting your attack.
+cost: 16
+self_target: true
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: Attack
+    source: target_combat
+    source_stat: attack
+    lo_divisor: 10
+    hi_divisor: 5
+    duration_stat: strength
+    duration_divisor: 5
+    duration_min: 5
+    apply_to_caster: true

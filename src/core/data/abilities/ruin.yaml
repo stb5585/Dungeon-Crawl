@@ -1,0 +1,47 @@
+name: Ruin
+type: Status
+subtype: Status
+description: "Devastate the target's physical and mental facilities, leaving
+  them helpless to retaliate."
+cost: 28
+messages:
+  resist: "The spell is ineffective."
+effects:
+  # WeakenMind component: intel vs con → debuff Magic + Magic Defense
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    actor_lo_divisor: 2
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 2
+    effect:
+      type: dynamic_multi_debuff
+      stats:
+        - stat_name: Magic
+          combat_attr: magic
+        - stat_name: "Magic Defense"
+          combat_attr: magic_def
+      scaling_stat: intel
+      scaling_divisor: 10
+      amount_divisor: 10
+      duration_min: 3
+  # Enfeeble component: intel vs con → debuff Attack + Defense
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    actor_lo_divisor: 2
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 2
+    effect:
+      type: dynamic_multi_debuff
+      stats:
+        - stat_name: Attack
+          combat_attr: attack
+        - stat_name: Defense
+          combat_attr: defense
+      scaling_stat: intel
+      scaling_divisor: 10
+      amount_divisor: 10
+      duration_min: 3

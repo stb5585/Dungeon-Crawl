@@ -1,0 +1,13 @@
+name: Absolute Zero
+type: Spell
+subtype: Ice
+description: >-
+  Channels the essence of absolute cold, freezing the target solid
+  and shattering their defenses.
+cost: 40
+damage_mod: 3.0
+effects:
+  - type: absolute_zero
+    damage_mod: 3.0
+    stun_duration: 3
+    def_reduction: 5

@@ -1,0 +1,9 @@
+name: Hydration
+type: Heal
+subtype: Heal
+description: "Bath yourself in restorative waters, healing for an initial amount then more over time."
+cost: 16
+heal: 0.3
+crit: 5
+turns: 2
+instant_heal: true

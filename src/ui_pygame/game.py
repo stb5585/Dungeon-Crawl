@@ -4,8 +4,10 @@ GUI Game Launcher for Dungeon Crawl
 Uses Pygame for graphical presentation instead of curses text interface.
 """
 
-import sys
+import math
+import random
 import signal
+import sys
 
 import pygame
 
@@ -137,7 +139,10 @@ class PygameGame:
                     pass
             except Exception:
                 pass
-        
+
+        if name == "Funhouse Entry":
+            self._play_funhouse_entry_effect(draw_current_screen)
+
         popup = ConfirmationPopup(self.presenter, message, show_buttons=False, slow_print=True)
         popup.show(
             background_draw_func=draw_current_screen,
@@ -145,6 +150,72 @@ class PygameGame:
             require_key_release=True,
             min_display_ms=300
         )
+
+    def _play_funhouse_entry_effect(self, draw_current_screen, duration_ms: int = 1100):
+        """Play a brief reality-warp effect before the funhouse entry popup."""
+        if not self.presenter or not self.dungeon_manager:
+            return
+
+        draw_current_screen()
+        base_surface = self.presenter.screen.copy()
+        clock = pygame.time.Clock()
+        start = pygame.time.get_ticks()
+        width, height = self.presenter.width, self.presenter.height
+
+        while True:
+            now = pygame.time.get_ticks()
+            elapsed = now - start
+            if elapsed >= duration_ms:
+                break
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+
+            t = elapsed / duration_ms
+            pulse = math.sin(t * math.pi * 4.5)
+            wobble = math.sin(t * math.pi * 7.0)
+            angle = pulse * 5.5
+            scale = 1.0 + (0.03 * math.sin(t * math.pi * 3.0)) + (0.08 * t)
+            warped = pygame.transform.rotozoom(base_surface, angle, scale)
+            warped_rect = warped.get_rect(
+                center=(
+                    width // 2 + int(wobble * 18),
+                    height // 2 + int(math.cos(t * math.pi * 5.5) * 10),
+                )
+            )
+
+            self.presenter.screen.fill((4, 0, 8))
+            self.presenter.screen.blit(warped, warped_rect)
+
+            veil = pygame.Surface((width, height), pygame.SRCALPHA)
+            magenta = int(55 + 70 * max(0.0, pulse))
+            cyan = int(45 + 80 * max(0.0, -pulse))
+            veil.fill((magenta, 20, cyan + 20, int(35 + 65 * t)))
+            self.presenter.screen.blit(veil, (0, 0))
+
+            band_count = 6
+            for index in range(band_count):
+                phase = (t * 240) + (index * 37)
+                band_y = int((height / band_count) * index + math.sin(phase * 0.05) * 14)
+                band_h = max(24, height // 9)
+                src_y = max(0, min(height - band_h, band_y))
+                slice_surface = base_surface.subsurface((0, src_y, width, band_h)).copy()
+                offset_x = int(math.sin((phase + index * 11) * 0.12) * (18 + 14 * t))
+                alpha = int(30 + 70 * (1.0 - t))
+                slice_surface.set_alpha(alpha)
+                self.presenter.screen.blit(slice_surface, (offset_x, src_y))
+
+            flash = pygame.Surface((width, height), pygame.SRCALPHA)
+            flash_alpha = int(max(0, 120 * (1.0 - abs(0.5 - t) * 2.0)))
+            flash.fill((255, 255, 255, flash_alpha))
+            self.presenter.screen.blit(flash, (0, 0))
+
+            pygame.display.flip()
+            clock.tick(60)
+
+        draw_current_screen()
 
     def debug_level_up(self):
         """Debug-only shortcut to trigger a single level-up."""

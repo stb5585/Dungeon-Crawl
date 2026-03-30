@@ -5,7 +5,7 @@ import random
 from textwrap import wrap
 
 from . import companions, enemies, items, town
-from .player import DIRECTIONS, actions_dict
+from .player import DIRECTIONS, REALM_OF_CAMBION_LEVEL, actions_dict
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -27,6 +27,30 @@ CHALICE_QUEST_NAME = "The Holy Grail of Quests"
 CHALICE_PROGRESS_KEY = "Chalice Progress"
 CHALICE_ADVENTURER_POS = (12, 14, 3)
 CHALICE_LOCATION_POS = (2, 17, 6)
+UNDERGROUND_SPRING_POS = (4, 9, 3)
+REALM_OF_CAMBION_ENTRY_POS = (1, 28, REALM_OF_CAMBION_LEVEL)
+CAMBION_SWITCH_CODE = "2749"
+CAMBION_SWITCH_POS = (12, 28, REALM_OF_CAMBION_LEVEL)
+CAMBION_ALARM_ENEMY = enemies.Warforged
+CAMBION_CODE_CLUES = {
+    (1, 1, REALM_OF_CAMBION_LEVEL): "A sigil burned into the stone shows the first digit: 2.",
+    (23, 9, REALM_OF_CAMBION_LEVEL): "A charred warning plate hisses. The second digit is 7.",
+    (20, 20, REALM_OF_CAMBION_LEVEL): "A rotating ring clicks into place and reveals the third digit: 4.",
+    (25, 28, REALM_OF_CAMBION_LEVEL): "An etched rune near the terminal reveals the last digit: 9.",
+}
+CAMBION_PORTAL_PAIRS = [
+    ((1, 1, REALM_OF_CAMBION_LEVEL), (28, 28, REALM_OF_CAMBION_LEVEL)),
+    ((9, 1, REALM_OF_CAMBION_LEVEL), (28, 20, REALM_OF_CAMBION_LEVEL)),
+    ((11, 1, REALM_OF_CAMBION_LEVEL), (1, 22, REALM_OF_CAMBION_LEVEL)),
+    ((17, 1, REALM_OF_CAMBION_LEVEL), (5, 28, REALM_OF_CAMBION_LEVEL)),
+    ((28, 1, REALM_OF_CAMBION_LEVEL), (8, 3, REALM_OF_CAMBION_LEVEL)),
+    ((1, 4, REALM_OF_CAMBION_LEVEL), (16, 4, REALM_OF_CAMBION_LEVEL)),
+    ((24, 6, REALM_OF_CAMBION_LEVEL), (22, 10, REALM_OF_CAMBION_LEVEL)),
+    ((4, 11, REALM_OF_CAMBION_LEVEL), (17, 13, REALM_OF_CAMBION_LEVEL)),
+    ((20, 13, REALM_OF_CAMBION_LEVEL), (23, 13, REALM_OF_CAMBION_LEVEL)),
+    ((28, 15, REALM_OF_CAMBION_LEVEL), (22, 17, REALM_OF_CAMBION_LEVEL)),
+    ((6, 18, REALM_OF_CAMBION_LEVEL), (12, 24, REALM_OF_CAMBION_LEVEL)),
+]
 CHALICE_ALTAR_IMAGE_PATH = "src/ui_pygame/assets/sprites/key_items/chalice_map.png"
 CHALICE_MAP_BLANK_DESC = "A weathered map whose ink appears almost completely faded."
 CHALICE_MAP_METHOD_DESC = (
@@ -125,6 +149,99 @@ def _replace_tile(world_dict, pos, new_tile):
             if hasattr(old_tile, attr) and hasattr(new_tile, attr):
                 setattr(new_tile, attr, getattr(old_tile, attr))
     world_dict[pos] = new_tile
+
+
+CAMBION_PORTAL_MAP = {}
+for left, right in CAMBION_PORTAL_PAIRS:
+    CAMBION_PORTAL_MAP[left] = right
+    CAMBION_PORTAL_MAP[right] = left
+
+
+def _enterable_adjacent_positions(world_dict, x: int, y: int, z: int) -> list[tuple[str, tuple[int, int, int]]]:
+    positions = []
+    for direction, data in DIRECTIONS.items():
+        dx, dy = data["move"]
+        pos = (x + dx, y + dy, z)
+        tile = world_dict.get(pos)
+        if tile and getattr(tile, "enter", False):
+            positions.append((direction, pos))
+    return positions
+
+
+def _ensure_cambion_state(player_char) -> dict:
+    state = getattr(player_char, "cambion_state", None)
+    if not isinstance(state, dict):
+        state = {}
+        player_char.cambion_state = state
+    state.setdefault("anti_magic_active", True)
+    state.setdefault("alarm_count", 0)
+    state.setdefault("clues_found", {})
+    state.setdefault("messages", [])
+    player_char.anti_magic_active = bool(state["anti_magic_active"])
+    return state
+
+
+def _queue_cambion_message(player_char, message: str):
+    state = _ensure_cambion_state(player_char)
+    state["messages"].append(message)
+
+
+def pop_cambion_messages(player_char) -> list[str]:
+    if getattr(player_char, "location_z", None) != REALM_OF_CAMBION_LEVEL and not hasattr(player_char, "cambion_state"):
+        return []
+    state = _ensure_cambion_state(player_char)
+    messages = list(state.get("messages", []))
+    state["messages"] = []
+    return messages
+
+
+def cambion_anti_magic_active(player_char) -> bool:
+    return bool(_ensure_cambion_state(player_char).get("anti_magic_active", True))
+
+
+def disable_cambion_anti_magic(player_char):
+    state = _ensure_cambion_state(player_char)
+    state["anti_magic_active"] = False
+    player_char.anti_magic_active = False
+
+
+def reveal_cambion_code_clue(player_char, pos):
+    if pos not in CAMBION_CODE_CLUES:
+        return
+    state = _ensure_cambion_state(player_char)
+    key = f"{pos[0]},{pos[1]},{pos[2]}"
+    if state["clues_found"].get(key):
+        return
+    state["clues_found"][key] = True
+    _queue_cambion_message(player_char, CAMBION_CODE_CLUES[pos])
+
+
+def _apply_cambion_antimagic(tile, player_char, enemy=None):
+    if tile.z != REALM_OF_CAMBION_LEVEL:
+        return
+    active = cambion_anti_magic_active(player_char)
+    player_char.anti_magic_active = active
+    if enemy is not None:
+        enemy.anti_magic_active = active
+
+
+def enter_realm_of_cambion(player_char):
+    player_char.enter_realm_of_cambion(*REALM_OF_CAMBION_ENTRY_POS, facing="east")
+    player_char.cambion_state = {
+        "anti_magic_active": True,
+        "alarm_count": 0,
+        "clues_found": {},
+        "messages": [],
+    }
+    player_char.anti_magic_active = True
+
+
+def return_to_underground_spring(player_char):
+    if hasattr(player_char, "cambion_return") and player_char.cambion_return:
+        player_char.exit_realm_of_cambion()
+        return
+    player_char.location_x, player_char.location_y, player_char.location_z = UNDERGROUND_SPRING_POS
+    player_char.facing = "east"
 
 
 def update_chalice_location(game):
@@ -370,6 +487,8 @@ class CavePath(MapTile):
     def modify_player(self, game, textbox=None):
         self.visited = True
         self.adjacent_visited(game.player_char)
+        if self.z == REALM_OF_CAMBION_LEVEL:
+            reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
         if game.player_char.cls in ['Warlock', 'Shadowcaster']:
             if game.player_char.familiar.race == 'Jinkin' and game.player_char.familiar.pro_level == 3:
                 if not random.randint(0, int(20 - game.player_char.check_mod('luck', luck_factor=10))):
@@ -399,7 +518,7 @@ class CavePath(MapTile):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = ["Attack", "Use Item", "Flee"]
-            if not player_char.status_effects["Silence"].active:
+            if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
@@ -457,6 +576,7 @@ class CavePath0(CavePath):
                         )
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy('0')
+        _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
 
@@ -481,6 +601,7 @@ class CavePath1(CavePath):
 
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy(str(self.z))
+        _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
 
@@ -488,23 +609,32 @@ class CavePath2(CavePath):
 
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy(str(self.z + 1))
+        _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
 
+class FunhouseEmptyPath(EmptyCavePath):
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
 class FunhousePath(CavePath):
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
 
     def enter_combat(self, player_char):
         self.enemy = enemies.funhouse_enemy()
         player_char.state = 'fight'
 
 
-class MirrorWall(MapTile):
-    """A confusing mirror wall that redirects the player's movement."""
+class FunhouseWall(FakeWall):
+    """A deceptive wall tile that disorients the player when entered."""
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.blocked = None
-        self.enter = False
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
@@ -689,7 +819,7 @@ class UndergroundSpring(SpecialTile):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = ["Attack", "Use Item"]
-            if not player_char.status_effects["Silence"].active:
+            if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
@@ -744,6 +874,29 @@ class Portal(EmptyCavePath):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
 
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "A shimmering portal flickers here, reflecting impossible corridors in its surface.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        player_char = game.player_char
+        self.adjacent_visited(player_char)
+        reveal_cambion_code_clue(player_char, (self.x, self.y, self.z))
+        pos = (self.x, self.y, self.z)
+        if pos in CAMBION_PORTAL_MAP:
+            destination = CAMBION_PORTAL_MAP[pos]
+            player_char.previous_location = pos
+            player_char.location_x, player_char.location_y, player_char.location_z = destination
+            destination_tile = player_char.world_dict.get(destination)
+            if destination_tile:
+                destination_tile.visited = True
+                destination_tile.adjacent_visited(player_char)
+            _queue_cambion_message(player_char, "Space folds in on itself and spits you out elsewhere in the realm.")
+            return
+        return_to_underground_spring(player_char)
+
 
 class Rotator(EmptyCavePath):
     """
@@ -752,6 +905,97 @@ class Rotator(EmptyCavePath):
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "The floor hums beneath your feet, as if some hidden mechanism is waiting to trigger.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        player_char = game.player_char
+        previous = getattr(player_char, "previous_location", None)
+        reveal_cambion_code_clue(player_char, (self.x, self.y, self.z))
+
+        options = _enterable_adjacent_positions(player_char.world_dict, self.x, self.y, self.z)
+        if not options:
+            self.adjacent_visited(player_char)
+            return
+
+        filtered = [entry for entry in options if entry[1] != previous]
+        if filtered:
+            options = filtered
+
+        direction, destination = random.choice(options)
+        player_char.previous_location = (self.x, self.y, self.z)
+        player_char.facing = direction
+        player_char.location_x, player_char.location_y, player_char.location_z = destination
+
+        destination_tile = player_char.world_dict.get(destination)
+        if destination_tile:
+            destination_tile.visited = True
+            destination_tile.adjacent_visited(player_char)
+        _queue_cambion_message(player_char, "The room spins violently and throws you down a different passage.")
+
+
+class Trap(EmptyCavePath):
+    """
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+    def intro_text(self, game):
+        return super().intro_text(game)
+
+    def modify_player(self, game):
+        super().modify_player(game)
+        player_char = game.player_char
+        reveal_cambion_code_clue(player_char, (self.x, self.y, self.z))
+        damage = min(player_char.health.current - 1, random.randint(10, 28))
+        if damage > 0:
+            player_char.health.current -= damage
+            _queue_cambion_message(player_char, f"A hidden trap snaps shut, dealing {damage} damage!")
+
+
+class AntiMagicSwitch(EmptyCavePath):
+    """
+    """
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = None
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        if cambion_anti_magic_active(game.player_char):
+            intro_str += "A humming terminal pulses here, bound to the realm's anti-magic field.\n"
+        else:
+            intro_str += "The terminal sits dark and silent. The anti-magic field is down.\n"
+        return intro_str
+
+    def modify_player(self, game):
+        self.visited = True
+        self.adjacent_visited(game.player_char)
+
+    def attempt_disable(self, game, code: str | None):
+        player_char = game.player_char
+        state = _ensure_cambion_state(player_char)
+        if not state["anti_magic_active"]:
+            _queue_cambion_message(player_char, "The terminal displays: SHIELD OFFLINE.")
+            return True
+
+        if str(code).strip() == CAMBION_SWITCH_CODE:
+            disable_cambion_anti_magic(player_char)
+            _queue_cambion_message(player_char, "The terminal accepts the code. The anti-magic field collapses.")
+            return True
+
+        state["alarm_count"] += 1
+        self.enemy = CAMBION_ALARM_ENEMY()
+        _apply_cambion_antimagic(self, player_char, self.enemy)
+        player_char.state = "fight"
+        _queue_cambion_message(player_char, "The terminal flashes red. An alarm sounds and a guardian attacks!")
+        return False
 
 
 class BossRoom(SpecialTile):
@@ -764,7 +1008,7 @@ class BossRoom(SpecialTile):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = ["Attack", "Use Item"]
-            if not player_char.status_effects["Silence"].active:
+            if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
@@ -776,12 +1020,15 @@ class BossRoom(SpecialTile):
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
+        if self.z == REALM_OF_CAMBION_LEVEL:
+            reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
         if not self.defeated:
             self.generate_enemy()
             if self.enemy.is_alive():
                 self.enter_combat(game.player_char)
 
     def enter_combat(self, player_char):
+        _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
     def special_text(self, game):
@@ -966,6 +1213,28 @@ class RedDragonBossRoom(BossRoom):
         return super().intro_text(game)
 
 
+class CirceBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Circe
+
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("")
+        return super().intro_text(game)
+
+
+class MerzhinBossRoom(BossRoom):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.Merzhin
+
+    def intro_text(self, game):
+        if not self.enemy:
+            return ("Merzhin's illusions have collapsed, leaving only the fading hush of the realm.\n")
+        return super().intro_text(game)
+
+
 class CerberusBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -1030,7 +1299,7 @@ class UnlockedChestRoom(ChestRoom):
         if not self.open:
             if player_char.state == 'fight':
                 action_list = ["Attack", "Use Item", "Flee"]
-                if not player_char.status_effects["Silence"].active:
+                if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
@@ -1073,7 +1342,7 @@ class LockedChestRoom(ChestRoom):
                 return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
             if player_char.state == 'fight':
                 action_list = ["Attack", "Use Item", "Flee"]
-                if not player_char.status_effects["Silence"].active:
+                if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
@@ -1442,7 +1711,7 @@ class IncubusLair(BossRoom):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = ["Attack", "Use Item"]
-            if not player_char.status_effects["Silence"].active:
+            if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
@@ -1457,7 +1726,8 @@ class GoldenChaliceRoom(SpecialTile):
     
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        self.enter = True
+        # Interact with the chalice from an adjacent tile; do not step onto it.
+        self.enter = False
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
@@ -1538,7 +1808,7 @@ class DeadBody(SpecialTile):
     def available_actions(self, player_char):
         if player_char.state == 'fight':
             action_list = ["Attack", "Use Item", "Flee"]
-            if not player_char.status_effects["Silence"].active:
+            if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")
                 if player_char.usable_abilities("Skills"):
@@ -1612,7 +1882,7 @@ class FinalRoom(SpecialTile):
     def available_actions(self, player_char):
         """Return combat actions for the final boss."""
         action_list = ["Attack", "Use Item", "Flee"]
-        if not player_char.status_effects["Silence"].active:
+        if not player_char.abilities_suppressed():
             if player_char.usable_abilities("Spells"):
                 action_list.insert(1, "Cast Spell")
             if player_char.usable_abilities("Skills"):
@@ -1689,6 +1959,10 @@ class WarpPoint(MapTile):
             game: Game instance (for context)
             confirm_popup: Optional ConfirmPopupMenu UI component
         """
+        if not game.player_char.warp_point:
+            self.visited = True
+            self.adjacent_visited(game.player_char)
+            return
         if not self.warped:
             if confirm_popup and confirm_popup.navigate_popup():
                 game.player_char.to_town()
@@ -1749,7 +2023,7 @@ class FunhouseMimicChest(ChestRoom):
         if not self.open:
             if player_char.state == 'fight':
                 action_list = ["Attack", "Use Item", "Flee"]
-                if not player_char.status_effects["Silence"].active:
+                if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):
                         action_list.insert(1, "Cast Spell")
                     if player_char.usable_abilities("Skills"):
@@ -1767,4 +2041,3 @@ class FunhouseMimicChest(ChestRoom):
         if self.loot is None:
             # Generate loot at level 4 difficulty (not at zone level)
             self.loot = items.random_item(4)
-

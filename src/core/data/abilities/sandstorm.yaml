@@ -1,0 +1,19 @@
+name: Sandstorm
+type: Spell
+subtype: Earth
+description: Engulf the enemy in a sandstorm, doing damage and blinding them.
+cost: 22
+damage_mod: 2.0
+crit: 6
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_lo_divisor: 2
+    actor_divisor: 1
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    effect:
+      type: status_apply
+      status_name: Blind
+      duration: 3

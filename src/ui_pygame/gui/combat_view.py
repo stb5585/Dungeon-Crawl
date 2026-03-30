@@ -119,7 +119,7 @@ class CombatView:
         # Sprite cache
         self.sprite_cache = {}
         self.sprite_dir = 'src/ui_pygame/assets/sprites'
-        self.enemy_sprite_dir = 'src/ui_pygame/assets/sprites/enemies'
+        self.enemy_sprite_dir = f'{self.sprite_dir}/enemies'
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
@@ -318,12 +318,13 @@ class CombatView:
         if cache_key in self.sprite_cache:
             del self.sprite_cache[cache_key]
     
-    def _get_enemy_sprite(self, enemy):
+    def _get_enemy_sprite(self, enemy, has_sight=False):
         """
         Load enemy sprite from file based on enemy type.
         
         Args:
             enemy: Enemy character object
+            has_sight: indicates if the player character can view certain types of enemies (e.g. Invisible Stalker)
         
         Returns:
             pygame.Surface or None if sprite not found
@@ -342,6 +343,8 @@ class CombatView:
         
         # Build sprite filename
         sprite_filename = f"{sprite_name}.png"
+        if not has_sight and enemy.name == "Invisible Stalker":
+            sprite_filename = f"{sprite_name}_hidden.png"
         sprite_path = os.path.join(self.enemy_sprite_dir, sprite_filename)
         if not os.path.exists(sprite_path):
             sprite_path = os.path.join(self.sprite_dir, sprite_filename)
@@ -463,7 +466,7 @@ class CombatView:
         animator = self._get_sprite_animator(enemy)
         
         # Try to load enemy sprite
-        sprite = self._get_enemy_sprite(enemy)
+        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
         
         if sprite:
             # Scale sprite up to 256x256 for better visibility

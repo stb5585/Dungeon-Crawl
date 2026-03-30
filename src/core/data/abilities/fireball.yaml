@@ -1,21 +1,21 @@
 name: Fireball
 type: Spell
-subtype: Offensive
-description: Launches a ball of fire at the enemy
-cost: 15
-damage_mod: 1.5
+subtype: Fire
+description: A giant ball of fire that consumes the enemy.
+cost: 10
+damage_mod: 2.0
+crit: 10
+school: Arcane
 effects:
-- type: damage
-  base: 25
-  scaling:
-    stat: intelligence
-    ratio: 1.5
-  element: Fire
-- type: chance
-  chance: 0.3
+- type: stat_contest
+  actor_stat: intel
+  actor_divisor: 2
+  target_stat: wisdom
+  target_lo_divisor: 4
+  target_hi_divisor: 1
   effect:
-    type: dot
-    dot_type: Burn
-    damage_per_tick: 5
-    duration: 3
-    element: Fire
+    type: dynamic_dot
+    dot_type: DOT
+    duration: 2
+    damage_lo_fraction: 0.25
+    damage_hi_fraction: 0.5

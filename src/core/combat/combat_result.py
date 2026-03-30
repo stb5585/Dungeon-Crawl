@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
 
-    from character import Character
+    from src.core.character import Character
 
 
 @dataclass
@@ -29,6 +29,11 @@ class CombatResult:
         'Class': []
     })
     extra: dict[str, Any] = field(default_factory=dict)
+    message: str = ""
+
+    def __str__(self) -> str:
+        """Return the display message, enabling transparent use with str()."""
+        return self.message
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -44,6 +49,7 @@ class CombatResult:
             "healing": self.healing,
             "effects_applied": self.effects_applied,
             "extra": self.extra,
+            "message": self.message,
         }
 
 
@@ -54,11 +60,11 @@ class CombatResultGroup:
     def add(self, result: CombatResult) -> None:
         self.results.append(result)
     
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> CombatResult:
         """Make CombatResultGroup subscriptable for backward compatibility."""
         return self.results[index]
-    
-    def __len__(self):
+
+    def __len__(self) -> int:
         """Return the number of results in the group."""
         return len(self.results)
 

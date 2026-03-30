@@ -1,0 +1,14 @@
+name: Holy Retribution
+type: Skill
+subtype: Power Up
+description: >-
+  Call upon the spirit of a Paladin to fill you with holy energy. For 5 rounds,
+  physical attacks will burn with holy fire.
+cost: 25
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    message: >-
+      The spirit of a Paladin fills {actor} with holy energy. For 5 rounds,
+      {actor}'s physical attacks will burn with holy fire.

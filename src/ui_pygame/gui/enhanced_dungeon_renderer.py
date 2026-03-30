@@ -49,7 +49,6 @@ class EnhancedDungeonRenderer:
         # --- Render caches (rebuilt on resize) ---
         self._cache_key = None  # (view_w, view_h)
         self._layer_cache = {}  # per-depth scaled perspective pieces + bg
-        self._flat_cache = {}   # scaled/gradient flat corridor pieces (recursive corridors)
         self._vignette_surf = None
         self._torch_frames = []
         self._torch_frame_idx = 0
@@ -96,6 +95,8 @@ class EnhancedDungeonRenderer:
         self._boulder_cache = {}
         self._dead_body_base = None
         self._dead_body_cache = {}
+        self._portal_base = None
+        self._portal_cache = {}
         # Chest tiles (lazy-loaded)
         self._chest_locked_base = None
         self._chest_locked_cache = {}
@@ -191,11 +192,12 @@ class EnhancedDungeonRenderer:
         textures = {
             'wall': 'walls/brick.png',
             'floor': 'floors/dirt.png',
-            'ceiling': 'ceilings/stone.png',
             'floor_fire': 'floors/firepath.png',  # FirePath floor
             'floor_spring': 'special_tiles/underground_spring.png',  # Underground Spring floor
-            'ladder_down': 'floors/dirt_pit.png',  # LadderDown floor pit
+            'floor_funhouse': 'floors/funhouse.png',
+            'ceiling': 'ceilings/stone.png',
             'ceiling_pit': 'ceilings/stone_pit.png',  # LadderUp ceiling
+            'ladder_down': 'floors/dirt_pit.png',  # LadderDown floor pit
         }
 
         # Load base texture and scale to required sizes
@@ -242,6 +244,11 @@ class EnhancedDungeonRenderer:
         tile_type = type(tile).__name__
         
         # Check for special floor types
+        if 'Funhouse' in tile_type:
+            floor_tex = self.tiles.get('floor_funhouse', {}).get(base_size)
+            if floor_tex:
+                return floor_tex
+
         if 'FirePath' in tile_type:
             floor_tex = self.tiles.get('floor_fire', {}).get(base_size)
             if floor_tex:
@@ -252,9 +259,61 @@ class EnhancedDungeonRenderer:
             if floor_tex:
                 return floor_tex
 
+        if 'LadderDown' in tile_type:
+            floor_tex = self.tiles.get('ladder_down', {}).get(base_size)
+            if floor_tex:
+                return floor_tex
         
         # Default to regular floor
         return self.tiles.get('floor', {}).get(base_size)
+
+    @staticmethod
+    def _is_floor_overlay_tile(tile):
+        """Return whether a tile should inherit the surrounding floor theme."""
+        tile_type = type(tile).__name__ if tile else ""
+        return any(
+            name in tile_type
+            for name in (
+                "Chest",
+                "ChestRoom",
+                "Relic",
+                "RelicRoom",
+                "Boulder",
+                "GoldenChaliceRoom",
+                "BossRoom",
+                "BossPath",
+                "Boss",
+                "Lair",
+            )
+        )
+
+    def _get_ceiling_texture_for_tile(self, tile, base_size):
+        """Get the appropriate ceiling texture based on tile type."""
+        if tile and 'LadderUp' in type(tile).__name__:
+            ceiling_tex = self.tiles.get('ceiling_pit', {}).get(base_size)
+            if ceiling_tex:
+                return ceiling_tex
+        return self.tiles.get('ceiling', {}).get(base_size)
+
+    def _get_floor_tile_key(self, tile):
+        """Return the generated perspective tile key for a floor surface."""
+        if tile:
+            tile_type_name = type(tile).__name__
+            if 'Funhouse' in tile_type_name:
+                return 'floor_funhouse'
+            if 'FirePath' in tile_type_name:
+                return 'floor_fire'
+            if 'UndergroundSpring' in tile_type_name:
+                return 'floor_spring'
+            if 'LadderDown' in tile_type_name:
+                return 'ladder_down'
+        return 'floor'
+
+    def _get_ceiling_tile_key(self, tile):
+        """Return the generated perspective tile key for a ceiling surface."""
+        if tile and 'LadderUp' in type(tile).__name__:
+            return 'ceiling_pit'
+        return 'ceiling'
 
     def _generate_perspective_tiles(self, textures, layer):
         """Generate perspective-transformed tiles for a given layer.
@@ -286,11 +345,15 @@ class EnhancedDungeonRenderer:
 
         # Get textures at the appropriate size for this layer
         wall_tex = textures.get('wall', {}).get(base_size)
+
         floor_tex = textures.get('floor', {}).get(base_size)
-        ceiling_tex = textures.get('ceiling', {}).get(base_size)
-        ceiling_pit_tex = textures.get('ceiling_pit', {}).get(base_size)
         floor_fire_tex = textures.get('floor_fire', {}).get(base_size)
         floor_spring_tex = textures.get('floor_spring', {}).get(base_size)
+        floor_funhouse_tex = textures.get('floor_funhouse', {}).get(base_size)
+
+        ceiling_tex = textures.get('ceiling', {}).get(base_size)
+        ceiling_pit_tex = textures.get('ceiling_pit', {}).get(base_size)
+
         ladder_down_tex = textures.get('ladder_down', {}).get(base_size)
 
         if not wall_tex:
@@ -314,8 +377,8 @@ class EnhancedDungeonRenderer:
         tiles['floor_left'] = self._create_side_floor_ceiling(floor_tex, base_size, 'floor', darkness, layer, 'left')
         tiles['floor_right'] = self._create_side_floor_ceiling(floor_tex, base_size, 'floor', darkness, layer, 'right')
         tiles['ceiling'] = self._create_floor_ceiling(ceiling_tex, base_size, 'ceiling', darkness, layer)
-        tiles['ceiling_left'] = self._create_side_floor_ceiling(ceiling_tex, base_size, 'ceiling', darkness, layer, 'left')
-        tiles['ceiling_right'] = self._create_side_floor_ceiling(ceiling_tex, base_size, 'ceiling', darkness, layer, 'right')
+        # tiles['ceiling_left'] = self._create_side_floor_ceiling(ceiling_tex, base_size, 'ceiling', darkness, layer, 'left')
+        # tiles['ceiling_right'] = self._create_side_floor_ceiling(ceiling_tex, base_size, 'ceiling', darkness, layer, 'right')
 
         # Create special floor tiles with perspective transformation
         if floor_fire_tex:
@@ -327,6 +390,11 @@ class EnhancedDungeonRenderer:
             tiles['floor_spring'] = self._create_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer)
             tiles['floor_spring_left'] = self._create_side_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer, 'left')
             tiles['floor_spring_right'] = self._create_side_floor_ceiling(floor_spring_tex, base_size, 'floor', darkness, layer, 'right')
+
+        if floor_funhouse_tex:
+            tiles['floor_funhouse'] = self._create_floor_ceiling(floor_funhouse_tex, base_size, 'floor', darkness, layer)
+            # tiles['floor_funhouse_left'] = self._create_side_floor_ceiling(floor_funhouse_tex, base_size, 'floor', darkness, layer, 'left')
+            # tiles['floor_funhouse_right'] = self._create_side_floor_ceiling(floor_funhouse_tex, base_size, 'floor', darkness, layer, 'right')
 
         if ceiling_pit_tex:
             tiles['ceiling_pit'] = self._create_floor_ceiling(ceiling_pit_tex, base_size, 'ceiling', darkness, layer)
@@ -540,12 +608,12 @@ class EnhancedDungeonRenderer:
     def _create_side_floor_ceiling(self, texture, base_size, type_name, darkness, layer, side):
         """Create perspective-transformed floor/ceiling for side corridors.
 
-        These have opposite perspective - wide on the outer edge (left/right),
-        narrow toward the center.
+        These are generated as full-width side wedges and rendered partially
+        off-screen. That preserves the original checker phase while letting the
+        visible portion taper toward the center of the corridor.
         """
-        # Side tiles should be same dimensions as center tiles for proper alignment
-        width = base_size // 2
-        height = base_size // 2  # Half the base_size to match composition proportions
+        width = base_size
+        height = base_size
 
         # Convert pygame surface to PIL Image
         texture_string = pygame.image.tostring(texture, 'RGBA')
@@ -556,51 +624,95 @@ class EnhancedDungeonRenderer:
 
         # Inset for perspective (1/4 of width on each side at far edge)
         inset = width // 4
+        pad_x = inset
+        output_width = width + (pad_x * 2)
+        source_points = [(0, 0), (width, 0), (width, height), (0, height)]
 
         # Calculate perspective coefficients
         if type_name == 'floor':
-            # Side floor uses inverted perspective (like center ceiling)
-            # Narrow at bottom, wide at top
+            # Side floor strips are rhombi/parallelograms, not trapezoids.
+            # The left strip leans right toward the center seam; the right strip
+            # leans left toward the center seam.
+            if side == 'left':
+                target_points = [
+                    (pad_x + inset, 0),
+                    (pad_x + width + inset, 0),
+                    (pad_x + width, height),
+                    (pad_x, height),
+                ]
+            else:  # right
+                target_points = [
+                    (pad_x - inset, 0),
+                    (pad_x + width - inset, 0),
+                    (pad_x + width, height),
+                    (pad_x, height),
+                ]
             coeffs = self._get_perspective_coeffs(
-                # Output corners
-                [(0, 0), (width, 0), (width, height), (0, height)],
-                # Source sample points - compressed at bottom (like ceiling)
-                [(0, 0), (width, 0), (width-inset, height), (inset, height)]
+                source_points,
+                target_points
             )
         else:  # ceiling
-            # Side ceiling uses inverted perspective (like center floor)
-            # Narrow at top, wide at bottom
-            coeffs = self._get_perspective_coeffs(
-                # Output corners
-                [(0, 0), (width, 0), (width, height), (0, height)],
-                # Source sample points - compressed at top (like floor)
-                [(inset, 0), (width-inset, 0), (width, height), (0, height)]
-            )
+            if side == 'left':
+                target_points = [
+                    (pad_x - inset, 0),
+                    (pad_x + width, 0),
+                    (pad_x + width + inset, height),
+                    (pad_x, height),
+                ]
+                coeffs = self._get_perspective_coeffs(
+                    source_points,
+                    target_points
+                )
+            else:  # right
+                target_points = [
+                    (pad_x + inset, 0),
+                    (pad_x + width, 0),
+                    (pad_x + width + inset, height),
+                    (pad_x, height),
+                ]
+                coeffs = self._get_perspective_coeffs(
+                    source_points,
+                    target_points
+                )
 
-        # Apply perspective transform
         transformed = pil_image.transform(
-            (width, height),
+            (output_width, height),
             Image.PERSPECTIVE,
             coeffs,
             Image.BICUBIC
         )
 
-        # Crop to get half of it (like corridor walls)
-        half_width = width // 2
-        if side == 'left':
-            # Take the right half for left corridor
-            half_wall = transformed.crop((half_width, 0, width, height))
-        else:  # right
-            # Take the left half for right corridor
-            half_wall = transformed.crop((0, 0, half_width, height))
+        # # Crop to get half of it (like corridor walls)
+        # half_width = width // 2
+        # if side == 'left':
+        #     # Take the right half for left corridor
+        #     half_wall = transformed.crop((half_width, 0, width, height))
+        # else:  # right
+        #     # Take the left half for right corridor
+        #     half_wall = transformed.crop((0, 0, half_width, height))
 
         # Convert back to pygame
-        surf = self._pil_to_pygame(half_wall)
+        surf = self._pil_to_pygame(transformed)
 
         # Apply gradient shading (sideways gradient instead of forward)
         surf = self._apply_side_floor_ceiling_gradient(surf, type_name, darkness, layer)
 
         return surf
+
+    def _get_projected_tile_surface(self, layer_tiles, tile_key, width, height, side=None):
+        """Fetch a generated projected surface and scale it for the current band."""
+        if not layer_tiles:
+            return None
+
+        surface_key = f"{tile_key}_{side}" if side else tile_key
+        source = layer_tiles.get(surface_key)
+        if source is None:
+            return None
+
+        if source.get_width() == width and source.get_height() == height:
+            return source
+
+        return pygame.transform.smoothscale(source, (width, height))
 
     def _apply_darkness_to_surface(self, surface, darkness):
         """Apply darkness multiplier to a surface."""
@@ -718,8 +830,7 @@ class EnhancedDungeonRenderer:
     def _apply_side_floor_ceiling_gradient(self, surface, type_name, base_darkness, layer):
         """Apply gradient to side corridor floor/ceiling.
 
-        The gradient follows the perspective depth - from near (wide) to far (narrow).
-        For inverted perspective tiles: floor is narrow at bottom, ceiling is narrow at top.
+        The gradient follows the same near/far direction as the center strips.
         """
         if not self.enable_gradients:
             return surface  # Return original surface when gradient disabled
@@ -731,15 +842,12 @@ class EnhancedDungeonRenderer:
         gradient = pygame.Surface((width, height), pygame.SRCALPHA)
 
         for y in range(height):
-            # Gradient from near (bright) to far (dark) following the perspective
             if type_name == 'floor':
-                # Floor: narrow at bottom (far), wide at top (near)
-                # So bright at top (near), dark at bottom (far)
-                ratio = 1.0 - (y / height)  # 1 at top (near) to 0 at bottom (far)
+                # Floor: near edge is at the bottom, far edge is at the top.
+                ratio = 1.0 - (y / height)
             else:  # ceiling
-                # Ceiling: narrow at top (far), wide at bottom (near)
-                # So bright at bottom (near), dark at top (far)
-                ratio = y / height  # 0 at top (far) to 1 at bottom (near)
+                # Ceiling: near edge is at the top, far edge is at the bottom.
+                ratio = y / height
 
             # Gradient transitions to match next layer; cap at full darkness
             if layer < 3:
@@ -928,14 +1036,11 @@ class EnhancedDungeonRenderer:
         # If the side is open (no wall blocking), check one step into that direction
         # to see if there's a back wall (player would hit a wall if they moved that way)
         left_has_back_wall = False
-        left_is_open = False
         right_has_back_wall = False
-        right_is_open = False
 
         # Left corridor: if left side is open, check center-left tile
         # This is the tile you'd see if you stepped left from the side wall position
         if left_tile is not None and not self._is_wall(left_tile):
-            left_is_open = True
             center_left_tile = tiles.get('center_left')
             # Show back wall if there's a wall one step into the left corridor
             left_has_back_wall = center_left_tile is None or self._is_wall(center_left_tile)
@@ -943,25 +1048,9 @@ class EnhancedDungeonRenderer:
         # Right corridor: if right side is open, check center-right tile
         # This is the tile you'd see if you stepped right from the side wall position
         if right_tile is not None and not self._is_wall(right_tile):
-            right_is_open = True
             center_right_tile = tiles.get('center_right')
             # Show back wall if there's a wall one step into the right corridor
             right_has_back_wall = center_right_tile is None or self._is_wall(center_right_tile)
-
-        # Check if side corridors continue to the next depth (for rendering deeper corridor elements)
-        # Only relevant when corridor is open and has no back wall
-        left_continues = False
-        right_continues = False
-        if next_tiles and depth < 3:
-            # Left corridor continues if it's open here and also open at next depth
-            if left_is_open and not left_has_back_wall:
-                next_center_left = next_tiles.get('center_left')
-                left_continues = next_center_left is not None and not self._is_wall(next_center_left)
-
-            # Right corridor continues if it's open here and also open at next depth
-            if right_is_open and not right_has_back_wall:
-                next_center_right = next_tiles.get('center_right')
-                right_continues = next_center_right is not None and not self._is_wall(next_center_right)
 
         # Get pre-generated perspective tiles for this layer
         layer_tiles = self.tiles.get('perspective', {}).get(depth, {})
@@ -1002,14 +1091,13 @@ class EnhancedDungeonRenderer:
         left_w = comp_width // 4
         center_w = comp_width // 2
         right_w = comp_width - left_w - center_w  # absorb remainder
+        # Side floor cells extend beyond the visible view bounds in the source layout,
+        # so keep them as full-width planes and let the blit crop them at the screen edge.
+        side_plane_w = comp_width
 
         top_h = comp_height // 4
         center_h = comp_height // 2
         bottom_h = comp_height - top_h - center_h  # absorb remainder
-
-        # Track if we need to render recursive corridors (must be done LAST)
-        left_recursive = None
-        right_recursive = None
 
         # Render left side
         if left_tile is None or self._is_wall(left_tile):
@@ -1023,24 +1111,20 @@ class EnhancedDungeonRenderer:
                 scaled_left = pygame.transform.scale(left_surf, (left_w, comp_height))
                 self.screen.blit(scaled_left, (comp_x, comp_y))
         else:
-            # Open corridor to the left - use flat tiles for proper grid-based rendering
-            # Get base textures (not perspective-transformed)
+            # Open corridor to the left - use projected side floor/ceiling so the
+            # corridor opening follows the same vanishing lines as the main plane.
             darkness_level = self._get_layer_darkness(depth)
-
-            ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
-            # Use the actual left tile for floor texture, not forward tile
-            floor_tex = self._get_floor_texture_for_tile(left_tile, base_size)
             wall_tex = self.tiles.get('wall', {}).get(base_size)
+            left_floor_key = self._get_floor_tile_key(left_tile)
 
-            # Top section: ceiling - flat rectangular tile
-            if ceiling_tex:
-                scaled_ceiling = self._get_flat_piece(ceiling_tex, left_w, top_h, "ceiling", darkness_level, depth)
-                self.screen.blit(scaled_ceiling, (comp_x, comp_y))
-
-            # Bottom section: floor - flat rectangular tile
-            if floor_tex:
-                scaled_floor = self._get_flat_piece(floor_tex, left_w, bottom_h, "floor", darkness_level, depth)
-                self.screen.blit(scaled_floor, (comp_x, comp_y + top_h + center_h))
+            scaled_floor = self._get_projected_tile_surface(
+                layer_tiles, left_floor_key, side_plane_w, bottom_h, side='left'
+            )
+            if scaled_floor:
+                center_left_edge = comp_x + left_w
+                left_seam_x = (scaled_floor.get_width() * 5) // 6
+                left_floor_x = center_left_edge - left_seam_x
+                self.screen.blit(scaled_floor, (left_floor_x, comp_y + top_h + center_h))
 
             # Middle section: back wall or recursive next layer
             if left_has_back_wall and wall_tex:
@@ -1070,7 +1154,6 @@ class EnhancedDungeonRenderer:
                     # self._render_tile_contents(center_left_tile, comp_x, comp_y + top_h,
                     #                           left_w, center_h, darkness_level, depth)
                     pass  # TODO: fix rendering of side objects
-                left_recursive = (comp_x, comp_y + top_h, left_w, center_h, depth + 1, 'left', visible)
 
         # Render right side
         if right_tile is None or self._is_wall(right_tile):
@@ -1086,24 +1169,20 @@ class EnhancedDungeonRenderer:
                 scaled_right = pygame.transform.scale(right_surf, (right_w, comp_height))
                 self.screen.blit(scaled_right, (right_x, comp_y))
         else:
-            # Open corridor to the right - use flat tiles for proper grid-based rendering
-            # Get base textures (not perspective-transformed)
+            # Open corridor to the right - use projected side floor/ceiling so the
+            # corridor opening follows the same vanishing lines as the main plane.
             darkness_level = self._get_layer_darkness(depth)
-
-            ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
-            # Use the actual right tile for floor texture, not forward tile
-            floor_tex = self._get_floor_texture_for_tile(right_tile, base_size)
             wall_tex = self.tiles.get('wall', {}).get(base_size)
+            right_floor_key = self._get_floor_tile_key(right_tile)
 
-            # Top section: ceiling - flat rectangular tile
-            if ceiling_tex:
-                scaled_ceiling = self._get_flat_piece(ceiling_tex, right_w, top_h, "ceiling", darkness_level, depth)
-                self.screen.blit(scaled_ceiling, (comp_x + left_w + center_w, comp_y))
-
-            # Bottom section: floor - flat rectangular tile
-            if floor_tex:
-                scaled_floor = self._get_flat_piece(floor_tex, right_w, bottom_h, "floor", darkness_level, depth)
-                self.screen.blit(scaled_floor, (comp_x + left_w + center_w, comp_y + top_h + center_h))
+            scaled_floor = self._get_projected_tile_surface(
+                layer_tiles, right_floor_key, side_plane_w, bottom_h, side='right'
+            )
+            if scaled_floor:
+                center_right_edge = comp_x + left_w + center_w
+                right_seam_x = scaled_floor.get_width() // 6
+                right_floor_x = center_right_edge - right_seam_x
+                self.screen.blit(scaled_floor, (right_floor_x, comp_y + top_h + center_h))
 
             # Middle section: back wall or recursive next layer
             if right_has_back_wall and wall_tex:
@@ -1133,7 +1212,6 @@ class EnhancedDungeonRenderer:
                     # self._render_tile_contents(center_right_tile, comp_x + left_w + center_w, comp_y + top_h,
                     #                           right_w, center_h, darkness_level, depth)
                     pass  # TODO: fix rendering of side objects
-                right_recursive = (comp_x + left_w + center_w, comp_y + top_h, right_w, center_h, depth + 1, 'right', visible)
 
         # Render floor first (bottom section - full width)
         # For special floors (FirePath), render the special texture
@@ -1141,20 +1219,8 @@ class EnhancedDungeonRenderer:
         floor_x = comp_x
         floor_y = comp_y + top_h + center_h
         
-        # Determine which floor tile to render based on center tile type at this depth
         tile_for_floor = self._get_floor_source_tile(depth)
-        if tile_for_floor:
-            tile_type_name = type(tile_for_floor).__name__
-            if 'FirePath' in tile_type_name:
-                floor_key = 'floor_fire'
-            elif 'UndergroundSpring' in tile_type_name:
-                floor_key = 'floor_spring'
-            elif 'LadderDown' in tile_type_name:
-                floor_key = 'ladder_down'
-            else:
-                floor_key = 'floor'
-        else:
-            floor_key = 'floor'
+        floor_key = self._get_floor_tile_key(tile_for_floor)
         
         # Use perspective-transformed floor tile
         floor_cached = cache.get(floor_key + '_strip')
@@ -1166,13 +1232,8 @@ class EnhancedDungeonRenderer:
             self.screen.blit(scaled_floor, (floor_x, floor_y))
 
         # Render ceiling (top section - full width)
-        # Check if current tile is LadderUp to use ceiling_pit instead
         tile_for_ceiling = self._get_floor_source_tile(depth)
-        if tile_for_ceiling:
-            tile_type_name = type(tile_for_ceiling).__name__
-            ceiling_key = 'ceiling_pit' if 'LadderUp' in tile_type_name else 'ceiling'
-        else:
-            ceiling_key = 'ceiling'
+        ceiling_key = self._get_ceiling_tile_key(tile_for_ceiling)
         
         ceiling_cached = cache.get(ceiling_key + '_strip')
         if ceiling_cached:
@@ -1259,11 +1320,11 @@ class EnhancedDungeonRenderer:
                     self._render_tile_contents(current_tile, comp_x + left_w, comp_y + top_h, 
                                               center_w, center_h, darkness_level, 0)
 
-        # Render recursive corridors LAST so they appear on top
-        if left_recursive:
-            self._render_recursive_corridor(*left_recursive)
-        if right_recursive:
-            self._render_recursive_corridor(*right_recursive)
+        # # Render recursive corridors LAST so they appear on top TODO
+        # if left_recursive:
+        #     self._render_recursive_corridor(*left_recursive)
+        # if right_recursive:
+        #     self._render_recursive_corridor(*right_recursive)
 
     def _get_closed_door_tile(self, depth):
         """Load and scale the closed door tile for the given depth."""
@@ -1562,8 +1623,8 @@ class EnhancedDungeonRenderer:
     def _render_recursive_corridor(self, x, y, width, height, depth, side, visible):
         """
         Recursively render a side corridor view showing what's at the next depth.
-        This creates nested perspective by subdividing the view into ceiling/content/floor.
-        Uses flat rectangular tiles, not perspective-transformed ones.
+        This creates nested perspective by subdividing the view into ceiling/content/floor
+        using the same projected strips as the main corridor view.
 
         Args:
             x, y: Position to render at
@@ -1578,37 +1639,17 @@ class EnhancedDungeonRenderer:
         # Get tiles for this depth
         tiles_dict = visible[depth]
         
-        # Get the center tile in the corridor to check for special floor types
+        # Get the tile we're looking directly into down this side corridor.
         check_tile = tiles_dict.get(f'center_{side}')
 
-        # Get base textures for this depth (not perspective-transformed)
+        # Get base textures for fallback cases.
         base_size = self._get_base_size(depth)
         darkness = self._get_layer_darkness(depth)
-
-        ceiling_tex = self.tiles.get('ceiling', {}).get(base_size)
-        offset_tile = self._get_floor_source_tile(depth)
-        floor_tex = self._get_floor_texture_for_tile(offset_tile, base_size)
-        wall_tex = self.tiles.get('wall', {}).get(base_size)
-
-        if not ceiling_tex or not floor_tex:
-            return
+        layer_tiles = self.tiles.get('perspective', {}).get(depth, {})
 
         # Subdivide the space: top 25% ceiling, middle 50% content, bottom 25% floor
         top_h = height // 4
         center_h = height // 2
-        bottom_h = height - top_h - center_h
-
-        # Render ceiling (top quarter) - flat rectangular tile
-        if ceiling_tex:
-            ceiling_surf = self._get_flat_piece(ceiling_tex, width, top_h, 'ceiling', darkness, depth)
-            if ceiling_surf:
-                self.screen.blit(ceiling_surf, (x, y))
-
-        # Render floor (bottom quarter) - flat rectangular tile
-        if floor_tex:
-            floor_surf = self._get_flat_piece(floor_tex, width, bottom_h, 'floor', darkness, depth)
-            if floor_surf:
-                self.screen.blit(floor_surf, (x, y + top_h + center_h))
 
         # Middle section: check what's at this depth in the side corridor
         # Check if the corridor continues by looking for a back wall one step in
@@ -1616,9 +1657,13 @@ class EnhancedDungeonRenderer:
         has_wall = check_tile is None or self._is_wall(check_tile)
 
         # Middle section: show back wall if blocked, otherwise render contents and/or recurse deeper
-        if has_wall and wall_tex:
+        if has_wall:
+            wall_source = layer_tiles.get('back') or self.tiles.get('wall', {}).get(base_size)
+            if wall_source is None:
+                return
+
             wall_w = width
-            scaled_wall = pygame.transform.scale(wall_tex, (wall_w, center_h))
+            scaled_wall = pygame.transform.scale(wall_source, (wall_w, center_h))
 
             if darkness > 0:
                 scaled_wall = self._apply_darkness_to_surface(scaled_wall, darkness)
@@ -1640,27 +1685,6 @@ class EnhancedDungeonRenderer:
                 next_y = y + top_h
                 self._render_recursive_corridor(next_x, next_y, next_w, next_h, depth + 1, side, visible)
 
-    def _get_flat_piece(self, base_tex, w, h, kind, darkness, depth):
-        """
-        kind: 'ceiling' or 'floor'
-        """
-        if base_tex is None:
-            return None
-
-        # Quantize darkness to stabilize cache keys
-        d = int(darkness * 255)
-        key = ("flat", depth, w, h, kind, d, id(base_tex))
-
-        cached = self._flat_cache.get(key)
-        if cached is not None:
-            return cached
-
-        surf = pygame.transform.smoothscale(base_tex, (w, h))
-        # Always apply gradient to match center floor/ceiling rendering
-        surf = self._apply_floor_ceiling_gradient(surf, kind, darkness, depth)
-        self._flat_cache[key] = surf
-        return surf
-
     def _render_tile_contents(self, tile, x, y, width, height, darkness, depth):
         """Render special tile contents like stairs, chests, enemies."""
         if not tile:
@@ -1676,6 +1700,8 @@ class EnhancedDungeonRenderer:
             self._render_ladder_up(x, y, width, height, darkness, depth)
         elif 'LadderDown' in tile_type:
             self._render_ladder_down(x, y, width, height, darkness, depth)
+        elif 'Portal' in tile_type:
+            self._render_portal(x, y, width, height, darkness, depth)
         elif 'Boulder' in tile_type:
             is_looted = bool(getattr(tile, 'read', False))
             self._render_boulder(x, y, width, height, darkness, depth, is_looted)
@@ -1696,6 +1722,11 @@ class EnhancedDungeonRenderer:
                 relic_num = 1  # fallback
             is_collected = bool(getattr(tile, 'read', False))
             self._render_altar(x, y, width, height, darkness, depth, relic_num, is_collected)
+        elif 'GoldenChaliceRoom' in tile_type:
+            is_collected = bool(getattr(tile, 'read', False))
+            self._render_golden_chalice_altar(
+                x, y, width, height, darkness, depth, is_collected
+            )
         elif 'UnobtainiumRoom' in tile_type:
             # Render Unobtainium ore on the ground unless already looted
             is_looted = bool(getattr(tile, 'visited', False))
@@ -1778,6 +1809,21 @@ class EnhancedDungeonRenderer:
             # Fallback: Draw a simple colored representation
             ladder_color = self._apply_darkness(self.colors.get('stairs_down', (200, 120, 80)), darkness)
             pygame.draw.rect(self.screen, ladder_color, pygame.Rect(x, y, width, height))
+
+    def _render_portal(self, x, y, width, height, darkness, depth):
+        """Render a portal sprite centered in the tile view."""
+        if depth == 0:
+            return
+
+        portal_tile = self._get_portal_tile(depth)
+        if portal_tile:
+            portal_surf = pygame.transform.smoothscale(portal_tile, (width, height))
+            portal_surf = self._apply_darkness_to_surface(portal_surf, darkness)
+            self.screen.blit(portal_surf, (x, y))
+            return
+
+        portal_color = self._apply_darkness(self.colors.get('magic_glow', (180, 140, 255)), darkness)
+        pygame.draw.ellipse(self.screen, portal_color, pygame.Rect(x + width // 4, y + height // 8, width // 2, int(height * 0.75)))
 
     def _render_secret_shop(self, x, y, width, height, darkness, depth):
         """Render the secret shop visual overlay in the center view."""
@@ -2082,24 +2128,8 @@ class EnhancedDungeonRenderer:
         self._chest_open_cache[depth] = scaled
         return scaled
     
-    def _get_altar_tile(self, relic_num, depth, is_collected):
-        """Load and scale the altar tile for the given relic number and depth."""
-        
-        # Determine which altar image to use
-        if is_collected:
-            altar_name = 'empty_altar.png'
-        else:
-            # Map relic numbers to altar names
-            altar_names = {
-                1: 'luna_altar.png',
-                2: 'polaris_altar.png',
-                3: 'triangulus_altar.png',
-                4: 'quadrata_altar.png',
-                5: 'hexagonum_altar.png',
-                6: 'infinitas_altar.png'
-            }
-            altar_name = altar_names.get(relic_num, 'empty_altar.png')
-        
+    def _get_named_altar_tile(self, altar_name, depth):
+        """Load and scale a named altar/special altar tile for the given depth."""
         # Lazy-load base image for this altar type
         cache_key = altar_name
         if cache_key not in self._altar_bases:
@@ -2130,6 +2160,22 @@ class EnhancedDungeonRenderer:
         scaled = pygame.transform.smoothscale(base_img, (target_size, target_size))
         self._altar_caches[cache_key][depth] = scaled
         return scaled
+
+    def _get_altar_tile(self, relic_num, depth, is_collected):
+        """Load and scale the altar tile for the given relic number and depth."""
+        if is_collected:
+            altar_name = 'empty_altar.png'
+        else:
+            altar_names = {
+                1: 'luna_altar.png',
+                2: 'polaris_altar.png',
+                3: 'triangulus_altar.png',
+                4: 'quadrata_altar.png',
+                5: 'hexagonum_altar.png',
+                6: 'infinitas_altar.png'
+            }
+            altar_name = altar_names.get(relic_num, 'empty_altar.png')
+        return self._get_named_altar_tile(altar_name, depth)
     
     def _render_altar(self, x, y, width, height, darkness, depth, relic_num, is_collected):
         """Render an altar using pre-made tiles, bottom-aligned to sit on the floor."""
@@ -2156,6 +2202,31 @@ class EnhancedDungeonRenderer:
         
         # Fallback: simple colored rectangle if tiles are missing
         altar_color = self._apply_darkness((120, 120, 140), darkness)
+        altar_rect = pygame.Rect(altar_x, altar_y, altar_size, altar_size)
+        pygame.draw.rect(self.screen, altar_color, altar_rect)
+
+    def _render_golden_chalice_altar(self, x, y, width, height, darkness, depth, is_collected):
+        """Render the Golden Chalice altar tile in its room."""
+        tile_name = "empty_golden_chalice_altar.png" if is_collected else "golden_chalice_altar.png"
+        altar_tile = self._get_named_altar_tile(tile_name, depth)
+
+        if depth == 1:
+            size_ratio = 0.6
+        elif depth == 2:
+            size_ratio = 0.5
+        else:
+            size_ratio = 0.4
+        altar_size = max(8, int(height * size_ratio))
+        altar_x = x + (width - altar_size) // 2
+        altar_y = y + height - altar_size
+
+        if altar_tile:
+            altar_surf = pygame.transform.smoothscale(altar_tile, (altar_size, altar_size))
+            altar_surf = self._apply_darkness_to_surface(altar_surf, darkness)
+            self.screen.blit(altar_surf, (altar_x, altar_y))
+            return
+
+        altar_color = self._apply_darkness((160, 145, 90), darkness)
         altar_rect = pygame.Rect(altar_x, altar_y, altar_size, altar_size)
         pygame.draw.rect(self.screen, altar_color, altar_rect)
         
@@ -2238,6 +2309,30 @@ class EnhancedDungeonRenderer:
         target_size = self._get_base_size(depth)
         scaled = pygame.transform.smoothscale(self._unobtainium_base, (target_size, target_size))
         self._unobtainium_cache[depth] = scaled
+        return scaled
+
+    def _get_portal_tile(self, depth):
+        """Load and scale the portal tile for the given depth."""
+        if self._portal_base is None:
+            portal_path = os.path.join('src/ui_pygame/assets', 'dungeon_tiles', 'special_tiles', 'portal.png')
+            if os.path.exists(portal_path):
+                try:
+                    self._portal_base = pygame.image.load(portal_path).convert_alpha()
+                except Exception as e:
+                    print(f"Failed to load portal tile {portal_path}: {e}")
+                    self._portal_base = None
+            else:
+                self._portal_base = None
+
+        if self._portal_base is None:
+            return None
+
+        if depth in self._portal_cache:
+            return self._portal_cache[depth]
+
+        target_size = self._get_base_size(depth)
+        scaled = pygame.transform.smoothscale(self._portal_base, (target_size, target_size))
+        self._portal_cache[depth] = scaled
         return scaled
 
     def _render_secret_shop(self, x, y, width, height, darkness, depth):
@@ -2346,7 +2441,6 @@ class EnhancedDungeonRenderer:
 
         self._cache_key = key
         self._layer_cache.clear()
-        self._flat_cache.clear()
 
         # Ensure tileset is loaded before accessing it
         self._ensure_tileset_loaded()
@@ -2426,6 +2520,10 @@ class EnhancedDungeonRenderer:
         if tile_type == 'FakeWall':
             return not getattr(tile, 'visited', False)
 
+        # Funhouse walls remain visually wall-like even though they are enterable.
+        if tile_type in ('FunhouseWall', 'MirrorWall'):
+            return True
+
         # OreVaultDoor shows as wall until detected or opened
         if tile_type == 'OreVaultDoor':
             is_open = getattr(tile, 'open', False)
@@ -2433,8 +2531,8 @@ class EnhancedDungeonRenderer:
             # Show as wall if not open and not detected
             return not (is_open or is_detected)
 
-        # Chest tiles should always render, even if impassable (enter=False)
-        if 'Chest' in tile_type or 'Relic' in tile_type or 'Boulder' in tile_type:
+        # Certain special tiles should render even when impassable (enter=False).
+        if any(name in tile_type for name in ("Chest", "Relic", "Boulder", "GoldenChaliceRoom")):
             return False
 
         # Wall tiles have enter=False, walkable tiles have enter=True

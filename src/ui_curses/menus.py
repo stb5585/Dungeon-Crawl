@@ -277,6 +277,22 @@ class NewGameMenu:
                 self.desc_win.addstr(j + k + 17, self.width // 3 - 9, "Available Classes", curses.A_BOLD)
                 cls_res_str = ", ".join(self.race.cls_res['Base'])
                 self.desc_win.addstr(j + k + 19, (self.width // 3) - (len(cls_res_str) // 2), cls_res_str)
+                # Racial traits (virtue/sin)
+                try:
+                    virtue = getattr(self.race, "virtue", None)
+                    sin = getattr(self.race, "sin", None)
+                    if virtue and getattr(virtue, "name", ""):
+                        self.desc_win.addstr(j + k + 21, self.width // 3 - 6, "Virtue / Sin", curses.A_BOLD)
+                        self.desc_win.addstr(j + k + 23, 3, f"Virtue: {virtue.name}")
+                        if getattr(virtue, "description", ""):
+                            self.desc_win.addstr(j + k + 24, 5, str(virtue.description)[: self.width // 3 - 8])
+                    if sin and getattr(sin, "name", ""):
+                        row = j + k + 26
+                        self.desc_win.addstr(row, 3, f"Sin: {sin.name}")
+                        if getattr(sin, "description", ""):
+                            self.desc_win.addstr(row + 1, 5, str(sin.description)[: self.width // 3 - 8])
+                except Exception:
+                    pass
             elif self.page == 2:
                 self.cls = self.game.classes_dict[self.options_list[self.current_option]]['class']()
                 self.desc_win.addstr(1, self.width // 3 - (len(self.cls.name) // 2), self.cls.name, curses.A_BOLD)
@@ -1037,9 +1053,9 @@ class ShopMenu:
                 typ = itemlist[0].typ
                 self.item_str_list.append(f"{typ:16}{' ':2}{name:31}{'':26}x{len(itemlist):2}")
         else:
+            adj_scale = self.game.player_char.shop_price_scale()
             for typ, lst in self.itemdict.items():
                 for item in lst:
-                    adj_scale = scaled_decay_function(self.game.player_char.stats.charisma // 2)
                     if self.game.player_char.in_town():
                         if item().rarity >= max(0.4, (1.0 - (0.02 * self.game.player_char.player_level()))):
                             adj_cost = max(1, int(item().value * adj_scale))
@@ -2291,10 +2307,6 @@ class QuestListPopupMenu(PopupMenu):
                 self.popup_win.addstr(h_adjust, 16, f"{quest}: {info[1]}/{info[0]['num']}")
             h_adjust += 1
 
-        if self.options_list:
-            self.popup_win.addstr(h_adjust, 2, "* = ready to turn in")
-            h_adjust += 1
-
         # Add a gap
         h_adjust += 1
 
@@ -2348,26 +2360,34 @@ class QuestListPopupMenu(PopupMenu):
                 if self.options_list[self.current_option] == "Go Back":
                     return
                 if self.options_list[self.current_option] == "Completed Quests":
-                    self.completed_quests()
+                    continue  # Section header, not selectable
+                if self.options_list[self.current_option] == "Turned In":
+                    self.show_turned_in()
                 else:
                     self.inspect_quests()
 
     def update_options(self):
         self.options_list = []
-        self.completed = []
+        active = []
+        self.completed = []   # completed but not turned in
+        self.turned_in = []
         self.display_to_quest = {}
         for typ in ["Main", "Side"]:
             for quest, info in self.game.player_char.quest_dict[typ].items():
-                if info["Completed"] and info["Turned In"]:
+                if info["Turned In"]:
+                    self.turned_in.append(quest)
+                elif info["Completed"]:
                     self.completed.append(quest)
+                    self.display_to_quest[quest] = quest
                 else:
-                    display = quest
-                    if info["Completed"] and not info["Turned In"]:
-                        display = f"{quest} *"
-                    self.options_list.append(display)
-                    self.display_to_quest[display] = quest
+                    active.append(quest)
+                    self.display_to_quest[quest] = quest
+        self.options_list.extend(active)
         if self.completed:
             self.options_list.append("Completed Quests")
+            self.options_list.extend(self.completed)
+        if self.turned_in:
+            self.options_list.append("Turned In")
         self.options_list.append("Go Back")
 
     def inspect_quests(self):
@@ -2405,6 +2425,14 @@ class QuestListPopupMenu(PopupMenu):
     def completed_quests(self):
         questbox = TextBox(self.game)
         questbox.print_text_in_rectangle("\n".join(self.completed))
+        questbox.clear_rectangle()
+
+    def show_turned_in(self):
+        questbox = TextBox(self.game)
+        if self.turned_in:
+            questbox.print_text_in_rectangle("\n".join(self.turned_in))
+        else:
+            questbox.print_text_in_rectangle("No turned in quests.")
         questbox.clear_rectangle()
 
 

@@ -1,16 +1,16 @@
 """
 BattleManager for curses-based UI combat.
-Moved from core.battle to keep UI dependencies separate from core logic.
+
+Thin UI wrapper around the core BattleEngine.  All game-mechanical logic
+(action execution, status effects, initiative, etc.) lives in the engine;
+this class is responsible only for curses rendering and player input.
 """
 from __future__ import annotations
 
-import random
-import re
 from typing import TYPE_CHECKING
 
+from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.battle_logger import BattleLogger
-from src.core.combat.initiative import determine_initiative
-from src.core.constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 
 if TYPE_CHECKING:
     from typing import Any
@@ -20,23 +20,17 @@ if TYPE_CHECKING:
 
 class BattleManager:
     """
-    Handles the flow of combat between the player and an enemy.
+    Curses UI wrapper for combat.
+
+    Delegates all combat logic to :class:`BattleEngine` and provides
+    curses-specific rendering, text output, and player input.
 
     Attributes:
         game: The current game instance.
-        player_char: The player character.
-        enemy: The enemy character.
-        logger: The logger for recording combat events.
-        flee: Whether the player has chosen to flee combat.
-        tile: The current tile the player is on.
+        engine: The core BattleEngine driving combat logic.
         battle_ui: The UI for the battle screen.
         battle_popup: The UI for selecting spells, skills, or items.
         textbox: The UI for displaying text.
-        available_actions: The actions the player can take in combat.
-        summon_active: Whether the player has summoned a companion.
-        summon: The player's summoned companion.
-        attacker: The character currently taking their turn.
-        defender: The character currently being attacked.
     """
 
     def __init__(
@@ -49,36 +43,104 @@ class BattleManager:
             textbox: Any | None = None,
             ):
         self.game = game
-        self.player_char: Character = game.player_char
-        self.enemy = enemy
-        self.logger = logger if logger else BattleLogger()
-        self.flee: bool = False
-        self.tile: Any = game.player_char.world_dict[(game.player_char.location_x,
-                                                          game.player_char.location_y,
-                                                          game.player_char.location_z)]
-        self.boss = False if "Boss" not in str(self.tile) else True
         self.battle_ui = battle_ui
         self.battle_popup = battle_popup
         self.textbox = textbox
-        self.available_actions: list = self.tile.available_actions(game.player_char)
-        self.summon_active: bool = False
-        self.summon: Character | None = None
-        self.attacker, self.defender = self.determine_initiative()
-        # Track charging abilities across turns
-        self.charging_ability = None  # (ability_name, skill_obj) tuple when charging
+
+        player = game.player_char
+        tile = player.world_dict[(player.location_x, player.location_y, player.location_z)]
+
+        self.engine = BattleEngine(
+            player=player,
+            enemy=enemy,
+            tile=tile,
+            game=game,
+            logger=logger,
+        )
+
+    # ── Convenience accessors (keep API compatible for subclasses) ───
+
+    @property
+    def player_char(self) -> Character:
+        return self.engine.player
+
+    @property
+    def enemy(self) -> Character:
+        return self.engine.enemy
+
+    @property
+    def tile(self) -> Any:
+        return self.engine.tile
+
+    @property
+    def logger(self) -> BattleLogger:
+        return self.engine.logger
+
+    @property
+    def flee(self) -> bool:
+        return self.engine.flee
+
+    @flee.setter
+    def flee(self, value: bool) -> None:
+        self.engine.flee = value
+
+    @property
+    def boss(self) -> bool:
+        return self.engine.boss
+
+    @property
+    def available_actions(self) -> list:
+        return self.engine.available_actions
+
+    @available_actions.setter
+    def available_actions(self, value: list) -> None:
+        self.engine.available_actions = value
+
+    @property
+    def summon_active(self) -> bool:
+        return self.engine.summon_active
+
+    @summon_active.setter
+    def summon_active(self, value: bool) -> None:
+        self.engine.summon_active = value
+
+    @property
+    def summon(self) -> Character | None:
+        return self.engine.summon
+
+    @summon.setter
+    def summon(self, value: Character | None) -> None:
+        self.engine.summon = value
+
+    @property
+    def attacker(self) -> Character | None:
+        return self.engine.attacker
+
+    @attacker.setter
+    def attacker(self, value: Character | None) -> None:
+        self.engine.attacker = value
+
+    @property
+    def defender(self) -> Character | None:
+        return self.engine.defender
+
+    @defender.setter
+    def defender(self, value: Character | None) -> None:
+        self.engine.defender = value
+
+    @property
+    def charging_ability(self):
+        return self.engine.charging_ability
+
+    @charging_ability.setter
+    def charging_ability(self, value) -> None:
+        self.engine.charging_ability = value
+
+    # ── UI methods (curses-specific) ─────────────────────────────────
 
     def render_screen(self) -> None:
         """Renders the battle screen."""
-        has_sight = any([
-            self.player_char.cls.name in ["Inquisitor", "Seeker"],
-            getattr(self.player_char.equipment.get("Pendant"), "mod", None) == "Vision",
-            getattr(self.player_char, "sight", False),
-        ])
-        vision = all([
-            has_sight,
-            "Boss" not in str(self.tile),
-            self.enemy.name != "Waitress",
-        ])
+        vision = self.engine.show_enemy_details()
         self.battle_ui.draw_enemy(self.enemy, vision=vision)
         self.battle_ui.draw_options(self.available_actions)
         if self.summon_active:
@@ -105,323 +167,150 @@ class BattleManager:
                 kept_lines.append(line)
         return "\n".join(kept_lines)
 
+    # ── Battle flow ──────────────────────────────────────────────────
+
     def determine_initiative(self) -> tuple[Character, Character]:
         """Determine who goes first using each character's dexterity plus luck."""
-        return determine_initiative(self.player_char, self.enemy)
+        return self.engine.start_battle()
 
     def execute_battle(self) -> bool:
         """Handles the entire battle flow."""
-        # Emit combat start event
-        from src.core.events.event_bus import get_event_bus, create_combat_event, EventType
-        event_bus = get_event_bus()
-        event_bus.emit(create_combat_event(
-            EventType.COMBAT_START,
-            actor=self.player_char,
-            target=self.enemy,
-            initiative=self.attacker == self.player_char,
-            boss=self.boss
-        ))
+        self.engine.start_battle()
 
-        self.logger.start_battle(
-            self.player_char, self.enemy, initiative=self.attacker == self.player_char, boss=self.boss
-        )
         while self.battle_continues():
             self.process_turn()
 
         self.end_battle()
-
-        # Emit combat end event
-        event_bus.emit(create_combat_event(
-            EventType.COMBAT_END,
-            actor=self.player_char,
-            target=self.enemy,
-            fled=self.flee,
-            player_alive=self.player_char.is_alive(),
-            enemy_alive=self.enemy.is_alive()
-        ))
-
         return self.flee
 
     def battle_continues(self) -> bool:
         """Checks if the battle should continue."""
         self.render_screen()
-        return all([self.player_char.is_alive() and self.enemy.is_alive(),
-                    not self.flee])
+        return self.engine.battle_continues()
 
     def process_turn(self) -> None:
         """Handles the flow of a single turn."""
         self.before_turn()
         self.take_turn()
         self.after_turn()
-
-        # switch active user for next turn
-        active_user = self.player_char
-        if self.summon_active:
-            active_user = self.summon
-        if self.attacker == active_user:
-            self.attacker, self.defender = self.enemy, active_user
-        else:
-            self.attacker, self.defender = active_user, self.enemy
-
-    def take_turn(self) -> None:
-        """Handles the active combatant's turn."""
-        effects_text = self.attacker.effects()
-        if effects_text:
-            self.print_text(effects_text)
-            if "damage" in effects_text:
-                # handles exploding shield for Crusader
-                try:
-                    self.defender.health.current -= int(effects_text.split(" damage")[0].split(" ")[-1])
-                except ValueError:
-                    pass
-        active, text = self.attacker.check_active()
-        if not active:
-            self.print_text(text)
-        else:
-            choice = None
-            combat_text = ""
-            if self.attacker.status_effects["Berserk"].active:
-                action = "Attack"
-            elif self.charging_ability and self.attacker == self.player_char:
-                # Continue a charging ability
-                ability_name, skill_obj = self.charging_ability
-                action = "Use Skill"
-                choice = ability_name
-                # Will be handled in execute_action
-            elif self.attacker.class_effects["Jump"].active:
-                # If incapacitated while charging, cancel the Jump
-                if self.attacker.incapacitated():
-                    jump_choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
-                    jump_skill = self.attacker.spellbook['Skills'][jump_choice]
-                    self.print_text(jump_skill.cancel_charge(self.attacker))
-                    self.attacker.class_effects["Jump"].active = False
-                else:
-                    action = "Use Skill"
-                    choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
-                    self.attacker.class_effects["Jump"].active = False
-            else:
-                if self.attacker == self.player_char:
-                    while True:
-                        choice = False
-                        action = self.battle_ui.navigate_menu()
-                        if action in ["Cast Spell", "Use Skill", "Use Item"]:
-                            self.battle_popup.update_options(action, tile=self.tile)
-                            choice = self.battle_popup.navigate_popup().split('  ')[0]
-                        elif action == "Summon":
-                            self.battle_popup.update_options("Summon", options=list(self.attacker.summons))
-                            choice = self.battle_popup.navigate_popup()
-                        elif action == "Untransform":
-                            self.print_text(self.attacker.transform(back=True))
-                        elif action == "Transform":
-                            self.print_text(self.attacker.transform())
-                        if action == "Attack" or (choice and choice != "Go Back"):
-                            break
-                        self.render_screen()
-                else:
-                    action, choice = self.enemy.options(self.player_char, self.available_actions, self.tile)
-            self.execute_action(action, choice=choice, result=combat_text)
-        self.companion_turn()
-
-    def execute_action(self, action: str, choice: str=None, result: str=None):
-        """Executes an attack or skill selection."""
-        from src.core.events.event_bus import get_event_bus, create_combat_event, EventType
-        event_bus = get_event_bus()
-
-        if action == "Nothing":
-            result = f"{self.attacker.name} does nothing."
-        elif action == "Attack":
-            # Emit attack event
-            event_bus.emit(create_combat_event(
-                EventType.ATTACK,
-                actor=self.attacker,
-                target=self.defender,
-                is_special=False
-            ))
-
-            if not random.randint(0, max(1, SPECIAL_ATTACK_ROLL_MAX - self.attacker.check_mod("luck", luck_factor=SPECIAL_ATTACK_LUCK_FACTOR))):
-                try:
-                    result = self.attacker.special_attack(target=self.defender)
-                    # Mark as special attack
-                    event_bus.emit(create_combat_event(
-                        EventType.ATTACK,
-                        actor=self.attacker,
-                        target=self.defender,
-                        is_special=True
-                    ))
-                except NotImplementedError:
-                    result, _, _ = self.attacker.weapon_damage(self.defender)
-            else:
-                result, _, _ = self.attacker.weapon_damage(self.defender)
-        elif action == "Pickup Weapon":
-            result = f"{self.attacker.name} picks up their weapon."
-            self.attacker.physical_effects["Disarm"].active = False
-        elif action == "Flee":
-            event_bus.emit(create_combat_event(
-                EventType.FLEE_ATTEMPT,
-                actor=self.attacker,
-                target=self.defender
-            ))
-            self.flee, result = self.attacker.flee(self.defender)
-        elif action == "Defend":
-            event_bus.emit(create_combat_event(
-                EventType.DEFEND,
-                actor=self.attacker,
-                target=self.defender
-            ))
-            result = self.attacker.enter_defensive_stance(duration=2, source="Defend")
-        elif action == "Cast Spell":
-            # Check for Silence
-            if self.attacker.status_effects["Silence"].active:
-                result = f"{self.attacker.name} is silenced and cannot cast spells!\n"
-            else:
-                # Emit spell cast event
-                event_bus.emit(create_combat_event(
-                    EventType.SPELL_CAST,
-                    actor=self.attacker,
-                    target=self.defender,
-                    spell_name=choice
-                ))
-                result = f"{self.attacker.name} casts {choice}.\n"
-                result += self.attacker.spellbook['Spells'][choice].cast(self.attacker, target=self.defender)
-        elif action == "Use Skill":
-            # Check for Silence
-            if self.attacker.status_effects["Silence"].active:
-                result = f"{self.attacker.name} is silenced and cannot use skills!\n"
-            else:
-                if choice == "Remove Shield":
-                    choice = "Mana Shield"
-                skill = self.attacker.spellbook['Skills'][choice]
-
-                # Emit skill use event
-                event_bus.emit(create_combat_event(
-                    EventType.SKILL_USE,
-                    actor=self.attacker,
-                    target=self.defender,
-                    skill_name=skill.name
-                ))
-
-                result = f"{self.attacker.name} uses {skill.name}.\n"
-                if skill.name == 'Smoke Screen':
-                    result += skill.use(self.attacker, target=self.defender)
-                    self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
-                    result += flee_str
-                elif skill.name == "Slot Machine":
-                    result += skill.use(self.attacker, target=self.defender)
-                elif skill.name in ["Doublecast", "Triplecast"]:
-                    result += skill.use(self.attacker, self.defender, game=self.game)
-                elif "Jump" in skill.name:
-                    charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
-                    if charge_time > 0:
-                        self.attacker.class_effects["Jump"].active = True
-                        result += f"{self.attacker.name} prepares to leap into the air.\n"
-                    result += skill.use(self.attacker, target=self.defender)
-                # Handle Charge and other charging abilities
-                elif hasattr(skill, 'get_charge_time') and skill.get_charge_time() > 0:
-                    result += skill.use(self.attacker, target=self.defender)
-                    # Track that this ability is charging
-                    if getattr(skill, 'charging', False):
-                        self.charging_ability = (choice, skill)
-                    else:
-                        # Charging is complete, clear the tracking variable
-                        self.charging_ability = None
-                else:
-                    result += skill.use(self.attacker, target=self.defender)
-        elif action == "Use Item":
-            itm = self.attacker.inventory[re.split(r"\s{2,}", choice)[0]][0]
-            target = self.attacker
-            if itm.subtyp == "Scroll":
-                if itm.spell.subtyp != "Support":
-                    target = self.defender
-
-            # Emit item use event
-            event_bus.emit(create_combat_event(
-                EventType.ITEM_USE,
-                actor=self.attacker,
-                target=target,
-                item_name=itm.name
-            ))
-            result = itm.use(self.attacker, target=target)
-        elif action == "Summon":
-            self.summon = self.attacker.summons[choice]
-            self.attacker = self.summon
-            result = f"{self.player_char.name} summons {self.summon.name} to aid them in combat."
-        elif action == "Recall":
-            result = f"{self.player_char.name} recalls {self.summon.name}."
-            self.summon_active = False
-            self.attacker = self.player_char
-        elif action == "Totem":
-            totem_skill = None
-            skills = self.attacker.spellbook.get("Skills", {})
-            if "Totem" in skills:
-                totem_skill = skills["Totem"]
-            else:
-                for sk in skills.values():
-                    if getattr(sk, "name", "") == "Totem":
-                        totem_skill = sk
-                        break
-            if totem_skill:
-                result = totem_skill.use(self.attacker, target=self.defender)
-            else:
-                result = f"{self.attacker.name} does not know how to summon a totem.\n"
-        self.print_text(result)
-        self.logger.log_event("Action", self.attacker, action=action, outcome=result)
-
-    def companion_turn(self) -> None:
-        """Handles the companion's turn."""  # TODO add other companions
-        familiar_text = self.attacker.familiar_turn(self.defender)
-        if familiar_text:
-            self.print_text(familiar_text)
-            self.logger.log_event("Familiar", self.attacker, target=self.defender, outcome=familiar_text)
-
-    def end_battle(self) -> None:
-        """Handles cleanup and post-battle results."""
-        result = "victory" if self.player_char.is_alive() else "defeat"
-        winner = self.player_char.name if self.player_char.is_alive() else self.enemy.name
-        if self.flee:
-            self.tile.enemy = None
-            result = "flee"
-            winner = None
-        self.player_char.end_combat(self.game,
-                                    self.enemy,
-                                    self.tile,
-                                    flee=self.flee,
-                                    summon=self.summon,
-                                    textbox=self.textbox)
-        if self.player_char.is_alive() and self.boss:
-            self.tile.defeated = True
-            self.tile.enemy = None
-        self.logger.end_battle(result=result, winner=winner, boss=self.boss)
-        self.game.stdscr.getch()
+        self.engine.swap_turns()
 
     def before_turn(self) -> None:
-        """Hook for pre-turn effects like buffs, debuffs, or AI strategy changes."""
+        """Pre-turn hook. Subclasses may override for queue-based processing."""
         pass
 
     def after_turn(self) -> None:
-        """Hook for post-turn effects."""
-        if not self.flee:
-            result = self.defender.special_effects(self.attacker)
-            if result:
-                self.print_text(result)
-                self.logger.log_event(
-                    "Special Effect", self.defender, target=self.attacker, outcome=result
+        """Post-turn: process special effects, summon state, resurrection."""
+        post = self.engine.post_turn()
+        for msg in post.messages:
+            if msg:
+                self.print_text(msg)
+
+    def take_turn(self) -> None:
+        """Handles the active combatant's turn."""
+        # Pre-turn: process status effects, check if attacker can act
+        pre = self.engine.pre_turn()
+        if pre.effects_text:
+            self.print_text(pre.effects_text)
+
+        # If the attacker died from effects (poison, DOT, bleed), skip turn
+        if pre.died_from_effects:
+            return
+
+        if not pre.can_act:
+            self.print_text(pre.inactive_reason)
+        else:
+            # Check for forced actions (berserk, charging, jump)
+            forced = self.engine.get_forced_action()
+            if forced:
+                if forced.action == "Cancelled":
+                    # Jump was cancelled due to incapacitation
+                    self.print_text(forced.cancel_message)
+                else:
+                    self.execute_action(forced.action, choice=forced.choice)
+            elif self.engine.is_player_turn():
+                # Get player input via curses UI
+                action, choice = self._get_player_input()
+                self.execute_action(action, choice=choice)
+            else:
+                # Enemy AI chooses action
+                action, choice = self.engine.get_enemy_action()
+                self.execute_action(action, choice=choice)
+
+        # Companion / familiar turn
+        companion_msg = self.engine.companion_turn()
+        if companion_msg:
+            self.print_text(companion_msg)
+
+    def _get_player_input(self) -> tuple[str, str | None]:
+        """Get the player's action choice via curses menus. Returns (action, choice)."""
+        while True:
+            choice = False
+            action = self.battle_ui.navigate_menu()
+            if action in ["Cast Spell", "Use Skill", "Use Item"]:
+                self.battle_popup.update_options(action, tile=self.tile)
+                choice = self.battle_popup.navigate_popup().split('  ')[0]
+            elif action == "Summon":
+                self.battle_popup.update_options(
+                    "Summon", options=list(self.engine.attacker.summons)
                 )
-            self.available_actions = self.tile.available_actions(self.player_char)
-            if self.summon_active:
-                if self.summon.is_alive():
-                    self.available_actions.append("Recall")
-                else:
-                    self.print_text(f"{self.summon.name} has been slain.")
-                    self.summon_active = False
-                    self.summon = None
-                    self.defender = self.player_char
-            if not self.defender.is_alive():
-                if 'Resurrection' in self.defender.spellbook['Spells'] and \
-                        abs(self.defender.health.current) <= self.defender.mana.current:
-                    result = self.defender.spellbook['Spells']['Resurrection'].cast(self.defender)
-                else:
-                    if self.defender.name == "Behemoth":
-                        result = self.defender.special_effects(self.attacker)
-                if result:
-                    self.print_text(result)
-        self.logger.next_turn()
+                choice = self.battle_popup.navigate_popup()
+            elif action == "Untransform":
+                self.print_text(self.engine.attacker.transform(back=True))
+            elif action == "Transform":
+                self.print_text(self.engine.attacker.transform())
+            if action == "Attack" or (choice and choice != "Go Back"):
+                break
+            self.render_screen()
+        return action, choice if choice else None
+
+    def execute_action(self, action: str, choice: str = None, result: str = None):
+        """Executes an action by delegating to the core engine."""
+        action_result = self.engine.execute_action(action, choice=choice)
+
+        # Sync flee state (engine updates it internally, but Smoke Screen
+        # sets it via the skill's flee call inside the engine)
+        # Sync summon state for Summon/Recall actions
+        if action_result.summon_started:
+            self.engine.summon_active = True
+        if action_result.summon_recalled:
+            self.engine.summon_active = False
+
+        self.print_text(action_result.message)
+
+    def companion_turn(self) -> None:
+        """Handles the companion's turn (called from EnhancedBattleManager)."""
+        companion_msg = self.engine.companion_turn()
+        if companion_msg:
+            self.print_text(companion_msg)
+
+    def end_battle(self) -> None:
+        """Handles cleanup and post-battle results (curses-specific)."""
+        # Use player.end_combat for curses (handles textbox output)
+        result_str = "victory" if self.player_char.is_alive() else "defeat"
+        winner = self.player_char.name if self.player_char.is_alive() else self.enemy.name
+        if self.flee:
+            self.tile.enemy = None
+            result_str = "flee"
+            winner = None
+        self.player_char.end_combat(
+            self.game, self.enemy, self.tile,
+            flee=self.flee, summon=self.summon, textbox=self.textbox,
+        )
+        if self.player_char.is_alive() and self.boss:
+            self.tile.defeated = True
+            self.tile.enemy = None
+        self.logger.end_battle(result=result_str, winner=winner, boss=self.boss)
+
+        # Emit combat end event
+        from src.core.events.event_bus import get_event_bus, create_combat_event, EventType
+        get_event_bus().emit(create_combat_event(
+            EventType.COMBAT_END,
+            actor=self.player_char,
+            target=self.enemy,
+            fled=self.flee,
+            player_alive=self.player_char.is_alive(),
+            enemy_alive=self.enemy.is_alive(),
+        ))
+
+        self.game.stdscr.getch()

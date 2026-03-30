@@ -1,0 +1,9 @@
+name: Aqualung
+type: Spell
+subtype: Water
+description: Giant water bubbles surround the enemy and burst, causing great water damage.
+cost: 13
+damage_mod: 1.5
+crit: 3
+school: Elemental
+rank: 1

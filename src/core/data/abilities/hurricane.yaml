@@ -1,0 +1,9 @@
+name: Hurricane
+type: Spell
+subtype: Wind
+description: A violent storm berates your foes, causing great wind damage.
+cost: 22
+damage_mod: 1.75
+crit: 6
+school: Elemental
+rank: 1

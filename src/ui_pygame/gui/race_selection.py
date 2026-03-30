@@ -102,6 +102,46 @@ class RaceSelectionScreen:
                     self.screen.blit(text, (x, y))
                     y += line_height
                     line_count += 1
+
+        # Virtue / Sin (fits in the gap between description and stats)
+        trait_y = desc_y + (5 * line_height) + 10
+        if race.get("virtue") or race.get("sin"):
+            trait_header = self.small_font.render("Virtue / Sin", True, self.GOLD)
+            self.screen.blit(trait_header, (x, trait_y))
+            trait_y += line_height
+
+            def _wrap_lines(s: str, max_px: int) -> list[str]:
+                words = (s or "").split()
+                out = []
+                line = ""
+                for w in words:
+                    test = f"{line} {w}".strip()
+                    if self.small_font.size(test)[0] <= max_px:
+                        line = test
+                    else:
+                        if line:
+                            out.append(line)
+                        line = w
+                if line:
+                    out.append(line)
+                return out
+
+            max_px = self.details_rect.width - 60
+            virtue = race.get("virtue") or {}
+            sin = race.get("sin") or {}
+            if virtue.get("name"):
+                vname = self.small_font.render(f"Virtue: {virtue.get('name','')}", True, self.WHITE)
+                self.screen.blit(vname, (x, trait_y))
+                trait_y += line_height - 2
+                for ln in _wrap_lines(virtue.get("description", ""), max_px)[:2]:
+                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
+                    trait_y += line_height - 2
+            if sin.get("name"):
+                self.screen.blit(self.small_font.render(f"Sin: {sin.get('name','')}", True, self.WHITE), (x, trait_y))
+                trait_y += line_height - 2
+                for ln in _wrap_lines(sin.get("description", ""), max_px)[:2]:
+                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
+                    trait_y += line_height - 2
         
         # Base Stats section (fixed position)
         if 'stats' in race:
@@ -340,6 +380,14 @@ class RaceSelectionScreen:
                 cls_res = race_instance.cls_res
                 if 'Base' in cls_res:
                     race_info['available_classes'] = cls_res['Base']
+
+            # Racial traits (virtue/sin)
+            virtue = getattr(race_instance, "virtue", None)
+            sin = getattr(race_instance, "sin", None)
+            if virtue is not None:
+                race_info["virtue"] = {"name": getattr(virtue, "name", ""), "description": getattr(virtue, "description", "")}
+            if sin is not None:
+                race_info["sin"] = {"name": getattr(sin, "name", ""), "description": getattr(sin, "description", "")}
             
             self.race_data[race_name] = race_info
     

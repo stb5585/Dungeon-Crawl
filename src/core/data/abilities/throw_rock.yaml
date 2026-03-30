@@ -1,0 +1,9 @@
+name: Throw Rock
+type: Skill
+description: >-
+  Grab the nearest rock or stone and chuck it at the enemy, with a chance
+  to knock the target prone.
+cost: 7
+ice_block_check: true
+effects:
+  - type: throw_rock

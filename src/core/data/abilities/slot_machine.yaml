@@ -1,0 +1,10 @@
+name: Slot Machine
+description: >-
+  Pull the handle and see what comes up! Depending on the results,
+  different possible outcomes can occur.
+type: Skill
+subtype: Luck
+cost: 15
+weapon: false
+effects:
+  - type: slot_machine

@@ -1,0 +1,21 @@
+name: Berserk
+type: Status
+subtype: Status
+description: "Enrage the enemy, increasing damage but lowering accuracy and making them only attack."
+cost: 15
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    actor_lo_divisor: 2
+    target_stat: wisdom
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    effect:
+      type: status_apply
+      status_name: Berserk
+      skip_if_active: true
+      duration_stat: intel
+      duration_stat_divisor: 10
+      duration_min: 2
+      duration_random: true

@@ -12,6 +12,9 @@ from . import abilities
 from .character import StatusEffect
 
 if TYPE_CHECKING:
+    from typing import Any
+
+    from .character import Character
     from .combat.combat_result import CombatResultGroup
 
 
@@ -73,7 +76,7 @@ class Item:
     subtyp: the subtype of the item (i.e. Sword would be a subtype of Weapon)
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         self.name = name
         self.description = '\n'.join(wrap(description, 35, break_on_hyphens=False))
         self.value = value
@@ -84,14 +87,14 @@ class Item:
         self.restriction = []
         self.ultimate = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
                 f"Sub-type: {'Special' if 'Summon' in self.subtyp else self.subtyp}\n"
                 f"{35*'='}")
 
-    def use(self, user, target=None, tile=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         return ""
 
     def special_effect(self, results: CombatResultGroup) -> None:
@@ -111,7 +114,8 @@ class Weapon(Item):
     ignore: boolean indicating whether the weapon automatically ignores armor when calculating damage
     """
 
-    def __init__(self, name, description, value, rarity, damage, crit, handed, subtyp, unequip, off):
+    def __init__(self, name: str, description: str, value: int, rarity: float, damage: int,
+                 crit: float, handed: int, subtyp: str, unequip: bool, off: bool) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.damage = damage
         self.crit = crit
@@ -125,7 +129,7 @@ class Weapon(Item):
         self.ignore = False
         self.element = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
@@ -147,13 +151,14 @@ class Armor(Item):
     typ: the item type; 'Armor' for this class
     """
 
-    def __init__(self, name, description, value, rarity, armor, subtyp, unequip):
+    def __init__(self, name: str, description: str, value: int, rarity: float,
+                 armor: int, subtyp: str, unequip: bool) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.armor = armor
         self.unequip = unequip
         self.typ = 'Armor'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
@@ -175,13 +180,14 @@ class OffHand(Item):
     typ: the item type; 'OffHand' for this class
     """
 
-    def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
+    def __init__(self, name: str, description: str, value: int, rarity: float,
+                 mod: float, subtyp: str, unequip: bool) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
         self.unequip = unequip
         self.typ = 'OffHand'
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.subtyp == 'Shield':
             return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                     f"{self.description}\n"
@@ -210,13 +216,14 @@ class Accessory(Item):
     typ: the item type; 'Accessory' for this class
     """
 
-    def __init__(self, name, description, value, rarity, mod, subtyp, unequip):
+    def __init__(self, name: str, description: str, value: int, rarity: float,
+                 mod: str, subtyp: str, unequip: bool) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
         self.unequip = unequip
         self.typ = "Accessory"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
@@ -230,12 +237,12 @@ class Potion(Item):
     typ: the item type; 'Potion' for this class
     """
 
-    def __init__(self, name, description, value, rarity, subtyp):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.typ = "Potion"
         self.weight = 0.1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
@@ -248,7 +255,7 @@ class Misc(Item):
     typ: the item type; 'Misc' for this class
     """
 
-    def __init__(self, name, description, value, rarity, subtyp):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.typ = "Misc"
 
@@ -265,7 +272,7 @@ class NoWeapon(Weapon):
 
 class NaturalWeapon(Weapon):
 
-    def __init__(self, name, damage, crit, description, off):
+    def __init__(self, name: str, damage: int, crit: float, description: str, off: bool) -> None:
         super().__init__(name=name, damage=damage, crit=crit, subtyp='Natural', description=description, handed=1,
                          off=off, rarity=0, unequip=False, value=0)
         self.att_name = 'attacks'
@@ -335,12 +342,12 @@ class IndrasFist(Weapon):
                     f"Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if result.crit > 1:
-                if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
-                        > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                att_roll = random.randint(result.actor.stats.strength // 2, result.actor.stats.strength)
+                def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                     duration = max(1, result.actor.stats.strength // 10)
-                    result.target.status_effects["Stun"].active = True
-                    result.target.status_effects["Stun"].duration = duration
-                    result.effects_applied['Stun'] = True
+                    if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                        result.effects_applied['Stun'] = True
 
 
 class GodsHand(Weapon):
@@ -449,14 +456,13 @@ class Carnwennan(Weapon):
                     f"Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if result.crit > 1:
-                if random.randint(
-                    result.actor.check_mod("speed", enemy=result.target) // 2, 
-                    result.actor.check_mod("speed", enemy=result.target)) \
-                        > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                spd = result.actor.check_mod("speed", enemy=result.target)
+                att_roll = random.randint(spd // 2, spd)
+                def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                     duration = max(1, result.actor.check_mod("speed", enemy=result.target) // 10)
-                    result.target.status_effects["Stun"].active = True
-                    result.target.status_effects["Stun"].duration = duration
-                    result.effects_applied['Stun'] = True
+                    if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                        result.effects_applied['Stun'] = True
         return results
 
 
@@ -658,12 +664,12 @@ class Mjolnir(Weapon):
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
                 if result.crit > 1:
-                    if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
-                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                    att_roll = random.randint(result.actor.stats.strength // 2, result.actor.stats.strength)
+                    def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                    if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                         duration = max(1, result.actor.stats.strength // 10)
-                        result.target.status_effects["Stun"].active = True
-                        result.target.status_effects["Stun"].duration = duration
-                    result.effects_applied['Status'].append('Stun')
+                        if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                            result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1209,12 +1215,12 @@ class Skullcrusher(Weapon):
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
                 if result.crit > 1:
-                    if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) \
-                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                    att_roll = random.randint(result.actor.stats.strength // 2, result.actor.stats.strength)
+                    def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                    if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                         duration = max(1, result.actor.stats.strength // 10)
-                        result.target.status_effects["Stun"].active = True
-                        result.target.status_effects["Stun"].duration = duration
-                        result.effects_applied['Status'].append('Stun')
+                        if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                            result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1494,11 +1500,14 @@ class Pincers(NaturalWeapon):
                 if not result.target.status_effects["Stun"].active:
                     p_resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                     if result.crit > 1:
-                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - p_resist) \
-                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        att_roll = int(
+                            random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - p_resist)
+                        )
+                        def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                        if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                             s_duration = max(1, result.actor.stats.strength // 10)
-                            result.target.status_effects["Stun"] = StatusEffect(True, s_duration)
-                            result.effects_applied['Status'].append('Stun')
+                            if result.target.apply_stun(s_duration, source=self.name, applier=result.actor):
+                                result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1596,11 +1605,14 @@ class AlligatorTail(NaturalWeapon):
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
                     if result.crit > 1:
-                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist) \
-                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        att_roll = int(
+                            random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist)
+                        )
+                        def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                        if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                             duration = max(1, result.actor.stats.strength // 10)
-                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            result.effects_applied['Status'].append('Stun')
+                            if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                                result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1651,24 +1663,27 @@ class Laser2(Laser):
 
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
-        t_chance = result.target.check_mod('luck', enemy=result.actor, luck_factor=5) / 100
+        # Luck should reduce proc chance, but it shouldn't fully shut off the effect.
+        # Cap the luck term so the threshold never reaches/exceeds 1.0 (which would disable procs).
+        t_chance = min(0.015, result.target.check_mod('luck', enemy=result.actor, luck_factor=20) / 100)
         if result.crit > 1:
-            if random.random() > 0.95 + t_chance:  # 5% chance minus charisma // 5
-                stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
+            # Balance tuning: permanent primary-stat damage is swingy and can
+            # be punishing in long runs. Convert to a temporary combat-stat
+            # debuff that matters immediately, with a lower proc chance.
+            #
+            # Proc chance ~ 2% on crit at low-CHA targets, reduced by luck.
+            if random.random() > 0.98 + t_chance:
+                stat_list = ["Attack", "Defense", "Magic", "Magic Defense", "Speed"]
                 stat_name = random.choice(stat_list)
-                result.effects_applied['Stat'].append(stat_name.capitalize())
-                if stat_name == 'strength':
-                    result.target.stats.strength -= 1
-                if stat_name == 'intelligence':
-                    result.target.stats.intel -= 1
-                if stat_name == 'wisdom':
-                    result.target.stats.wisdom -= 1
-                if stat_name == 'constitution':
-                    result.target.stats.con -= 1
-                if stat_name == 'charisma':
-                    result.target.stats.charisma -= 1
-                if stat_name == 'dexterity':
-                    result.target.stats.dex -= 1
+                eff = result.target.stat_effects.get(stat_name)
+                if eff is not None:
+                    duration = 5
+                    amount = 10
+                    eff.active = True
+                    eff.duration = max(duration, eff.duration)
+                    # Negative extra applies as a debuff in check_mod().
+                    eff.extra = min(int(getattr(eff, "extra", 0) or 0), -amount) if eff.extra < 0 else -amount
+                    result.effects_applied['Stat'].append(f"{stat_name} Down")
         return results
 
 
@@ -1753,11 +1768,14 @@ class DragonTail2(DragonTail):
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
                     if result.crit > 1:
-                        if random.randint(0, result.actor.stats.strength * result.crit) * (1 - resist) \
-                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        att_roll = int(
+                            random.randint(0, int(result.actor.stats.strength * result.crit)) * (1 - resist)
+                        )
+                        def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                        if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                             duration = max(1, result.actor.stats.strength // 10)
-                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
-                            result.effects_applied['Status'].append('Stun')
+                            if result.target.apply_stun(duration, source=self.name, applier=result.actor):
+                                result.effects_applied['Status'].append('Stun')
         return results
 
 
@@ -1826,8 +1844,23 @@ class Tentacle(NaturalWeapon):
         self.special = True
 
     def special_effect(self, results: CombatResultGroup) -> None:
+        # Weapon special effects operate on CombatResultGroup; data-driven skills
+        # expect (user, target). Apply the effect to the last hit's actor/target
+        # and append the generated message.
         result = results[-1]
-        result = abilities.Trip().use(result, special=True)
+        try:
+            from .constants import TENTACLE_TRIP_PROC_CHANCE
+            if random.random() > float(TENTACLE_TRIP_PROC_CHANCE):
+                return results
+        except Exception:
+            # If the tuning constant can't be loaded, fall back to current behavior.
+            pass
+        try:
+            msg = abilities.Trip().use(result.actor, target=result.target, fam=True)
+            if msg:
+                result.message += str(msg)
+        except Exception:
+            pass
         return results
 
 
@@ -1851,10 +1884,13 @@ class Tentacle2(Tentacle):
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
                     if result.crit > 1:
-                        if random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist) \
-                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        att_roll = int(
+                            random.randint(result.actor.stats.strength // 2, result.actor.stats.strength) * (1 - resist)
+                        )
+                        def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                        if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                             duration = max(1, result.actor.stats.strength // 10)
-                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            result.target.apply_stun(duration, source=self.name, applier=result.actor)
         return results
 
 
@@ -1878,10 +1914,12 @@ class InvisibleBlade(NaturalWeapon):
                 resist = result.target.check_mod('resist', enemy=result.actor, typ='Physical')
                 if resist < 1:
                     if result.crit > 1:
-                        if random.randint(0, result.actor.check_mod("speed", enemy=result.target) // 2) * (1 - resist) \
-                                > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                        spd = result.actor.check_mod("speed", enemy=result.target)
+                        att_roll = int(random.randint(0, spd // 2) * (1 - resist))
+                        def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                        if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                             duration = 1
-                            result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                            result.target.apply_stun(duration, source=self.name, applier=result.actor)
         return results
 
 
@@ -1947,10 +1985,11 @@ class LichHand(NaturalWeapon):
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
                 if result.crit > 1:
-                    if random.randint(result.actor.stats.intel // 4, result.actor.stats.intel) \
-                            > random.randint(result.target.stats.wisdom // 2, result.target.stats.wisdom):
+                    att_roll = random.randint(result.actor.stats.intel // 4, result.actor.stats.intel)
+                    def_roll = random.randint(result.target.stats.wisdom // 2, result.target.stats.wisdom)
+                    if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                         duration = max(1, result.actor.stats.intel // 10)
-                        result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                        result.target.apply_stun(duration, source=self.name, applier=result.actor)
         return results
 
 
@@ -1970,10 +2009,11 @@ class Cannon(NaturalWeapon):
                     "Status-All" in result.target.equipment["Pendant"].mod]):
             if not result.target.status_effects["Stun"].active:
                 if result.crit > 1:
-                    if random.randint(result.actor.stats.strength // 4, result.actor.stats.strength) \
-                            > random.randint(result.target.stats.con // 2, result.target.stats.con):
+                    att_roll = random.randint(result.actor.stats.strength // 4, result.actor.stats.strength)
+                    def_roll = random.randint(result.target.stats.con // 2, result.target.stats.con)
+                    if result.target.stun_contest_success(result.actor, att_roll, def_roll):
                         duration = max(1, result.actor.stats.strength // 10)
-                        result.target.status_effects["Stun"] = StatusEffect(True, duration)
+                        result.target.apply_stun(duration, source=self.name, applier=result.actor)
         return results
 
 
@@ -2305,7 +2345,7 @@ class Genji(Armor):
 # Natural armor
 class NaturalArmor(Armor):
 
-    def __init__(self, name, armor, description):
+    def __init__(self, name: str, armor: int, description: str) -> None:
         super().__init__(name=name, armor=armor, description=description, rarity=0, subtyp="Natural",
                          unequip=False, value=0)
 
@@ -2526,7 +2566,7 @@ class MedusaShield(OffHand):
 # Natural Shield
 class NaturalShield(OffHand):
 
-    def __init__(self, name, mod, subtyp):
+    def __init__(self, name: str, mod: float, subtyp: str) -> None:
         super().__init__(name=name, mod=mod, subtyp=subtyp, description="", rarity=0, unequip=False, value=0)
         self.name = name
         self.mod = mod
@@ -3246,6 +3286,9 @@ class RibbonPendant(Accessory):
 
 
 class MagicPendant(Accessory):
+    """
+    Increases chance to dodge spells by 25%.
+    """
 
     def __init__(self):
         super().__init__(name="Magic Pendant", description="An amulet that makes the wearer harder to hit with magic spells.",
@@ -3261,12 +3304,14 @@ class HealthPotion(Potion):
                          value=100, rarity=0.99, subtyp='Health')
         self.percent = 0.25
 
-    def use(self, user, target=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = ""
         if user.health.current == user.health.max:
             use_str += "You are already at full health.\n"
             return use_str
         user.modify_inventory(self, subtract=True)
+        # Dwarf Temperance/Gluttony: combat consumables are stronger, but may cause hangover.
+        is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
         if user.state != 'fight':
             # Out of combat: 80-110% of base amount for variance and improved usefulness
             base_heal = int(user.health.max * self.percent)
@@ -3276,6 +3321,24 @@ class HealthPotion(Potion):
             rand_heal = int(user.health.max * self.percent)
             heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
             heal = max(heal, int(50 * self.percent))
+        if is_dwarf:
+            from .constants import (
+                DWARF_COMBAT_CONSUMABLE_MULTIPLIER,
+                DWARF_HANGOVER_COMBAT_DURATION,
+                DWARF_HANGOVER_MAX_STEPS,
+                DWARF_HANGOVER_STEPS_PER_USE,
+            )
+            heal = int(heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
+            if user.state == "fight":
+                h = user.status_effects.get("Hangover")
+                if h is not None:
+                    h.active = True
+                    h.duration = max(int(h.duration or 0), DWARF_HANGOVER_COMBAT_DURATION)
+            else:
+                user.dwarf_hangover_steps = min(
+                    DWARF_HANGOVER_MAX_STEPS,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                )
         use_str += f"The potion healed you for {heal} life.\n"
         user.health.current += heal
         if user.health.current >= user.health.max:
@@ -3324,12 +3387,13 @@ class ManaPotion(Potion):
                          value=250, rarity=0.9, subtyp='Mana')
         self.percent = 0.25
 
-    def use(self, user, target=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = ""
         if user.mana.current == user.mana.max:
             use_str += "You are already at full mana.\n"
             return use_str
         user.modify_inventory(self, subtract=True)
+        is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
         if user.state != 'fight':
             # Out of combat: 80-110% of base amount for variance and improved usefulness
             base_heal = int(user.mana.max * self.percent)
@@ -3338,6 +3402,24 @@ class ManaPotion(Potion):
             # In combat: 50-100% with luck modifier
             rand_res = int(user.mana.max * self.percent)
             heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+        if is_dwarf:
+            from .constants import (
+                DWARF_COMBAT_CONSUMABLE_MULTIPLIER,
+                DWARF_HANGOVER_COMBAT_DURATION,
+                DWARF_HANGOVER_MAX_STEPS,
+                DWARF_HANGOVER_STEPS_PER_USE,
+            )
+            heal = int(heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
+            if user.state == "fight":
+                h = user.status_effects.get("Hangover")
+                if h is not None:
+                    h.active = True
+                    h.duration = max(int(h.duration or 0), DWARF_HANGOVER_COMBAT_DURATION)
+            else:
+                user.dwarf_hangover_steps = min(
+                    DWARF_HANGOVER_MAX_STEPS,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                )
         use_str += f"The potion restored {heal} mana points.\n"
         user.mana.current += heal
         if user.mana.current >= user.mana.max:
@@ -3386,12 +3468,13 @@ class Elixir(Potion):
                          value=20000, rarity=0.2, subtyp='Elixir')
         self.percent = 0.5
 
-    def use(self, user, target=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = ""
         if user.health.current == user.health.max and user.mana.current == user.mana.max:
             use_str += "You are already at full health and mana.\n"
             return use_str
         user.modify_inventory(self, subtract=True)
+        is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
         if user.state != 'fight':
             health_heal = int(user.health.max * self.percent)
             mana_heal = int(user.mana.max * self.percent)
@@ -3400,6 +3483,25 @@ class Elixir(Potion):
             rand_res = int(user.mana.max * self.percent)
             health_heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
             mana_heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+        if is_dwarf:
+            from .constants import (
+                DWARF_COMBAT_CONSUMABLE_MULTIPLIER,
+                DWARF_HANGOVER_COMBAT_DURATION,
+                DWARF_HANGOVER_MAX_STEPS,
+                DWARF_HANGOVER_STEPS_PER_USE,
+            )
+            health_heal = int(health_heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
+            mana_heal = int(mana_heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
+            if user.state == "fight":
+                h = user.status_effects.get("Hangover")
+                if h is not None:
+                    h.active = True
+                    h.duration = max(int(h.duration or 0), DWARF_HANGOVER_COMBAT_DURATION)
+            else:
+                user.dwarf_hangover_steps = min(
+                    DWARF_HANGOVER_MAX_STEPS,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                )
         use_str += f"The potion restored {health_heal} health points and {mana_heal} mana points.\n"
         user.health.current += health_heal
         user.mana.current += mana_heal
@@ -3561,12 +3663,28 @@ class Status(Potion):
                          value=0, rarity=0, subtyp="Status")
         self.status = None
 
-    def use(self, user, target=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = ""
         if not user.status_effects[self.status].active:
             use_str += f"You are not affected by {self.status.lower()}.\n"
             return use_str
         user.modify_inventory(self, subtract=True)
+        if getattr(getattr(user, "race", None), "name", None) == "Dwarf":
+            from .constants import (
+                DWARF_HANGOVER_COMBAT_DURATION,
+                DWARF_HANGOVER_MAX_STEPS,
+                DWARF_HANGOVER_STEPS_PER_USE,
+            )
+            if user.state == "fight":
+                h = user.status_effects.get("Hangover")
+                if h is not None:
+                    h.active = True
+                    h.duration = max(int(h.duration or 0), DWARF_HANGOVER_COMBAT_DURATION)
+            else:
+                user.dwarf_hangover_steps = min(
+                    DWARF_HANGOVER_MAX_STEPS,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                )
         user.status_effects[self.status].active = False
         user.status_effects[self.status].duration = 0
         try:
@@ -3755,7 +3873,7 @@ class Scroll(Misc):
         self.spell = None
         self.charges = random.randint(2, 10)
 
-    def use(self, user, target=None):
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = f"{user.name} uses {self.name}.\n"
         use_str += self.spell.cast(user, target=target, special=True)
         self.charges -= 1
@@ -4056,7 +4174,7 @@ class SheetMusic(Misc):
     Base sheet music item  TODO
     """
 
-    def __init__(self, name, description, value, rarity, subtyp):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         super().__init__(name, description, value, rarity, subtyp)
 
 
@@ -4065,7 +4183,7 @@ class BlankScroll(Misc):
     Base scroll item; used by Spell Stealer/Arcane Trickster to store spells for use
     """
 
-    def __init__(self, name, description, value, rarity, subtyp):
+    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         super().__init__(name, description, value, rarity, subtyp)
 
 

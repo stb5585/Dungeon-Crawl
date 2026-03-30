@@ -299,8 +299,32 @@ class Game:
                 battle.execute_battle()
             
             room.modify_player(self, confirm_popup=confirm_popup, textbox=textbox, battle_manager=battle_handler)
+            wizard_folly = self.player_char.quest_dict.get("Side", {}).get("The Wizard's Folly")
+            if wizard_folly and not wizard_folly.get("Completed") and not wizard_folly.get("Turned In"):
+                enter_message = "Nimue parts the water and reveals a path. Enter the Realm of Cambion?"
+                enter_popup = menus.ConfirmPopupMenu(self, header_message=enter_message, box_height=8)
+                if enter_popup.navigate_popup():
+                    map_tiles.enter_realm_of_cambion(self.player_char)
+                    return
+            for message in map_tiles.pop_cambion_messages(self.player_char):
+                textbox.print_text_in_rectangle(message)
+                textbox.clear_rectangle()
+        elif isinstance(room, map_tiles.AntiMagicSwitch):
+            textbox = menus.TextBox(self)
+            room.modify_player(self)
+            code = menus.player_input(self, "Enter 4-digit code: ")
+            room.attempt_disable(self, code)
+            for message in map_tiles.pop_cambion_messages(self.player_char):
+                textbox.print_text_in_rectangle(message)
+                textbox.clear_rectangle()
         else:
             room.modify_player(self)
+            queued_messages = map_tiles.pop_cambion_messages(self.player_char)
+            if queued_messages:
+                textbox = menus.TextBox(self)
+                for message in queued_messages:
+                    textbox.print_text_in_rectangle(message)
+                    textbox.clear_rectangle()
         if self.player_char.in_town() or "Shop" in str(room):
             return
         dmenu = menus.DungeonMenu(self)
@@ -372,11 +396,22 @@ class Game:
                 flee = battle.execute_battle()
                 if flee:
                     return
+                if isinstance(room, map_tiles.MerzhinBossRoom) and room.defeated:
+                    textbox.print_text_in_rectangle("Merzhin falls and the Realm of Cambion spits you back out.")
+                    textbox.clear_rectangle()
+                    self.player_char.exit_realm_of_cambion()
+                    return
                 # Check if player died
                 if not self.player_char.is_alive():
                     if self.player_char.location_z == 7:
                         # In funhouse - exit instead of going to town
                         self.player_char.exit_funhouse()
+                    elif self.player_char.in_realm_of_cambion():
+                        textbox.print_text_in_rectangle(
+                            "The Realm of Cambion rejects your defeat and hurls you back to the spring."
+                        )
+                        textbox.clear_rectangle()
+                        self.player_char.exit_realm_of_cambion()
                     else:
                         self.player_char.to_town()
             dmenu.draw_all()

@@ -1,0 +1,12 @@
+name: Reveal
+type: Skill
+subtype: Truth
+description: >-
+  An Inquisitor is a champion of truth, exposing secrets and gaining
+  protection from shadow.
+cost: 0
+passive: true
+self_target: true
+effects:
+  - type: reveal
+    resist_bonus: 0.25

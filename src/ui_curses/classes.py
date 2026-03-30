@@ -2,8 +2,6 @@
 Curses UI-specific class selection and promotion logic.
 Moved from core/classes.py to keep UI dependencies separate from core logic.
 """
-import time
-
 
 def choose_familiar(game):
     from src.ui_curses import menus as utils

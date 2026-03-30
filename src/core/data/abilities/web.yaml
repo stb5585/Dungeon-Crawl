@@ -1,0 +1,19 @@
+name: Web
+type: StatusSkill
+subtype: Offensive
+description: Expel a thick, sticky substance onto the enemy, leaving them prone.
+cost: 6
+status_name: Prone
+physical: true
+actor_use_check_mod: speed
+target_stat: strength
+target_lo_divisor: 2
+target_hi_divisor: 1
+duration_stat: strength
+duration_divisor: 20
+duration_min: 1
+skip_if_active: false
+extend_if_active: 1
+messages:
+  success: "{target} is trapped in a web and is prone.\n"
+  fail: "{target} evades the web.\n"

@@ -1,0 +1,8 @@
+name: Regen
+type: Heal
+subtype: Heal
+description: "Cooling waters stimulate your natural healing ability, regenerating health over time."
+cost: 18
+heal: 0.3
+crit: 5
+turns: 3

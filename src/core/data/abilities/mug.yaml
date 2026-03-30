@@ -1,0 +1,10 @@
+name: Mug
+type: Skill
+subtype: Stealth
+description: >-
+  Attack the enemy with a chance to steal their items.
+cost: 20
+weapon: true
+effects:
+  - type: mug
+    gold_cap: 0.05

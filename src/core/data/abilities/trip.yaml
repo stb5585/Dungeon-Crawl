@@ -1,0 +1,20 @@
+name: Trip
+type: StatusSkill
+subtype: Offensive
+description: Grab the enemy's leg and trip them to the ground, leaving them prone.
+cost: 6
+status_name: Prone
+physical: true
+check_flying: true
+actor_stat: strength
+actor_lo_divisor: 0
+actor_hi_divisor: 2
+target_use_check_mod: speed
+duration_stat: strength
+duration_divisor: 20
+duration_min: 1
+skip_if_active: true
+messages:
+  success: "{user} trips {target} and they fall prone.\n"
+  fail: "{user} fails to trip {target}.\n"
+  already: "{target} is already prone.\n"

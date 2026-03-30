@@ -124,6 +124,16 @@ class CharacterScreen(TownScreenBase):
         """Get list of special abilities from player character, separated by type."""
         result = []
 
+        # Racial traits
+        race = getattr(player_char, "race", None)
+        virtue = getattr(race, "virtue", None) if race else None
+        sin = getattr(race, "sin", None) if race else None
+        if virtue and getattr(virtue, "name", ""):
+            result.append("--- RACIAL TRAITS ---")
+            result.append(virtue)
+            if sin and getattr(sin, "name", ""):
+                result.append(sin)
+
         # Primary source: player spellbook (Spells/Skills dictionaries)
         if not result:
             spellbook = getattr(player_char, "spellbook", None)
@@ -139,6 +149,20 @@ class CharacterScreen(TownScreenBase):
                     for skill in skills.values():
                         result.append(skill)
                 # If spellbook present but empty, fall through to specials check
+        else:
+            # Append spells/skills after racial traits.
+            spellbook = getattr(player_char, "spellbook", None)
+            if spellbook and isinstance(spellbook, dict):
+                spells = spellbook.get("Spells", {}) or {}
+                skills = spellbook.get("Skills", {}) or {}
+                if spells:
+                    result.append("--- SPELLS ---")
+                    for spell in spells.values():
+                        result.append(spell)
+                if skills:
+                    result.append("--- SKILLS ---")
+                    for skill in skills.values():
+                        result.append(skill)
 
         return result if result else ["No special abilities"]
 
@@ -174,6 +198,19 @@ class CharacterScreen(TownScreenBase):
             f"{player_char.race.name} {player_char.cls.name}", True, self.colors.WHITE
         )
         self.screen.blit(class_text, (x, y))
+
+        # Racial traits (virtue/sin)
+        try:
+            virtue = getattr(getattr(player_char, "race", None), "virtue", None)
+            sin = getattr(getattr(player_char, "race", None), "sin", None)
+            if virtue and getattr(virtue, "name", ""):
+                y += 28
+                self.screen.blit(self.small_font.render(f"Virtue: {virtue.name}", True, self.colors.GRAY), (x, y))
+                y += 18
+            if sin and getattr(sin, "name", ""):
+                self.screen.blit(self.small_font.render(f"Sin: {sin.name}", True, self.colors.GRAY), (x, y))
+        except Exception:
+            pass
 
         # Gold
         gold_amount = getattr(player_char, 'gold', 0)

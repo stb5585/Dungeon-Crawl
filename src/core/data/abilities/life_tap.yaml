@@ -1,0 +1,12 @@
+name: Life Tap
+type: Skill
+subtype: Drain
+description: Convert a portion of your health into mana.
+cost: 0
+self_target: true
+use_out_enabled: true
+effects:
+  - type: resource_convert
+    source: health
+    target_resource: mana
+    percent: 0.1

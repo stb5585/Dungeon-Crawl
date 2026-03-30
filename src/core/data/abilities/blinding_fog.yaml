@@ -1,0 +1,19 @@
+name: Blinding Fog
+type: Status
+subtype: Status
+description: "The enemy is surrounding in a thick fog, lowering the chance to hit on a melee attack."
+cost: 7
+rank: 1
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    actor_lo_divisor: 2
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    effect:
+      type: status_apply
+      status_name: Blind
+      duration: 3
+      skip_if_active: true

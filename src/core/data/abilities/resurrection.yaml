@@ -1,0 +1,12 @@
+name: Resurrection
+type: Support
+subtype: Support
+description: >-
+  The ultimate boon bestowed upon only the chosen few. Life returns where
+  it once left.
+cost: 0
+passive: true
+target_self: false
+effects:
+  - type: resurrection
+    revive_pct: 0.1

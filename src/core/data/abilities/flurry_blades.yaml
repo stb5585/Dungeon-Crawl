@@ -1,0 +1,8 @@
+name: Flurry of Blades
+type: Skill
+subtype: Offensive
+description: Unleash a flurry of four rapid strikes.
+cost: 40
+weapon: true
+damage_mod: 0.75
+strikes: 4

@@ -95,13 +95,6 @@ class EnhancedBattleManager(BaseBattleManager):
                     break
         
         self.after_turn()
-        
-        # Trigger enemy death special effects (like Behemoth's Meteor)
-        if not self.enemy.is_alive() and hasattr(self.enemy, 'special_effects'):
-            result = self.enemy.special_effects(self.player_char)
-            if result:
-                self.print_text(result)
-        
         self.action_queue.next_round()
         
         # Emit turn end event
@@ -111,6 +104,39 @@ class EnhancedBattleManager(BaseBattleManager):
             target=self.defender,
             turn_number=getattr(self, 'turn_count', 0)
         ))
+
+    def after_turn(self) -> None:
+        """
+        Post-turn processing for the action-queue system.
+
+        Unlike the base class, this does NOT delegate to engine.post_turn()
+        because the queue resolves multiple actors per round and the
+        attacker/defender roles are not in the simple alternating state that
+        engine.post_turn() expects. Instead, we handle the relevant checks
+        inline.
+        """
+        if not self.flee:
+            # Refresh available actions
+            self.available_actions = self.engine.tile.available_actions(self.player_char)
+
+            # Manage summon state
+            if self.summon_active:
+                if self.summon and self.summon.is_alive():
+                    if "Recall" not in self.available_actions:
+                        self.available_actions = list(self.available_actions) + ["Recall"]
+                else:
+                    if self.summon:
+                        self.print_text(f"{self.summon.name} has been slain.\n")
+                    self.summon_active = False
+                    self.summon = None
+
+            # Trigger enemy death special effects (like Behemoth's Meteor)
+            if not self.enemy.is_alive() and hasattr(self.enemy, 'special_effects'):
+                result = self.enemy.special_effects(self.player_char)
+                if result:
+                    self.print_text(result)
+
+        self.engine.logger.next_turn()
     
     def _update_charging_actions(self) -> None:
         """Update status of charging/delayed actions and show telegraphs."""
@@ -137,12 +163,9 @@ class EnhancedBattleManager(BaseBattleManager):
         """
         Get telegraph message for enemy charging action.
         
-        Seeker/Inquisitor classes see specific action, others see generic message.
+        Seeker/Inquisitor classes (or Vision pendant) see specific action, others see generic message.
         """
-        # Check if player has sight/knowledge ability
-        has_foresight = self.player_char.cls.name in ["Seeker", "Inquisitor"]
-        
-        if has_foresight:
+        if self.engine.player_has_sight():
             return f"{self.enemy.name} is preparing {action_name}!"
         else:
             return f"{self.enemy.name} is preparing something..."
@@ -187,7 +210,11 @@ class EnhancedBattleManager(BaseBattleManager):
         effects_text = self.player_char.effects()
         if effects_text:
             self.print_text(effects_text)
-        
+
+        # If player died from effects (poison, DOT, bleed), skip scheduling
+        if not self.player_char.is_alive():
+            return
+
         # Check if player can act
         active, text = self.player_char.check_active()
         if not active:
@@ -275,7 +302,11 @@ class EnhancedBattleManager(BaseBattleManager):
         effects_text = self.enemy.effects()
         if effects_text:
             self.print_text(effects_text)
-        
+
+        # If enemy died from effects (poison, DOT, bleed), skip scheduling
+        if not self.enemy.is_alive():
+            return
+
         # Check if enemy can act
         active, text = self.enemy.check_active()
         if not active:

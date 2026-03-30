@@ -1,0 +1,20 @@
+name: Howl
+type: StatusSkill
+subtype: Offensive
+description: The wolf howls at the moon, terrifying the enemy.
+cost: 10
+status_name: Stun
+actor_stat: strength
+actor_lo_divisor: 0
+actor_hi_divisor: 1
+target_stat: con
+target_lo_divisor: 2
+target_hi_divisor: 1
+duration: 1
+skip_if_active: true
+action_message: "{user} howls at the moon.\n"
+messages:
+  success: "{user} stunned {target}.\n"
+  immune: "{target} is immune to stun effect.\n"
+  already: "{target} is already stunned.\n"
+  fail: "{target}'s resolve is steadfast.\n"

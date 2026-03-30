@@ -1,0 +1,20 @@
+name: Disease Breath
+type: Status
+subtype: Status
+school: Disease
+description: "A diseased cloud emanates onto the enemy, with a chance to lower
+  the enemy's constitution permanently."
+cost: 25
+messages:
+  resist: "The spell does nothing."
+effects:
+  - type: stat_reduce
+    stat: con
+    amount: 1
+    actor_stat: intel
+    actor_divisor: 2
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    luck_factor: 10
+    success_message: "The disease cripples {target}, lowering their constitution by 1."

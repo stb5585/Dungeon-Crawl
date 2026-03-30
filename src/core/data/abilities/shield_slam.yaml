@@ -1,0 +1,9 @@
+name: Shield Slam
+description: >-
+  Slam the enemy with your shield, damaging with a chance to stun for several turns.
+type: Skill
+cost: 8
+subtype: Offensive
+ice_block_check: true
+effects:
+  - type: shield_slam

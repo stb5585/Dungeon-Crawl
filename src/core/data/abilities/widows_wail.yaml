@@ -1,0 +1,10 @@
+name: Widow's Wail
+description: >-
+  The agony of loss is released, affecting both the target and user. Both
+  will take non-elemental damage based on the current health of the user.
+type: Skill
+cost: 12
+effects:
+  - type: widows_wail
+    multiplier: 20
+    max_damage: 200

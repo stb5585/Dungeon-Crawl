@@ -1,0 +1,17 @@
+name: Magic Missile
+type: MagicMissile
+subtype: Non-elemental
+description: >-
+  Orbs of energy shoots forth from the caster, dealing non-elemental damage.
+cost: 5
+damage_mod: 1.0
+crit: 8
+missiles: 1
+
+notes: |
+  Cannot be reflected.
+  Free to cast with Wizard Power Up active.
+  Per-missile: dodge, hit, Mirror Image interception, Mana Shield,
+  Crusader Shield, armor scaling, variance, CON save.
+  Wizard mana regen on damage during Power Up.
+  May trigger Counterspell.

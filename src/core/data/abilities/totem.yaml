@@ -1,0 +1,13 @@
+name: Totem
+description: >-
+  Summon a totem channeling a sacred aspect. Choose Earth for defense,
+  Water for healing, Fire for offense, Wind for mobility, or Soul for weapon mastery.
+  Only one aspect active at a time.
+type: Skill
+subtype: Class
+cost: 12
+weapon: false
+self_target: true
+effects:
+  - type: totem
+    duration_base: 5

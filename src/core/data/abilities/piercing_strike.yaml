@@ -1,0 +1,8 @@
+name: Piercing Strike
+type: Skill
+subtype: Offensive
+description: Pierces the enemy's defenses, ignoring armor and defenses.
+cost: 5
+weapon: true
+damage_mod: 1.25
+ignore_armor: true

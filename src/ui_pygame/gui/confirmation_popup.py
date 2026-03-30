@@ -760,3 +760,118 @@ class QuantityPopup:
             except Exception:
                 pass
         return self.screen.copy()
+
+
+class CodeEntryPopup:
+    """Popup for entering a 4-digit code."""
+
+    def __init__(self, presenter, title: str, message: str):
+        self.presenter = presenter
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.title = title
+        self.message = message
+        self.digits = [0, 0, 0, 0]
+        self.selected_digit = 0
+
+        self.WHITE = (255, 255, 255)
+        self.GOLD = (218, 165, 32)
+        self.GRAY = (128, 128, 128)
+        self.BORDER_COLOR = (200, 200, 200)
+        self.HIGHLIGHT_BG = (60, 60, 80)
+        self.POPUP_BG = (20, 20, 30)
+
+        self.title_font = presenter.title_font
+        self.normal_font = presenter.normal_font
+        self.small_font = presenter.small_font
+
+        self.popup_width = 560
+        self.popup_height = 260
+        self.popup_x = (self.width - self.popup_width) // 2
+        self.popup_y = (self.height - self.popup_height) // 2
+        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+
+    def draw_popup(self, background_draw_func):
+        if background_draw_func:
+            background_draw_func()
+
+        overlay = pygame.Surface((self.width, self.height))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+
+        title_text = self.title_font.render(self.title, True, self.GOLD)
+        title_rect = title_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 18)
+        self.screen.blit(title_text, title_rect)
+
+        message_text = self.normal_font.render(self.message, True, self.WHITE)
+        message_rect = message_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 72)
+        self.screen.blit(message_text, message_rect)
+
+        digit_y = self.popup_y + 130
+        spacing = 72
+        start_x = self.popup_rect.centerx - (spacing * 3) // 2
+        for idx, digit in enumerate(self.digits):
+            x = start_x + idx * spacing
+            rect = pygame.Rect(x - 24, digit_y - 8, 48, 64)
+            if idx == self.selected_digit:
+                pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, rect)
+                pygame.draw.rect(self.screen, self.GOLD, rect, 2)
+                color = self.GOLD
+            else:
+                pygame.draw.rect(self.screen, self.POPUP_BG, rect)
+                pygame.draw.rect(self.screen, self.BORDER_COLOR, rect, 1)
+                color = self.WHITE
+            digit_text = self.title_font.render(str(digit), True, color)
+            digit_rect = digit_text.get_rect(center=rect.center)
+            self.screen.blit(digit_text, digit_rect)
+
+        instructions = self.small_font.render(
+            "UP/DOWN: Adjust | LEFT/RIGHT: Move | ENTER: Confirm | ESC: Cancel",
+            True,
+            self.GRAY,
+        )
+        instructions_rect = instructions.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 220)
+        self.screen.blit(instructions, instructions_rect)
+
+        pygame.display.flip()
+
+    def show(self, background_draw_func=None):
+        background = None
+        if background_draw_func is None:
+            background = self.screen.copy()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        def finish(result):
+            if background_draw_func is not None:
+                background_draw_func()
+            elif background is not None:
+                self.screen.blit(background, (0, 0))
+            return result
+
+        while True:
+            self.draw_popup(background_draw_func)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+                    sys.exit()
+                if event.type != pygame.KEYDOWN:
+                    continue
+                if event.key == pygame.K_ESCAPE:
+                    return finish(None)
+                if event.key == pygame.K_LEFT:
+                    self.selected_digit = max(0, self.selected_digit - 1)
+                elif event.key == pygame.K_RIGHT:
+                    self.selected_digit = min(3, self.selected_digit + 1)
+                elif event.key == pygame.K_UP:
+                    self.digits[self.selected_digit] = min(9, self.digits[self.selected_digit] + 1)
+                elif event.key == pygame.K_DOWN:
+                    self.digits[self.selected_digit] = max(0, self.digits[self.selected_digit] - 1)
+                elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    return finish("".join(str(digit) for digit in self.digits))
+            self.presenter.clock.tick(30)

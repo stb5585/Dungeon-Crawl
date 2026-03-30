@@ -1,0 +1,16 @@
+name: Shell
+type: Support
+subtype: Support
+description: "The target is shrouded in a magical veil, lessening the damage from magic attacks."
+cost: 26
+target_self: false
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: "Magic Defense"
+    source: target_combat
+    source_stat: magic_def
+    lo_divisor: 4
+    hi_divisor: 2
+    duration_stat: intel
+    duration_divisor: 10
+    duration_min: 3

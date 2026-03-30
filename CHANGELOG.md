@@ -194,8 +194,8 @@
 **1-turn charge abilities**:
 - jump.yaml, charge.yaml, true_strike.yaml, true_piercing_strike.yaml
 - ultima.yaml, disintegrate.yaml, dim_mak.yaml, arcane_blast.yaml
-- shadow_strike.yaml, summon_allies.yaml, crushing_blow.yaml
-- holy_smite.yaml, power_strike.yaml, blessing.yaml, fireball.yaml
+- shadow_strike.yaml, crushing_blow.yaml
+- blessing.yaml, fireball.yaml
 
 **Features**:
 - Telegraph messages for foresight mechanics

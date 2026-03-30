@@ -1,0 +1,10 @@
+name: Mana Slice
+type: Skill
+subtype: Enhance
+description: A mana-infused strike that drains the target's mana.
+cost: 0
+weapon: true
+damage_mod: 0.5
+effects:
+  - type: mana_drain_on_hit
+    divisor: 5

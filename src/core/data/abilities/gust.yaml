@@ -1,0 +1,8 @@
+name: Gust
+type: Spell
+subtype: Wind
+description: A strong gust of wind whips past the enemy.
+cost: 7
+damage_mod: 1.25
+crit: 6
+school: Elemental

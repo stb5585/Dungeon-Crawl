@@ -1,0 +1,14 @@
+name: Vulcanize
+description: >-
+  Fire can be very destructive but can sometimes harden. The user is
+  engulfed in flames, taking fire damage but increasing armor.
+type: Support
+cost: 15
+school: Fire
+target_self: true
+effects:
+  - type: vulcanize
+    health_fraction: 0.1
+    buff_duration: 5
+    buff_lo_divisor: 4
+    buff_hi_divisor: 2

@@ -1,0 +1,17 @@
+name: Dragon Breath (Water)
+type: ChargingSkill
+subtype: Water
+description: A torrential blast of water erupts from multiple maws
+cost: 0
+
+charge_time: 2
+telegraph_message: "all heads rearing back, gathering torrential water in their maws"
+
+effects:
+  - type: breath_damage
+    multiplier: 1.5
+    element: Water
+    announce_message: "{actor} unleashes a torrent of water!\n"
+
+priority: NORMAL
+delay: 2

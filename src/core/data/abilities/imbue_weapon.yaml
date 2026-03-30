@@ -1,0 +1,8 @@
+name: Imbue Weapon
+type: Skill
+subtype: Enhance
+description: Channel magical energy into your weapon to enhance its damage.
+cost: 12
+weapon: true
+damage_mod: 1.25
+intel_dmg_mod: true

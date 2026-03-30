@@ -1,0 +1,13 @@
+name: Eruption
+type: Spell
+subtype: Fire
+description: >-
+  The son of Vulcan erupts in a cataclysmic blaze, scorching the enemy
+  and hardening his own volcanic hide.
+cost: 40
+damage_mod: 3.5
+effects:
+  - type: eruption
+    damage_mod: 3.5
+    burn_duration: 3
+    vulcanize_duration: 3

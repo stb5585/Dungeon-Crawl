@@ -1,0 +1,24 @@
+name: Hellfire
+type: Spell
+subtype: Non-elemental
+description: >-
+  The flames of Hell lick at the toes of the enemy, inflicting immense
+  initial damage as well as damage over time.
+cost: 25
+damage_mod: 3.0
+crit: 2
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_lo_divisor: 2
+    actor_divisor: 1
+    target_stat: wisdom
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    use_crit_multiplier: true
+    effect:
+      type: dynamic_dot
+      dot_type: DOT
+      duration: 3
+      damage_lo_fraction: 1.0
+      damage_hi_fraction: 1.0

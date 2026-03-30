@@ -1,0 +1,8 @@
+name: Hex
+description: >-
+  Afflict the target with a hex that can poison, blind, and silence.
+type: Status
+cost: 14
+effects:
+  - type: hex
+    duration: 3

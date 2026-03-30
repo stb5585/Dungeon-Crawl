@@ -1,0 +1,16 @@
+name: Mana Drain
+type: Skill
+subtype: Drain
+description: Drain the enemy, absorbing their mana.
+cost: 0
+ice_block_check: true
+effects:
+  - type: drain
+    resource: mana
+    base_stat: mana_current
+    secondary_stat: charisma
+    lo_divisor: 5
+    hi_divisor: 1.5
+    luck_factor: 10
+    cap_percent: 0.22
+    message: "{actor} drains {amount} mana from {target}.\n"

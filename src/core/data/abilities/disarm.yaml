@@ -1,0 +1,17 @@
+name: Disarm
+type: StatusSkill
+subtype: Defensive
+description: >-
+  Surprise the enemy by attacking their weapon, knocking it out of their grasp.
+  Disarmed characters have lower chance to hit and can't use certain abilities.
+cost: 4
+status_name: Disarm
+physical: true
+check_disarmable: true
+add_luck_chance: true
+actor_stat: strength
+actor_stat_alt: dex
+actor_lo_divisor: 2
+actor_hi_divisor: 1
+target_use_check_mod: speed
+duration: -1

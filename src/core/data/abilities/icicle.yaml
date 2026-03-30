@@ -1,0 +1,19 @@
+name: Icicle
+type: Spell
+subtype: Ice
+description: Frozen shards rain from the sky.
+cost: 9
+damage_mod: 1.5
+crit: 3
+school: Arcane
+effects:
+- type: stat_contest
+  actor_stat: intel
+  actor_divisor: 2
+  target_stat: wisdom
+  target_lo_divisor: 4
+  target_hi_divisor: 1
+  effect:
+    type: dynamic_extra_damage
+    damage_lo_fraction: 0.5
+    damage_hi_fraction: 1.0

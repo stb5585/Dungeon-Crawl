@@ -1,0 +1,12 @@
+name: Choose Fate
+description: >-
+  The Devil likes to toy with his food, letting the player decide what he
+  will do for that turn.
+type: Skill
+subtype: Skill
+cost: 0
+weapon: false
+ice_block_check: true
+effects:
+  - type: choose_fate
+    dmg_mod: 1.5

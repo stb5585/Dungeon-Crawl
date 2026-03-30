@@ -1,0 +1,9 @@
+name: Mirror Image
+type: Support
+subtype: Illusion
+description: "Create an illusion to fool the enemy into seeing multiple of the user, sometimes causing the enemy to target the wrong one. The illusion lasts until until the user is hit."
+cost: 20
+effects:
+  - type: magic_effect_apply
+    effect_name: Duplicates
+    duration: 4

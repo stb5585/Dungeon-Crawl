@@ -1,0 +1,14 @@
+name: Thunderstrike
+type: Spell
+subtype: Electric
+description: >-
+  The lightning bird calls down a devastating bolt that chains through
+  the target multiple times, leaving them paralyzed.
+cost: 40
+damage_mod: 3.0
+effects:
+  - type: thunderstrike
+    damage_mod: 3.0
+    chain_hits: 2
+    chain_multiplier: 0.5
+    stun_duration: 2

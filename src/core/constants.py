@@ -11,6 +11,7 @@ DAMAGE_VARIANCE_HIGH: float = 1.15
 
 # ── Armor / damage reduction ────────────────────────────────────────
 ARMOR_SCALING_FACTOR: int = 50          # dam_red / (dam_red + ARMOR_SCALING_FACTOR)
+MAGIC_DEF_SCALING_FACTOR: int = 60      # m_def / (m_def + MAGIC_DEF_SCALING_FACTOR)
 
 # ── Dodge / defensive caps ──────────────────────────────────────────
 MAX_DODGE_CHANCE: float = 0.75          # hard cap on dodge probability
@@ -22,14 +23,18 @@ BLIND_ACCURACY_PENALTY: float = 0.5     # Blind: −50% hit
 FLYING_ACCURACY_PENALTY: float = 0.1    # Flying target: −10% hit
 DISARM_HIT_PENALTY: float = 0.25        # Disarmed: −25% hit
 BERSERK_HIT_PENALTY: float = 0.15       # Berserk: −15% hit
+BLIND_RAGE_HIT_PENALTY: float = 0.25    # Blind Rage: −25% hit (retains control)
 INVISIBLE_ACCURACY_PENALTY: float = 1 / 3  # Invisible: −33.3% hit
 ENCUMBERED_HIT_MULTIPLIER: float = 0.75    # Encumbered: ×0.75 hit
 PRO_LEVEL_HIT_MODIFIER: float = 0.05       # Per-promotion-level difference
+TENTACLE_TRIP_PROC_CHANCE: float = 0.70    # chance Tentacle attempts to apply Trip on hit
 
 # ── Critical hit ────────────────────────────────────────────────────
 BASE_CRIT_PER_POINT: float = 0.005      # crit chance per speed+luck point
 SEEKER_CRIT_BONUS: float = 0.1          # Seeker power-up crit per stack
 MAELSTROM_CRIT_PER_HIT: float = 0.05    # Maelstrom Weapon crit per consecutive hit
+WEAPON_CRIT_WEIGHT: float = 0.5         # weight applied to weapon crit contributions
+MAX_CRIT_CHANCE: float = 0.60           # hard cap on overall crit probability
 
 # ── Misc combat modifiers ──────────────────────────────────────────
 ASTRAL_SHIFT_REDUCTION: float = 0.25    # Astral Shift damage reduction
@@ -37,6 +42,34 @@ REFLECT_DAMAGE_FRACTION: float = 0.25   # Templar/Totem reflect %
 DISARM_DAMAGE_MULTIPLIER: float = 0.5   # Disarmed damage multiplier
 BERSERK_DAMAGE_BONUS: float = 0.1       # Berserk damage bonus
 OFFHAND_DAMAGE_MULTIPLIER: float = 0.75 # Base off-hand damage multiplier
+
+# ── Racial tuning (7 sins / 7 virtues) ──────────────────────────────
+HUMAN_EXP_MULTIPLIER: float = 1.10
+HUMAN_STATUS_RESIST_MULTIPLIER: float = 0.90  # affects resisted-status contest scores (lower = worse resist)
+
+ELF_INVISIBLE_PENALTY_MULTIPLIER: float = 0.50  # reduces the impact of INVISIBLE_ACCURACY_PENALTY
+ELF_BLIND_PENALTY_MULTIPLIER: float = 0.80      # reduces the impact of BLIND_ACCURACY_PENALTY
+ELF_HEALING_RECEIVED_MULTIPLIER: float = 0.95
+
+HALF_ELF_HEALING_RECEIVED_MULTIPLIER: float = 1.05
+# Half Elf sin should trim extreme crit spikes without nuking burst identities.
+HALF_ELF_CRIT_SPIKE_MULTIPLIER: float = 0.93  # scales crit bonus above 1.0
+
+HALF_GIANT_EXP_MULTIPLIER: float = 0.85
+
+GNOME_GOLD_CHARISMA_MULTIPLIER: float = 1.25   # treat CHA as higher for gold/shop outcomes
+GNOME_ENCUMBERED_HIT_MULTIPLIER: float = 0.85  # extra hit penalty while encumbered (stacks w/ ENCUMBERED_HIT_MULTIPLIER)
+GNOME_ENCUMBERED_DODGE_MULTIPLIER: float = 0.75  # extra dodge penalty while encumbered
+
+DWARF_COMBAT_CONSUMABLE_MULTIPLIER: float = 1.10
+DWARF_HANGOVER_STEPS_PER_USE: int = 6
+DWARF_HANGOVER_MAX_STEPS: int = 30
+DWARF_HANGOVER_COMBAT_DURATION: int = 3
+DWARF_HANGOVER_DODGE_MULTIPLIER: float = 0.75
+
+HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER: float = 0.85  # take 15% less damage from weapon crits
+HALF_ORC_BLIND_RAGE_CHANCE: float = 0.0075           # 0.75% chance on taking weapon damage
+HALF_ORC_BLIND_RAGE_DURATION: int = 2                # turns
 
 # ── Flee mechanics ──────────────────────────────────────────────────
 BASE_FLEE_CHANCE: float = 0.2           # base flee probability

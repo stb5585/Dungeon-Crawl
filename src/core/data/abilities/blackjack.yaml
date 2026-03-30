@@ -1,0 +1,9 @@
+name: Blackjack
+type: Skill
+subtype: Luck
+description: >-
+  Play a round of blackjack with the Jester; different things happen
+  depending on the result.
+cost: 7
+effects:
+  - type: blackjack

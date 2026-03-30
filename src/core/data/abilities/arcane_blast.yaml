@@ -1,36 +1,28 @@
 name: Arcane Blast
-type: PowerUp
-subtype: Arcane
-description: Expend all remaining mana in a devastating blast of arcane energy
-cost: 0  # Uses remaining mana
+type: ChargingSkill
+subtype: PowerUp
+description: >-
+  Expend all remaining mana in a devastating blast of arcane energy.
+  If the enemy survives, mana will regenerate over the next 4 turns.
+cost: 0
+requires_any_mana: true
 
 # Charging mechanics
 charge_time: 1
 telegraph_message: "channeling all remaining mana into a devastating blast"
 
 effects:
-  - type: damage
-    base: 0
-    scaling:
-      # Damage = remaining mana * 3
-      stat: mana_remaining
-      ratio: 3.0
-    element: Arcane
-    
-  - type: resource_drain
-    resource: mana
-    amount: all_remaining
+  - type: arcane_blast
+    regen_turns: 4
+    regen_fraction: 0.1
 
 # Priority and targeting
 priority: NORMAL
-delay: 1  # Takes 1 turn to charge
+delay: 1
 
-# Usage notes
 notes: |
-  Powerful spell that converts ALL remaining mana into damage.
-  Damage = (current_mana * 3) * (1 - magic_resist)
-  
-  After casting, user has 0 mana.
-  
-  Best used as a finishing move or when out of options.
-  Telegraph: "The Mage is channeling all remaining mana into a devastating blast!"
+  Knight Enchanter power-up ability.
+  Uses ALL remaining mana as magic damage via handle_defenses/damage_reduction.
+  Drains mana to 0 after execution.
+  If target survives, activates Power Up for 4-turn mana regen (10% per turn).
+  Mana is captured at charge start, so damage is based on pre-charge mana.

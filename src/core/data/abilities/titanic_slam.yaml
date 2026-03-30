@@ -1,0 +1,14 @@
+name: Titanic Slam
+type: Skill
+subtype: Offensive
+description: >-
+  The ultimate technique of the mountain giant. Brings both fists crashing
+  down with enough force to stun any foe.
+cost: 30
+weapon: true
+damage_mod: 4.0
+effects:
+  - type: titanic_slam
+    dmg_mod: 4.0
+    crit_override: 2
+    stun_duration: 2

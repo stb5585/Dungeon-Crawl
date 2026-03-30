@@ -1,0 +1,11 @@
+name: Brain Gorge
+description: >-
+  Attack the enemy and attempt to latch on and eat its brain; a successful
+  attack can lower intelligence.
+type: Skill
+cost: 30
+subtype: Offensive
+weapon: true
+damage_mod: 0.75
+effects:
+  - type: brain_gorge

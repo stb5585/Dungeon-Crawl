@@ -1,0 +1,12 @@
+name: Devour
+type: Skill
+subtype: Offensive
+description: >-
+  The sandworm swallows its prey whole, crushing them repeatedly
+  before spitting them back out.
+cost: 35
+effects:
+  - type: devour
+    num_bites: 3
+    multiplier: 1.5
+    element: Earth

@@ -1,0 +1,8 @@
+name: Destroy Metal
+description: Target metal items and destroy them.
+type: Skill
+subtype: Offensive
+cost: 27
+weapon: false
+effects:
+  - type: destroy_metal

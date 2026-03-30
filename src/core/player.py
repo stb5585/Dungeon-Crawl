@@ -48,6 +48,9 @@ DIRECTIONS = {
     }
 
 
+REALM_OF_CAMBION_LEVEL = 8
+
+
 def load_char(char=None, filename=None, is_tmp=False):
     """
     Initializes the character based on the save file using the data-driven save system.
@@ -230,6 +233,9 @@ class Player(Character):
         self.transform_type = self.cls
         self.encumbered = False
         self.power_up = False
+        # Dwarf Gluttony (racial sin): out-of-combat hangover that can affect initiative
+        # for a number of steps after using combat consumables.
+        self.dwarf_hangover_steps = 0
         self.absorb_essence_state = {
             'floor': self.location_z,
             'procs_this_floor': 0,
@@ -254,6 +260,19 @@ class Player(Character):
             f"Health: {self.health.current}/{self.health.max} | "
             f"Mana: {self.mana.current}/{self.mana.max}"
             )
+
+    def exp_gain_multiplier(self) -> float:
+        """Race-based experience gain multiplier (used by combat and quests)."""
+        try:
+            from .constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
+            race_name = getattr(getattr(self, "race", None), "name", None)
+            if race_name == "Human":
+                return HUMAN_EXP_MULTIPLIER
+            if race_name == "Half Giant":
+                return HALF_GIANT_EXP_MULTIPLIER
+        except Exception:
+            pass
+        return 1.0
 
     def minimap(self):
         """
@@ -362,6 +381,10 @@ class Player(Character):
         if os.path.exists(funhouse_path) and 7 not in files_by_level:
             files_by_level[7] = {"path": funhouse_path, "ext": ".json"}
 
+        cambion_path = os.path.join('map_files', 'map_realm_cambion.json')
+        if os.path.exists(cambion_path) and REALM_OF_CAMBION_LEVEL not in files_by_level:
+            files_by_level[REALM_OF_CAMBION_LEVEL] = {"path": cambion_path, "ext": ".json"}
+
         for z in sorted(files_by_level):
             map_file = files_by_level[z]["path"]
             ext = files_by_level[z]["ext"]
@@ -396,7 +419,7 @@ class Player(Character):
             action_list.insert(1, "Pickup Weapon")
         if "Summon" in self.spellbook["Skills"] and \
             any([x.is_alive() for x in self.summons.values()]) and \
-                not self.status_effects["Silence"].active:
+                not self.abilities_suppressed():
             action_list.insert(1, "Summon")
         # Note: Totem was previously duplicated here for Shaman/Soulcatcher
         # It's already accessible via the Skills submenu, so no need for separate action
@@ -445,6 +468,30 @@ class Player(Character):
             # Fallback: return to town if no saved location
             self.to_town()
 
+    def enter_realm_of_cambion(self, x, y, z, facing="east"):
+        """Enter the Realm of Cambion from the current location."""
+        self.cambion_return = (
+            self.location_x,
+            self.location_y,
+            self.location_z,
+            self.facing,
+        )
+        self.location_x = x
+        self.location_y = y
+        self.location_z = z
+        self.facing = facing
+        self.anti_magic_active = True
+
+    def exit_realm_of_cambion(self):
+        """Exit the Realm of Cambion and return to the saved location."""
+        if hasattr(self, 'cambion_return') and self.cambion_return:
+            self.location_x, self.location_y, self.location_z, self.facing = self.cambion_return
+            self.cambion_return = None
+        self.anti_magic_active = False
+
+    def in_realm_of_cambion(self):
+        return self.location_z == REALM_OF_CAMBION_LEVEL
+
     def town_heal(self):
         self.state = 'normal'
         self.health.current = self.health.max
@@ -463,6 +510,8 @@ class Player(Character):
         return False
 
     def usable_abilities(self, typ):
+        if self.abilities_suppressed():
+            return False
         for ability in self.spellbook[typ].values():
             if not ability.passive and ability.cost <= self.mana.current:
                 if any([ability.name == 'Shield Slam' and self.equipment['OffHand'].subtyp != 'Shield',
@@ -628,6 +677,15 @@ class Player(Character):
                           f"{'Constitution:':13}{' ':1}{self.stats.con:>7}\n"
                           f"{'Charisma:':13}{' ':1}{self.stats.charisma:>7}\n"
                           f"{'Dexterity:':13}{' ':1}{self.stats.dex:>7}\n")
+        try:
+            virtue = getattr(getattr(self, "race", None), "virtue", None)
+            sin = getattr(getattr(self, "race", None), "sin", None)
+            if virtue and getattr(virtue, "name", ""):
+                status_message += f"{'Virtue:':13} {virtue.name}\n"
+            if sin and getattr(sin, "name", ""):
+                status_message += f"{'Sin:':13} {sin.name}\n"
+        except Exception:
+            pass
         return status_message
 
     def combat_str(self):
@@ -891,6 +949,7 @@ class Player(Character):
                 # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
                 mimic_level = 4 if is_funhouse_mimic else (self.location_z + locked + plus)
                 enemy = enemies.Mimic(mimic_level, player_level=self.player_level())
+                enemy.anti_magic_active = self.anti_magic_active
                 tile.enemy = enemy
                 if textbox:
                     textbox.print_text_in_rectangle("There is a Mimic in the chest!")
@@ -931,8 +990,18 @@ class Player(Character):
         rare = [False] * len(items)
         drop = [False] * len(items)
         if enemy.gold > 0:
-            loot_message += f"{enemy.name} dropped {enemy.gold} gold.\n"
-            self.gold += enemy.gold
+            gold = int(enemy.gold)
+            # Gnome Charity (virtue): charisma has a stronger effect on gold outcomes.
+            try:
+                if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                    from .constants import GNOME_GOLD_CHARISMA_MULTIPLIER
+                    eff_cha = int(getattr(self.stats, "charisma", 0) * GNOME_GOLD_CHARISMA_MULTIPLIER)
+                    bonus_pct = min(0.25, max(0.0, eff_cha * 0.01))  # up to +25%
+                    gold = max(0, int(gold * (1.0 + bonus_pct)))
+            except Exception:
+                pass
+            loot_message += f"{enemy.name} dropped {gold} gold.\n"
+            self.gold += gold
         for i, item_typ in enumerate(items):
             try:
                 item = item_typ()
@@ -1363,6 +1432,8 @@ class Player(Character):
 
         if getattr(self.world_dict.get((new_x, new_y, self.location_z), {}), "enter"):
             self.location_x, self.location_y = new_x, new_y
+            if getattr(self, "dwarf_hangover_steps", 0) > 0:
+                self.dwarf_hangover_steps = max(0, int(self.dwarf_hangover_steps) - 1)
 
     def move_forward(self, game):
         """Moves the character in the direction they are facing."""
@@ -1398,6 +1469,8 @@ class Player(Character):
         """Moves the character up or down a floor."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
         self.location_z += dz
+        if getattr(self, "dwarf_hangover_steps", 0) > 0:
+            self.dwarf_hangover_steps = max(0, int(self.dwarf_hangover_steps) - 1)
 
     def stairs_up(self):
         self.stairs(dz=-1)
@@ -1719,14 +1792,19 @@ class Player(Character):
             self.transform(back=True)
         self.effects(end=True)
         if all([self.is_alive(), not flee]):
+            exp_gain = int(enemy.experience)
+            try:
+                exp_gain = max(0, int(exp_gain * float(self.exp_gain_multiplier())))
+            except Exception:
+                pass
             endcombat_str = (f"{self.name} killed {enemy.name}.\n"
-                             f"{self.name} gained {enemy.experience} experience.\n")
+                             f"{self.name} gained {exp_gain} experience.\n")
             if summon:
                 summon.effects(end=True)
-                endcombat_str += f"{summon.name} gained {enemy.experience} experience.\n"
-                summon.level.exp += enemy.experience
+                endcombat_str += f"{summon.name} gained {exp_gain} experience.\n"
+                summon.level.exp += exp_gain
                 if summon.level.level < 10:
-                    summon.level.exp_to_gain -= enemy.experience
+                    summon.level.exp_to_gain -= exp_gain
                     while summon.level.exp_to_gain <= 0:
                         endcombat_str += summon.level_up(self)
                         if summon.level.level == 10:
@@ -1740,12 +1818,12 @@ class Player(Character):
             endcombat_str += self.quests(enemy=enemy)
             if textbox:
                 textbox.print_text_in_rectangle(endcombat_str)
-            self.level.exp += enemy.experience
+            self.level.exp += exp_gain
             upgrade_message = self.class_upgrades(game, enemy)
             if upgrade_message and textbox:
                 textbox.print_text_in_rectangle(upgrade_message)
             if not self.max_level():
-                self.level.exp_to_gain -= enemy.experience
+                self.level.exp_to_gain -= exp_gain
                 while self.level.exp_to_gain <= 0:
                     self.level_up(game)
                     if self.max_level():
@@ -1822,13 +1900,14 @@ class Player(Character):
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
         if self.cls.name == "Soulcatcher" and self.power_up:
-            if enemy:
+            if enemy and getattr(enemy, "enemy_typ", None) in self.kill_dict:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             if 'Monk' in self.cls.name:
                 class_mod += self.stats.wisdom
-            if self.cls.name in ["Thief", "Rogue", "Assassin", "Ninja"]:
+            # Footpad-line weapon damage is DEX-forward.
+            if self.cls.name in ["Footpad", "Thief", "Rogue", "Assassin", "Ninja"]:
                 class_mod += self.stats.dex
             if self.cls.name in ['Spellblade', 'Knight Enchanter']:
                 class_mod += weapon_mod * int(2 * (self.mana.current / self.mana.max))
@@ -1874,7 +1953,7 @@ class Player(Character):
             if self.cls.name == 'Knight Enchanter':
                 class_mod += int(armor_mod * max(0, min(5, self.mana.max / (self.mana.current + 1))))
             if self.cls.name in ['Warlock', 'Shadowcaster']:
-                if self.familiar.spec == 'Homunculus' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
+                if self.familiar and self.familiar.spec == 'Homunculus' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = random.randint(0, 3) ** self.familiar.level.pro_level
                     class_mod += fam_mod
             if self.cls.name == "Berserker" and self.power_up and (self.health.current / self.health.max) < 0.3:
@@ -1898,7 +1977,9 @@ class Player(Character):
                 class_mod += magic_mod
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
-            m_def_mod = self.stats.wisdom * self.level.pro_level
+            # Wisdom is the primary magic-defense stat; charisma provides a secondary
+            # willpower component so low-CHA physical builds have a tangible downside.
+            m_def_mod = (self.stats.wisdom + (self.stats.charisma // 2)) * self.level.pro_level
             if self.equipment['Pendant'] is not None and "Magic Defense" in self.equipment['Pendant'].mod:
                 m_def_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
@@ -1923,7 +2004,7 @@ class Player(Character):
                 elif typ == 'Wind':
                     res_mod = -0.25
             if self.cls.name in ['Warlock', 'Shadowcaster']:
-                if self.familiar.spec == 'Mephit' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
+                if self.familiar and self.familiar.spec == 'Mephit' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = 0.25 * random.randint(1, max(1, self.stats.charisma // 10))
                     res_mod += fam_mod
             if self.equipment['Pendant'].mod.split("-")[-1] in [typ, "Elemental"] and \
@@ -1943,8 +2024,9 @@ class Player(Character):
         if mod == 'luck':
             if self.cls.name == "Rogue" and self.power_up:
                 luck_factor = max(1, luck_factor // 2)
-            luck_mod = self.stats.charisma // luck_factor
-            return luck_mod
+            lf = max(1, int(luck_factor))
+            base = int(self.stats.charisma) + int(self.stats.wisdom)
+            return max(0, (base * 2) // lf)
         if mod == "speed":
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active

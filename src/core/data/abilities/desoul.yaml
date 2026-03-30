@@ -1,0 +1,19 @@
+name: Desoul
+type: Status
+subtype: Death
+description: "Removes the soul from the enemy, instantly killing it."
+cost: 50
+messages:
+  immune: "{target} is immune to death spells."
+  resist: "The spell has no effect."
+effects:
+  - type: instant_kill
+    success_message: "{target} has their soul ripped right out and falls to the ground dead."
+    actor_stat: charisma
+    actor_divisor: 4
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    apply_resist_multiplier: true
+    resist_type: Death
+    luck_factor: 10

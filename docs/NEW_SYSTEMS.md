@@ -365,7 +365,6 @@ dungeon-crawl/
 │   ├── ability_loader.py
 │   └── abilities/
 │       ├── fireball.yaml
-│       ├── power_strike.yaml
 │       └── blessing.yaml
 ├── ARCHITECTURE.md              # NEW: Architecture documentation
 ├── NEW_SYSTEMS.md              # This file

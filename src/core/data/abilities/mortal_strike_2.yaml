@@ -1,0 +1,25 @@
+name: Mortal Strike
+type: Skill
+subtype: Offensive
+description: >-
+  Devastating critical strike plus bleed; duration and damage determined by
+  the player's strength. Requires a 2-handed weapon.
+cost: 30
+weapon: true
+damage_mod: 1.5
+crit_override: 3
+effects:
+  - type: physical_effect_apply
+    effect_name: Bleed
+    use_crit_multiplier: true
+    damage_multiplier: 0.75
+    actor_stat: strength
+    actor_lo_divisor: 2
+    actor_hi_divisor: 1
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    duration_stat: strength
+    duration_divisor: 10
+    duration_min: 1
+    skip_if_active: true

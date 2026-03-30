@@ -1,0 +1,10 @@
+name: Lick
+description: >-
+  Lick the target, dealing damage and inflicting random status effect(s).
+type: Skill
+cost: 10
+subtype: Offensive
+weapon: true
+damage_mod: 1.25
+effects:
+  - type: lick

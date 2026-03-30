@@ -1,0 +1,17 @@
+name: Goad
+type: StatusSkill
+subtype: Defensive
+description: Provoke the target into a berserking rage.
+cost: 12
+status_name: Berserk
+actor_stat: strength
+actor_lo_divisor: 0
+actor_hi_divisor: 2
+target_stat: wisdom
+target_lo_divisor: 2
+target_hi_divisor: 1
+duration_stat: strength
+duration_divisor: 5
+duration_min: 5
+skip_if_active: true
+ice_block_check: true

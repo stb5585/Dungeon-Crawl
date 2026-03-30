@@ -1,0 +1,16 @@
+name: Divine Aegis
+type: Skill
+subtype: Power Up
+description: >-
+  Create a holy shield that absorbs some incoming damage for a limited time.
+cost: 20
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    extra_mode: random_health
+    lo_frac: 0.25
+    hi_frac: 0.5
+    message: >-
+      A holy shield engulfs {actor}, providing an extra {extra} points of
+      protection.

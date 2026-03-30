@@ -1,0 +1,11 @@
+name: Tornado
+type: Spell
+subtype: Wind
+description: >-
+  You bring down a cyclone that pelts the enemy with debris and causes
+  massive wind damage.
+cost: 40
+damage_mod: 2.25
+crit: 6
+school: Elemental
+rank: 2

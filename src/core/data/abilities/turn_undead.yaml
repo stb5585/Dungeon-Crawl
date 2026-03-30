@@ -1,0 +1,13 @@
+name: Turn Undead
+description: >-
+  A holy chant is recited with a chance to banish any nearby undead from
+  existence.
+type: CustomSpell
+cost: 8
+damage_mod: 1.5
+crit: 5
+subtype: Holy
+school: Holy
+effects:
+  - type: turn_undead
+    luck_factor: 6

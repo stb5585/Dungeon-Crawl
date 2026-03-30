@@ -5,7 +5,6 @@ Usage:
   python3 tools/generate_tiled_tileset.py
 """
 
-import json
 from pathlib import Path
 from PIL import Image
 

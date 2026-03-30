@@ -3,17 +3,37 @@
 from __future__ import annotations
 
 import random
+from pathlib import Path
 from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from .combat.combat_result import CombatResult
-from .constants import ARMOR_SCALING_FACTOR, DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
-from . import enemies
+from .constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
 if TYPE_CHECKING:
     from typing import Any
 
     from .character import Character
+
+
+# ── YAML ability loader helper ──────────────────────────────────────────
+_YAML_DIR = Path(__file__).parent / "data" / "abilities"
+
+
+def _load_yaml_ability(filename: str, cls_name: str | None = None) -> Ability:
+    """Load a combat-ready ability from a YAML file.
+
+    If *cls_name* is provided it is stored on the returned instance as
+    ``_class_name`` so the save-system serialiser can round-trip the
+    original Python class name.
+    """
+    from .data.ability_loader import AbilityFactory
+    ability = AbilityFactory.create_from_yaml(
+        _YAML_DIR / filename, combat_ready=True
+    )
+    if cls_name:
+        ability._class_name = cls_name
+    return ability
 
 
 class Ability:
@@ -83,6 +103,42 @@ class Ability:
                 action=self.name,
                 extra={'cost': self.cost, "type": self.typ, "subtype": self.subtyp}
             )
+
+    def _reset_result(
+        self,
+        *,
+        actor: Character | None = None,
+        target: Character | None = None,
+    ) -> CombatResult:
+        """
+        Reset the reusable result object to per-cast defaults.
+
+        Many ability instances are reused across turns (enemy spellbooks),
+        so this clears transient fields (messages, effects, extra context)
+        to prevent cross-cast leakage.
+        """
+        self._ensure_result()
+        result = self.result
+        result.action = self.name
+        result.actor = actor
+        result.target = target
+        result.hit = None
+        result.crit = None
+        result.dodge = None
+        result.block = None
+        result.block_amount = None
+        result.damage = 0
+        result.healing = 0
+        result.effects_applied = {
+            "Status": [],
+            "Physical": [],
+            "Stat": [],
+            "Magic": [],
+            "Class": [],
+        }
+        result.extra = {"cost": self.cost, "type": self.typ, "subtype": self.subtyp}
+        result.message = ""
+        return result
 
     def __str__(self) -> str:
         """
@@ -247,8 +303,8 @@ class Spell(Ability):
 
     def __init__(
             self,
-            name,
-            description,
+            name: str,
+            description: str,
             school: str | None = None,
             ):
         """
@@ -290,7 +346,7 @@ Skill section
 
 def _skill_subtype(cls_name: str, subtyp: str, description: str) -> type:
     """Generate a Skill subclass whose only distinction is *subtyp*."""
-    def _init(self, name: str = "", description: str = "", **kwargs):
+    def _init(self, name: str = "", description: str = "", **kwargs: Any) -> None:
         Skill.__init__(self, name, description, **kwargs)
         self.subtyp = subtyp
     return type(cls_name, (Skill,), {
@@ -323,1073 +379,88 @@ PowerUp = _skill_subtype("PowerUp", "Power Up",
 
 # Skills #
 # Offensive
-class ShieldSlam(Offensive):
-    """
-    Slam the enemy with your shield, damaging with a chance to stun for several turns.
-    - Requires a shield to use
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Shield Slam",
-            description="Slam the enemy with your shield, damaging with a chance to stun for several turns.",
-        )
-        self.cost = 8
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return f"{user.name} attempts to use {self.name} but {target.name} is unreachable!\n"
-        
-        # Shield slam requires an offhand shield
-        if user.equipment["OffHand"].subtyp != 'Shield':
-            return f"{user.name} has no shield to slam with!\n"
-        
-        use_str = ""
-        dodge = target.dodge_chance(user) > random.random()
-        
-        if dodge:
-            use_str += f"{target.name} dodges {user.name}'s shield slam!\n"
-        else:
-            # Calculate damage based on strength and shield weight
-            damage = max(1, user.stats.strength + user.equipment["OffHand"].weight)
-            variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-            damage = int(damage * variance)
-            
-            target.health.current -= damage
-            use_str += f"{user.name} slams {target.name} with their shield for {damage} damage!\n"
-            
-            # Check for stun effect
-            if target.is_alive():
-                if not any([
-                    "Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]):
-                    if random.randint(0, user.stats.strength) > random.randint(
-                        target.stats.strength // 2, target.stats.strength
-                    ):
-                        turns = random.randint(1, max(1, user.stats.strength // 8))
-                        target.status_effects["Stun"].active = True
-                        target.status_effects["Stun"].duration = turns
-                        user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Shield Bash")
-                        use_str += f"{target.name} is stunned for {turns} turn(s)!\n"
-        
-        return use_str
+class ShieldSlam:
+    """Data-driven (shield_slam.yaml) – str+shield damage + stun."""
+    def __new__(cls):
+        return _load_yaml_ability("shield_slam.yaml", cls_name="ShieldSlam")
 
 
-class DoubleStrike(Offensive):
-    """
-    Attack with your weapon twice, dealing normal damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Double Strike",
-            description="Perform two melee attacks at normal damage.",
-        )
-        self.cost = 14
-        self.strikes = 2  # number of strikes performed
-        self.weapon = True
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str = ""
-        
-        for i in range(self.strikes):
-            strike_str, hit, crit = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
-            use_str += strike_str
-            if not target.is_alive():
-                break
-        
-        return use_str
+class DoubleStrike:
+    """Data-driven (double_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("double_strike.yaml", cls_name="DoubleStrike")
 
 
-class TripleStrike(DoubleStrike):
-    """
-    Replaces Double Strike; attack with your weapon three times, dealing 90% of normal damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Triple Strike"
-        self.description = "Perform three melee attacks at 90% of normal damage."
-        self.strikes = 3
-        self.cost = 26
-        self.dmg_mod = 0.9
+class TripleStrike:
+    """Data-driven (triple_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("triple_strike.yaml", cls_name="TripleStrike")
 
 
-class FlurryBlades(TripleStrike):
-    """
-    Replaces Triple Strike; attack with your weapon four times, dealing 75% of normal damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Flurry of Blades"
-        self.description = "Perform four melee attacks at 75% of normal damage."
-        self.strikes = 4
-        self.cost = 40
-        self.dmg_mod = 0.75
+class FlurryBlades:
+    """Data-driven (flurry_blades.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("flurry_blades.yaml", cls_name="FlurryBlades")
 
 
-class PiercingStrike(Offensive):
-    """
-    Attack that pierces the enemy's defenses, ignoring armor and defenses.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Piercing Strike",
-            description="Pierces the enemy's defenses, ignoring armor and defenses.",
-        )
-        self.cost = 5
-        self.weapon = True
-        self.dmg_mod = 1.25
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, ignore=True
-        )
-        return use_str
+class PiercingStrike:
+    """Data-driven (piercing_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("piercing_strike.yaml", cls_name="PiercingStrike")
 
 
-class TrueStrike(Offensive):
-    """
-    Attack that is guaranteed to hit but deals 0.75x weapon damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="True Strike",
-            description="Attack that is guaranteed to hit but deals 0.75x weapon damage.",
-        )
-        self.cost = 12
-        self.weapon = True
-        self.dmg_mod = 0.75
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, hit=True
-        )
-        return use_str
+class TrueStrike:
+    """Data-driven (true_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("true_strike.yaml", cls_name="TrueStrike")
 
 
-class TruePiercingStrike(Offensive):
-    """
-    Attack that is guaranteed to hit and that pierces the enemy's defenses, ignoring armor and defenses.
-    However it only deals 0.75x weapon damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="True Piercing Strike",
-            description="Attack that is guaranteed to hit and that pierces "
-            "the enemy's defenses, ignoring armor and defenses. However it "
-            "only deals 0.75x weapon damage.",
-        )
-        self.cost = 15
-        self.weapon = True
-        self.dmg_mod = 0.75
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, ignore=True, hit=True
-        )
-        return use_str
+class TruePiercingStrike:
+    """Data-driven (true_piercing_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("true_piercing_strike.yaml", cls_name="TruePiercingStrike")
 
 
-class Jump(Offensive):
-    """
-    Jump into the air and bring down your weapon onto the enemy, delivering increased damage.
-    Takes a turn to complete; user is prone while charging
-    Add modifications to Jump to customize it to your liking
-    - Crit (initial): increases the critical factor of the damage but reduces the dmg_mod to 1.5x weapon damage
-    
-    Lancer unlocks (Levels 1-30):
-    - Defend (Lancer Lv 5): increased damage reduction when preparing to Jump
-    - Quick Dive (Lancer Lv 10): removes charge time but reduces damage to 1.25x weapon damage
-    - Acrobat (Lancer Lv 15): gain evasion bonus while preparing to Jump
-    - Thrust (Lancer Lv 20): after landing the Jump, if enemy is still alive, thrust your spear into them at 0.75x weapon damage
-    - Rend (Lancer Lv 25): chance to apply a bleed, dealing damage over time
-    
-    Dragoon unlocks (Levels 1-50):
-    - Quake (Dragoon Lv 5): chance to stun enemy upon landing
-    - Soaring Strike (Dragoon Lv 10): takes two turns instead of one, but deals increased damage
-    - Retribution (Dragoon Lv 20): if you take damage while charging and it doesn't cancel, the Jump deals additional damage based on the damage taken
-    - Unstoppable (Dragoon Lv 30): Jump cannot be interrupted once started
-    
-    Special unlocks:
-    - Dragon's Fury (Boss: Red Dragon): deals additional random elemental damage
-    - Skyfall (Boss: Merzhin): brings down the ceiling on the enemy, dealing multiple additional hits (random smaller damage instances)
-    - Recover (Item: Dragon's Tear): regain a small amount of health and mana upon landing
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Jump",
-            description="Leap into the air and bring down your weapon onto the enemy, "
-            "delivering increased damage.",
-        )
-        self.cost = 10
-        self.strikes = 1
-        self.crit = 1
-        self.weapon = True
-        self.dmg_mod = 2.0
-        self._yaml_charge_time = None
-        self._yaml_telegraph_message = None
-        self._yaml_prone_while_charging = None
-
-        # Load YAML-backed config when available
-        try:
-            from pathlib import Path
-            from src.core.data.ability_loader import AbilityFactory
-
-            file_path = Path(__file__).parent / "data" / "abilities" / "jump.yaml"
-            if file_path.exists():
-                yaml_ability = AbilityFactory.create_from_yaml(file_path)
-                if getattr(yaml_ability, "description", None):
-                    self.description = yaml_ability.description
-                if getattr(yaml_ability, "cost", None) is not None:
-                    self.cost = yaml_ability.cost
-                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
-                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
-                self._yaml_prone_while_charging = getattr(yaml_ability, "prone_while_charging", None)
-        except Exception:
-            pass
-        
-        # Jump modifications system - tracks which mods are toggled on/off
-        self.modifications = {
-            "Crit": True,  # Start with Crit enabled by default
-            "Thrust": False,
-            "Defend": False,
-            "Rend": False,
-            "Quake": False,
-            "Acrobat": False,
-            "Dragon's Fury": False,
-            "Soaring Strike": False,
-            "Quick Dive": False,
-            "Retribution": False,
-            "Unstoppable": False,
-            "Recover": False,
-            "Skyfall": False,
-        }
-        
-        # Tracks which modifications have been unlocked (available to toggle)
-        self.unlocked_modifications = {
-            "Crit": True,  # Start with Crit unlocked
-            "Thrust": False,
-            "Defend": False,
-            "Rend": False,
-            "Quake": False,
-            "Acrobat": False,
-            "Dragon's Fury": False,
-            "Soaring Strike": False,
-            "Quick Dive": False,
-            "Retribution": False,
-            "Unstoppable": False,
-            "Recover": False,
-            "Skyfall": False,
-        }
-        
-        # Unlock requirements for each modification
-        # Format: {'type': 'lancer_level'|'dragoon_level'|'boss'|'item', 'requirement': level_num|boss_name|item_name}
-        self.unlock_requirements = {
-            "Crit": {"type": "initial", "requirement": None},
-            # Lancer unlocks (levels 1-30)
-            "Defend": {"type": "lancer_level", "requirement": 5},
-            "Quick Dive": {"type": "lancer_level", "requirement": 10},
-            "Acrobat": {"type": "lancer_level", "requirement": 15},
-            "Thrust": {"type": "lancer_level", "requirement": 20},
-            "Rend": {"type": "lancer_level", "requirement": 25},
-            # Dragoon unlocks (levels 1-50)
-            "Quake": {"type": "dragoon_level", "requirement": 5},
-            "Soaring Strike": {"type": "dragoon_level", "requirement": 10},
-            "Retribution": {"type": "dragoon_level", "requirement": 20},
-            "Unstoppable": {"type": "dragoon_level", "requirement": 30},
-            # Special unlocks
-            "Skyfall": {"type": "boss", "requirement": "Merzhin"},
-            "Dragon's Fury": {"type": "boss", "requirement": "Red Dragon"},
-            "Recover": {"type": "item", "requirement": "Dragon's Tear"},
-        }
-        
-        # Charging state tracking
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        self.retribution_damage = 0
-        self.jump_charge_health = None
-        
-    def get_max_active_modifications(self, user: Character = None) -> int:
-        """
-        Calculate maximum number of modifications that can be active simultaneously based on level.
-        
-        Args:
-            user: The character (used to get level and check for ClassRing bonus)
-            
-        Returns:
-            int: Maximum number of active modifications allowed
-        """
-        if user is None:
-            return 5  # Default max if no user provided
-        
-        # Extract level from user object using Lancer/Dragoon progression
-        if hasattr(user, 'level'):
-            base_level = user.level.level if hasattr(user.level, 'level') else user.level
-        else:
-            base_level = 99  # Default if level not found
-
-        # Jump progression: Lancer levels are 1-30, Dragoon adds +30 offset
-        if hasattr(user, 'cls') and hasattr(user.cls, 'name'):
-            if "Dragoon" in user.cls.name:
-                user_level = 30 + int(base_level)
-            else:
-                user_level = int(base_level)
-        else:
-            user_level = int(base_level)
-        
-        # Start with 1 active mod, increase by 1 every 15 levels, cap at 5
-        # Level 1-14: 1 mod
-        # Level 15-29: 2 mods
-        # Level 30-44: 3 mods
-        # Level 45-59: 4 mods
-        # Level 60+: 5 mods
-        base_mods = 1
-        additional = user_level // 15
-        max_mods = min(base_mods + additional, 5)  # Cap at 5 active mods
-        
-        # Check for ClassRing bonus (+1 Jump Mod for Dragoon)
-        if hasattr(user, 'equipment') and 'Ring' in user.equipment:
-            ring = user.equipment['Ring']
-            if hasattr(ring, 'mod') and ring.mod == "+1 Jump Mod":
-                max_mods += 1  # ClassRing grants an extra slot (total of 6)
-        
-        return max_mods
-        
-    def unlock_modification(self, mod_name: str) -> bool:
-        """
-        Unlock a Jump modification, making it available to toggle.
-        
-        Args:
-            mod_name: Name of the modification to unlock
-            
-        Returns:
-            bool: True if successful, False if modification doesn't exist
-        """
-        if mod_name in self.unlocked_modifications:
-            self.unlocked_modifications[mod_name] = True
-            return True
-        return False
-    
-    def check_and_unlock_level_modifications(self, user_level: int, user_class: str = None) -> list:
-        """
-        Check and unlock any modifications that should be unlocked at the given level.
-        
-        Args:
-            user_level: The character's current level
-            user_class: The character's current class name (e.g., "Lancer", "Dragoon")
-            
-        Returns:
-            list: Names of newly unlocked modifications
-        """
-        # Coerce Level objects or other types to int
-        if hasattr(user_level, "level"):
-            user_level = user_level.level
-        
-        # Normalize class name
-        if hasattr(user_class, "name"):
-            user_class = user_class.name
-        if not user_class:
-            return []
-        user_class = str(user_class)
-        
-        newly_unlocked = []
-        for mod_name, req in self.unlock_requirements.items():
-            req_type = req["type"]
-            req_level = req["requirement"]
-            
-            # Check if this modification should be unlocked
-            should_unlock = False
-            
-            if req_type == "lancer_level" and "Lancer" in user_class and req_level <= user_level:
-                should_unlock = True
-            elif req_type == "dragoon_level" and "Dragoon" in user_class and req_level <= user_level:
-                should_unlock = True
-            
-            if should_unlock and not self.unlocked_modifications[mod_name]:
-                self.unlocked_modifications[mod_name] = True
-                newly_unlocked.append(mod_name)
-        
-        return newly_unlocked
-    
-    def unlock_boss_modification(self, boss_name: str) -> str:
-        """
-        Unlock a modification by defeating a specific boss.
-        
-        Args:
-            boss_name: Name of the defeated boss
-            
-        Returns:
-            str: Name of unlocked modification, or empty string if none
-        """
-        for mod_name, req in self.unlock_requirements.items():
-            if req["type"] == "boss" and req["requirement"] == boss_name:
-                if not self.unlocked_modifications[mod_name]:
-                    self.unlocked_modifications[mod_name] = True
-                    return mod_name
-        return ""
-    
-    def unlock_item_modification(self, item_name: str) -> str:
-        """
-        Unlock a modification by obtaining a special item.
-        
-        Args:
-            item_name: Name of the special item
-            
-        Returns:
-            str: Name of unlocked modification, or empty string if none
-        """
-        for mod_name, req in self.unlock_requirements.items():
-            if req["type"] == "item" and req["requirement"] == item_name:
-                if not self.unlocked_modifications[mod_name]:
-                    self.unlocked_modifications[mod_name] = True
-                    return mod_name
-        return ""
-    
-    def is_modification_unlocked(self, mod_name: str) -> bool:
-        """
-        Check if a modification is unlocked (available to toggle).
-        
-        Args:
-            mod_name: Name of the modification
-            
-        Returns:
-            bool: True if unlocked, False otherwise
-        """
-        return self.unlocked_modifications.get(mod_name, False)
-    
-    def get_unlocked_modifications(self) -> list:
-        """Return list of unlocked modification names."""
-        return [mod for mod, unlocked in self.unlocked_modifications.items() if unlocked]
-    
-    def get_active_count(self) -> int:
-        """Return the number of currently active modifications."""
-        return sum(1 for active in self.modifications.values() if active)
-    
-    def enforce_modification_limit(self, user: Character = None) -> list:
-        """
-        Enforce the modification limit by deactivating excess modifications.
-        Called when equipment changes (e.g., unequipping ClassRing).
-        
-        Args:
-            user: The character whose modification limit to enforce
-            
-        Returns:
-            list: Names of modifications that were deactivated
-        """
-        max_allowed = self.get_max_active_modifications(user)
-        current_active = self.get_active_count()
-        
-        deactivated = []
-        if current_active > max_allowed:
-            # Need to deactivate some modifications
-            # Deactivate from the end of the modification list (arbitrary choice)
-            excess = current_active - max_allowed
-            for mod_name in reversed(list(self.modifications.keys())):
-                if excess <= 0:
-                    break
-                if self.modifications[mod_name]:  # If active
-                    self.modifications[mod_name] = False
-                    deactivated.append(mod_name)
-                    excess -= 1
-        
-        return deactivated
-    
-    def set_modification(self, mod_name: str, active: bool, user: Character = None) -> tuple[bool, str]:
-        """
-        Enable or disable a Jump modification (if it's unlocked and within active limit).
-        
-        Args:
-            mod_name: Name of the modification
-            active: Whether to enable or disable it
-            user: The character (used to check active mod limit and ClassRing bonus)
-            
-        Returns:
-            tuple[bool, str]: (Success status, Error message if any)
-        """
-        if mod_name not in self.modifications:
-            return (False, "Modification doesn't exist")
-        
-        if not self.unlocked_modifications.get(mod_name, False):
-            return (False, "Modification not unlocked")
-
-        # If trying to activate, check the active mod limit
-        if active and not self.modifications[mod_name]:  # Not already active
-            current_active = self.get_active_count()
-            max_active = self.get_max_active_modifications(user)
-            
-            if current_active >= max_active:
-                # Extract level for error message using Lancer/Dragoon progression
-                if user and hasattr(user, 'level'):
-                    base_level = user.level.level if hasattr(user.level, 'level') else user.level
-                    if hasattr(user, 'cls') and hasattr(user.cls, 'name') and "Dragoon" in user.cls.name:
-                        user_level = 30 + int(base_level)
-                    else:
-                        user_level = int(base_level)
-                else:
-                    user_level = "?"
-                return (False, f"Maximum {max_active} modifications can be active (based on level {user_level})")
-        
-        self.modifications[mod_name] = active
-        
-        # Handle conflicting modifications
-        if active:
-            if mod_name == "Quick Dive" and self.modifications["Soaring Strike"]:
-                self.modifications["Soaring Strike"] = False
-            elif mod_name == "Soaring Strike" and self.modifications["Quick Dive"]:
-                self.modifications["Quick Dive"] = False
-            elif mod_name == "Crit":
-                # Crit conflicts with Soaring Strike (which has its own crit boost)
-                if self.modifications["Soaring Strike"]:
-                    self.modifications["Soaring Strike"] = False
-            elif mod_name == "Soaring Strike" and self.modifications["Crit"]:
-                self.modifications["Crit"] = False
-        
-        return (True, "")
-    
-    def get_active_modifications(self) -> list:
-        """Return list of active modification names."""
-        return [mod for mod, active in self.modifications.items() if active]
-    
-    def get_charge_time(self) -> int:
-        """Calculate how many turns the Jump takes based on modifications."""
-        if self.modifications["Quick Dive"]:
-            return 0  # Instant
-        elif self.modifications["Soaring Strike"]:
-            return 2  # Two turns to charge
-        else:
-            return self._yaml_charge_time if self._yaml_charge_time is not None else 1
-
-    def start_charge(self, user: Character, target: Character) -> str:
-        """
-        Begin charging the Jump ability.
-        
-        Args:
-            user: The character using Jump
-            target: The target of the Jump
-            
-        Returns:
-            str: Message describing the charge start
-        """
-        charge_time = self.get_charge_time()
-        
-        if charge_time == 0:
-            # Quick Dive - no charge needed
-            return ""
-        
-        self.charging = True
-        self.charge_turns = charge_time
-        self.charge_target = target
-        self.retribution_damage = 0
-        self.jump_charge_health = user.health.current
-        
-        if self._yaml_telegraph_message:
-            use_str = f"{user.name} is {self._yaml_telegraph_message}"
-        else:
-            use_str = f"{user.name} prepares to leap into the air"
-        if self.modifications["Soaring Strike"]:
-            use_str += ", gathering power for a devastating strike"
-        use_str += "!\n"
-        
-        # Apply Defend modification
-        if self.modifications["Defend"]:
-            if not hasattr(user, 'jump_defend_active'):
-                user.jump_defend_active = False
-            user.jump_defend_active = True
-            use_str += f"{user.name} assumes a defensive stance while preparing.\n"
-        
-        # Apply Acrobat modification
-        if self.modifications["Acrobat"]:
-            if not hasattr(user, 'jump_acrobat_active'):
-                user.jump_acrobat_active = False
-            user.jump_acrobat_active = True
-            use_str += f"{user.name} moves with enhanced agility.\n"
-        
-        return use_str
-    
-    def add_retribution_damage(self, damage: int) -> None:
-        """Add damage taken during charging for Retribution modification."""
-        if self.modifications["Retribution"]:
-            self.retribution_damage += damage
-    
-    def cancel_charge(self, user: Character) -> str:
-        """
-        Cancel the Jump charge (e.g., if interrupted).
-        
-        Args:
-            user: The character whose Jump was cancelled
-            
-        Returns:
-            str: Message describing the cancellation
-        """
-        if not self.modifications["Unstoppable"]:
-            self.charging = False
-            self.charge_turns = 0
-            self.charge_target = None
-            self.retribution_damage = 0
-            self.jump_charge_health = None
-            
-            # Remove temporary effects
-            if hasattr(user, 'jump_defend_active'):
-                user.jump_defend_active = False
-            if hasattr(user, 'jump_acrobat_active'):
-                user.jump_acrobat_active = False
-            if hasattr(user, 'class_effects') and "Jump" in user.class_effects:
-                user.class_effects["Jump"].active = False
-            
-            return f"{user.name}'s Jump was interrupted!\n"
-        else:
-            return f"{user.name}'s Jump cannot be stopped!\n"
-    
-    def execute_jump(self, user: Character, target: Character, cover: bool = False) -> str:
-        """
-        Execute the Jump attack after charging is complete.
-        
-        Args:
-            user: The character executing the Jump
-            target: The target of the Jump
-            cover: Whether the target is in cover
-            
-        Returns:
-            str: Combat result message
-        """
-        use_str = f"{user.name} descends from the air, weapon aimed at {target.name}!\n"
-        
-        # Calculate damage modifier
-        dmg_mod = self.dmg_mod
-        crit = self.crit
-        
-        # Crit modification: increase crit factor but reduce damage
-        if self.modifications["Crit"]:
-            dmg_mod = 1.5
-            crit = 2
-        
-        # Quick Dive reduces damage
-        if self.modifications["Quick Dive"]:
-            dmg_mod = 1.25
-        
-        # Soaring Strike increases damage and crit (overrides Crit mod)
-        if self.modifications["Soaring Strike"]:
-            dmg_mod = 3.0
-            crit = 3
-        
-        # Retribution adds bonus damage
-        if self.modifications["Retribution"] and self.retribution_damage > 0:
-            dmg_mod += (self.retribution_damage / 100)  # Scale retribution bonus
-            use_str += f"{user.name}'s fury from taking damage empowers the strike!\n"
-        
-        # Execute the main Jump attack
-        wd_str, hit, actual_crit = user.weapon_damage(
-            target, cover=cover, dmg_mod=dmg_mod, crit=crit
-        )
-        use_str += wd_str
-        
-        if hit and target.is_alive():
-            # Apply Quake modification (stun chance)
-            if self.modifications["Quake"]:
-                if not any([
-                    "Stun" in target.status_immunity,
-                    "Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]):
-                    if random.randint(user.stats.strength // 2, user.stats.strength) > random.randint(
-                        target.stats.con // 2, target.stats.con
-                    ):
-                        target.status_effects["Stun"].active = True
-                        target.status_effects["Stun"].duration = 1
-                        user._emit_status_event(target, "Stun", applied=True, duration=1, source="Jump (Quake)")
-                        use_str += f"The impact stuns {target.name}!\n"
-            
-            # Apply Rend modification (bleed chance)
-            if self.modifications["Rend"]:
-                if not target.physical_effects["Bleed"].active:
-                    if random.randint(0, 100) < 40:  # 40% chance
-                        bleed_dmg = int(user.stats.strength * 1.0)
-                        target.physical_effects["Bleed"].active = True
-                        target.physical_effects["Bleed"].duration = 2
-                        target.physical_effects["Bleed"].extra = bleed_dmg
-                        user._emit_status_event(target, "Bleed", applied=True, duration=2, source="Jump (Rend)")
-                        use_str += f"{target.name} is bleeding from the vicious strike!\n"
-            
-            # Apply Dragon's Fury modification (elemental damage)
-            if self.modifications["Dragon's Fury"]:
-                elements = ["Fire", "Ice", "Lightning"]
-                element = random.choice(elements)
-                elem_damage = int(user.stats.intel * random.uniform(0.5, 1.0))
-                elem_damage = max(1, elem_damage)
-                
-                # Check resistance
-                resistance = target.check_mod(mod="resist", typ=f"{element}", enemy=user)
-                elem_damage = max(1, elem_damage - resistance)
-
-                target.health.current -= elem_damage
-                use_str += f"Draconic {element.lower()} energy erupts for {elem_damage} damage!\n"
-            
-            # Apply Skyfall modification (multiple hits)
-            if self.modifications["Skyfall"]:
-                num_hits = random.randint(2, 4)
-                use_str += f"Debris rains down on {target.name}!\n"
-                for i in range(num_hits):
-                    if target.is_alive():
-                        sky_dmg = int(user.stats.strength * random.uniform(0.2, 0.4))
-                        sky_dmg = max(1, sky_dmg)
-                        target.health.current -= sky_dmg
-                        use_str += f"  Impact {i+1}: {sky_dmg} damage!\n"
-            
-            # Apply Thrust modification (follow-up attack)
-            if self.modifications["Thrust"] and target.is_alive():
-                use_str += f"{user.name} thrusts their weapon forward!\n"
-                thrust_str, _, _ = user.weapon_damage(
-                    target, cover=cover, dmg_mod=0.75
-                )
-                use_str += thrust_str
-        
-        # Apply Recover modification (heal on landing)
-        if self.modifications["Recover"]:
-            hp_recover = int(user.health.max * 0.05)  # 5% max HP
-            mp_recover = int(user.mana.max * 0.05)    # 5% max MP
-            
-            user.health.current = min(user.health.max, user.health.current + hp_recover)
-            user.mana.current = min(user.mana.max, user.mana.current + mp_recover)
-            
-            use_str += f"{user.name} recovers {hp_recover} HP and {mp_recover} MP!\n"
-        
-        # Clean up
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        self.retribution_damage = 0
-        
-        if hasattr(user, 'jump_defend_active'):
-            user.jump_defend_active = False
-        if hasattr(user, 'jump_acrobat_active'):
-            user.jump_acrobat_active = False
-        
-        return use_str
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        """
-        Use the Jump ability. Handles both charging and execution phases.
-        
-        Args:
-            user: The character using Jump
-            target: The target of the Jump
-            cover: Whether the target is in cover
-            
-        Returns:
-            str: Combat result message
-        """
-        # Check if already charging
-        if self.charging:
-            # Interrupt if incapacitated (unless Unstoppable)
-            if not self.modifications["Unstoppable"] and user.incapacitated():
-                return self.cancel_charge(user)
-
-            # Interrupt if hit hard enough during charge (unless Unstoppable)
-            if not self.modifications["Unstoppable"] and self.jump_charge_health is not None:
-                damage_taken = max(0, self.jump_charge_health - user.health.current)
-                interrupt_threshold = max(1, int(user.health.max * 0.1))
-                if damage_taken >= interrupt_threshold:
-                    return self.cancel_charge(user)
-
-                if self.modifications["Retribution"] and damage_taken > self.retribution_damage:
-                    self.retribution_damage = damage_taken
-
-            self.charge_turns -= 1
-            if self.charge_turns <= 0:
-                # Execute the jump
-                return self.execute_jump(user, self.charge_target or target, cover)
-            else:
-                # Still charging
-                turns_left = self.charge_turns
-                return f"{user.name} continues to gather power... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
-        else:
-            # Start the charge
-            user.mana.current -= self.cost
-            
-            charge_time = self.get_charge_time()
-            
-            if charge_time == 0:
-                # Quick Dive - execute immediately
-                return self.execute_jump(user, target, cover)
-            else:
-                # Start charging for next turn
-                return self.start_charge(user, target)
+class Jump:
+    """Data-driven (jump.yaml) – leap attack with full modification system."""
+    def __new__(cls):
+        return _load_yaml_ability("jump.yaml", cls_name="Jump")
 
 
-class Doublecast(Offensive):
-    """
-    Cast two spells in a single turn. Cannot select Magic Missile.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Doublecast",
-            description="Cast multiple spells in a single turn.",
-        )
-        self.cost = 10
-        self.cast = 2
-
-    def use(self, user: Character, target: Character=None, cover=False, spell_selector=None) -> str:
-        """
-        Cast multiple spells in a single turn. This method is UI-agnostic:
-        - The spell_selector argument should be a callable provided by the UI layer (curses, pygame, etc.)
-        - spell_selector(user, spell_list, cast_index) -> spell_key
-        - If not provided, a random spell is chosen.
-        This allows the core logic to remain independent of any UI framework.
-        Args:
-            user: The character casting the spell
-            target: The target of the spell (optional)
-            cover: Whether the target is in cover
-            spell_selector: Optional callable for spell selection
-        Returns:
-            str: Result of casting the spells
-        """
-        use_str = ""
-        user.mana.current -= self.cost
-        j = 0
-        while j < self.cast:
-            spell_list = []
-            for entry in user.spellbook["Spells"]:
-                spell_obj = user.spellbook["Spells"][entry]
-                if spell_obj.cost <= user.mana.current and spell_obj.name != "Magic Missile":
-                    if user.cls != user:
-                        spell_list.append(f"{entry}  {spell_obj.cost}")
-                    else:
-                        spell_list.append(str(entry))
-            if len(spell_list) == 0:
-                use_str += f"{user.name} does not have enough mana to cast any spells with {self.name}.\n"
-                user.mana.current += self.cost
-                break
-            # UI-agnostic spell selection
-            if spell_selector is not None:
-                spell_key = spell_selector(user, spell_list, j)
-                # If spell_list contains cost, strip it
-                spell_key = spell_key.rsplit("  ", 1)[0]
-            else:
-                spell_key = random.choice([s.rsplit("  ", 1)[0] for s in spell_list])
-            spell = user.spellbook["Spells"][spell_key]
-            cast_message = spell.cast(user, target=target, cover=cover)
-            use_str += cast_message
-            j += 1
-            if not target.is_alive():
-                break
-        return use_str
+class Doublecast:
+    """Data-driven (doublecast.yaml) – cast 2 spells in a single turn."""
+    def __new__(cls):
+        return _load_yaml_ability("doublecast.yaml", cls_name="Doublecast")
 
 
-class Triplecast(Doublecast):
-    """
-    Replaces Doublecast; cast three spells in a single turn. Cannot select Magic Missile.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Triplecast"
-        self.cost = 20
-        self.cast = 3
+class Triplecast:
+    """Data-driven (triplecast.yaml) – cast 3 spells in a single turn."""
+    def __new__(cls):
+        return _load_yaml_ability("triplecast.yaml", cls_name="Triplecast")
 
 
-class MortalStrike(Offensive):
-    """
-    Assault the enemy, striking them with a critical hit and placing a bleed effect that deals damage.
-    - requires a 2-handed weapon
-    - duration and damage determined by the player's strength
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Mortal Strike",
-            description="Assault the enemy, striking them with a critical hit and placing a bleed effect that deals "
-                        "damage. Requires a 2-handed weapon.",
-        )
-        self.cost = 10
-        self.crit = 2
-        self.weapon = True
-        self.dmg_mod = 1.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
-        )
-        if hit and target.is_alive() and not target.physical_effects["Bleed"].active:
-            bleed_dmg = int(user.stats.strength * crit * 0.75)
-            if random.randint(bleed_dmg // 2, bleed_dmg) > random.randint(
-                target.stats.con // 2, target.stats.con
-            ):
-                bleed_dmg = random.randint(max(1, bleed_dmg // 4), max(1, bleed_dmg))
-                target.physical_effects["Bleed"].active = True
-                target.physical_effects["Bleed"].duration = max(
-                    user.stats.strength // 10, target.physical_effects["Bleed"].duration
-                )
-                target.physical_effects["Bleed"].extra = max(
-                    bleed_dmg, target.physical_effects["Bleed"].extra
-                )
-                user._emit_status_event(target, "Bleed", applied=True, duration=target.physical_effects["Bleed"].duration, source="Mortal Strike")
-                use_str += f"{target.name} is bleeding.\n"
-        return use_str
+class MortalStrike:
+    """Data-driven (mortal_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mortal_strike.yaml", cls_name="MortalStrike")
 
 
-class MortalStrike2(MortalStrike):
-    """
-    Devastating critical strike plus bleed; duration and damage determined by the player's strength
-    - requires a 2-handed weapon
-    - duration and damage determined by the player's strength
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.crit = 3
-        self.cost = 30
+class MortalStrike2:
+    """Data-driven (mortal_strike_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mortal_strike_2.yaml", cls_name="MortalStrike2")
 
 
-class BattleCry(Offensive):
-    """
-    Unleash a furious scream, increasing your attack damage for several turns.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Battle Cry",
-            description="Unleash a furious scream, increasing your attack damage for several turns.",
-        )
-        self.cost = 16
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        turns = max(5, user.stats.strength // 5)
-        dmg_mod = random.randint(target.combat.attack // 10, target.combat.attack // 5)
-        user.stat_effects["Attack"].active = True
-        user.stat_effects["Attack"].duration = max(
-            user.stat_effects["Attack"].duration, turns
-        )
-        user.stat_effects["Attack"].extra += dmg_mod
-        return f"{user.name}'s attack damage increases by {dmg_mod}.\n"
+class BattleCry:
+    """Data-driven (battle_cry.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("battle_cry.yaml", cls_name="BattleCry")
 
 
 class Charge(Offensive):
-    """
-    Can stun then attacks at 1.25x damage, as opposed to other abilities that attack then stun
-    - requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Charge",
-            description="Charge the enemy, possibly stunning them for the turn and doing "
-            "weapon damage.",
-        )
-        self.cost = 10
-        self.weapon = True
-        self.dmg_mod = 1.25
-        self._yaml_charge_time = None
-        self._yaml_telegraph_message = None
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-
-        # Load YAML-backed config when available
-        try:
-            from pathlib import Path
-            from src.core.data.ability_loader import AbilityFactory
-
-            file_path = Path(__file__).parent / "data" / "abilities" / "charge.yaml"
-            if file_path.exists():
-                yaml_ability = AbilityFactory.create_from_yaml(file_path)
-                if getattr(yaml_ability, "description", None):
-                    self.description = yaml_ability.description
-                if getattr(yaml_ability, "cost", None) is not None:
-                    self.cost = yaml_ability.cost
-                if getattr(yaml_ability, "subtyp", None):
-                    self.subtyp = yaml_ability.subtyp
-                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
-                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
-        except Exception:
-            pass
-
-    def get_charge_time(self) -> int:
-        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
-
-    def start_charge(self, user: Character, target: Character) -> str:
-        self.charging = True
-        self.charge_turns = self.get_charge_time()
-        self.charge_target = target
-
-        if self._yaml_telegraph_message:
-            return f"{user.name} is {self._yaml_telegraph_message}!\n"
-        return f"{user.name} lowers their head, preparing to charge!\n"
-
-    def cancel_charge(self, user: Character) -> str:
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        return f"{user.name}'s Charge was interrupted!\n"
-
-    def execute_charge(self, user: Character, target: Character, cover: bool = False) -> str:
-        use_str = ""
-        if not any(
-            [
-                "Stun" in target.status_immunity,
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-                not target.tunnel,
-            ]
-        ):
-            if (
-                random.randint(user.stats.strength // 2, user.stats.strength)
-                > random.randint(target.stats.con // 2, target.stats.con)
-                and not target.status_effects["Stun"].active
-                and not target.magic_effects["Mana Shield"].active
-            ):
-                target.status_effects["Stun"].active = True
-                target.status_effects["Stun"].duration = 1
-                user._emit_status_event(target, "Stun", applied=True, duration=1, source="Head Butt")
-                use_str += f"{user.name} stunned {target.name}.\n"
-        wd_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
-        use_str += wd_str
-
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        return use_str
-
-    def use(self, user: Character, target: Character=None, cover:bool=False) -> str:
-        if self.charging:
-            if user.incapacitated():
-                return self.cancel_charge(user)
-
-            self.charge_turns -= 1
-            if self.charge_turns <= 0:
-                return self.execute_charge(user, self.charge_target or target, cover)
-            turns_left = self.charge_turns
-            return f"{user.name} continues charging... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
-
-        user.mana.current -= self.cost
-        charge_time = self.get_charge_time()
-        if charge_time > 0:
-            return self.start_charge(user, target)
-
-        return self.execute_charge(user, target, cover)
+    """Data-driven (charge.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("charge.yaml", cls_name="Charge")
 
 
 # Defensive skills
@@ -1422,41 +493,43 @@ class Parry(Defensive):
         self.passive = True
 
 
-class Disarm(Defensive):
+class Quickstep(Defensive):
     """
-    Disarm the enemy, knocking their weapon out of their grasp. Disarmed characters have lower chance to hit and 
-    can't use certain abilities.
+    Passive ability; improves dodge chance via DEX scaling.
+
+    This is intended as a Footpad-line defensive baseline so DEX-forward builds
+    have a meaningful mitigation path without relying on flee mechanics.
     """
 
     def __init__(self):
         super().__init__(
-            name="Disarm",
-            description="Surprise the enemy by attacking their weapon, knocking it out of "
-            "their grasp. Disarmed characters have lower chance to hit and "
-            "can't use certain abilities.",
+            name="Quickstep",
+            description="You fight light on your feet, improving your ability to evade attacks.",
         )
-        self.cost = 4
+        self.passive = True
 
-    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        if not fam:
-            user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if target.can_be_disarmed():
-            if not target.physical_effects["Disarm"].active:
-                chance = target.check_mod("luck", enemy=user, luck_factor=10)
-                max_stat = max(user.stats.strength, user.stats.dex)
-                if (
-                    random.randint(max_stat // 2, max_stat)
-                    > random.randint(0, target.check_mod("speed", enemy=user)) + chance
-                ):
-                    target.physical_effects["Disarm"].active = True
-                    target.physical_effects["Disarm"].duration = -1
-                    user._emit_status_event(target, "Disarm", applied=True, duration=-1, source="Disarm")
-                    return f"{target.name} is disarmed.\n"
-                return f"{user.name} fails to disarm the {target.name}.\n"
-            return f"{target.name} is already disarmed.\n"
-        return f"{target.name} cannot be disarmed.\n"
+
+class EvasiveGuard(Defensive):
+    """
+    Passive ability; stackable damage reduction against weapon hits (DEX-scaling).
+
+    This is meant to give Footpad-line characters a way to mitigate damage without
+    altering racial resistances or relying on flee mechanics.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Evasive Guard",
+            description="Each time you are hit, you learn and reduce future damage (stacks up to 3). "
+                        "Stacks reset when you dodge an attack.",
+        )
+        self.passive = True
+
+
+class Disarm:
+    """Disarm the enemy - data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("disarm.yaml", cls_name="Disarm")
 
 
 class Cover(Defensive):
@@ -1473,305 +546,59 @@ class Cover(Defensive):
         self.passive = True
 
 
-class Goad(Defensive):
-    """
-    Insult the enemy, sending them into a blind rage. The enemy will only use attack for several turns. Berserk status
-    increases damage dealt but reduces chance to hit.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Goad",
-            description="Insult the enemy, sending them into a blind rage.",
-        )
-        self.cost = 12
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        if not fam:
-            user.mana.current -= self.cost
-        if any(
-            [
-                "Berserk" in target.status_immunity,
-                "Status-Berserk" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            return f"{target.name} is immune to berserk status.\n"
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not target.status_effects["Berserk"].active:
-            if random.randint(0, user.stats.strength // 2) > random.randint(
-                target.stats.wisdom // 2, target.stats.wisdom
-            ):
-                target.status_effects["Berserk"].active = True
-                target.status_effects["Berserk"].duration = max(
-                    5, user.stats.strength // 5
-                )
-                user._emit_status_event(target, "Berserk", applied=True, duration=target.status_effects["Berserk"].duration, source="Enrage")
-                return f"{target.name} is enraged.\n"
-            return f"{target.name} is not so easily provoked.\n"
-        return f"{target.name} is already enraged.\n"
+class Goad:
+    """Data-driven (goad.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("goad.yaml", cls_name="Goad")
 
 
 # Stealth skills
-class Backstab(Stealth):
-    """
-    Attack a stunned enemy from behind, dealing devastating damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Backstab",
-            description="Strike a stunned opponent in the back, ignoring any defense or "
-            "armor and dealing devastating damage.",
-        )
-        self.cost = 6
-        self.weapon = True
-        self.dmg_mod = 2.0
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, _, _ = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, ignore=True
-        )
-        return use_str
+class Backstab:
+    """Data-driven (backstab.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("backstab.yaml", cls_name="Backstab")
 
 
-class PocketSand(Stealth):
-    """
-    Throw sand in the eyes of your enemy, blinding them and reducing their chance to hit on a melee attack.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Pocket Sand",
-            description="Throw sand in the eyes of your enemy, blinding them and "
-            "reducing their chance to hit on a melee attack.",
-        )
-        self.cost = 8
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        if not fam:
-            user.mana.current -= self.cost
-        if any(
-            [
-                "Blind" in target.status_immunity,
-                "Status-Blind" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            return f"{target.name} is immune to blind status.\n"
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not target.status_effects["Blind"].active:
-            if random.randint(0, user.check_mod("speed", enemy=user)) > random.randint(
-                0, target.check_mod("speed", enemy=user)
-            ):
-                target.status_effects["Blind"].active = True
-                target.status_effects["Blind"].duration = 3
-                user._emit_status_event(target, "Blind", applied=True, duration=3, source="Blinding Powder")
-                return f"{target.name} is blinded.\n"
-            return f"{user.name} fails to blind {target.name}.\n"
-        return f"{target.name} is already blinded.\n"
+class PocketSand:
+    """Data-driven (pocket_sand.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("pocket_sand.yaml", cls_name="PocketSand")
 
 
-class SleepingPowder(Stealth):
-    """
-    Put the enemy to sleep, preventing them from acting for several turns.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Sleeping Powder",
-            description="Releases a powerful toxin that puts the target to sleep.",
-        )
-        self.cost = 11
-        self.turns = 2
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not any(
-            [
-                "Sleep" in target.status_immunity,
-                f"Status-Sleep" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Sleep"].active:
-                mag_def = target.check_mod("magic def", enemy=user)
-                if random.randint(
-                    0, user.check_mod("speed", enemy=user)
-                ) > random.randint(0, mag_def):
-                    target.status_effects["Sleep"].active = True
-                    target.status_effects["Sleep"].duration = self.turns
-                    user._emit_status_event(target, "Sleep", applied=True, duration=self.turns, source="Sleep")
-                    return f"{target.name} is asleep.\n"
-                return f"{user.name} fails to put {target.name} to sleep.\n"
-            return f"{target.name} is already asleep.\n"
-        return f"{target.name} is immune to sleep effect.\n"
+class SleepingPowder:
+    """Data-driven (sleeping_powder.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("sleeping_powder.yaml", cls_name="SleepingPowder")
 
 
-class KidneyPunch(Stealth):
-    """
-    Punch the enemy in the kidney, rendering them stunned.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Kidney Punch",
-            description="Punch the enemy in the kidney, rendering them stunned. Requires an off-hand weapon.",
-        )
-        self.cost = 12
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        offhand = user.equipment.get("OffHand") if hasattr(user, "equipment") else None
-        if not offhand or getattr(offhand, "typ", None) != "Weapon":
-            return f"{user.name} needs an off-hand weapon to use {self.name}.\n"
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover, use_offhand=False
-        )
-        # Check if target is a Crusader with Divine Aegis active (prevents stun)
-        crusader_aegis_active = (
-            hasattr(target, 'cls') and
-            hasattr(target, 'class_effects') and
-            target.cls.name == "Crusader" and
-            getattr(target, 'power_up', False) and
-            "Power Up" in target.class_effects and
-            target.class_effects["Power Up"].active
-        )
-        if hit and target.is_alive() and not crusader_aegis_active:
-            if not any(
-                [
-                    "Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]
-            ):
-                if random.randint(
-                    0, int(user.check_mod("speed", enemy=user) * crit)
-                ) > random.randint(target.stats.con // 2, target.stats.con):
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = max(
-                        2, user.check_mod("speed", enemy=user) // 8
-                    )
-                    user._emit_status_event(target, "Stun", applied=True, duration=target.status_effects["Stun"].duration, source="Kidney Punch")
-                    use_str += f"{target.name} is stunned.\n"
-                else:
-                    use_str += f"{user.name} fails to stun {target.name}.\n"
-            else:
-                use_str += f"{target.name} is immune to stun.\n"
-        return use_str
+class KidneyPunch:
+    """Data-driven (kidney_punch.yaml) – weapon hit + stun."""
+    def __new__(cls):
+        return _load_yaml_ability("kidney_punch.yaml", cls_name="KidneyPunch")
 
 
-class SmokeScreen(Stealth):
-    """
-    Surround the player in a cloud of smoke, allowing them to flee without fail.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Smoke Screen",
-            description="Obscure the player in a puff of smoke, allowing the "
-            "player to flee without fail.",
-        )
-        self.cost = 5
-
-    def use(self, user: Character, target: Character=None) -> str:
-        user.mana.current -= self.cost
-        use_str = ""
-        return use_str
+class SmokeScreen:
+    """Data-driven (smoke_screen.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("smoke_screen.yaml", cls_name="SmokeScreen")
 
 
-class Steal(Stealth):
-    """
-    Steal an item or gold from the enemy.
-    - cap of 5% of the enemy's gold
-    - if the enemy has no items or gold, the ability fails
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Steal",
-            description="Relieve the enemy of their items or gold.",
-        )
-        self.cost = 6
-
-    def use(
-            self,
-            user: Character,
-            target: Character=None,
-            cover: bool=False,
-            crit: int=1,
-            mug: bool=False,
-            fam: bool=False
-            ) -> str:
-        if not (mug and fam):
-            user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        gold_or_item = random.choice(["Gold", "Item"])
-        chance = user.check_mod("luck", enemy=target, luck_factor=16)
-        dv = 1 + int(user.status_effects["Blind"].active)
-        if random.randint(
-            0, int(user.check_mod("speed", enemy=user) * crit) // dv
-        ) + chance > random.randint(0, target.check_mod("speed", enemy=user)):
-            if gold_or_item == "Item":
-                if len(target.inventory) != 0:
-                    item_key = random.choice(list(target.inventory))
-                    item = target.inventory[item_key][0]
-                    target.modify_inventory(item, subtract=True)
-                    try:
-                        user.modify_inventory(item)
-                    except AttributeError:
-                        pass
-                    steal_effect = user.status_effects.get("Steal Success")
-                    if steal_effect is not None:
-                        steal_effect.active = True
-                        steal_effect.duration = max(steal_effect.duration, 2)
-                    return f"{user.name} steals {item_key} from {target.name}.\n"
-                return f"{target.name} doesn't have anything to steal.\n"
-            else:
-                gold_amount = random.randint(
-                    1, max(1, int(target.gold * 0.05))
-                )  # max of 5% of gold
-                user.gold += gold_amount
-                target.gold -= gold_amount
-                steal_effect = user.status_effects.get("Steal Success")
-                if steal_effect is not None:
-                    steal_effect.active = True
-                    steal_effect.duration = max(steal_effect.duration, 2)
-                return f"{user.name} steals {gold_amount} gold from {target.name}.\n"
-        return "Steal fails.\n"
+class Steal:
+    """Data-driven (steal.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("steal.yaml", cls_name="Steal")
 
 
-class Mug(Stealth):
-    """
-    Attack the enemy with a chance to steal their items.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - cap of 5% of the enemy's gold
-    - if the enemy has no items or gold, the Steal method will fail
-    """
+class Mug:
+    """Data-driven (mug.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mug.yaml", cls_name="Mug")
 
-    def __init__(self):
-        super().__init__(
-            name="Mug",
-            description="Attack the enemy with a chance to steal their items.",
-        )
-        self.cost = 20
-        self.weapon = True
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
-        )
-        if hit:
-            use_str += Steal().use(user, target, crit=crit, mug=True)
-        return use_str
+class ShadowStrike:
+    """Data-driven (shadow_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("shadow_strike.yaml", cls_name="ShadowStrike")
 
 
 class Lockpick(Stealth):
@@ -1796,177 +623,41 @@ class MasterLockpick(Lockpick):
         self.passive = True
 
 
-class PoisonStrike(Stealth):
-    """
-    Attack the enemy with a chance to poison.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - poison damage is 5% of the target's max health per turn
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Poison Strike",
-            description="Attack the enemy with a chance to poison.",
-        )
-        self.cost = 14
-        self.damage = 0.1  # 10% of target's max health per turn
-        self.weapon = True
-        self.dmg_mod = 1.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
-        )
-        if hit and target.is_alive():
-            if not any(
-                [
-                    "Poison" in target.status_immunity,
-                    "Status-Poison" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]
-            ):
-                resist = target.check_mod("resist", enemy=user, typ="Poison")
-                if random.randint(0, user.check_mod("speed", enemy=user)) * crit * (
-                    1 - resist
-                ) > random.randint(target.stats.con // 2, target.stats.con):
-                    turns = max(5, user.check_mod("speed", enemy=user) // 5)
-                    pois_dmg = int(target.health.max * self.damage * (1 - resist))
-                    target.status_effects["Poison"].active = True
-                    target.status_effects["Poison"].duration = max(
-                        turns, target.status_effects["Poison"].duration
-                    )
-                    target.status_effects["Poison"].extra = max(
-                        pois_dmg, target.status_effects["Poison"].extra
-                    )
-                    user._emit_status_event(target, "Poison", applied=True, duration=target.status_effects["Poison"].duration, source="Poison Blade")
-                    use_str += f"{target.name} is poisoned.\n"
-                else:
-                    use_str += f"{target.name} resists the poison.\n"
-            else:
-                use_str += f"{target.name} is immune to poison.\n"
-        return use_str
+class PoisonStrike:
+    """Data-driven (poison_strike.yaml) – weapon hit + poison."""
+    def __new__(cls):
+        return _load_yaml_ability("poison_strike.yaml", cls_name="PoisonStrike")
 
 
-class SneakAttack(Stealth):
-    """
-    Attack the target with a devastating blow, dealing double damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - can only be used when target is incapacitated
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Sneak Attack",
-            description="If the target is incapacitated, unleash a devastating attack.",
-        )
-        self.cost = 15
-        self.weapon = True
-        self.dmg_mod = 2.0
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        if target.incapacitated():
-            use_str, _, _ = user.weapon_damage(
-                target, dmg_mod=self.dmg_mod, crit=2, ignore=True, cover=cover
-            )
-        else:
-            use_str = f"{self.name} is ineffective against {target.name}."
-        return use_str
+class SneakAttack:
+    """Data-driven (sneak_attack.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("sneak_attack.yaml", cls_name="SneakAttack")
 
 
 # Enhance skills
-class ImbueWeapon(Enhance):
-    """
-    Imbue your weapon with magical energy to enhance the weapon's damage.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - damage modifier is 1.25x
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Imbue Weapon",
-            description="Imbue your weapon with magical energy to enhance the weapon's damage.",
-        )
-        self.cost = 12
-        self.weapon = True
-        self.dmg_mod = 1.25
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        dmg_mod = max(self.dmg_mod, user.stats.intel / 15)
-        use_str += f"{user.name}'s weapon has been imbued with arcane power, increasing damage.\n"
-        dmg_str, _, _ = user.weapon_damage(target, cover=cover, dmg_mod=dmg_mod)
-        use_str += dmg_str
-        return use_str
+class ImbueWeapon:
+    """Data-driven (imbue_weapon.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("imbue_weapon.yaml", cls_name="ImbueWeapon")
 
 
-class ManaSlice(Enhance):
-    """
-    Attack the target with a melee attack at half damage and steal mana from the target.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - damage modifier is 0.5x
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Mana Slice",
-            description="Perform a melee attack at half damage and steal mana from the target.",
-        )
-        self.weapon = True
-        self.dmg_mod = 0.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        dmg_str, hit, crit = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod
-        )
-        use_str += dmg_str
-        if hit:
-            drain_per = (self.dmg_mod * crit) / 5
-            mana_gain = int(target.mana.current * drain_per)
-            if mana_gain > 0:
-                target.mana.current -= mana_gain
-                use_str += f"{user.name} steals {mana_gain} mana from {target.name}.\n"
-                user.mana.current = min(user.mana.max, user.mana.current + mana_gain)
-        return use_str
+class ManaSlice:
+    """Data-driven (mana_slice.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_slice.yaml", cls_name="ManaSlice")
 
 
-class ManaSlice2(ManaSlice):
-    """
-    Replaces ManaSlice; attack the target with a melee attack at damage and a half and steal mana from the target.
-    - Requires a weapon to use unless Monk or Master Monk)
-    - damage modifier is 1.5x
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.dmg_mod = 1.5
+class ManaSlice2:
+    """Data-driven (mana_slice_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_slice_2.yaml", cls_name="ManaSlice2")
 
 
-class DispelSlash(Enhance):
-    """
-    Attack the target with a critical hit, dispelling any positive status effects.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Dispel Slash",
-            description="Attack the target with a critical hit, dispelling any positive status effects.",
-        )
-        self.cost = 20
-        self.weapon = True
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        dmg_str, hit, _ = user.weapon_damage(target, cover=cover, crit=2)
-        use_str += dmg_str
-        if hit:
-            cast_str = Dispel().cast(caster=user, target=target, special=True)
-            use_str += cast_str
-        return use_str
+class DispelSlash:
+    """Data-driven (dispel_slash.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("dispel_slash.yaml", cls_name="DispelSlash")
 
 
 class EnhanceBlade(Enhance):
@@ -2006,240 +697,53 @@ class EnhanceArmor(Enhance):
         self.passive = True
 
 
-class ManaShield(Enhance):
-    """
-    A protective shield envelopes the caster, absorbing damage at the expense of mana.
-    - reduction indicates how much damage a single mana point reduces
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Mana Shield",
-            description="A protective shield envelopes the caster, absorbing 2 damage "
-            "at the expense of every 1 mana.",
-        )
-        self.cost = 4
-        self.reduction = 2
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        if not user.magic_effects["Mana Shield"].active:
-            user.mana.current -= self.cost
-            user.magic_effects["Mana Shield"].active = True
-            user.magic_effects["Mana Shield"].duration = self.reduction
-            user._emit_status_event(user, "Mana Shield", applied=True, duration=self.reduction, source="Enhance Armor")
-            use_str += f"A mana shield envelopes {user.name}.\n"
-        else:
-            use_str += f"The mana shield dissolves around {user.name}.\n"
-            user.magic_effects["Mana Shield"].active = False
-        return use_str
+class ManaShield:
+    """Skill — data-driven (mana_shield.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_shield.yaml", cls_name="ManaShield")
 
 
-class ManaShield2(ManaShield):
-    """
-    Replaces ManaShield; a protective shield envelopes the caster, absorbing 4 damage at the expense of every 1 mana.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.description = (
-            "A protective shield envelopes the caster, absorbing 4 damage at the expense of every 1 mana.",
-        )
-        self.reduction = 4
+class ManaShield2:
+    """Skill — data-driven (mana_shield_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_shield_2.yaml", cls_name="ManaShield2")
 
 
-class ElementalStrike(Enhance):
-    """
-    Attack the enemy with your weapon and a random elemental spell.
-    - Requires a weapon to use (unless Monk or Master Monk)
-    - damage modifier is 1.25x
-    - Spellblade, Spell Stealer, and Shaman ability
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Elemental Strike",
-            description="Attack the enemy with your weapon and a random "
-            "elemental spell.",
-        )
-        self.cost = 15
-        self.weapon = True
-        self.dmg_mod = 1.25
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
-        )
-        if hit and target.is_alive():
-            spell_list = [
-                Firebolt(),
-                IceLance(),
-                Shock(),
-                Scorch(),
-                WaterJet(),
-                Tremor(),
-                Gust(),
-            ]
-            cast_list = []
-            for spell in spell_list:
-                if spell.name in user.spellbook["Spells"]:
-                    cast_list.append(spell)
-            spell = random.choice(cast_list)
-            use_str += (
-                f"The enemy is struck by the elemental force of {spell.subtyp}.\n"
-            )
-            use_str += spell.cast(user, target=target, special=True, cover=cover)
-            if crit > 1 and target.is_alive():
-                use_str += spell.cast(user, target=target, special=True, cover=cover)
-        return use_str
+class ElementalStrike:
+    """Data-driven (elemental_strike.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("elemental_strike.yaml", cls_name="ElementalStrike")
 
 
 # Drain skills
-class HealthDrain(Drain):
-    """
-    Drain the enemy, absorbing their health.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Health Drain",
-            description="Drain the enemy, absorbing their health.",
-        )
-        self.cost = 10
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not special:
-            user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        drain = random.randint(
-            (user.health.current + user.stats.charisma) // 5,
-            int((user.health.current + user.stats.charisma) / 1.5),
-        )
-        chance = target.check_mod("luck", enemy=user, luck_factor=10)
-        if (
-            not random.randint(user.stats.wisdom // 2, user.stats.wisdom)
-            > random.randint(0, target.stats.wisdom // 2) + chance
-        ):
-            drain = drain // 2
-        health_cap = max(1, int(target.health.max * 0.18))
-        drain = min(drain, health_cap, target.health.current)
-        target.health.current -= drain
-        user.health.current += drain
-        user.health.current = min(user.health.current, user.health.max)
-        user._emit_damage_event(target, drain, damage_type="Drain", is_critical=False)
-        user._emit_healing_event(drain, source="Life Drain")
-        return f"{user.name} drains {drain} health from {target.name}.\n"
+class HealthDrain:
+    """Skill — data-driven (health_drain.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("health_drain.yaml", cls_name="HealthDrain")
 
 
-class ManaDrain(Drain):
-    """
-    Drain the enemy, absorbing their mana.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Mana Drain",
-            description="Drain the enemy, absorbing their mana.",
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not special:
-            user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        drain = random.randint(
-            (user.mana.current + user.stats.charisma) // 5,
-            int((user.mana.current + user.stats.charisma) / 1.5),
-        )
-        chance = target.check_mod("luck", enemy=user, luck_factor=10)
-        if (
-            not random.randint(user.stats.wisdom // 2, user.stats.wisdom)
-            > random.randint(0, target.stats.wisdom // 2) + chance
-        ):
-            drain = drain // 2
-        mana_cap = max(1, int(target.mana.max * 0.22))
-        drain = min(drain, mana_cap, target.mana.current)
-        target.mana.current -= drain
-        user.mana.current += drain
-        user.mana.current = min(user.mana.current, user.mana.max)
-        return f"{user.name} drains {drain} mana from {target.name}.\n"
+class ManaDrain:
+    """Skill — data-driven (mana_drain.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_drain.yaml", cls_name="ManaDrain")
 
 
-class HealthManaDrain(Drain):
-    """
-    Drain the enemy, absorbing their health and mana.
-    - replaces Health Drain in spellbook
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Health/Mana Drain",
-            description="Drain the enemy, absorbing the health and mana in return.",
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        # Keep this skill equivalent to using HealthDrain + ManaDrain together.
-        use_str = HealthDrain().use(user, target, special=True)
-        use_str += ManaDrain().use(user, target, special=True)
-        return use_str
+class HealthManaDrain:
+    """Skill — data-driven (health_mana_drain.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("health_mana_drain.yaml", cls_name="HealthManaDrain")
 
 
-class LifeTap(Drain):
-    """
-    Sacrifice 10% health and convert it into mana.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Life Tap",
-            description="Sacrifice 10% health and convert it into mana.",
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        if user.mana.current == user.mana.max:
-            return f"You are already at full mana.\n"
-        health_loss = int(user.health.max * 0.1)
-        if user.health.current < health_loss:
-            return f"You health is too low to use this ability.\n"
-        user.health.current -= health_loss
-        user.mana.current += min(health_loss, user.mana.max - user.mana.current)
-        return f"{user.name} sacrifices {health_loss} health to restore mana.\n"
-
-    def use_out(self, game):
-        return self.use(game.player_char)
+class LifeTap:
+    """Data-driven (life_tap.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("life_tap.yaml", cls_name="LifeTap")
 
 
-class ManaTap(Drain):
-    """
-    Sacrifice 10% mana and convert it into health.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Mana Tap", description="Convert 10% of your mana into health."
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        if user.health.current == user.health.max:
-            return f"You are already at full health.\n"
-        
-        # Check if user has Class Ring with Mana Tap+ mod (Knight Enchanter)
-        heal_multiplier = 0.1
-        if "Mana Tap+" in user.equipment["Ring"].mod:
-            heal_multiplier = 0.2
-        
-        mana_loss = int(min(user.mana.max * heal_multiplier, user.mana.current))
-        user.mana.current -= mana_loss
-        user.health.current += min(mana_loss, user.health.max - user.health.current)
-        return f"{user.name} sacrifices {int(user.mana.max * heal_multiplier)} mana to restore health.\n"
-
-    def use_out(self, game):
-        return self.use(game.player_char)
+class ManaTap:
+    """Data-driven (mana_tap.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mana_tap.yaml", cls_name="ManaTap")
 
 
 # Class skills
@@ -2267,259 +771,34 @@ class LearnSpell2(LearnSpell):
         self.description = "Enables a diviner to learn rank 2 enemy spells."
 
 
-class Transform(Class):
-    """
-    Transform into a creature, assuming the spells and abilities inherent to the creature.
-    - Panther
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Transform",
-            description="Transforms the druid into a Panther, assuming the spells and "
-            "abilities inherent to the creature.",
-        )
-
-    def use(self, user):
-        from . import enemies
-
-        user.transform_type = enemies.Panther()
-        return ""
+class Transform:
+    """Data-driven (transform.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("transform.yaml", cls_name="Transform")
 
 
-class Transform2(Transform):
-    """
-    Transform into a creature, assuming the spells and abilities inherent to the creature.
-    - Direbear
-    - replaces Transform
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.description = "Transforms the druid into a Direbear, assuming the spells and abilities inherent to the creature."
-
-    def use(self, user):
-        user.transform_type = enemies.Direbear()
-        return ""
+class Transform2:
+    """Data-driven (transform2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("transform2.yaml", cls_name="Transform2")
 
 
-class Transform3(Transform):
-    """
-    Transform into a creature, assuming the spells and abilities inherent to the creature.
-    - replaces Transform2
-    - Werewolf
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.description = "Transforms the druid into a Werewolf, assuming the spells and abilities inherent to the creature."
-
-    def use(self, user):
-        user.transform_type = enemies.Werewolf()
-        return ""
+class Transform3:
+    """Data-driven (transform3.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("transform3.yaml", cls_name="Transform3")
 
 
-class Transform4(Transform):
-    """
-    Transform into a creature, assuming the spells and abilities inherent to the creature.
-    - replaces Transform3
-    - Red Dragon
-    - requires the player to defeat the Red Dragon
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.description = (
-            "Transforms the druid into a Red Dragon, assuming the spells and abilities inherent to the "
-            "creature."
-        )
-    def use(self, user):
-        user.transform_type = enemies.RedDragon()
+class Transform4:
+    """Data-driven (transform4.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("transform4.yaml", cls_name="Transform4")
 
 
-class Totem(Class):
-    """
-    Summon a totem, a sacred symbol of your clan, channeling spiritual energy through sacred aspects.
-    
-    Sacred Aspects (unlock through Shaman progression):
-    - Earth Aspect (Lv 1): Guardian totem. +20% Defense, reflects 25% damage back at attackers
-    - Water Aspect (Lv 10): Healing totem. +50% healing effectiveness, dispels negative effects
-    - Fire Aspect (Lv 20): Primal totem. +25% Attack, adds elemental fire damage to attacks
-    - Wind Aspect (Lv 30): Swift totem. +15% Dodge, +10% Critical strike chance
-    - Soul Aspect (Soulcatcher ClassRing): Masterful totem. +20% Weapon damage, +20% Critical damage
-    
-    You may only have one aspect active at a time. Choose your aspect wisely before combat.
-    Duration: 5-8 turns depending on wisdom.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Totem",
-            description="Summon a totem channeling a sacred aspect. Choose Earth for defense, "
-            "Water for healing, Fire for offense, Wind for mobility, or Soul for weapon mastery. "
-            "Only one aspect active at a time.",
-        )
-        self.cost = 12  # Base cost; varies per aspect
-        self.combat = True
-        self.passive = False  # Can be actively summoned in combat
-        
-        # Aspect definitions: cost, attack bonus, defense bonus, secondary effect, description
-        self.aspects = {
-            "Earth": {
-                "cost": 12,
-                "attack_bonus": 0.0,
-                "defense_bonus": 0.20,
-                "secondary": "reflect",  # Reflects 25% damage
-                "description": "+20% Defense. Reflects 25% of damage back at attackers."
-            },
-            "Water": {
-                "cost": 14,
-                "attack_bonus": 0.0,
-                "defense_bonus": 0.0,
-                "secondary": "healing",  # +50% healing effectiveness, cleanse
-                "description": "+50% healing effectiveness. Cleanses negative status effects."
-            },
-            "Fire": {
-                "cost": 16,
-                "attack_bonus": 0.25,
-                "defense_bonus": 0.0,
-                "secondary": "elemental",  # Fire damage on attacks
-                "description": "+25% Attack damage. Adds elemental fire damage to your attacks."
-            },
-            "Wind": {
-                "cost": 15,
-                "attack_bonus": 0.0,
-                "defense_bonus": 0.0,
-                "secondary": "speed",  # +15% dodge, +10% crit
-                "description": "+15% Dodge chance and +10% Critical strike chance. Enhanced precision and evasion."
-            },
-            "Soul": {
-                "cost": 18,
-                "attack_bonus": 0.20,
-                "defense_bonus": 0.0,
-                "secondary": "crit_damage",  # +20% critical damage, embodies captured souls
-                "description": "+20% Weapon damage and +20% Critical damage. Embodies the essence of conquered foes."
-            }
-        }
-        
-        # Unlock requirements: aspect name -> shaman level required (Soul requires ClassRing)
-        self.unlock_requirements = {
-            "Earth": 1,
-            "Water": 10,
-            "Fire": 20,
-            "Wind": 30,
-            "Soul": 999  # Special unlock via ClassRing, not by level
-        }
-        
-        # Tracking active aspect and unlocked aspects
-        self.active_aspect = "Earth"  # Default to Earth
-        self.unlocked_aspects = {"Earth": True}  # Earth is always unlocked
-        self.duration_base = 5  # Base duration in turns, modified by wisdom
-    
-    def calculate_duration(self, user: Character) -> int:
-        """Calculate how long the totem lasts based on user's wisdom."""
-        return self.duration_base + (user.stats.wisdom // 10)  # +1 turn per 10 wisdom
-    
-    def is_aspect_unlocked(self, aspect: str) -> bool:
-        """Check if an aspect is unlocked."""
-        return self.unlocked_aspects.get(aspect, False)
-    
-    def check_and_unlock_aspects(self, user_level: int) -> list:
-        """Check and unlock any aspects available at the given level."""
-        newly_unlocked = []
-        for aspect, required_level in self.unlock_requirements.items():
-            if required_level <= user_level and not self.unlocked_aspects.get(aspect, False):
-                self.unlocked_aspects[aspect] = True
-                newly_unlocked.append(aspect)
-        return newly_unlocked
-    
-    def get_unlocked_aspects(self, user: Character = None) -> list:
-        """
-        Return list of unlocked aspect names.
-        
-        Args:
-            user: Optional Character to check for Soul Aspect unlock via ClassRing
-        """
-        unlocked = [aspect for aspect, unlocked_flag in self.unlocked_aspects.items() if unlocked_flag]
-        
-        # Check if user has ClassRing and is a Soulcatcher - if so, Soul Aspect is available
-        if user is not None:
-            try:
-                ring = user.equipment.get("Ring")
-                if ring and ring.name == "Class Ring" and user.cls.name == "Soulcatcher":
-                    if "Soul" not in unlocked:
-                        unlocked.append("Soul")
-            except (AttributeError, KeyError):
-                pass
-        
-        return unlocked
-    
-    def set_active_aspect(self, aspect: str) -> tuple[bool, str]:
-        """
-        Set the active aspect for the totem.
-        
-        Args:
-            aspect: Name of the aspect to activate
-            
-        Returns:
-            tuple[bool, str]: (Success status, Error message if any)
-        """
-        if aspect not in self.aspects:
-            return (False, f"Unknown aspect: {aspect}")
-        
-        if not self.is_aspect_unlocked(aspect):
-            return (False, f"{aspect} Aspect is not yet unlocked")
-        
-        self.active_aspect = aspect
-        self.cost = self.aspects[aspect]["cost"]
-        return (True, "")
-    
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        """Summon the totem with the currently active aspect."""
-        user.mana.current -= self.cost
-        
-        duration = self.calculate_duration(user)
-        aspect = self.aspects[self.active_aspect]
-        
-        # Activate the Totem magic effect
-        user.magic_effects["Totem"].active = True
-        user.magic_effects["Totem"].duration = duration
-        
-        # Store aspect info in the effect's extra field for gameplay mechanics
-        user.magic_effects["Totem"].extra = {
-            "aspect": self.active_aspect,
-            "attack_bonus": aspect["attack_bonus"],
-            "defense_bonus": aspect["defense_bonus"],
-            "secondary": aspect["secondary"]
-        }
-        
-        use_str = f"{user.name} drives a {self.active_aspect.lower()} totem into the ground!\n"
-        use_str += f"{aspect['description']}\n"
-        
-        # Describe the benefits
-        if aspect["attack_bonus"] > 0:
-            use_str += f"Attack increased by {int(aspect['attack_bonus'] * 100)}%.\n"
-        if aspect["defense_bonus"] > 0:
-            use_str += f"Defense increased by {int(aspect['defense_bonus'] * 100)}%.\n"
-        
-        # Secondary effect descriptions
-        if aspect["secondary"] == "reflect":
-            use_str += "Attacks against you are reflected back at the attacker.\n"
-        elif aspect["secondary"] == "healing":
-            use_str += "Healing spells and effects are significantly more effective.\n"
-        elif aspect["secondary"] == "elemental":
-            use_str += "Your attacks burn with primal fire.\n"
-        elif aspect["secondary"] == "speed":
-            use_str += "Your reflexes and precision are heightened, granting increased dodge and critical strike chance.\n"
-        elif aspect["secondary"] == "crit_damage":
-            use_str += "The captured essence of fallen foes empowers your weapon with devastating critical strikes.\n"
-        
-        use_str += f"The totem emanates power for {duration} turns.\n"
-        
-        # Emit status event for the totem
-        user._emit_status_event(user, "Totem", applied=True, duration=duration, source=f"{self.active_aspect} Totem")
-        
-        return use_str
+class Totem:
+    """Data-driven (totem.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("totem.yaml", cls_name="Totem")
 
 
 class MaelstromWeapon(Class):
@@ -2632,93 +911,22 @@ class AbsorbEssence(Class):
         self.passive = True
 
 
-class Reveal(Truth):
-    """
-    gives player sight and increases shadow resistance by 25%
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Reveal",
-            description="An Inquisitor is a champion of truth, exposing secrets and "
-            "gaining protection from shadow.",
-        )
-        self.passive = True
-
-    def use(self, user):
-        user.sight = True
-        user.resistance["Shadow"] += 0.25
-        if user.equipment["Pendant"].name == "Pendant of Vision":
-            user.modify_inventory(user.equipment["Pendant"], 1)
-            user.equipment["Pendant"] = user.unequip("Pendant")
+class Reveal:
+    """Data-driven (reveal.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("reveal.yaml", cls_name="Reveal")
 
 
-class Inspect(Truth):
-
-    def __init__(self):
-        super().__init__(
-            name="Inspect",
-            description="Your attention to detail allows you to inspect aspects of the "
-            "enemy, possibly revealing a tender spot.",
-        )
-        self.cost = 5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        inspect_text = target.inspect() + "\n"
-        return inspect_text
+class Inspect:
+    """Data-driven (inspect.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("inspect.yaml", cls_name="Inspect")
 
 
-class ExploitWeakness(Truth):
-    """
-    Adds damage multiplier to melee attack equal to the lowest resistance; if no weakness to exploit, a random status
-      effect may be applied
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Exploit Weakness",
-            description="Inspect and identify the enemy's greatest weakness and "
-            "exploit it.",
-        )
-        self.cost = 10
-        self.weapon = True
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        types = list(target.resistance)
-        resists = list(target.resistance.values())
-        weak = min(resists)
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if weak < 0:
-            mod = 1 - weak  # negative resistance will result in increased damage
-            use_str = f"{user.name} targets {target.name}'s weakness to {types[resists.index(weak)].lower()} to increase their attack!\n"
-        else:
-            mod = 1
-            effects = list(target.status_effects).append("None")
-            chances = [user.check_mod("luck", enemy=target, luck_factor=10)] * len(
-                target.status_effects
-            )
-            chances.append(target.stats.con // 5)
-            effect = random.choices(effects, weights=chances)[0]
-            if effect == "None":
-                use_str = f"{target.name} has no identifiable weakness. The skill is ineffective.\n"
-            else:
-                if any(
-                    [
-                        effect in target.status_immunity,
-                        f"Status-{effect}" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod,
-                    ]
-                ):
-                    use_str = f"{target.name} is immune to {effect.lower()}.\n"
-                else:
-                    use_str = f"{target.name} is affected by {effect.lower()}.\n"
-                target.status_effects[effect].active = True
-                target.status_effects[effect].duration = -1
-        wd_str, _, _ = user.weapon_damage(target, dmg_mod=mod)
-        return use_str + wd_str
+class ExploitWeakness:
+    """Data-driven (exploit_weakness.yaml) – weakness detection + weapon."""
+    def __new__(cls):
+        return _load_yaml_ability("exploit_weakness.yaml", cls_name="ExploitWeakness")
 
 
 class KeenEye(Truth):
@@ -2750,85 +958,28 @@ class Cartography(Truth):
 
 
 # Martial Art Skills
-class LegSweep(MartialArts):
-
-    def __init__(self):
-        super().__init__(
-            name="Leg Sweep",
-            description="Sweep the leg, tripping the enemy and leaving them prone.",
-        )
-        self.cost = 8
-        self.dmg_mod = 0.75
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, _ = user.weapon_damage(target, dmg_mod=self.dmg_mod, cover=cover)
-        if hit and target.is_alive():
-            if not target.physical_effects["Prone"].active:
-                if (
-                    random.randint(user.stats.strength // 2, user.stats.strength)
-                    > random.randint(target.stats.strength // 2, target.stats.strength)
-                    and not target.flying
-                ):
-                    target.physical_effects["Prone"].active = True
-                    target.physical_effects["Prone"].duration = max(
-                        1, user.stats.strength // 20
-                    )
-                    user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Leg Sweep")
-                    use_str += f"{user.name} trips {target.name} and they fall prone.\n"
-        return use_str
+class LegSweep:
+    """Sweep the leg, trip the enemy – data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("leg_sweep.yaml", cls_name="LegSweep")
 
 
-class ChiHeal(MartialArts):
-
-    def __init__(self):
-        super().__init__(
-            name="Chi Heal",
-            description="The monk channels his chi energy, healing 25% of their health"
-            " and removing all negative status effects.",
-        )
-        self.cost = 16
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        target = user
-        user.mana.current -= self.cost
-        use_str = Heal().cast(user, target=target, special=True)
-        use_str += Cleanse().cast(user, target=target, special=True)
-        return use_str
+class ChiHeal:
+    """Skill — data-driven (chi_heal.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("chi_heal.yaml", cls_name="ChiHeal")
 
 
-class PurityBody(MartialArts):
-
-    def __init__(self):
-        super().__init__(
-            name="Purity of Body",
-            description="Through meditation and perserverance, the monk gains "
-            "control over their body, increasing resistance against "
-            "poison magic to 50% and gaining immunity to poison "
-            "status.",
-        )
-        self.passive = True
-
-    def use(self, user: Character) -> None:
-        user.resistance["Poison"] = max(0.5, user.resistance["Poison"])
-        user.status_immunity.append("Poison")
+class PurityBody:
+    """Data-driven (purity_body.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("purity_body.yaml", cls_name="PurityBody")
 
 
-class PurityBody2(MartialArts):
-
-    def __init__(self):
-        super().__init__(
-            name="Purity of Body",
-            description="Further meditation and perserverance, the monk masters "
-            "control over their body, increasing resistance against "
-            "poison magic by 100% and gaining immunity to stone "
-            "status.",
-        )
-        self.passive = True
-
-    def use(self, user: Character) -> None:
-        user.resistance["Poison"] = max(1.0, user.resistance["Poison"])
-        user.status_immunity.append("Stone")
+class PurityBody2:
+    """Data-driven (purity_body2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("purity_body2.yaml", cls_name="PurityBody2")
 
 
 class Evasion(MartialArts):
@@ -2843,321 +994,22 @@ class Evasion(MartialArts):
 
 
 # Luck
-class GoldToss(Luck):
-    """
-    Rank 1 Enemy Spell
-    Unblockable (including mana shield and cover) and unresistable but enemy has chance to catch/keep some of it
-    max_thrown is a percentage
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Gold Toss",
-            description="Toss a handful of gold at the enemy, dealing damage equal to "
-            "the amount of gold thrown.",
-        )
-        self.rank = 1
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        max_thrown = min(target.health.current, user.gold)
-        if user.gold == 0:
-            return "Nothing happens.\n"
-        d_chance = target.check_mod("luck", enemy=user, luck_factor=10)
-        gold_thrown = random.randint(1, max_thrown)
-        user.gold -= gold_thrown
-        use_str = f"{user.name} throws {gold_thrown} gold at {target.name}.\n"
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not random.randint(0, 1) and not target.incapacitated():
-            catch = random.randint(min(gold_thrown, d_chance), gold_thrown)
-            gold_thrown -= catch
-            if catch > 0:
-                target.gold += catch
-                if gold_thrown > 0:
-                    use_str += f"{target.name} catches some of the gold thrown, gaining {catch} gold.\n"
-                else:
-                    use_str += f"{target.name} catches all of the gold thrown, gaining {catch} gold.\n"
-        if gold_thrown > 0:
-            damage = max(
-                1,
-                gold_thrown
-                // (2 + target.check_mod("luck", enemy=user, luck_factor=10)),
-            )
-            target.health.current -= damage
-            user._emit_damage_event(target, damage, damage_type="Gold", is_critical=False)
-            use_str += f"{user.name} does {damage} damage to {target.name}.\n"
-        return use_str
+class GoldToss:
+    """Data-driven (gold_toss.yaml) – gold-based unblockable damage."""
+    def __new__(cls):
+        return _load_yaml_ability("gold_toss.yaml", cls_name="GoldToss")
 
 
-class SlotMachine(Luck):
-    """
-    Rank 2 Enemy Skill
-    Rolls 3 10-sided dice (so to speak); 1000 possible results (000 to 999)
-    Possible outcomes:
-    Nothing: nothing happens
-    Mark of the Beast: either user (player) or enemy (bypasses Death resistance) - (666 or 999)
-    3 of a Kind: full health/mana, cleanse negative statuses - (000, 111, 222, 333, 444, 555, 777, 888)
-    Straight: damage to enemy equal to numbers multiplied together (unresistable and unblockable) -
-        (012 = 0, 123 = 6, 234 = 24, 345 = 60, 456 = 120, 567 = 210, 678 = 336, 789 = 504, 890 = 0)
-    Palindrome: casts high level spell based on middle value - (number that follow xyx format)
-    Pairs: random effect - Berserk, Blind, Doom, Poison, Silence, Sleep, Stun (status)
-                           Bleed, Disarm, Prone (physical)
-                           Attack, Defense, Magic, Magic Defense, Speed (stat)
-                           DOT, Reflect, Regen (magic)
-        (two numbers that are the same but do not meet any of the other requirements i.e. 221 but not 212)
-    Evens: all numbers even; gain gold equal to spin - (i.e. 246 or 680)
-    Odds: all numbers odd; gain random item - (i.e. 137 or 531)
-    Chance: if no other spin hits, there is a chance that the user attacks with damage mod equal to one of the spins
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Slot Machine",
-            description="Pull the handle and see what comes up! Depending on the "
-            "results, different possible outcomes can occur.",
-        )
-        self.cost = 15
-        self.rank = 2
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, fam: bool=False, slot_machine_callback=None, textbox_callback=None) -> str:
-        """
-        Play the slot machine. UI-agnostic: expects a slot_machine_callback for user interaction.
-        Args:
-            user: The character using the ability
-            target: The target (optional)
-            cover: Whether the target is in cover
-            fam: Familiar flag
-            slot_machine_callback: Callable that returns a slot machine spin result (str of 3 digits)
-            textbox_callback: Optional callable for displaying messages (for retries)
-        Returns:
-            str: Result of the slot machine ability
-        """
-        use_str = ""
-        user.mana.current -= self.cost
-
-        hands = {
-            "Death": ["666", "999"],
-            "Trips": ["000", "111", "222", "333", "444", "555", "777", "888"],
-                 'Straight': ["012", "123", "234", "345", "456", "567", "678", "789"],
-                 'Palindrome': ['010', '020', '030', '040', '050', '060', '070', '080', '090',
-                                '101', '121', '131', '141', '151', '161', '171', '181', '191',
-                                '202', '212', '232', '242', '252', '262', '272', '282', '292',
-                                '303', '313', '323', '343', '353', '363', '373', '383', '393',
-                                '404', '414', '424', '434', '454', '464', '474', '484', '494',
-                                '505', '515', '525', '535', '545', '565', '575', '585', '595',
-                                '606', '616', '626', '636', '646', '656', '676', '686', '696',
-                                '707', '717', '727', '737', '747', '757', '767', '787', '797',
-                                '808', '818', '828', '838', '848', '858', '868', '878', '898',
-                                '909', '919', '929', '939', '949', '959', '969', '979', '989']}
-        user_chance = user.check_mod('luck', enemy=target, luck_factor=10)
-        target_chance = target.check_mod('luck', enemy=user, luck_factor=10)
-        success = False
-        retries = 0
-        while not success:
-            if slot_machine_callback is not None:
-                spin = slot_machine_callback(user, target)
-            else:
-                spin = f"{random.randint(0,9)}{random.randint(0,9)}{random.randint(0,9)}"
-            if spin in hands["Death"]:
-                use_str += "The mark of the beast!\n"
-                success = True
-                if target_chance > user_chance + 1:
-                    target = user
-                if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-                    use_str += "It has no effect.\n"
-                elif not "Death" in target.status_immunity:
-                    target.health.current = 0
-                    use_str += f"Death has come for {target.name}!\n"
-                else:
-                    use_str += f"{target.name} is immune to death spells.\n"
-            elif spin in hands["Trips"]:
-                use_str += "3 of a Kind!\n"
-                success = True
-                if any(
-                    [
-                        target.magic_effects["Ice Block"].active,
-                        random.randint(0, max(1, user_chance)),
-                    ]
-                ):
-                    target = user
-                target.health.current = target.health.max
-                target.mana.current = target.mana.max
-                use_str += f"{target.name} has been revitalized! Health and mana are restored.\n"
-                use_str += Cleanse().cast(target, special=True)
-            elif "".join(sorted(spin)) in hands["Straight"]:
-                use_str += "Straight!\n"
-                success = True
-                if target_chance > user_chance + 1:
-                    target = user
-                ints = [int(x) for x in list(spin)]
-                damage = 1
-                for i in ints:
-                    damage *= i
-                if any([target.magic_effects["Ice Block"].active]):
-                    use_str += "It has no effect.\n"
-                else:
-                    target.health.current -= damage
-                    use_str += f"{target.name} takes {damage} damage.\n"
-            elif spin in hands["Palindrome"]:
-                use_str += "Palindrome!\n"
-                success = True
-                if target_chance > user_chance + 1:
-                    target = user
-                spell_list = [MagicMissile3(),
-                              Firestorm, IceBlizzard(), Electrocution(),
-                              Tsunami(), Earthquake(), Tornado(),
-                              ShadowBolt3(), Holy3(), Ultima()]
-                spell = spell_list[int(spin[1])]
-                use_str += f"{spell.name} is cast!\n"
-                if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-                    use_str += f"It has no effect.\n"
-                else:
-                    use_str += spell.cast(user, target=target, special=True)
-            elif len(set(spin)) == 2:
-                use_str += "Pairs!\n"
-                success = True
-                duration = int(
-                    min(set(list(spin)), key=list(spin).count)
-                )  # number of turns effect will last
-                if duration == 0:
-                    duration = 10
-                amount = int(
-                    max(set(list(spin)), key=list(spin).count)
-                )  # amount it will affect target
-                if amount == 0:
-                    amount = 10
-                amount **= 2
-                effects = ["Berserk", "Blind", "Doom", "Poison", "Silence", "Sleep", "Stun",
-                           "Bleed", "Disarm", "Prone",
-                           "Attack", "Defense", "Magic", "Magic Defense", "Speed",
-                           "DOT", "Reflect", "Regen"]
-                if not random.randint(0, 1):
-                    target = user
-                effect = random.choice(effects)
-                if any(
-                    [
-                        effect in target.status_immunity,
-                        f"Status-{effect}" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod and
-                        effect in ["Berserk", "Blind", "Doom", "Poison", "Silence", "Sleep", "Stun"]]):
-                    use_str = f"{target.name} is immune to {effect.lower()}.\n"
-                elif any([target.magic_effects["Ice Block"].active, target.tunnel]):
-                    use_str += f"It has no effect.\n"
-                else:
-                    use_str += f"{effect} has been randomly selected to affect {target.name}.\n"
-                    effect_dict = target.effect_handler(effect)
-                    effect_dict[effect].active = True
-                    if effect in ["Blind", "Disarm", "Silence"]:
-                        effect_dict[effect].duration = -1
-                    else:
-                        effect_dict[effect].duration = max(
-                            duration, effect_dict[effect].duration
-                        )
-                    if effect == ["Poison", "Bleed", "DOT"]:
-                        amount *= int(target.health.max * 0.01)
-                        effect_dict[effect].extra = amount
-                    if effect in target.stat_effects:
-                        combat_effect = (
-                            "magic_def" if effect == "Magic Defense" else effect.lower()
-                        )
-                        amount *= target.combat.__dict__[combat_effect] // 10
-                        use_str += f"{target.name}'s {effect.lower()} is temporarily increased by {amount}.\n"
-                        effect_dict[effect].extra = amount
-            elif all(int(x) % 2 == 0 for x in list(spin)):
-                use_str += "Evens!\n"
-                success = True
-                if any(
-                    [
-                        target.magic_effects["Ice Block"].active,
-                        target.tunnel,
-                        user_chance + 1 >= target_chance,
-                    ]
-                ):
-                    target = user
-                target.gold += int(spin) * 10
-                use_str += f"{target.name} gains {int(spin)} gold!\n"
-            elif all(int(x) % 2 == 1 for x in list(spin)):
-                use_str += "Odds!\n"
-                success = True
-                level = min(list(spin))
-                if any(
-                    [
-                        user_chance + 1 >= target_chance,
-                        target.magic_effects["Ice Block"].active,
-                        target.tunnel,
-                    ]
-                ):
-                    target = user
-                from . import items
-
-                item = items.random_item(int(level))
-                try:
-                    target.modify_inventory(item)
-                except AttributeError:
-                    pass
-                use_str += f"{target.name} gains {item.name}.\n"
-            elif random.randint(0, user_chance):
-                use_str += "Chance!\n"
-                success = True
-                mod = int(random.choice(list(spin))) / 10
-                use_str += f"{user.name} gains {int(mod * 100)}% to attack.\n"
-                wd_str, _, _ = user.weapon_damage(target, dmg_mod=1 + mod)
-                use_str += wd_str
-            else:
-                if random.randint(0, user_chance) and retries < 2:
-                    if textbox_callback is not None:
-                        textbox_callback("No luck, try again.")
-                    retries += 1
-                else:
-                    success = True
-                    use_str += "Nothing happens.\n"
-        return use_str
+class SlotMachine:
+    """Data-driven (slot_machine.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("slot_machine.yaml", cls_name="SlotMachine")
 
 
-class Blackjack(Luck):
-    """
-    TODO not convinced this ability will stay
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Blackjack",
-            description="Play a round of blackjack with the Jester; different things "
-            "happen depending on the result.",
-        )
-        self.cost = 7
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, blackjack_callback=None):
-        """
-        Play a round of blackjack. UI-agnostic: expects a blackjack_callback for user interaction.
-        Args:
-            user: The character using the ability
-            target: The target (optional)
-            cover: Whether the target is in cover
-            blackjack_callback: Callable that returns the blackjack result (str)
-        Returns:
-            str: Result of the blackjack ability
-        """
-        user.mana.current -= self.cost
-        use_str = ""
-        if blackjack_callback is not None:
-            result = blackjack_callback(user, target)
-        else:
-            result = random.choice(["User Win", "Target Win", "Draw", "User Break", "Target Break"])
-        prizes = {"Win": ["Regen", "Gold", ""], "Break": ["Ultima"], "Draw": []}
-        if result == "Target Win":
-            use_str += f"{target.name} wins the hand!\n"
-        elif result == "Target Break":
-            use_str += f"Oh no, {target.name} busted...\n"
-        elif result == "User Break":
-            target = user
-            use_str += f"Oh no, {user.name} busted...\n"
-        elif result == "User Win":
-            target = user
-            use_str += f"{user.name} wins the hand!\n"
-        else:
-            use_str += f"It's a draw!\n"
-        return use_str
+class Blackjack:
+    """Data-driven (blackjack.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("blackjack.yaml", cls_name="Blackjack")
 
 
 # Power Up skills
@@ -3177,32 +1029,10 @@ class BloodRage(PowerUp):
         self.passive = True
 
 
-class DivineAegis(PowerUp):
-    """
-    Crusader Power Up
-    create shell that absorbs damage and increases healing; if the shield survives the full duration, it will explode
-      and deal holy damage to the enemy
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Divine Aegis",
-            description="The power of faith envelopes your body for a time, "
-            "shielding you from harm and increases healing spells "
-            "while active. If the shield survives the duration, it will"
-            " explode in a brilliant light, dealing holy damage equal "
-            "to the remaining damage absorption.",
-        )
-        self.cost = 20
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        dam_abs = random.randint(user.health.max // 4, user.health.max // 2)
-        if hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
-            user.class_effects["Power Up"].active = True
-            user.class_effects["Power Up"].duration = 5
-            user.class_effects["Power Up"].extra = dam_abs
-        return f"A shield envelopes {user.name}.\n"
+class DivineAegis:
+    """Skill — data-driven (divine_aegis.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("divine_aegis.yaml", cls_name="DivineAegis")
 
 
 class DragonsFury(PowerUp):
@@ -3259,111 +1089,9 @@ class VeilShadows(PowerUp):
 
 
 class ArcaneBlast(PowerUp):
-    """
-    Knight Enchanter Power Up
-    blast the enemy with a powerful attack, draining all remaining mana points; mana
-        will regen the next 4 turns (10% per turn)
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Arcane Blast",
-            description="The power of the arcane can be devastating, especially "
-            "when its full force is realized. The Knight Enchanter "
-            "can expend its remaining energy in a powerful blast, at the"
-            " expense of all remaining mana. If the enemy remains, mana "
-            "will regenerate over the next 4 turns.",
-        )
-        self._yaml_charge_time = None
-        self._yaml_telegraph_message = None
-        self._charge_mana = None
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-
-        # Load YAML-backed config when available
-        try:
-            from pathlib import Path
-            from src.core.data.ability_loader import AbilityFactory
-
-            file_path = Path(__file__).parent / "data" / "abilities" / "arcane_blast.yaml"
-            if file_path.exists():
-                yaml_ability = AbilityFactory.create_from_yaml(file_path)
-                if getattr(yaml_ability, "description", None):
-                    self.description = yaml_ability.description
-                if getattr(yaml_ability, "cost", None) is not None:
-                    self.cost = yaml_ability.cost
-                if getattr(yaml_ability, "subtyp", None):
-                    self.subtyp = yaml_ability.subtyp
-                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
-                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
-        except Exception:
-            pass
-
-    def get_charge_time(self) -> int:
-        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
-
-    def start_charge(self, user: Character, target: Character) -> str:
-        self.charging = True
-        self.charge_turns = self.get_charge_time()
-        self.charge_target = target
-        self._charge_mana = user.mana.current
-
-        if self._yaml_telegraph_message:
-            return f"{user.name} is {self._yaml_telegraph_message}!\n"
-        return f"{user.name} begins to channel arcane energy...\n"
-
-    def cancel_charge(self, user: Character) -> str:
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        self._charge_mana = None
-        return f"{user.name}'s Arcane Blast was interrupted!\n"
-
-    def execute_blast(self, user: Character, target: Character, cover: bool = False) -> str:
-        use_str = ""
-        mana_spent = self._charge_mana if self._charge_mana is not None else user.mana.current
-
-        hit, message, damage = target.handle_defenses(user, mana_spent, cover, typ="Magic")
-        use_str += message
-        hit, message, damage = target.damage_reduction(damage, user, typ=self.subtyp)
-        use_str += message
-        user.mana.current = 0
-
-        if hit:
-            variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-            damage = int(damage * variance)
-            if damage > 0:
-                target.health.current -= damage
-                use_str += f"{user.name} blasts {target.name} for {damage} damage, draining all remaining mana.\n"
-        if target.is_alive() and hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
-            user.power_up = True
-            user.class_effects["Power Up"].active = True
-            user.class_effects["Power Up"].duration = 4
-            user.class_effects["Power Up"].extra = max(1, user.mana.max // 10)
-
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        self._charge_mana = None
-        return use_str
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        if self.charging:
-            if user.incapacitated():
-                return self.cancel_charge(user)
-
-            self.charge_turns -= 1
-            if self.charge_turns <= 0:
-                return self.execute_blast(user, self.charge_target or target, cover)
-            turns_left = self.charge_turns
-            return f"{user.name} continues channeling... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
-
-        charge_time = self.get_charge_time()
-        if charge_time > 0:
-            return self.start_charge(user, target)
-
-        return self.execute_blast(user, target, cover)
+    """Data-driven (arcane_blast.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("arcane_blast.yaml", cls_name="ArcaneBlast")
 
 
 # Passive ability for Summoner
@@ -3385,7 +1113,7 @@ class EternalConduit(Ability):
             subtyp="Power Up"
         )
 
-    def special_effect(self, user, *args, **kwargs):
+    def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
         # TODO: actual shared healing/buff logic to be implemented
         return CombatResult(action=self.name, extra={"effect": "shared_healing_and_buffs"})
 
@@ -3422,141 +1150,28 @@ class EyesUnseen(PowerUp):
         self.passive = True
 
 
-class BladeFatalities(PowerUp):
-    """
-    Ninja Power Up
-    sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing damage dealt and absorbing
-        it into the user
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Blade of Fatalities",
-            description="The spirit of Muramasa demands a sacrifice but will"
-            " grant ultimate power. The user will give up 25% of "
-            "their health for increased damage and draining health"
-            " into the user.",
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        per_health = int(0.25 * user.health.current)
-        use_str = f"{user.name} sacrifices {per_health} health to imbue their blades with the spirit of Muramasa!\n"
-        if hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
-            user.class_effects["Power Up"].active = True
-            user.class_effects["Power Up"].duration = 5
-            user.class_effects["Power Up"].extra = max(per_health // 5, 5)
-        return use_str
+class BladeFatalities:
+    """Skill — data-driven (blade_fatalities.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("blade_fatalities.yaml", cls_name="BladeFatalities")
 
 
-class HolyRetribution(PowerUp):
-    """
-    Templar Power Up
-    the Templar is surrounded by holy swords, reflecting 25% percent of weapon damage back at the attacker; while
-        the shield is active, attack damage is increased
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Holy Retribution",
-            description="The power of Elysia repels you...or the enemy's attacks"
-            " in this case. Holy blades reflect 25% of weapon damage"
-            " back to the attacker. While active, the player also "
-            "receives a boost to attack damage.",
-        )
-        self.cost = 25
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        user.class_effects["Power Up"].active = True
-        user.class_effects["Power Up"].duration = 5
-        return f"{user.name} is surrounded by holy blades.\n"
+class HolyRetribution:
+    """Skill — data-driven (holy_retribution.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("holy_retribution.yaml", cls_name="HolyRetribution")
 
 
-class GreatGospel(PowerUp):
-    """
-    Archbishop Power Up
-    regens health and mana over time, and restores status; increases resistance and holy damage for duration
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Great Gospel",
-            description="A white orb with a hint of green descends upon you, surrounding"
-            " you character with a benevolent aura. This aura removes all"
-            " status effects and regens both health and mana of the user. "
-            "While active, resistance and holy damage are increased.",
-        )
-        self.cost = 35
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = f"{user.name} gains a holy aura.\n"
-        user.mana.current -= self.cost
-        user.class_effects["Power Up"].active = True
-        user.class_effects["Power Up"].duration = 5
-        use_str += Cleanse().cast(user, special=True)
-        return use_str
+class GreatGospel:
+    """Skill — data-driven (great_gospel.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("great_gospel.yaml", cls_name="GreatGospel")
 
 
-class DimMak(PowerUp):
-    """
-    Master Monk Power Up
-    unleash a powerful attack that deals heavy damage and can either stun or in some cases kill the target; if the
-        target is killed, the user will absorb the enemy's essence and will be regenerated by its max health and mana
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Dim Mak",
-            description="The life force of chi is typically ruled by restraint however "
-            "there is one exception, the powerful Dim Mak or touch of death."
-            " This ability has a chance to either stun or kill its target, with"
-            " death allowing the user to absorb the essence of the enemy, "
-            "gaining health and mana.",
-        )
-        self.cost = 50
-        self.dmg_mod = 1.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        wd_str, _, _ = user.weapon_damage(
-            target, crit=3, dmg_mod=self.dmg_mod, ignore=True, hit=True
-        )
-        use_str += wd_str
-        if target.is_alive():
-            if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-                return use_str
-            if (
-                not (
-                    random.randint(0, target.con)
-                    + target.check_mod("luck", enemy=user, luck_factor=5)
-                )
-                and not "Death" in target.status_immunity
-            ):
-                use_str += f"{target.name} sustains a lethal blow and collapses to the ground.\n"
-                target.health.current = 0
-            else:
-                if not any(
-                    [
-                        "Stun" in target.status_immunity,
-                        f"Status-Stun" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod,
-                        target.check_mod("resist", enemy=user, typ="Physical")
-                        > random.random(),
-                    ]
-                ):
-                    use_str += f"{target.name} is stunned.\n"
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = user.stats.wisdom // 10
-                    user._emit_status_event(target, "Stun", applied=True, duration=user.stats.wisdom // 10, source="Devour")
-            if target.is_alive():
-                return use_str
-        user.health.current = min(
-            user.health.max, user.health.current + target.health.max
-        )
-        user.mana.current = min(user.mana.max, user.mana.current + target.mana.max)
-        use_str += f"{user.name} gains the essence of {target.name}, gaining health and mana.\n"
-        return use_str
+class DimMak:
+    """Data-driven (dim_mak.yaml) – weapon + kill/stun + absorb."""
+    def __new__(cls):
+        return _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
 
 
 class SongInspiration(PowerUp):
@@ -3575,7 +1190,7 @@ class SongInspiration(PowerUp):
             subtyp="Power Up"
         )
 
-    def special_effect(self, user, *args, **kwargs):
+    def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
         # TODO: actual stat bonus and status removal logic to be implemented
         return CombatResult(action=self.name, extra={"effect": "stat_bonus_and_status_removal"})
 
@@ -3601,35 +1216,10 @@ class LunarFrenzy(PowerUp):
         self.passive = True
 
 
-class TetraDisaster(PowerUp):
-    """
-    Geomancer Power Up
-    unleash a powerful attack consisting of all 4 elements; this will also increase resistance of caster to the
-        4 elements by 50%
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Tetra-Disaster",
-            description="The 4 elements of the natural world are mighty on their "
-            "own but together they can wreak an incredible level of "
-            "destruction. Unleash them all at once with this powerful "
-            "spell, increasing resistance of each by 50%.",
-        )
-        self.cost = 20
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        elements = ["Fire", "Water", "Wind", "Earth"]
-        for spell in user.spellbook["Spells"].values():
-            if spell.subtyp in elements:
-                use_str += spell().use(user, target=target, special=True)
-        user.class_effects["Power Up"].active = True
-        user.class_effects["Power Up"].duration = 5
-        return use_str
+class TetraDisaster:
+    """Data-driven (tetra_disaster.yaml) – cast all 4 elemental spells + Power Up."""
+    def __new__(cls):
+        return _load_yaml_ability("tetra_disaster.yaml", cls_name="TetraDisaster")
 
 
 class SoulHarvest(PowerUp):
@@ -3667,875 +1257,106 @@ class PackBond(PowerUp):
             subtyp="Power Up"
         )
 
-    def special_effect(self, user, *args, **kwargs):
+    def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
         # TODO: actual companion bonus and intercept/heal logic to be implemented
         return CombatResult(action=self.name, extra={"effect": "companion_bonus_and_intercept"})
 
 
 # Enemy skills
-class Lick(Skill):
+class Lick:
+    """Data-driven (lick.yaml) – weapon hit + random status."""
+    def __new__(cls):
+        return _load_yaml_ability("lick.yaml", cls_name="Lick")
 
-    def __init__(self):
-        super().__init__(
-            name="Lick",
-            description="Lick the target, dealing damage and inflicting random status "
-            "effect(s).",
-        )
-        self.cost = 10
-        self.dmg_mod = 1.25
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, _ = user.weapon_damage(target, cover=cover, dmg_mod=self.dmg_mod)
-        if hit:
-            if random.randint(
-                user.stats.strength // 2, user.stats.strength
-            ) > random.randint(target.stats.con // 2, target.stats.con):
-                random_effect = random.choice(list(target.status_effects))
-                if not any(
-                    [
-                        random_effect in target.status_immunity,
-                        f"Status-{random_effect}" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod,
-                    ]
-                ):
-                    if not target.status_effects[random_effect].active:
-                        target.status_effects[random_effect].active = True
-                        if random_effect in ["Silence", "Blind"]:
-                            target.status_effects[random_effect].duration = -1
-                        else:
-                            target.status_effects[random_effect].duration = (
-                                random.randint(2, max(3, user.stats.strength // 8))
-                            )
-                            if random_effect == "Poison":
-                                target.status_effects[random_effect].extra = int(
-                                    target.health.max * 0.05
-                                )
-                        use_str += (
-                            f"{target.name} is affected by {random_effect.lower()}.\n"
-                        )
-        return use_str
+class AcidSpit:
+    """Data-driven (acid_spit.yaml) – magic damage + DOT."""
+    def __new__(cls):
+        return _load_yaml_ability("acid_spit.yaml", cls_name="AcidSpit")
 
 
-class AcidSpit(Skill):
-    """
-    dodge reduces damage by half
-    """
+class Web:
+    """Spider web that causes prone – data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("web.yaml", cls_name="Web")
 
-    def __init__(self):
-        super().__init__(
-            name="Acid Spit",
-            description="Spit a corrosive substance on the target, dealing initial "
-            "damage plus damage over time.",
-        )
-        self.cost = 6
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost * user.level.pro_level
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        dmg = (user.stats.intel // 2) + user.combat.magic
-        dam_red = target.check_mod("magic def", enemy=user)
-        damage = int(dmg * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
-        variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-        damage = int(damage * variance)
-        if user.hit_chance(target, typ="magic"):
-            if target.dodge_chance(user, spell=True):
-                use_str += f"{target.name} partially dodges the attack, only taking half damage.\n"
-                damage //= 2
-            if damage > 0:
-                use_str += f"{target.name} takes {damage} damage from the acid.\n"
-                target.health.current -= damage
-                if not random.randint(0, target.stats.con // 2):
-                    target.magic_effects["DOT"].active = True
-                    target.magic_effects["DOT"].duration = 2
-                    target.magic_effects["DOT"].extra = max(
-                        damage, target.magic_effects["DOT"].extra
-                    )
-                    user._emit_status_event(target, "DOT", applied=True, duration=2, source="Acid Splash")
-                    use_str += f"{target.name} is covered in a corrosive substance.\n"
-            else:
-                use_str += "The acid is ineffective.\n"
-        else:
-            use_str += f"{user.name} misses {target.name} with {self.name}.\n"
-        return use_str
+class Howl:
+    """Wolf howl that stuns – data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("howl.yaml", cls_name="Howl")
 
 
-class Web(Skill):
+class Shapeshift:
+    """Data-driven (shapeshift.yaml) – enemy transforms into random creature."""
+    def __new__(cls):
+        return _load_yaml_ability("shapeshift.yaml", cls_name="Shapeshift")
 
-    def __init__(self):
-        super().__init__(
-            name="Web",
-            description="Expel a thick, sticky substance onto the enemy, leaving them prone.",
-        )
-        self.cost = 6
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if random.randint(0, user.check_mod("speed", enemy=user)) > random.randint(
-            target.stats.strength // 2, target.stats.strength
-        ):
-            if not target.physical_effects["Prone"].active:
-                target.physical_effects["Prone"].active = True
-                target.physical_effects["Prone"].duration = max(
-                    1, user.stats.strength // 20
-                )
-                user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Web")
-            else:
-                target.physical_effects["Prone"].duration += 1
-            return f"{target.name} is trapped in a web and is prone.\n"
-        return f"{target.name} evades the web.\n"
+class Trip:
+    """Trip the enemy prone – data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("trip.yaml", cls_name="Trip")
 
 
-class Howl(Skill):
+class NightmareFuel:
+    """Data-driven (nightmare_fuel.yaml) – sleep-conditional damage."""
+    def __new__(cls):
+        return _load_yaml_ability("nightmare_fuel.yaml", cls_name="NightmareFuel")
 
-    def __init__(self):
-        super().__init__(
-            name="Howl",
-            description="The wolf howls at the moon, terrifying the enemy.",
-        )
-        self.cost = 10
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        turns = 1
-        use_str = f"{user.name} howls at the moon.\n"
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not any(
-            [
-                "Stun" in target.status_immunity,
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Stun"].active:
-                if random.randint(0, user.stats.strength) > random.randint(
-                    target.stats.con // 2, target.stats.con
-                ):
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = turns
-                    user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Concussion")
-                    use_str += f"{user.name} stunned {target.name}.\n"
-                else:
-                    use_str += f"{target.name}'s resolve is steadfast.\n"
-            else:
-                use_str += f"{target.name} is already stunned.\n"
-        else:
-            use_str += f"{target.name} is immune to stun effect.\n"
-        return use_str
+class WidowsWail:
+    """Data-driven (widows_wail.yaml) – inverse-HP damage to both."""
+    def __new__(cls):
+        return _load_yaml_ability("widows_wail.yaml", cls_name="WidowsWail")
 
 
-class Shapeshift(Skill):
+class ThrowRock:
+    """Data-driven (throw_rock.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("throw_rock.yaml", cls_name="ThrowRock")
 
-    def __init__(self):
-        super().__init__(
-            name="Shapeshift",
-            description="Some enemies can change their appearance and type. This is the"
-            " skill they use to do so.",
-        )
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        while True:
-            s_creature = random.choice(user.transform)()
-            if user.cls.name != s_creature.cls.name:
-                break
-        user.cls = s_creature.cls
-        user.stats = s_creature.stats
-        user.equipment = s_creature.equipment
-        user.spellbook = s_creature.spellbook
-        user.resistance = s_creature.resistance
-        user.flying = s_creature.flying
-        user.invisible = s_creature.invisible
-        user.sight = s_creature.sight
-        # Update name and picture for proper sprite rendering
-        old_name = user.name
-        user.name = s_creature.name
-        user.picture = s_creature.picture
-        user.spellbook["Skills"]["Shapeshift"] = Shapeshift()
-        # Apply cooldown
-        user.status_effects["Shapeshifted"].active = True
-        user.status_effects["Shapeshifted"].duration = 3
-        user._emit_status_event(user, "Shapeshifted", applied=True, duration=3, source="Shapeshift")
-        return f"{old_name} changes shape, becoming a {s_creature.name}.\n"
+class Stomp:
+    """Data-driven (stomp.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("stomp.yaml", cls_name="Stomp")
 
 
-class Trip(Skill):
+class Slam:
+    """Knocks prone on a critical – data-driven (Batch 4)."""
+    def __new__(cls):
+        return _load_yaml_ability("slam.yaml", cls_name="Slam")
 
-    def __init__(self):
-        super().__init__(
-            name="Trip",
-            description="Grab the enemy's leg and trip them to the ground, leaving them "
-            "prone.",
-        )
-        self.cost = 6
 
-    def use(self, user: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not special:
-            user.mana.current -= self.cost
-        if not target:
-            return "It has no effect.\n"
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not target.physical_effects["Prone"].active:
-            if (
-                random.randint(0, user.stats.strength // 2)
-                > random.randint(0, target.check_mod("speed", enemy=user))
-                and not target.flying
-            ):
-                target.physical_effects["Prone"].active = True
-                target.physical_effects["Prone"].duration = max(
-                    1, user.stats.strength // 20
-                )
-                user._emit_status_event(target, "Prone", applied=True, duration=target.physical_effects["Prone"].duration, source="Trip")
-                return f"{user.name} trips {target.name} and they fall prone.\n"
-            if not special:
-                return f"{user.name} fails to trip {target.name}.\n"
-        else:
-            if not special:
-                return f"{target.name} is already prone.\n"
-        return ""
+class Screech:
+    """Data-driven (screech.yaml) – damage + permanent Silence."""
+    def __new__(cls):
+        return _load_yaml_ability("screech.yaml", cls_name="Screech")
 
 
-class NightmareFuel(Skill):
+class Detonate:
+    """Data-driven (detonate.yaml) – self-destruct massive damage."""
+    def __new__(cls):
+        return _load_yaml_ability("detonate.yaml", cls_name="Detonate")
 
-    def __init__(self):
-        super().__init__(
-            name="Nightmare Fuel",
-            description="Invade the enemy's dreams, messing with their mind and "
-            "dealing damage.",
-        )
-        self.cost = 20
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        crit = 1
-        if target.status_effects["Sleep"].active:
-            if random.randint(user.stats.intel // 2, user.stats.intel) > random.randint(
-                target.stats.wisdom // 2, target.stats.wisdom
-            ):
-                if random.random() > 0.5:  # 50% chance to crit
-                    crit = 2
-                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-                damage = int(
-                    target.status_effects["Sleep"].duration
-                    * user.stats.intel
-                    * crit
-                    * variance
-                )
-                target.health.current -= damage
-                damage_msg = f"{user.name} invades {target.name}'s dreams, dealing {damage} damage"
-                if crit > 1:
-                    damage_msg += " (Critical hit!)"
-                use_str += damage_msg + ".\n"
-            else:
-                use_str += f"{target.name} resists the spell.\n"
-        else:
-            use_str += "The spell does nothing.\n"
-        return use_str
+class Crush:
+    """Data-driven (crush.yaml) – grab + crush + throw."""
+    def __new__(cls):
+        return _load_yaml_ability("crush.yaml", cls_name="Crush")
 
 
-class WidowsWail(Skill):
-    """
-    Special skill of waitress; does more damage as the user's HP diminishes
-    """
+class ConsumeItem:
+    """Data-driven (consume_item.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("consume_item.yaml", cls_name="ConsumeItem")
 
-    def __init__(self):
-        super().__init__(
-            name="Widow's Wail",
-            description="The agony of loss is released, affecting both the target "
-            "and user. Both will take non-elemental damage based on the "
-            "current health of the user.",
-        )
-        self.cost = 12
-        self.damage = 20
-        self.max_damage = 200
 
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        dmg = int((user.health.max / user.health.current) * self.damage)
-        damage = min(self.max_damage, dmg)
-        if random.randint(user.stats.intel // 2, user.stats.intel) > random.randint(
-            user.stats.wisdom // 2, user.stats.wisdom
-        ):
-            use_str += f"Anguish overwhelms {user.name}, taking {damage} damage.\n"
-            user.health.current -= damage
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return use_str
-        if random.randint(user.stats.intel // 2, user.stats.intel) > random.randint(
-            target.stats.wisdom // 2, target.stats.wisdom
-        ):
-            use_str += f"Anguish overwhelms {target.name}, taking {damage} damage.\n"
-            target.health.current -= damage
-        return use_str
-
-
-class ThrowRock(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Throw Rock",
-            description="Grab the nearest rock or stone and chuck it at the enemy, with"
-            " a chance to knock the target prone.",
-        )
-        self.cost = 7
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        size = random.randint(0, 4)  # size of rock thrown
-        sizes = ["tiny", "small", "medium", "large", "massive"]
-        use_str = f"{user.name} throws a {sizes[size]} rock at {target.name}.\n"
-        a_chance = user.check_mod("luck", enemy=target, luck_factor=10)
-        d_chance = target.check_mod("luck", enemy=user, luck_factor=15)
-        dodge = (
-            random.randint(0, target.check_mod("speed", enemy=user) // 2) + d_chance
-            > random.randint(0, user.check_mod("speed", enemy=user)) + a_chance
-        )
-        dam_red = target.check_mod("armor", enemy=user)
-        resist = target.check_mod("resist", enemy=user, typ="Physical")
-        hit = user.hit_chance(target, typ="weapon")
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if target.incapacitated():
-            dodge = False
-            hit = True
-        if dodge:
-            use_str += f"{target.name} evades the attack.\n"
-        else:
-            if hit and target.magic_effects["Duplicates"].active:
-                chance = target.magic_effects["Duplicates"].duration - self.check_mod(
-                    "luck", luck_factor=15
-                )
-                if random.randint(0, max(0, chance)):
-                    hit = False
-                    use_str += (
-                        f"{user.name} throws a rock but hits a mirror image of {target.name} and it vanishes "
-                        f"from existence.\n"
-                    )
-                    target.magic_effects["Duplicates"].duration -= 1
-                    if not target.magic_effects["Duplicates"].duration:
-                        target.magic_effects["Duplicates"].active = False
-            if hit and cover:
-                use_str += (
-                    f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                    f"{target.name}.\n"
-                )
-            elif hit:
-                crit = 1
-                if (a_chance - d_chance) * 0.1 > random.random():
-                    crit = 2
-                damage = (
-                    random.randint(user.stats.strength // 4, user.stats.strength // 3)
-                    * (size + 1)
-                    * crit
-                )
-                damage = max(0, int((damage - dam_red) * (1 - resist)))
-                if target.magic_effects["Mana Shield"].active:
-                    hit, message, damage = target.handle_mana_shield(damage)
-                    use_str += message
-                elif (
-                    target.cls.name == "Crusader"
-                    and target.power_up
-                    and target.class_effects["Power Up"].active
-                ):
-                    hit, message, damage = target.handle_crusader_shield(damage)
-                    use_str += message
-                if damage > 0:
-                    target.health.current -= damage
-                    damage_msg = f"{target.name} is hit by the rock and takes {damage} damage"
-                    if crit > 1:
-                        damage_msg += " (Critical hit!)"
-                    use_str += damage_msg + ".\n"
-                    if not target.physical_effects["Prone"].active:
-                        if random.randint(
-                            user.stats.strength // 2, user.stats.strength
-                        ) > random.randint(
-                            target.stats.strength // 2, target.stats.strength
-                        ):
-                            target.physical_effects["Prone"].active = True
-                            target.physical_effects["Prone"].duration = max(1, size)
-                            user._emit_status_event(target, "Prone", applied=True, duration=max(1, size), source="Throw Rock")
-                            use_str += (
-                                f"{target.name} is knocked over and falls prone.\n"
-                            )
-                else:
-                    use_str += f"{target.name} shrugs off the damage.\n"
-            else:
-                use_str += f"{user.name} misses {target.name} with the throw.\n"
-        return use_str
-
-
-class Stomp(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Stomp",
-            description="Stomp on the enemy, dealing damage with a chance to stun.",
-        )
-        self.cost = 8
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        resist = target.check_mod("resist", enemy=user, typ="Physical")
-        a_chance = user.check_mod("luck", enemy=target, luck_factor=10)
-        d_chance = target.check_mod("luck", enemy=user, luck_factor=15)
-        dodge = (
-            random.randint(0, target.check_mod("speed", enemy=user) // 2) + d_chance
-            > random.randint(0, user.check_mod("speed", enemy=user)) + a_chance
-        )
-        if target.incapacitated():
-            dodge = False
-            hit = True
-        else:
-            hit = user.hit_chance(target, typ="weapon")
-        if dodge:
-            return f"{target.name} evades the attack.\n"
-        if hit and target.magic_effects["Duplicates"].active:
-            chance = target.magic_effects["Duplicates"].duration - self.check_mod(
-                "luck", luck_factor=15
-            )
-            if random.randint(0, max(0, chance)):
-                hit = False
-                use_str += (
-                    f"{user.name} stomps but hits a mirror image of {target.name} and it vanishes from "
-                    f"existence.\n"
-                )
-                target.magic_effects["Duplicates"].duration -= 1
-                if not target.magic_effects["Duplicates"].duration:
-                    target.magic_effects["Duplicates"].active = False
-        if cover and hit:
-            use_str += (
-                f"{target.familiar.name} steps in front of the attack, absorbing the damage directed at "
-                f"{target.name}.\n"
-            )
-        elif hit:
-            crit = 1
-            if (a_chance - d_chance) * 0.1 > random.random():
-                crit = 2
-            damage = int(
-                random.randint(user.stats.strength // 2, user.stats.strength)
-                * (1 - resist)
-                * crit
-            )
-            if target.magic_effects["Mana Shield"].active:
-                hit, message, damage = target.handle_mana_shield(damage)
-                use_str += message
-            elif (
-                target.cls.name == "Crusader"
-                and target.power_up
-                and target.class_effects["Power Up"].active
-            ):
-                hit, message, damage = target.handle_crusader_shield(damage)
-                use_str += message
-            if damage > 0:
-                target.health.current -= damage
-                damage_msg = f"{user.name} stomps {target.name}, dealing {damage} damage"
-                if crit > 1:
-                    damage_msg += " (Critical hit!)"
-                use_str += damage_msg + ".\n"
-                if not any(
-                    [
-                        "Stun" in target.status_immunity,
-                        f"Status-Stun" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod,
-                    ]
-                ):
-                    if not target.status_effects["Stun"].active:
-                        if random.randint(
-                            user.stats.strength // 2, user.stats.strength
-                        ) > random.randint(target.stats.con // 2, target.stats.con):
-                            turns = 1 + int(crit > 1)
-                            target.status_effects["Stun"].active = True
-                            target.status_effects["Stun"].duration = turns
-                            user._emit_status_event(target, "Stun", applied=True, duration=turns, source="Stomp")
-                            use_str += f"{user.name} stunned {target.name}.\n"
-            else:
-                use_str += f"{user.name} stomps {target.name} but deals no damage.\n"
-        else:
-            use_str += f"{user.name} misses {target.name}.\n"
-        return use_str
-
-
-class Slam(Skill):
-    """
-    Knocks prone on a critical
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Slam",
-            description="Slam into the enemy, dealing great damage with a chance for prone.",
-        )
-        self.cost = 12
-        self.dmg_mod = 1.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(target, dmg_mod=self.dmg_mod)
-        if hit and crit > 1:
-            turns = max(2, user.stats.strength // 10)
-            target.physical_effects["Prone"].active = True
-            target.physical_effects["Prone"].duration = turns
-            user._emit_status_event(target, "Prone", applied=True, duration=turns, source="Slam")
-            use_str += f"{target.name} is knocked prone.\n"
-        return use_str
-
-
-class Screech(Skill):
-    """
-    Only silences if damage is dealt
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Screech",
-            description="Let out an ear-piercing screech, damaging the foe and silencing"
-            " them.",
-        )
-        self.cost = 15
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        damage = 0
-        if (
-            random.randint(0, user.check_mod("speed", enemy=user)) + user.stats.intel
-            > random.randint(target.stats.con // 2, target.stats.con)
-            + target.stats.wisdom
-        ):
-            resist = target.check_mod("resist", enemy=user, typ="Physical")
-            damage = int(user.stats.intel * (1 - resist))
-            if damage > 0:
-                target.health.current -= damage
-                use_str += (
-                    f"The deafening screech hurts {target.name} for {damage} damage.\n"
-                )
-                if not any(
-                    [
-                        "Silence" in target.status_immunity,
-                        f"Status-Silence" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod,
-                    ]
-                ):
-                    target.status_effects["Silence"].active = True
-                    target.status_effects["Silence"].duration = -1
-                    user._emit_status_event(target, "Silence", applied=True, duration=-1, source="Screech")
-                    use_str += f"{target.name} has been silenced.\n"
-        if damage <= 0:
-            use_str += "The spell is ineffective.\n"
-        return use_str
-
-
-class Detonate(Skill):
-    """
-    Cannot fully resist the damage except with an active shield
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Detonate",
-            description="Systems are failing and retreat is not an option. Protocol "
-            "states the prime directive is destruction of the enemy by any "
-            "means necessary. Self-destruct sequence initiated.",
-        )
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = f"{user.name} explodes, sending shrapnel in all directions.\n"
-        resist = target.check_mod("resist", enemy=user, typ="Physical")
-        damage = max(
-            user.health.current // 2, int(user.health.current * (1 - resist))
-        ) * random.randint(1, 4)
-        if target.magic_effects["Mana Shield"].active:
-            _, message, damage = target.handle_mana_shield(damage)
-            use_str += message
-        elif (
-            target.cls.name == "Crusader"
-            and target.power_up
-            and target.class_effects["Power Up"].active
-        ):
-            _, message, damage = target.handle_crusader_shield(damage)
-            use_str += message
-        if damage > 0:
-            if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-                use_str += "It has no effect.\n"
-            else:
-                t_chance = target.check_mod("luck", enemy=user, luck_factor=20)
-                if (
-                    random.randint(0, target.check_mod("speed", enemy=user) // 15)
-                    + t_chance
-                ):
-                    damage = max(1, damage // 2)
-                    use_str += (
-                        f"{target.name} dodges the shrapnel, only taking half damage.\n"
-                    )
-                use_str += f"{target.name} takes {damage} damage from the shrapnel.\n"
-        else:
-            use_str += f"{target.name} was unhurt by the explosion.\n"
-        user.health.current = 0
-        return use_str
-
-
-class Crush(Skill):
-    """
-    Can't be covered or blacked by Mana Shield
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Crush",
-            description="Take the enemy into your clutches and attempt to squeeze the life "
-            "from them.",
-        )
-        self.cost = 25
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        resist = target.check_mod("resist", enemy=user, typ="Physical")
-        a_chance = user.check_mod("luck", enemy=target, luck_factor=15)
-        d_chance = target.check_mod("luck", enemy=user, luck_factor=10)
-        dodge = (
-            random.randint(0, target.check_mod("speed", enemy=user) // 2) + d_chance
-            > random.randint(0, user.check_mod("speed", enemy=user)) + a_chance
-        )
-        if target.incapacitated():
-            hit = True
-            dodge = False
-        else:
-            a_hit = user.stats.dex + user.stats.strength
-            d_hit = target.stats.dex + target.stats.strength
-            hit = (
-                random.randint(a_hit // 2, a_hit) + a_chance
-                > random.randint(d_hit // 2, d_hit) + d_chance
-            )
-        if dodge:
-            return f"{target.name} evades the attack.\n"
-        if hit and target.magic_effects["Duplicates"].active:
-            chance = target.magic_effects["Duplicates"].duration - self.check_mod(
-                "luck", luck_factor=15
-            )
-            if random.randint(0, max(0, chance)):
-                hit = False
-                use_str += (
-                    f"{user.name} grabs for {target.name} but gets a mirror image instead and it vanishes "
-                    f"from existence.\n"
-                )
-                target.magic_effects["Duplicates"].duration -= 1
-                if not target.magic_effects["Duplicates"].duration:
-                    target.magic_effects["Duplicates"].active = False
-        if hit:
-            use_str = f"{user.name} grabs {target.name}.\n"
-            crit = 1
-            if (a_chance - d_chance) * 0.1 > random.random():
-                crit = 2
-            damage = max(
-                int(target.health.current * 0.25),
-                int(
-                    random.randint(user.stats.strength // 2, user.stats.strength)
-                    * (1 - resist)
-                    * crit
-                ),
-            )
-            target.health.current -= damage
-            damage_msg = f"{user.name} crushes {target.name}, dealing {damage} damage"
-            if crit > 1:
-                damage_msg += " (Critical hit!)"
-            use_str += damage_msg + ".\n"
-            if (
-                random.randint(user.stats.strength // 2, user.stats.strength)
-                > random.randint(0, target.check_mod("speed", enemy=user)) + d_chance
-            ):
-                fall_damage = int(
-                    random.randint(user.stats.strength // 2, user.stats.strength)
-                    * (1 - resist)
-                )
-                target.health.current -= fall_damage
-                use_str += f"{user.name} throws {target.name} to the ground, dealing {fall_damage} damage.\n"
-            else:
-                use_str += f"{target.name} rolls as they hit the ground, preventing any fall damage.\n"
-            return use_str
-        return f"{user.name} grabs for {target.name} but misses.\n"
-
-
-class ConsumeItem(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Consume Item",
-            description="You enjoy the finer things in life, which includes metal, "
-            "wood, and leather. Steal an item from the enemy and consume"
-            " it, absorbing the power of the item.",
-        )
-        self.cost = 14
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        user.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        u_chance = user.check_mod("luck", enemy=target, luck_factor=10)
-        t_chance = target.check_mod("luck", enemy=user, luck_factor=10)
-        if (
-            random.randint(0, user.check_mod("speed", enemy=user)) + u_chance
-            > random.randint(0, target.check_mod("speed", enemy=user)) + t_chance
-        ):
-            if len(target.inventory) != 0 and random.randint(0, u_chance):
-                item_key = random.choice(list(target.inventory))
-                item = target.inventory[item_key][0]
-                target.modify_inventory(item, subtract=True)
-                use_str += f"{user.name} steals {item_key} from {target.name} and consumes it.\n"
-                duration = max(1, int(1 / item.rarity))
-                amount = max(1, int(2 / item.rarity))
-                if item.typ == "Weapon":
-                    effect = "Attack"
-                elif item.typ == "Armor":
-                    effect = "Defense"
-                elif item.typ == "OffHand":
-                    if item.subtyp == "Tome":
-                        effect = "Magic"
-                    else:
-                        effect = "Magic Defense"
-                elif item.typ == "Accessory":
-                    if item.subtyp == "Ring":
-                        effect = random.choice(["Attack", "Defense"])
-                    else:
-                        effect = random.choice(["Magic", "Magic Defense"])
-                elif item.typ == "Potion":
-                    if item.subtyp != "Stat":
-                        effect = "Regen"
-                    else:
-                        effect = "Poison"
-                else:
-                    effect = random.choice(
-                        ["Berserk", "Blind", "Doom", "Silence", "Sleep", "Stun"]
-                    )
-                if any(
-                    [
-                        effect in target.status_immunity,
-                        f"Status-{effect}" in target.equipment["Pendant"].mod,
-                        "Status-All" in target.equipment["Pendant"].mod
-                        and effect
-                        in [
-                            "Berserk",
-                            "Blind",
-                            "Doom",
-                            "Poison",
-                            "Silence",
-                            "Sleep",
-                            "Stun",
-                        ],
-                    ]
-                ):
-                    use_str = f"{target.name} is immune to {effect.lower()}.\n"
-                else:
-                    use_str += f"{effect} is affected by {target.name}.\n"
-                    effect_dict = target.effect_handler(effect)
-                    effect_dict[effect].active = True
-                    if effect in ["Blind", "Disarm", "Silence"]:
-                        effect_dict[effect].duration = -1
-                    else:
-                        effect_dict[effect].duration = max(
-                            duration, effect_dict[effect].duration
-                        )
-                    if effect in ["Poison", "Regen"]:
-                        amount = int((target.health.max * 0.01) * amount)
-                        effect_dict[effect].extra = amount
-                    if effect in target.stat_effects:
-                        combat_effect = (
-                            "magic_def" if effect == "Magic Defense" else effect.lower()
-                        )
-                        amount *= target.combat.__dict__[combat_effect] // 10
-                        effect_dict[effect].extra = amount
-                        use_str += f"{target.name}'s {effect.lower()} is temporarily increased by {amount}.\n"
-            else:
-                gold = random.randint(target.gold // 100, target.gold // 50) * u_chance
-                regen = gold // 10
-                use_str += f"{user.name} steals {gold} gold from {target.name} and consumes it.\n"
-                use_str += f"{user.name} regains {regen} health and mana.\n"
-                user.health.current += regen
-                user.health.current = min(user.health.current, user.health.max)
-                user.mana.current += regen
-                user.mana.current = min(user.mana.current, user.mana.max)
-        else:
-            use_str += f"{user.name} can't steal anything.\n"
-        return use_str
-
-
-class DestroyMetal(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Destroy Metal",
-            description="Target metal items and destroy them.",
-        )
-        self.cost = 27
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        from ..core.items import remove_equipment
-
-        use_str = ""
-        user.mana.current -= self.cost
-        metal_items = ['Fist', 'Dagger', 'Club', 'Sword', 'Ninja Blade', 'Longsword', 'Battle Axe', 'Polearm',
-                       'Shield', 'Heavy', 'Ring', 'Pendant', 'Key']
-        destroy_list = []
-        destroy_loc = "inv"
-        for item in [target.inventory[x][0] for x in target.inventory]:
-            if item.subtyp in metal_items and not item.ultimate and item.rarity > 0:
-                destroy_list.append(item)
-        if len(destroy_list) == 0:
-            destroy_loc = "equip"
-            for item in target.equipment.values():
-                if item.subtyp in metal_items and not item.ultimate and item.rarity > 0:
-                    destroy_list.append(item)
-        try:
-            destroy_item = random.choice(destroy_list)
-            t_chance = target.check_mod("luck", enemy=user, luck_factor=5)
-            if not random.randint(0, int(2 / destroy_item.rarity) + t_chance):
-                from . import items
-
-                if destroy_loc == "inv":
-                    use_str += f"{user.name} destroys a {destroy_item.name} out of {target.name}'s inventory.\n"
-                    target.modify_inventory(destroy_item, subtract=True)
-                elif destroy_loc == "equip":
-                    if destroy_item.typ not in ["Weapon", "Accessory"]:
-                        use_str += f"{user.name} destroys {target.name}'s {destroy_item.typ}.\n"
-                        target.equipment[destroy_item.typ] = remove_equipment(
-                            destroy_item.typ
-                        )
-                    elif destroy_item.typ == "Accessory":
-                        use_str += f"{user.name} destroys {target.name}'s {destroy_item.subtyp}.\n"
-                        target.equipment[destroy_item.subtyp] = remove_equipment(
-                            destroy_item.subtyp
-                        )
-                    else:
-                        if target.equipment["OffHand"] == destroy_item:
-                            target.equipment["OffHand"] = remove_equipment("OffHand")
-                            use_str += f"{user.name} destroys {target.name}'s offhand weapon.\n"
-                        else:
-                            target.equipment[destroy_item.typ] = remove_equipment(
-                                destroy_item.typ
-                            )
-                            use_str += f"{user.name} destroys {target.name}'s {destroy_item.typ}.\n"
-                else:
-                    raise AssertionError("You shouldn't reach here.")
-            else:
-                use_str += f"{user.name} fails to destroy any items.\n"
-        except IndexError:
-            use_str += f"{target.name} isn't carrying any metal items.\n"
-        return use_str
+class DestroyMetal:
+    """Data-driven (destroy_metal.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("destroy_metal.yaml", cls_name="DestroyMetal")
 
 
 class Turtle(Skill):
@@ -4549,355 +1370,139 @@ class Turtle(Skill):
         self.passive = True
 
 
-class Tunnel(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Tunnel",
-            description="Tunnel into the ground indefinitely, making user untargetable. "
-            "Self-targeting abilities can be used but offensive abilities "
-            "require user to surface.",
-        )
-        self.cost = 3
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        user.tunnel = True
-        return f"{user.name} tunnels into the ground.\n"
+class Tunnel:
+    """Data-driven (tunnel.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("tunnel.yaml", cls_name="Tunnel")
 
 
-class Surface(Skill):
-    """Exit from tunneled underground state."""
-
-    def __init__(self):
-        super().__init__(
-            name="Surface",
-            description="Emerge from underground, becoming targetable again.",
-        )
-        self.cost = 0
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.tunnel = False
-        return f"{user.name} surfaces from underground.\n"
+class Surface:
+    """Data-driven (surface.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("surface.yaml", cls_name="Surface")
 
 
-class GoblinPunch(Skill):
-    """
-    does damage based on the strength difference between the user and target; the higher the target's strength is
-      compared to the user, the more damage it will cause
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Goblin Punch",
-            description="Attack the target multiple times with a flurry of punches, "
-            "dealing damage based on the strength difference between the "
-            "user and target.",
-        )
-        self.max_punches = 5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        use_str = ""
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        num_attacks = max(1, random.randint(user.level.pro_level, self.max_punches))
-        str_diff = max(
-            1 + user.level.pro_level, (target.stats.strength - user.stats.strength) // 2
-        )
-        for _ in range(num_attacks):
-            if user.hit_chance(target, typ="weapon"):
-                target.health.current -= str_diff
-                use_str += f"{user.name} punches {target.name} for {str_diff} damage.\n"
-            else:
-                use_str += f"{user.name} punches air, missing {target.name}.\n"
-        return use_str
+class GoblinPunch:
+    """Data-driven (goblin_punch.yaml) – multi-hit str-diff damage."""
+    def __new__(cls):
+        return _load_yaml_ability("goblin_punch.yaml", cls_name="GoblinPunch")
 
 
-class BrainGorge(Skill):
-    """
-    ignores mana shield
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Brain Gorge",
-            description="Attack the enemy and attempt to latch on and eat its brain; a"
-            " successful attack can lower intelligence.",
-        )
-        self.cost = 30
-        self.dmg_mod = 0.75
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        user.mana.current -= self.cost
-        use_str, hit, crit = user.weapon_damage(target, dmg_mod=self.dmg_mod)
-        if hit:
-            t_chance = target.check_mod("luck", enemy=user, luck_factor=15)
-            use_str += f"{user.name} latches onto {target.name}.\n"
-            if target.incapacitated() or (
-                random.randint(user.stats.strength // 2, user.stats.strength)
-                > random.randint(target.stats.con // 2, target.stats.con) + t_chance
-            ):
-                resist = target.check_mod("resist", enemy=user, typ="Physical")
-                damage = int(
-                    random.randint(user.stats.strength // 4, user.stats.strength)
-                    * (1 - resist)
-                    * crit
-                )
-                target.health.current -= damage
-                if damage > 0:
-                    use_str += f"{user.name} does an additional {damage} damage to {target.name}.\n"
-                    if not target.is_alive() or (
-                        random.randint(user.stats.intel // 2, user.stats.intel)
-                        > random.randint(target.stats.wisdom // 2, target.stats.wisdom)
-                        + target.check_mod("magic def", enemy=user)
-                    ):
-                        target.stats.intel -= 1
-                        use_str += f"{user.name} eats a part of {target.name}'s brain, lowering their intelligence by 1.\n"
-        return use_str
+class BrainGorge:
+    """Data-driven (brain_gorge.yaml) – weapon hit + latch + intel drain."""
+    def __new__(cls):
+        return _load_yaml_ability("brain_gorge.yaml", cls_name="BrainGorge")
 
 
-class Counterspell(Skill):
-
-    def __init__(self):
-        super().__init__(
-            name="Counterspell",
-            description="If the Behemoth is the target of an attack spell, it will "
-            "counter with a spell of its own.",
-        )
-        self.passive = True
-
-    def use(self, user: Character, target: Character=None, cover: bool=False) -> str:
-        spell = random.choice(user.spellbook["Spells"].values())
-        if spell.subtyp == "Heal":
-            target = user
-        return spell.cast(user, target=target, cover=cover)
+class Counterspell:
+    """Data-driven (counterspell.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("counterspell.yaml", cls_name="Counterspell")
 
 
-class ChooseFate(Skill):
-    """
-    The player gets to choose what the Devil does on his turn; your choices affect the Devil's stats
-    Each time Attack is selected, the damage mod goes up (increases attack and armor)
-    Each time a spell is selected, the magic mod goes up (increases magic, healing, and magic defense)
-    Each time a skill is selected, the damage and magic mod goes down
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Choose Fate",
-            description="The Devil likes to toy with his food, letting the player "
-            "decide what he will do for that turn.",
-        )
-        self.dmg_mod = 1.5
-
-    def use(self, user: Character, target: Character=None, cover: bool=False, selection_callback=None) -> str:
-        """
-        Let the player choose the Devil's action. UI-agnostic: expects a selection_callback for user interaction.
-        Args:
-            user: The character using the ability
-            target: The target (optional)
-            cover: Whether the target is in cover
-            selection_callback: Callable (choose_message, options) -> option_index
-        Returns:
-            str: Result of the ability
-        """
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        use_str = ""
-        choose_message = "I'm bored, you choose."
-        options = ["Attack", "Hellfire", "Crush"]
-        if selection_callback is not None:
-            option_index = selection_callback(choose_message, options)
-        else:
-            option_index = random.randint(0, len(options) - 1)
-        mod_up = random.randint(10, 25)
-        if options[option_index] == "Attack":
-            wd_str, _, _ = user.weapon_damage(target, dmg_mod=self.dmg_mod)
-            use_str += wd_str
-            user.damage_mod += mod_up
-            use_str += "Hahaha, my power increases!\n"
-        elif options[option_index] == "Hellfire":
-            user.spell_mod += mod_up
-            Hellfire().cast(user, target=target)
-            use_str += "The devastation will only get worse from here.\n"
-        elif options[option_index] == "Crush":
-            Crush().use(user, target)
-            mod_down = random.randint(0, 10)
-            if user.damage_mod > 0:
-                user.damage_mod -= mod_down
-            if user.spell_mod > 0:
-                user.spell_mod -= mod_down
-            use_str += "Interesting choice...maybe I'll show pity.\n"
-        else:
-            raise AssertionError("You shouldn't reach here.")
-        return use_str
+class ChooseFate:
+    """Data-driven (choose_fate.yaml) – Devil lets player pick his action."""
+    def __new__(cls):
+        return _load_yaml_ability("choose_fate.yaml", cls_name="ChooseFate")
 
 
-class BreatheFire(Skill):
-    """
-    Enemy skill - used by dragon-like enemies as special attack; can be various elemental types
-    Deals damage based on the user's stats and applies elemental damage reduction
-    """
+class BreatheFire:
+    """Data-driven (breathe_fire.yaml) – stat-based elemental breath."""
+    def __new__(cls):
+        return _load_yaml_ability("breathe_fire.yaml", cls_name="BreatheFire")
 
-    def __init__(self):
-        super().__init__(
-            name="Breathe Fire",
-            description="Special attack used randomly when attack is selected. Only "
-            "used by dragon-like creatures.",
-        )
 
-    def use(self, user: Character, target: Character=None, cover: bool=False, typ: str="Non-elemental") -> str:
-        """
-        Dragon breath weapon attack
-        
-        Args:
-            user: The dragon using the breath weapon
-            target: The target of the breath
-            cover: Whether the attack can be blocked
-            typ: Element type - "Fire", "Wind", "Non-elemental", etc.
-        """
-        if target is None:
-            return "No target specified.\n"
-        
-        # Calculate base damage from user's strength and intelligence
-        base_damage = int((user.stats.strength + user.stats.intel) * 1.5)
-        
-        # Add some variance
-        variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-        damage = int(base_damage * variance)
-        
-        # Apply target's damage reduction for this element type
-        _, reduction_msg, damage = target.damage_reduction(damage, user, typ=typ)
-        
-        result_msg = f"{user.name} unleashes a breath of {typ} energy!\n"
-        result_msg += reduction_msg
-        
-        if damage > 0:
-            target.health.current -= damage
-            user._emit_damage_event(target, damage, damage_type=typ, is_critical=False)
-            result_msg += f"{target.name} takes {damage} damage from the breath weapon.\n"
-        else:
-            result_msg += f"The breath weapon has no effect on {target.name}.\n"
-        
-        return result_msg
+class DragonBreathFire:
+    """Data-driven (dragon_breath_fire.yaml) – charging fire breath."""
+    def __new__(cls):
+        return _load_yaml_ability("dragon_breath_fire.yaml", cls_name="DragonBreathFire")
+
+
+class DragonBreathWater:
+    """Data-driven (dragon_breath_water.yaml) – charging water breath."""
+    def __new__(cls):
+        return _load_yaml_ability("dragon_breath_water.yaml", cls_name="DragonBreathWater")
+
+
+class DragonBreathWind:
+    """Data-driven (dragon_breath_wind.yaml) – charging wind breath."""
+    def __new__(cls):
+        return _load_yaml_ability("dragon_breath_wind.yaml", cls_name="DragonBreathWind")
+
+
+# ── Companion Ultimate Attacks ────────────────────────────────────────
+
+
+class TitanicSlam:
+    """Data-driven (titanic_slam.yaml) – Patagon ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("titanic_slam.yaml", cls_name="TitanicSlam")
+
+
+class Devour:
+    """Data-driven (devour.yaml) – Dilong ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("devour.yaml", cls_name="Devour")
+
+
+class AbsoluteZero:
+    """Data-driven (absolute_zero.yaml) – Agloolik ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("absolute_zero.yaml", cls_name="AbsoluteZero")
+
+
+class Eruption:
+    """Data-driven (eruption.yaml) – Cacus ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("eruption.yaml", cls_name="Eruption")
+
+
+class MaelstromVortex:
+    """Data-driven (maelstrom_vortex.yaml) – Fuath ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("maelstrom_vortex.yaml", cls_name="MaelstromVortex")
+
+
+class Thunderstrike:
+    """Data-driven (thunderstrike.yaml) – Izulu ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("thunderstrike.yaml", cls_name="Thunderstrike")
+
+
+class WindShrapnel:
+    """Data-driven (wind_shrapnel.yaml) – Hala ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("wind_shrapnel.yaml", cls_name="WindShrapnel")
+
+
+class DivineJudgment:
+    """Data-driven (divine_judgment.yaml) – Grigori ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("divine_judgment.yaml", cls_name="DivineJudgment")
+
+
+class Oblivion:
+    """Data-driven (oblivion.yaml) – Bardi ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("oblivion.yaml", cls_name="Oblivion")
+
+
+class GrandHeist:
+    """Data-driven (grand_heist.yaml) – Kobalos ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("grand_heist.yaml", cls_name="GrandHeist")
+
+
+class Cataclysm:
+    """Data-driven (cataclysm.yaml) – Zahhak ultimate."""
+    def __new__(cls):
+        return _load_yaml_ability("cataclysm.yaml", cls_name="Cataclysm")
 
 
 class CrushingBlow(Skill):
-    """
-    Powerful overhead strike with a short wind-up.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Crushing Blow",
-            description="A devastating overhead strike that takes time to wind up but deals massive damage.",
-        )
-        self.cost = 25
-        self.weapon = True
-        self.dmg_mod = 3.0
-        self.crit = 2
-        self.subtyp = "Physical"
-
-        self._yaml_charge_time = None
-        self._yaml_telegraph_message = None
-        self._stun_chance = 0.5
-        self._stun_duration = 2
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-
-        # Load YAML-backed config when available
-        try:
-            from pathlib import Path
-            from src.core.data.ability_loader import AbilityFactory
-
-            file_path = Path(__file__).parent / "data" / "abilities" / "crushing_blow.yaml"
-            if file_path.exists():
-                yaml_ability = AbilityFactory.create_from_yaml(file_path)
-                if getattr(yaml_ability, "description", None):
-                    self.description = yaml_ability.description
-                if getattr(yaml_ability, "cost", None) is not None:
-                    self.cost = yaml_ability.cost
-                if getattr(yaml_ability, "subtyp", None):
-                    self.subtyp = yaml_ability.subtyp
-                if getattr(yaml_ability, "dmg_mod", None) is not None:
-                    self.dmg_mod = yaml_ability.dmg_mod
-
-                raw = getattr(yaml_ability, "_raw_data", None) or getattr(yaml_ability, "raw_data", {})
-                if raw:
-                    self.crit = raw.get("crit", self.crit)
-
-                self._yaml_charge_time = getattr(yaml_ability, "charge_time", None)
-                self._yaml_telegraph_message = getattr(yaml_ability, "telegraph_message", None)
-        except Exception:
-            pass
-
-    def get_charge_time(self) -> int:
-        return self._yaml_charge_time if self._yaml_charge_time is not None else 0
-
-    def start_charge(self, user: Character, target: Character) -> str:
-        self.charging = True
-        self.charge_turns = self.get_charge_time()
-        self.charge_target = target
-
-        if self._yaml_telegraph_message:
-            return f"{user.name} is {self._yaml_telegraph_message}!\n"
-        return f"{user.name} raises their weapon for a crushing strike!\n"
-
-    def cancel_charge(self, user: Character) -> str:
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        return f"{user.name}'s Crushing Blow was interrupted!\n"
-
-    def execute_blow(self, user: Character, target: Character, cover: bool = False) -> str:
-        use_str = ""
-        wd_str, hit, _ = user.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit
-        )
-        use_str += wd_str
-
-        if hit and target.is_alive():
-            if not any(
-                [
-                    "Stun" in target.status_immunity,
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]
-            ):
-                if random.random() < self._stun_chance and not target.status_effects["Stun"].active:
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = self._stun_duration
-                    user._emit_status_event(
-                        target,
-                        "Stun",
-                        applied=True,
-                        duration=self._stun_duration,
-                        source="Crushing Blow",
-                    )
-                    use_str += f"{target.name} is stunned!\n"
-
-        self.charging = False
-        self.charge_turns = 0
-        self.charge_target = None
-        return use_str
-
-    def use(self, user: Character, target: Character = None, cover: bool = False) -> str:
-        if self.charging:
-            if user.incapacitated():
-                return self.cancel_charge(user)
-
-            self.charge_turns -= 1
-            if self.charge_turns <= 0:
-                return self.execute_blow(user, self.charge_target or target, cover)
-            turns_left = self.charge_turns
-            return f"{user.name} continues winding up... ({turns_left} turn{'s' if turns_left > 1 else ''} remaining)\n"
-
-        user.mana.current -= self.cost
-        charge_time = self.get_charge_time()
-        if charge_time > 0:
-            return self.start_charge(user, target)
-
-        return self.execute_blow(user, target, cover)
+    """Data-driven (crushing_blow.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("crushing_blow.yaml", cls_name="CrushingBlow")
 
 
 """
@@ -5021,7 +1626,7 @@ class Attack(Spell):
 
 class HolySpell(Spell):
 
-    def __init__(self, name, description, cost, dmg_mod, crit):
+    def __init__(self, name: str, description: str, cost: int, dmg_mod: float, crit: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.dmg_mod = dmg_mod
@@ -5030,21 +1635,21 @@ class HolySpell(Spell):
 
 
 class SupportSpell(Spell):
-    def __init__(self, name, description, cost):
+    def __init__(self, name: str, description: str, cost: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.subtyp = "Support"
 
 
 class DeathSpell(Spell):
-    def __init__(self, name, description, cost):
+    def __init__(self, name: str, description: str, cost: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.subtyp = "Death"
 
 
 class StatusSpell(Spell):
-    def __init__(self, name, description, cost):
+    def __init__(self, name: str, description: str, cost: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.subtyp = "Status"
@@ -5065,7 +1670,7 @@ class HealSpell(Spell):
         - Regen 3: 0.4 (pro 3 lvl 7)
     """
 
-    def __init__(self, name, description, cost, heal, crit):
+    def __init__(self, name: str, description: str, cost: int, heal: int, crit: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.heal = heal
@@ -5108,7 +1713,7 @@ class HealSpell(Spell):
 
 
 class MovementSpell(Spell):
-    def __init__(self, name, description, cost):
+    def __init__(self, name: str, description: str, cost: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.subtyp = "Movement"
@@ -5119,7 +1724,7 @@ class IllusionSpell(Spell):
     subtyp: the subtype of these abilities is 'Illusion', meaning they rely on deception
     """
 
-    def __init__(self, name, description, cost):
+    def __init__(self, name: str, description: str, cost: int) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.subtyp = "Illusion"
@@ -5127,215 +1732,39 @@ class IllusionSpell(Spell):
 
 # Spells
 class MagicMissile(Attack):
-    """
-    Can't be reflected
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Magic Missile",
-            description="Orbs of energy shoots forth from the caster, dealing "
-            "non-elemental damage.",
-            cost=5,
-            dmg_mod=1.0,
-            crit=8,
-        )
-        self.subtyp = "Non-elemental"
-        self.missiles = 1
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        cast_message = ""
-        if not (
-            special
-            or fam
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
-        ):
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        spell_mod = caster.check_mod("magic", enemy=target)
-        hits = []
-        for i in range(self.missiles):
-            hits.append(False)
-            dodge = target.dodge_chance(caster, spell=True)
-            hits[i] = caster.hit_chance(target, typ="magic")
-            if target.incapacitated():
-                dodge = False
-                hits[i] = True
-            if dodge:
-                cast_message += (
-                    f"{target.name} dodged the {self.name} and was unhurt.\n"
-                )
-            elif cover:
-                cast_message += (
-                    f"{target.familiar.name} steps in front of the attack, "
-                    f"absorbing the damage directed at {target.name}.\n"
-                )
-            else:
-                crit = 1
-                if not random.randint(0, self.crit):
-                    crit = 2
-                if hits[i] and target.magic_effects["Duplicates"].active:
-                    chance = target.magic_effects[
-                        "Duplicates"
-                    ].duration - self.check_mod("luck", luck_factor=15)
-                    if random.randint(0, max(0, chance)):
-                        hits[i] = False
-                        cast_message += f"{self.name} hits a mirror image of {target.name} and it vanishes from existence.\n"
-                        target.magic_effects["Duplicates"].duration -= 1
-                        if not target.magic_effects["Duplicates"].duration:
-                            target.magic_effects["Duplicates"].active = False
-                if hits[i]:
-                    crit_per = random.uniform(1, crit)
-                    damage = int(self.dmg_mod * spell_mod * crit_per)
-                    if target.magic_effects["Mana Shield"].active:
-                        hits[i], message, damage = target.handle_mana_shield(damage)
-                        cast_message += message
-                    elif (
-                        target.cls.name == "Crusader"
-                        and target.power_up
-                        and target.class_effects["Power Up"].active
-                    ):
-                        _, message, damage = target.handle_crusader_shield(damage)
-                        cast_message += message
-                    dam_red = target.check_mod("magic def", enemy=caster)
-                    damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
-                    variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-                    damage = int(damage * variance)
-                    if damage <= 0:
-                        cast_message += (
-                            f"{self.name} was ineffective and does no damage.\n"
-                        )
-                        damage = 0
-                    elif random.randint(0, target.stats.con // 2) > random.randint(
-                        caster.stats.intel // 2, caster.stats.intel
-                    ):
-                        damage //= 2
-                        if damage > 0:
-                            cast_message += f"{target.name} shrugs off the {self.name} and only receives half of the damage.\n"
-                            damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
-                            if crit > 1:
-                                damage_msg += " (Critical hit!)"
-                            cast_message += damage_msg + ".\n"
-                        else:
-                            cast_message += (
-                                f"{self.name} was ineffective and does no damage.\n"
-                            )
-                    else:
-                        damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
-                        if crit > 1:
-                            damage_msg += " (Critical hit!)"
-                        cast_message += damage_msg + ".\n"
-                    target.health.current -= damage
-                    if not target.is_alive():
-                        break
-                else:
-                    cast_message += f"The spell misses {target.name}.\n"
-                if (
-                    caster.cls.name == "Wizard"
-                    and caster.class_effects["Power Up"].active
-                    and damage > 0
-                ):
-                    cast_message += f"{caster.name} regens {damage} mana.\n"
-                    caster.mana.current += damage
-                    if caster.mana.current > caster.mana.max:
-                        caster.mana.current = caster.mana.max
-        if any(hits):
-            if "Counterspell" in target.spellbook["Spells"] and not random.randint(
-                0, 4
-            ):  # TODO
-                cast_message += f"{target.name} uses Counterspell.\n"
-                cast_message += Counterspell().use(target, target=caster)
-        return cast_message
+    """Data-driven (magic_missile.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("magic_missile.yaml", cls_name="MagicMissile")
 
 
 class MagicMissile2(MagicMissile):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 18
-        self.missiles = 2
+    """Data-driven (magic_missile_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("magic_missile_2.yaml", cls_name="MagicMissile2")
 
 
 class MagicMissile3(MagicMissile):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 40
-        self.missiles = 3
+    """Data-driven (magic_missile_3.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("magic_missile_3.yaml", cls_name="MagicMissile3")
 
 
-class Ultima(Attack):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Ultima",
-            description="Envelopes the enemy in a magical void, dealing massive non-"
-            "elemental damage.",
-            cost=35,
-            dmg_mod=2.0,
-            crit=4,
-        )
-        self.subtyp = "Non-elemental"
-        self.rank = 2
+class Ultima:
+    """Rank 2 Enemy Spell — data-driven (ultima.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("ultima.yaml", cls_name="Ultima")
 
 
-class Maelstrom(Attack):
-    """
-    Enemy Spell - Behemoth
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Maelstrom",
-            description="A massive maelstrom engulfs the target, reducing target HP to "
-            "10% of max or 25% on a successful save.",
-            cost=40,
-            dmg_mod=0,
-            crit=1,
-        )
-        self.subtyp = "Non-elemental"
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if random.randint(0, caster.intel) > random.randint(
-            target.wisdom // 2, target.wisdom
-        ):
-            hp_per = int(target.health.max * 0.10)
-        else:
-            hp_per = int(target.health.max * 0.25)
-        target.health.current = min(target.health.current, hp_per)
-        if hp_per > target.health.current:
-            cast_message = f"{target.name} has their health reduced to 25%.\n"
-        else:
-            cast_message = f"The spell is ineffective.\n"
-        return cast_message
+class Maelstrom:
+    """Data-driven (maelstrom.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("maelstrom.yaml", cls_name="Maelstrom")
 
 
-class Meteor(Attack):
-    """
-    Enemy spell - Final Attack for Behemoth
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Meteor",
-            description="A large, extra-terrestrial rock falls from the heavens, crushing "
-            "the target for immense damage.",
-            cost=0,
-            dmg_mod=5,
-            crit=3,
-        )
-        self.subtyp = "Non-elemental"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        """Meteor has no special secondary effects - just massive damage"""
-        return ""
+class Meteor:
+    """Data-driven (meteor.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("meteor.yaml", cls_name="Meteor")
 
 
 class FireSpell(Attack):
@@ -5343,7 +1772,7 @@ class FireSpell(Attack):
     Arcane and elemental fire spells have lower crit but hit harder on average; chance to apply damage over time
     """
 
-    def __init__(self, name, description, cost, dmg_mod, crit):
+    def __init__(self, name: str, description: str, cost: int, dmg_mod: float, crit: int) -> None:
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Fire"
 
@@ -5365,80 +1794,40 @@ class FireSpell(Attack):
         return special_str
 
 
-class Firebolt(FireSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Firebolt",
-            description="A mote of fire propelled at the foe.",
-            cost=2,
-            dmg_mod=1.5,
-            crit=10,
-        )
-        self.school = "Arcane"
+class Firebolt:
+    """Data-driven (firebolt.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("firebolt.yaml", cls_name="Firebolt")
 
 
-class Fireball(Firebolt):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Fireball"
-        self.description = "A giant ball of fire that consumes the enemy."
-        self.cost = 10
-        self.dmg_mod = 2.0
+class Fireball:
+    """Data-driven (fireball.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("fireball.yaml", cls_name="Fireball")
 
 
-class Firestorm(Fireball):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Firestorm"
-        self.description = "Fire rains from the sky, incinerating the enemy."
-        self.cost = 20
-        self.dmg_mod = 2.5
+class Firestorm:
+    """Data-driven (firestorm.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("firestorm.yaml", cls_name="Firestorm")
 
 
-class Scorch(FireSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Scorch",
-            description="Light a fire and watch the enemy burn!",
-            cost=6,
-            dmg_mod=1.5,
-            crit=9,
-        )
-        self.school = "Elemental"
+class Scorch:
+    """Data-driven (scorch.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("scorch.yaml", cls_name="Scorch")
 
 
-class MoltenRock(Scorch):
-    """
-    Rank 1 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Molten Rock"
-        self.description = (
-            "A giant, molten boulder is hurled at the enemy, dealing great fire damage."
-        )
-        self.cost = 16
-        self.dmg_mod = 2.0
-        self.rank = 1
+class MoltenRock:
+    """Data-driven (molten_rock.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("molten_rock.yaml", cls_name="MoltenRock")
 
 
-class Volcano(MoltenRock):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Volcano"
-        self.description = "A mighty eruption burst out from beneath the enemy' feet, dealing massive fire damage."
-        self.cost = 24
-        self.dmg_mod = 2.5
-        self.rank = 2
+class Volcano:
+    """Data-driven (volcano.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("volcano.yaml", cls_name="Volcano")
 
 
 class IceSpell(Attack):
@@ -5446,7 +1835,7 @@ class IceSpell(Attack):
     Arcane ice spells have lower average damage but have the highest chance to crit; chance to do extra damage
     """
 
-    def __init__(self, name, description, cost, dmg_mod, crit):
+    def __init__(self, name: str, description: str, cost: int, dmg_mod: float, crit: int) -> None:
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Ice"
 
@@ -5463,39 +1852,22 @@ class IceSpell(Attack):
         return special_str
 
 
-class IceLance(IceSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Ice Lance",
-            description="A javelin of ice launched at the enemy.",
-            cost=4,
-            dmg_mod=1.0,
-            crit=2,
-        )
-        self.school = "Arcane"
+class IceLance:
+    """Data-driven (ice_lance.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("ice_lance.yaml", cls_name="IceLance")
 
 
-class Icicle(IceLance):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Icicle"
-        self.description = "Frozen shards rain from the sky."
-        self.cost = 9
-        self.dmg_mod = 1.5
+class Icicle:
+    """Data-driven (icicle.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("icicle.yaml", cls_name="Icicle")
 
 
-class IceBlizzard(Icicle):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Ice Blizzard"
-        self.description = (
-            "The enemy is encased in a blistering cold, penetrating into its bones."
-        )
-        self.cost = 18
-        self.dmg_mod = 2.0
+class IceBlizzard:
+    """Data-driven (ice_blizzard.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("ice_blizzard.yaml", cls_name="IceBlizzard")
 
 
 class ElectricSpell(Attack):
@@ -5503,7 +1875,7 @@ class ElectricSpell(Attack):
     Arcane electric spells have better crit than fire and better damage than ice; chance to stun
     """
 
-    def __init__(self, name, description, cost, dmg_mod, crit):
+    def __init__(self, name: str, description: str, cost: int, dmg_mod: float, crit: int) -> None:
         super().__init__(name, description, cost, dmg_mod, crit)
         self.subtyp = "Electric"
 
@@ -5516,1800 +1888,395 @@ class ElectricSpell(Attack):
                 "Status-All" in target.equipment["Pendant"].mod,
             ]
         ):
-            if random.randint(0, caster.stats.intel // 2) > random.randint(
-                target.stats.wisdom // 4, target.stats.wisdom
-            ):
+            att_roll = random.randint(0, caster.stats.intel // 2)
+            def_roll = random.randint(target.stats.wisdom // 4, target.stats.wisdom)
+            if target.stun_contest_success(caster, att_roll, def_roll):
                 special_str += f"{target.name} gets shocked and is stunned.\n"
-                target.status_effects["Stun"].active = True
-                target.status_effects["Stun"].duration = max(
-                    1 + crit, target.status_effects["Stun"].duration
+                target.apply_stun(
+                    max(1 + crit, target.status_effects["Stun"].duration),
+                    source=self.name,
+                    applier=caster,
                 )
-                caster._emit_status_event(target, "Stun", applied=True, duration=target.status_effects["Stun"].duration, source=self.name)
         return special_str
 
 
-class Shock(ElectricSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Shock",
-            description="An electrical arc from the caster's hands to the enemy.",
-            cost=6,
-            dmg_mod=1.25,
-            crit=4,
-        )
-        self.school = "Arcane"
+class Shock:
+    """Data-driven (shock.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("shock.yaml", cls_name="Shock")
 
 
-class Lightning(Shock):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Lightning"
-        self.description = "Throws a bolt of lightning at the enemy."
-        self.cost = 15
-        self.dmg_mod = 1.75
+class Lightning:
+    """Data-driven (lightning.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("lightning.yaml", cls_name="Lightning")
 
 
-class Electrocution(Lightning):
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Electrocution"
-        self.description = "A million volts of electricity passes through the enemy."
-        self.cost = 25
-        self.dmg_mod = 2.25
+class Electrocution:
+    """Data-driven (electrocution.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("electrocution.yaml", cls_name="Electrocution")
 
 
-class WaterSpell(Attack):
-    """
-    Elemental water spells have lower average damage but have the highest chance to crit; chance to add drown (doom) status
-    """
-
-    def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost, dmg_mod, crit)
-        self.subtyp = "Water"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO add doom status
-        special_str = ""
-        return special_str
+class WaterJet:
+    """Data-driven (water_jet.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("water_jet.yaml", cls_name="WaterJet")
 
 
-class WaterJet(WaterSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Water Jet",
-            description="A jet of water erupts from beneath the enemy's feet.",
-            cost=4,
-            dmg_mod=1.0,
-            crit=3,
-        )
-        self.school = "Elemental"
+class Aqualung:
+    """Rank 1 Enemy Spell — data-driven (aqualung.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("aqualung.yaml", cls_name="Aqualung")
 
 
-class Aqualung(WaterJet):
-    """
-    Rank 1 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Aqualung"
-        self.description = "Giant water bubbles surround the enemy and burst, causing great water damage."
-        self.cost = 13
-        self.dmg_mod = 1.5
-        self.rank = 1
+class Tsunami:
+    """Rank 2 Enemy Spell — data-driven (tsunami.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("tsunami.yaml", cls_name="Tsunami")
 
 
-class Tsunami(Aqualung):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Tsunami"
-        self.description = "A massive tidal wave cascades over your foes."
-        self.cost = 26
-        self.dmg_mod = 2.0
-        self.rank = 2
+class Hydration:
+    def __new__(cls):
+        return _load_yaml_ability("hydration.yaml", cls_name="Hydration")
 
 
-class Hydration(HealSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Hydration",
-            description="Bath yourself in restorative waters, healing for an initial "
-            "amount then more over time.",
-            cost=16,
-            heal=0.3,
-            crit=5,
-        )
-        self.turns = 2
-
-    def hot(self, caster: Character, heal: int) -> None:
-        """Apply heal-over-time effect using Regen magic effect."""
-        caster.magic_effects["Regen"].active = True
-        caster.magic_effects["Regen"].duration = max(
-            self.turns, caster.magic_effects["Regen"].duration
-        )
-        caster.magic_effects["Regen"].extra = max(
-            heal, caster.magic_effects["Regen"].extra
-        )
-        caster._emit_status_event(caster, "Regen", applied=True, duration=caster.magic_effects["Regen"].duration, source="Heal")
+class Tremor:
+    """Data-driven (tremor.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("tremor.yaml", cls_name="Tremor")
 
 
-class EarthSpell(Attack):
-    """
-    Elemental earth spells have lower crit but hit harder on average; chance to stun on hit; flying characters immune
-    """
-
-    def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost, dmg_mod, crit)
-        self.subtyp = "Earth"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO
-        special_str = ""
-        return special_str
+class Mudslide:
+    """Rank 1 Enemy Spell — data-driven (mudslide.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("mudslide.yaml", cls_name="Mudslide")
 
 
-class Tremor(EarthSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Tremor",
-            description="The ground shakes, causing objects to fall and damage the enemy.",
-            cost=3,
-            dmg_mod=1.5,
-            crit=8,
-        )
-        self.school = "Elemental"
+class Earthquake:
+    """Rank 2 Enemy Spell — data-driven (earthquake.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("earthquake.yaml", cls_name="Earthquake")
 
 
-class Mudslide(Tremor):
-    """
-    Rank 1 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Mudslide"
-        self.description = (
-            "A torrent of mud and earth sweep over the enemy, causing earth damage."
-        )
-        self.cost = 16
-        self.dmg_mod = 2.0
-        self.rank = 1
+class Sandstorm:
+    """Enemy Spell — data-driven (sandstorm.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("sandstorm.yaml", cls_name="Sandstorm")
 
 
-class Earthquake(Mudslide):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Earthquake"
-        self.description = (
-            "The cave wall and ceiling are brought down by a massive seismic event, dealing "
-            "devastating earth damage."
-        )
-        self.cost = 26
-        self.dmg_mod = 2.5
-        self.rank = 2
+class Gust:
+    """Data-driven (gust.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("gust.yaml", cls_name="Gust")
 
 
-class Sandstorm(EarthSpell):
-    """
-    Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Sandstorm",
-            description="Engulf the enemy in a sandstorm, doing damage and blinding "
-            "them.",
-            cost=22,
-            dmg_mod=2.0,
-            crit=6,
-        )
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if not any(
-            [
-                "Blind" in target.status_immunity,
-                "Status-Blind" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Blind"].active:
-                if random.randint(
-                    caster.stats.intel // 2, caster.stats.intel
-                ) > random.randint(target.stats.con // 2, target.stats.con):
-                    target.status_effects["Blind"].active = True
-                    target.status_effects["Blind"].duration = 3
-                    caster._emit_status_event(target, "Blind", applied=True, duration=3, source=self.name)
-                    return f"{target.name} is blinded by the {self.name}.\n"
-        return special_str
+class Hurricane:
+    """Rank 1 Enemy Spell — data-driven (hurricane.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("hurricane.yaml", cls_name="Hurricane")
 
 
-class WindSpell(Attack):
-    """
-    Elemental wind spells have better crit than earth and better damage than water; chance to eject enemy
-    """
-
-    def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost, dmg_mod, crit)
-        self.subtyp = "Wind"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO add eject enemy effect
-        special_str = ""
-        return special_str
-
-
-class Gust(WindSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Gust",
-            description="A strong gust of wind whips past the enemy.",
-            cost=7,
-            dmg_mod=1.25,
-            crit=6,
-        )
-        self.school = "Elemental"
-
-
-class Hurricane(Gust):
-    """
-    Rank 1 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Hurricane"
-        self.description = (
-            "A violent storm berates your foes, causing great wind damage."
-        )
-        self.cost = 22
-        self.dmg_mod = 1.75
-        self.rank = 1
-
-
-class Tornado(Hurricane):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.name = "Tornado"
-        self.description = "You bring down a cyclone that pelts the enemy with debris and causes massive wind damage."
-        self.cost = 40
-        self.dmg_mod = 2.25
-        self.rank = 2
+class Tornado:
+    """Rank 2 Enemy Spell — data-driven (tornado.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("tornado.yaml", cls_name="Tornado")
 
 
 # Shadow spells
-class ShadowSpell(Attack):
-
-    def __init__(self, name, description, cost, dmg_mod, crit):
-        super().__init__(name, description, cost, dmg_mod, crit)
-        self.subtyp = "Shadow"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:  # TODO special effect
-        special_str = ""
-        return special_str
+class ShadowBolt:
+    """Data-driven (shadow_bolt.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("shadow_bolt.yaml", cls_name="ShadowBolt")
 
 
-class ShadowBolt(ShadowSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Shadow Bolt",
-            description="Launch a bolt of magic infused with dark energy, damaging the"
-            " enemy.",
-            cost=8,
-            dmg_mod=1.5,
-            crit=5,
-        )
-        self.school = "Shadow"
+class ShadowBolt2:
+    """Data-driven (shadow_bolt_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("shadow_bolt_2.yaml", cls_name="ShadowBolt2")
 
 
-class ShadowBolt2(ShadowBolt):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 20
-        self.dmg_mod = 2.0
-        self.crit = 4
+class ShadowBolt3:
+    """Data-driven (shadow_bolt_3.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("shadow_bolt_3.yaml", cls_name="ShadowBolt3")
 
 
-class ShadowBolt3(ShadowBolt):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 30
-        self.dmg_mod = 2.5
-        self.crit = 3
+class Corruption:
+    """Data-driven (corruption.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("corruption.yaml", cls_name="Corruption")
 
 
-class Corruption(ShadowSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Corruption",
-            description="Damage the enemy and add a debuff that does damage over time.",
-            cost=16,
-            dmg_mod=1.25,
-            crit=5,
-        )
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if random.randint(
-            (caster.stats.charisma * crit) // 2, (caster.stats.charisma * crit)
-        ) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-            turns = max(1, caster.stats.charisma // 10)
-            target.magic_effects["DOT"].active = True
-            target.magic_effects["DOT"].duration = max(
-                turns, target.magic_effects["DOT"].duration
-            )
-            target.magic_effects["DOT"].extra = max(
-                damage, target.magic_effects["DOT"].extra
-            )
-            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source="Corruption")
-            special_str += (
-                f"{caster.name}'s magic penetrates {target.name}'s defenses.\n"
-            )
-        return special_str
-
-
-class Terrify(ShadowSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Terrify",
-            description="Get in the mind of the enemy, terrifying them into inaction and "
-            "doing damage in the process.",
-            cost=18,
-            dmg_mod=1.0,
-            crit=4,
-        )
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if not any(
-            [
-                "Stun" in target.status_immunity,
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Stun"].active:
-                if random.randint(0, (caster.stats.charisma * crit)) > random.randint(
-                    target.stats.wisdom // 2, target.stats.wisdom
-                ):
-                    turns = 1 + int(crit > 1)
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = turns
-                    caster._emit_status_event(target, "Stun", applied=True, duration=turns, source="Terrify")
-                    special_str += f"{caster.name} stunned {target.name}.\n"
-        return special_str
+class Terrify:
+    """Data-driven (terrify.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("terrify.yaml", cls_name="Terrify")
 
 
 # Death spells
-class Doom(DeathSpell):
-    """
-    Can't be reflected
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Doom",
-            description="Places a timer on the enemy's life, ending it when the timer "
-            "expires.",
-            cost=15,
-        )
-        self.timer = 5
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        cast_message = ""
-        if not special:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        chance = target.check_mod("luck", enemy=caster, luck_factor=10)
-        if not any(
-            [
-                "Doom" in target.status_immunity,
-                f"Status-Doom" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Doom"].active:
-                if (
-                    random.randint(caster.stats.charisma // 4, caster.stats.charisma)
-                    > random.randint(target.stats.wisdom // 2, target.stats.wisdom)
-                    + chance
-                ):
-                    target.status_effects["Doom"].active = True
-                    target.status_effects["Doom"].duration = self.timer
-                    caster._emit_status_event(target, "Doom", applied=True, duration=self.timer, source="Doom")
-                    cast_message += (
-                        f"A timer has been placed on {target.name}'s life.\n"
-                    )
-                else:
-                    if not special:
-                        cast_message += "The magic has no effect.\n"
-        else:
-            if not special:
-                cast_message += f"{target.name} is immune to death spells.\n"
-        return cast_message
+class Doom:
+    """Data-driven (doom.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("doom.yaml", cls_name="Doom")
 
 
-class Desoul(DeathSpell):
-    """
-    Can't be reflected
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Desoul",
-            description="Removes the soul from the enemy, instantly killing it.",
-            cost=50,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        cast_message = ""
-        if not special:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        resist = target.check_mod("resist", enemy=caster, typ=self.subtyp)
-        chance = target.check_mod("luck", enemy=caster, luck_factor=10)
-        if resist < 1:
-            if (
-                random.randint(0, caster.stats.charisma // 4) * (1 - resist)
-                > random.randint(target.stats.con // 2, target.stats.con) + chance
-            ):
-                target.health.current = 0
-                cast_message += f"{target.name} has their soul ripped right out and falls to the ground dead.\n"
-            else:
-                if not special:
-                    cast_message += "The spell has no effect.\n"
-        else:
-            if not special:
-                cast_message += f"{target.name} is immune to death spells.\n"
-        return cast_message
+class Desoul:
+    """Death spell — data-driven (desoul.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("desoul.yaml", cls_name="Desoul")
 
 
-class Petrify(DeathSpell):
-    """
-    Rank 2 Enemy Spell; Can't be reflected except by Medusa Shield
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Petrify",
-            description="Gaze at the enemy and turn them into stone.",
-            cost=50,
-        )
-        self.rank = 2
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        cast_message = ""
-        if not special:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if target.equipment["OffHand"].name == "Medusa Shield":
-            cast_message += f"{target.name} uses the Medusa Shield to reflect {self.name} back at {caster.name}!"
-            target = caster
-        chance = target.check_mod("luck", enemy=caster, luck_factor=1)
-        if not "Stone" in target.status_immunity:
-            if (
-                random.randint(0, caster.stats.charisma)
-                > random.randint(target.stats.con // 2, target.stats.con) + chance
-            ):
-                target.health.current = 0
-                cast_message += f"{target.name} is turned to stone!"
-            else:
-                if not special:
-                    cast_message += "The spell has no effect.\n"
-        else:
-            if not special:
-                cast_message += f"{target.name} is immune to petrify.\n"
-        return cast_message
+class Petrify:
+    """Death spell — data-driven (petrify.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("petrify.yaml", cls_name="Petrify")
 
 
-class Disintegrate(DeathSpell):
-    """
-    Can't be reflected or absorbed by Mana Shield
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Disintegrate",
-            description="An intense blast focused directly at the target, "
-            "obliterating them or doing great damage.",
-            cost=65,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = ""
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        resist = target.check_mod("resist", enemy=caster, typ=self.subtyp)
-        chance = target.check_mod("luck", enemy=caster, luck_factor=15)
-        if resist < 1:
-            if (
-                random.randint(0, caster.stats.charisma) * (1 - resist)
-                > random.randint(target.stats.con // 2, target.stats.con) + chance
-            ):
-                target.health.current = 0
-                cast_message += f"The intense blast from disintegrate leaves {target.name} in a heap of ashes.\n"
-        if target.is_alive():
-            damage = int(caster.stats.charisma + (target.health.current * 0.25))
-            if random.randint(0, chance):
-                cast_message += f"{target.name} dodges the brunt of the blast, taking only half damage.\n"
-                damage //= 2
-            target.health.current -= damage
-            cast_message += f"The blast from {self.name.lower()} hurts {target.name} for {damage} damage.\n"
-        return cast_message
+class Disintegrate:
+    """Data-driven (disintegrate.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("disintegrate.yaml", cls_name="Disintegrate")
 
 
 # Holy spells
-class Smite(HolySpell):
-    """
-    Can't be reflected; holy damage crit based on melee crit and can be absorbed by mana shield TODO
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Smite",
-            description="The power of light rebukes the enemy, adding bonus holy damage to "
-            "a successful attack roll.",
-            cost=10,
-            dmg_mod=1.0,
-            crit=4,
-        )
-        self.school = "Holy"
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        caster.mana.current -= self.cost
-        cast_message, hit, crit = caster.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
-        )
-        if hit and target.is_alive():
-            spell_mod = caster.check_mod("magic", enemy=target)
-            spell_mod = random.randint(spell_mod // 2, spell_mod)
-            dam_red = target.check_mod("magic def", enemy=caster)
-            resist = target.check_mod("resist", enemy=caster, typ="Holy")
-            damage = int(self.dmg_mod * spell_mod)
-            damage *= crit
-            if target.magic_effects["Mana Shield"].active:
-                hit, message, damage = target.handle_mana_shield(damage)
-                cast_message += message
-            elif (
-                target.cls.name == "Crusader"
-                and target.power_up
-                and target.class_effects["Power Up"].active
-            ):
-                hit, message, damage = target.handle_crusader_shield(damage)
-                cast_message += message
-            damage = int(damage * (1 - resist))
-            if damage < 0:
-                target.health.current -= damage
-                cast_message += f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
-            else:
-                damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
-                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-                damage = int(damage * variance)
-                if damage <= 0:
-                    damage = 0
-                    cast_message += f"{self.name} was ineffective and does no damage.\n"
-                elif random.randint(0, target.stats.con // 2) > random.randint(
-                    (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)
-                ):
-                    damage //= 2
-                    if damage > 0:
-                        cast_message += f"{target.name} shrugs off the {self.name} and only receives half of the damage.\n"
-                        cast_message += f"{caster.name} smites {target.name} for {damage} hit points.\n"
-                    else:
-                        cast_message += (
-                            f"{self.name} was ineffective and does no damage.\n"
-                        )
-                else:
-                    cast_message += (
-                        f"{caster.name} smites {target.name} for {damage} hit points.\n"
-                    )
-                target.health.current -= damage
-        return cast_message
+class Smite:
+    """Data-driven (smite.yaml) – weapon strike + holy follow-up."""
+    def __new__(cls):
+        return _load_yaml_ability("smite.yaml", cls_name="Smite")
 
 
-class Smite2(Smite):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 20
-        self.dmg_mod = 1.25
-        self.crit = 3
+class Smite2:
+    """Data-driven (smite_2.yaml) – upgraded Smite."""
+    def __new__(cls):
+        return _load_yaml_ability("smite_2.yaml", cls_name="Smite2")
 
 
-class Smite3(Smite):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 32
-        self.dmg_mod = 1.5
-        self.crit = 2
+class Smite3:
+    """Data-driven (smite_3.yaml) – upgraded Smite."""
+    def __new__(cls):
+        return _load_yaml_ability("smite_3.yaml", cls_name="Smite3")
 
 
-class Holy(Attack):
-
-    def __init__(self):
-        super().__init__(
-            name="Holy",
-            description="The enemy is bathed in a holy light, cleansing it of evil. There "
-            "is a chance on critical hit that the target will be blinded for a "
-            "duration.",
-            cost=4,
-            dmg_mod=1.25,
-            crit=10,
-        )
-        self.subtyp = "Holy"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if not any(
-            [
-                "Blind" in target.status_immunity,
-                "Status-Blind" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if crit:
-                special_str += f"{target.name} is blinded by the light!\n"
-                target.status_effects["Blind"].active = True
-                target.status_effects["Blind"].duration = 2
-                caster._emit_status_event(target, "Blind", applied=True, duration=2, source="Holy")
-        return special_str
+class Holy:
+    """Data-driven (holy.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("holy.yaml", cls_name="Holy")
 
 
-class Holy2(Holy):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 12
-        self.dmg_mod = 1.5
-        self.crit = 8
+class Holy2:
+    """Data-driven (holy_2.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("holy_2.yaml", cls_name="Holy2")
 
 
-class Holy3(Holy):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 28
-        self.dmg_mod = 2.0
-        self.crit = 6
+class Holy3:
+    """Data-driven (holy_3.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("holy_3.yaml", cls_name="Holy3")
 
 
-class TurnUndead(HolySpell):
-    """
-    crit will double chance of kill or double damage
-    can't be absorbed or reflected
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Turn Undead",
-            description="A holy chant is recited with a chance to banish any nearby "
-            "undead from existence.",
-            cost=8,
-            dmg_mod=1.5,
-            crit=5,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = ""
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if target.enemy_typ == "Undead":
-            crit = 1
-            chance = max(2, target.check_mod("luck", enemy=caster, luck_factor=6))
-            if not random.randint(0, self.crit):
-                crit = 2
-                chance -= 1
-            if not random.randint(0, chance):
-                target.health.current = 0
-                cast_message += f"The {target.name} has been rebuked, destroying the undead monster.\n"
-            else:
-                spell_mod = caster.check_mod("magic", enemy=target)
-                spell_mod = random.randint(spell_mod // 2, spell_mod)
-                dam_red = target.check_mod("magic def", enemy=caster)
-                resist = target.check_mod("resist", enemy=caster, typ="Holy")
-                damage = int(self.dmg_mod * spell_mod)
-                damage *= crit
-                damage = int(damage * (1 - resist) * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
-                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
-                damage = int(damage * variance)
-                target.health.current -= damage
-                damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
-                if crit > 1:
-                    damage_msg += " (Critical hit!)"
-                cast_message += damage_msg + ".\n"
-        else:
-            cast_message += "The spell does nothing.\n"
-        return cast_message
+class TurnUndead:
+    """Data-driven (turn_undead.yaml) – undead-only kill or holy damage."""
+    def __new__(cls):
+        return _load_yaml_ability("turn_undead.yaml", cls_name="TurnUndead")
 
 
-class TurnUndead2(TurnUndead):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 20
-        self.dmg_mod = 2.0
-        self.crit = 3
+class TurnUndead2:
+    """Data-driven (turn_undead_2.yaml) – upgraded Turn Undead."""
+    def __new__(cls):
+        return _load_yaml_ability("turn_undead_2.yaml", cls_name="TurnUndead2")
 
 
 # Heal spells
-class Heal(HealSpell):
-    """
-    Critical heal will double healing amount
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Heal",
-            description="A glowing light envelopes your body and heals you for a percentage "
-            "of the target's health.",
-            cost=6,
-            heal=0.3,
-            crit=5,
-        )
-
-    def cast_out(self, actor) -> str:
-        """
-        UI-agnostic: expects an actor (player character) object, not a Game object.
-        Args:
-            actor: The character to heal (should have .name, .health, .mana, etc.)
-        Returns:
-            str: Result of the ability
-        """
-        cast_message = f"{actor.name} casts {self.name}.\n"
-        if actor.health.current == actor.health.max:
-            cast_message += f"You are already at full health.\n"
-            return cast_message
-        actor.mana.current -= self.cost
-        crit = 1
-        heal_mod = actor.check_mod("heal")
-        heal = int(actor.health.max * self.heal + heal_mod)
-        if not random.randint(0, self.crit):
-            cast_message += f"Critical Heal!\n"
-            crit = 2
-        heal *= crit
-        actor.health.current += heal
-        actor._emit_healing_event(heal, source=self.name)
-        cast_message += (
-            f"{actor.name} heals themself for {heal} hit points.\n"
-        )
-        if actor.health.current >= actor.health.max:
-            actor.health.current = actor.health.max
-            cast_message += f"{actor.name} is at full health.\n"
-        return cast_message
+class Heal:
+    def __new__(cls):
+        return _load_yaml_ability("heal.yaml", cls_name="Heal")
 
 
-class Heal2(Heal):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 12
-        self.heal = 0.45
+class Heal2:
+    def __new__(cls):
+        return _load_yaml_ability("heal_2.yaml", cls_name="Heal2")
 
 
-class Heal3(Heal):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 25
-        self.heal = 0.6
+class Heal3:
+    def __new__(cls):
+        return _load_yaml_ability("heal_3.yaml", cls_name="Heal3")
 
 
-class Regen(HealSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Regen",
-            description="Cooling waters stimulate your natural healing ability, regenerating"
-            " health over time.",
-            cost=8,
-            heal=0.2,
-            crit=5,
-        )
-        self.combat = True
-        self.turns = 3
-
-    def hot(self, caster: Character, heal: int) -> None:
-        caster.magic_effects["Regen"].active = True
-        caster.magic_effects["Regen"].duration = max(
-            self.turns, caster.magic_effects["Regen"].duration
-        )
-        caster.magic_effects["Regen"].extra = max(
-            heal, caster.magic_effects["Regen"].extra
-        )
-        caster._emit_status_event(caster, "Regen", applied=True, duration=caster.magic_effects["Regen"].duration, source="Heal")
+class Regen:
+    def __new__(cls):
+        return _load_yaml_ability("regen.yaml", cls_name="Regen")
 
 
-class Regen2(Regen):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 18
-        self.heal = 0.3
+class Regen2:
+    def __new__(cls):
+        return _load_yaml_ability("regen_2.yaml", cls_name="Regen2")
 
 
-class Regen3(Regen):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 30
-        self.heal = 0.4
+class Regen3:
+    def __new__(cls):
+        return _load_yaml_ability("regen_3.yaml", cls_name="Regen3")
 
 
 # Support spells
-class Bless(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Bless",
-            description="A prayer is spoken, bestowing a mighty blessing upon the caster's "
-            "weapon, increasing melee damage.",
-            cost=12,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        if not fam:
-            target = caster
-        if not (fam or special):
-            caster.mana.current -= self.cost
-        attack_amount = 10
-        defense_amount = 8
-        duration = 5
-
-        target.stat_effects["Attack"].active = True
-        target.stat_effects["Attack"].duration = max(duration, target.stat_effects["Attack"].duration)
-        target.stat_effects["Attack"].extra = max(attack_amount, target.stat_effects["Attack"].extra)
-
-        target.stat_effects["Defense"].active = True
-        target.stat_effects["Defense"].duration = max(duration, target.stat_effects["Defense"].duration)
-        target.stat_effects["Defense"].extra = max(defense_amount, target.stat_effects["Defense"].extra)
-
-        return (
-            f"{target.name}'s attack increases by {attack_amount} and defense increases by {defense_amount}.\n"
-        )
+class Bless:
+    def __new__(cls):
+        return _load_yaml_ability("bless.yaml", cls_name="Bless")
 
 
-class Boost(SupportSpell):
-    """
-    Increases magic damage
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Boost",
-            description="Supercharge the magic capabilities of the target, increasing magic"
-            " damage.",
-            cost=22,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        if not fam:
-            target = caster
-        if not (
-            special
-            or fam
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
-        ):
-            caster.mana.current -= self.cost
-        amount = random.randint(target.combat.magic // 4, target.combat.magic // 2)
-        target.stat_effects["Magic"].active = True
-        target.stat_effects["Magic"].duration = max(3, caster.stats.intel // 10)
-        target.stat_effects["Magic"].extra = amount
-        return f"{target.name}'s magic increases by {amount}.\n"
+class Boost:
+    def __new__(cls):
+        return _load_yaml_ability("boost.yaml", cls_name="Boost")
 
 
-class Shell(SupportSpell):
-    """
-    Increases magic defense
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Shell",
-            description="The target is shrouded in a magical veil, lessening the damage from"
-            " magic attacks.",
-            cost=26,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if target is None:
-            target = caster
-        if not special:
-            caster.mana.current -= self.cost
-        amount = random.randint(
-            target.combat.magic_def // 4, target.combat.magic_def // 2
-        )
-        target.stat_effects["Magic Defense"].active = True
-        target.stat_effects["Magic Defense"].duration = max(3, caster.stats.intel // 10)
-        target.stat_effects["Magic Defense"].extra = amount
-        return f"{target.name}'s magic defense increases by {amount}.\n"
+class Shell:
+    def __new__(cls):
+        return _load_yaml_ability("shell.yaml", cls_name="Shell")
 
 
-class Reflect(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Reflect",
-            description="A magical shield surrounds the user, reflecting incoming spells "
-            "back at the caster.",
-            cost=14,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        if not fam:
-            target = caster
-            if (
-                not caster.cls.name == "Wizard"
-                and caster.class_effects["Power Up"].active
-            ):
-                caster.mana.current -= self.cost
-        target.magic_effects["Reflect"].active = True
-        target.magic_effects["Reflect"].duration = max(4, caster.stats.intel // 10)
-        caster._emit_status_event(target, "Reflect", applied=True, duration=target.magic_effects["Reflect"].duration, source="Reflect")
-        return f"A magic force field envelopes {target.name}.\n"
+class Reflect:
+    def __new__(cls):
+        return _load_yaml_ability("reflect.yaml", cls_name="Reflect")
 
 
-class Resurrection(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Resurrection",
-            description="The ultimate boon bestowed upon only the chosen few. Life "
-            "returns where it once left.",
-            cost=0,
-        )
-        self.passive = True
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = ""
-        if target is None:
-            target = caster
-            max_heal = target.health.max - target.health.current
-            if target.mana.current > max_heal:
-                target.health.current = target.health.max
-                target.mana.current -= max_heal
-                cast_message += (
-                    f"{target.name} expends mana and is healed to full life!"
-                )
-            else:
-                target.health.current += target.mana.current
-                cast_message += f"{target.name} expends all mana and is healed for {target.mana.current} hit points!"
-                target.mana.current = 0
-        else:
-            heal = int(target.health.max * 0.1)
-            target.health.current = heal
-            cast_message += f"{target.name} is brought back to life and is healed for {heal} hit points.\n"
-        caster.mana.current -= self.cost
-        return cast_message
+class Resurrection:
+    """Data-driven (resurrection.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("resurrection.yaml", cls_name="Resurrection")
 
 
-class Cleanse(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Cleanse",
-            description="You feel all ailments leave your body like a draught of panacea.",
-            cost=20,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        if target is None:
-            target = caster
-        if not (special or fam):
-            caster.mana.current -= self.cost
-        for effect in target.status_effects:
-            target.status_effects[effect].active = False
-        return f"All negative status effects have been cured for {target.name}!\n"
+class Cleanse:
+    def __new__(cls):
+        return _load_yaml_ability("cleanse.yaml", cls_name="Cleanse")
 
 
-class ResistAll(SupportSpell):
-
-    def __init__(self):
-        super().__init__(name="Resist All", description="", cost=25)
-
-    def cast(self, caster, target=None, special=False):
-        return f"All spell resistances are increased by 50% for {target.name}.\n"
+class ResistAll:
+    """Data-driven (resist_all.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("resist_all.yaml", cls_name="ResistAll")
 
 
-class DivineProtection(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Divine Protection",
-            description="A shimmering aura envelops the user, shielding them "
-            "with the celestial power of the Divine. While active, "
-            "Divine Protection fortifies defenses, significantly "
-            "reducing incoming physical damage.",
-            cost=12,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        caster.mana.current -= self.cost
-        amount = random.randint(target.combat.defense // 4, target.combat.defense // 2)
-        caster.stat_effects["Defense"].active = True
-        caster.stat_effects["Defense"].duration = max(
-            5, caster.stat_effects["Defense"].duration
-        )
-        caster.stat_effects["Defense"].extra = amount
-        return (
-            f"A golden aura protects {target.name}, increasing defense by {amount}.\n"
-        )
+class DivineProtection:
+    def __new__(cls):
+        return _load_yaml_ability("divine_protection.yaml", cls_name="DivineProtection")
 
 
-class IceBlock(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Ice Block",
-            description="The user encases themself in a block of ice, preventing damage"
-            " and regaining health and mana over 3 turns. The user cannot "
-            "act while frozen and any effects active will be paused.",
-            cost=30,
-        )
-        self.school = "Ice"
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        target = caster
-        caster.mana.current -= self.cost
-        caster.magic_effects["Ice Block"].active = True
-        caster.magic_effects["Ice Block"].duration = 3
-        caster._emit_status_event(caster, "Ice Block", applied=True, duration=3, source="Resist All")
-        return f"{target.name} encases themself in a block of ice, making them invulnerable for a time."
+class IceBlock:
+    def __new__(cls):
+        return _load_yaml_ability("ice_block.yaml", cls_name="IceBlock")
 
 
-class Vulcanize(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Vulcanize",
-            description="Fire can be very destructive but can sometimes harden. The "
-            "user is engulfed in flames, taking fire damage but increasing "
-            "armor.",
-            cost=15,
-        )
-        self.school = "Fire"
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = ""
-        target = caster
-        caster.mana.current -= self.cost
-        fire_resist = target.check_mod("resist", enemy=caster, typ="Fire")
-        damage = int((1 - fire_resist) * (target.health.current * 0.1))
-        target.health.current -= damage
-        caster._emit_damage_event(target, damage, damage_type="Fire", is_critical=False)
-        if damage > 0:
-            cast_message += f"{target.name} takes {damage} damage from the flames.\n"
-        elif damage < 0:
-            cast_message += (
-                f"{target.name} is healed by the flames for {damage} hit points.\n"
-            )
-        if target.is_alive():
-            def_gain = target.combat.defense + caster.stats.intel
-            target.stat_effects["Defense"].active = True
-            target.stat_effects["Defense"].duration = 5
-            target.stat_effects["Defense"].extra = random.randint(
-                def_gain // 4, def_gain // 2
-            )
-            cast_message += f"{target.name} is hardened by the flames.\n"
-        return cast_message
+class Vulcanize:
+    """Data-driven (vulcanize.yaml) – self fire-damage + defense buff."""
+    def __new__(cls):
+        return _load_yaml_ability("vulcanize.yaml", cls_name="Vulcanize")
 
 
-class WindSpeed(SupportSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Wind Speed",
-            description="The power of the wind is at the user's back, increasing dodge"
-            " chance and increases chance to flee in battle.",
-            cost=12,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        target = caster
-        caster.mana.current -= self.cost
-        amount = random.randint(caster.stats.intel // 4, caster.stats.intel // 2)
-        target.stat_effects["Speed"].active = True
-        target.stat_effects["Speed"].duration = 5
-        target.stat_effects["Speed"].extra = amount
-        return f"The wind propels {caster.name}, increasing speed by {amount}.\n"
+class WindSpeed:
+    def __new__(cls):
+        return _load_yaml_ability("wind_speed.yaml", cls_name="WindSpeed")
 
 
 # Movement spells
-class Sanctuary(MovementSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Sanctuary",
-            description="Return to town from anywhere in the dungeon.",
-            cost=100,
-        )
-
-    def cast_out(self, user):
-        user.mana.current -= self.cost
-        user.health.current = user.health.max
-        user.mana.current = user.mana.max
-        user.to_town()
-        return f"{user.name} casts Sanctuary and is transported back to town.\n"
+class Sanctuary:
+    """Data-driven (sanctuary.yaml) – return to town, full heal."""
+    def __new__(cls):
+        return _load_yaml_ability("sanctuary.yaml", cls_name="Sanctuary")
 
 
-class Teleport(MovementSpell):
-    """
-    TODO
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Teleport",
-            description="Teleport the user to a previously set location on the same level.",
-            cost=50,
-        )
-        self.combat = False
-
-    def cast_out(self, selection_callback=None, game=None):
-        """
-        Teleport or set location. UI-agnostic: expects a selection_callback for user interaction.
-        Args:
-            selection_callback: Callable (teleport_message, options) -> option_index
-            game: Optional game context
-        Returns:
-            str: Result of the ability
-        """
-        teleport_message = (
-            "Do you want to set your location or teleport to the previous location?"
-        )
-        options = ["Set", "Teleport"]
-        if selection_callback is not None:
-            option_index = selection_callback(teleport_message, options)
-        else:
-            option_index = random.randint(0, len(options) - 1)
-        if options[option_index] == "Set":
-            cast_message = (
-                f"This location has been set for teleport by {game.player_char.name}.\n"
-            )
-            game.player_char.teleport = (
-                game.player_char.location_x,
-                game.player_char.location_y,
-                game.player_char.location_z,
-            )
-        else:
-            cast_message = f"{game.player_char.name} teleports to set location.\n"
-            game.player_char.mana.current -= self.cost
-            (
-                game.player_char.location_x,
-                game.player_char.location_y,
-                game.player_char.location_z,
-            ) = game.player_char.teleport
-        return cast_message
+class Teleport:
+    """Data-driven (teleport.yaml) – set/restore location."""
+    def __new__(cls):
+        return _load_yaml_ability("teleport.yaml", cls_name="Teleport")
 
 
 # Illusion spells
-class MirrorImage(IllusionSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Mirror Image",
-            description="Create an illusion to fool the enemy into seeing multiple "
-            "of the user, sometimes causing the enemy to target the "
-            "wrong one. The illusion lasts until until the user is hit.",
-            cost=8,
-        )
-        self.duplicates = 2
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = (
-            f"{caster.name} creates duplicates of themself to fool {target.name}.\n"
-        )
-        caster.magic_effects["Duplicates"].active = True
-        caster.magic_effects["Duplicates"].duration = self.duplicates
-        caster._emit_status_event(caster, "Duplicates", applied=True, duration=self.duplicates, source="Mirror Image")
-        return cast_message
+class MirrorImage:
+    def __new__(cls):
+        return _load_yaml_ability("mirror_image.yaml", cls_name="MirrorImage")
 
 
-class MirrorImage2(MirrorImage):
-
-    def __init__(self):
-        super().__init__()
-        self.cost = 20
-        self.duplicates = 4
+class MirrorImage2:
+    def __new__(cls):
+        return _load_yaml_ability("mirror_image_2.yaml", cls_name="MirrorImage2")
 
 
-class AstralShift(IllusionSpell):
-    """
-    Partially shifts the character into the astral plane, reducing damage taken by 25%.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Astral Shift",
-            description="Partially shift into the astral plane, reducing physical and magical damage by 25%.",
-            cost=18,
-        )
-        self.duration_base = 4
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        target = caster
-        if not cover:
-            caster.mana.current -= self.cost
-        
-        duration = self.duration_base + (caster.stats.wisdom // 20)
-        
-        target.magic_effects["Astral Shift"].active = True
-        target.magic_effects["Astral Shift"].duration = max(duration, target.magic_effects["Astral Shift"].duration)
-        
-        caster._emit_status_event(target, "Astral Shift", applied=True, duration=duration, source="Astral Shift")
-        
-        return f"{target.name} shifts partially into the astral plane, reducing damage taken by 25%.\n"
+class AstralShift:
+    def __new__(cls):
+        return _load_yaml_ability("astral_shift.yaml", cls_name="AstralShift")
 
 
 # Status spells
-class Hex(StatusSpell):
-    """
-    Applies a hex that can inflict poison, blind, and silence.
-    Each effect has its own resistance check.
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Hex",
-            description="Afflict the target with a hex that can poison, blind, and silence.",
-            cost=14,
-        )
-        self.turns = 3
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        if target is None:
-            return "No target specified.\n"
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-
-        cast_message = f"{caster.name} curses {target.name} with a hex.\n"
-        applied = False
-
-        # Poison: Con vs caster Int
-        if not any(
-            [
-                "Poison" in target.status_immunity,
-                f"Status-Poison" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Poison"].active:
-                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-                    target.stats.con // 2, target.stats.con
-                ):
-                    poison_damage = max(1, caster.stats.intel // 4)
-                    target.status_effects["Poison"].active = True
-                    target.status_effects["Poison"].duration = max(
-                        self.turns, target.status_effects["Poison"].duration
-                    )
-                    target.status_effects["Poison"].extra = max(
-                        poison_damage, target.status_effects["Poison"].extra
-                    )
-                    caster._emit_status_event(
-                        target,
-                        "Poison",
-                        applied=True,
-                        duration=target.status_effects["Poison"].duration,
-                        source="Hex",
-                    )
-                    cast_message += f"{target.name} is poisoned.\n"
-                    applied = True
-
-        # Blind: Con vs caster Int
-        if not any(
-            [
-                "Blind" in target.status_immunity,
-                "Status-Blind" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Blind"].active:
-                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-                    target.stats.con // 2, target.stats.con
-                ):
-                    target.status_effects["Blind"].active = True
-                    target.status_effects["Blind"].duration = max(
-                        self.turns, target.status_effects["Blind"].duration
-                    )
-                    caster._emit_status_event(
-                        target,
-                        "Blind",
-                        applied=True,
-                        duration=target.status_effects["Blind"].duration,
-                        source="Hex",
-                    )
-                    cast_message += f"{target.name} is blinded.\n"
-                    applied = True
-
-        # Silence: Wis vs caster Int
-        if not any(
-            [
-                "Silence" in target.status_immunity,
-                f"Status-Silence" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Silence"].active:
-                if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-                    target.stats.wisdom // 2, target.stats.wisdom
-                ):
-                    target.status_effects["Silence"].active = True
-                    target.status_effects["Silence"].duration = max(
-                        self.turns, target.status_effects["Silence"].duration
-                    )
-                    caster._emit_status_event(
-                        target,
-                        "Silence",
-                        applied=True,
-                        duration=target.status_effects["Silence"].duration,
-                        source="Hex",
-                    )
-                    cast_message += f"{target.name} is silenced.\n"
-                    applied = True
-
-        if not applied:
-            cast_message += "The hex has no effect.\n"
-        return cast_message
+class Hex:
+    """Data-driven (hex.yaml) – multi-status spell (Poison/Blind/Silence)."""
+    def __new__(cls):
+        return _load_yaml_ability("hex.yaml", cls_name="Hex")
 
 
-class BlindingFog(StatusSpell):
-    """
-    Rank 1 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Blinding Fog",
-            description="The enemy is surrounding in a thick fog, lowering the chance"
-            " to hit on a melee attack.",
-            cost=7,
-        )
-        self.subtyp = "Status"
-        self.turns = 3
-        self.rank = 1
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if any(
-            [
-                "Blind" in target.status_immunity,
-                "Status-Blind" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            return f"{target.name} is immune to blind status.\n"
-        if not target.status_effects["Blind"].active:
-            if random.randint(
-                caster.stats.intel // 2, caster.stats.intel
-            ) > random.randint(target.stats.con // 2, target.stats.con):
-                target.status_effects["Blind"].active = True
-                target.status_effects["Blind"].duration = self.turns
-                caster._emit_status_event(target, "Blind", applied=True, duration=self.turns, source="Blinding Fog")
-                return f"{target.name} is blinded.\n"
-            return "The spell had no effect.\n"
-        return f"{target.name} is already blinded.\n"
+class BlindingFog:
+    def __new__(cls):
+        return _load_yaml_ability("blinding_fog.yaml", cls_name="BlindingFog")
 
 
-class PoisonBreath(Attack):
-    """
-    Rank 2 Enemy Spell
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Poison Breath",
-            description="Your spew forth a toxic breath, dealing poison damage and "
-            "poisoning the target.",
-            cost=20,
-            dmg_mod=1.5,
-            crit=5,
-        )
-        self.subtyp = "Poison"
-        self.school = "Poison"
-        self.rank = 2
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if not any(
-            [
-                "Poison" in target.status_immunity,
-                f"Status-Poison" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if (
-                random.randint(
-                    (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)
-                )
-                > random.randint(target.stats.con // 2, target.stats.con)
-                and not target.magic_effects["Mana Shield"].active
-                and not all(
-                    [
-                        target.cls.name == "Crusader",
-                        target.power_up,
-                        target.class_effects["Power Up"].active,
-                    ]
-                )
-            ):
-                turns = max(2, caster.stats.intel // 10)
-                damage = int(
-                    damage * (target.health.max * 0.005)
-                )  # 0.5% of max health times the damage
-                target.status_effects["Poison"].active = True
-                target.status_effects["Poison"].duration = max(
-                    turns, target.status_effects["Poison"].duration
-                )
-                target.status_effects["Poison"].extra = max(
-                    damage, target.status_effects["Poison"].extra
-                )
-                caster._emit_status_event(target, "Poison", applied=True, duration=target.status_effects["Poison"].duration, source="Poison Breath")
-                special_str += f"{caster.name} poisons {target.name}.\n"
-        return special_str
+class PoisonBreath:
+    """Rank 2 Enemy Spell — data-driven (poison_breath.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("poison_breath.yaml", cls_name="PoisonBreath")
 
 
-class DiseaseBreath(StatusSpell):
-    """
-    Enemy Spell; not learnable by player
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Disease Breath",
-            description="A diseased cloud emanates onto the enemy, with a chance to"
-            " lower the enemy's constitution permanently.",
-            cost=25,
-        )
-        self.school = "Disease"
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = "The spell does nothing.\n"
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        t_chance = target.check_mod("luck", enemy=caster, luck_factor=10)
-        if random.randint(0, caster.stats.intel // 2) > random.randint(
-            target.stats.con // 2, target.stats.con
-        ):
-            if not random.randint(0, target.stats.con + t_chance):
-                cast_message = f"The disease cripples {target.name}, lowering their constitution by 1.\n"
-                target.stats.con -= 1
-        return cast_message
+class DiseaseBreath:
+    """Status spell — data-driven (disease_breath.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("disease_breath.yaml", cls_name="DiseaseBreath")
 
 
-class Sleep(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Sleep",
-            description="A magical tune lulls the target to sleep.",
-            cost=9,
-        )
-        self.turns = 3
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not (
-            special
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
-        ):
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not any(
-            [
-                "Sleep" in target.status_immunity,
-                f"Status-Sleep" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Sleep"].active:
-                if random.randint(0, caster.stats.intel) > random.randint(
-                    0, target.stats.wisdom // 2
-                ):
-                    target.status_effects["Sleep"].active = True
-                    target.status_effects["Sleep"].duration = self.turns
-                    caster._emit_status_event(target, "Sleep", applied=True, duration=self.turns, source="Sleep")
-                    return f"{target.name} is asleep.\n"
-                return f"{caster.name} fails to put {target.name} to sleep.\n"
-            return f"{target.name} is already asleep.\n"
-        return f"{target.name} is immune to sleep effect.\n"
+class Sleep:
+    def __new__(cls):
+        return _load_yaml_ability("sleep.yaml", cls_name="Sleep")
 
 
-class Stupefy(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Stupefy",
-            description="Hit the enemy so hard, they go stupid and cannot act.",
-            cost=14,
-        )
-        self.turns = 2
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, fam: bool=False) -> str:
-        if not fam:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not any(
-            [
-                "Stun" in target.status_immunity,
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if not target.status_effects["Stun"].active:
-                if random.randint(0, caster.stats.intel) > random.randint(
-                    0, target.stats.wisdom // 2
-                ):
-                    target.status_effects["Stun"].active = True
-                    target.status_effects["Stun"].duration = self.turns
-                    caster._emit_status_event(target, "Stun", applied=True, duration=self.turns, source="Stupefy")
-                    return f"{target.name} is stunned.\n"
-                return f"{caster.name} fails to stun {target.name}.\n"
-            return f"{target.name} is already stunned.\n"
-        return f"{target.name} is immune to stun effect.\n"
+class Stupefy:
+    def __new__(cls):
+        return _load_yaml_ability("stupefy.yaml", cls_name="Stupefy")
 
 
-class WeakenMind(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Weaken Mind",
-            description="Attack the enemy's mind, diminishing their ability to deal "
-            "damage and defend against magic.",
-            cost=20,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        cast_message = ""
-        if not (
-            special
-            or caster.cls.name == "Wizard"
-            and caster.class_effects["Power Up"].active
-        ):
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-            0, target.stats.con // 2
-        ):
-            for stat in ["Magic", "Magic Defense"]:
-                combat_effect = "magic_def" if stat == "Magic Defense" else stat.lower()
-                amount = target.combat.__dict__[combat_effect] // 10
-                dv = caster.stats.intel // 10
-                stat_mod = random.randint(
-                    amount // max(2, 9 - dv), amount // max(1, 5 - dv)
-                )
-                target.stat_effects[stat].active = True
-                target.stat_effects[stat].duration = max(3, dv)
-                target.stat_effects[stat].extra = -stat_mod
-                cast_message += (
-                    f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.\n"
-                )
-        return cast_message
+class WeakenMind:
+    def __new__(cls):
+        return _load_yaml_ability("weaken_mind.yaml", cls_name="WeakenMind")
 
 
-class Enfeeble(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Enfeeble",
-            description="Cripple your foe, reducing their attack and defense rating.",
-            cost=12,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
-        cast_message = ""
-        if not (
-            fam
-            or special
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
-        ):
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-            0, target.stats.con // 2
-        ):
-            for stat in ["Attack", "Defense"]:
-                amount = target.combat.__dict__[stat.lower()]
-                dv = caster.stats.intel // 10
-                stat_mod = random.randint(
-                    amount // max(2, 9 - dv), amount // max(1, 5 - dv)
-                )
-                target.stat_effects[stat].active = True
-                target.stat_effects[stat].duration = max(3, caster.stats.intel // 10)
-                target.stat_effects[stat].extra = -stat_mod
-                cast_message += (
-                    f"{target.name}'s {stat.lower()} is lowered by {stat_mod}.\n"
-                )
-        else:
-            cast_message += f"{target.name} resists the spell.\n"
-        return cast_message
+class Enfeeble:
+    def __new__(cls):
+        return _load_yaml_ability("enfeeble.yaml", cls_name="Enfeeble")
 
 
-class Ruin(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Ruin",
-            description="Devastate the target's physical and mental facilities, leaving "
-            "them helpless to retaliate.",
-            cost=28,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False) -> str:
-        cast_message = ""
-        caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        cast_message += WeakenMind(caster, target, special=True)
-        cast_message += Enfeeble(caster, target, special=True)
-        return cast_message
+class Ruin:
+    """Status spell — data-driven (ruin.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("ruin.yaml", cls_name="Ruin")
 
 
-class Dispel(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Dispel",
-            description="Cast an anti-magic spell on your foe, removing any positive status"
-            " effects.",
-            cost=20,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not (
-            special
-            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
-        ):
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if random.randint(caster.stats.intel // 2, caster.stats.intel) > random.randint(
-            0, target.stats.wisdom // 2
-        ):
-            target.magic_effects["Regen"].active = False
-            target.magic_effects["Reflect"].active = False
-            target.stat_effects["Attack"].active = False
-            target.stat_effects["Defense"].active = False
-            target.stat_effects["Magic"].active = False
-            target.stat_effects["Magic Defense"].active = False
-            target.stat_effects["Speed"].active = False
-            return f"All positive status effects removed from {target.name}.\n"
-        return f"{target.name} resists the spell.\n"
+class Dispel:
+    def __new__(cls):
+        return _load_yaml_ability("dispel.yaml", cls_name="Dispel")
 
 
-class Silence(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Silence",
-            description="Tongue-tie the enemy's brain, making spell casting impossible.",
-            cost=20,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not special:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if not any(
-            [
-                "Silence" in target.status_immunity,
-                f"Status-Silence" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            if random.randint(
-                caster.stats.intel // 2, caster.stats.intel
-            ) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-                target.status_effects["Silence"].active = True
-                target.status_effects["Silence"].duration = -1
-                caster._emit_status_event(target, "Silence", applied=True, duration=-1, source="Silence")
-                return f"{target.name} has been silenced.\n"
-            return "The spell is ineffective.\n"
-        return f"{target.name} is immune to silence.\n"
+class Silence:
+    def __new__(cls):
+        return _load_yaml_ability("silence.yaml", cls_name="Silence")
 
 
-class Berserk(StatusSpell):
-
-    def __init__(self):
-        super().__init__(
-            name="Berserk",
-            description="Enrage the enemy, increasing damage but lowering accuracy and "
-            "making them only attack.",
-            cost=15,
-        )
-
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False) -> str:
-        if not special:
-            caster.mana.current -= self.cost
-        if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
-        if any(
-            [
-                "Berserk" in target.status_immunity,
-                "Status-Berserk" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]
-        ):
-            return f"{target.name} is immune to berserk status.\n"
-        if not target.status_effects["Berserk"].active:
-            if random.randint(
-                caster.stats.intel // 2, caster.stats.intel
-            ) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-                target.status_effects["Berserk"].active = True
-                target.status_effects["Berserk"].duration = random.randint(
-                    1, max(2, caster.stats.intel // 10)
-                )
-                caster._emit_status_event(target, "Berserk", applied=True, duration=target.status_effects["Berserk"].duration, source="Berserk")
-                return f"{target.name} is enraged.\n"
-            return "The spell is ineffective.\n"
-        return f"{target.name} is already enraged.\n"
+class Berserk:
+    def __new__(cls):
+        return _load_yaml_ability("berserk.yaml", cls_name="Berserk")
 
 
 # Enemy spells
-class Hellfire(Attack):
-    """
-    Devil's spell; the fire is non-elemental
-    """
-
-    def __init__(self):
-        super().__init__(
-            name="Hellfire",
-            description="The flames of Hell lick at the toes of the enemy, inflicting "
-            "immense initial damage as well as damage over time.",
-            cost=25,
-            dmg_mod=3.0,
-            crit=2,
-        )
-        self.subtyp = "Non-elemental"
-
-    def special_effect(self, caster: Character, target: Character, damage: int, crit: int) -> str:
-        special_str = ""
-        if random.randint(
-            (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)
-        ) > random.randint(target.stats.wisdom // 2, target.stats.wisdom):
-            turns = max(2, caster.stats.intel // 10)
-            target.magic_effects["DOT"].active = True
-            target.magic_effects["DOT"].duration = max(
-                turns, target.magic_effects["DOT"].duration
-            )
-            target.magic_effects["DOT"].extra = max(
-                damage, target.magic_effects["DOT"].extra
-            )
-            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source="Hellfire")
-            special_str += f"The flames of Hell continue to burn {target.name}.\n"
-        return special_str
+class Hellfire:
+    """Devil's spell — data-driven (hellfire.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("hellfire.yaml", cls_name="Hellfire")
 
 
 # Parameters
@@ -7361,6 +2328,7 @@ skill_dict = {
     "Summoner": {"1": Summon},
     "Grand Summoner": {"1": Summon2},
     "Footpad": {
+        "2": Quickstep,
         "3": Disarm,
         "5": SmokeScreen,
         "6": PocketSand,
@@ -7369,6 +2337,7 @@ skill_dict = {
         "12": Backstab,
         "16": DoubleStrike,
         "19": SleepingPowder,
+        "22": EvasiveGuard,
         "25": Parry,
     },
     "Thief": {"5": Lockpick, "12": GoldToss, "15": Mug, "20": PoisonStrike},

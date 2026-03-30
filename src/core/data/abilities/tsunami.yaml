@@ -1,0 +1,9 @@
+name: Tsunami
+type: Spell
+subtype: Water
+description: A massive tidal wave cascades over your foes.
+cost: 26
+damage_mod: 2.0
+crit: 3
+school: Elemental
+rank: 2

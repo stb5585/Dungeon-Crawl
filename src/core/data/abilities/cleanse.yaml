@@ -1,0 +1,8 @@
+name: Cleanse
+type: Support
+subtype: Support
+description: "You feel all ailments leave your body like a draught of panacea."
+cost: 20
+target_self: false
+effects:
+  - type: cleanse

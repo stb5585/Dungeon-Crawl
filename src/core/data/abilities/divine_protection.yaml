@@ -1,0 +1,14 @@
+name: Divine Protection
+type: Support
+subtype: Support
+description: "A shimmering aura envelops the user, shielding them with the celestial power of the Divine. While active, Divine Protection fortifies defenses, significantly reducing incoming physical damage."
+cost: 12
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: Defense
+    source: target_combat
+    source_stat: defense
+    lo_divisor: 4
+    hi_divisor: 2
+    duration: 5
+    apply_to_caster: true

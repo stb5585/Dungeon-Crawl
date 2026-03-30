@@ -1,0 +1,10 @@
+name: Steal
+type: Skill
+subtype: Stealth
+description: >-
+  Relieve the enemy of their items or gold.
+cost: 6
+ice_block_check: true
+effects:
+  - type: steal
+    gold_cap: 0.05

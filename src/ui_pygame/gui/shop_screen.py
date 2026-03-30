@@ -409,9 +409,8 @@ class ShopScreen(TownScreenBase):
                     if not in_secret_rarity_band:
                         continue
                 
-                # Calculate adjusted cost based on charisma
-                from src.core.character import scaled_decay_function
-                adj_scale = scaled_decay_function(self.player_char.stats.charisma // 2)
+                # Calculate adjusted cost based on charisma (race-aware).
+                adj_scale = self.player_char.shop_price_scale()
                 adj_cost = max(1, int(item.value * adj_scale))
                 
                 # Count owned items
@@ -436,8 +435,8 @@ class ShopScreen(TownScreenBase):
             item = items_list[0]
             owned = len(items_list)
             
-            # Calculate sell price (half value, adjusted by charisma)
-            sell_price = int((item.value // 2) * (1 + 0.025 * self.player_char.stats.charisma))
+            # Calculate sell price (half value, adjusted by charisma; race-aware).
+            sell_price = int((item.value // 2) * self.player_char.shop_sell_price_multiplier())
             
             # Store item data (no formatting needed - we render at fixed positions)
             self.item_list.append((name, item, sell_price, owned))

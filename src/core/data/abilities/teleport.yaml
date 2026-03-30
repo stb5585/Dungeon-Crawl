@@ -1,0 +1,13 @@
+name: Teleport
+type: Movement
+subtype: Movement
+description: Teleport the user to a previously set location on the same level.
+cost: 50
+movement_type: teleport
+combat: false
+
+notes: |
+  Out-of-combat movement spell (combat=false).
+  Presents Set / Teleport choice via selection_callback.
+  Set: stores current (x, y, z) on player_char.teleport.
+  Teleport: deducts mana, restores stored coordinates.

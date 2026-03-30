@@ -988,15 +988,13 @@ class QuestPopupMenu(BasePopupMenu):
 
     def draw_popup(self, player_char):
         super().draw_popup(player_char)
-        legend_text = "* = ready to turn in"
-        text = self.small_font.render(legend_text, True, self.LIGHT_GRAY)
-        self.screen.blit(text, (self.popup_rect.left + 16, self.popup_rect.bottom - text.get_height() - 36))
     
     def build_items(self, player_char):
         """Build list of quest objects from quest_dict."""
         self.items = []
         active_items = []
-        completed_items = []
+        completed_items = []  # completed but not turned in
+        turned_in_items = []
         quest_dict = getattr(player_char, "quest_dict", {})
 
         if not quest_dict:
@@ -1030,10 +1028,10 @@ class QuestPopupMenu(BasePopupMenu):
                             completed = quest_data.get('Completed', False)
                             turned_in = quest_data.get('Turned In', False)
                             display_name = f"[{quest_type}] {quest_name}"
-                            if completed and not turned_in:
-                                display_name = f"{display_name} *"
                             entry = (display_name, quest_type, quest_name, quest_data)
                             if turned_in:
+                                turned_in_items.append(entry)
+                            elif completed:
                                 completed_items.append(entry)
                             else:
                                 active_items.append(entry)
@@ -1043,10 +1041,10 @@ class QuestPopupMenu(BasePopupMenu):
                                 completed = quest_data.get('Completed', False)
                                 turned_in = quest_data.get('Turned In', False)
                                 display_name = f"[{quest_type}] {quest_name}"
-                                if completed and not turned_in:
-                                    display_name = f"{display_name} *"
                                 entry = (display_name, quest_type, quest_name, quest_data)
                                 if turned_in:
+                                    turned_in_items.append(entry)
+                                elif completed:
                                     completed_items.append(entry)
                                 else:
                                     active_items.append(entry)
@@ -1055,6 +1053,9 @@ class QuestPopupMenu(BasePopupMenu):
         if completed_items:
             self.items.append({"is_header": True, "text": "Completed Quests"})
             self.items.extend(completed_items)
+        if turned_in_items:
+            self.items.append({"is_header": True, "text": "Turned In"})
+            self.items.extend(turned_in_items)
 
         if not self.items:
             self.items = [("No quests available", None, None, None)]

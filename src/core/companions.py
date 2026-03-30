@@ -1,6 +1,8 @@
 ###########################################
 """ companion manager """
 
+from __future__ import annotations
+
 import random
 
 from . import abilities, items
@@ -13,10 +15,10 @@ class Familiar(Character):
     Base Familiar class
     """
 
-    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat):
+    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
         super().__init__(name=name, health=health, mana=mana, stats=stats, combat=combat)
 
-    def inspect(self):
+    def inspect(self) -> str:
         raise NotImplementedError
 
 
@@ -28,7 +30,7 @@ class Homunculus(Familiar):
     Level 3: Gains Resurrection
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Homunculus'
         self.spellbook = {"Spells": {'Stupefy': abilities.Stupefy()},
@@ -37,13 +39,13 @@ class Homunculus(Familiar):
         self.spec = "Defense"
         self.cls = 'Familiar'
 
-    def inspect(self):
+    def inspect(self) -> str:
         return (f"A tiny construct that serves and protects its master from anything that challenges them, regardless"
                 f" of the enemy's size or toughness. The {self.race} specializes in defensive abilities, either to "
                 f"prevent direct damage or to limit the enemy's ability to deal damage. Choose this familiar if you "
                 f"are a tad bit squishy, or your favorite movie is The Bodyguard.")
 
-    def level_up(self):
+    def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
@@ -67,7 +69,7 @@ class Fairy(Familiar):
     Level 3: Gains Cleanse
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Fairy'
         self.spellbook = {"Spells": {'Heal': abilities.Heal(),
@@ -77,13 +79,13 @@ class Fairy(Familiar):
         self.spec = 'Support'
         self.cls = 'Familiar'
 
-    def inspect(self):
+    def inspect(self) -> str:
         return (f"These small, flying creatures hail from a parallel plane of existence and are typically associated"
                 f" with a connection to nature. While the {self.race} is not known for its constitution, they more than"
                 f" make up for it with support magics. If you hate having to stock up on potions, this familiar is the "
                 f"one for you!")
 
-    def level_up(self):
+    def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
@@ -108,7 +110,7 @@ class Mephit(Familiar):
     Level 3: Gains Ultima
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Mephit'
         self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt(),
@@ -119,13 +121,13 @@ class Mephit(Familiar):
         self.spec = 'Arcane'
         self.cls = 'Familiar'
 
-    def inspect(self):
+    def inspect(self) -> str:
         return (f"A {self.race} is similar to an imp, except this little guy can blast arcane spells. Typically "
                 f"mephits embody a single elemental school but these are more Jack-of-all-trades than specialist, "
                 f"even gaining the ability to boost its master's magic and magic defense. Who wouldn't want a their "
                 f"very own pocket caster?")
 
-    def level_up(self):
+    def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
@@ -159,7 +161,7 @@ class Jinkin(Familiar):
     Level 3: Gains Slot Machine and will randomly find items at the end of combat
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Jinkin'
         self.spellbook = {"Spells": {'Corruption': abilities.Corruption()},
@@ -168,13 +170,13 @@ class Jinkin(Familiar):
         self.spec = 'Luck'
         self.cls = 'Familiar'
 
-    def inspect(self):
+    def inspect(self) -> str:
         return (f"{self.race}s are vindictive little tricksters. While they mostly rely on (their very good) luck, "
                 f"Jinkins also enjoy the occasional curse to really add a thorn to your enemy's paw. You may not always"
                 f" like what you get but you also may just love it! (low charisma characters should probably avoid this"
                 f" familiar)...")
 
-    def level_up(self):
+    def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
@@ -196,15 +198,15 @@ class Summons(Character):
     Odd number levels result in ability gain (except 10); even levels gain stat(s)
     """
 
-    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat):
+    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
         super().__init__(name=name, health=health, mana=mana, stats=stats, combat=combat)
-        self.start_stats = [0, 0, 0, 0, 0, 0, 0, 0]  # health, mana, str, intel, wis, con, cha, dex
-        self.start_combat = [0, 0, 0, 0]  # attack, defense, magic, magic_def
+        self.start_stats: list[int] = [0, 0, 0, 0, 0, 0, 0, 0]  # health, mana, str, intel, wis, con, cha, dex
+        self.start_combat: list[int] = [0, 0, 0, 0]  # attack, defense, magic, magic_def
         self.cls = self
-        self.exp_scale = 2500
-        self.description = ""
+        self.exp_scale: int = 2500
+        self.description: str = ""
 
-    def initialize_stats(self, player_char):
+    def initialize_stats(self, player_char: Character) -> None:
         self.level.exp_to_gain = self.level.pro_level * self.exp_scale
         stat_scale = 25 - self.level.pro_level
         stat_adj = 1 + (((player_char.stats.intel - random.randint(10, 20)) + 
@@ -216,7 +218,7 @@ class Summons(Character):
         combat_stats = [int(x * stat_adj) for x in self.start_combat]
         self.combat = Combat(*combat_stats)
 
-    def level_up(self, player_char):
+    def level_up(self, player_char: Character) -> str:
         self.level.level += 1
         self.level.exp_to_gain += self.level.pro_level * self.exp_scale * self.level.level
         level_str = f"{self.name} gains a level and its power increases.\n"
@@ -241,7 +243,7 @@ class Summons(Character):
             self.stats = Stats(*new_stats)
         return level_str
 
-    def options(self):
+    def options(self) -> list[str]:
         action_list = ["Attack"]
         if not self.status_effects["Silence"].active:
             if self.spellbook["Skills"]:
@@ -251,7 +253,7 @@ class Summons(Character):
         action_list.append("Recall")
         return action_list
 
-    def inspect(self):
+    def inspect(self) -> str:
         inspect_str = f"{self.name} - Level {self.level.level}\n\n"
         inspect_str += self.description
         inspect_str += (f"{'Hit Points:':13}{' ':1}{self.health.current:3}/{self.health.max:>3}\n"
@@ -281,10 +283,10 @@ class Patagon(Summons):
     Level 9
     - Crush
     Level 10
-    - Ultimate attack TODO
+    - Titanic Slam
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Patagon", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 1
         self.start_stats = [125, 85, 20, 5, 8, 15, 3, 14, 75, 40]
@@ -317,10 +319,10 @@ class Dilong(Summons):
     Level 9
     - Earthquake
     Level 10
-    - Ultimate attack (Devour) TODO
+    - Devour
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Dilong", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [225, 118, 24, 7, 12, 23, 4, 15, 85, 80]
@@ -353,10 +355,10 @@ class Agloolik(Summons):
     Level 9
     - Ice Blizzard
     Level 10
-    - Ultimate attack TODO
+    - Absolute Zero
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Agloolik", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [190, 168, 18, 15, 13, 12, 9, 18, 80, 55]
@@ -390,10 +392,10 @@ class Cacus(Summons):
     Level 9
     - Volcano
     Level 10
-    - Ultimate attack TODO
+    - Eruption
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Cacus", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [215, 112, 25, 11, 13, 21, 7, 15, 110, 60]
@@ -426,10 +428,10 @@ class Fuath(Summons):
     Level 9
     - Tsunami
     Level 10
-    - Ultimate attack TODO
+    - Maelstrom Vortex
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Fuath", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [202, 147, 19, 14, 18, 14, 11, 15, 90, 55]
@@ -463,10 +465,10 @@ class Izulu(Summons):
     Level 9
     - Electrocution
     Level 10
-    - Ultimate attack TODO
+    - Thunderstrike
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Izulu", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [212, 123, 18, 11, 12, 14, 13, 22, 85, 50]
@@ -502,10 +504,10 @@ class Hala(Summons):
     Level 9
     - Tornado
     Level 10
-    - Ultimate attack TODO (Wind Shrapnel/Bullets)
+    - Wind Shrapnel
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Hala", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
         self.start_stats = [224, 109, 20, 12, 9, 15, 10, 24, 105, 65]
@@ -541,10 +543,10 @@ class Grigori(Summons):
     Level 9
     - Resurrection
     Level 10
-    - Ultimate attack TODO
+    - Divine Judgment
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Grigori", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 3
         self.start_stats = [280, 205, 29, 12, 18, 30, 14, 12, 130, 90]
@@ -581,10 +583,10 @@ class Bardi(Summons):
     Level 9
     - Shadow Bolt 3
     Level 10
-    - Ultimate attack (Anguish or Oblivion)  TODO
+    - Oblivion
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Bardi", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 4
         self.start_stats = [321, 285, 32, 19, 22, 27, 19, 18, 155, 80]
@@ -622,10 +624,10 @@ class Kobalos(Summons):
     Level 9
     - Slot Machine
     Level 10
-    - Ultimate attack TODO
+    - Grand Heist
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Kobalos", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 4
         self.start_stats = [365, 305, 23, 14, 13, 19, 20, 25, 130, 75]
@@ -673,10 +675,10 @@ class Zahhak(Summons):
     Level 9
     - Meteor
     Level 10
-    - Ultimate attack TODO
+    - Cataclysm
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name="Zahhak", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 5
         self.start_stats = [455, 402, 32, 29, 31, 35, 23, 26, 190, 100]
@@ -700,7 +702,7 @@ class Zahhak(Summons):
         self.status_immunity.append("Poison")
         self.description = ""  # TODO
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target=target)
 
 
@@ -708,50 +710,61 @@ summon_abilities = {
     "Patagon": {"Skills": {"3": abilities.PiercingStrike,
                            "5": abilities.Stomp,
                            "7": abilities.MortalStrike,
-                           "9": abilities.Crush},
+                           "9": abilities.Crush,
+                           "10": abilities.TitanicSlam},
                 "Spells": {}},
     "Dilong": {"Skills": {"3": abilities.Slam,
-                          "7": abilities.ConsumeItem},
+                          "7": abilities.ConsumeItem,
+                          "10": abilities.Devour},
                "Spells": {"5": abilities.Mudslide,
                           "9": abilities.Earthquake}},
     "Agloolik": {"Skills": {"7": abilities.TruePiercingStrike},
                  "Spells": {"3": abilities.IceBlock,
                             "5": abilities.Icicle,
-                            "9": abilities.IceBlizzard}},
+                            "9": abilities.IceBlizzard,
+                            "10": abilities.AbsoluteZero}},
     "Cacus": {"Skills": {"7": abilities.MortalStrike2},
               "Spells": {"3": abilities.Vulcanize,
                          "5": abilities.MoltenRock,
-                         "9": abilities.Volcano}},
+                         "9": abilities.Volcano,
+                         "10": abilities.Eruption}},
     "Fuath": {"Skills": {},
               "Spells": {"3": abilities.Terrify,
                          "5": abilities.Aqualung,
                          "7": abilities.WeakenMind,
-                         "9": abilities.Tsunami}},
+                         "9": abilities.Tsunami,
+                         "10": abilities.MaelstromVortex}},
     "Izulu": {"Skills": {"7": abilities.TruePiercingStrike},
               "Spells": {"3": abilities.Berserk,
                          "5": abilities.Lightning,
-                         "9": abilities.Electrocution}},
+                         "9": abilities.Electrocution,
+                         "10": abilities.Thunderstrike}},
     "Hala": {"Skills": {"3": abilities.DoubleStrike},
               "Spells": {"5": abilities.Hurricane,
                          "7": abilities.WindSpeed,
-                         "9": abilities.Tornado}},
+                         "9": abilities.Tornado,
+                         "10": abilities.WindShrapnel}},
     "Grigori": {"Skills": {},
                 "Spells": {"3": abilities.DivineProtection,
                            "5": abilities.Regen2,
                            "7": abilities.Holy3,
-                           "9": abilities.Resurrection}},
+                           "9": abilities.Resurrection,
+                           "10": abilities.DivineJudgment}},
     "Bardi": {"Skills": {"5": abilities.SleepingPowder},
               "Spells": {"3": abilities.Corruption,
                          "7": abilities.Ruin,
-                         "9": abilities.ShadowBolt3}},
+                         "9": abilities.ShadowBolt3,
+                         "10": abilities.Oblivion}},
     "Kobalos": {"Skills": {"3": abilities.PoisonStrike,
                            "5": abilities.Mug,
                            "7": abilities.SneakAttack,
-                           "9": abilities.SlotMachine},
+                           "9": abilities.SlotMachine,
+                           "10": abilities.GrandHeist},
                 "Spells": {}},
     "Zahhak": {"Skills": {},
                "Spells": {"3": abilities.MagicMissile3,
                           "5": abilities.Ultima,
                           "7": abilities.Disintegrate,
-                          "9": abilities.Meteor}}
+                          "9": abilities.Meteor,
+                          "10": abilities.Cataclysm}}
 }

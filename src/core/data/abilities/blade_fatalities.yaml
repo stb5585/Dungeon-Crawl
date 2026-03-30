@@ -1,0 +1,18 @@
+name: Blade of Fatalities
+type: Skill
+subtype: Power Up
+description: >-
+  Sacrifice health to strengthen your attacks, dealing extra damage with every
+  hit for a limited time.
+cost: 0
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    extra_mode: sacrifice_health
+    sacrifice_pct: 0.25
+    sacrifice_divisor: 5
+    sacrifice_minimum: 5
+    message: >-
+      {actor} sacrifices health to strengthen their attacks. For 5 rounds,
+      every hit will deal {extra} extra damage.

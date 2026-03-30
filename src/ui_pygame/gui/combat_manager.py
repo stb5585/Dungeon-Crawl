@@ -1,22 +1,20 @@
 """
 Combat Manager for Pygame GUI.
-Handles combat flow with GUI rendering (doesn't use curses BattleManager).
+Handles combat flow with GUI rendering, delegating core game logic to BattleEngine.
 """
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import random
-import re
 import sys
 
 import pygame
 
 from src.core import enemies
+from src.core.combat.battle_engine import BattleEngine
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
-from src.core.combat.initiative import determine_initiative
-from src.core.constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from src.core.player import Player
 from .combat_view import CombatView
 from .level_up import LevelUpScreen
@@ -27,9 +25,16 @@ if TYPE_CHECKING:
     from src.ui_pygame.gui.dungeon_hud import DungeonHUD
     from src.ui_pygame.presentation.pygame_presenter import PygamePresenter
 
+# Map display action names (pygame) back to engine action names
+_DISPLAY_TO_ENGINE = {
+    "Spells": "Cast Spell",
+    "Skills": "Use Skill",
+    "Items": "Use Item",
+}
+
 
 class GUICombatManager:
-    """Manages combat with pygame GUI rendering."""
+    """Manages combat with pygame GUI rendering, delegating logic to BattleEngine."""
     
     def __init__(self, presenter: PygamePresenter, hud: DungeonHUD, game: PygameGame):
         self.presenter = presenter
@@ -40,45 +45,13 @@ class GUICombatManager:
         self.level_up_screen = LevelUpScreen(self.screen, presenter)
         self.logger = BattleLogger()
         self.running = False
+        self.engine: BattleEngine | None = None
         # References to dungeon rendering (set by dungeon_manager)
         self.dungeon_renderer = None
         self.player_world_dict = None
         self._combat_background = None
         self.available_actions = []
-        # Track charging abilities across turns
-        self.charging_ability = None  # (ability_name, skill_obj) tuple when charging
     
-    def _result_to_message(self, result):
-        """Convert a combat result (string or CombatResult object) to a message string."""
-        if isinstance(result, str):
-            return result
-        
-        # Handle CombatResult object
-        from src.core.combat.combat_result import CombatResult
-        if isinstance(result, CombatResult):
-            # Build a message from the CombatResult
-            msg_parts = []
-            
-            if result.action:
-                msg_parts.append(result.action)
-            
-            if result.damage and result.target:
-                msg_parts.append(f"{result.target.name} takes {result.damage} damage!")
-            
-            if result.healing and result.target:
-                msg_parts.append(f"{result.target.name} heals {result.healing} HP!")
-            
-            if result.dodge:
-                msg_parts.append(f"{result.target.name if result.target else 'Target'} dodges!")
-            
-            if result.block:
-                msg_parts.append(f"{result.target.name if result.target else 'Target'} blocks!")
-            
-            return " ".join(msg_parts) if msg_parts else "Action performed."
-        
-        # Fallback for unknown types
-        return str(result)
-
     def _capture_background(self):
         if hasattr(self.presenter, "get_background_surface"):
             try:
@@ -185,57 +158,24 @@ class GUICombatManager:
         # Ensure dungeon background has a valid world dict for rendering
         if not self.player_world_dict and hasattr(player_char, "world_dict"):
             self.player_world_dict = player_char.world_dict
-        
-        # Determine available actions
-        if hasattr(tile, 'available_actions'):
-            available_actions = tile.available_actions(player_char)
-            # Extract action names and update old ones to new ones
-            action_names = []
-            for action in available_actions:
-                # Handle both dict actions and string actions
-                if isinstance(action, dict):
-                    action_name = action.get('name', str(action))
-                else:
-                    action_name = str(action)
-                # Update old action names to new ones
-                action_name = action_name.replace("Cast Spell", "Spells") \
-                                        .replace("Use Skill", "Skills") \
-                                        .replace("Use Item", "Items")
-                action_names.append(action_name)
-            available_actions = action_names
-        else:
-            available_actions = ["Attack", "Flee"]
 
-        # Remove duplicate actions while preserving order.
-        deduped_actions = []
-        seen_actions = set()
-        for action_name in available_actions:
-            normalized_action = str(action_name).strip()
-            if not normalized_action or normalized_action in seen_actions:
-                continue
-            seen_actions.add(normalized_action)
-            deduped_actions.append(normalized_action)
-        available_actions = deduped_actions
-
-        # Add Defend option to combat actions
-        if "Defend" not in available_actions and "Attack" in available_actions:
-            available_actions.insert(1, "Defend")
+        # Create the core engine (handles initiative, actions, bookkeeping)
+        self.engine = BattleEngine(
+            player=player_char,
+            enemy=enemy,
+            tile=tile,
+            game=self.game,
+            logger=self.logger,
+        )
         
-        # Add Pickup Weapon option if player is disarmed
-        if player_char.is_disarmed() and "Pickup Weapon" not in available_actions:
-            available_actions.insert(2 if "Defend" in available_actions else 1, "Pickup Weapon")
+        # Build display-friendly action list from the engine's available actions
+        self.available_actions = self._build_display_actions()
 
-        self.available_actions = available_actions
-        
         # Initialize combat state
         self.running = True
         self.combat_view.reset_combat_log()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         self._combat_background = self._capture_background()
-        
-        # Initialize battle logger
-        boss = "Boss" in str(tile)
-        player_initiative = True
         
         # Show initial combat screen with brief transition delay (with animation updates)
         init_clock = pygame.time.Clock()
@@ -249,30 +189,23 @@ class GUICombatManager:
             pygame.display.flip()
             init_clock.tick(60)
         
-        # Determine who goes first (shared initiative logic)
-        first, _second = determine_initiative(player_char, enemy)
-        player_initiative = (first == player_char)
+        # Determine who goes first (engine handles initiative)
+        first, _ = self.engine.start_battle()
         if player_char.encumbered:
             self.combat_view.add_combat_message("You are ENCUMBERED! Enemy strikes first!")
         
-        # Start logging battle
-        self.logger.start_battle(player_char, enemy, player_initiative, boss)
-        
         if first == player_char:
-            attacker, defender = player_char, enemy
             self.combat_view.add_combat_message(f"{player_char.name} has the initiative!")
         else:
-            attacker, defender = enemy, player_char
             self.combat_view.add_combat_message(f"{enemy.name} has the initiative!")
         
         clock = pygame.time.Clock()
         fled = False
         
         # Main combat loop
-        while self.running and player_char.is_alive() and enemy.is_alive() and not fled and not player_char.in_town():
-            # Player turn
-            if attacker == player_char:
-                action_result = self._player_turn(player_char, enemy, available_actions)
+        while self.running and self.engine.battle_continues() and not player_char.in_town():
+            if self.engine.is_player_turn():
+                action_result = self._player_turn(player_char, enemy)
                 if action_result == "flee":
                     fled = True
                     break
@@ -290,11 +223,6 @@ class GUICombatManager:
                 
                 # Check for Mad Waitress form change (below 10% health)
                 self._check_enemy_form_change(player_char, enemy)
-                
-                # Switch to enemy turn
-                attacker, defender = enemy, player_char
-            
-            # Enemy turn
             else:
                 # Double-check enemy is still alive before their turn
                 if not enemy.is_alive():
@@ -310,8 +238,7 @@ class GUICombatManager:
                 if not player_char.is_alive():
                     break
 
-                # Prevent Mad Waitress from dying before her forced transition,
-                # including self-inflicted lethal damage from Widow's Wail.
+                # Prevent Mad Waitress from dying before her forced transition
                 self._preserve_waitress_for_transition(enemy)
                 self._check_enemy_form_change(player_char, enemy)
                 
@@ -319,13 +246,14 @@ class GUICombatManager:
                 if not enemy.is_alive():
                     self.combat_view.enemy_dies(enemy)
                     break
-                
-                # Switch to player turn
-                attacker, _ = player_char, enemy
             
-            # Advance turn counter in logger
+            # Advance turn: post-turn processing + swap
+            self._post_turn_processing(player_char, enemy)
+            self.engine.swap_turns()
             self._refresh_combat_background(player_char, enemy)
-            self.logger.next_turn()
+            
+            # Refresh available actions for next turn
+            self.available_actions = self._build_display_actions()
             
             # Small delay between turns (with animation updates)
             for _ in range(18):  # 300ms at 60fps
@@ -340,111 +268,108 @@ class GUICombatManager:
         
         # Combat ended - show result
         return self._handle_combat_end(player_char, enemy, fled)
+
+    def _build_display_actions(self) -> list[str]:
+        """Build the pygame display-friendly action list from the engine's available actions."""
+        raw_actions = self.engine.available_actions
+        action_names = []
+        for action in raw_actions:
+            if isinstance(action, dict):
+                action_name = action.get('name', str(action))
+            else:
+                action_name = str(action)
+            # Rename for display
+            action_name = action_name.replace("Cast Spell", "Spells") \
+                                    .replace("Use Skill", "Skills") \
+                                    .replace("Use Item", "Items")
+            action_names.append(action_name)
+
+        # Deduplicate while preserving order
+        deduped = []
+        seen = set()
+        for name in action_names:
+            normalized = name.strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(normalized)
+
+        # Add Defend if not already present
+        if "Defend" not in deduped and "Attack" in deduped:
+            deduped.insert(1, "Defend")
+
+        # Add Pickup Weapon if disarmed
+        if self.engine.player.is_disarmed() and "Pickup Weapon" not in deduped:
+            idx = 2 if "Defend" in deduped else 1
+            deduped.insert(idx, "Pickup Weapon")
+
+        return deduped
+
+    def _post_turn_processing(self, player_char: Player, enemy: Character) -> None:
+        """Handle engine post-turn + display any messages."""
+        post = self.engine.post_turn()
+        for msg in post.messages:
+            if msg:
+                for line in msg.strip().split('\n'):
+                    if line.strip():
+                        self.combat_view.add_combat_message(line)
     
-    def _player_turn(self, player_char, enemy, available_actions):
+    def _player_turn(self, player_char, enemy):
         """
         Handle player's turn with action selection.
         
         Returns:
             str/bool: "flee" if fled, False if cancelled, True if action taken
         """
-        # Check if a charging ability is active (e.g., Charge, Minotaur's Charge)
-        if self.charging_ability:
-            ability_name, skill_obj = self.charging_ability
-            # Continue the charge
-            result = skill_obj.use(player_char, target=enemy)
-            
-            # Display result
-            if result:
-                for line in result.strip().split('\n'):
+        # Pre-turn: process status effects and check if player can act
+        pre = self.engine.pre_turn()
+        if pre.effects_text:
+            for line in pre.effects_text.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
+
+        # If the player died from effects (poison, DOT, bleed), end turn immediately
+        if pre.died_from_effects:
+            return True
+
+        if not pre.can_act:
+            self.combat_view.add_combat_message(pre.inactive_reason.strip())
+            return True  # Turn skipped
+
+        # Check for forced actions (berserk, charging, jump)
+        forced = self.engine.get_forced_action()
+        if forced:
+            if forced.action == "Cancelled":
+                for line in forced.cancel_message.strip().split('\n'):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
-            
-            # Check if charging is complete
-            if not getattr(skill_obj, 'charging', False):
-                self.charging_ability = None
-            
-            # Log skill usage
-            self.logger.log_event(
-                event_type="skill",
-                actor=player_char,
-                target=enemy,
-                action=f"Charging {ability_name}",
-                outcome="Charging"
-            )
-            return True
-        
-        # Check if Jump is active (charging)
-        if player_char.class_effects.get("Jump") and player_char.class_effects["Jump"].active:
-            # Automatically execute Jump
-            jump_skill = None
-            for skill_name in player_char.spellbook.get('Skills', {}):
-                if "Jump" in skill_name:
-                    jump_skill = player_char.spellbook['Skills'][skill_name]
-                    break
-            
-            if jump_skill:
-                player_char.class_effects["Jump"].active = False
-                result = jump_skill.use(player_char, target=enemy)
-                
-                # Jump.use() returns a string, add it directly to combat log
-                if result:
-                    # Split multi-line messages and add each line
-                    for line in result.strip().split('\n'):
-                        if line.strip():
-                            self.combat_view.add_combat_message(line)
-                
-                # Log skill usage
-                self.logger.log_event(
-                    event_type="skill",
-                    actor=player_char,
-                    target=enemy,
-                    action=f"Used {jump_skill.name} (execution)",
-                    outcome="Success"
-                )
                 return True
-        
-        # Check if player is berserked (auto-attack, no choice)
-        if player_char.status_effects.get('Berserk') and player_char.status_effects['Berserk'].active:
-            self.combat_view.add_combat_message(f"{player_char.name} is BERSERKED and attacks wildly!")
-            
-            # Force attack action
-            action_result = self._execute_action("Attack", player_char, enemy)
-            
-            # Process status effects after attack
-            effect_messages = self._process_status_effects(player_char)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            
-            return True
-        
-        # Check if player is stunned or asleep
-        if player_char.status_effects.get('Stun') and player_char.status_effects['Stun'].active:
-            self.combat_view.add_combat_message(f"{player_char.name} is stunned and cannot act!")
-            # Process status effects (tick down duration)
-            effect_messages = self._process_status_effects(player_char)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return True  # Skip turn
-        
-        if player_char.status_effects.get('Sleep') and player_char.status_effects['Sleep'].active:
-            self.combat_view.add_combat_message(f"{player_char.name} is asleep and cannot act!")
-            # Process status effects (tick down duration)
-            effect_messages = self._process_status_effects(player_char)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return True  # Skip turn
 
-        if player_char.physical_effects.get('Prone') and player_char.physical_effects['Prone'].active:
-            self.combat_view.add_combat_message(f"{player_char.name} is prone and cannot act!")
-            # Process status effects (attempt recovery)
-            effect_messages = self._process_status_effects(player_char)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return True  # Skip turn
+            if forced.action == "Attack":
+                self.combat_view.add_combat_message(f"{player_char.name} is BERSERKED and attacks wildly!")
+
+            # Execute the forced action via engine
+            enemy_hp_before = enemy.health.current
+            result = self.engine.execute_action(forced.action, choice=forced.choice)
+
+            for line in result.message.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
+
+            # Damage flash for attack/skill hits
+            damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
+            if damage_to_enemy > 0:
+                self.combat_view.enemy_take_damage(enemy)
+                self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+
+            self._preserve_waitress_for_transition(enemy)
+
+            if result.fled:
+                return "flee"
+            return True
         
         # Get available actions
-        actions = available_actions
+        actions = self.available_actions
         selected_action = 0
         
         action_taken = False
@@ -512,11 +437,13 @@ class GUICombatManager:
                                 action_taken = True
             
             pygame.display.flip()
-        
-        # Process status effects on player after their turn (tick down durations, apply DOT)
-        effect_messages = self._process_status_effects(player_char)
-        for msg in effect_messages:
-            self.combat_view.add_combat_message(msg)
+
+        # Companion / familiar turn
+        companion_msg = self.engine.companion_turn()
+        if companion_msg:
+            for line in companion_msg.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
         
         return True
     
@@ -601,203 +528,87 @@ class GUICombatManager:
             enemy.health.current = 1
     
     def _execute_action(self, action, player_char, enemy):
-        """Execute a player action."""
-        if action == "Attack":
-            # Execute attack using weapon_damage method (same as battle.py)
-            enemy_hp_before = enemy.health.current
-            message, hit, damage = player_char.weapon_damage(enemy)
-            damage_dealt = max(0, enemy_hp_before - enemy.health.current)
-            
-            # Add the combat message (split multi-line output)
-            for line in message.strip().split("\n"):
-                if line.strip():
-                    self.combat_view.add_combat_message(line)
-            
-            # Log attack event
-            flags = []
-            if not hit:
-                flags.append("miss")
-                outcome = "Miss"
-            elif damage_dealt == 0:
-                # Check if it was blocked completely vs just missed/no damage
-                if "blocks" in message.lower() or "absorb" in message.lower():
-                    flags.append("blocked")
-                    outcome = "Blocked"
-                else:
-                    flags.append("no_damage")
-                    outcome = "No Damage"
-            else:
-                flags.append("hit")
-                # Check if damage was partially blocked
-                if "blocks" in message.lower() or "mitigates" in message.lower():
-                    flags.append("partial_block")
-                    outcome = "Partial Block"
-                else:
-                    outcome = "Hit"
-            
-            self.logger.log_event(
-                event_type="attack",
-                actor=player_char,
-                target=enemy,
-                action="Attack",
-                outcome=outcome,
-                damage=damage_dealt,
-                flags=flags
-            )
-            
-            # Show damage flash if hit
-            if damage_dealt > 0:
-                self.combat_view.enemy_take_damage(enemy)
-                self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
-            
-            self._preserve_waitress_for_transition(enemy)
-            return "action_taken"
-            
-        elif action == "Flee":
-            success, message = player_char.flee(enemy)
-            self.combat_view.add_combat_message(message)
-            if success:
-                return "flee"
-            return "action_taken"  # Failed flee still uses turn
-            
-        elif action == "Pickup Weapon":
-            if player_char.is_disarmed():
-                message = f"{player_char.name} picks up their weapon."
-                player_char.physical_effects["Disarm"].active = False
-                self.combat_view.add_combat_message(message)
-                self.logger.log_event(
-                    event_type="action",
-                    actor=player_char,
-                    action="Pickup Weapon",
-                    outcome="Success"
+        """Execute a player action by delegating to the engine."""
+        # Map display name back to engine name
+        engine_action = _DISPLAY_TO_ENGINE.get(action, action)
+
+        # Sub-menu actions need a selection UI first
+        choice = None
+
+        if action == "Items":
+            selected_item = self._select_item(player_char, enemy)
+            if not selected_item:
+                return None  # Cancelled
+            choice = selected_item.name
+
+        elif action == "Spells":
+            if player_char.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                self.combat_view.add_combat_message(
+                    f"{player_char.name} cannot cast spells because of {reason}!"
                 )
-                return "action_taken"
-            else:
+                return None
+            selected_spell = self._select_spell(player_char, enemy)
+            if not selected_spell:
+                return None
+            choice = selected_spell
+
+        elif action == "Skills":
+            if player_char.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                self.combat_view.add_combat_message(
+                    f"{player_char.name} cannot use skills because of {reason}!"
+                )
+                return None
+            selected_skill = self._select_skill(player_char, enemy)
+            if not selected_skill:
+                return None
+            choice = selected_skill
+
+        elif action == "Pickup Weapon":
+            if not player_char.is_disarmed():
                 self.combat_view.add_combat_message("Not disarmed!")
                 return None
-            
-        elif action == "Defend":
-            message = player_char.enter_defensive_stance(duration=2, source="Defend")
-            self.combat_view.add_combat_message(message.strip())
-            self.logger.log_event(
-                event_type="defend",
-                actor=player_char,
-                target=enemy,
-                action="Defend",
-                outcome="Success"
-            )
-            return "action_taken"
-        
-        elif action == "Items":
-            # Show item selection menu
-            selected_item = self._select_item(player_char, enemy)
-            if selected_item:
-                # Use the item
-                message = selected_item.use(player_char, target=player_char)
-                self.combat_view.add_combat_message(message.strip())
-                
-                # Log item usage
-                self.logger.log_event(
-                    event_type="item",
-                    actor=player_char,
-                    action=f"Used {selected_item.name}",
-                    outcome="Success"
-                )
-                return "action_taken"
-            return None  # Cancelled, don't count as action
-            
-        elif action == "Spells":
-            # Check for Silence
-            if player_char.status_effects["Silence"].active:
-                self.combat_view.add_combat_message(f"{player_char.name} is silenced and cannot cast spells!")
-                return None
-            
-            # Show spell selection menu
-            selected_spell = self._select_spell(player_char, enemy)
-            if selected_spell:
-                # Cast the spell
-                spell_obj = player_char.spellbook['Spells'][selected_spell]
-                if player_char.mana.current >= spell_obj.cost:
-                    self.combat_view.add_combat_message(f"{player_char.name} casts {selected_spell}.")
-                    result = spell_obj.cast(player_char, target=enemy)
-                    message = self._result_to_message(result)
-                    self.combat_view.add_combat_message(message)
-                    
-                    # Log spell cast
-                    self.logger.log_event(
-                        event_type="spell",
-                        actor=player_char,
-                        target=enemy,
-                        action=f"Cast {selected_spell}",
-                        outcome="Success"
-                    )
-                    self._preserve_waitress_for_transition(enemy)
-                    return "action_taken"
-                else:
-                    self.combat_view.add_combat_message("Not enough mana!")
-                    return None
-            return None  # Cancelled
-            
-        elif action == "Skills":
-            # Check for Silence
-            if player_char.status_effects["Silence"].active:
-                self.combat_view.add_combat_message(f"{player_char.name} is silenced and cannot use skills!")
-                return None
-            
-            # Show skill selection menu
-            selected_skill = self._select_skill(player_char, enemy)
-            if selected_skill:
-                # Use the skill
-                skill_obj = player_char.spellbook['Skills'][selected_skill]
-                if player_char.mana.current >= skill_obj.cost:
-                    self.combat_view.add_combat_message(f"{player_char.name} uses {selected_skill}.")
-                    # Special handling for Jump
-                    if "Jump" in selected_skill:
-                        charge_time = skill_obj.get_charge_time() if hasattr(skill_obj, "get_charge_time") else 1
-                        if charge_time > 0:
-                            player_char.class_effects["Jump"].active = True
-                        result = skill_obj.use(player_char, target=enemy)
-                        if result:
-                            for line in result.strip().split('\n'):
-                                if line.strip():
-                                    self.combat_view.add_combat_message(line)
-                    # Special handling for Charge and other charging abilities
-                    elif hasattr(skill_obj, 'get_charge_time') and skill_obj.get_charge_time() > 0:
-                        charge_time = skill_obj.get_charge_time()
-                        result = skill_obj.use(player_char, target=enemy)
-                        if result:
-                            for line in result.strip().split('\n'):
-                                if line.strip():
-                                    self.combat_view.add_combat_message(line)
-                        # Track that this ability is charging
-                        if getattr(skill_obj, 'charging', False):
-                            self.charging_ability = (selected_skill, skill_obj)
-                    else:
-                        if skill_obj.name == "Slot Machine":
-                            result = skill_obj.use(
-                                player_char,
-                                target=enemy,
-                                slot_machine_callback=lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy),
-                            )
-                        else:
-                            result = skill_obj.use(player_char, target=enemy)
-                        message = self._result_to_message(result)
-                        self.combat_view.add_combat_message(message)
-                    
-                    # Log skill usage
-                    self.logger.log_event(
-                        event_type="skill",
-                        actor=player_char,
-                        target=enemy,
-                        action=f"Used {selected_skill}",
-                        outcome="Success"
-                    )
-                    self._preserve_waitress_for_transition(enemy)
-                    return "action_taken"
-                else:
-                    self.combat_view.add_combat_message("Not enough mana!")
-                    return None
-            return None  # Cancelled
+
+        # Record HP before execution for damage flash
+        enemy_hp_before = enemy.health.current
+        player_hp_before = player_char.health.current
+        enemy_name_before = enemy.name
+
+        # Delegate to engine (handles attack rolls, spell casts, skill use, etc.)
+        slot_cb = None
+        if action == "Skills" and choice:
+            skill_obj = player_char.spellbook.get('Skills', {}).get(choice)
+            if skill_obj and skill_obj.name == "Slot Machine":
+                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
+
+        result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+
+        # Display result messages
+        for line in result.message.strip().split('\n'):
+            if line.strip():
+                self.combat_view.add_combat_message(line)
+
+        # Show damage flash for enemy damage
+        damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
+        if damage_to_enemy > 0:
+            self.combat_view.enemy_take_damage(enemy)
+            self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+
+        # Show damage flash for player damage (from reflected/self-damage skills)
+        damage_to_player = max(0, player_hp_before - player_char.health.current)
+        if damage_to_player > 0:
+            self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
+
+        # Check if enemy shapeshifted (name changed)
+        if enemy.name != enemy_name_before:
+            self.combat_view.reload_enemy_sprite(enemy)
+
+        self._preserve_waitress_for_transition(enemy)
+
+        if result.fled:
+            return "flee"
+        return "action_taken"
     
     def _select_totem_aspect(self, player_char, enemy, totem_skill):
         """Show Totem aspect selection menu and return aspect name."""
@@ -1064,87 +875,21 @@ class GUICombatManager:
         self.screen.blit(instr_surf, instr_rect)
     
     def _enemy_turn(self, player_char, enemy):
-        """Handle enemy's turn (automated)."""
-        # Check if enemy is stunned or asleep
-        if enemy.status_effects.get('Stun') and enemy.status_effects['Stun'].active:
-            self.combat_view.add_combat_message(f"{enemy.name} is stunned and cannot act!")
-            
-            # Log stunned turn
-            self.logger.log_event(
-                event_type="status",
-                actor=enemy,
-                action="Stunned",
-                outcome="Skip turn"
-            )
-            
-            # Process status effects (tick down duration)
-            effect_messages = self._process_status_effects(enemy)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return  # Skip turn
-        
-        if enemy.status_effects.get('Sleep') and enemy.status_effects['Sleep'].active:
-            self.combat_view.add_combat_message(f"{enemy.name} is asleep and cannot act!")
-            
-            # Log asleep turn
-            self.logger.log_event(
-                event_type="status",
-                actor=enemy,
-                action="Asleep",
-                outcome="Skip turn"
-            )
-            
-            # Process status effects (tick down duration)
-            effect_messages = self._process_status_effects(enemy)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return  # Skip turn
+        """Handle enemy's turn (automated), delegating logic to the engine."""
+        # Pre-turn: process status effects and check activity
+        pre = self.engine.pre_turn()
+        if pre.effects_text:
+            for line in pre.effects_text.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
 
-        if enemy.physical_effects.get('Prone') and enemy.physical_effects['Prone'].active:
-            self.combat_view.add_combat_message(f"{enemy.name} is prone and cannot act!")
-
-            # Log prone turn
-            self.logger.log_event(
-                event_type="status",
-                actor=enemy,
-                action="Prone",
-                outcome="Skip turn"
-            )
-
-            # Process status effects (attempt recovery)
-            effect_messages = self._process_status_effects(enemy)
-            for msg in effect_messages:
-                self.combat_view.add_combat_message(msg)
-            return  # Skip turn
-
-        # Continue already-started charging skills before selecting a new action.
-        # This keeps telegraphed enemy abilities (e.g., Crushing Blow/Charge) deterministic
-        # and prevents normal attacks from replacing the charged resolution turn.
-        charging_skill_name = None
-        charging_skill_obj = None
-        for skill_name, skill in enemy.spellbook.get('Skills', {}).items():
-            if getattr(skill, 'charging', False):
-                charging_skill_name = skill_name
-                charging_skill_obj = skill
-                break
-
-        if charging_skill_obj is not None:
-            self.combat_view.add_combat_message(f"{enemy.name} continues {charging_skill_obj.name}.")
-            result = charging_skill_obj.use(enemy, target=player_char)
-            message = self._result_to_message(result)
-            if message:
-                for line in str(message).split("\n"):
-                    if line.strip():
-                        self.combat_view.add_combat_message(line)
-
-            self.logger.log_event(
-                event_type="skill",
-                actor=enemy,
-                target=player_char,
-                action=f"Used {charging_skill_name} (charge)",
-                outcome="Success"
-            )
+        # If the enemy died from its own effects (poison, DOT, bleed), end turn
+        if pre.died_from_effects:
             return None
+
+        if not pre.can_act:
+            self.combat_view.add_combat_message(pre.inactive_reason.strip())
+            return None  # Skip turn
         
         # Render current state and pause before enemy acts (with animation updates)
         enemy_clock = pygame.time.Clock()
@@ -1157,182 +902,73 @@ class GUICombatManager:
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             enemy_clock.tick(60)
-        
-        # Choose action using enemy AI
-        action = "Attack"
-        choice = None
-        if enemy.class_effects.get("Jump") and enemy.class_effects["Jump"].active:
-            try:
-                choice = [x for x in enemy.spellbook.get('Skills', {}) if "Jump" in x][0]
-                enemy.class_effects["Jump"].active = False
-                action = "Use Skill"
-            except IndexError:
-                action = "Attack"
-        else:
-            try:
-                action, choice = enemy.options(player_char, self.available_actions, self.current_tile)
-            except Exception:
-                action, choice = "Attack", None
+
+        # Check for forced actions (charging skills, jump)
+        forced = self.engine.get_forced_action()
+        if forced:
+            if forced.action == "Cancelled":
+                for line in forced.cancel_message.strip().split('\n'):
+                    if line.strip():
+                        self.combat_view.add_combat_message(line)
+                return None
+
+            enemy_name_before = enemy.name
+            player_hp_before = player_char.health.current
+
+            result = self.engine.execute_action(forced.action, choice=forced.choice)
+            for line in result.message.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
+
+            # Check if enemy shapeshifted
+            if enemy.name != enemy_name_before:
+                self.combat_view.reload_enemy_sprite(enemy)
+
+            damage_to_player = max(0, player_hp_before - player_char.health.current)
+            if damage_to_player > 0:
+                self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
+
+            if result.fled:
+                return "flee"
+            return None
+
+        # Enemy AI chooses action
+        action, choice = self.engine.get_enemy_action()
 
         if action == "Nothing":
             self.combat_view.add_combat_message(f"{enemy.name} does nothing.")
             return None
-        if action == "Pickup Weapon":
-            enemy.physical_effects["Disarm"].active = False
-            self.combat_view.add_combat_message(f"{enemy.name} picks up their weapon.")
-            return None
-        if action == "Defend":
-            message = enemy.enter_defensive_stance(duration=2, source="Defend")
-            self.combat_view.add_combat_message(message.strip())
-            self.logger.log_event(
-                event_type="defend",
-                actor=enemy,
-                target=player_char,
-                action="Defend",
-                outcome="Success"
-            )
-            return None
-        if action == "Flee":
-            success, message = enemy.flee(player_char)
-            self.combat_view.add_combat_message(message)
-            if success:
-                return "flee"
-            return None
-        if action == "Cast Spell" and choice:
-            spell_obj = enemy.spellbook['Spells'].get(choice)
-            if spell_obj and enemy.mana.current >= spell_obj.cost:
-                self.combat_view.add_combat_message(f"{enemy.name} casts {choice}.")
-                result = spell_obj.cast(enemy, target=player_char)
-                message = self._result_to_message(result)
-                self.combat_view.add_combat_message(message)
-                self.logger.log_event(
-                    event_type="spell",
-                    actor=enemy,
-                    target=player_char,
-                    action=f"Cast {choice}",
-                    outcome="Success"
-                )
-                return None
-            self.combat_view.add_combat_message("Not enough mana!")
-            return None
-        if action == "Use Skill" and choice:
-            skill_obj = enemy.spellbook['Skills'].get(choice)
-            if skill_obj and enemy.mana.current >= skill_obj.cost:
-                result = None
-                enemy_name_before = enemy.name
-                self.combat_view.add_combat_message(f"{enemy.name} uses {choice}.")
-                if skill_obj.name == 'Smoke Screen':
-                    result = skill_obj.use(enemy, target=player_char)
-                    _, flee_str = enemy.flee(player_char, smoke=True)
-                    if flee_str:
-                        result = f"{result}\n{flee_str}" if result else flee_str
-                elif skill_obj.name == "Slot Machine":
-                    result = skill_obj.use(
-                        enemy,
-                        target=player_char,
-                        slot_machine_callback=lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy),
-                    )
-                elif skill_obj.name in ["Doublecast", "Triplecast"]:
-                    result = skill_obj.use(enemy, player_char, game=self.game)
-                elif "Jump" in skill_obj.name:
-                    charge_time = skill_obj.get_charge_time() if hasattr(skill_obj, "get_charge_time") else 1
-                    if charge_time > 0:
-                        enemy.class_effects["Jump"].active = True
-                    result = skill_obj.use(enemy, target=player_char)
-                else:
-                    result = skill_obj.use(enemy, target=player_char)
 
-                # Check if enemy shapeshifted (name changed)
-                if enemy.name != enemy_name_before:
-                    self.combat_view.reload_enemy_sprite(enemy)
-
-                message = self._result_to_message(result)
-                if message:
-                    for line in str(message).split("\n"):
-                        if line.strip():
-                            self.combat_view.add_combat_message(line)
-                self.logger.log_event(
-                    event_type="skill",
-                    actor=enemy,
-                    target=player_char,
-                    action=f"Used {skill_obj.name}",
-                    outcome="Success"
-                )
-                return None
-            self.combat_view.add_combat_message("Not enough mana!")
-            return None
-        if action == "Use Item" and choice:
-            item_key = re.split(r"\s{2,}", choice)[0]
-            if item_key in enemy.inventory and enemy.inventory[item_key]:
-                itm = enemy.inventory[item_key][0]
-                target = enemy
-                if itm.subtyp == "Scroll" and itm.spell.subtyp != "Support":
-                    target = player_char
-                message = itm.use(enemy, target=target)
-                if message:
-                    self.combat_view.add_combat_message(message.strip())
-                self.logger.log_event(
-                    event_type="item",
-                    actor=enemy,
-                    target=target,
-                    action=f"Used {itm.name}",
-                    outcome="Success"
-                )
-                return None
-
-        # Enemy attacks using weapon_damage method (same as battle.py)
+        # Record state before execution
         player_hp_before = player_char.health.current
-        if not random.randint(0, SPECIAL_ATTACK_ROLL_MAX - enemy.check_mod("luck", luck_factor=SPECIAL_ATTACK_LUCK_FACTOR)):
-            try:
-                message = enemy.special_attack(target=player_char)
-                hit = True
-            except NotImplementedError:
-                message, hit, _ = enemy.weapon_damage(player_char)
-        else:
-            message, hit, _ = enemy.weapon_damage(player_char)
-        damage_dealt = max(0, player_hp_before - player_char.health.current)
-        
-        # Add the combat message (split multi-line output)
-        for line in message.strip().split("\n"):
+        enemy_name_before = enemy.name
+
+        # Delegate to engine (handles Smoke Screen flee, Slot Machine, Doublecast, Jump, etc.)
+        slot_cb = None
+        if action == "Use Skill" and choice:
+            skill_obj = enemy.spellbook.get('Skills', {}).get(choice)
+            if skill_obj and skill_obj.name == "Slot Machine":
+                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
+
+        result = self.engine.execute_action(action, choice=choice, slot_machine_callback=slot_cb)
+
+        # Display messages
+        for line in result.message.strip().split('\n'):
             if line.strip():
                 self.combat_view.add_combat_message(line)
-        
-        # Log enemy attack
-        flags = []
-        if not hit:
-            flags.append("miss")
-            outcome = "Miss"
-        elif damage_dealt == 0:
-            # Check if it was blocked completely vs just missed/no damage
-            if "blocks" in message.lower() or "absorb" in message.lower():
-                flags.append("blocked")
-                outcome = "Blocked"
-            else:
-                flags.append("no_damage")
-                outcome = "No Damage"
-        else:
-            flags.append("hit")
-            # Check if damage was partially blocked
-            if "blocks" in message.lower() or "mitigates" in message.lower():
-                flags.append("partial_block")
-                outcome = "Partial Block"
-            else:
-                outcome = "Hit"
-        
-        self.logger.log_event(
-            event_type="attack",
-            actor=enemy,
-            target=player_char,
-            action="Attack",
-            outcome=outcome,
-            damage=damage_dealt,
-            flags=flags
-        )
-        
-        # Show damage flash if hit
-        if damage_dealt > 0:
+
+        # Check if enemy shapeshifted (name changed)
+        if enemy.name != enemy_name_before:
+            self.combat_view.reload_enemy_sprite(enemy)
+
+        # Show damage flash if player took damage
+        damage_to_player = max(0, player_hp_before - player_char.health.current)
+        if damage_to_player > 0:
             self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
-        
+
+        if result.fled:
+            return "flee"
+
         # Render updated state and show result (with animation updates)
         result_clock = pygame.time.Clock()
         for _ in range(48):  # 800ms at 60fps
@@ -1344,11 +980,8 @@ class GUICombatManager:
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
             result_clock.tick(60)
-        
-        # Process status effects on enemy after their turn (tick down durations, apply DOT)
-        effect_messages = self._process_status_effects(enemy)
-        for msg in effect_messages:
-            self.combat_view.add_combat_message(msg)
+
+        return None
     
     def _render_combat_frame(self, player_char, enemy, actions, selected_action):
         """Render a single frame of combat."""
@@ -1380,8 +1013,7 @@ class GUICombatManager:
         self._combat_background = self.screen.copy()
     
     def _handle_combat_end(self, player_char, enemy, fled):
-        """Handle end of combat and show results."""
-        end_messages = []
+        """Handle end of combat using the engine for bookkeeping."""
 
         def _show_end_popup(message_text: str) -> None:
             self._refresh_combat_background(player_char, enemy)
@@ -1391,95 +1023,48 @@ class GUICombatManager:
             popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)
             popup.show(background_draw_func=draw_background)
 
-        # Clear status effects at end of combat
-        player_char.effects(end=True)
+        # Handle Sanctuary (player got teleported to town during combat)
         if player_char.in_town():
-            # Sanctuary or similar movement effect ended combat by relocating the player.
+            player_char.effects(end=True)
             self.logger.end_battle(result="Escaped", winner=None, boss=False)
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
 
-        if not player_char.is_alive():
-            end_messages.append("You have been defeated!")
+        # Sync engine flee state (in case player fled via UI flow)
+        if fled:
+            self.engine.flee = True
 
-            # Reset enemy status effects and restore health/mana (only matters for boss fights)
-            enemy.effects(end=True)
-            enemy.health.current = enemy.health.max
-            enemy.mana.current = enemy.mana.max
+        # Let the engine handle all bookkeeping (exp, loot, quests, kill tracking, etc.)
+        outcome = self.engine.end_battle()
 
-            # Log battle end
-            self.logger.end_battle(result="Defeat", winner=enemy.name, boss="Boss" in str(self.current_tile))
-
+        if outcome.result == "defeat":
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-
             self._pause_with_events(900)
 
-            # Show defeat message in popup over current post-combat frame
-            _show_end_popup("\n".join(end_messages))
+            _show_end_popup("You have been defeated!")
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
-        
-        elif not enemy.is_alive():
-            end_messages.append(f"Victory! {enemy.name} defeated!")
-            
-            # Log victory
-            self.logger.end_battle(result="Victory", winner=player_char.name, boss="Boss" in str(self.current_tile))
-            
-            # Handle loot drops (gold, exp, and items)
-            tile = getattr(self, 'current_tile', None)
 
-            # Record kill in player kill_dict (for defeat quests)
-            try:
-                if enemy.enemy_typ not in player_char.kill_dict:
-                    player_char.kill_dict[enemy.enemy_typ] = {}
-                if enemy.name not in player_char.kill_dict[enemy.enemy_typ]:
-                    player_char.kill_dict[enemy.enemy_typ][enemy.name] = 0
-                player_char.kill_dict[enemy.enemy_typ][enemy.name] += 1
-            except Exception:
-                pass
+        elif outcome.result == "victory":
+            # Build end messages from outcome
+            end_messages = [f"Victory! {enemy.name} defeated!"]
+            # Parse the outcome message for display lines
+            for line in outcome.message.strip().split('\n'):
+                if line.strip():
+                    end_messages.append(line)
 
-            # Mark boss tiles defeated so quests can be completed after the fact
-            if tile is not None and hasattr(tile, 'defeated'):
-                tile.defeated = True
-            
-            # Award experience
-            exp_gained = enemy.experience
-            player_char.level.exp += exp_gained
-            end_messages.append(f"Gained {exp_gained} exp!")
-            
-            # Handle gold and item drops
-            loot_msg = player_char.loot(enemy, tile)
-            if loot_msg:
-                for line in loot_msg.strip().split('\n'):
-                    if line:
-                        end_messages.append(line)
-            
-            # Check for quest completion
-            quest_msg = player_char.quests(enemy=enemy)
-            if quest_msg:
-                for line in quest_msg.strip().split('\n'):
-                    if line:
-                        end_messages.append(line)
-            
-            # Check for level up
-            level_up = False
-            if not player_char.max_level():
-                player_char.level.exp_to_gain -= exp_gained
-                if player_char.level.exp_to_gain <= 0:
-                    level_up = True
-                    end_messages.append("\nLEVEL UP!")
-            
-            # Render final combat state and let death animation complete (~60 frames)
+            if outcome.level_up:
+                end_messages.append("\nLEVEL UP!")
+
+            # Render final combat state and let death animation complete
             clock = pygame.time.Clock()
-            for _ in range(70):  # Let death dissolve animation play out
+            for _ in range(70):
                 self._render_combat_frame(player_char, enemy, [], -1)
                 pygame.display.flip()
-                clock.tick(60)  # 60 FPS
-                
-                # Handle events to prevent window freeze
+                clock.tick(60)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
@@ -1487,34 +1072,26 @@ class GUICombatManager:
                     self._handle_combat_log_scroll_event(event)
 
             self._pause_with_events(900)
-            
-            # Show all end messages in popup over current post-combat frame
             _show_end_popup("\n".join(end_messages))
-            
-            # Handle level up screen if needed
-            if level_up:
+
+            if outcome.level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)
+
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return True
-        
-        elif fled:
-            end_messages.append("You fled from combat!")
-            
-            # Log fled battle (cannot flee boss fights)
-            self.logger.end_battle(result="Fled", winner=None, boss=False)
-            
+
+        elif outcome.result == "flee":
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-
             self._pause_with_events(700)
-            
-            # Show flee message in popup over current post-combat frame
-            _show_end_popup("\n".join(end_messages))
+
+            _show_end_popup("You fled from combat!")
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
 
+        # Fallback
         self.combat_view.reset_combat_log()
         self._combat_background = None
         return True
@@ -1531,70 +1108,3 @@ class GUICombatManager:
                 self._handle_combat_log_scroll_event(event)
             pause_clock.tick(60)
             elapsed += pause_clock.get_time()
-
-    def _process_status_effects(self, character: Character) -> list[str]:
-        """
-        Process and tick down status effects for a character.
-        Returns list of messages about status effects that are active.
-        """
-        messages = []
-        silent_effects = {"Shapeshifted"}
-        
-        # Process all status effect dictionaries
-        effect_dicts = [
-            (character.status_effects, "Status"),
-            (character.physical_effects, "Physical"),
-            (character.stat_effects, "Stat"),
-            (character.magic_effects, "Magic")
-        ]
-        
-        for effect_dict, category_name in effect_dicts:
-            for effect_name, effect_obj in effect_dict.items():
-                if effect_obj.active:
-                    if effect_name == "Prone":
-                        if effect_obj.duration <= 0:
-                            effect_obj.active = False
-                            messages.append(f"{character.name} is no longer prone.")
-                        elif (not random.randint(0, effect_obj.duration)
-                              or random.randint(0, character.check_mod("luck", luck_factor=10))):
-                            effect_obj.active = False
-                            effect_obj.duration = 0
-                            messages.append(f"{character.name} is no longer prone.")
-                        else:
-                            effect_obj.duration -= 1
-                            messages.append(f"{character.name} is still prone.")
-                        continue
-
-                if effect_obj.active and effect_obj.duration > 0:
-                    # Add message about active effect
-                    if effect_name not in silent_effects:
-                        messages.append(f"{character.name} is affected by {effect_name}!")
-                    
-                    # Apply damage/healing for damage-over-time effects
-                    if effect_name == "DOT" and hasattr(effect_obj, 'extra') and effect_obj.extra > 0:
-                        damage = effect_obj.extra
-                        character.health.current -= damage
-                        messages.append(f"{character.name} takes {damage} DOT damage!")
-                    elif effect_name == "Poison" and hasattr(effect_obj, 'extra') and effect_obj.extra > 0:
-                        damage = effect_obj.extra
-                        character.health.current -= damage
-                        messages.append(f"{character.name} takes {damage} poison damage!")
-                    elif effect_name == "Bleed" and hasattr(effect_obj, 'extra') and effect_obj.extra > 0:
-                        damage = effect_obj.extra
-                        character.health.current -= damage
-                        messages.append(f"{character.name} bleeds for {damage} damage!")
-                    elif effect_name == "Regen" and hasattr(effect_obj, 'extra') and effect_obj.extra > 0:
-                        healing = effect_obj.extra
-                        character.health.current = min(character.health.current + healing, character.health.max)
-                        messages.append(f"{character.name} regenerates {healing} HP!")
-                    
-                    # Tick down duration
-                    effect_obj.duration -= 1
-                    
-                    # Deactivate if duration expired
-                    if effect_obj.duration <= 0:
-                        effect_obj.active = False
-                        if effect_name not in silent_effects:
-                            messages.append(f"{character.name}'s {effect_name} wears off.")
-        
-        return messages

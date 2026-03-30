@@ -1,0 +1,15 @@
+name: Purity of Body
+type: Skill
+subtype: Martial Arts
+description: >-
+  Through meditation and perserverance, the monk gains control over their
+  body, increasing resistance against poison magic to 50% and gaining
+  immunity to poison status.
+cost: 0
+passive: true
+self_target: true
+effects:
+  - type: resist_immunity
+    resist_type: Poison
+    min_resist: 0.5
+    immunity_name: Poison

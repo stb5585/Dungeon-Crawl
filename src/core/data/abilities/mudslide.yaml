@@ -1,0 +1,9 @@
+name: Mudslide
+type: Spell
+subtype: Earth
+description: A torrent of mud and earth sweep over the enemy, causing earth damage.
+cost: 16
+damage_mod: 2.0
+crit: 8
+school: Elemental
+rank: 1

@@ -150,20 +150,21 @@ class PygamePresenter(GamePresenter):
         
     def _on_combat_start(self, event):
         """Handle combat start event."""
-        self.player = event.data.get('actor')
-        self.enemy = event.data.get('target')
+        self.player = event.actor
+        self.enemy = event.target
         self.turn_number = 0
         self.combat_log.clear()
         self._add_log(f"Combat begins: {self.player.name} vs {self.enemy.name}!")
         
     def _on_combat_end(self, event):
         """Handle combat end event."""
+        player = event.actor
         if event.data.get('fled'):
-            self._add_log(f"{self.player.name} fled from combat!")
+            self._add_log(f"{player.name} fled from combat!")
         elif event.data.get('player_alive'):
-            self._add_log(f"{self.player.name} is victorious!")
+            self._add_log(f"{player.name} is victorious!")
         else:
-            self._add_log(f"{self.player.name} was defeated...")
+            self._add_log(f"{player.name} was defeated...")
             
     def _on_turn_start(self, event):
         """Handle turn start event."""

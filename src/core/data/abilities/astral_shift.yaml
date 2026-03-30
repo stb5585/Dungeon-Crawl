@@ -1,0 +1,12 @@
+name: Astral Shift
+type: Support
+subtype: Illusion
+description: "Partially shift into the astral plane, reducing physical and magical damage by 25%."
+cost: 18
+effects:
+  - type: magic_effect_apply
+    effect_name: "Astral Shift"
+    duration: 4
+    duration_stat: wisdom
+    duration_stat_divisor: 20
+    duration_stat_mode: add

@@ -1,0 +1,11 @@
+name: Sanctuary
+type: Movement
+subtype: Movement
+description: Return to town from anywhere in the dungeon.
+cost: 100
+movement_type: sanctuary
+
+notes: |
+  Out-of-combat movement spell.
+  Deducts mana, fully heals HP and MP, then calls user.to_town().
+  Used by Sanctuary Scroll item (cast_out(user=user)).

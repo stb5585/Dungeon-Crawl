@@ -1,0 +1,16 @@
+name: Health Drain
+type: Skill
+subtype: Drain
+description: Drain the enemy, absorbing their health.
+cost: 10
+ice_block_check: true
+effects:
+  - type: drain
+    resource: health
+    base_stat: health_current
+    secondary_stat: charisma
+    lo_divisor: 5
+    hi_divisor: 1.5
+    luck_factor: 10
+    cap_percent: 0.18
+    message: "{actor} drains {amount} health from {target}.\n"

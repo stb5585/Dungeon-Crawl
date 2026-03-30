@@ -1,0 +1,7 @@
+name: Double Strike
+type: Skill
+subtype: Offensive
+description: Strike the enemy twice in rapid succession.
+cost: 14
+weapon: true
+strikes: 2

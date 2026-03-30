@@ -1,0 +1,20 @@
+name: Lightning
+type: Spell
+subtype: Electric
+description: Throws a bolt of lightning at the enemy.
+cost: 15
+damage_mod: 1.75
+crit: 4
+school: Arcane
+effects:
+- type: stat_contest
+  actor_stat: intel
+  actor_divisor: 2
+  target_stat: wisdom
+  target_lo_divisor: 4
+  target_hi_divisor: 1
+  effect:
+    type: status_apply
+    status_name: Stun
+    duration: 1
+    use_crit_bonus: true

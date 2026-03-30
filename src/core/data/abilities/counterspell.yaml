@@ -1,0 +1,9 @@
+name: Counterspell
+type: Skill
+description: >-
+  If the Behemoth is the target of an attack spell, it will counter
+  with a spell of its own.
+cost: 0
+passive: true
+effects:
+  - type: counterspell

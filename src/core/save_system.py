@@ -130,6 +130,9 @@ class AbilitySerializer:
         """
         if ability is None:
             return ""
+        # Support YAML-migrated abilities that carry their original class name
+        if hasattr(ability, '_class_name'):
+            return ability._class_name
         # Use class name for unambiguous serialization
         return ability.__class__.__name__
     

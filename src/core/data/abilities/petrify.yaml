@@ -1,0 +1,23 @@
+name: Petrify
+type: Status
+subtype: Death
+description: "Gaze at the enemy and turn them into stone."
+cost: 50
+rank: 2
+messages:
+  immune: "{target} is immune to petrify."
+  resist: "The spell has no effect."
+effects:
+  - type: instant_kill
+    success_message: "{target} is turned to stone!"
+    actor_stat: charisma
+    actor_divisor: 1
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    apply_resist_multiplier: false
+    luck_factor: 1
+    immunity_status: Stone
+    reflect_item: "Medusa Shield"
+    reflect_slot: OffHand
+    reflect_message: "{target} uses the Medusa Shield to reflect {name} back at {caster}!"

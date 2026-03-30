@@ -1,0 +1,21 @@
+name: Leg Sweep
+type: Skill
+subtype: Offensive
+description: Sweep the leg, tripping the enemy and leaving them prone.
+cost: 8
+weapon: true
+damage_mod: 0.75
+effects:
+  - type: physical_effect_apply
+    effect_name: Prone
+    check_flying: true
+    actor_stat: strength
+    actor_lo_divisor: 2
+    actor_hi_divisor: 1
+    target_stat: strength
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    duration_stat: strength
+    duration_divisor: 20
+    duration_min: 1
+    skip_if_active: true

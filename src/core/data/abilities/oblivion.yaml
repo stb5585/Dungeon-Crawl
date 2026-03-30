@@ -1,0 +1,13 @@
+name: Oblivion
+type: Spell
+subtype: Shadow
+description: >-
+  Tears open a rift to the void, unleashing pure darkness that
+  may annihilate the target outright or drain their very essence.
+cost: 50
+damage_mod: 4.0
+effects:
+  - type: oblivion
+    damage_mod: 4.0
+    kill_chance: 0.2
+    stat_drain: 3

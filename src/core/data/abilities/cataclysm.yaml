@@ -1,0 +1,14 @@
+name: Cataclysm
+type: Spell
+subtype: Non-elemental
+description: >-
+  The dragon of apocalypse unleashes everything at once — a barrage
+  of high-tier spells, a devastating breath of fire, and a surge of
+  draconic power.
+cost: 60
+damage_mod: 5.0
+effects:
+  - type: cataclysm
+    spell_count: 3
+    breath_multiplier: 2.0
+    power_up_duration: 3

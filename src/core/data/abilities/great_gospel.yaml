@@ -1,0 +1,20 @@
+name: Great Gospel
+type: Skill
+subtype: Power Up
+description: >-
+  The light of God shines upon you, healing all wounds and providing a temporary
+  boost. Status effects are cured and all attacks deal extra damage for 5 rounds.
+cost: 35
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    message: >-
+      The light of God shines on {actor}, healing all wounds and providing
+      a temporary boost. Status effects are cured and all attacks will deal
+      extra damage for 5 rounds.
+  - type: ability_chain
+    ability_name: Cleanse
+    target_self: true
+    special: true
+    use_method: cast

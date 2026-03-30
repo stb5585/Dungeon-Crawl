@@ -1,0 +1,10 @@
+name: Sneak Attack
+type: Skill
+subtype: Stealth
+description: If the target is incapacitated, unleash a devastating attack.
+cost: 15
+weapon: true
+damage_mod: 2.0
+ignore_armor: true
+crit_override: 2
+requires_incapacitated: true

@@ -1,0 +1,8 @@
+name: Screech
+description: >-
+  Let out an ear-piercing screech, damaging the foe and silencing them.
+type: Skill
+cost: 15
+ice_block_check: true
+effects:
+  - type: screech

@@ -1,5 +1,6 @@
 ###########################################
 """ enemy manager """
+from __future__ import annotations
 
 import random
 from textwrap import wrap
@@ -11,7 +12,7 @@ from .constants import ENEMY_LOW_HEALTH_THRESHOLD
 
 
 # Functions
-def random_enemy(level):
+def random_enemy(level: str) -> Enemy:
     """
     Takes the current level a player is on and returns a random enemy
     """
@@ -45,8 +46,8 @@ def random_enemy(level):
     return random_monster
 
 
-def funhouse_enemy():
-    return random.choice([Puppet(), Harlequin(), Trickster()])
+def funhouse_enemy() -> Enemy:
+    return random.choice([Puppet(), Harlequin(), Trickster(), Copycat()])
 
 
 class Enemy(Character):
@@ -64,32 +65,42 @@ class Enemy(Character):
         "Ruin": {"stat_all": ["Attack", "Defense", "Magic", "Magic Defense"]},
         "Sleeping Powder": {"status": "Sleep"},
         "Sleep": {"status": "Sleep"},
+        # Stun-lock prevention: avoid wasting stun attempts while the target
+        # is already stunned or is in the short post-stun immunity window
+        # (Character.apply_stun uses status_effects["Stun"].extra).
         "Stupefy": {"status": "Stun"},
         "Berserk": {"status": "Berserk"},
         "Howl": {"status": "Stun"},
+        # Charging skills that often apply stun; skip when the target cannot be stunned.
+        "Charge": {"status": "Stun"},
+        "Crushing Blow": {"status": "Stun"},
         "Trip": {"physical": "Prone"},
         "Goad": {"status": "Berserk"},
         "Blinding Fog": {"status": "Blind"},
     }
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
+    def __init__(self, name: str, health: int, mana: int, strength: int, intel: int, wisdom: int,
+                 con: int, charisma: int, dex: int,
+                 attack: int, defense: int, magic: int, magic_def: int, exp: int) -> None:
         super().__init__(name, Resource(health+con, health+con), Resource(mana+intel, mana+intel),
                          Stats(strength, intel, wisdom, con, charisma, dex),
                          Combat(attack, defense, magic, magic_def))
         self.name = name
         self.cls = self
         self.experience = exp
-        self.enemy_typ = ""
-        self.action_stack = []
-        self.picture = "test.txt"
+        self.enemy_typ: str = ""
+        self.action_stack: list[dict] = []
+        # Ability names that can only be used once per combat by this enemy.
+        self.single_use_abilities: set[str] = set()
+        self._used_single_use_abilities: set[str] = set()
+        self.picture: str = "test.txt"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"{self.name} | "
                 f"Health: {self.health.current}/{self.health.max} | "
                 f"Mana: {self.mana.current}/{self.mana.max}")
 
-    def inspect(self):
+    def inspect(self) -> str:
         stats_str = [
             "{:15}{:>4}".format("Strength:", f"{self.stats.strength}"),
             "{:15}{:>4}".format("Intelligence:", f"{self.stats.intel}"),
@@ -127,7 +138,7 @@ class Enemy(Character):
         )
         return text
 
-    def options(self, target, action_list, tile):
+    def options(self, target: Character, action_list: list[str], tile: object) -> tuple[str, str | None]:
         if self.status_effects["Berserk"].active:
             return "Attack", None
         if self.turtle or self.magic_effects["Ice Block"].active:
@@ -142,9 +153,11 @@ class Enemy(Character):
             action_list = ["Attack"]
         else:
             action_list = []
-        if not self.status_effects["Silence"].active:
+        if not self.abilities_suppressed():
             spell_list = []
             for spell_name, spell in self.spellbook['Spells'].items():
+                if spell_name in self.single_use_abilities and spell_name in self._used_single_use_abilities:
+                    continue
                 if self.spellbook['Spells'][spell_name].passive:
                     continue
                 if self._should_skip_reapply_debuff(spell_name, target):
@@ -158,6 +171,8 @@ class Enemy(Character):
                 action_list.append("Cast Spell")
             skill_list = []
             for skill_name, _ in self.spellbook['Skills'].items():
+                if skill_name in self.single_use_abilities and skill_name in self._used_single_use_abilities:
+                    continue
                 if any([self.spellbook['Skills'][skill_name].passive,
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
@@ -188,9 +203,11 @@ class Enemy(Character):
             ability = random.choice(skill_list)
         else:
             ability = None
+        if ability in self.single_use_abilities:
+            self._used_single_use_abilities.add(ability)
         return action, ability
 
-    def _choose_action_by_priority(self, target, tile):
+    def _choose_action_by_priority(self, target: Character, tile: object) -> tuple[str, str | None]:
         """
         Choose an action based on priority weights from action_stack.
         Priority weighting: HIGH=3, NORMAL=2, LOW=1
@@ -204,6 +221,8 @@ class Enemy(Character):
                 continue
             
             ability_name = action_entry.get("ability", "Attack")
+            if ability_name in self.single_use_abilities and ability_name in self._used_single_use_abilities:
+                continue
             priority = action_entry.get("priority", ActionPriority.NORMAL)
             priority_if = action_entry.get("priority_if")
             if priority_if:
@@ -216,6 +235,8 @@ class Enemy(Character):
                 action_type = "Attack"
                 usable = not self.tunnel
             elif ability_name in self.spellbook.get("Spells", {}):
+                if self.abilities_suppressed():
+                    continue
                 if self._should_skip_reapply_debuff(ability_name, target):
                     continue
                 spell = self.spellbook["Spells"][ability_name]
@@ -227,6 +248,8 @@ class Enemy(Character):
                 action_type = "Cast Spell"
                 usable = True
             elif ability_name in self.spellbook.get("Skills", {}):
+                if self.abilities_suppressed():
+                    continue
                 if self._should_skip_reapply_debuff(ability_name, target):
                     continue
                 skill = self.spellbook["Skills"][ability_name]
@@ -267,9 +290,11 @@ class Enemy(Character):
         
         # Choose from weighted pool (higher priority = more copies in pool = higher selection chance)
         action_type, ability_name = random.choice(weighted_actions)
+        if ability_name in self.single_use_abilities:
+            self._used_single_use_abilities.add(ability_name)
         return action_type, ability_name
 
-    def _fallback_action_selection(self, target, tile):
+    def _fallback_action_selection(self, target: Character, tile: object) -> tuple[str, str | None]:
         """Fallback to standard random action selection if action_stack can't be used."""
         if self.name != 'Test' and not self.tunnel:
             action_list = ["Attack"]
@@ -279,8 +304,10 @@ class Enemy(Character):
         spell_list = []
         skill_list = []
         
-        if not self.status_effects["Silence"].active:
+        if not self.abilities_suppressed():
             for spell_name, spell in self.spellbook['Spells'].items():
+                if spell_name in self.single_use_abilities and spell_name in self._used_single_use_abilities:
+                    continue
                 if self.spellbook['Spells'][spell_name].passive:
                     continue
                 if self._should_skip_reapply_debuff(spell_name, target):
@@ -294,6 +321,8 @@ class Enemy(Character):
                 action_list.append("Cast Spell")
             
             for skill_name, _ in self.spellbook['Skills'].items():
+                if skill_name in self.single_use_abilities and skill_name in self._used_single_use_abilities:
+                    continue
                 if any([self.spellbook['Skills'][skill_name].passive,
                         self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
@@ -327,23 +356,139 @@ class Enemy(Character):
             ability = random.choice(spell_list)
         elif action == "Use Skill" and skill_list:
             ability = random.choice(skill_list)
+        if ability in self.single_use_abilities:
+            self._used_single_use_abilities.add(ability)
         
         return action, ability
 
-    def _resolve_priority_condition(self, condition, fallback_priority, target, tile):
+    def _resolve_priority_condition(self, condition: dict, fallback_priority: ActionPriority,
+                                     target: Character, tile: object) -> ActionPriority:
+        """
+        Resolve action_stack priority conditions.
+
+        Supports two formats:
+        1) Dict format (legacy/new): {"target_has_weapon": True, "priority": HIGH, "else": SKIP}
+        2) List format (newer): [{"condition": "self_hp_pct_lt", "value": 0.5, "priority": HIGH}, ...]
+        """
+        def _pct_threshold(val: object) -> float | None:
+            """
+            Convert a % or ratio threshold into a 0..1 float.
+
+            Accepts:
+            - 0.25, "0.25" (ratio)
+            - 25, "25" (percent)
+            """
+            try:
+                thr = float(val)
+            except (TypeError, ValueError):
+                return None
+            if thr < 0:
+                return None
+            # Treat values > 1 as percentages (e.g., 50 => 0.5).
+            if thr > 1.0:
+                thr = thr / 100.0
+            return thr
+
+        def _effect_active(ch: Character, effect_name: str) -> tuple[bool, StatusEffect]:
+            """
+            Check for an effect name across all common effect dictionaries.
+
+            This intentionally supports action_stack configs that refer to
+            magic effects like "Regen" using "self_status"/"target_status".
+            """
+            for bucket_name in (
+                "status_effects",
+                "physical_effects",
+                "magic_effects",
+                "class_effects",
+                "stat_effects",
+            ):
+                bucket = getattr(ch, bucket_name, None)
+                if isinstance(bucket, dict) and effect_name in bucket:
+                    eff = bucket.get(effect_name, StatusEffect())
+                    return bool(getattr(eff, "active", False)), eff
+            return False, StatusEffect()
+
+        def _matches_list_rule(cond: str, value: object) -> bool:
+            """
+            Evaluate a single list-style rule ("condition"/"value").
+
+            Conditions supported are the same set as the dict-style keys.
+            """
+            if cond == "tunneled":
+                desired = bool(value)
+                return bool(getattr(self, "tunnel", False)) == desired
+            if cond == "target_status":
+                active, _eff = _effect_active(target, str(value))
+                return active
+            if cond == "self_status":
+                active, _eff = _effect_active(self, str(value))
+                return active
+            if cond == "target_incapacitated":
+                desired = bool(value)
+                return bool(target.incapacitated()) == desired
+            if cond == "target_has_weapon":
+                desired = bool(value)
+                return bool(self._target_has_weapon(target)) == desired
+            if cond == "target_has_mana":
+                desired = bool(value)
+                has_mana = hasattr(target, "mana") and target.mana.current > 0
+                return bool(has_mana) == desired
+            if cond == "target_has_positive_effects":
+                desired = bool(value)
+                stat_effects = getattr(target, "stat_effects", {})
+                magic_effects = getattr(target, "magic_effects", {})
+                has_pos = (
+                    any(bool(effect.active) for effect in stat_effects.values())
+                    or any(bool(effect.active) for effect in magic_effects.values())
+                )
+                return bool(has_pos) == desired
+            if cond == "self_hp_pct_lt":
+                threshold = _pct_threshold(value)
+                if threshold is None:
+                    return False
+                return bool(self.health.max) and (self.health.current / self.health.max) < threshold
+            if cond == "self_mana_pct_lt":
+                threshold = _pct_threshold(value)
+                if threshold is None:
+                    return False
+                return bool(getattr(self, "mana", None) and self.mana.max) and (self.mana.current / self.mana.max) < threshold
+            if cond == "self_stat":
+                stat_effects = getattr(self, "stat_effects", {})
+                return bool(stat_effects.get(str(value), StatusEffect()).active)
+            if cond == "self_stat_any":
+                stat_effects = getattr(self, "stat_effects", {})
+                if not isinstance(value, (list, tuple)):
+                    return False
+                return any(bool(stat_effects.get(str(stat_name), StatusEffect()).active) for stat_name in value)
+            return False
+
+        if isinstance(condition, list):
+            for rule in condition:
+                if not isinstance(rule, dict):
+                    continue
+                cond = rule.get("condition")
+                if not cond:
+                    continue
+                if _matches_list_rule(str(cond), rule.get("value")):
+                    return rule.get("priority", fallback_priority)
+                if "else" in rule:
+                    return rule.get("else", fallback_priority)
+            return fallback_priority
+
         if not isinstance(condition, dict):
             return fallback_priority
 
         if condition.get("tunneled") is not None:
+            desired = bool(condition.get("tunneled"))
             is_tunneled = bool(getattr(self, "tunnel", False))
-            if is_tunneled:
+            if is_tunneled == desired:
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
 
         target_status = condition.get("target_status")
         if target_status:
-            status_effects = getattr(target, "status_effects", {})
-            is_active = bool(status_effects.get(target_status, StatusEffect()).active)
+            is_active, _eff = _effect_active(target, str(target_status))
             if is_active:
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
@@ -380,9 +525,8 @@ class Enemy(Character):
 
         self_hp_pct_lt = condition.get("self_hp_pct_lt")
         if self_hp_pct_lt is not None:
-            try:
-                threshold = float(self_hp_pct_lt)
-            except (TypeError, ValueError):
+            threshold = _pct_threshold(self_hp_pct_lt)
+            if threshold is None:
                 return fallback_priority
             if self.health.max and (self.health.current / self.health.max) < threshold:
                 return condition.get("priority", fallback_priority)
@@ -390,9 +534,8 @@ class Enemy(Character):
 
         self_mana_pct_lt = condition.get("self_mana_pct_lt")
         if self_mana_pct_lt is not None:
-            try:
-                threshold = float(self_mana_pct_lt)
-            except (TypeError, ValueError):
+            threshold = _pct_threshold(self_mana_pct_lt)
+            if threshold is None:
                 return fallback_priority
             if hasattr(self, "mana") and self.mana.max and (self.mana.current / self.mana.max) < threshold:
                 return condition.get("priority", fallback_priority)
@@ -400,8 +543,7 @@ class Enemy(Character):
 
         self_status = condition.get("self_status")
         if self_status:
-            status_effects = getattr(self, "status_effects", {})
-            is_active = bool(status_effects.get(self_status, StatusEffect()).active)
+            is_active, _eff = _effect_active(self, str(self_status))
             if is_active:
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
@@ -427,7 +569,7 @@ class Enemy(Character):
 
         return fallback_priority
 
-    def _should_skip_reapply_debuff(self, ability_name, target):
+    def _should_skip_reapply_debuff(self, ability_name: str, target: Character | None) -> bool:
         if target is None:
             return False
         rule = self._DEBUFF_REAPPLY_RULES.get(ability_name)
@@ -437,7 +579,11 @@ class Enemy(Character):
         status_name = rule.get("status")
         if status_name:
             status_effects = getattr(target, "status_effects", {})
-            return bool(status_effects.get(status_name, StatusEffect()).active)
+            eff = status_effects.get(status_name, StatusEffect())
+            # Special-case Stun: "extra" is used as a short post-stun immunity window.
+            if status_name == "Stun":
+                return bool(eff.active) or bool(getattr(eff, "extra", 0) > 0)
+            return bool(eff.active)
 
         physical_name = rule.get("physical")
         if physical_name:
@@ -454,7 +600,7 @@ class Enemy(Character):
 
         return False
 
-    def _target_has_weapon(self, target):
+    def _target_has_weapon(self, target: Character) -> bool:
         equipment = getattr(target, "equipment", {})
         weapon = equipment.get("Weapon") if isinstance(equipment, dict) else None
         if weapon is None:
@@ -462,7 +608,7 @@ class Enemy(Character):
         return not isinstance(weapon, items.NoWeapon)
 
     @staticmethod
-    def _priority_to_weight(priority):
+    def _priority_to_weight(priority: ActionPriority) -> int:
         """Convert ActionPriority enum to selection weight (HIGH=3, NORMAL=2, LOW=1)."""
         if priority == ActionPriority.HIGH:
             return 3
@@ -668,7 +814,7 @@ class Test(Misc):
         ]
         self.level.pro_level = 99  # test for enemies running away
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target=target)
 
 
@@ -697,7 +843,12 @@ class Mimic(Aberration):
         # when encountered on lower floors later in progression.
         progression_tier = 0
         if player_level is not None:
-            progression_tier = max(1, min(10, (int(player_level) + 4) // 8))
+            # Scale with player progression, but avoid "linear-to-absurd" stats
+            # at late game, especially because Mimic has swingy control and
+            # high-variance skills (e.g., Lick/Slot Machine).
+            #
+            # Tiering: 1 @ 1-10, 2 @ 11-20, ... 5 @ 41-50.
+            progression_tier = max(1, min(12, (int(player_level) + 9) // 10))
         effective_level = max(int(z), progression_tier)
 
         super().__init__(name='Mimic', health=20 + (random.randint(10, 40) * effective_level), mana=10 + (random.randint(20, 35) * effective_level),
@@ -716,7 +867,7 @@ class Mimic(Aberration):
         self.resistance["Poison"] = 1.0
         self.status_immunity = ["Poison", "Death", "Stone"]
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.LOW},
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Lick", "priority": ActionPriority.HIGH},
             {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
             {"ability": "Slot Machine", "priority": ActionPriority.NORMAL}
@@ -1577,21 +1728,23 @@ class Naga(Monster):
 class Clannfear(Fiend):
 
     def __init__(self):
-        super().__init__(name='Clannfear', health=random.randint(22, 28), mana=40, strength=17, intel=8, wisdom=11,
-                         con=14, charisma=12, dex=15, attack=11, defense=19, magic=11, magic_def=12,
+        super().__init__(name='Clannfear', health=random.randint(28, 38), mana=55, strength=19, intel=10, wisdom=12,
+                         con=16, charisma=12, dex=16, attack=15, defense=22, magic=14, magic_def=16,
                          exp=random.randint(77, 130))
         self.equipment = {'Weapon': items.DemonClaw(), 'Armor': items.AnimalHide(), 'OffHand': items.DemonClaw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(65, 92)
         self.spellbook = {'Spells': {},
                           'Skills': {'Trip': abilities.Trip(),
-                                     'Charge': abilities.Charge()}}
+                                     'Charge': abilities.Charge(),
+                                     'Double Strike': abilities.DoubleStrike()}}
         self.resistance['Fire'] = 0.75
         self.resistance['Electric'] = -0.5
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Trip", "priority": ActionPriority.NORMAL},
-            {"ability": "Charge", "priority": ActionPriority.NORMAL}
+            {"ability": "Charge", "priority": ActionPriority.HIGH},
+            {"ability": "Double Strike", "priority": ActionPriority.HIGH},
         ]
         self.level.pro_level = 2
         self.picture = "clannfear.txt"
@@ -1676,18 +1829,19 @@ class Pseudodragon(Dragon):
         self.spellbook = {'Spells': {'Fireball': abilities.Fireball(),
                                      'Blinding Fog': abilities.BlindingFog(),
                                      'Dispel': abilities.Dispel()},
-                          'Skills': {'Gold Toss': abilities.GoldToss()}}
+                          'Skills': {'Gold Toss': abilities.GoldToss(),
+                                     'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Fireball", "priority": ActionPriority.NORMAL},
-            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-            #  "telegraph": "inhaling deeply, flames flickering in its throat"} TODO: implement
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, flames flickering in its throat"},
         ]
         self.level.pro_level = 2
         self.sight = True
         self.picture = "pseudodragon.txt"
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target, typ="Fire")
 
 
@@ -1727,7 +1881,7 @@ class Nightmare(Fiend):
         self.sight = True
         self.picture = "nightmare.txt"
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return super().special_attack(target)
 
 
@@ -2483,13 +2637,14 @@ class DrowAssassin(Humanoid):
                                      'Kidney Punch': abilities.KidneyPunch(),
                                      'Mug': abilities.Mug(),
                                      'Parry': abilities.Parry(),
-                                     'Smoke Screen': abilities.SmokeScreen()}}
+                                     'Smoke Screen': abilities.SmokeScreen(),
+                                     'Shadow Strike': abilities.ShadowStrike()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Backstab", "priority": ActionPriority.HIGH},
-            # {"ability": "Shadow Strike", "priority": ActionPriority.HIGH, "delay": 1,  TODO: implement
-            #  "telegraph": "melding with the shadows, preparing a deadly strike"}
+            {"ability": "Shadow Strike", "priority": ActionPriority.HIGH, "delay": 1,
+             "telegraph": "melding with the shadows, preparing a deadly strike"},
         ]
         self.level.pro_level = 4
         self.sight = True
@@ -2520,7 +2675,7 @@ class Cyborg(Construct):
         self.level.pro_level = 4
         self.picture = "cyborg.txt"
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         """25% chance to detonate if health below 25%"""
         special_str = ""
         if self.is_alive() and self.health.current < int(self.health.current * 0.25) and not random.randint(0, 3):
@@ -2783,7 +2938,7 @@ class IronGolem(Golem):
             {"ability": "Goad", "priority": ActionPriority.NORMAL}
         ]
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         """If health below 10%, turtle and heal for 25% of max health"""
         special_str = ""
         if self.is_alive() and not self.incapacitated():
@@ -2849,7 +3004,7 @@ class Jester(Humanoid):
         self.sight = True
         self.picture = "jester.txt"
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         """Randomizes stats and resistances"""
         if not self.is_alive():
             return ""
@@ -2980,6 +3135,115 @@ class Trickster(FunhouseMinion):
         self.stats.wisdom += random.randint(4, 10)
         self.combat.magic += random.randint(4, 8)
         self.combat.magic_def += random.randint(4, 8)
+
+
+class Copycat(FunhouseMinion):
+    """
+    Funhouse minion that mirrors a small subset of the player's combat abilities.
+
+    Implementation notes:
+    - Copies once per instance (first options() call) to avoid per-turn churn.
+    - Clones abilities via AbilitySerializer to avoid shared mutable state
+      (e.g., charging abilities).
+    """
+
+    MAX_COPIED_SPELLS = 2
+    MAX_COPIED_SKILLS = 2
+    _BLACKLIST_CLASS_NAMES = {
+        # World-state / UI-callback / special-context abilities
+        "Teleport",
+        "Sanctuary",
+        "ChooseFate",
+        "SlotMachine",
+        "Inspect",
+    }
+
+    def __init__(self):
+        super().__init__(
+            name="Copycat",
+            health_range=(160, 280),
+            mana_range=(120, 240),
+            stat_range=(10, 28),
+            combat_range=(22, 44),
+            exp_range=(1800, 3200),
+        )
+        # Start with only the base Funhouse trick pool; we will mirror additional
+        # abilities from the player at combat start.
+        self._mirrored: bool = False
+
+    def _clone_from_target(self, target: Character) -> None:
+        from src.core.save_system import AbilitySerializer
+
+        if not isinstance(getattr(target, "spellbook", None), dict):
+            self._mirrored = True
+            return
+
+        def _pool(bucket: str) -> list[tuple[str, object, str]]:
+            out: list[tuple[str, object, str]] = []
+            src = target.spellbook.get(bucket, {})
+            if not isinstance(src, dict):
+                return out
+            for key, ab in src.items():
+                if ab is None:
+                    continue
+                if bool(getattr(ab, "passive", False)):
+                    continue
+                try:
+                    cls_name = AbilitySerializer.serialize(ab)
+                except Exception:
+                    cls_name = ab.__class__.__name__
+                if cls_name in self._BLACKLIST_CLASS_NAMES:
+                    continue
+                cost = int(getattr(ab, "cost", 0) or 0)
+                if cost > int(getattr(self.mana, "max", 0) or 0):
+                    continue
+                out.append((str(key), ab, cls_name))
+            return out
+
+        spells_pool = _pool("Spells")
+        skills_pool = _pool("Skills")
+        random.shuffle(spells_pool)
+        random.shuffle(skills_pool)
+
+        spells_take = spells_pool[: self.MAX_COPIED_SPELLS]
+        skills_take = skills_pool[: self.MAX_COPIED_SKILLS]
+
+        # Clone and install
+        copied_any = False
+        for bucket_name, selected in (("Spells", spells_take), ("Skills", skills_take)):
+            for orig_key, orig_ab, _cls_name in selected:
+                try:
+                    clone = AbilitySerializer.deserialize(AbilitySerializer.serialize(orig_ab))
+                except Exception:
+                    continue
+                if clone is None:
+                    continue
+
+                # Prefer human-readable name as key, but avoid collisions.
+                key = str(getattr(clone, "name", orig_key) or orig_key)
+                bucket = self.spellbook.setdefault(bucket_name, {})
+                if key in bucket:
+                    key = str(getattr(clone, "_class_name", clone.__class__.__name__))
+                bucket[key] = clone
+                copied_any = True
+
+        # Rebuild action_stack to include copied abilities (priority-weighted selection).
+        if copied_any:
+            self.action_stack = [{"ability": "Attack", "priority": ActionPriority.NORMAL}]
+            for ability_name in list(self.spellbook.get("Skills", {}).keys()):
+                self.action_stack.append({"ability": ability_name, "priority": ActionPriority.NORMAL})
+            for ability_name in list(self.spellbook.get("Spells", {}).keys()):
+                self.action_stack.append({"ability": ability_name, "priority": ActionPriority.NORMAL})
+
+        self._mirrored = True
+
+    def options(self, target: Character, action_list: list[str], tile: object) -> tuple[str, str | None]:
+        if not self._mirrored:
+            try:
+                self._clone_from_target(target)
+            except Exception:
+                self._mirrored = True
+        return super().options(target, action_list, tile)
 
 
 class Incubus(Fiend):
@@ -3140,7 +3404,7 @@ class Behemoth(Aberration):
         self.level.pro_level = 5
         self.picture = "behemoth.txt"
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         """Has a 60% chance to cast Meteor on death"""
         special_str = ""
         if not self.is_alive():
@@ -3167,6 +3431,8 @@ class Lich(Undead):
                                      'Boost': abilities.Boost()},
                           "Skills": {'Health/Mana Drain': abilities.HealthManaDrain()}}
         self.resistance['Ice'] = 0.9
+        # Prevent Ice Block loops that can stall the fight indefinitely.
+        self.single_use_abilities = {"Ice Block"}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Ice Blizzard", "priority": ActionPriority.NORMAL},
@@ -3311,7 +3577,7 @@ class Warforged(Construct):
         self.level.pro_level = 5
         self.picture = "golem.txt"
 
-    def special_effects(self, target):
+    def special_effects(self, target: Character) -> str:
         """if health is below 10%, turtle and heal for 25% of max health"""
         special_str = ""
         if self.is_alive() and not self.incapacitated():
@@ -3340,13 +3606,14 @@ class Wyrm(Dragon):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(650, 830)
         self.spellbook = {'Spells': {'Volcano': abilities.Volcano()},
-                          'Skills': {'Triple Strike': abilities.TripleStrike()}}
+                          'Skills': {'Triple Strike': abilities.TripleStrike(),
+                                     'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Volcano", "priority": ActionPriority.NORMAL},
-            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-            #  "telegraph": "drawing in massive amounts of air, magma swirling in its throat"}
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "drawing in massive amounts of air, magma swirling in its throat"},
         ]
         self.level.pro_level = 5
         self.picture = "wyrm.txt"
@@ -3362,7 +3629,8 @@ class Hydra(Monster):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(400, 550)
         self.spellbook = {'Spells': {'Tsunami': abilities.Tsunami()},
-                          'Skills': {'Double Strike': abilities.DoubleStrike()}}
+                          'Skills': {'Double Strike': abilities.DoubleStrike(),
+                                     'Dragon Breath (Water)': abilities.DragonBreathWater()}}
         self.resistance['Electric'] = -1
         self.resistance['Water'] = 1.5
         self.resistance["Poison"] = 0.75
@@ -3372,8 +3640,8 @@ class Hydra(Monster):
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Tsunami", "priority": ActionPriority.NORMAL},
-            # {"ability": "Dragon Breath (Water)", "priority": ActionPriority.LOW, "delay": 2,
-            #  "telegraph": "all heads rearing back, gathering torrential water in their maws"}
+            {"ability": "Dragon Breath (Water)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "all heads rearing back, gathering torrential water in their maws"},
         ]
         self.level.pro_level = 5
         self.picture = "hydra.txt"
@@ -3389,18 +3657,19 @@ class Wyvern(Dragon):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(420, 570)
         self.spellbook = {"Spells": {'Tornado': abilities.Tornado()},
-                          "Skills": {'Piercing Strike': abilities.PiercingStrike()}}
+                          "Skills": {'Piercing Strike': abilities.PiercingStrike(),
+                                     'Dragon Breath (Wind)': abilities.DragonBreathWind()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Tornado", "priority": ActionPriority.NORMAL},
-            # {"ability": "Dragon Breath (Wind)", "priority": ActionPriority.LOW, "delay": 2,
-            #  "telegraph": "inhaling deeply, gathering a powerful gale within"}
+            {"ability": "Dragon Breath (Wind)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, gathering a powerful gale within"},
         ]
         self.flying = True
         self.level.pro_level = 5
         self.picture = "wyvern.txt"
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target, typ="Wind")
 
 
@@ -3548,7 +3817,8 @@ class RedDragon(Dragon):
                                      'Volcano': abilities.Volcano(),
                                      'Ultima': abilities.Ultima()},
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
-                                     'Doublecast': abilities.Doublecast()}}
+                                     'Doublecast': abilities.Doublecast(),
+                                     'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Volcano", "priority": ActionPriority.NORMAL},
@@ -3556,8 +3826,8 @@ class RedDragon(Dragon):
             {"ability": "Heal", "priority": ActionPriority.NORMAL},
             {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Doublecast", "priority": ActionPriority.HIGH},
-            # {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
-            #  "telegraph": "inhaling deeply, roaring flames building in its maw"}
+            {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
+             "telegraph": "inhaling deeply, roaring flames building in its maw"},
         ]
         self.flying = True
         self.resistance = {'Fire': 1.5,
@@ -3575,7 +3845,7 @@ class RedDragon(Dragon):
         self.sight = True
         self.picture = "reddragon.txt"
 
-    def special_attack(self, target):
+    def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target)
 
 
@@ -3590,6 +3860,68 @@ class RedDragon2(RedDragon):
         self.combat = Combat(0, 0, 0, 0)
 
 
+class Circe(Humanoid):
+    """
+    """
+
+    def __init__(self):
+        super().__init__(name="Circe", health=800, mana=425, strength=35, intel=51, wisdom=44, con=31, charisma=48,
+                         dex=36, attack=92, defense=77, magic=101, magic_def=99,
+                         exp=40000)
+        self.equipment = {
+            "Weapon": items.Khatvanga(),
+            "Armor": items.MerlinRobe(),
+            "OffHand": items.InfernalGrimoire(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = 18000
+        self.inventory["Item"] = [items.random_item(6)]
+        self.spellbook = {
+            "Spells": {
+                "Hex": abilities.Hex(),
+                "Sleep": abilities.Sleep(),
+                "Enfeeble": abilities.Enfeeble(),
+                "Mirror Image": abilities.MirrorImage2(),
+                "Magic Missile": abilities.MagicMissile3(),
+            },
+            "Skills": {
+                "Mana Shield": abilities.ManaShield(),
+            },
+        }
+        self.resistance = {
+            "Fire": 0.25,
+            "Ice": 0.25,
+            "Electric": 0.25,
+            "Water": 0.25,
+            "Earth": 0.25,
+            "Wind": 0.25,
+            "Shadow": 0.5,
+            "Holy": -0.25,
+            "Poison": 0.5,
+            "Physical": 0.1,
+        }
+        self.status_immunity = ["Death", "Stone", "Sleep"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.LOW},
+            {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Hex", "priority": ActionPriority.NORMAL},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_status": "Sleep",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Mirror Image", "priority": ActionPriority.HIGH},
+            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+             "priority_if": {"self_mana_pct_lt": 0.2,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.HIGH}},
+        ]
+        self.level.pro_level = 5
+        self.sight = True
+        self.picture = "nighthag.txt"
+
+
 class Merzhin(Humanoid):
     """
     Breton name for Merlin; Maid of the Spring gives quest to defeat
@@ -3601,7 +3933,7 @@ class Merzhin(Humanoid):
     """
 
     def __init__(self):
-        super().__init__(name="Merzhin", health=1500, mana=2000, strength=24, intel=61, wisdom=58, con=28, charisma=35,
+        super().__init__(name="Merzhin", health=1500, mana=2000, strength=32, intel=61, wisdom=58, con=28, charisma=35,
                          dex=32, attack=103, defense=101, magic=140, magic_def=164,
                          exp=90000)
         self.equipment = {"Weapon": items.Khatvanga(), "Armor": items.MerlinRobe(), "OffHand": items.Vedas(),
@@ -3680,6 +4012,105 @@ class Cerberus(Fiend):
         self.picture = "cerberus.txt"
 
 
+class CambionAcolyte(Fiend):
+    """
+    Support companion for the Devil boss.
+
+    This is implemented as a "familiar-style" helper: the Devil's
+    familiar_turn() delegates to CambionAcolyte.support_turn().
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Cambion Acolyte",
+            health=900,
+            mana=500,
+            strength=24,
+            intel=34,
+            wisdom=36,
+            con=28,
+            charisma=22,
+            dex=26,
+            attack=55,
+            defense=60,
+            magic=80,
+            magic_def=75,
+            exp=0,
+        )
+        self.equipment = {
+            'Weapon': items.RuneStaff(),
+            'Armor': items.StuddedLeather(),
+            'OffHand': items.NoOffHand(),
+            'Ring': items.NoRing(),
+            'Pendant': items.NoPendant(),
+        }
+        self.spellbook = {
+            "Spells": {
+                "Regen": abilities.Regen3(),
+                "Shell": abilities.Shell(),
+                "Boost": abilities.Boost(),
+            },
+            "Skills": {},
+        }
+        self.resistance['Shadow'] = 0.5
+        self.resistance['Holy'] = -0.25
+        self.status_immunity = ["Death", "Stone"]
+        self.level.pro_level = 99
+        self.picture = "imp.txt"
+
+    @staticmethod
+    def _regen_active(ch: Character) -> bool:
+        try:
+            return bool(ch.magic_effects.get("Regen").active)
+        except Exception:
+            return False
+
+    @staticmethod
+    def _shell_active(ch: Character) -> bool:
+        """
+        Shell is implemented as a Magic Defense stat buff (see shell.yaml).
+
+        We treat it as active when the target has an active Magic Defense stat effect.
+        """
+        try:
+            return bool(ch.stat_effects.get("Magic Defense").active)
+        except Exception:
+            return False
+
+    def support_turn(self, *, boss: Character, player: Character) -> str:
+        """
+        Deterministic support-only logic:
+        1) Apply Shell if not active
+        2) Apply Regen if boss HP < 70% and Regen not active
+        3) Otherwise do nothing
+        """
+        if boss is None or not getattr(boss, "is_alive", lambda: False)():
+            return ""
+
+        # 1) Shell (defensive buff)
+        shell = self.spellbook.get("Spells", {}).get("Shell")
+        if shell and not self._shell_active(boss):
+            if self.mana.current >= getattr(shell, "cost", 0):
+                msg = "Cambion Acolyte chants...\n"
+                msg += f"{self.name} casts Shell.\n"
+                msg += str(shell.cast(self, target=boss))
+                return msg
+
+        # 2) Regen (only when needed)
+        regen = self.spellbook.get("Spells", {}).get("Regen")
+        if regen and boss.health.max and (boss.health.current / boss.health.max) < 0.70:
+            if not self._regen_active(boss) and self.mana.current >= getattr(regen, "cost", 0):
+                # Heal/HoT spells default to self-target unless fam=True; we want
+                # the acolyte to target the boss, while still paying the mana cost.
+                self.mana.current -= int(getattr(regen, "cost", 0) or 0)
+                msg = "Cambion Acolyte chants...\n"
+                msg += f"{self.name} casts Regen.\n"
+                msg += str(regen.cast(self, target=boss, special=True, fam=True))
+                return msg
+
+        return ""
+
+
 # Final Boss
 class Devil(Fiend):
     """
@@ -3730,8 +4161,19 @@ class Devil(Fiend):
         self.level.pro_level = 99
         self.sight = True
         self.picture = "devil.txt"
+        # Support companion (acts during companion_turn via familiar_turn()).
+        self.acolyte = CambionAcolyte()
 
-    def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
+    def familiar_turn(self, target: Character) -> str:
+        try:
+            if hasattr(self, "acolyte") and self.acolyte and self.acolyte.mana.current > 0:
+                return self.acolyte.support_turn(boss=self, player=target)
+        except Exception:
+            pass
+        return ""
+
+    def check_mod(self, mod: str, enemy: Character | None = None, typ: str | None = None,
+                  luck_factor: int = 1, ultimate: bool = False, ignore: bool = False) -> int | float:
         class_mod = 0
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
@@ -3756,7 +4198,7 @@ class Devil(Fiend):
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
-            m_def_mod = self.stats.wisdom
+            m_def_mod = int(self.stats.wisdom) + (int(self.stats.charisma) // 2)
             class_mod += self.spell_mod
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
             return max(0, m_def_mod + class_mod + self.combat.magic_def)
@@ -3777,8 +4219,9 @@ class Devil(Fiend):
                     res_mod = -0.25
             return res_mod
         if mod == 'luck':
-            luck_mod = self.stats.charisma // luck_factor
-            return luck_mod
+            lf = max(1, int(luck_factor))
+            base = int(self.stats.charisma) + int(self.stats.wisdom)
+            return max(0, (base * 2) // lf)
         if mod == "speed":
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active

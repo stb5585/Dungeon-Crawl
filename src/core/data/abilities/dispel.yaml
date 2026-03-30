@@ -1,0 +1,19 @@
+name: Dispel
+type: Status
+subtype: Status
+description: "Cast an anti-magic spell on your foe, removing any positive status effects."
+cost: 20
+wizard_free_cast: true
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    actor_lo_divisor: 2
+    target_stat: wisdom
+    target_lo_divisor: 2
+    target_hi_divisor: 2
+    effect:
+      type: full_dispel
+messages:
+  success: "All positive status effects removed from {target}."
+  resist: "{target} resists the spell."

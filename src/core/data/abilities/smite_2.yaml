@@ -1,0 +1,13 @@
+name: Smite
+description: >-
+  The power of light rebukes the enemy, adding bonus holy damage to a
+  successful attack roll.
+type: WeaponSpell
+cost: 20
+damage_mod: 1.25
+crit: 3
+subtype: Holy
+school: Holy
+effects:
+  - type: holy_followup
+    resist_type: Holy

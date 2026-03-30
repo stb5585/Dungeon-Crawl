@@ -1,0 +1,7 @@
+name: Resist All
+type: Support
+subtype: Support
+description: ""
+cost: 25
+target_self: true
+message: "All spell resistances are increased by 50% for {target}.\n"

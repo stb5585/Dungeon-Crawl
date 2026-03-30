@@ -418,10 +418,11 @@
     },
     "Funhouse Entry": {
         "Text": [
-            "You step through the strange archway and reality twists around you...",
+            "You notice a strange tile floor out of place surronded by the dirt ground of the dungeon.",
+            "You hesitate at first but decide it can't be that bad, can it?",
+            "Immediately after stepping on to the tile your reality twists around you...",
             "Colors swirl, geometry bends impossibly, and gravity seems negotiable.",
-            "Before you stands a twisted carnival of mirrors, illusions, and impossible architecture.",
-            "In the center, you sense a powerful presence—the Jester's domain.",
+            "You are teleported to a strange place of deception, where things are not as they seem.",
             "This place thrums with chaotic magical energy. You must navigate carefully.",
             "Defeat the Jester and find your way out of this labyrinth of madness."
         ]
@@ -448,7 +449,6 @@
         "Text": [
             "You reach out and grasp the Golden Chalice. It is warm to the touch.",
             "As your fingers close around it, the chalice pulses with ancient power.",
-            "The pedestal crumbles to dust, as if it no longer has purpose.",
             "You feel the blessing of the chalice settle into your very being.",
             "This sacred vessel will grant you the strength needed to face Merzhin himself."
         ]

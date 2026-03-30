@@ -16,7 +16,7 @@ from src.core.player import DIRECTIONS
 from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
 from .dungeon_hud import DungeonHUD
-from .enhanced_dungeon_renderer import EnhancedDungeonRenderer
+from .dungeon_renderer import DungeonRenderer
 from .loot_popup import LootPopup
 
 
@@ -36,7 +36,7 @@ class DungeonManager:
         self._dungeon_background_loaded = False
 
         # Initialize renderer and HUD
-        self.renderer = EnhancedDungeonRenderer(presenter)
+        self.renderer = DungeonRenderer(presenter)
         self.hud = DungeonHUD(presenter)
 
         # Initialize combat manager
@@ -696,6 +696,9 @@ class DungeonManager:
             elif 'UnobtainiumRoom' in tile_type:
                 self._interact_unobtainium_room(ahead_tile)
                 return
+            elif 'GoldenChaliceRoom' in tile_type:
+                self._interact_golden_chalice_room(ahead_tile)
+                return
 
         # Check current tile for things you stand on
         current_tile = self.get_current_tile()
@@ -736,6 +739,8 @@ class DungeonManager:
             self._handle_warp_point(current_tile)
         elif 'UndergroundSpring' in tile_type:
             self._interact_underground_spring(current_tile)
+        elif 'AntiMagicSwitch' in tile_type:
+            self._interact_anti_magic_switch(current_tile)
         elif 'UnobtainiumRoom' in tile_type:
             self._interact_unobtainium_room(current_tile)
         elif 'DeadBody' in tile_type:
@@ -792,6 +797,7 @@ class DungeonManager:
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
             mimic_level = 4 if is_funhouse_mimic else (self.player_char.location_z + locked + plus)
             enemy = enemies.Mimic(mimic_level, player_level=self.player_char.player_level())
+            enemy.anti_magic_active = self.player_char.anti_magic_active
             chest_tile.enemy = enemy
             self.add_message("There is a Mimic in the chest!")
             # Start combat with the Mimic
@@ -941,6 +947,10 @@ class DungeonManager:
 
     def _handle_warp_point(self, warp_tile):
         """Handle warp point interaction - return to town."""
+        if not getattr(self.player_char, 'warp_point', False):
+            self.add_message("The warp point is inactive. It looks like it requires authorization.")
+            return
+
         choice = self._show_dungeon_choice(
             "You've found a warp point!\n\nDo you want to return to town?",
             ["Yes", "No"],
@@ -1127,6 +1137,41 @@ class DungeonManager:
             elif "Excalibur" == self.player_char.equipment.get('Weapon').name:
                 self.add_message("The Lady of the Lake appears and upgrades your Excalibur!")
                 self.player_char.equipment['Weapon'] = items.Excalibur2()
+
+        wizard_folly = self.player_char.quest_dict.get("Side", {}).get("The Wizard's Folly")
+        if wizard_folly and not wizard_folly.get("Completed") and not wizard_folly.get("Turned In"):
+            realm_popup = ConfirmationPopup(
+                self.presenter,
+                "Nimue parts the spring and reveals a hidden way.\n\nEnter the Realm of Cambion?",
+                show_buttons=True,
+            )
+            if realm_popup.show(
+                background_draw_func=self._dungeon_dialog_background,
+                flush_events=True,
+                require_key_release=True,
+                min_display_ms=300,
+            ):
+                map_tiles.enter_realm_of_cambion(self.player_char)
+                self._mark_view_dirty()
+                self.add_message("The spring pulls you into the Realm of Cambion.")
+
+    def _interact_anti_magic_switch(self, switch_tile):
+        """Handle the Cambion anti-magic terminal."""
+        from .confirmation_popup import CodeEntryPopup
+
+        popup = CodeEntryPopup(
+            self.presenter,
+            "Anti-Magic Terminal",
+            "Enter the 4-digit override code",
+        )
+        code = popup.show(background_draw_func=self._dungeon_dialog_background)
+        if code is None:
+            self.add_message("You step away from the terminal.")
+            return
+
+        switch_tile.attempt_disable(self.game, code)
+        for message in map_tiles.pop_cambion_messages(self.player_char):
+            self.add_message(message)
 
     def _interact_unobtainium_room(self, unobtainium_tile):
         """Handle Unobtainium room interaction."""
@@ -1353,9 +1398,14 @@ class DungeonManager:
             elif 'UltimateArmorShop' in tile_type:
                 messages.append("You've found a mysterious forge! (Press O to enter)")
             elif 'WarpPoint' in tile_type:
-                messages.append("A warp point shimmers before you! (Press O to use)")
+                if getattr(self.player_char, 'warp_point', False):
+                    messages.append("A warp point shimmers before you! (Press O to use)")
+                else:
+                    messages.append("An inactive warp point hums faintly. (Press O to inspect)")
             elif 'UndergroundSpring' in tile_type:
                 messages.append("An underground spring bubbles nearby. (Press O to interact)")
+            elif 'AntiMagicSwitch' in tile_type:
+                messages.append("A humming terminal waits here. The anti-magic field may be tied to it.")
             elif 'UnobtainiumRoom' in tile_type:
                 if not (hasattr(current_tile, 'looted') and not current_tile.looted):
                     messages.append("You happen upon a strange metal! (Press O to take)")
@@ -1437,6 +1487,11 @@ class DungeonManager:
                     messages.append("The ground ahead is already cleared.")
                 else:
                     messages.append("You see Unobtainium on the ground ahead! (Press O to take)")
+            elif 'GoldenChaliceRoom' in tile_type:
+                if getattr(ahead_tile, 'read', False):
+                    messages.append("An empty chalice pedestal stands ahead.")
+                else:
+                    messages.append("A golden chalice rests on a pedestal ahead! (Press O to take)")
 
         return messages if messages else None
 
@@ -1465,6 +1520,8 @@ class DungeonManager:
             # Automatically trigger final room conversation when stepping on the tile
             self._interact_final_room(current_tile)
             return  # Don't check for other effects after final room interaction
+        elif 'AntiMagicSwitch' in tile_type:
+            self._interact_anti_magic_switch(current_tile)
 
         # Display special event text BEFORE tile effects and combat
         if hasattr(current_tile, 'special_text'):
@@ -1500,6 +1557,9 @@ class DungeonManager:
                     self.renderer.trigger_damage_flash()
                 self.ui_dirty = True
                 self.view_dirty = True
+
+        for message in map_tiles.pop_cambion_messages(self.player_char):
+            self.add_message(message)
         
         # Check if tile effect teleported player to town (e.g., "Bring Him Home" quest)
         if self.player_char.in_town():
@@ -1562,12 +1622,20 @@ class DungeonManager:
                 # Enemy defeated - clear from tile
                 current_tile.enemy = None
                 self.add_message("You emerge victorious!")
+                if 'MerzhinBossRoom' in type(current_tile).__name__:
+                    self.add_message("Merzhin falls and the Realm of Cambion collapses around you.")
+                    self.player_char.exit_realm_of_cambion()
+                    self._mark_view_dirty()
             elif not self.player_char.is_alive():
                 # Player died - return to town or exit funhouse
                 if self.player_char.location_z == 7:
                     # In funhouse - exit instead of going to town
                     self.add_message("You were defeated... The funhouse spits you back out.")
                     self.player_char.exit_funhouse()
+                elif self.player_char.in_realm_of_cambion():
+                    self.add_message("You were defeated... The Realm of Cambion hurls you back to the spring.")
+                    self.player_char.exit_realm_of_cambion()
+                    self._mark_view_dirty()
                 else:
                     self.add_message("You were defeated... You awaken safely back in town.")
                     self.player_char.to_town()

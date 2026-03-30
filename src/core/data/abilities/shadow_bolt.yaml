@@ -1,0 +1,9 @@
+name: Shadow Bolt
+type: Spell
+subtype: Shadow
+description: >-
+  Launch a bolt of magic infused with dark energy, damaging the enemy.
+cost: 8
+damage_mod: 1.5
+crit: 5
+school: Shadow

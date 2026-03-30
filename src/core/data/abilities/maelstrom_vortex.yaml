@@ -1,0 +1,12 @@
+name: Maelstrom Vortex
+type: Spell
+subtype: Water
+description: >-
+  Summons a maddening vortex of churning water that overwhelms
+  the target's senses with terror, silence, and blindness.
+cost: 40
+damage_mod: 3.0
+effects:
+  - type: maelstrom_vortex
+    damage_mod: 3.0
+    status_duration: 3

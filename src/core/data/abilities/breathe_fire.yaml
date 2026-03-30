@@ -1,0 +1,10 @@
+name: Breathe Fire
+description: >-
+  Special attack used randomly when attack is selected. Only used by
+  dragon-like creatures.
+type: Skill
+cost: 0
+effects:
+  - type: breath_damage
+    multiplier: 1.5
+    element: Non-elemental

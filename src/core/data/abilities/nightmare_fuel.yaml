@@ -1,0 +1,9 @@
+name: Nightmare Fuel
+description: >-
+  Invade the enemy's dreams, messing with their mind and dealing damage.
+type: Skill
+cost: 20
+ice_block_check: true
+effects:
+  - type: nightmare_fuel
+    crit_chance: 0.5

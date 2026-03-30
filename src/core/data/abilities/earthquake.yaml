@@ -1,0 +1,11 @@
+name: Earthquake
+type: Spell
+subtype: Earth
+description: >-
+  The cave wall and ceiling are brought down by a massive seismic event,
+  dealing devastating earth damage.
+cost: 26
+damage_mod: 2.5
+crit: 8
+school: Elemental
+rank: 2

@@ -1,0 +1,13 @@
+name: Shapeshift
+description: >-
+  Some enemies can change their appearance and type. This is the skill they
+  use to do so.
+type: Skill
+subtype: Skill
+cost: 0
+weapon: false
+self_target: true
+effects:
+  - type: shapeshift
+    status_name: Shapeshifted
+    status_duration: 3

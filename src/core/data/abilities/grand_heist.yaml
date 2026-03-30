@@ -1,0 +1,11 @@
+name: Grand Heist
+type: Skill
+subtype: Offensive
+description: >-
+  The ultimate trickster maneuver. Steals everything not nailed down,
+  inflicts a nasty surprise, then pelts the victim with their own gold.
+cost: 25
+effects:
+  - type: grand_heist
+    gold_multiplier: 2.0
+    debuff_duration: 3

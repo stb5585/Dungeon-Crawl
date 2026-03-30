@@ -1,0 +1,11 @@
+name: Transform
+type: Skill
+subtype: Class
+description: >-
+  Transforms the druid into a Direbear, assuming the spells and abilities
+  inherent to the creature.
+cost: 0
+self_target: true
+effects:
+  - type: transform
+    creature: Direbear

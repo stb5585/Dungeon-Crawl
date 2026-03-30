@@ -1,0 +1,10 @@
+name: Ice Block
+type: Support
+subtype: Support
+description: "The user encases themself in a block of ice, preventing damage and regaining health and mana over 3 turns. The user cannot act while frozen and any effects active will be paused."
+cost: 30
+school: Ice
+effects:
+  - type: magic_effect_apply
+    effect_name: "Ice Block"
+    duration: 3

@@ -1,0 +1,11 @@
+name: Surface
+type: Skill
+subtype: Offensive
+description: "Emerge from underground, becoming targetable again."
+cost: 0
+self_target: true
+effects:
+  - type: set_flag
+    flag: tunnel
+    value: false
+    message: "{target} surfaces from underground."

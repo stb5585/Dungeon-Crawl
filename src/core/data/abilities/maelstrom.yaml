@@ -1,0 +1,13 @@
+name: Maelstrom
+type: CustomSpell
+subtype: Non-elemental
+description: >-
+  A massive maelstrom engulfs the target, reducing target HP to 10% of max
+  or 25% on a successful save.
+cost: 40
+damage_mod: 0
+crit: 1
+effects:
+  - type: maelstrom
+    success_pct: 0.10
+    fail_pct: 0.25

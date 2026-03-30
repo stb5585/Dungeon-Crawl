@@ -1,0 +1,29 @@
+name: Poison Breath
+type: Spell
+subtype: Poison
+description: >-
+  Your spew forth a toxic breath, dealing poison damage and poisoning the
+  target.
+cost: 20
+damage_mod: 1.5
+crit: 5
+school: Poison
+rank: 2
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_lo_divisor: 2
+    actor_divisor: 1
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    use_crit_multiplier: true
+    effect:
+      type: dynamic_status_dot
+      status_name: Poison
+      duration_stat: intel
+      duration_stat_divisor: 10
+      duration_min: 2
+      damage_lo_fraction: 1.0
+      damage_hi_fraction: 1.0
+      health_multiplier: 0.005

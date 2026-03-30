@@ -1,0 +1,17 @@
+name: Stupefy
+type: Status
+subtype: Status
+description: "Hit the enemy so hard, they go stupid and cannot act."
+cost: 14
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 1
+    target_stat: wisdom
+    target_lo_divisor: 2
+    target_hi_divisor: 2
+    effect:
+      type: status_apply
+      status_name: Stun
+      duration: 2
+      skip_if_active: true

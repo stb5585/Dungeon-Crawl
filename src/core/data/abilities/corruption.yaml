@@ -1,0 +1,22 @@
+name: Corruption
+type: Spell
+subtype: Shadow
+description: Damage the enemy and add a debuff that does damage over time.
+cost: 16
+damage_mod: 1.25
+crit: 5
+effects:
+  - type: stat_contest
+    actor_stat: charisma
+    actor_lo_divisor: 2
+    actor_divisor: 1
+    target_stat: wisdom
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    use_crit_multiplier: true
+    effect:
+      type: dynamic_dot
+      dot_type: DOT
+      duration: 2
+      damage_lo_fraction: 1.0
+      damage_hi_fraction: 1.0

@@ -1,0 +1,17 @@
+name: Dragon Breath (Fire)
+type: ChargingSkill
+subtype: Fire
+description: A devastating breath of fire that incinerates everything in its path
+cost: 0
+
+charge_time: 2
+telegraph_message: "inhaling deeply, flames flickering in its throat"
+
+effects:
+  - type: breath_damage
+    multiplier: 1.5
+    element: Fire
+    announce_message: "{actor} unleashes a torrent of fire!\n"
+
+priority: NORMAL
+delay: 2

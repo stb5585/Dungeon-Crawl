@@ -1,7 +1,18 @@
 ###########################################
 """race manager"""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 from textwrap import wrap
+
+
+# ── Racial traits (7 sins / 7 virtues) ───────────────────────────────
+@dataclass(frozen=True)
+class RacialTrait:
+    """Displayable always-on race trait (used by character creation + UI screens)."""
+    name: str
+    description: str
 
 
 # Race objects
@@ -27,6 +38,8 @@ class Race:
                  base_magic_def: int,
                  cls_res: dict,
                  resistance: dict,
+                 virtue: RacialTrait | None = None,
+                 sin: RacialTrait | None = None,
                  ):
         self.name = name
         self.description = "\n".join(wrap(description, 75, break_on_hyphens=False))
@@ -42,6 +55,8 @@ class Race:
         self.base_magic_def = base_magic_def
         self.cls_res = cls_res
         self.resistance = resistance
+        self.virtue = virtue or RacialTrait(name="", description="")
+        self.sin = sin or RacialTrait(name="", description="")
 
 
 class Human(Race):
@@ -74,6 +89,15 @@ class Human(Race):
                                      "Holy": 0.,
                                      "Poison": 0.,
                                      "Physical": 0.}
+                         ,
+                         virtue=RacialTrait(
+                             name="Diligence",
+                             description="You learn quickly from battle, gaining increased experience.",
+                         ),
+                         sin=RacialTrait(
+                             name="Lust",
+                             description="Temptation dulls your caution, reducing your resistance to debilitating effects.",
+                         ),
                          )
 
 
@@ -105,6 +129,15 @@ class Elf(Race):
                                      "Holy": 0.,
                                      "Poison": 0.,
                                      "Physical": -0.2}
+                         ,
+                         virtue=RacialTrait(
+                             name="Humility",
+                             description="You see through deception, suffering fewer penalties when fighting the unseen or obscured.",
+                         ),
+                         sin=RacialTrait(
+                             name="Pride",
+                             description="Your pride resists aid, slightly reducing healing received.",
+                         ),
                          )
 
 
@@ -139,6 +172,15 @@ class HalfElf(Race):
                                      "Holy": 0.,
                                      "Poison": 0.,
                                      "Physical": -0.1}
+                         ,
+                         virtue=RacialTrait(
+                             name="Gratitude",
+                             description="You recover steadily, increasing healing received.",
+                         ),
+                         sin=RacialTrait(
+                             name="Envy",
+                             description="Envy undermines resolve, slightly reducing your critical damage spikes.",
+                         ),
                          )
 
 
@@ -173,6 +215,15 @@ class HalfGiant(Race):
                                      "Holy": -0.3,
                                      "Poison": 0.33,
                                      "Physical": 0.2}
+                         ,
+                         virtue=RacialTrait(
+                             name="Perseverance",
+                             description="Your charge cannot be broken by pain alone; only incapacitation can interrupt it.",
+                         ),
+                         sin=RacialTrait(
+                             name="Sloth",
+                             description="You advance slowly, gaining reduced experience from combat.",
+                         ),
                          )
 
 
@@ -206,6 +257,15 @@ class Gnome(Race):
                                      "Holy": 0.2,
                                      "Poison": 0.,
                                      "Physical": 0.}
+                         ,
+                         virtue=RacialTrait(
+                             name="Charity",
+                             description="Your charm opens purses; charisma has a stronger effect on gold outcomes.",
+                         ),
+                         sin=RacialTrait(
+                             name="Greed",
+                             description="When you carry too much, the penalties of encumbrance are harsher.",
+                         ),
                          )
 
 
@@ -236,6 +296,15 @@ class Dwarf(Race):
                                      "Holy": 0.,
                                      "Poison": 0.25,
                                      "Physical": 0.1}
+                         ,
+                         virtue=RacialTrait(
+                             name="Temperance",
+                             description="Combat consumables are more effective (does not affect permanent stat potions).",
+                         ),
+                         sin=RacialTrait(
+                             name="Gluttony",
+                             description="Overindulgence brings a hangover: using combat consumables can hinder your next fight.",
+                         ),
                          )
 
 
@@ -269,6 +338,15 @@ class HalfOrc(Race):
                                      "Holy": -0.2,
                                      "Poison": 0.1,
                                      "Physical": 0.}
+                         ,
+                         virtue=RacialTrait(
+                             name="Patience",
+                             description="You endure the worst blows, taking reduced damage from critical hits.",
+                         ),
+                         sin=RacialTrait(
+                             name="Wrath",
+                             description="Pain can trigger blind rage: you keep control, but your aim suffers briefly.",
+                         ),
                          )
 
 

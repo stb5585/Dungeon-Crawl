@@ -1,0 +1,17 @@
+name: Dragon Breath (Wind)
+type: ChargingSkill
+subtype: Wind
+description: A powerful gale of cutting wind is exhaled with devastating force
+cost: 0
+
+charge_time: 2
+telegraph_message: "inhaling deeply, gathering a powerful gale within"
+
+effects:
+  - type: breath_damage
+    multiplier: 1.5
+    element: Wind
+    announce_message: "{actor} unleashes a devastating gale!\n"
+
+priority: NORMAL
+delay: 2

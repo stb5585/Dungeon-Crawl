@@ -1,0 +1,12 @@
+name: Acid Spit
+description: >-
+  Spit a corrosive substance on the target, dealing initial damage plus
+  damage over time.
+type: Skill
+# cost is dynamic (6 * pro_level) — handled by the AcidSpitEffect
+cost: 0
+ice_block_check: true
+effects:
+  - type: acid_spit
+    base_cost: 6
+    dot_duration: 2

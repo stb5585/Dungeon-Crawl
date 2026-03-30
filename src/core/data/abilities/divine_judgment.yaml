@@ -1,0 +1,13 @@
+name: Divine Judgment
+type: Spell
+subtype: Holy
+description: >-
+  The angelic Watcher raises a holy sword and passes divine judgment,
+  smiting the enemy while restoring and cleansing the summoner.
+cost: 50
+damage_mod: 3.0
+effects:
+  - type: divine_judgment
+    damage_mod: 3.0
+    undead_multiplier: 2.0
+    heal_fraction: 0.5

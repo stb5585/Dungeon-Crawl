@@ -1,0 +1,14 @@
+name: Holy
+type: Spell
+subtype: Holy
+description: >-
+  The enemy is bathed in a holy light, cleansing it of evil. There is a
+  chance on critical hit that the target will be blinded for a duration.
+cost: 4
+damage_mod: 1.25
+crit: 10
+effects:
+  - type: status_apply
+    status_name: Blind
+    duration: 2
+    crit_only: true

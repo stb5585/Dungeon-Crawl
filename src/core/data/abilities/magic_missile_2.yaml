@@ -1,0 +1,14 @@
+name: Magic Missile
+type: MagicMissile
+subtype: Non-elemental
+description: >-
+  Orbs of energy shoots forth from the caster, dealing non-elemental damage.
+cost: 18
+damage_mod: 1.0
+crit: 8
+missiles: 2
+
+notes: |
+  Upgraded Magic Missile with 2 projectiles.
+  Cannot be reflected.
+  Free to cast with Wizard Power Up active.

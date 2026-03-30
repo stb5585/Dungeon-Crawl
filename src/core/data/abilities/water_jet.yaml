@@ -1,0 +1,8 @@
+name: Water Jet
+type: Spell
+subtype: Water
+description: A jet of water erupts from beneath the enemy's feet.
+cost: 4
+damage_mod: 1.0
+crit: 3
+school: Elemental

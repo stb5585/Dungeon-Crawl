@@ -120,6 +120,182 @@ class TestAbilitiesAPI:
                 pytest.fail(f"CombatResult requires optional parameters: {e}")
 
 
+class TestBattleEngineBasics:
+    """Core BattleEngine behavior for basic combat flow."""
+
+    class MockTile:
+        def __init__(self, enemy=None):
+            self.enemy = enemy
+            self.defeated = False
+
+        def available_actions(self, _player):
+            return ["Attack", "Flee", "Use Skill"]
+
+        def __str__(self):
+            return "TestTile"
+
+    def _make_engine(self):
+        from src.core.combat.battle_engine import BattleEngine
+        from tests.test_framework import TestGameState
+
+        player = TestGameState.create_player(
+            name="Hero",
+            class_name="Warrior",
+            race_name="Human",
+            level=5,
+            health=(50, 50),
+            mana=(10, 10),
+        )
+        enemy = TestGameState.create_player(
+            name="Goblin",
+            class_name="Warrior",
+            race_name="Human",
+            level=3,
+            health=(20, 20),
+            mana=(1, 0),
+        )
+        # BattleLogger expects enemy_typ and non-zero mana max for ratio logging.
+        enemy.enemy_typ = "TestEnemy"
+        tile = self.MockTile(enemy=enemy)
+        engine = BattleEngine(player=player, enemy=enemy, tile=tile)
+        return engine, player, enemy, tile
+
+    def test_start_battle_sets_attacker_and_defender(self, monkeypatch):
+        import src.core.combat.battle_engine as battle_engine
+
+        engine, player, enemy, _tile = self._make_engine()
+
+        monkeypatch.setattr(
+            battle_engine,
+            "determine_initiative",
+            lambda _p, _e: (player, enemy),
+        )
+
+        attacker, defender = engine.start_battle()
+        assert attacker == player
+        assert defender == enemy
+        assert engine.attacker == player
+        assert engine.defender == enemy
+
+    def test_execute_attack_uses_weapon_damage(self, monkeypatch):
+        import src.core.combat.battle_engine as battle_engine
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        monkeypatch.setattr(battle_engine.random, "randint", lambda _a, _b: 1)
+
+        def weapon_damage(target, **_kwargs):
+            damage = 7
+            target.health.current -= damage
+            return "Hit for 7 damage.\n", True, damage
+
+        monkeypatch.setattr(player, "weapon_damage", weapon_damage)
+
+        result = engine.execute_action("Attack")
+        assert "Hit for 7 damage" in result.message
+        assert enemy.health.current == 13
+
+    def test_execute_flee_sets_flee_flag(self, monkeypatch):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        monkeypatch.setattr(player, "flee", lambda _t, smoke=False: (True, "Fled.\n"))
+
+        result = engine.execute_action("Flee")
+        assert engine.flee is True
+        assert result.fled is True
+        assert "Fled" in result.message
+
+    def test_pre_turn_parses_shield_explosion_damage(self, monkeypatch):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        enemy.health.current = 10
+        monkeypatch.setattr(
+            player, "effects", lambda: "Exploding shield deals 5 damage.\n"
+        )
+        pre = engine.pre_turn()
+        assert pre.shield_explosion_damage == 5
+        assert enemy.health.current == 5
+
+    def test_charging_skill_can_continue_after_paying_mana_cost(self, monkeypatch):
+        """
+        Regression: charging skills pay mana up-front. The engine must allow the
+        follow-up turns even if mana is now 0, otherwise the charge can never
+        resolve.
+        """
+        from src.core import abilities
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        # Add Charge to the player's skillbook. Give exactly enough mana to start.
+        player.spellbook["Skills"]["Charge"] = abilities.Charge()
+        player.mana.max = 10
+        player.mana.current = 10
+
+        def weapon_damage(target, **_kwargs):
+            damage = 5
+            target.health.current -= damage
+            return "Hit for 5 damage.\n", True, 1
+
+        monkeypatch.setattr(player, "weapon_damage", weapon_damage)
+
+        # Turn 1: start charging (mana becomes 0).
+        res1 = engine.execute_action("Use Skill", choice="Charge")
+        assert player.mana.current == 0
+        assert "is lowering their head" in res1.message or "begins to charge" in res1.message
+
+        # Turn 2: resolve charge with mana == 0 (should be allowed).
+        res2 = engine.execute_action("Use Skill", choice="Charge")
+        assert "Hit for 5 damage" in res2.message
+
+    def test_execute_skill_calls_skill_use(self):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        class DummySkill:
+            def __init__(self):
+                self.name = "Test Skill"
+                self.cost = 0
+
+            def use(self, _user, target=None, **_kwargs):
+                return "Skill used.\n"
+
+        player.spellbook["Skills"]["Test Skill"] = DummySkill()
+
+        result = engine.execute_action("Use Skill", choice="Test Skill")
+        assert "uses Test Skill" in result.message
+        assert "Skill used" in result.message
+
+    def test_end_battle_flee_clears_tile_enemy(self):
+        engine, _player, _enemy, tile = self._make_engine()
+        engine.flee = True
+
+        outcome = engine.end_battle()
+        assert outcome.result == "flee"
+        assert tile.enemy is None
+
+    def test_silence_prevents_summoning(self):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        player.status_effects["Silence"].active = True
+        player.status_effects["Silence"].duration = 2
+        player.summons["TestSummon"] = enemy
+
+        result = engine.execute_action("Summon", choice="TestSummon")
+        assert "silenced" in result.message.lower()
+        assert result.summon_started is False
+
+
 def run_tests():
     """Run all tests."""
     print("=" * 70)

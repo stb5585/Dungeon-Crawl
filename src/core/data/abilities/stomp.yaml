@@ -1,0 +1,8 @@
+name: Stomp
+type: Skill
+description: >-
+  Stomp on the enemy, dealing damage with a chance to stun.
+cost: 8
+ice_block_check: true
+effects:
+  - type: stomp

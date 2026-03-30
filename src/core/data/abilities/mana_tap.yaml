@@ -1,0 +1,13 @@
+name: Mana Tap
+type: Skill
+subtype: Drain
+description: Convert a portion of your mana into health.
+cost: 0
+self_target: true
+use_out_enabled: true
+effects:
+  - type: resource_convert
+    source: mana
+    target_resource: health
+    percent: 0.1
+    ring_mod: "Mana Tap+"

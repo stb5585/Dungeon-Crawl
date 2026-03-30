@@ -1,0 +1,14 @@
+name: Tunnel
+type: Skill
+subtype: Offensive
+description: >-
+  Tunnel into the ground indefinitely, making user untargetable.
+  Self-targeting abilities can be used but offensive abilities require
+  user to surface.
+cost: 3
+self_target: true
+effects:
+  - type: set_flag
+    flag: tunnel
+    value: true
+    message: "{target} tunnels into the ground."

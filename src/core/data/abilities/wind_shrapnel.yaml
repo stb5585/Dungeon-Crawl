@@ -1,0 +1,14 @@
+name: Wind Shrapnel
+type: Spell
+subtype: Wind
+description: >-
+  Conjures a storm of razor-sharp wind blades that strike the
+  target multiple times, each with a chance to critically wound.
+cost: 40
+damage_mod: 1.2
+effects:
+  - type: wind_shrapnel
+    num_hits: 5
+    damage_mod: 1.2
+    crit_chance: 0.25
+    crit_multiplier: 2.0

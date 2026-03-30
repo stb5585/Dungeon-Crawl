@@ -1,0 +1,16 @@
+name: Boost
+type: Support
+subtype: Support
+description: "Supercharge the magic capabilities of the target, increasing magic damage."
+cost: 22
+wizard_free_cast: true
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: Magic
+    source: target_combat
+    source_stat: magic
+    lo_divisor: 4
+    hi_divisor: 2
+    duration_stat: intel
+    duration_divisor: 10
+    duration_min: 3

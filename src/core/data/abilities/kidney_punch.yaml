@@ -1,0 +1,9 @@
+name: Kidney Punch
+description: >-
+  Punch the enemy in the kidney, rendering them stunned. Requires an off-hand weapon.
+type: Skill
+cost: 0
+subtype: Stealth
+effects:
+  - type: kidney_punch
+    cost: 12

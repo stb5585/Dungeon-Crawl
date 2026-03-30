@@ -151,6 +151,19 @@ class TestCharacterMethods:
 
         assert disarmed_mod == armed_mod
 
+    def test_magic_pendant_increases_spell_dodge(self, monkeypatch):
+        attacker = TestGameState.create_player(name="Mage", class_name="Wizard", race_name="Human")
+        defender = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human")
+
+        defender.equipment["Pendant"] = items.NoPendant()
+        monkeypatch.setattr("src.core.character.random.randint", lambda lo, hi: (lo + hi) // 2)
+        base_spell_dodge = defender.dodge_chance(attacker, spell=True)
+
+        defender.equipment["Pendant"] = items.MagicPendant()
+        pendant_spell_dodge = defender.dodge_chance(attacker, spell=True)
+
+        assert pendant_spell_dodge > base_spell_dodge
+
 
 class TestCombatAPIContract:
     """Test the API contract between combat systems and character."""
@@ -207,6 +220,101 @@ class TestEnhancedCombatRequirements:
         # Check for speed or dexterity stat
         assert hasattr(char, 'stats')
         assert hasattr(char.stats, 'dex') or hasattr(char.stats, 'speed')
+
+
+class TestStatusEffectImprovements:
+    def test_poison_reduces_healing_received(self, monkeypatch):
+        import src.core.data.data_driven_abilities as dda
+        from src.core.abilities import Heal
+        from src.core.character import POISON_HEALING_MULTIPLIER
+
+        monkeypatch.setattr(dda.random, "randint", lambda _a, _b: 1)  # avoid crit heals
+
+        normal = TestGameState.create_player(
+            name="Normal",
+            class_name="Warrior",
+            race_name="Human",
+            level=10,
+            health=(200, 50),
+            mana=(200, 200),
+        )
+        poisoned = TestGameState.create_player(
+            name="Poisoned",
+            class_name="Warrior",
+            race_name="Human",
+            level=10,
+            health=(200, 50),
+            mana=(200, 200),
+        )
+        poisoned.status_effects["Poison"].active = True
+        poisoned.status_effects["Poison"].duration = 2
+
+        heal_spell = Heal()
+
+        before = normal.health.current
+        heal_spell.cast_out(normal)
+        normal_healed = normal.health.current - before
+
+        before = poisoned.health.current
+        heal_spell.cast_out(poisoned)
+        poisoned_healed = poisoned.health.current - before
+
+        assert poisoned_healed <= int(normal_healed * POISON_HEALING_MULTIPLIER) + 1
+
+    def test_bleed_increases_melee_damage_taken(self, monkeypatch):
+        import src.core.character as character_mod
+
+        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
+        defender = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
+
+        monkeypatch.setattr(character_mod.random, "uniform", lambda _a, _b: 1.0)  # deterministic variance
+        monkeypatch.setattr(character_mod.random, "random", lambda: 1.0)  # avoid block/dodge randomness
+        monkeypatch.setattr(attacker, "critical_chance", lambda _att: 0.0)  # no crits
+
+        defender.health.current = defender.health.max
+        defender.physical_effects["Bleed"].active = False
+        _msg, _hit, _crit = attacker.weapon_damage(defender, hit=True, use_offhand=False)
+        base_damage = defender.health.max - defender.health.current
+
+        defender.health.current = defender.health.max
+        defender.physical_effects["Bleed"].active = True
+        defender.physical_effects["Bleed"].duration = 2
+        defender.physical_effects["Bleed"].extra = 5
+        _msg, _hit, _crit = attacker.weapon_damage(defender, hit=True, use_offhand=False)
+        bleed_damage = defender.health.max - defender.health.current
+
+        assert bleed_damage > base_damage
+
+    def test_stun_has_post_expiry_immunity_window(self):
+        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
+        target = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human")
+
+        assert target.apply_stun(1, source="Test", applier=attacker) is True
+        assert target.status_effects["Stun"].active is True
+
+        # Tick effects: stun expires and grants a short immunity window.
+        target.effects()
+        assert target.status_effects["Stun"].active is False
+        assert target.status_effects["Stun"].duration == 0
+        assert target.status_effects["Stun"].extra > 0
+
+        assert target.apply_stun(1, source="Test", applier=attacker) is False
+
+        # Next turn start: immunity ticks down.
+        target.effects()
+        assert target.status_effects["Stun"].extra == 0
+        assert target.apply_stun(1, source="Test", applier=attacker) is True
+
+    def test_stun_contest_is_biased_by_level_difference(self):
+        high = TestGameState.create_player(name="High", class_name="Warrior", race_name="Human", level=20)
+        low = TestGameState.create_player(name="Low", class_name="Warrior", race_name="Human", level=1)
+        target = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human", level=10)
+
+        attacker_roll = 10
+        defender_roll = 11
+
+        assert target.stun_contest_success(high, attacker_roll, defender_roll) is True
+        assert target.stun_contest_success(low, attacker_roll, defender_roll) is False
 
 
 def run_tests():

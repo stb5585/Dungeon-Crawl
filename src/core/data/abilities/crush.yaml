@@ -1,0 +1,9 @@
+name: Crush
+description: >-
+  Take the enemy into your clutches and attempt to squeeze the life from them.
+type: Skill
+cost: 25
+subtype: Offensive
+ice_block_check: true
+effects:
+  - type: crush

@@ -1,0 +1,17 @@
+name: Health/Mana Drain
+type: Skill
+subtype: Drain
+description: Drain the enemy, absorbing the health and mana in return.
+cost: 0
+ice_block_check: true
+effects:
+  - type: ability_chain
+    ability_name: HealthDrain
+    target_self: false
+    special: true
+    use_method: use
+  - type: ability_chain
+    ability_name: ManaDrain
+    target_self: false
+    special: true
+    use_method: use

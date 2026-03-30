@@ -1,0 +1,12 @@
+name: Triplecast
+description: Cast multiple spells in a single turn.
+type: Skill
+subtype: Offensive
+cost: 20
+weapon: false
+effects:
+  - type: doublecast
+    cast_count: 3
+    exclude_spells:
+      - Magic Missile
+    ability_cost: 20

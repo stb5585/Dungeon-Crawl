@@ -1,0 +1,10 @@
+name: Consume Item
+description: >-
+  You enjoy the finer things in life, which includes metal, wood, and leather.
+  Steal an item from the enemy and consume it, absorbing the power of the item.
+type: Skill
+subtype: Offensive
+cost: 14
+weapon: false
+effects:
+  - type: consume_item
