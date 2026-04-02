@@ -81,8 +81,17 @@ def _ensure_chalice_progress(quest_data: dict | None) -> dict | None:
 
 
 def get_chalice_progress(player_char):
-    quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    quest_dict = getattr(player_char, "quest_dict", {})
+    quest_data = quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
     return _ensure_chalice_progress(quest_data)
+
+
+def chalice_altar_visible(player_char) -> bool:
+    """Return whether the Golden Chalice altar should be visible to the player."""
+    quest_dict = getattr(player_char, "quest_dict", {})
+    quest_data = quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
+    progress = _ensure_chalice_progress(quest_data)
+    return bool(progress and (progress.get("Revealed") or quest_data.get("Completed")))
 
 
 def _set_chalice_map_description(player_char, text: str):
@@ -255,16 +264,21 @@ def update_chalice_location(game):
     if tile is None:
         return
 
-    should_reveal = bool(progress and (progress.get("Revealed") or quest_data.get("Completed")))
+    should_reveal = chalice_altar_visible(player_char)
     if should_reveal:
         if not isinstance(tile, GoldenChaliceRoom):
-            _replace_tile(player_char.world_dict, pos, GoldenChaliceRoom(*pos))
+            new_tile = GoldenChaliceRoom(*pos)
+            new_tile.enter = False
+            _replace_tile(player_char.world_dict, pos, new_tile)
             if progress is not None:
                 progress["Spawned"] = True
             if (player_char.location_x, player_char.location_y, player_char.location_z) == pos:
                 game.special_event("Chalice Revealed")
+        else:
+            tile.enter = False
     else:
         if isinstance(tile, GoldenChaliceRoom):
+            tile.enter = True
             _replace_tile(player_char.world_dict, pos, CavePath(*pos))
 
 
@@ -1726,10 +1740,15 @@ class GoldenChaliceRoom(SpecialTile):
     
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        # Interact with the chalice from an adjacent tile; do not step onto it.
-        self.enter = False
+        # Hidden altar locations behave like an ordinary floor tile until revealed.
+        self.enter = True
+
+    @staticmethod
+    def _altar_visible_for(player_char) -> bool:
+        return chalice_altar_visible(player_char)
 
     def intro_text(self, game):
+        self.enter = not self._altar_visible_for(game.player_char)
         intro_str = super().intro_text(game)
         if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
             if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
@@ -1741,10 +1760,12 @@ class GoldenChaliceRoom(SpecialTile):
         return intro_str
 
     def modify_player(self, game):
+        self.enter = not self._altar_visible_for(game.player_char)
         self.adjacent_visited(game.player_char)
         self.visited = True
 
     def special_text(self, game):
+        self.enter = not self._altar_visible_for(game.player_char)
         # Only allow pickup if quest is active
         if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
             if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
@@ -1754,6 +1775,7 @@ class GoldenChaliceRoom(SpecialTile):
 
     def pickup_chalice_action(self, game):
         """Actually pick up the chalice when player confirms."""
+        self.enter = not self._altar_visible_for(game.player_char)
         if "The Holy Grail of Quests" in game.player_char.quest_dict.get("Side", {}):
             if not game.player_char.quest_dict["Side"]["The Holy Grail of Quests"]["Completed"]:
                 game.special_event("Golden Chalice")

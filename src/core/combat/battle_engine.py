@@ -658,7 +658,7 @@ class BattleEngine:
     def _execute_summon(self, choice: str | None) -> tuple[str, bool, Character | None]:
         """Summon a companion. Returns (message, success, summon_character)."""
         if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "being silenced"
             return f"{self.attacker.name} cannot summon because of {reason}!\n", False, None
 
         if not choice or choice not in self.attacker.summons:

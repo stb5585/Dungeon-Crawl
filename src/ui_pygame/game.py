@@ -583,7 +583,12 @@ class PygameGame:
 
             elif choice_idx == 5:  # Warp Point or Old Warehouse
                 if getattr(self.player_char, 'warp_point', False):
-                    result = self.use_warp_point()
+                    result = self.use_warp_point(
+                        background_draw_func=lambda: (
+                            town_screen.draw_background(),
+                            town_screen.draw_menu_panel(options),
+                        )
+                    )
                     if result == "dungeon":
                         return "dungeon"
                 else:
@@ -596,14 +601,13 @@ class PygameGame:
                 if self.player_char.quit:
                     return "quit"
 
-    def use_warp_point(self):
+    def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
-        confirm = self.presenter.render_menu(
+        confirm = ConfirmationPopup(
+            self.presenter,
             f"Hello, {self.player_char.name}.\n\nDo you want to warp down to level 5?",
-            ["Yes", "No"]
         )
-        
-        if confirm == 0:  # Yes
+        if confirm.show(background_draw_func=background_draw_func):
             # Mark the destination as visited
             if (3, 0, 5) in self.player_char.world_dict:
                 if not self.player_char.world_dict[(3, 0, 5)].visited:
@@ -616,11 +620,14 @@ class PygameGame:
                 
                 # Mark as warped
                 self.player_char.world_dict[(3, 0, 5)].warped = True
-            
-            self.presenter.show_message(
+
+            popup = ConfirmationPopup(
+                self.presenter,
                 "You step into the warp point,\n"
-                "taking you deep into the dungeon."
+                "taking you deep into the dungeon.",
+                show_buttons=False,
             )
+            popup.show(background_draw_func=background_draw_func)
             
             # Warp player to level 5
             self.player_char.location_x = 3
@@ -631,7 +638,12 @@ class PygameGame:
             # Return to dungeon
             return "dungeon"
         else:
-            self.presenter.show_message("Not a problem, come back when you change your mind.")
+            popup = ConfirmationPopup(
+                self.presenter,
+                "Not a problem, come back when you change your mind.",
+                show_buttons=False,
+            )
+            popup.show(background_draw_func=background_draw_func)
     
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""

@@ -5,6 +5,8 @@ Displays character stats, minimap, inventory quick-access, and other UI elements
 
 import pygame
 
+from src.core import map_tiles
+
 
 class DungeonHUD:
     """
@@ -387,6 +389,9 @@ class DungeonHUD:
                                     'SecretShop',
                                     'Relic',
                                 )
+                            ) or (
+                                'GoldenChaliceRoom' in tile_type
+                                and map_tiles.chalice_altar_visible(player_char)
                             )
                         )
                     )
@@ -500,6 +505,28 @@ class DungeonHUD:
                                      (center_x, center_y + icon_size // 2),
                                      (center_x - icon_size // 2, center_y)]
                             pygame.draw.polygon(self.screen, (255, 215, 0), points)
+
+                        if 'GoldenChaliceRoom' in tile_type and map_tiles.chalice_altar_visible(player_char):
+                            # Chalice altar - warm gold cup marker
+                            icon_width = max(2, tile_size // 2)
+                            icon_height = max(2, tile_size // 3)
+                            icon_x = screen_x + (tile_size - icon_width) // 2
+                            icon_y = screen_y + (tile_size - icon_height) // 2
+                            chalice_color = (196, 160, 70) if getattr(tile, 'read', False) else (255, 215, 0)
+                            pygame.draw.rect(
+                                self.screen,
+                                chalice_color,
+                                pygame.Rect(icon_x, icon_y + icon_height // 3, icon_width, max(2, icon_height // 2)),
+                            )
+                            stem_width = max(1, icon_width // 4)
+                            stem_height = max(2, icon_height // 3)
+                            stem_x = screen_x + (tile_size - stem_width) // 2
+                            stem_y = icon_y + icon_height // 3
+                            pygame.draw.rect(
+                                self.screen,
+                                chalice_color,
+                                pygame.Rect(stem_x, stem_y, stem_width, stem_height),
+                            )
 
                         if 'UndergroundSpring' in tile_type:
                             # Spring marker - cyan circle

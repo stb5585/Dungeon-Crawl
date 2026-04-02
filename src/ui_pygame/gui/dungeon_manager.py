@@ -85,6 +85,22 @@ class DungeonManager:
         if hasattr(self.presenter, "set_background_provider"):
             self.presenter.set_background_provider(self._get_popup_background)
 
+    @staticmethod
+    def _resolve_tile_enemy(tile):
+        """Return a concrete enemy instance for a tile, instantiating stored classes if needed."""
+        if not hasattr(tile, "enemy"):
+            return None
+
+        enemy = tile.enemy
+        if not enemy:
+            return None
+
+        if callable(enemy) and not hasattr(enemy, "name"):
+            enemy = enemy()
+            tile.enemy = enemy
+
+        return enemy
+
     def _get_popup_background(self):
         if self._cached_frame is not None:
             return self._cached_frame
@@ -1419,13 +1435,15 @@ class DungeonManager:
             elif 'FinalRoom' in tile_type:
                 messages.append("The final chamber awaits. (Press O to proceed)")
             elif 'Boss' in tile_type or 'Lair' in tile_type:
-                if hasattr(current_tile, 'enemy') and current_tile.enemy:
+                if self._resolve_tile_enemy(current_tile):
                     messages.append("You sense a powerful presence nearby...")
                 else:
                     if intro_text:
                         messages.append(intro_text)
-            elif hasattr(current_tile, 'enemy') and current_tile.enemy:
-                messages.append(f"A {current_tile.enemy.name} blocks your path!")
+            else:
+                enemy = self._resolve_tile_enemy(current_tile)
+                if enemy:
+                    messages.append(f"A {enemy.name} blocks your path!")
 
         # Check tile ahead (for interactive objects like chests, doors, relics)
         direction = self.player_char.facing
@@ -1488,10 +1506,11 @@ class DungeonManager:
                 else:
                     messages.append("You see Unobtainium on the ground ahead! (Press O to take)")
             elif 'GoldenChaliceRoom' in tile_type:
-                if getattr(ahead_tile, 'read', False):
-                    messages.append("An empty chalice pedestal stands ahead.")
-                else:
-                    messages.append("A golden chalice rests on a pedestal ahead! (Press O to take)")
+                if map_tiles.chalice_altar_visible(self.player_char):
+                    if getattr(ahead_tile, 'read', False):
+                        messages.append("An empty chalice pedestal stands ahead.")
+                    else:
+                        messages.append("A golden chalice rests on a pedestal ahead! (Press O to take)")
 
         return messages if messages else None
 
@@ -1583,11 +1602,7 @@ class DungeonManager:
 
         # Check for enemy encounter after enter_combat has had a chance to spawn one
         if hasattr(current_tile, 'enemy') and current_tile.enemy:
-            enemy = current_tile.enemy
-            # If enemy is still a class (not instantiated), instantiate it
-            if callable(enemy) and not hasattr(enemy, 'name'):
-                enemy = enemy()
-                current_tile.enemy = enemy  # Update tile's enemy to the instance
+            enemy = self._resolve_tile_enemy(current_tile)
 
             if hasattr(enemy, "is_alive") and not enemy.is_alive():
                 current_tile.enemy = None
