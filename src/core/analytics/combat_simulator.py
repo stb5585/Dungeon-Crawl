@@ -21,10 +21,19 @@ if TYPE_CHECKING:
 
 
 def _combat_level(ch: object) -> int:
-    lvl = getattr(ch, "level", 1)
-    if hasattr(lvl, "level"):
+    try:
+        lvl = getattr(ch, "level", 1)
+    except Exception:
+        return 1
+    try:
+        nested_level = getattr(lvl, "level")
+    except AttributeError:
+        nested_level = None
+    except Exception:
+        return 1
+    else:
         try:
-            return int(lvl.level)
+            return int(nested_level)
         except Exception:
             return 1
     try:

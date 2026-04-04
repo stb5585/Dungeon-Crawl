@@ -2,184 +2,100 @@
 
 ## Overview
 
-**Status**: 47 tests passing, 1 skipped (intentional), 0 failures  
-**Execution Time**: ~3.2 seconds  
-**Coverage**: Core systems, equipment, combat, assets, UI
+This directory contains the automated regression suite for Dungeon Crawl.
 
-## Test Files
+Current snapshot:
+- Last full-suite run confirmed by the user: `1398` tests passing
+- Current repo-wide `src/` coverage confirmed by the user: `81%`
+- The suite covers core combat/content systems, integration and persistence flows, pygame-facing UI helpers, curses UI helpers, dungeon rendering/math, and balance/simulator workflows
+- Most day-to-day focused work should use targeted pytest runs inside the project venv
 
-### Core Tests
+## Run Tests
 
-**tests/test_core.py** (7 tests)  
-Core functionality verification:
-- Character creation with proper attributes
-- Equipment initialization
-- Method signatures (check_active, weapon_damage, is_alive)
-- Enemy and player creation
-- CombatResult API
+Run the full suite:
 
-**tests/test_character.py** (8 tests)  
-Character system tests:
-- Character creation and required attributes
-- Character methods (check_active, incapacitated, weapon_damage)
-- Combat API contracts (combat attributes for enemy/player)
-- Speed stat for turn ordering
-
-**tests/test_battle.py** (7 tests)  
-Battle system tests:
-- BattleManager import and API
-- EnhancedBattleManager import
-- CombatResult creation and groups
-- Ability initialization
-- Full combat flow (CombatResult with characters)
-
-### Equipment & Combat Tests
-
-**tests/test_equipment.py** (16 tests) ✨ NEW  
-Equipment system validation:
-- Equipment initialization from class defaults
-- Two-handed weapon logic (handed == 2)
-- **Lancer/Dragoon polearm + shield exception** (validates fix)
-- **Dragoon promotion inherits polearm exception**
-- Class-specific equipment restrictions
-- Off-hand equipment (shields, dual-wield)
-- All 5 equipment slots (Weapon, Armor, OffHand, Ring, Pendant)
-- Armor type validation (Light, Medium, Heavy, None)
-- Edge cases (unequip/reequip, multi-slot equipping)
-
-**tests/test_weapon_special_effects.py** (5 tests)  
-Weapon special effects:
-- VampireBite (life steal on critical)
-- Ninjato (instant death chance)
-- Gaze (petrification)
-- Mjolnir (stun effect)
-- Armor effects
-
-### Asset & UI Tests
-
-**tests/test_perspective.py** (1 test)  
-PIL perspective transforms:
-- Asset loading (PIL Image operations)
-- Perspective transformation matrices
-- Wall/floor projection validation
-- CI/CD compatible (no interactive GUI)
-
-**tests/test_tileset.py** (1 test)  
-Tileset asset loading:
-- Texture file loading
-- Sprite scaling
-- Tileset composition
-- CI/CD compatible (no interactive GUI)
-
-**tests/test_shop_gui.py** (1 test)  
-Shop GUI instantiation:
-- Shop object creation
-- Basic menu structure
-- No interactive simulation (autonomous test)
-
-### Navigation Tests
-
-**tests/test_dungeon_navigation.py** (1 test)  
-Player movement system:
-- Basic movement mechanics
-- Location tracking
-
-### Legacy/Integration Tests
-
-**tests/test_integration.py**  
-Enhanced combat system integration (legacy)
-
-**tests/basic_tests.py**  
-Basic functionality checks (legacy)
-
-## Test Execution
-
-### Run All Tests
 ```bash
-.venv/bin/python -m pytest tests/ -v
+./.venv/bin/python -m pytest tests/ -q
 ```
 
-### Run Specific Test File
+Run a module/domain slice:
+
 ```bash
-.venv/bin/python -m pytest tests/test_equipment.py -v
+./.venv/bin/python -m pytest tests/core -q
+./.venv/bin/python -m pytest tests/integration -q
+./.venv/bin/python -m pytest tests/ui_curses -q
+./.venv/bin/python -m pytest tests/ui_pygame -q
 ```
 
-### Run Specific Test Class
+Run a specific file:
+
 ```bash
-.venv/bin/python -m pytest tests/test_equipment.py::TestTwoHandedWeaponLogic -v
+./.venv/bin/python -m pytest tests/core/test_character.py -q
+./.venv/bin/python -m pytest tests/ui_curses/test_menus.py -q
+./.venv/bin/python -m pytest tests/ui_pygame/test_pygame_sound_manager.py -q
 ```
 
-### Run Specific Test
+Run a specific test:
+
 ```bash
-.venv/bin/python -m pytest tests/test_equipment.py::TestTwoHandedWeaponLogic::test_lancer_can_equip_polearm_with_shield -v
+./.venv/bin/python -m pytest tests/integration/test_battle.py::TestBattleLogger::test_export_payload_includes_metadata_events_and_summary -q
 ```
 
-## Current Test Results
+## Coverage Areas
 
-✅ **47 tests PASSING**  
-⏭️ **1 test SKIPPED** (test_battle_manager_creation - requires full game context)  
-❌ **0 tests FAILING**  
-⚠️ **0 deprecation warnings**
+High-coverage areas:
+- `test_data_driven_abilities.py`: migrated abilities and effect behaviors
+- `core/test_character.py` / `integration/test_battle.py`: character logic, battle engine flow, gameplay statistics, save/load compatibility, and battle logging
+- Dungeon renderer/math tests:
+  - `tests/ui_pygame/test_dungeon_renderer_smoke.py`
+  - `tests/ui_pygame/test_dungeon_geometry.py`
+  - `tests/ui_pygame/test_dungeon_projector.py`
+  - `tests/ui_pygame/test_dungeon_scene.py`
+  - `tests/ui_pygame/test_perspective.py`
+  - `tests/ui_pygame/test_tileset.py`
+- Balance and analytics:
+  - `tests/test_balance_tuning.py`
+  - `tests/core/test_combat_simulator.py`
+
+Supporting coverage:
+- Equipment and weapon effects
+- Enemy AI / specialty enemies
+- Shop, presenter, and shared menu smoke tests
+- Integration and harness-based combat checks
+
+Current layout:
+- `tests/core/`: focused tests for `src/core/*`
+  - currently includes character/player, equipment, items, enemies, companions, race/special-effect, town, combat-simulator, and map/realm focused tests
+- `tests/integration/`: broader flow and cross-module tests
+  - currently includes battle-system API/flow coverage, combat integration smoke tests, and save-system round-trip coverage
+- `tests/ui_pygame/`: focused tests for `src/ui_pygame/*`
+  - currently includes presenter, sound, shop, popup, town, dungeon, combat-manager/view, and menu/helper coverage
+- `tests/ui_curses/`: focused tests for `src/ui_curses/*`
+  - currently includes battle, classes, enhanced-manager, game, town, and shared `menus.py` coverage
+- top-level `tests/` still holds a smaller set of legacy or cross-cutting files such as `test_data_driven_abilities.py`, `test_core.py`, `test_balance_tuning.py`, and framework helpers
+- bucket directories now include `__init__.py` markers so duplicate basenames like `test_battle.py` can coexist without pytest import collisions
 
 ## Recent Improvements
 
-### Phase 1: Equipment System Fix (Validated)
-- Two-handed weapon unequipping for non-Lancer/Dragoon classes
-- Special exception for Lancer/Dragoon polearms with shields
-- **Test coverage**: 4 dedicated tests validate the fix
+Recent test-debt cleanup completed:
+- replaced stale skipped tests in the character and battle coverage files with real assertions
+- added gameplay-statistics persistence coverage
+- added save/load round-trip coverage for inventory, quest, storage, and tile state
+- upgraded battle logger tests to cover structured export behavior
+- replaced placeholder assertions in the pygame smoke tests and weapon-effect helpers
+- tightened `ConsumeItem` fallback coverage in `test_data_driven_abilities.py`
+- reorganized the suite into import-safe package buckets so duplicate basenames like `test_battle.py` and `test_town.py` no longer collide during pytest collection
 
-### Phase 2: Test Suite Enhancement
-- Added 16 equipment system tests (51% increase in test count)
-- Fixed deprecated Player API usage in test_character.py
-- Removed GUI event loops from perspective/tileset tests
-- Converted return-based assertions to pytest assertions
-- **Coverage**: Now 47 tests covering core systems
+## Notes
 
-### Phase 3: CI/CD Compatibility
-- Removed blocking GUI waits from tile transformation tests
-- All tests run autonomously without user input
-- GitHub Actions upload-artifact updated to v4
-- No interactive elements or manual inputs required
+- Use the project venv for all pytest runs: `./.venv/bin/python -m pytest ...`
+- Some tests exercise pygame/PIL asset paths but are written to complete without interactive loops
+- `basic_tests.py` is a lightweight legacy smoke helper and is not a major source of coverage
+- The most active regression surfaces are the shared core systems, the pygame helper/presenter layer, and the curses shared menu layer
 
-## Test Framework
+## Next Useful Additions
 
-### TestGameState Helper
-```python
-# Create test characters easily
-player = TestGameState.create_player(
-    name="TestPlayer",
-    class_name="Warrior", 
-    race_name="Human"
-)
-
-# Character is fully initialized with:
-# - Equipment from class defaults
-# - Stats and combat attributes
-# - Spellbook with abilities
-# - Proper class and race bindings
-```
-
-### Test Structure
-- Uses pytest framework
-- Proper isolation between tests
-- Fixtures for shared setup (test_framework.py)
-- Parametrized tests for variants
-- Docstrings on all test methods
-
-## Known Limitations
-
-- BattleManager instantiation requires full game context (intentionally skipped)
-- Some gameplay features untested (inventory, level progression, status effects)
-- GUI integration tests limited (basic instantiation only)
-- Save/load system not yet tested
-
-## Next Steps for Coverage
-
-Priority items for future test additions:
-1. Inventory management (add/remove/drop items)
-2. Status effect management (apply/remove/duration)
-3. Combat calculations (damage, defense, magic)
-4. Level progression (stat gains, experience)
-5. Ability system (mana cost, targeting, cooldowns)
-
-
+- broader end-to-end `SaveManager` file round-trip tests
+- more quest completion flow coverage
+- more event-bus infrastructure assertions where behavior matters
+- continued cleanup of low-value legacy test helpers as they are encountered

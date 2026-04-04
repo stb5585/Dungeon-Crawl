@@ -268,6 +268,11 @@ class Character:
     
     def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
+        if damage and damage > 0:
+            if hasattr(self, "record_damage_dealt"):
+                self.record_damage_dealt(damage)
+            if hasattr(target, "record_damage_taken"):
+                target.record_damage_taken(damage)
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -322,6 +327,8 @@ class Character:
         source: str = "Unknown",
     ) -> None:
         """Emit a status tick (damage/heal) event for analytics/tests."""
+        if kind == "damage" and amount and amount > 0 and hasattr(target, "record_damage_taken"):
+            target.record_damage_taken(amount)
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()

@@ -138,7 +138,7 @@ class BattleEngine:
         self.defender: Character | None = None
 
         # Track charging abilities across turns
-        self.charging_ability: tuple[str, Any] | None = None  # (name, skill_obj)
+        self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)
 
         # Available actions refreshed each turn
         self.available_actions: list = tile.available_actions(player)
@@ -228,8 +228,9 @@ class BattleEngine:
 
         # Ongoing charging ability (e.g. Charge, Crushing Blow)
         if self.charging_ability and self.attacker == self.player:
-            ability_name, _skill_obj = self.charging_ability
-            return ForcedAction(action="Use Skill", choice=ability_name)
+            charge_owner, ability_name, _skill_obj = self.charging_ability
+            if charge_owner == self.attacker:
+                return ForcedAction(action="Use Skill", choice=ability_name)
 
         # Jump in progress
         if self.attacker.class_effects["Jump"].active:
@@ -303,6 +304,8 @@ class BattleEngine:
             result.message, result.fled = self._execute_flee()
             if result.fled:
                 self.flee = True
+                if hasattr(self.player, "record_flee"):
+                    self.player.record_flee()
 
         elif action == "Defend":
             result.message = self._execute_defend()
@@ -597,6 +600,8 @@ class BattleEngine:
             message += skill.use(self.attacker, target=self.defender)
             self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
             message += flee_str
+            if self.flee and hasattr(self.player, "record_flee"):
+                self.player.record_flee()
 
         elif skill.name == "Slot Machine":
             if slot_machine_callback:
@@ -621,7 +626,7 @@ class BattleEngine:
             # Charging abilities (Charge, Crushing Blow, etc.)
             message += skill.use(self.attacker, target=self.defender)
             if getattr(skill, 'charging', False):
-                self.charging_ability = (choice, skill)
+                self.charging_ability = (self.attacker, choice, skill)
             else:
                 # Charge completed this turn
                 self.charging_ability = None
@@ -725,6 +730,8 @@ class BattleEngine:
         if self.enemy.name not in self.player.kill_dict[self.enemy.enemy_typ]:
             self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] = 0
         self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] += 1
+        if hasattr(self.player, "record_enemy_defeat"):
+            self.player.record_enemy_defeat()
 
         # Loot
         loot_msg = self.player.loot(self.enemy, self.tile)

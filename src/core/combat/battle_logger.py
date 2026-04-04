@@ -6,6 +6,9 @@ combat events for later analysis.
 from __future__ import annotations
 
 import datetime
+import json
+from collections import Counter
+from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,6 +22,28 @@ class BattleLogger:
         self.events = []
         self.metadata = {}
         self.turn_counter = 0
+
+    @staticmethod
+    def _serialize_value(value):
+        """Convert logger metadata into JSON-friendly primitives."""
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if is_dataclass(value):
+            return asdict(value)
+        if isinstance(value, dict):
+            return {
+                str(key): BattleLogger._serialize_value(val)
+                for key, val in value.items()
+            }
+        if isinstance(value, (list, tuple, set)):
+            return [BattleLogger._serialize_value(val) for val in value]
+        if hasattr(value, "__dict__"):
+            return {
+                key: BattleLogger._serialize_value(val)
+                for key, val in vars(value).items()
+                if not key.startswith("_")
+            }
+        return str(value)
 
     def start_battle(self, player: Player, enemy: Enemy, initiative: bool, boss: bool) -> None:
         """
@@ -34,23 +59,23 @@ class BattleLogger:
                 "cls": player.cls.name,
                 "level": player.level.level,
                 "pro level": player.level.pro_level,
-                "attributes": player.stats,
-                "combat stats": player.combat,
+                "attributes": self._serialize_value(player.stats),
+                "combat stats": self._serialize_value(player.combat),
                 "hp": player.health.current,
                 "mp": player.mana.current,
-                "resistances": player.resistance,
+                "resistances": self._serialize_value(player.resistance),
                 "dungeon level": player.location_z,
                 "initiative": initiative,
             },
             "enemy": {
                 "name": enemy.name,
                 "type": enemy.enemy_typ,
-                "level": enemy.level,
-                "attributes": enemy.stats,
-                "combat stats": enemy.combat,
+                "level": self._serialize_value(enemy.level),
+                "attributes": self._serialize_value(enemy.stats),
+                "combat stats": self._serialize_value(enemy.combat),
                 "hp": enemy.health.current,
                 "mp": enemy.mana.current,
-                "resistances": enemy.resistance,
+                "resistances": self._serialize_value(enemy.resistance),
                 "boss": boss,
             }
         }
@@ -111,16 +136,38 @@ class BattleLogger:
             "end_time": datetime.datetime.now().isoformat(),
         })
 
+    def build_summary(self) -> dict:
+        """Create a compact battle summary for debugging and analysis."""
+        event_counts = Counter(event["event_type"] for event in self.events)
+        damage_events = [event for event in self.events if isinstance(event.get("damage"), int)]
+        total_damage = sum(max(0, event["damage"]) for event in damage_events)
+
+        return {
+            "turns": self.turn_counter,
+            "event_count": len(self.events),
+            "event_types": dict(event_counts),
+            "total_damage_logged": total_damage,
+            "max_damage_logged": max((event["damage"] for event in damage_events), default=0),
+            "result": self.metadata.get("result"),
+            "winner": self.metadata.get("winner"),
+        }
+
+    def export_payload(self) -> dict:
+        """Export a structured combat record with metadata, events, and summary."""
+        return {
+            "metadata": self._serialize_value(self.metadata),
+            "events": self._serialize_value(self.events),
+            "summary": self.build_summary(),
+        }
+
+    def export_json(self, *, indent: int = 2) -> str:
+        """Export the structured combat record as JSON text."""
+        return json.dumps(self.export_payload(), indent=indent, sort_keys=True)
+
     def export(self) -> list:
         """
         Exports the logged events for analysis or storage.
         Returns:
             list: A list of dictionaries containing the logged events.
         """
-        # This could be extended to save to a file or database
-        # For now, we just return the events
-        # as a list of dictionaries
-        # Example: [{"event": "attack", "actor": "Player", "target": "Enemy", "details": "Hit for 10 damage"}]
-        # This is a placeholder for actual export logic
-        # You could save to a JSON file or a database here
-        return self.events
+        return list(self.events)

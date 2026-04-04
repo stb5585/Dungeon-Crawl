@@ -1597,6 +1597,12 @@ class Attack(Spell):
                             damage_msg += " (Critical hit!)"
                         cast_message += damage_msg + ".\n"
                     target.health.current -= damage
+                    caster._emit_damage_event(
+                        target,
+                        damage,
+                        damage_type=self.subtyp,
+                        is_critical=(crit > 1),
+                    )
                     if target.is_alive() and damage > 0 and not reflect:
                         cast_message += self.special_effect(
                             caster, target, damage, crit

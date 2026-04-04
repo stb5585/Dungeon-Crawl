@@ -6514,16 +6514,16 @@ class TestBatch14ConsumeItem:
     def test_consume_item_gold_fallback(self):
         """When target has no items, should steal gold and heal."""
         from src.core import abilities
-        stolen_gold = False
+        saw_valid_outcome = False
         for _ in range(100):
             user, target = self._make_combatants(target_has_items=False)
             result = abilities.ConsumeItem().use(user, target)
             msg = result if isinstance(result, str) else str(result)
-            if "gold" in msg.lower():
-                stolen_gold = True
+            lowered = msg.lower()
+            if "gold" in lowered or "can't steal anything" in lowered:
+                saw_valid_outcome = True
                 break
-        # Either steals gold or can't steal — both valid
-        assert True
+        assert saw_valid_outcome is True
 
     def test_consume_item_potion_effect_applies_to_user_not_target(self, monkeypatch):
         import random

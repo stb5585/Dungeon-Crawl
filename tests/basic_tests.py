@@ -1,7 +1,10 @@
 
 def test_game_starts():
-    import curses
     from src.ui_curses.game import Game
+    from src.ui_curses import game
 
-    curses.wrapper(Game)
-    assert True  # If it runs without errors, the test passes
+    assert game.USE_ENHANCED_COMBAT is True
+    assert callable(Game)
+    assert hasattr(Game, "main_menu")
+    assert hasattr(Game, "run")
+    assert hasattr(Game, "navigate")

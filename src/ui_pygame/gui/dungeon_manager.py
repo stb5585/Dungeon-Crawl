@@ -479,6 +479,8 @@ class DungeonManager:
         # Move the player
         self.player_char.location_x += dx
         self.player_char.location_y += dy
+        if hasattr(self.player_char, "record_step"):
+            self.player_char.record_step()
 
         # The view definitely changed.
         self._mark_view_dirty()
@@ -567,6 +569,8 @@ class DungeonManager:
         self._show_dungeon_loading_screen(loading_text)
 
         self.player_char.location_z = target_level
+        if hasattr(self.player_char, "record_stairs_used"):
+            self.player_char.record_stairs_used()
         if 'StairsUp' in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
@@ -595,6 +599,8 @@ class DungeonManager:
         self._show_dungeon_loading_screen(f"Descending to level {target_level}...")
 
         self.player_char.location_z = target_level
+        if hasattr(self.player_char, "record_stairs_used"):
+            self.player_char.record_stairs_used()
         if 'StairsDown' in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()

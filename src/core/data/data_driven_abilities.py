@@ -223,6 +223,12 @@ class DataDrivenSpell(Spell):
 
                 # ── 11. Apply damage ────────────────────────────────
                 target.health.current -= damage
+                caster._emit_damage_event(
+                    target,
+                    damage,
+                    damage_type=self.subtyp,
+                    is_critical=(crit > 1),
+                )
                 result.damage = damage
                 result.hit = True
 
@@ -1570,6 +1576,12 @@ class DataDrivenMagicMissileSpell(Spell):
                         cast_message += damage_msg + ".\n"
 
                     target.health.current -= damage
+                    caster._emit_damage_event(
+                        target,
+                        damage,
+                        damage_type=self.subtyp,
+                        is_critical=(crit > 1),
+                    )
                     if not target.is_alive():
                         break
                 else:

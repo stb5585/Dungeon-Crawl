@@ -327,6 +327,36 @@ class EnemyStateSerializer:
 
 class QuestDataSerializer:
     """Serializes/deserializes quest data with proper item handling."""
+
+    @staticmethod
+    def _deserialize_item_reference(item_data):
+        """Resolve quest item references from serialized dicts or legacy strings."""
+        if isinstance(item_data, dict):
+            return ItemSerializer.deserialize(item_data)
+
+        if not isinstance(item_data, str) or not item_data:
+            return item_data
+
+        if hasattr(items, item_data):
+            item_class = getattr(items, item_data)
+            if hasattr(item_class, '__call__'):
+                try:
+                    return item_class()
+                except Exception:
+                    return item_data
+
+        for attr_name in dir(items):
+            attr = getattr(items, attr_name)
+            if not hasattr(attr, '__call__'):
+                continue
+            try:
+                instance = attr()
+            except Exception:
+                continue
+            if getattr(instance, 'name', None) == item_data:
+                return instance
+
+        return item_data
     
     @staticmethod
     def serialize_quest_dict(quest_dict: dict) -> dict:
@@ -487,14 +517,9 @@ class QuestDataSerializer:
                         
                         # Deserialize item class in 'What' field for Collect quests
                         if 'What' in deserialized_quest and deserialized_quest.get('Type') == 'Collect':
-                            what = deserialized_quest['What']
-                            if isinstance(what, dict):
-                                deserialized_quest['What'] = ItemSerializer.deserialize(what)
-                            elif isinstance(what, str):
-                                # Handle legacy string data - try to find the item class
-                                # For now, leave as string (will be handled by GUI)
-                                # TODO: Could add item name -> class mapping here
-                                pass
+                            deserialized_quest['What'] = QuestDataSerializer._deserialize_item_reference(
+                                deserialized_quest['What']
+                            )
                         
                         quest_dict[quest_type][quest_name] = deserialized_quest
                     else:
@@ -505,14 +530,32 @@ class QuestDataSerializer:
 
 class PlayerDataSerializer:
     """Serializes/deserializes player character."""
+
+    @staticmethod
+    def _is_jump_skill(skill) -> bool:
+        return bool(
+            skill
+            and getattr(skill, "name", "") == "Jump"
+            and hasattr(skill, "modifications")
+            and hasattr(skill, "unlocked_modifications")
+        )
+
+    @staticmethod
+    def _is_totem_skill(skill) -> bool:
+        return bool(
+            skill
+            and getattr(skill, "name", "") == "Totem"
+            and hasattr(skill, "unlocked_aspects")
+        )
     
     @staticmethod
     def serialize(player) -> dict[str, Any]:
         """Convert player object to data dictionary."""
+        from .player import normalize_gameplay_stats
         
         # Basic attributes
         data = {
-            'version': 2,
+            'version': 3,
             'name': player.name,
             'location': (player.location_x, player.location_y, player.location_z),
             'facing': player.facing,
@@ -584,6 +627,10 @@ class PlayerDataSerializer:
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
             'kill_dict': player.kill_dict,
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
+            'gameplay_stats': normalize_gameplay_stats(
+                getattr(player, 'gameplay_stats', None),
+                current_level=getattr(getattr(player, 'level', None), 'level', 1),
+            ),
             
             # World state (tile visited flags, defeated enemies, open doors, etc.)
             'world_state': TileStateSerializer.serialize_tile_state(player.world_dict) if player.world_dict else {},
@@ -593,12 +640,12 @@ class PlayerDataSerializer:
         for name, skill in player.spellbook.get('Skills', {}).items():
             if not skill:
                 continue
-            if skill.__class__.__name__ == "Jump":
+            if PlayerDataSerializer._is_jump_skill(skill):
                 data['spellbook_state']['Skills'][name] = {
                     'modifications': getattr(skill, 'modifications', None),
                     'unlocked_modifications': getattr(skill, 'unlocked_modifications', None),
                 }
-            elif skill.__class__.__name__ == "Totem":
+            elif PlayerDataSerializer._is_totem_skill(skill):
                 data['spellbook_state']['Skills'][name] = {
                     'unlocked_aspects': getattr(skill, 'unlocked_aspects', None),
                     'active_aspect': getattr(skill, 'active_aspect', None),
@@ -614,7 +661,7 @@ class PlayerDataSerializer:
             data: Serialized player data dictionary
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
-        from .player import Player
+        from .player import Player, normalize_gameplay_stats
         from . import races
         from . import classes
         
@@ -712,12 +759,12 @@ class PlayerDataSerializer:
         if skill_state:
             for name, state in skill_state.items():
                 skill = player.spellbook['Skills'].get(name)
-                if skill and skill.__class__.__name__ == "Jump":
+                if PlayerDataSerializer._is_jump_skill(skill):
                     if 'modifications' in state and state['modifications'] is not None:
                         skill.modifications = state['modifications']
                     if 'unlocked_modifications' in state and state['unlocked_modifications'] is not None:
                         skill.unlocked_modifications = state['unlocked_modifications']
-                elif skill and skill.__class__.__name__ == "Totem":
+                elif PlayerDataSerializer._is_totem_skill(skill):
                     if 'unlocked_aspects' in state and state['unlocked_aspects'] is not None:
                         skill.unlocked_aspects = state['unlocked_aspects']
                     if 'active_aspect' in state and state['active_aspect'] is not None:
@@ -727,6 +774,10 @@ class PlayerDataSerializer:
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
         player.kill_dict = data.get('kill_dict', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
+        player.gameplay_stats = normalize_gameplay_stats(
+            data.get('gameplay_stats'),
+            current_level=player.level.level,
+        )
         player.intro_shown = data.get('intro_shown', False)
         
         # Load world tiles and restore saved world state (unless skipped for transform)

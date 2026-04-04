@@ -33,9 +33,13 @@ env/
 # IDE
 .idea/
 .vscode/
+.codex
 *.swp
 *.swo
 *~
+
+# pytest files
+.coverage
 
 # skip currently unneeded files/directories
 test_suite.py

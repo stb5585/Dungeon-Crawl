@@ -51,6 +51,37 @@ DIRECTIONS = {
 REALM_OF_CAMBION_LEVEL = 8
 
 
+GAMEPLAY_STATS_DEFAULTS = {
+    "steps_taken": 0,
+    "stairs_used": 0,
+    "enemies_defeated": 0,
+    "deaths": 0,
+    "flees": 0,
+    "highest_level_reached": 1,
+    "highest_damage_dealt": 0,
+    "highest_damage_taken": 0,
+}
+
+
+def normalize_gameplay_stats(gameplay_stats=None, *, current_level=1):
+    """Return a backward-compatible gameplay statistics dictionary."""
+    normalized = dict(GAMEPLAY_STATS_DEFAULTS)
+    if isinstance(gameplay_stats, dict):
+        normalized.update(gameplay_stats)
+
+    for key in GAMEPLAY_STATS_DEFAULTS:
+        try:
+            normalized[key] = int(normalized.get(key, GAMEPLAY_STATS_DEFAULTS[key]))
+        except (TypeError, ValueError):
+            normalized[key] = GAMEPLAY_STATS_DEFAULTS[key]
+
+    normalized["highest_level_reached"] = max(
+        int(current_level or 1),
+        normalized["highest_level_reached"],
+    )
+    return normalized
+
+
 def load_char(char=None, filename=None, is_tmp=False):
     """
     Initializes the character based on the save file using the data-driven save system.
@@ -233,6 +264,7 @@ class Player(Character):
         self.transform_type = self.cls
         self.encumbered = False
         self.power_up = False
+        self.gameplay_stats = normalize_gameplay_stats(current_level=self.level.level)
         # Dwarf Gluttony (racial sin): out-of-combat hangover that can affect initiative
         # for a number of steps after using combat consumables.
         self.dwarf_hangover_steps = 0
@@ -260,6 +292,55 @@ class Player(Character):
             f"Health: {self.health.current}/{self.health.max} | "
             f"Mana: {self.mana.current}/{self.mana.max}"
             )
+
+    def ensure_gameplay_stats(self):
+        """Ensure gameplay statistics exist and include all supported counters."""
+        self.gameplay_stats = normalize_gameplay_stats(
+            getattr(self, "gameplay_stats", None),
+            current_level=getattr(getattr(self, "level", None), "level", 1),
+        )
+        return self.gameplay_stats
+
+    def record_step(self, steps=1):
+        stats = self.ensure_gameplay_stats()
+        stats["steps_taken"] += max(0, int(steps))
+
+    def record_stairs_used(self, count=1):
+        stats = self.ensure_gameplay_stats()
+        stats["stairs_used"] += max(0, int(count))
+
+    def record_enemy_defeat(self, count=1):
+        stats = self.ensure_gameplay_stats()
+        stats["enemies_defeated"] += max(0, int(count))
+
+    def record_flee(self, count=1):
+        stats = self.ensure_gameplay_stats()
+        stats["flees"] += max(0, int(count))
+
+    def record_death(self, count=1):
+        stats = self.ensure_gameplay_stats()
+        stats["deaths"] += max(0, int(count))
+
+    def record_damage_dealt(self, damage):
+        if damage is None:
+            return
+        damage = max(0, int(damage))
+        stats = self.ensure_gameplay_stats()
+        stats["highest_damage_dealt"] = max(stats["highest_damage_dealt"], damage)
+
+    def record_damage_taken(self, damage):
+        if damage is None:
+            return
+        damage = max(0, int(damage))
+        stats = self.ensure_gameplay_stats()
+        stats["highest_damage_taken"] = max(stats["highest_damage_taken"], damage)
+
+    def refresh_highest_level(self):
+        stats = self.ensure_gameplay_stats()
+        stats["highest_level_reached"] = max(
+            stats["highest_level_reached"],
+            int(getattr(self.level, "level", 1) or 1),
+        )
 
     def exp_gain_multiplier(self) -> float:
         """Race-based experience gain multiplier (used by combat and quests)."""
@@ -771,6 +852,7 @@ class Player(Character):
             self.health.current = self.health.max
             self.mana.current = self.mana.max
         self.level.level += 1
+        self.refresh_highest_level()
         level_str = (f"You have gained a level.\n"
                      f"You are now level {self.level.level}.\n"
                      f"You have gained {health_gain} health points and {mana_gain} mana points.\n")
@@ -1432,6 +1514,7 @@ class Player(Character):
 
         if getattr(self.world_dict.get((new_x, new_y, self.location_z), {}), "enter"):
             self.location_x, self.location_y = new_x, new_y
+            self.record_step()
             if getattr(self, "dwarf_hangover_steps", 0) > 0:
                 self.dwarf_hangover_steps = max(0, int(self.dwarf_hangover_steps) - 1)
 
@@ -1469,6 +1552,7 @@ class Player(Character):
         """Moves the character up or down a floor."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
         self.location_z += dz
+        self.record_stairs_used()
         if getattr(self, "dwarf_hangover_steps", 0) > 0:
             self.dwarf_hangover_steps = max(0, int(self.dwarf_hangover_steps) - 1)
 
@@ -1491,6 +1575,7 @@ class Player(Character):
         Args:
             textbox: Optional TextBox UI component
         """
+        self.record_death()
         death_message = ""
         stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
         if self.level.level > 9 or self.level.pro_level > 1:

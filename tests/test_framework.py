@@ -22,6 +22,8 @@ Usage:
     )
 """
 
+import copy
+
 from src.core.character import Resource, Stats, Combat, Level
 from src.core.player import Player
 from src.core.save_system import SaveManager
@@ -180,7 +182,10 @@ class TestGameState:
         else:
             # If no custom equipment provided, use class default equipment
             if hasattr(player.cls, 'equipment') and player.cls.equipment:
-                player.equipment = player.cls.equipment.copy()
+                # Deep copy equipment so tests cannot leak mutable item state
+                # (for example weapon disarm flags or other per-item mutations)
+                # into later synthetic players created from the same class defaults.
+                player.equipment = copy.deepcopy(player.cls.equipment)
         
         # Save character if requested
         if save_as:

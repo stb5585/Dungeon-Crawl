@@ -175,10 +175,10 @@ class EnhancedBattleManager(BaseBattleManager):
         if not self.charging_ability:
             return None
 
-        ability_name, skill_obj = self.charging_ability
+        charge_owner, ability_name, skill_obj = self.charging_ability
         actor_skills = actor.spellbook.get('Skills', {})
 
-        if skill_obj in actor_skills.values() and getattr(skill_obj, 'charging', False):
+        if charge_owner == actor and skill_obj in actor_skills.values() and getattr(skill_obj, 'charging', False):
             return ability_name, skill_obj
 
         return None

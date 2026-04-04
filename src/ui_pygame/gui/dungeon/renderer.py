@@ -1488,7 +1488,7 @@ class SceneRenderer:
             return
 
         if "GoldenChaliceRoom" in tile_type:
-            if not map_tiles.chalice_altar_visible(self.player_char):
+            if hasattr(getattr(self, "player_char", None), "quest_dict") and not map_tiles.chalice_altar_visible(self.player_char):
                 return
             sprite_key = "empty_golden_chalice_altar" if bool(getattr(tile, "read", False)) else "golden_chalice_altar"
             self._render_floor_sprite(

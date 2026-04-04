@@ -103,46 +103,6 @@ class RaceSelectionScreen:
                     y += line_height
                     line_count += 1
 
-        # Virtue / Sin (fits in the gap between description and stats)
-        trait_y = desc_y + (5 * line_height) + 10
-        if race.get("virtue") or race.get("sin"):
-            trait_header = self.small_font.render("Virtue / Sin", True, self.GOLD)
-            self.screen.blit(trait_header, (x, trait_y))
-            trait_y += line_height
-
-            def _wrap_lines(s: str, max_px: int) -> list[str]:
-                words = (s or "").split()
-                out = []
-                line = ""
-                for w in words:
-                    test = f"{line} {w}".strip()
-                    if self.small_font.size(test)[0] <= max_px:
-                        line = test
-                    else:
-                        if line:
-                            out.append(line)
-                        line = w
-                if line:
-                    out.append(line)
-                return out
-
-            max_px = self.details_rect.width - 60
-            virtue = race.get("virtue") or {}
-            sin = race.get("sin") or {}
-            if virtue.get("name"):
-                vname = self.small_font.render(f"Virtue: {virtue.get('name','')}", True, self.WHITE)
-                self.screen.blit(vname, (x, trait_y))
-                trait_y += line_height - 2
-                for ln in _wrap_lines(virtue.get("description", ""), max_px)[:2]:
-                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
-                    trait_y += line_height - 2
-            if sin.get("name"):
-                self.screen.blit(self.small_font.render(f"Sin: {sin.get('name','')}", True, self.WHITE), (x, trait_y))
-                trait_y += line_height - 2
-                for ln in _wrap_lines(sin.get("description", ""), max_px)[:2]:
-                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
-                    trait_y += line_height - 2
-        
         # Base Stats section (fixed position)
         if 'stats' in race:
             stats_header = self.small_font.render("Base Stats", True, self.GOLD)
@@ -270,6 +230,53 @@ class RaceSelectionScreen:
                 line = ", ".join(current_line)
                 text = self.small_font.render(line, True, self.WHITE)
                 self.screen.blit(text, (x, y))
+
+        # Virtue / Sin (bottom anchored so it doesn't collide with stats/resistances)
+        if race.get("virtue") or race.get("sin"):
+            def _wrap_lines(s: str, max_px: int) -> list[str]:
+                words = (s or "").split()
+                out = []
+                line = ""
+                for w in words:
+                    test = f"{line} {w}".strip()
+                    if self.small_font.size(test)[0] <= max_px:
+                        line = test
+                    else:
+                        if line:
+                            out.append(line)
+                        line = w
+                if line:
+                    out.append(line)
+                return out
+
+            max_px = self.details_rect.width - 60
+            virtue = race.get("virtue") or {}
+            sin = race.get("sin") or {}
+
+            trait_lines = 1  # header
+            if virtue.get("name"):
+                trait_lines += 1 + min(2, len(_wrap_lines(virtue.get("description", ""), max_px)))
+            if sin.get("name"):
+                trait_lines += 1 + min(2, len(_wrap_lines(sin.get("description", ""), max_px)))
+
+            trait_y = self.details_rect.bottom - 20 - (trait_lines * (line_height - 2))
+            trait_header = self.small_font.render("Virtue / Sin", True, self.GOLD)
+            self.screen.blit(trait_header, (x, trait_y))
+            trait_y += line_height
+
+            if virtue.get("name"):
+                vname = self.small_font.render(f"Virtue: {virtue.get('name','')}", True, self.WHITE)
+                self.screen.blit(vname, (x, trait_y))
+                trait_y += line_height - 2
+                for ln in _wrap_lines(virtue.get("description", ""), max_px)[:2]:
+                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
+                    trait_y += line_height - 2
+            if sin.get("name"):
+                self.screen.blit(self.small_font.render(f"Sin: {sin.get('name','')}", True, self.WHITE), (x, trait_y))
+                trait_y += line_height - 2
+                for ln in _wrap_lines(sin.get("description", ""), max_px)[:2]:
+                    self.screen.blit(self.small_font.render(ln, True, self.GRAY), (x + 12, trait_y))
+                    trait_y += line_height - 2
     
     def draw_race_list(self):
         """Draw the race list panel."""
