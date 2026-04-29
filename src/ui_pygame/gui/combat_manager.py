@@ -212,10 +212,7 @@ class GUICombatManager:
                 elif not action_result:  # Closed combat
                     fled = True
                     break
-                
-                # Trigger special effects if enemy health drops below threshold (while still alive)
-                self._trigger_enemy_special_effects(player_char, enemy)
-                
+
                 # Check if enemy died from special effects (e.g., self-healing that prevents death)
                 if not enemy.is_alive():
                     self.combat_view.enemy_dies(enemy)
@@ -307,7 +304,11 @@ class GUICombatManager:
 
     def _post_turn_processing(self, player_char: Player, enemy: Character) -> None:
         """Handle engine post-turn + display any messages."""
+        visual_before = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
         post = self.engine.post_turn()
+        visual_after = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
+        if visual_after != visual_before:
+            self.combat_view.reload_enemy_sprite(enemy)
         for msg in post.messages:
             if msg:
                 for line in msg.strip().split('\n'):
@@ -447,21 +448,6 @@ class GUICombatManager:
         
         return True
     
-    def _trigger_enemy_special_effects(self, player_char, enemy):
-        """
-        Trigger enemy special effects if health drops below threshold while alive.
-        This must be called DURING combat, not after death.
-        """
-        if not enemy.is_alive() or not hasattr(enemy, 'special_effects'):
-            return
-        
-        # Trigger special effects (will only activate if conditions are met, e.g., below 10% health)
-        result = enemy.special_effects(player_char)
-        if result:
-            for line in result.strip().split('\n'):
-                if line.strip():
-                    self.combat_view.add_combat_message(line)
-    
     def _check_enemy_form_change(self, player_char, enemy):
         """
         Check if Mad Waitress should change form/state when health drops below 10%.
@@ -505,7 +491,7 @@ class GUICombatManager:
         from .confirmation_popup import ConfirmationPopup
         popup_text = "\n".join(transition_messages)
         popup = ConfirmationPopup(self.presenter, popup_text, show_buttons=False)
-        popup.show()
+        popup.show(flush_events=True, require_key_release=True)
 
         # Show combat log messages for the self-attack
         self.combat_view.add_combat_message(
@@ -1001,7 +987,16 @@ class GUICombatManager:
         self.combat_view.render_enemy_in_dungeon(player_char, enemy)
         
         # Render combat HUD overlay (action menu and combat log)
-        self.combat_view.render_combat_overlay(player_char, enemy, actions, selected_action)
+        current_turn = None
+        if self.engine is not None and getattr(self.engine, "attacker", None) is not None:
+            current_turn = "player" if self.engine.is_player_turn() else "enemy"
+        self.combat_view.render_combat_overlay(
+            player_char,
+            enemy,
+            actions,
+            selected_action,
+            current_turn=current_turn,
+        )
         
         # Render HUD (right 1/3) with combat mode indicator
         self.hud.render_hud(player_char, combat_mode=True, enemy=enemy)
@@ -1021,7 +1016,11 @@ class GUICombatManager:
             draw_background = lambda: self.screen.blit(background, (0, 0))
             from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)
-            popup.show(background_draw_func=draw_background)
+            popup.show(
+                background_draw_func=draw_background,
+                flush_events=True,
+                require_key_release=True,
+            )
 
         # Handle Sanctuary (player got teleported to town during combat)
         if player_char.in_town():

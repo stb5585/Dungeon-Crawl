@@ -11,6 +11,18 @@ from .level_up_popup import LevelUpPopup
 from .stat_selection_popup import StatSelectionPopup
 
 
+def _upgrade_source_name(ability_cls) -> str | None:
+    """Return the inherited ability name for upgrade detection, if available."""
+    try:
+        bases = getattr(ability_cls, "__mro__", ())
+        if len(bases) < 2:
+            return None
+        parent_instance = bases[1]()
+        return getattr(parent_instance, "name", None)
+    except Exception:
+        return None
+
+
 class LevelUpScreen:
     """Display level up information and handle stat selection."""
     
@@ -54,7 +66,11 @@ class LevelUpScreen:
         
         # Show level up information popup
         popup = LevelUpPopup(self.presenter, level_info)
-        popup.show(background_draw_func=self._draw_popup_background)
+        popup.show(
+            background_draw_func=self._draw_popup_background,
+            flush_events=True,
+            require_key_release=True,
+        )
         
         # Handle stat selection every 4 levels
         if player_char.level.level % 4 == 0:
@@ -114,14 +130,11 @@ class LevelUpScreen:
             if spell_name in player_char.spellbook['Spells']:
                 spell_upgrades.append(f"{spell_name} goes up a level")
             else:
-                try:
-                    if spell.mro()[1]().name in player_char.spellbook['Spells']:
-                        old_name = spell.mro()[1]().name
-                        spell_upgrades.append(f"{old_name} upgraded to {spell_name}")
-                        del player_char.spellbook['Spells'][old_name]
-                    else:
-                        new_abilities.append(f"Spell: {spell_name}")
-                except TypeError:
+                old_name = _upgrade_source_name(spell)
+                if old_name and old_name in player_char.spellbook['Spells']:
+                    spell_upgrades.append(f"{old_name} upgraded to {spell_name}")
+                    del player_char.spellbook['Spells'][old_name]
+                else:
                     new_abilities.append(f"Spell: {spell_name}")
             
             player_char.spellbook['Spells'][spell_name] = spell_gain
@@ -135,14 +148,11 @@ class LevelUpScreen:
             if skill_name in player_char.spellbook['Skills']:
                 skill_upgrades.append(f"{skill_name} goes up a level")
             else:
-                try:
-                    if skill.mro()[1]().name in player_char.spellbook['Skills']:
-                        old_name = skill.mro()[1]().name
-                        skill_upgrades.append(f"{old_name} upgraded to {skill_name}")
-                        del player_char.spellbook['Skills'][old_name]
-                    else:
-                        new_abilities.append(f"Skill: {skill_name}")
-                except TypeError:
+                old_name = _upgrade_source_name(skill)
+                if old_name and old_name in player_char.spellbook['Skills']:
+                    skill_upgrades.append(f"{old_name} upgraded to {skill_name}")
+                    del player_char.spellbook['Skills'][old_name]
+                else:
                     new_abilities.append(f"Skill: {skill_name}")
             
             player_char.spellbook['Skills'][skill_name] = skill_gain
@@ -326,7 +336,11 @@ class LevelUpScreen:
         
         # Show popup to select stat
         popup = StatSelectionPopup(self.presenter, stat_options)
-        selected_stat = popup.show(background_draw_func=lambda: self._draw_level_up_background(player_char))
+        selected_stat = popup.show(
+            background_draw_func=lambda: self._draw_level_up_background(player_char),
+            flush_events=True,
+            require_key_release=True,
+        )
         
         if selected_stat is None:
             return
@@ -380,7 +394,11 @@ class LevelUpScreen:
         
         message = f"{stat_name} increased to {new_value}!"
         popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
-        popup.show(background_draw_func=self._draw_popup_background)
+        popup.show(
+            background_draw_func=self._draw_popup_background,
+            flush_events=True,
+            require_key_release=True,
+        )
     
     def _wait_for_continue(self):
         """Wait for player to press a key."""

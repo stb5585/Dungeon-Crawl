@@ -218,17 +218,16 @@
     },
     "Jester": {
         "Text": [
-            "You pass through the open door into a small chamber and you are met with a horrifying sight.",
-            "A disfigured man is shackled against the wall, upside down and covered with blood.",
-            "The man struggles to breathe but manages to muster a weak 'Help me!'.",
-            "The Jester steps into view with an unsettling gait, his face painted in a macabre grin.",
-            "His ragged outfit jingles with the sound of bells, each step punctuated by a spine-chilling laugh.",
-            "His eyes glint with wild, unrestrained madness as he deftly twirls a knife between his fingers.",
-            "Without looking away from you, he steps towards the chained man and thrusts the knife deep into his chest.",
-            "You hear nothing but a meager gasp, his body slumping down. 'We were playing a game. He lost...hehe.'",
-            "The Jester turns and walks towards a table in the corner of the room, covered with the tools of his trade.",
-            "'Care to play?' he asks, his voice dripping with mockery.",
-            "'The stakes? Oh, just your sanity—or maybe your life. Let's see where the chips fall!'"
+            "You step into the chamber and the carnival noise dies all at once, as if the room itself is holding its breath.",
+            "At the center stands the Jester, waiting beneath a wash of impossible color and shifting light.",
+            "His costume is immaculate in some places and ruined in others, velvet and bells stitched together with blood-dark thread.",
+            "He tilts his head as though studying you, a smile curling slowly across his painted face.",
+            "With a flick of the wrist he produces a token, lets it dance across his knuckles, then closes his hand around it.",
+            "'You made it through the mirrors,' he says softly. 'Most only find themselves.'",
+            "The bells at his cuffs give a faint, deliberate chime as he takes a step forward.",
+            "'But every game has rules, and every guest must choose what they are willing to lose.'",
+            "His grin widens, equal parts delight and menace, and the chamber seems to bend around him like a stage awaiting its cue.",
+            "'Come then,' he says. 'Let us see which face of mine breaks you first.'"
         ]
     },
     "Domingo": {
@@ -434,6 +433,14 @@
             "The funhouse collapses around you like a house of cards, but you emerge unscathed.",
             "As the last echoes fade, you find yourself back where you started, victorious.",
             "The Jester has been defeated, and the funhouse is no more."
+        ]
+    },
+    "Jester Force Field": {
+        "Text": [
+            "The force field crackles, and the Jester's laughter skips across the mirrored halls.",
+            "'Oh, no, no, no... no admittance without the proper fare,' he sings.",
+            "'Four little laughs I hid away where greedy hands meet hungry teeth.'",
+            "'Open what grins. Slay what bites. Gather my tokens, and perhaps I'll let the curtain rise.'"
         ]
     },
     "Incubus Defeated": {

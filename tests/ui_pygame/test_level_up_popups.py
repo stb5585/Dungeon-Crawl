@@ -130,6 +130,19 @@ def test_level_up_popup_prepares_draws_and_shows(monkeypatch):
     popup.show()
     assert ("bg-default", (0, 0)) in presenter.screen.blit_calls
 
+    popup = level_up_popup.LevelUpPopup(presenter, level_info)
+    clear_calls = []
+    key_states = iter([[1], []])
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.key.get_pressed", lambda: next(key_states, []))
+    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, []))
+    popup.show(flush_events=True, require_key_release=True)
+    assert clear_calls == [True]
+
 
 def test_stat_selection_popup_draws_and_selects(monkeypatch):
     presenter = _make_presenter()
@@ -165,6 +178,19 @@ def test_stat_selection_popup_draws_and_selects(monkeypatch):
     ])
     monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
     assert popup.show() == "Wisdom"
+
+    popup = stat_selection_popup.StatSelectionPopup(presenter, options)
+    clear_calls = []
+    key_states = iter([[1], []])
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.key.get_pressed", lambda: next(key_states, []))
+    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert popup.show(flush_events=True, require_key_release=True) == "Strength"
+    assert clear_calls == [True]
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
     event_batches = iter([

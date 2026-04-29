@@ -63,13 +63,15 @@ def _make_player(*, level=12, in_town=True, gold=500):
 class FakePopup:
     responses = []
     messages = []
+    calls = []
 
     def __init__(self, _presenter, message, show_buttons=True):
         self.message = message
         self.show_buttons = show_buttons
         FakePopup.messages.append((message, show_buttons))
 
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, **kwargs):
+        FakePopup.calls.append(kwargs)
         if background_draw_func:
             background_draw_func()
         if FakePopup.responses:
@@ -89,7 +91,7 @@ class FakeQuantityPopup:
         self.default_quantity = default_quantity
         FakeQuantityPopup.created.append((item_name, price, max_qty, action, default_quantity))
 
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, **_kwargs):
         if background_draw_func:
             background_draw_func()
         return FakeQuantityPopup.responses.pop(0)
@@ -177,6 +179,7 @@ class DummyItem:
 def _manager(monkeypatch, *, level=12, in_town=True, gold=500):
     FakePopup.responses = []
     FakePopup.messages = []
+    FakePopup.calls = []
     FakeQuantityPopup.responses = []
     FakeQuantityPopup.created = []
     FakeShopScreen.option_sequences = []
@@ -196,6 +199,7 @@ def test_visit_blacksmith_and_jeweler_closed_show_popup(monkeypatch):
 
     assert any("blacksmith is currently closed" in message for message, _buttons in FakePopup.messages)
     assert any("jeweler is currently closed" in message for message, _buttons in FakePopup.messages)
+    assert all(call.get("flush_events") for call in FakePopup.calls)
 
 
 def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
@@ -318,6 +322,7 @@ def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purcha
     assert manager.player_char.inventory_calls == [("Potion", 2, False)]
     assert FakeShopScreen.instances[0].update_calls == [(itemdict, "Buy"), (itemdict, "Buy")]
     assert any("Purchased 2x Potion!" in message for message, _buttons in FakePopup.messages)
+    assert any(call.get("flush_events") for call in FakePopup.calls)
 
 
 def test_format_item_info_and_item_availability_helpers(monkeypatch):
@@ -383,6 +388,7 @@ def test_sell_items_covers_empty_inventory_unsellable_cancel_and_confirm(monkeyp
     assert manager.player_char.gold == 60
     assert manager.player_char.inventory_calls[-1] == ("Herb", 2, True)
     assert any("Sold 2x Herb for 10g!" in message for message, _buttons in FakePopup.messages)
+    assert any(call.get("flush_events") for call in FakePopup.calls)
 
 
 def test_secret_shop_branches_delegate_to_expected_helpers(monkeypatch):
@@ -424,6 +430,7 @@ def test_secret_shop_branches_delegate_to_expected_helpers(monkeypatch):
         ("sell", "dungeon.png"),
     ]
     assert any("Come back anytime!" in message for message, _buttons in FakePopup.messages)
+    assert any(call.get("flush_events") for call in FakePopup.calls)
 
 
 def test_secret_shop_submenus_and_misc_helpers(monkeypatch):

@@ -260,6 +260,26 @@ def test_quantity_popup_draw_and_show_cover_adjustment_confirmation_and_cancel(m
     assert cancel_popup.show() is None
 
 
+def test_quantity_popup_can_flush_and_wait_for_key_release(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    popup = confirmation_popup.QuantityPopup(presenter, "Potion", max_quantity=9)
+    clear_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: clear_calls.append(True))
+    pressed_states = iter([[1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: next(pressed_states, []))
+    event_batches = iter([
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        [_event(pygame.KEYDOWN, pygame.K_UP)],
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    assert popup.show(flush_events=True, require_key_release=True) == 1
+    assert clear_calls == [True]
+
+
 def test_code_entry_popup_draw_and_show_cover_digit_navigation(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -283,6 +303,26 @@ def test_code_entry_popup_draw_and_show_cover_digit_navigation(monkeypatch):
         lambda: [_event(pygame.KEYDOWN, pygame.K_ESCAPE)],
     )
     assert cancel_popup.show() is None
+
+
+def test_code_entry_popup_can_flush_and_wait_for_key_release(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    popup = confirmation_popup.CodeEntryPopup(presenter, "Vault", "Enter code")
+    clear_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: clear_calls.append(True))
+    pressed_states = iter([[1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: next(pressed_states, []))
+    event_batches = iter([
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        [_event(pygame.KEYDOWN, pygame.K_UP)],
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    assert popup.show(flush_events=True, require_key_release=True) == "1000"
+    assert clear_calls == [True]
 
 
 def test_confirm_yes_no_helper_delegates_to_popup(monkeypatch):

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 import re
+from collections import OrderedDict
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 
 import pygame
 
@@ -91,6 +93,10 @@ SPECIAL_FALLBACK_COLORS = {
     "unobtainium": (110, 180, 190),
 }
 
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+DEFAULT_ASSETS_BASE = Path(__file__).resolve().parents[2] / "assets"
+DEFAULT_TILESET_BASE = DEFAULT_ASSETS_BASE / "dungeon_tiles"
+
 
 @dataclass(frozen=True)
 class SurfacePanelPlan:
@@ -136,12 +142,20 @@ class SurfacePanelPlan:
 class TextureLibrary:
     """Load dungeon textures and cache projected panels."""
 
-    def __init__(self, tileset_base: str = "src/ui_pygame/assets/dungeon_tiles"):
-        self.tileset_base = tileset_base
-        self.assets_base = os.path.dirname(self.tileset_base)
+    def __init__(
+        self,
+        tileset_base: str | os.PathLike[str] | None = None,
+        projected_cache_limit: int = 512,
+    ):
+        if tileset_base:
+            self.tileset_base = Path(tileset_base).expanduser().resolve()
+        else:
+            self.tileset_base = DEFAULT_TILESET_BASE
+        self.assets_base = self.tileset_base.parent
         self._loaded = False
         self._textures: dict[str, pygame.Surface] = {}
-        self._projected_cache: dict[tuple, ProjectedSurface] = {}
+        self._projected_cache: OrderedDict[tuple, ProjectedSurface] = OrderedDict()
+        self._projected_cache_limit = max(1, int(projected_cache_limit))
         self._panel_texture_cache: dict[tuple, pygame.Surface] = {}
         self._special_base_textures: dict[str, pygame.Surface] = {}
         self._special_scaled_cache: dict[tuple[str, int], pygame.Surface] = {}
@@ -149,17 +163,26 @@ class TextureLibrary:
         self._enemy_scaled_cache: dict[tuple[str, int], pygame.Surface] = {}
         self._manual_surface_slot_overrides: dict[str, str] = {}
         self._scene_surface_slot_overrides: dict[str, str] = {}
+        self._asset_fallbacks: dict[str, str] = {}
         self._surface_slot_revision = 0
+
+    def get_asset_fallbacks(self) -> dict[str, str]:
+        """Return missing or failed asset paths that are using fallback behavior."""
+        return dict(self._asset_fallbacks)
+
+    def _record_asset_fallback(self, category: str, texture_key: str, path: str | os.PathLike[str]) -> None:
+        self._asset_fallbacks[f"{category}:{texture_key}"] = str(path)
 
     def ensure_loaded(self) -> None:
         if self._loaded:
             return
 
         for texture_key, rel_path in TEXTURE_PATHS.items():
-            full_path = os.path.join(self.tileset_base, rel_path)
+            full_path = self.tileset_base / rel_path
             if os.path.exists(full_path):
                 self._textures[texture_key] = self._load_image_surface(full_path)
             else:
+                self._record_asset_fallback("texture", texture_key, full_path)
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
                 fallback.fill((*FALLBACK_COLORS[texture_key], 255))
                 self._textures[texture_key] = fallback
@@ -167,8 +190,8 @@ class TextureLibrary:
         self._loaded = True
 
     @staticmethod
-    def _load_image_surface(path: str) -> pygame.Surface:
-        surface = pygame.image.load(path)
+    def _load_image_surface(path: str | os.PathLike[str]) -> pygame.Surface:
+        surface = pygame.image.load(str(path))
         if pygame.display.get_surface() is not None:
             return surface.convert_alpha()
         return surface.copy()
@@ -190,7 +213,10 @@ class TextureLibrary:
                 try:
                     base = self._load_image_surface(full_path)
                 except pygame.error:
+                    self._record_asset_fallback("special", texture_key, full_path)
                     base = None
+            else:
+                self._record_asset_fallback("special", texture_key, full_path)
             if base is None:
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
                 fallback.fill((*SPECIAL_FALLBACK_COLORS[texture_key], 255))
@@ -251,7 +277,10 @@ class TextureLibrary:
                 try:
                     base = self._load_image_surface(full_path)
                 except pygame.error:
+                    self._record_asset_fallback("enemy", cache_name, full_path)
                     base = None
+            else:
+                self._record_asset_fallback("enemy", cache_name, full_path)
             self._enemy_base_textures[cache_name] = base
 
         if base is None:
@@ -267,12 +296,15 @@ class TextureLibrary:
             self._enemy_scaled_cache[cache_key] = scaled
         return scaled
 
-    def _resolve_asset_path(self, rel_path: str) -> str:
+    def _resolve_asset_path(self, rel_path: str) -> Path:
+        path = Path(rel_path)
+        if path.is_absolute():
+            return path
         if rel_path.startswith("src/"):
-            return rel_path
+            return PROJECT_ROOT / path
         if rel_path.startswith("sprites/"):
-            return os.path.join(self.assets_base, rel_path)
-        return os.path.join(self.tileset_base, rel_path)
+            return self.assets_base / path
+        return self.tileset_base / path
 
     def describe_surface_slot_ids(self, panel_id: str, texture_key: str | None = None) -> tuple[str, ...]:
         plan = self._get_surface_panel_plan(panel_id, texture_key=texture_key)
@@ -686,6 +718,7 @@ class TextureLibrary:
         )
         projected = self._projected_cache.get(cache_key)
         if projected is not None:
+            self._projected_cache.move_to_end(cache_key)
             return projected
 
         projected = project_texture_to_quad(
@@ -697,7 +730,12 @@ class TextureLibrary:
         surface = self._shade_projected_surface(projected.surface, panel_id, darkness)
         projected = ProjectedSurface(surface=surface, topleft=projected.topleft)
         self._projected_cache[cache_key] = projected
+        self._trim_projected_cache()
         return projected
+
+    def _trim_projected_cache(self) -> None:
+        while len(self._projected_cache) > self._projected_cache_limit:
+            self._projected_cache.popitem(last=False)
 
     def _shade_projected_surface(self, surface: pygame.Surface, panel_id: str, base_darkness: float) -> pygame.Surface:
         depth_match = re.match(r"d(\d+):", panel_id)

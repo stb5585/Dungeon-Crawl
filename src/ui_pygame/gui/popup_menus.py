@@ -627,25 +627,30 @@ class InventoryPopupMenu(BasePopupMenu):
             if not player_char.cls.equip_check(item, slot):
                 self.presenter.show_message(f"You cannot equip {getattr(item, 'name', 'that item')}.")
                 return
+        equip_method = getattr(player_char, "equip", None)
+        if callable(equip_method):
+            result = equip_method(slot, item)
+            if result is False:
+                return
+        else:
+            # Check if current item can be unequipped
+            current = player_char.equipment.get(slot)
+            if current and not getattr(current, "unequip", True):
+                self.presenter.show_message(f"You cannot unequip {getattr(current, 'name', 'this item')}.")
+                return
 
-        # Check if current item can be unequipped
-        current = player_char.equipment.get(slot)
-        if current and not getattr(current, "unequip", True):
-            self.presenter.show_message(f"You cannot unequip {getattr(current, 'name', 'this item')}.")
-            return
+            # Move current item to inventory (if it exists and is not a placeholder)
+            if current and getattr(current, "name", None) not in (None, "None"):
+                player_char.inventory.setdefault(current.name, []).append(current)
 
-        # Move current item to inventory (if it exists and is not a placeholder)
-        if current and getattr(current, "name", None) not in (None, "None"):
-            player_char.inventory.setdefault(current.name, []).append(current)
+            # Equip new item
+            player_char.equipment[slot] = item
 
-        # Equip new item
-        player_char.equipment[slot] = item
-
-        # Remove from inventory
-        if category in player_char.inventory and item in player_char.inventory[category]:
-            player_char.inventory[category].remove(item)
-            if not player_char.inventory[category]:
-                del player_char.inventory[category]
+            # Remove from inventory
+            if category in player_char.inventory and item in player_char.inventory[category]:
+                player_char.inventory[category].remove(item)
+                if not player_char.inventory[category]:
+                    del player_char.inventory[category]
 
         # Rebuild items list
         self.build_items(player_char)
@@ -661,7 +666,11 @@ class InventoryPopupMenu(BasePopupMenu):
                 if result:
                     result_bg = background_surface or self._capture_menu_surface(player_char)
                     result_popup = ConfirmationPopup(self.presenter, result, show_buttons=False)
-                    result_popup.show(background_draw_func=lambda: self.screen.blit(result_bg, (0, 0)))
+                    result_popup.show(
+                        background_draw_func=lambda: self.screen.blit(result_bg, (0, 0)),
+                        flush_events=True,
+                        require_key_release=True,
+                    )
             except Exception as e:
                 self.presenter.show_message(f"Error using item: {e}")
         
@@ -679,7 +688,11 @@ class InventoryPopupMenu(BasePopupMenu):
         # Confirm drop
         menu_bg = background_surface or self._capture_menu_surface(player_char)
         popup = ConfirmationPopup(self.presenter, f"Drop {getattr(item, 'name', 'this item')}? This cannot be undone.")
-        if not popup.show(background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0))):
+        if not popup.show(
+            background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0)),
+            flush_events=True,
+            require_key_release=True,
+        ):
             return
         
         # Remove from inventory
@@ -910,28 +923,33 @@ class EquipmentPopupMenu(BasePopupMenu):
     
     def _equip_from_inventory(self, player_char, slot, new_item):
         """Equip an item from inventory, unequipping current item if needed."""
-        # Get current item
-        current_item = player_char.equipment.get(slot)
-        
-        # If there's a current item that's not a placeholder, move it to inventory
-        if current_item:
-            is_placeholder = getattr(current_item, "unequip", False)
-            if not is_placeholder:
-                item_name = getattr(current_item, "name", "Unknown")
-                if item_name not in player_char.inventory:
-                    player_char.inventory[item_name] = []
-                player_char.inventory[item_name].append(current_item)
-        
-        # Equip the new item
-        player_char.equipment[slot] = new_item
-        
-        # Remove new item from inventory
-        for category, items_list in player_char.inventory.items():
-            if new_item in items_list:
-                items_list.remove(new_item)
-                if not items_list:
-                    del player_char.inventory[category]
-                break
+        equip_method = getattr(player_char, "equip", None)
+        if callable(equip_method):
+            if equip_method(slot, new_item) is False:
+                return
+        else:
+            # Get current item
+            current_item = player_char.equipment.get(slot)
+
+            # If there's a current item that's not a placeholder, move it to inventory
+            if current_item:
+                is_placeholder = getattr(current_item, "unequip", False)
+                if not is_placeholder:
+                    item_name = getattr(current_item, "name", "Unknown")
+                    if item_name not in player_char.inventory:
+                        player_char.inventory[item_name] = []
+                    player_char.inventory[item_name].append(current_item)
+
+            # Equip the new item
+            player_char.equipment[slot] = new_item
+
+            # Remove new item from inventory
+            for category, items_list in player_char.inventory.items():
+                if new_item in items_list:
+                    items_list.remove(new_item)
+                    if not items_list:
+                        del player_char.inventory[category]
+                    break
         
         # Rebuild items list
         self.build_items(player_char)

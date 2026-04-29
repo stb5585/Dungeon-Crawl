@@ -13,6 +13,7 @@ Architecture:
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 from dataclasses import dataclass, asdict
@@ -215,8 +216,15 @@ class TileStateSerializer:
         for pos_str, state in tile_states.items():
             # Parse position string back to tuple
             try:
-                pos = eval(pos_str)  # e.g., "(5,10,1)"
-            except (ValueError, SyntaxError):
+                pos = ast.literal_eval(pos_str)  # e.g., "(5,10,1)"
+            except (ValueError, SyntaxError, TypeError):
+                continue
+
+            if (
+                not isinstance(pos, tuple)
+                or len(pos) != 3
+                or not all(isinstance(coord, int) for coord in pos)
+            ):
                 continue
             
             if pos not in world_dict:
@@ -739,6 +747,11 @@ class PlayerDataSerializer:
         
         for item_name, item_list in data['special_inventory'].items():
             player.special_inventory[item_name] = [ItemSerializer.deserialize(item_data) for item_data in item_list]
+
+        # Migrate legacy quest-key items that used to be stored in the main inventory.
+        legacy_jester_tokens = player.inventory.pop("Jester Token", [])
+        if legacy_jester_tokens:
+            player.special_inventory.setdefault("Jester Token", []).extend(legacy_jester_tokens)
         
         for item_name, item_list in data['storage'].items():
             player.storage[item_name] = [ItemSerializer.deserialize(item_data) for item_data in item_list]
@@ -817,6 +830,21 @@ class SaveManager:
     
     SAVE_DIR = "save_files"
     TMP_DIR = "tmp_files"
+
+    @staticmethod
+    def _resolve_save_path(filename: str, is_tmp: bool = False) -> str:
+        """Return a save path confined to the configured save directory."""
+        separators = {os.sep, os.altsep, "/", "\\"}
+        if (
+            not filename
+            or filename in {".", ".."}
+            or os.path.isabs(filename)
+            or any(sep and sep in filename for sep in separators)
+        ):
+            raise ValueError(f"Invalid save filename: {filename!r}")
+
+        directory = SaveManager.TMP_DIR if is_tmp else SaveManager.SAVE_DIR
+        return os.path.join(directory, filename)
     
     @staticmethod
     def ensure_dirs():
@@ -830,19 +858,26 @@ class SaveManager:
         """Save player to file."""
         SaveManager.ensure_dirs()
         
+        tmp_filepath = None
         try:
-            directory = SaveManager.TMP_DIR if is_tmp else SaveManager.SAVE_DIR
-            filepath = os.path.join(directory, filename)
+            filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
+            tmp_filepath = f"{filepath}.tmp"
             
             # Serialize player
             data = PlayerDataSerializer.serialize(player)
             
-            # Save as JSON
-            with open(filepath, 'w') as f:
+            # Write atomically so a failed save does not corrupt the prior file.
+            with open(tmp_filepath, 'w') as f:
                 json.dump(data, f, indent=2, default=str)
+            os.replace(tmp_filepath, filepath)
             
             return True
         except Exception as e:
+            if tmp_filepath and os.path.exists(tmp_filepath):
+                try:
+                    os.remove(tmp_filepath)
+                except OSError:
+                    pass
             print(f"Error saving player: {e}")
             return False
     
@@ -856,8 +891,7 @@ class SaveManager:
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
         try:
-            directory = SaveManager.TMP_DIR if is_tmp else SaveManager.SAVE_DIR
-            filepath = os.path.join(directory, filename)
+            filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
             
             if not os.path.exists(filepath):
                 return None
@@ -879,13 +913,13 @@ class SaveManager:
         SaveManager.ensure_dirs()
         if not os.path.isdir(SaveManager.SAVE_DIR):
             return []
-        return [f for f in os.listdir(SaveManager.SAVE_DIR) if f.endswith('.save')]
+        return sorted(f for f in os.listdir(SaveManager.SAVE_DIR) if f.endswith('.save'))
     
     @staticmethod
     def delete_save(filename: str) -> bool:
         """Delete a save file."""
-        filepath = os.path.join(SaveManager.SAVE_DIR, filename)
         try:
+            filepath = SaveManager._resolve_save_path(filename)
             if os.path.exists(filepath):
                 os.remove(filepath)
                 return True

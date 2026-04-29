@@ -52,7 +52,7 @@ class StatSelectionPopup:
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
     
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
         """
         Display the stat selection popup and handle user input.
         
@@ -62,8 +62,12 @@ class StatSelectionPopup:
         Returns:
             The name of the selected stat
         """
+        if flush_events:
+            pygame.event.clear()
+
         self.result = None
         selecting = True
+        input_armed = not require_key_release
 
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -80,10 +84,16 @@ class StatSelectionPopup:
             pygame.display.flip()
             
             # Handle input
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     selecting = False
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key in [pygame.K_UP, pygame.K_w]:
                         self.current_selection = (self.current_selection - 1) % len(self.stat_options)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:

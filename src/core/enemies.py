@@ -50,6 +50,34 @@ def funhouse_enemy() -> Enemy:
     return random.choice([Puppet(), Harlequin(), Trickster(), Copycat()])
 
 
+def _fixed_resistances(**overrides):
+    resistances = {
+        'Fire': 0.0,
+        'Ice': 0.0,
+        'Electric': 0.0,
+        'Water': 0.0,
+        'Earth': 0.0,
+        'Wind': 0.0,
+        'Shadow': 0.0,
+        'Holy': 0.0,
+        'Poison': 0.0,
+        'Physical': 0.0,
+    }
+    resistances.update(overrides)
+    return resistances
+
+
+def _build_spellbook(*, spells=(), skills=()):
+    spellbook = {"Spells": {}, "Skills": {}}
+    for ability_ctor in spells:
+        ability = ability_ctor()
+        spellbook["Spells"][ability.name] = ability
+    for ability_ctor in skills:
+        ability = ability_ctor()
+        spellbook["Skills"][ability.name] = ability
+    return spellbook
+
+
 class Enemy(Character):
     """
     Same as player character with notable exceptions
@@ -2963,74 +2991,181 @@ class Jester(Humanoid):
     Level 4 Special Boss - guards fourth of six relics (LUNA) required to beat the final boss
     """
 
+    FORM_DEFS = {
+        "crimson": {
+            "title": "Crimson Reveler",
+            "picture": "jester.png",
+            "announcement": "The Jester's bells flare crimson as he embraces pure chaos.",
+            "stats": {"strength": 28, "intel": 30, "wisdom": 24, "con": 38, "charisma": 99, "dex": 34},
+            "combat": {"attack": 50, "defense": 34, "magic": 42, "magic_def": 32},
+            "resistance": _fixed_resistances(Shadow=0.35, Holy=-0.15, Poison=0.25, Physical=0.10),
+            "spells": (abilities.Silence, abilities.MirrorImage2, abilities.Hex),
+            "skills": (abilities.GoldToss, abilities.SlotMachine),
+            "action_stack": [
+                {"ability": "Attack", "priority": ActionPriority.NORMAL},
+                {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
+                {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
+                {"ability": "Mirror Image", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Hex", "priority": ActionPriority.NORMAL},
+                {"ability": "Silence", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"target_has_mana": True, "priority": ActionPriority.NORMAL, "else": ActionPriority.SKIP}},
+            ],
+        },
+        "amber": {
+            "title": "Yellow Heckler",
+            "picture": "jester1.png",
+            "announcement": "A yellow grin spreads across his mask, mocking every spark of magic you raise.",
+            "stats": {"strength": 20, "intel": 38, "wisdom": 34, "con": 34, "charisma": 99, "dex": 28},
+            "combat": {"attack": 32, "defense": 28, "magic": 54, "magic_def": 46},
+            "resistance": _fixed_resistances(Fire=0.15, Electric=0.25, Shadow=0.25, Holy=0.20, Physical=-0.10),
+            "spells": (abilities.Silence, abilities.WeakenMind, abilities.ManaShield, abilities.MirrorImage2),
+            "skills": (abilities.GoldToss,),
+            "action_stack": [
+                {"ability": "Silence", "priority": ActionPriority.HIGH,
+                 "priority_if": {"target_has_mana": True, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
+                {"ability": "Weaken Mind", "priority": ActionPriority.HIGH,
+                 "priority_if": {"target_has_mana": True, "priority": ActionPriority.HIGH, "else": ActionPriority.NORMAL}},
+                {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_status": "Mana Shield", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Mirror Image", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.NORMAL}},
+                {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
+                {"ability": "Attack", "priority": ActionPriority.LOW},
+            ],
+        },
+        "violet": {
+            "title": "Purple Hexer",
+            "picture": "jester2.png",
+            "announcement": "Purple smoke coils from his sleeves as he prepares a killing punchline.",
+            "stats": {"strength": 22, "intel": 40, "wisdom": 32, "con": 32, "charisma": 99, "dex": 30},
+            "combat": {"attack": 30, "defense": 30, "magic": 56, "magic_def": 40},
+            "resistance": _fixed_resistances(Shadow=0.60, Holy=-0.35, Poison=0.35, Physical=-0.05),
+            "spells": (abilities.Sleep, abilities.Corruption, abilities.Terrify),
+            "skills": (abilities.SlotMachine,),
+            "action_stack": [
+                {"ability": "Sleep", "priority": ActionPriority.HIGH,
+                 "priority_if": {"target_status": "Sleep", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Corruption", "priority": ActionPriority.HIGH},
+                {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+                {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
+                {"ability": "Attack", "priority": ActionPriority.LOW},
+            ],
+        },
+        "verdant": {
+            "title": "Green Cutpurse",
+            "picture": "jester3.png",
+            "announcement": "Green motes scatter from his boots as the Jester slips into a knife dancer's stance.",
+            "stats": {"strength": 38, "intel": 18, "wisdom": 20, "con": 34, "charisma": 99, "dex": 42},
+            "combat": {"attack": 56, "defense": 42, "magic": 22, "magic_def": 26},
+            "resistance": _fixed_resistances(Earth=0.20, Wind=0.20, Poison=0.50, Physical=0.30, Holy=-0.10),
+            "spells": (),
+            "skills": (abilities.TripleStrike, abilities.Mug, abilities.PoisonStrike, abilities.SmokeScreen),
+            "action_stack": [
+                {"ability": "Triple Strike", "priority": ActionPriority.HIGH},
+                {"ability": "Poison Strike", "priority": ActionPriority.HIGH},
+                {"ability": "Mug", "priority": ActionPriority.NORMAL},
+                {"ability": "Smoke Screen", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_hp_pct_lt": 0.35, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
+                {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            ],
+        },
+        "azure": {
+            "title": "Blue Mirrorlord",
+            "picture": "jester4.png",
+            "announcement": "Blue glass ripples over his costume, turning the whole room into a laughing mirror.",
+            "stats": {"strength": 24, "intel": 30, "wisdom": 38, "con": 40, "charisma": 99, "dex": 24},
+            "combat": {"attack": 28, "defense": 48, "magic": 38, "magic_def": 52},
+            "resistance": _fixed_resistances(Ice=0.35, Water=0.35, Shadow=0.20, Holy=0.20, Physical=0.25),
+            "spells": (abilities.Reflect, abilities.Regen2, abilities.MirrorImage2),
+            "skills": (abilities.GoldToss,),
+            "action_stack": [
+                {"ability": "Reflect", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_status": "Reflect", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Regen", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_hp_pct_lt": 0.60, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
+                {"ability": "Mirror Image", "priority": ActionPriority.HIGH,
+                 "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
+                {"ability": "Attack", "priority": ActionPriority.LOW},
+            ],
+        },
+    }
+
     def __init__(self):
-        super().__init__(name="Jester", health=random.randint(500, 1500), mana=random.randint(125, 300),
-                         strength=random.randint(10, 50), intel=random.randint(10, 50), wisdom=random.randint(10, 50),
-                         con=random.randint(10, 60), charisma=99, dex=random.randint(10, 50),
-                         attack=random.randint(0, 100), defense=random.randint(0, 100),
-                         magic=random.randint(0, 100), magic_def=random.randint(0, 100),
-                         exp=random.randint(15000, 25000))
-        self.gold = random.randint(5000, 100000)
+        super().__init__(name="Jester", health=1100, mana=260,
+                         strength=28, intel=30, wisdom=24, con=38, charisma=99, dex=34,
+                         attack=50, defense=34, magic=42, magic_def=32,
+                         exp=22000)
+        self.gold = 25000
         self.equipment = {'Weapon': items.Kukri(), 'Armor': items.StuddedCuirboulli(), 'OffHand': items.Kukri(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.inventory['Item'] = [items.random_item(6)]
         self.inventory['Joker'] = [items.Joker]
-        self.spellbook = {"Spells": {"Silence": abilities.Silence(),
-                                     "Mirror Image": abilities.MirrorImage2()},
-                          "Skills": {'Gold Toss': abilities.GoldToss(),
-                                     'Slot Machine': abilities.SlotMachine()}}
-        self.resistance = {'Fire': round(random.uniform(-1, 1), 1),
-                           'Ice': round(random.uniform(-1, 1), 1),
-                           'Electric': round(random.uniform(-1, 1), 1),
-                           'Water': round(random.uniform(-1, 1), 1),
-                           'Earth': round(random.uniform(-1, 1), 1),
-                           'Wind': round(random.uniform(-1, 1), 1),
-                           'Shadow': round(random.uniform(-1, 1), 1),
-                           'Holy': round(random.uniform(-1, 1), 1),
-                           "Poison": round(random.uniform(-1, 1), 1),
-                           'Physical': round(random.uniform(-1, 1), 1)}
         self.status_immunity = ["Death", "Stone"]
-        self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
-            {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
-            {"ability": "Silence", "priority": ActionPriority.NORMAL,
-             "priority_if": {"target_status": "Silence",
-                              "priority": ActionPriority.SKIP,
-                              "else": ActionPriority.NORMAL}},
-            {"ability": "Mirror Image", "priority": ActionPriority.NORMAL}
-        ]
         self.level.pro_level = 5
         self.sight = True
-        self.picture = "jester.txt"
+        self._jester_form = ""
+        self._apply_jester_form("crimson")
+
+    def _apply_jester_form(self, form_key: str) -> None:
+        form = self.FORM_DEFS[form_key]
+        self._jester_form = form_key
+        self.stats = Stats(**form["stats"])
+        self.combat = Combat(**form["combat"])
+        self.resistance = dict(form["resistance"])
+        self.spellbook = _build_spellbook(spells=form["spells"], skills=form["skills"])
+        self.action_stack = [dict(entry) for entry in form["action_stack"]]
+        self.picture = form["picture"]
+
+    def _choose_jester_form(self, target: Character) -> str:
+        hp_pct = (target.health.current / max(1, target.health.max)) if getattr(target, "health", None) else 1.0
+        mana_pct = 0.0
+        if getattr(target, "mana", None) and getattr(target.mana, "max", 0):
+            mana_pct = target.mana.current / max(1, target.mana.max)
+
+        target_has_buffs = False
+        for bucket_name in ("stat_effects", "magic_effects", "class_effects"):
+            bucket = getattr(target, bucket_name, {})
+            if isinstance(bucket, dict) and any(bool(getattr(effect, "active", False)) for effect in bucket.values()):
+                target_has_buffs = True
+                break
+
+        physical_pressure = 0
+        magic_pressure = 0
+        if hasattr(target, "check_mod"):
+            try:
+                physical_pressure = float(target.check_mod("weapon", enemy=self))
+            except Exception:
+                physical_pressure = 0
+            try:
+                magic_pressure = float(target.check_mod("magic", enemy=self))
+            except Exception:
+                magic_pressure = 0
+
+        if hp_pct <= 0.35:
+            return "violet"
+        if target_has_buffs:
+            return "azure"
+        if mana_pct >= 0.50 and magic_pressure >= physical_pressure:
+            return "amber"
+        if physical_pressure > magic_pressure * 1.10:
+            return "verdant"
+        return "crimson"
 
     def special_effects(self, target: Character) -> str:
-        """Randomizes stats and resistances"""
         if not self.is_alive():
             return ""
-        special_str = "Jester: The wheel of time stops for no one! HAHA!\n"
-        special_str += "The Jester's stats and resistances have been randomized.\n"
-        self.stats = Stats(strength=random.randint(10, 50),
-                           intel=random.randint(10, 50),
-                           wisdom=random.randint(10, 50),
-                           con=random.randint(10, 60),
-                           charisma=self.stats.charisma,
-                           dex=random.randint(10, 50))
-        self.combat = Combat(attack=random.randint(0, 100),
-                             defense=random.randint(0, 100),
-                             magic=random.randint(0, 100),
-                             magic_def=random.randint(0, 100))
-        self.resistance = {'Fire': round(random.uniform(-1, 1), 2),
-                           'Ice': round(random.uniform(-1, 1), 2),
-                           'Electric': round(random.uniform(-1, 1), 2),
-                           'Water': round(random.uniform(-1, 1), 2),
-                           'Earth': round(random.uniform(-1, 1), 2),
-                           'Wind': round(random.uniform(-1, 1), 2),
-                           'Shadow': round(random.uniform(-1, 1), 2),
-                           'Holy': round(random.uniform(-1, 1), 2),
-                           "Poison": round(random.uniform(-1, 1), 2),
-                           'Physical': round(random.uniform(-1, 1), 2)}
-        return special_str
+        next_form = self._choose_jester_form(target)
+        if next_form == self._jester_form:
+            return ""
+        self._apply_jester_form(next_form)
+        form = self.FORM_DEFS[next_form]
+        return (
+            "Jester: The act changes with the audience! HAHA!\n"
+            f"{form['announcement']}\n"
+            f"The Jester becomes the {form['title']}.\n"
+        )
 
 
 def _funhouse_resistances(low=-0.5, high=0.5):

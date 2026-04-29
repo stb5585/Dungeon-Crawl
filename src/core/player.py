@@ -7,6 +7,7 @@ import json
 import os
 import random
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from .constants import (
     BASE_CRIT_PER_POINT,
@@ -50,6 +51,9 @@ DIRECTIONS = {
 
 REALM_OF_CAMBION_LEVEL = 8
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+MAP_FILES_DIR = PROJECT_ROOT / "map_files"
+
 
 GAMEPLAY_STATS_DEFAULTS = {
     "steps_taken": 0,
@@ -61,6 +65,18 @@ GAMEPLAY_STATS_DEFAULTS = {
     "highest_damage_dealt": 0,
     "highest_damage_taken": 0,
 }
+
+
+def _upgrade_source_name(ability_cls) -> str | None:
+    """Return the inherited ability name for upgrade detection, if available."""
+    try:
+        bases = getattr(ability_cls, "__mro__", ())
+        if len(bases) < 2:
+            return None
+        parent_instance = bases[1]()
+        return getattr(parent_instance, "name", None)
+    except Exception:
+        return None
 
 
 def normalize_gameplay_stats(gameplay_stats=None, *, current_level=1):
@@ -442,7 +458,8 @@ class Player(Character):
         from . import map_tiles
             
         world_dict = {}
-        map_files = glob.glob('map_files/map_level_*')
+        map_dir = MAP_FILES_DIR
+        map_files = glob.glob(str(map_dir / "map_level_*"))
         files_by_level = {}
         for map_file in map_files:
             base_name = os.path.basename(map_file)
@@ -458,11 +475,11 @@ class Player(Character):
                 files_by_level[z] = {"path": map_file, "ext": ext}
 
         # Optional side-area map: funhouse challenge level (level 4 boss area).
-        funhouse_path = os.path.join('map_files', 'map_funhouse.json')
+        funhouse_path = map_dir / "map_funhouse.json"
         if os.path.exists(funhouse_path) and 7 not in files_by_level:
             files_by_level[7] = {"path": funhouse_path, "ext": ".json"}
 
-        cambion_path = os.path.join('map_files', 'map_realm_cambion.json')
+        cambion_path = map_dir / "map_realm_cambion.json"
         if os.path.exists(cambion_path) and REALM_OF_CAMBION_LEVEL not in files_by_level:
             files_by_level[REALM_OF_CAMBION_LEVEL] = {"path": cambion_path, "ext": ".json"}
 
@@ -883,14 +900,11 @@ class Player(Character):
             if spell_name in self.spellbook['Spells']:
                 level_str += f"{spell_name} goes up a level.\n"
             else:
-                try:
-                    if spell.mro()[1]().name in self.spellbook['Spells']:
-                        old_name = spell.mro()[1]().name
-                        level_str += f"{old_name} is upgraded to {spell_name}."
-                        del self.spellbook['Spells'][old_name]
-                    else:
-                        level_str += f"You have gained the ability to cast {spell_name}.\n"
-                except TypeError:
+                old_name = _upgrade_source_name(spell)
+                if old_name and old_name in self.spellbook['Spells']:
+                    level_str += f"{old_name} is upgraded to {spell_name}."
+                    del self.spellbook['Spells'][old_name]
+                else:
                     level_str += f"You have gained the ability to cast {spell_name}.\n"
             self.spellbook['Spells'][spell_name] = spell_gain
         if str(self.level.level) in abilities.skill_dict[self.cls.name]:
@@ -900,14 +914,11 @@ class Player(Character):
             if skill_name in self.spellbook['Skills']:
                 level_str += f"{skill_name} goes up a level.\n"
             else:
-                try:
-                    if skill.mro()[1]().name in self.spellbook['Skills']:
-                        old_name = skill.mro()[1]().name
-                        level_str += f"{old_name} is upgraded to {skill_name}."
-                        del self.spellbook['Skills'][old_name]
-                    else:
-                        level_str += f"You have gained the ability to use {skill_name}.\n"
-                except TypeError:
+                old_name = _upgrade_source_name(skill)
+                if old_name and old_name in self.spellbook['Skills']:
+                    level_str += f"{old_name} is upgraded to {skill_name}."
+                    del self.spellbook['Skills'][old_name]
+                else:
                     level_str += f"You have gained the ability to use {skill_name}.\n"
             self.spellbook['Skills'][skill_name] = skill_gain
             if skill_name == 'Health/Mana Drain':
@@ -1051,7 +1062,7 @@ class Player(Character):
                 if is_funhouse_mimic:
                     from src.core.items import JesterToken
                     token = JesterToken()
-                    self.modify_inventory(token, 1)
+                    self.modify_inventory(token, 1, rare=True)
                     if textbox:
                         textbox.print_text_in_rectangle(
                             f"A shimmering {token.name} manifests as the Mimic dissolves!")
@@ -1511,17 +1522,35 @@ class Player(Character):
         """Moves the character by dx, dy if the target tile allows entry."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
         new_x, new_y = self.location_x + dx, self.location_y + dy
+        try:
+            from . import map_tiles
+            current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
+            if current_tile and map_tiles.jester_force_field_blocks(current_tile, self, self.facing):
+                return False
+        except Exception:
+            pass
 
         if getattr(self.world_dict.get((new_x, new_y, self.location_z), {}), "enter"):
             self.location_x, self.location_y = new_x, new_y
             self.record_step()
             if getattr(self, "dwarf_hangover_steps", 0) > 0:
                 self.dwarf_hangover_steps = max(0, int(self.dwarf_hangover_steps) - 1)
+            return True
+        return False
 
     def move_forward(self, game):
         """Moves the character in the direction they are facing."""
+        try:
+            from . import map_tiles
+            current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
+            if current_tile and map_tiles.jester_force_field_blocks(current_tile, self, self.facing):
+                if game is not None and hasattr(game, "special_event"):
+                    game.special_event(map_tiles.JESTER_FORCE_FIELD_EVENT)
+                return False
+        except Exception:
+            pass
         dx, dy = DIRECTIONS[self.facing]["move"]
-        self.move(dx, dy)
+        return self.move(dx, dy)
 
     def turn(self, direction):
         """Turns the character left, right, or around (180 degrees)."""

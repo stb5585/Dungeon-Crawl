@@ -392,6 +392,30 @@ class TestBasicTiles:
 
 
 class TestSpecialTiles:
+    def test_funhouse_empty_path_blocks_boss_until_tokens_collected(self):
+        player = _make_player()
+        player.world_dict = {
+            (0, 0, 7): map_tiles.FunhouseEmptyPath(0, 0, 7),
+            (0, -1, 7): map_tiles.JesterBossRoom(0, -1, 7),
+            (1, 0, 7): map_tiles.CavePath(1, 0, 7),
+            (-1, 0, 7): map_tiles.CavePath(-1, 0, 7),
+            (0, 1, 7): map_tiles.CavePath(0, 1, 7),
+        }
+        tile = player.world_dict[(0, 0, 7)]
+        game = _make_game(player)
+
+        player.facing = "north"
+        actions = tile.available_actions(player)
+        assert map_tiles.actions_dict["MoveForward"] not in actions
+        assert "force field" in tile.intro_text(game).lower()
+        assert "force field" in tile.special_text(game).lower()
+
+        player.special_inventory["Jester Token"] = [items.JesterToken() for _ in range(4)]
+        actions = tile.available_actions(player)
+        assert map_tiles.actions_dict["MoveForward"] in actions
+        assert "fades" in tile.intro_text(game).lower()
+        assert "drops" in tile.special_text(game).lower()
+
     def test_underground_spring_handles_naivete_drink_nimue_and_excalibur(self):
         player = _make_player(class_name="Summoner", pro_level=1)
         player.quest_dict["Side"]["Naivete"] = {"Completed": False}

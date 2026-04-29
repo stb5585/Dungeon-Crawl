@@ -234,20 +234,25 @@ class BattleEngine:
 
         # Jump in progress
         if self.attacker.class_effects["Jump"].active:
-            if self.attacker.incapacitated():
-                # Cancel the jump if incapacitated during charge
+            skills = self.attacker.spellbook.get("Skills", {})
+            jump_choice = next((name for name in skills if "Jump" in name), None)
+            jump_skill = skills.get(jump_choice) if jump_choice else None
+            unstoppable = bool(getattr(jump_skill, "modifications", {}).get("Unstoppable", False))
+
+            if self.attacker.incapacitated() and not unstoppable:
+                # Cancel the jump if incapacitated during charge.
                 try:
-                    jump_choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
-                    jump_skill = self.attacker.spellbook['Skills'][jump_choice]
-                    cancel_msg = jump_skill.cancel_charge(self.attacker)
-                except (IndexError, KeyError, AttributeError):
+                    cancel_msg = jump_skill.cancel_charge(self.attacker) if jump_skill else ""
+                except AttributeError:
+                    cancel_msg = ""
+                if not cancel_msg:
                     cancel_msg = f"{self.attacker.name}'s Jump was cancelled.\n"
                 self.attacker.class_effects["Jump"].active = False
                 return ForcedAction(action="Cancelled", cancel_message=cancel_msg)
-            else:
-                choice = [x for x in self.attacker.spellbook['Skills'] if "Jump" in x][0]
+
+            if jump_choice:
                 self.attacker.class_effects["Jump"].active = False
-                return ForcedAction(action="Use Skill", choice=choice)
+                return ForcedAction(action="Use Skill", choice=jump_choice)
 
         # Enemy with a charging skill in progress
         if self.attacker != self.player:

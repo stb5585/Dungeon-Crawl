@@ -89,14 +89,18 @@ class LevelUpPopup:
         
         return lines
     
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
         """
         Display the level up popup and wait for user to continue.
         
         Args:
             background_draw_func: Optional function to draw the background
         """
+        if flush_events:
+            pygame.event.clear()
+
         waiting = True
+        input_armed = not require_key_release
 
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -113,12 +117,18 @@ class LevelUpPopup:
             pygame.display.flip()
             
             # Handle input
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     waiting = False
-            
+
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):

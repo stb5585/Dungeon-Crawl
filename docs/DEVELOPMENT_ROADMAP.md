@@ -40,7 +40,7 @@ This roadmap is organized by implementation status instead of historical plannin
 
 ### Verified Repo Metrics
 
-- Test files under `tests/` (all buckets): `73`
+- Test files under `tests/` (all buckets): `76`
 - YAML ability definitions under `src/core/data/abilities/`: `179`
 - Event types in `EventType`: `38`
 
@@ -239,14 +239,16 @@ Status: `Partial`
 
 Remaining work:
 
-- Expand and polish status effect icon presentation
+- Continue polishing status effect icon presentation beyond the completed overflow handling
 - Add spell effect animations / particle systems
-- Improve telegraph presentation in the UI
-- Add a clearer turn indicator
+- Continue telegraph presentation polish beyond the completed combat-log highlight treatment and new banner strip
 
 Verification note:
 
-- Repo inspection confirms that baseline status icons and telegraph UI already exist, but a dedicated turn-indicator treatment is not clearly present yet.
+- Repo inspection confirms that baseline status icons, telegraph UI, and a dedicated turn-indicator banner exist in pygame combat.
+- Combat status icons now cap visible rows and collapse excess effects into a `+N` marker.
+- Charging / telegraph-style combat log lines now render with a warning color in both combat overlay modes.
+- Telegraph messages now also surface in a dedicated warning banner, and the turn indicator now uses fixed player/enemy turn labels for cleaner readability.
 
 ### Dungeon Rendering / Presentation Polish
 
@@ -254,13 +256,17 @@ Status: `Partial`
 
 Remaining work:
 
-- Add replacement visuals for defeated bosses
-- Resolve remaining vignette / presentation cleanup if still relevant after renderer changes
+- Continue any remaining presentation cleanup if later playtesting shows it is still needed
 
 Verification note:
 
 - Current active stabilization work is concentrated in `src/ui_pygame/gui/dungeon/renderer.py` and `tests/test_dungeon_renderer_smoke.py`.
-- `docs/notes.txt` still lists unfinished dungeon-presentation items such as defeated-boss replacement visuals and minimap icon polish.
+- Defeated boss rooms now render a replacement burial-site style visual.
+- Minimap door and chest icons now distinguish open and closed state.
+- Side-door smoke coverage now preserves the intentional rule that a single side door can remain visible behind a depth-1 center wall while the opposite side special still renders.
+- The dungeon viewport now gets a soft edge vignette so the rendered scene feels less abruptly cut off.
+- The viewport edge treatment now uses layered bands and a subtle separator so the dungeon frame reads more cleanly against the HUD.
+- Side floor sprites now advance to the visible next-zone depth when the corridor extends forward, and floor-sprite clip regions expand accordingly.
 
 ### Character / Shop UX
 
@@ -288,6 +294,9 @@ Remaining work:
 Verification note:
 
 - Stale-input protection is already present in multiple popup and dungeon flows (`flush_events`, `require_key_release`, and targeted `pygame.event.clear()` usage), but it is not yet uniform enough to mark this area complete.
+- Quantity and code-entry popups now support the same `flush_events` / `require_key_release` protections as confirmation popups, with shop, barracks, and anti-magic terminal flows using them.
+- Level-up info, stat selection, and inventory confirm/drop popups now use the same stale-input guard so buffered key presses do not skip modal choices.
+- Remaining shop, barracks, and combat-end confirmation popups now use the same stale-input guard too, so the modal behavior is consistent across the main pygame menu flows.
 
 ### 3. Broader Test Coverage
 
@@ -298,7 +307,7 @@ Testing work remains ongoing.
 Current state note:
 
 - The old roadmap metric of “13 test files” is outdated. The repo now contains substantially more test modules, but coverage gaps still remain in the areas below.
-- The current tracked `test_*.py` module count is `75`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
+- The current tracked `test_*.py` module count is `76`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
 - The latest full-suite run confirmed by the user is `1398` passing tests with `81%` total coverage across `src/`.
 - The `ui_pygame` bucket is now broadly stabilized for Phase 1 coverage work; every currently measured module there is at or above `70%`.
 - The test buckets now use package markers (`__init__.py`) so identically named files like `test_battle.py` and `test_town.py` collect cleanly across domains.
@@ -312,7 +321,7 @@ High-priority remaining coverage:
 Medium-priority remaining coverage:
 
 - Save/load round trips
-  - foundation coverage now exists for inventory/storage, quest serialization, mutable tile state, and gameplay-stat persistence
+  - foundation coverage now exists for inventory/storage, quest serialization, mutable tile state, SaveManager file IO, and gameplay-stat persistence
 - Quest completion flows
 - Enemy AI behavior
 
@@ -352,7 +361,7 @@ Remaining work:
 
 ### 1. Gameplay Statistics
 
-Status: `Partial`
+Status: `Confirmed`
 
 Completed foundation work:
 
@@ -360,14 +369,15 @@ Completed foundation work:
 - Current tracked values include steps, stairs, enemies defeated, deaths, flees
 - High-water marks now include highest level reached and peak damage dealt / taken
 - Targeted tests cover statistics defaults, persistence, and core combat hooks
+- A player-facing Statistics entry is available from the pygame town menu
 
 Remaining work:
 
-- Add a Statistics entry to the main menu
+- Decide whether richer history, run summaries, or permanent account-style statistics are worth adding later
 
 Verification note:
 
-- The tracking and persistence foundation now exists, but there is still no dedicated statistics menu or player-facing UI for it.
+- The current scoped statistics work is complete: tracked values are persisted and visible in the pygame UI.
 
 ### 2. Quest And Realm Expansion
 
@@ -444,14 +454,14 @@ Remaining tasks:
 - Audit the pygame dungeon renderer transition for active regressions
   - remaining smoke-test failures
   - side-wall / door / depth-slot edge cases
-  - defeated-boss replacement visuals
+  - boss-aftermath visual regressions after the completed replacement-visual pass
 - Verify the current state of pygame combat presentation
   - status icon behavior
   - telegraph UI behavior
-  - whether a dedicated turn indicator exists or still needs implementation
+  - whether the current turn-indicator treatment needs further visual refinement
 - Verify whether stale-input handling is broad enough across popups, area transitions, and menus
 - Confirm whether shop tabs remain unimplemented or whether a partial replacement already exists in the current shop flow
-- Confirm whether gameplay statistics remain foundation-only or are ready for player-facing UI work
+- Decide whether gameplay statistics need richer history/run-summary UI beyond the current town-menu display
 - Confirm whether sound/music should remain `Partial`
   - sound runtime/integration is implemented
   - final sound asset replacement is incomplete
@@ -465,14 +475,24 @@ Current progress:
 - Confirmed that baseline status icons and telegraph UI exist in pygame combat
 - Confirmed that shop tabs and character-menu redesign still appear to be open roadmap items
 - Confirmed that sound/music remains `Partial`: system code exists, final asset content is still incomplete
-- Completed the gameplay-statistics tracking and persistence foundation; player-facing statistics UI remains outstanding
+- Completed the gameplay-statistics tracking and persistence foundation plus a player-facing pygame town-menu statistics popup
 - Closed the legacy collect-quest `What` deserialization gap and added focused compatibility coverage
 - Added broader save/load round-trip coverage for mutable player inventories, quest data, and tile state restoration
+- Added atomic SaveManager writes so a failed save does not corrupt the previous file
+- Added save/tmp filename confinement and deterministic save-list ordering
 - Upgraded the battle logger from raw event capture only to structured payload and JSON export support
 - Confirmed that stale-input protection is present in key flows but still not broad enough to mark complete
-- Confirmed that a dedicated turn-indicator treatment still appears to be outstanding
+- Added a dedicated pygame combat turn-indicator treatment
+- Added combat status-icon overflow handling and telegraph-colored combat log lines
+- Added a dedicated telegraph banner and cleaner fixed-label turn indicator in pygame combat
 - Confirmed that the active pygame stabilization hotspot is the dungeon renderer / smoke-test surface
-- Confirmed that older notes still align with the roadmap on unfinished dungeon polish tasks such as boss replacement visuals and minimap-icon behavior
+- Added defeated-boss replacement visuals and open/closed minimap icon states for doors and chests
+- Added dungeon texture-library fallback diagnostics for missing wall, special-tile, and enemy sprite assets
+- Added renderer regression coverage for mixed single-side-door / opposite-side-special center-wall layouts
+- Added a dungeon viewport vignette cleanup pass with regression coverage
+- Refined the dungeon viewport edge vignette into layered bands plus a subtle HUD separator
+- Tightened side-corridor floor-sprite depth and clip behavior so opening sprites follow the deeper corridor geometry
+- Extended stale-input protection to quantity, code-entry, level-up, inventory, shop, barracks, and combat-end modal flows
 
 Current stabilization priorities:
 
@@ -482,24 +502,25 @@ Current stabilization priorities:
 - Door and side-opening presentation
   - continue validating side-door hiding rules versus center-wall depth
   - keep slot-based door rendering aligned with wall-layer expectations
+  - preserve the current single-side-door visibility behavior unless playtesting proves it is confusing
 - Special-tile rendering consistency
   - keep quest-gated visuals from leaking into generic renderer tests
   - preserve migrated special-tile sprite coverage in smoke tests
-  - finish floor-bound placement polish for props such as burial sites and future boss-replacement visuals
-- Boss aftermath presentation
-  - implement replacement visuals for defeated boss rooms instead of leaving the roadmap item only in notes
-- Minimap polish
-  - update icon states so doors, chests, and similar interactables reflect their opened/closed state more clearly
+  - continue floor-bound placement polish for future props beyond the completed defeated-boss replacement visual
+- Asset fallback visibility
+  - use the texture-library fallback diagnostics when renderer tests or manual play hit missing assets
 
 Current non-visual Phase 1 track:
 
 - Gameplay-statistics foundation
   - completed: persistent player-side counters for steps, stairs, deaths, flees, defeats, and high-water combat stats
-  - remaining: expose the tracked data through a player-facing statistics screen or menu
+  - completed: expose the tracked data through a player-facing pygame statistics popup
+  - remaining: decide whether richer history or run-summary views are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves
   - completed: added round-trip coverage for mutable quest, inventory, storage, and tile-state persistence
-  - remaining: expand into broader end-to-end SaveManager file round trips if needed
+  - completed: SaveManager writes are atomic and reject path-bearing save names
+  - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
   - remaining: decide whether simulator/debug tooling should persist or consume these logs directly
@@ -615,9 +636,9 @@ Recommended immediate fix order:
 3. Continue medium-sized `ui_curses` and remaining core slices before attempting any giant legacy screen/controller loops
 4. Build on the new `save_system.py` coverage with broader end-to-end SaveManager round-trip scenarios if persistence still feels under-tested
 5. Return to the remaining core combat/content clusters only if they offer better leverage than the next shared `ui_curses` helper module
-6. Decide whether to surface gameplay statistics in the UI during Phase 1 or Phase 4
-7. Decide whether structured battle logs need file persistence or simulator integration next
-8. Return to visual dungeon-polish items once the non-visual Phase 1 track is complete or blocked
+6. Decide whether structured battle logs need file persistence or simulator integration next
+7. Continue renderer presentation cleanup around wall, door, side-corridor, and vignette edge cases
+8. Revisit statistics only if richer history/run-summary behavior becomes a clear gameplay need
 
 Definition of done for Phase 1:
 
@@ -637,22 +658,25 @@ Goal:
 Primary workstreams:
 
 - Combat UI polish
-  - improve status icon readability and layout behavior under many simultaneous effects
-  - refine telegraph presentation so it is visible without overwhelming the rest of combat UI
-  - add or clarify a true turn-indicator treatment if the current combat state display is not sufficient
+  - completed: status icons cap visible rows and show a `+N` overflow marker under many simultaneous effects
+  - completed: telegraph-like combat log lines use warning coloring in both combat render modes
+  - completed: telegraph messages also surface in a dedicated warning banner
+  - refine the current turn-indicator treatment if playtesting shows it is not sufficient
   - evaluate where lightweight spell or hit effects add clarity rather than noise
 - Dungeon renderer and exploration polish
   - resolve remaining wall, door, and side-corridor edge cases in the scene renderer
-  - finish special-tile placement polish for floor-bound sprites, defeated bosses, and other migrated props
+  - finish special-tile placement polish for floor-bound sprites and future migrated props
   - remove or rewrite any outdated rendering assumptions left over from the legacy dungeon renderer
   - make smoke-test expectations and renderer behavior converge so regressions are caught early
+  - keep the new soft vignette honest if future playtesting suggests it needs tuning
+  - continue tuning the remaining edge framing if the viewport/HUD boundary still feels abrupt in play
 - Character / shop UX cleanup
   - decide whether the character menu needs a full redesign or a focused cleanup pass
   - reduce friction in inventory, equipment, and comparison flows
   - decide whether shop tabs should replace the current shop mode selection flow
   - standardize popup behavior across town, shop, dungeon, and combat interactions
 - Input, redraw, and presentation consistency
-  - ensure stale-input protections are used anywhere buffered input can skip a prompt or transition
+  - extend stale-input protections anywhere buffered input can still skip a prompt or transition
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient
@@ -721,7 +745,7 @@ Primary workstreams:
 
 - Gameplay statistics
   - decide which stats are worth persisting permanently versus showing only for the current run
-  - define where statistics live in the UI and how they are grouped
+  - decide whether the current town-menu statistics popup needs richer grouping or history views
   - reuse existing tracked state where possible before adding new persistence fields
 - Quest and realm expansion
   - prioritize unfinished or lightly implemented questlines and realm content
@@ -757,3 +781,23 @@ Definition of done for Phase 4:
 3. Prefer data-driven content. New abilities and content rules should go through the YAML / effect pipeline where possible.
 4. Test what changes. New renderer, combat, and quest work should come with direct test coverage.
 5. Treat this document as a living status file. If a section is complete, move it rather than leaving it buried in planned work.
+
+
+## Bug Fixes
+
+Recently resolved:
+
+- The charge messages now wrap in the combat logger, so long telegraph lines stay inside the pane.
+- Jump no longer cancels when stun lands during the charge if the skill has `Unstoppable` active.
+- Side-corridor outer wall doors now keep their door textures instead of collapsing into plain wall art, for both open and closed states.
+- Shields unequip correctly when equipping a two-handed weapon through the pygame equipment popup and the core equip path.
+- The combat turn indicator now stays hidden until initiative is known, instead of defaulting to the player's turn.
+- Chest sprites now stay behind the blocking corner in the side-view depth=2 corridor case.
+
+Resolved:
+
+- Combat enemy sprites failed to render for legacy `.txt` `enemy.picture` values. Sprite lookup now falls back to enemy-name PNG assets, uses cwd-independent asset paths, and has regression coverage for the dungeon-combat render path.
+
+New follow-up items:
+
+- Keep an eye on enemies with explicit `.png` form swaps so palette/form changes continue to invalidate the correct cached sprite.

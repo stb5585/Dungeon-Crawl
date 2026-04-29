@@ -208,10 +208,11 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
             self.near = True
 
     class ChestTile:
-        enter = True
-        visited = True
-        near = True
-        opened = False
+        def __init__(self, open_state=False):
+            self.enter = True
+            self.visited = True
+            self.near = True
+            self.open = open_state
 
     class StairsDownTile:
         enter = True
@@ -255,8 +256,10 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
         (5, 7, 2): DoorTile(open_state=True),
         (5, 6, 2): ChestTile(),
         (6, 7, 2): DoorTile(open_state=False),
+        (7, 7, 2): ChestTile(open_state=True),
         (4, 7, 2): SecretShopTile(),
         (5, 8, 2): WarpPointTile(),
+        (5, 9, 2): DoorTile(open_state=True),
         (4, 6, 2): UndergroundSpringTile(),
         (6, 6, 2): StairsDownTile(),
         (4, 8, 2): RelicRoom(),
@@ -279,6 +282,11 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert bundle.draw_rect_calls
     assert bundle.draw_polygon_calls
     assert bundle.draw_circle_calls
+    minimap_colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
+    assert (255, 215, 0) in minimap_colors
+    assert (130, 130, 120) in minimap_colors
+    assert (95, 170, 120) in minimap_colors
+    assert (139, 69, 19) in minimap_colors
 
     y2 = hud._render_compass(player, y)
     assert y2 > y

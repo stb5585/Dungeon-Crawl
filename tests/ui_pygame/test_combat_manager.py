@@ -64,6 +64,7 @@ class DummyCombatView:
         self.reload_calls = []
         self.enemy_deaths = []
         self.reset_calls = 0
+        self.render_calls = []
 
     def scroll_log(self, amount):
         self.scrolled.append(amount)
@@ -75,9 +76,11 @@ class DummyCombatView:
         self.reset_calls += 1
 
     def render_enemy_in_dungeon(self, *args, **kwargs):
+        self.render_calls.append(("enemy", args, kwargs))
         return None
 
     def render_combat_overlay(self, *args, **kwargs):
+        self.render_calls.append(("overlay", args, kwargs))
         return None
 
     def enemy_take_damage(self, enemy):
@@ -186,6 +189,26 @@ def _make_enemy(name="Goblin", hp=(20, 20)):
     return enemy
 
 
+def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    dungeon_calls = []
+    manager.dungeon_renderer = SimpleNamespace(
+        render_dungeon_view=lambda *args, **kwargs: dungeon_calls.append((args, kwargs))
+    )
+    manager.player_world_dict = {"tile": object()}
+    manager.engine = SimpleNamespace(is_player_turn=lambda: False)
+
+    manager._render_combat_frame(player, enemy, ["Attack"], 0)
+
+    assert dungeon_calls
+    assert [call[0] for call in manager.combat_view.render_calls] == ["enemy", "overlay"]
+    assert manager.combat_view.render_calls[0][1] == (player, enemy)
+    assert manager.combat_view.render_calls[1][2]["current_turn"] is None
+    assert manager.hud.calls
+
+
 def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch):
     manager = _make_manager(monkeypatch)
 
@@ -223,14 +246,16 @@ def test_post_turn_and_special_effect_helpers(monkeypatch):
 
     manager.combat_view.messages.clear()
     enemy = _make_enemy()
-    enemy.special_effects = lambda _player: "Burning aura!\nSecond line"
-    manager._trigger_enemy_special_effects(_make_player(), enemy)
-    assert manager.combat_view.messages == ["Burning aura!", "Second line"]
+    enemy.picture = "jester.png"
 
-    manager.combat_view.messages.clear()
-    enemy.health.current = 0
-    manager._trigger_enemy_special_effects(_make_player(), enemy)
-    assert manager.combat_view.messages == []
+    def post_turn():
+        enemy.picture = "jester2.png"
+        return SimpleNamespace(messages=["Palette shift!"])
+
+    manager.engine = SimpleNamespace(post_turn=post_turn)
+    manager._post_turn_processing(_make_player(), enemy)
+    assert manager.combat_view.reload_calls == [enemy]
+    assert manager.combat_view.messages == ["Palette shift!"]
 
 
 def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):
@@ -256,6 +281,7 @@ def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):
 
 def test_waitress_transition_and_preservation_helpers(monkeypatch):
     manager = _make_manager(monkeypatch)
+    popup_calls = []
 
     class FakeNightHag2:
         pass
@@ -267,8 +293,6 @@ def test_waitress_transition_and_preservation_helpers(monkeypatch):
 
         def show(self, **kwargs):
             popup_calls.append((self.message, kwargs))
-
-    popup_calls = []
     monkeypatch.setattr(combat_manager.enemies, "NightHag2", FakeNightHag2)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
 
@@ -286,6 +310,8 @@ def test_waitress_transition_and_preservation_helpers(monkeypatch):
     assert manager.combat_view.enemy_deaths == [enemy]
     assert any("turns her weapon on herself" in message for message in manager.combat_view.messages)
     assert popup_calls
+    assert popup_calls[0][1].get("flush_events") is True
+    assert popup_calls[0][1].get("require_key_release") is True
 
     enemy2 = FakeNightHag2()
     enemy2._form_changed = False
@@ -333,6 +359,7 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     player = _make_player()
     enemy = _make_enemy()
     popup_messages = []
+    popup_kwargs = []
 
     class FakePopup:
         def __init__(self, presenter, message, show_buttons=False):
@@ -340,6 +367,7 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
 
         def show(self, **kwargs):
             popup_messages.append("shown")
+            popup_kwargs.append(kwargs)
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
@@ -357,6 +385,8 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert manager.level_up_screen.calls == [(player, manager.game)]
     assert manager.combat_view.reset_calls == 1
     assert manager._combat_background is None
+    assert popup_kwargs[0].get("flush_events") is True
+    assert popup_kwargs[0].get("require_key_release") is True
 
     popup_messages.clear()
     manager.combat_view.reset_calls = 0
@@ -367,6 +397,8 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert manager._handle_combat_end(player, enemy, fled=False) is False
     assert popup_messages[0] == "You have been defeated!"
     assert manager.combat_view.reset_calls == 1
+    assert popup_kwargs[0].get("flush_events") is True
+    assert popup_kwargs[0].get("require_key_release") is True
 
     popup_messages.clear()
     manager.combat_view.reset_calls = 0
@@ -543,6 +575,24 @@ def test_start_combat_handles_initiative_and_sanctuary_escape(monkeypatch):
     assert any(call[0] == "logger" and call[1]["result"] == "Escaped" for call in end_calls if isinstance(call, tuple))
     assert sanctuary_manager.combat_view.reset_calls == 1
     assert sanctuary_manager._combat_background is None
+
+
+def test_render_combat_frame_waits_for_initiative_before_turn_label(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+
+    turn_calls = []
+    manager.engine = SimpleNamespace(attacker=None, is_player_turn=lambda: True)
+    manager.dungeon_renderer = None
+    manager.player_world_dict = None
+    manager.combat_view.render_enemy_in_dungeon = lambda *_args, **_kwargs: None
+    manager.combat_view.render_combat_overlay = lambda *_args, **kwargs: turn_calls.append(kwargs.get("current_turn"))
+    manager.hud.render_hud = lambda *_args, **_kwargs: None
+
+    manager._render_combat_frame(player, enemy, [], -1)
+
+    assert turn_calls == [None]
 
 
 def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatch):

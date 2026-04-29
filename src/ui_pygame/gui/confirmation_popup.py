@@ -681,7 +681,7 @@ class QuantityPopup:
         instr_rect = instr1.get_rect(centerx=self.popup_rect.centerx, top=instr_y)
         self.screen.blit(instr1, instr_rect)
     
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
         """
         Show the quantity popup and return selected quantity or None if cancelled.
         
@@ -691,6 +691,9 @@ class QuantityPopup:
         Returns:
             int: Selected quantity, or None if cancelled
         """
+        if flush_events:
+            pygame.event.clear()
+
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -703,9 +706,15 @@ class QuantityPopup:
                 self.screen.blit(background, (0, 0))
             return result
 
+        input_armed = not require_key_release
+
         while True:
             self.draw_popup(background_draw_func)
             pygame.display.flip()
+
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -713,6 +722,8 @@ class QuantityPopup:
                     import sys
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_ESCAPE:
                         return finish(None)
                     elif event.key == pygame.K_UP:
@@ -840,7 +851,10 @@ class CodeEntryPopup:
 
         pygame.display.flip()
 
-    def show(self, background_draw_func=None):
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
+        if flush_events:
+            pygame.event.clear()
+
         background = None
         if background_draw_func is None:
             background = self.screen.copy()
@@ -853,14 +867,22 @@ class CodeEntryPopup:
                 self.screen.blit(background, (0, 0))
             return result
 
+        input_armed = not require_key_release
+
         while True:
             self.draw_popup(background_draw_func)
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
                 if event.type != pygame.KEYDOWN:
+                    continue
+                if not input_armed:
                     continue
                 if event.key == pygame.K_ESCAPE:
                     return finish(None)

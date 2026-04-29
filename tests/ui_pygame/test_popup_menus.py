@@ -219,17 +219,21 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
     popup._equip_item(player, player.inventory["Weapons"][0], "Weapons")
     assert player.equipment["Weapon"].name == "Bronze Sword"
 
+    confirm_calls = []
+
     class FakeConfirm:
         def __init__(self, *_args, **_kwargs):
             pass
 
         def show(self, **_kwargs):
+            confirm_calls.append(_kwargs)
             return True
 
     monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakeConfirm)
     popup._use_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
     assert "Weapons" in player.inventory
     popup._drop_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
+    assert any(call.get("flush_events") for call in confirm_calls)
 
 
 def test_inventory_popup_on_select_uses_nested_selection_popup(monkeypatch):
@@ -287,6 +291,36 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
 
     monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", FakeEquipPopup)
     assert popup.on_select(player, popup.items[0]) is None
+
+
+def test_equipment_popup_uses_player_equip_logic_for_two_handed_weapons(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    popup = popup_menus.EquipmentPopupMenu(presenter, parent)
+
+    two_hander = SimpleNamespace(name="Great Pike", typ="Weapon", subtyp="Polearm", handed=2)
+    player.inventory.setdefault("Weapons", []).append(two_hander)
+    player.equipment["OffHand"] = DummyItem("Kite Shield", typ="OffHand", subtyp="Shield", unequip=False)
+    calls = []
+
+    def fake_equip(slot, item):
+        calls.append((slot, item.name))
+        if slot == "Weapon" and getattr(item, "handed", 1) == 2:
+            player.equipment["OffHand"] = DummyItem("None", typ="OffHand", subtyp="Shield", unequip=True)
+        player.equipment[slot] = item
+        if item in player.inventory["Weapons"]:
+            player.inventory["Weapons"].remove(item)
+        return True
+
+    player.equip = fake_equip
+
+    popup._equip_from_inventory(player, "Weapon", two_hander)
+
+    assert calls == [("Weapon", "Great Pike")]
+    assert player.equipment["Weapon"].name == "Great Pike"
+    assert player.equipment["OffHand"].name == "None"
 
 
 def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
@@ -396,17 +430,21 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
     inv.build_items(player)
     assert inv.items[0][1].name == "Apple"
 
+    confirm_calls = []
+
     class FalseConfirm:
         def __init__(self, *_args, **_kwargs):
             pass
 
         def show(self, **_kwargs):
+            confirm_calls.append(_kwargs)
             return False
 
     monkeypatch.setattr(popup_menus, "ConfirmationPopup", FalseConfirm)
     before = list(player.inventory["Weapons"])
     inv._drop_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
     assert player.inventory["Weapons"] == before
+    assert confirm_calls and confirm_calls[0]["flush_events"] is True
 
     # Equipment popup empty and select-unequip path
     eq = popup_menus.EquipmentPopupMenu(presenter, parent)

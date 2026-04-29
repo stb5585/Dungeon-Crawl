@@ -404,6 +404,10 @@ def test_move_forward_branches_and_turning(monkeypatch):
     manager, _presenter, player, _game = _make_manager(monkeypatch)
     manager._get_tile_intro = lambda: ["Intro text"]
     manager._check_tile_effects = lambda: manager.messages.append("effects")
+    dialogues = []
+    manager._show_special_event_dialogue = lambda event_name, title="", image_path="": dialogues.append(
+        (event_name, title, image_path)
+    )
 
     assert manager.move_forward() is False
     assert "can't move" in manager.messages[-1].lower()
@@ -423,6 +427,26 @@ def test_move_forward_branches_and_turning(monkeypatch):
     assert manager.move_forward() is False
     assert "invisible force" in manager.messages[-1].lower()
 
+    player.location_x, player.location_y = (5, 5)
+    player.special_inventory = {}
+    player.world_dict[(5, 5, 1)] = dungeon_manager.map_tiles.FunhouseEmptyPath(5, 5, 1)
+    player.world_dict[(5, 4, 1)] = dungeon_manager.map_tiles.JesterBossRoom(5, 4, 1)
+    assert manager.move_forward() is False
+    assert "force field" in manager.messages[-1].lower()
+    assert dialogues[-1] == (
+        dungeon_manager.map_tiles.JESTER_FORCE_FIELD_EVENT,
+        "Jester",
+        manager._npc_image_path("jester.png"),
+    )
+
+    player.special_inventory["Jester Token"] = [SimpleNamespace(name="Jester Token") for _ in range(4)]
+    destination = player.world_dict[(5, 4, 1)]
+    assert manager.move_forward() is True
+    assert (player.location_x, player.location_y) == (5, 4)
+    assert destination.visited is True
+
+    player.location_x, player.location_y = (5, 5)
+    player.step_calls.clear()
     player.has_relics = lambda: True
     destination = DummyTile()
     player.world_dict[(5, 4, 1)] = destination
@@ -527,7 +551,7 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
         generate_loot=lambda: None,
     )
     manager._interact_chest(funhouse, "FunhouseMimicChest")
-    assert any(call[0] == "Jester Token" for call in player.inventory_calls)
+    assert any(call[0] == "Jester Token" and call[1].get("rare") is True for call in player.inventory_calls)
 
     empty = SimpleNamespace(open=False, locked=False, loot=None, generate_loot=lambda: None)
     manager._interact_chest(empty, "Chest")

@@ -51,6 +51,50 @@ class OverlayRenderer:
         flash_surface.fill((*self._damage_flash_color, alpha))
         self.screen.blit(flash_surface, (0, 0))
 
+    def render_vignette(self) -> None:
+        """Draw a soft edge vignette over the dungeon viewport."""
+        width, height = self._get_viewport_size()
+        if width <= 0 or height <= 0:
+            return
+
+        vignette = pygame.Surface((width, height), pygame.SRCALPHA)
+        color = (8, 8, 12)
+        min_dim = min(width, height)
+
+        vignette.fill((*color, 8))
+
+        band_specs = (
+            (0, max(18, min_dim // 8), 52),
+            (10, max(12, min_dim // 11), 34),
+            (22, max(8, min_dim // 15), 20),
+        )
+        for inset, band_width, alpha in band_specs:
+            inner_width = max(1, width - (inset * 2))
+            inner_height = max(1, height - (inset * 2))
+            top = pygame.Rect(inset, inset, inner_width, band_width)
+            bottom = pygame.Rect(inset, height - inset - band_width, inner_width, band_width)
+            left = pygame.Rect(inset, inset, band_width, inner_height)
+            right = pygame.Rect(width - inset - band_width, inset, band_width, inner_height)
+            for rect in (top, bottom, left, right):
+                pygame.draw.rect(vignette, (*color, alpha), rect)
+
+        corner_size = max(18, min_dim // 7)
+        corner_alpha = 58
+        for rect in (
+            pygame.Rect(0, 0, corner_size, corner_size),
+            pygame.Rect(width - corner_size, 0, corner_size, corner_size),
+            pygame.Rect(0, height - corner_size, corner_size, corner_size),
+            pygame.Rect(width - corner_size, height - corner_size, corner_size, corner_size),
+        ):
+            pygame.draw.ellipse(vignette, (*color, corner_alpha), rect)
+
+        divider = pygame.Surface((6, height), pygame.SRCALPHA)
+        for offset, alpha in ((0, 72), (1, 54), (2, 36), (3, 24), (4, 12)):
+            pygame.draw.rect(divider, (6, 6, 10, alpha), pygame.Rect(offset, 0, 1, height))
+        self.screen.blit(divider, (width - divider.get_width(), 0))
+
+        self.screen.blit(vignette, (0, 0))
+
     def render_message_area(self, messages, scroll_offset: int = 0, lines_per_page: int = 4) -> None:
         width, height = self._get_viewport_size()
         msg_height = 100

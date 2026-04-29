@@ -513,15 +513,16 @@ class PygameGame:
             "Visit Inn",
             "Visit Church",
             "Enter Dungeon",
-            "Character Menu",
         ]
 
         # Add Warp Point or Old Warehouse based on player progress
         if getattr(self.player_char, 'warp_point', False):
-            options.insert(5, "Warp Point")
+            options.append("Warp Point")
         else:
-            options.insert(5, "Old Warehouse")
+            options.append("Old Warehouse")
 
+        options.append("Character Menu")
+        options.append("Statistics")
         options.append("Quit to Main Menu")
         
         # Create and use the new town menu screen
@@ -558,20 +559,21 @@ class PygameGame:
                 if popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))):
                     return "quit"
                 continue
+            choice_label = options[choice_idx]
 
-            elif choice_idx == 0:  # Visit Barracks
+            if choice_label == "Visit Barracks":
                 self.visit_barracks()
 
-            elif choice_idx == 1:  # Visit Shop
+            elif choice_label == "Visit Shop":
                 self.visit_shop()
 
-            elif choice_idx == 2:  # Visit Inn
+            elif choice_label == "Visit Inn":
                 self.visit_inn()
                 
-            elif choice_idx == 3:  # Visit Church
+            elif choice_label == "Visit Church":
                 self.visit_church()
 
-            elif choice_idx == 4:  # Enter Dungeon
+            elif choice_label == "Enter Dungeon":
                 # Move player to dungeon entrance
                 if self.player_char.location_z == 0:
                     # Town is at (5, 10, 0), stairs up from dungeon are at (5, 10, 1)
@@ -581,25 +583,76 @@ class PygameGame:
                     self.player_char.facing = "east"  # Face into dungeon (east has CavePath0)
                 return "dungeon"
 
-            elif choice_idx == 5:  # Warp Point or Old Warehouse
-                if getattr(self.player_char, 'warp_point', False):
-                    result = self.use_warp_point(
-                        background_draw_func=lambda: (
-                            town_screen.draw_background(),
-                            town_screen.draw_menu_panel(options),
-                        )
+            elif choice_label == "Warp Point":
+                result = self.use_warp_point(
+                    background_draw_func=lambda: (
+                        town_screen.draw_background(),
+                        town_screen.draw_menu_panel(options),
                     )
-                    if result == "dungeon":
-                        return "dungeon"
-                else:
-                    popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
-                    popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+                )
+                if result == "dungeon":
+                    return "dungeon"
 
-            elif choice_idx == 6:  # Character Menu
+            elif choice_label == "Old Warehouse":
+                popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
+                popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+
+            elif choice_label == "Character Menu":
                 self.show_character_info()
                 # Check if player quit while in character menu
                 if self.player_char.quit:
                     return "quit"
+
+            elif choice_label == "Statistics":
+                self.show_gameplay_statistics(
+                    background_draw_func=lambda: (
+                        town_screen.draw_background(),
+                        town_screen.draw_menu_panel(options),
+                    )
+                )
+
+    @staticmethod
+    def format_gameplay_statistics(player_char) -> str:
+        """Return a player-facing summary of persistent gameplay counters."""
+        stats = getattr(player_char, "gameplay_stats", {}) or {}
+
+        def stat_value(key: str) -> int:
+            try:
+                return int(stats.get(key, 0))
+            except (TypeError, ValueError):
+                return 0
+
+        try:
+            current_level = int(getattr(getattr(player_char, "level", None), "level", 1) or 1)
+        except (TypeError, ValueError):
+            current_level = 1
+        highest_level = max(stat_value("highest_level_reached"), current_level)
+
+        return "\n".join(
+            (
+                "Adventure Statistics",
+                "",
+                f"Steps Taken: {stat_value('steps_taken')}",
+                f"Stairs Used: {stat_value('stairs_used')}",
+                f"Enemies Defeated: {stat_value('enemies_defeated')}",
+                f"Deaths: {stat_value('deaths')}",
+                f"Flees: {stat_value('flees')}",
+                "",
+                f"Highest Level Reached: {highest_level}",
+                f"Highest Damage Dealt: {stat_value('highest_damage_dealt')}",
+                f"Highest Damage Taken: {stat_value('highest_damage_taken')}",
+            )
+        )
+
+    def show_gameplay_statistics(self, background_draw_func=None):
+        """Show the player's tracked gameplay statistics."""
+        message = self.format_gameplay_statistics(self.player_char)
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(
+            background_draw_func=background_draw_func,
+            flush_events=True,
+            require_key_release=True,
+        )
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""

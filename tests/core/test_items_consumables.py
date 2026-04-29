@@ -10,6 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import items
+from src.core.combat.combat_result import CombatResult
 from tests.test_framework import TestGameState
 
 
@@ -195,6 +196,27 @@ class TestItemConsumables:
         assert "safe light surrounds you" in sanctuary_result
         assert "crumbles to dust" in sanctuary_result
         assert ("Sanctuary Scroll", True) in calls
+
+    def test_scroll_use_accepts_combat_result_spell_returns(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        player.modify_inventory = lambda *_args, **_kwargs: None
+
+        holy = items.HolyScroll()
+        holy.charges = 1
+        holy.spell = SimpleNamespace(
+            cast=lambda user, target=None, special=True: CombatResult(
+                action="Holy",
+                actor=user,
+                target=target,
+                message="Radiant light scorches the foe.\n",
+            )
+        )
+
+        result = holy.use(player, target=SimpleNamespace(name="Skeleton"))
+
+        assert "uses Holy Scroll" in result
+        assert "Radiant light scorches the foe." in result
+        assert "crumbles to dust" in result
 
     def test_class_ring_description_and_mod_branches(self):
         ring = items.ClassRing()

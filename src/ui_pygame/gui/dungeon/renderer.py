@@ -828,12 +828,15 @@ class SceneRenderer:
                     )
                 )
         elif is_wall(outer_wall_tile) and continuation_quad is not None:
+            outer_texture_key = "wall"
+            if self._is_door_tile(outer_wall_tile):
+                outer_texture_key = "door_open" if getattr(outer_wall_tile, "open", False) else "door_closed"
             commands.extend(
                 self._build_wall_panel_commands(
                     depth=continuation_depth,
                     order=3,
                     panel_id=f"d{continuation_depth}:{side}_corridor_outer_wall",
-                    texture_key="wall",
+                    texture_key=outer_texture_key,
                     quad=continuation_quad,
                     darkness=darkness,
                 )
@@ -1324,6 +1327,10 @@ class SceneRenderer:
         if self._is_door_tile(tile):
             return
 
+        render_depth = depth
+        if zone is not None and next_zone is not None and self._is_floor_sprite_tile(tile):
+            render_depth = depth + 1
+
         render_rect = self._get_side_special_render_rect(
             rect,
             tile,
@@ -1349,7 +1356,7 @@ class SceneRenderer:
                 tile,
                 render_rect,
                 darkness=darkness,
-                depth=depth,
+                depth=render_depth,
                 side=side,
                 lateral_view=True,
             )
@@ -1591,6 +1598,15 @@ class SceneRenderer:
         lateral_view: bool = False,
     ) -> None:
         if bool(getattr(tile, "defeated", False)):
+            self._render_floor_sprite(
+                "burial_site",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="defeated_boss",
+                side=side,
+                lateral_view=lateral_view,
+            )
             return
 
         enemy = getattr(tile, "enemy", None)
@@ -1633,6 +1649,29 @@ class SceneRenderer:
 
         shaded = self._apply_darkness_to_surface(sprite, darkness)
         self.screen.blit(shaded, sprite_rect.topleft)
+
+    @staticmethod
+    def _is_floor_sprite_tile(tile) -> bool:
+        if tile is None:
+            return False
+
+        tile_type = type(tile).__name__
+        return any(
+            name in tile_type
+            for name in (
+                "Chest",
+                "Boulder",
+                "DeadBody",
+                "RelicRoom",
+                "GoldenChaliceRoom",
+                "UnobtainiumRoom",
+                "BossRoom",
+            )
+        )
+
+    @staticmethod
+    def _is_chest_tile(tile) -> bool:
+        return tile is not None and "Chest" in type(tile).__name__
 
     def _render_warp_point_sparks(
         self,
@@ -1753,6 +1792,8 @@ class SceneRenderer:
             return {1: 0.70, 2: 0.58, 3: 0.46}.get(depth, 0.46)
         if kind == "dead_body":
             return {1: 0.75, 2: 0.60, 3: 0.46}.get(depth, 0.46)
+        if kind == "defeated_boss":
+            return {1: 0.70, 2: 0.56, 3: 0.42}.get(depth, 0.42)
         if kind == "altar":
             return {1: 0.60, 2: 0.50, 3: 0.40}.get(depth, 0.40)
         if kind == "unobtainium":
@@ -1796,20 +1837,7 @@ class SceneRenderer:
         next_zone=None,
         depth: int | None = None,
     ) -> pygame.Rect:
-        tile_type = type(tile).__name__ if tile is not None else ""
-        is_floor_sprite = any(
-            name in tile_type
-            for name in (
-                "Chest",
-                "Boulder",
-                "DeadBody",
-                "RelicRoom",
-                "GoldenChaliceRoom",
-                "UnobtainiumRoom",
-                "BossRoom",
-            )
-        )
-        if not is_floor_sprite or is_wall(center_tile):
+        if not self._is_floor_sprite_tile(tile) or is_wall(center_tile):
             return rect
 
         if zone is not None and next_zone is not None and depth is not None:
@@ -1837,19 +1865,10 @@ class SceneRenderer:
         if not is_wall(center_tile):
             return None
 
-        tile_type = type(tile).__name__ if tile is not None else ""
-        is_floor_sprite = any(
-            name in tile_type
-            for name in (
-                "Boulder",
-                "DeadBody",
-                "RelicRoom",
-                "GoldenChaliceRoom",
-                "UnobtainiumRoom",
-                "BossRoom",
-            )
-        )
-        if not is_floor_sprite:
+        if not SceneRenderer._is_floor_sprite_tile(tile):
+            return rect
+
+        if SceneRenderer._is_chest_tile(tile):
             return rect
 
         overscan = max(1, int(rect.width * 0.7))

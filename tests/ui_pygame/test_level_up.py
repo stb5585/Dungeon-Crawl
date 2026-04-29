@@ -132,7 +132,9 @@ def test_show_level_up_captures_background_and_triggers_optional_stat_pick(monke
     assert level_info == {"new_level": 4}
     assert ui._popup_background == "background"
     assert popup_calls[0][1] == {"new_level": 4}
-    assert "background_draw_func" in popup_calls[1]
+    assert popup_calls[1]["background_draw_func"] is not None
+    assert popup_calls[1]["flush_events"] is True
+    assert popup_calls[1]["require_key_release"] is True
     assert stat_calls == [player]
 
     stat_calls.clear()
@@ -217,6 +219,32 @@ def test_calculate_level_up_applies_gains_and_discovers_abilities(monkeypatch):
         monkeypatch.setattr(abilities, "skill_dict", old_skill_dict)
 
 
+def test_show_stat_confirmation_uses_modal_input_guard(monkeypatch):
+    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
+    monkeypatch.setattr("src.ui_pygame.gui.level_up.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    ui = level_up.LevelUpScreen(RecordingScreen(), _make_presenter())
+
+    confirm_calls = []
+
+    class FakeConfirmationPopup:
+        def __init__(self, presenter_arg, message, show_buttons=False):
+            confirm_calls.append((presenter_arg, message, show_buttons))
+
+        def show(self, **kwargs):
+            confirm_calls.append(kwargs)
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirmationPopup)
+
+    ui._popup_background = "bg"
+    ui._show_stat_confirmation("Dexterity", [("Dexterity", 8)])
+
+    assert confirm_calls[0][1] == "Dexterity increased to 9!"
+    assert confirm_calls[0][2] is False
+    assert confirm_calls[1]["background_draw_func"] is not None
+    assert confirm_calls[1]["flush_events"] is True
+    assert confirm_calls[1]["require_key_release"] is True
+
+
 def test_calculate_level_up_handles_special_skill_effects_and_max_paths(monkeypatch):
     fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
     monkeypatch.setattr("src.ui_pygame.gui.level_up.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
@@ -266,6 +294,33 @@ def test_calculate_level_up_handles_special_skill_effects_and_max_paths(monkeypa
         monkeypatch.setattr(abilities, "skill_dict", old_skill_dict)
 
 
+def test_calculate_level_up_handles_non_named_parent_ability(monkeypatch):
+    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
+    monkeypatch.setattr("src.ui_pygame.gui.level_up.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    ui = level_up.LevelUpScreen(RecordingScreen(), _make_presenter())
+
+    from src.core import abilities
+
+    class ObjectParentSpell(object):
+        def __init__(self):
+            self.name = "Sunburst"
+
+    old_spell_dict = abilities.spell_dict
+    old_skill_dict = abilities.skill_dict
+    monkeypatch.setattr(abilities, "spell_dict", {"Mage": {"4": ObjectParentSpell}})
+    monkeypatch.setattr(abilities, "skill_dict", {"Mage": {}})
+
+    try:
+        player = _make_player(level=3, in_town=False, max_level=False)
+        info = ui._calculate_level_up(player)
+
+        assert "Spell: Sunburst" in info["new_abilities"]
+        assert "Sunburst" in player.spellbook["Spells"]
+    finally:
+        monkeypatch.setattr(abilities, "spell_dict", old_spell_dict)
+        monkeypatch.setattr(abilities, "skill_dict", old_skill_dict)
+
+
 def test_display_stat_selection_background_and_confirmation_helpers(monkeypatch):
     title_font = RecordingFont()
     header_font = RecordingFont()
@@ -309,6 +364,8 @@ def test_display_stat_selection_background_and_confirmation_helpers(monkeypatch)
 
         def show(self, **kwargs):
             assert "background_draw_func" in kwargs
+            assert kwargs["flush_events"] is True
+            assert kwargs["require_key_release"] is True
             return "Dexterity"
 
     confirmations = []

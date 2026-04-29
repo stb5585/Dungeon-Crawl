@@ -466,23 +466,12 @@ class DungeonHUD:
                                 corridor_color = (95, 95, 105)
                             pygame.draw.rect(self.screen, corridor_color, tile_rect)
                         
-                        # Draw icons for special features on visited tiles
-                        if 'Chest' in tile_type and not getattr(tile, 'opened', False):
-                            # Chest (unopened) - yellow/gold square
-                            icon_size = tile_size // 3
-                            icon_x = screen_x + (tile_size - icon_size) // 2
-                            icon_y = screen_y + (tile_size - icon_size) // 2
-                            pygame.draw.rect(self.screen, (255, 215, 0), 
-                                           pygame.Rect(icon_x, icon_y, icon_size, icon_size))
-                        
-                        if 'LockedDoor' in tile_type and not getattr(tile, 'opened', False):
-                            # Door (locked) - brown rectangle
-                            icon_width = tile_size // 2
-                            icon_height = tile_size // 3
-                            icon_x = screen_x + (tile_size - icon_width) // 2
-                            icon_y = screen_y + (tile_size - icon_height) // 2
-                            pygame.draw.rect(self.screen, (139, 69, 19),
-                                           pygame.Rect(icon_x, icon_y, icon_width, icon_height))
+                        # Draw icons for special features on visible/discovered tiles
+                        if 'Chest' in tile_type:
+                            self._render_minimap_chest_icon(tile, screen_x, screen_y, tile_size)
+
+                        if 'Door' in tile_type:
+                            self._render_minimap_door_icon(tile, screen_x, screen_y, tile_size)
                         
                         if 'Relic' in tile_type and not getattr(tile, 'read', False):
                             # Relic (uncollected) - cyan/bright blue diamond
@@ -582,6 +571,35 @@ class DungeonHUD:
                     
         y_offset += minimap_size + 5
         return y_offset
+
+    @staticmethod
+    def _tile_is_open(tile) -> bool:
+        return bool(getattr(tile, 'open', False) or getattr(tile, 'opened', False))
+
+    def _render_minimap_chest_icon(self, tile, screen_x: int, screen_y: int, tile_size: int) -> None:
+        icon_size = max(3, tile_size // 3)
+        icon_x = screen_x + (tile_size - icon_size) // 2
+        icon_y = screen_y + (tile_size - icon_size) // 2
+        icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+
+        if self._tile_is_open(tile):
+            pygame.draw.rect(self.screen, (130, 130, 120), icon_rect, 1)
+            return
+
+        pygame.draw.rect(self.screen, (255, 215, 0), icon_rect)
+
+    def _render_minimap_door_icon(self, tile, screen_x: int, screen_y: int, tile_size: int) -> None:
+        icon_width = max(4, tile_size // 2)
+        icon_height = max(3, tile_size // 3)
+        icon_x = screen_x + (tile_size - icon_width) // 2
+        icon_y = screen_y + (tile_size - icon_height) // 2
+        icon_rect = pygame.Rect(icon_x, icon_y, icon_width, icon_height)
+
+        if self._tile_is_open(tile):
+            pygame.draw.rect(self.screen, (95, 170, 120), icon_rect, 1)
+            return
+
+        pygame.draw.rect(self.screen, (139, 69, 19), icon_rect)
 
     def _get_visible_adjacent_positions(self, player_char):
         """Return adjacent N/S/E/W positions visible from the player's current tile."""

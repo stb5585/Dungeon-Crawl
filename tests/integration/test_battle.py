@@ -331,6 +331,7 @@ class TestBattleEngineBasics:
         engine.attacker = player
         player.class_effects["Jump"].active = True
         player.spellbook["Skills"]["Jump"] = SimpleNamespace(
+            name="Jump",
             cancel_charge=lambda _user: "Jump cancelled.\n"
         )
         monkeypatch = pytest.MonkeyPatch()
@@ -342,6 +343,23 @@ class TestBattleEngineBasics:
 
         assert forced.action == "Cancelled"
         assert forced.cancel_message == "Jump cancelled.\n"
+        assert player.class_effects["Jump"].active is False
+
+    def test_get_forced_action_allows_unstoppable_jump_when_incapacitated(self):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        player.class_effects["Jump"].active = True
+        player.spellbook["Skills"]["Jump"] = SimpleNamespace(
+            name="Jump",
+            modifications={"Unstoppable": True},
+            cancel_charge=lambda _user: "Jump cancelled.\n",
+        )
+        player.incapacitated = lambda: True
+
+        forced = engine.get_forced_action()
+
+        assert forced.action == "Use Skill"
+        assert forced.choice == "Jump"
         assert player.class_effects["Jump"].active is False
 
     def test_get_forced_action_returns_jump_skill_when_ready(self):

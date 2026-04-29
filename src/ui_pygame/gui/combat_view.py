@@ -6,9 +6,12 @@ from __future__ import annotations
 
 import math
 import os
+from pathlib import Path
 import sys
 
 import pygame
+
+ASSETS_BASE_DIR = Path(__file__).resolve().parents[1] / "assets"
 
 
 class SpriteAnimator:
@@ -102,6 +105,9 @@ class CombatView:
             'action_bg': (40, 40, 45),
             'action_selected': (80, 80, 90),
             'message_bg': (30, 30, 35),
+            'turn_player': (70, 130, 210),
+            'turn_enemy': (180, 80, 70),
+            'telegraph': (255, 205, 110),
         }
         
         # Combat log
@@ -114,12 +120,13 @@ class CombatView:
         self.status_colors = {
             "positive": (70, 170, 90),
             "negative": (190, 70, 70),
+            "overflow": (95, 95, 110),
         }
         
         # Sprite cache
         self.sprite_cache = {}
-        self.sprite_dir = 'src/ui_pygame/assets/sprites'
-        self.enemy_sprite_dir = f'{self.sprite_dir}/enemies'
+        self.sprite_dir = ASSETS_BASE_DIR / 'sprites'
+        self.enemy_sprite_dir = self.sprite_dir / 'enemies'
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
@@ -153,7 +160,7 @@ class CombatView:
             return
         was_at_bottom = self.log_scroll_offset >= self._max_log_scroll()
         for line in cleaned_lines:
-            self.combat_log.append(line)
+            self.combat_log.extend(self._wrap_log_line(line))
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
         if was_at_bottom:
@@ -200,6 +207,48 @@ class CombatView:
             if line.strip():
                 kept_lines.append(line.strip())
         return kept_lines
+
+    def _wrap_log_line(self, line: str) -> list[str]:
+        """Wrap a combat log line to the combat pane width."""
+        if not line:
+            return []
+
+        max_width = max(160, self.combat_width - 30)
+        font = pygame.font.Font(None, 20)
+        wrapped: list[str] = []
+        for paragraph in line.split("\n"):
+            stripped = paragraph.strip()
+            if not stripped:
+                continue
+
+            current = ""
+            for word in stripped.split():
+                candidate = f"{current} {word}".strip() if current else word
+                if font.size(candidate)[0] <= max_width:
+                    current = candidate
+                    continue
+
+                if current:
+                    wrapped.append(current)
+                    current = ""
+
+                if font.size(word)[0] <= max_width:
+                    current = word
+                    continue
+
+                chunk = ""
+                for char in word:
+                    chunk_candidate = f"{chunk}{char}"
+                    if chunk and font.size(chunk_candidate)[0] > max_width:
+                        wrapped.append(chunk)
+                        chunk = char
+                    else:
+                        chunk = chunk_candidate
+                current = chunk
+
+            if current:
+                wrapped.append(current)
+        return wrapped
 
     def _effect_label(self, effect_name):
         labels = {
@@ -285,7 +334,62 @@ class CombatView:
 
         return icons
 
-    def _render_status_icons(self, icons, x, y, max_width):
+    @staticmethod
+    def _compact_status_icons(icons, per_row: int, max_rows: int | None):
+        icon_list = list(icons)
+        if max_rows is None or max_rows <= 0:
+            return icon_list
+
+        capacity = max(1, per_row * max_rows)
+        if len(icon_list) <= capacity:
+            return icon_list
+
+        visible_count = max(0, capacity - 1)
+        hidden_count = len(icon_list) - visible_count
+        return icon_list[:visible_count] + [(f"+{hidden_count}", None)]
+
+    @staticmethod
+    def _is_telegraph_message(line: str) -> bool:
+        lower = line.lower()
+        telegraph_terms = (
+            " is lowering ",
+            " is raising ",
+            " is inhaling ",
+            " is gathering ",
+            " is coiling ",
+            " is channeling ",
+            " is melding ",
+            " is drawing in ",
+            " is preparing",
+            " continues charging",
+            " begins to charge",
+            " while preparing",
+        )
+        return any(term in lower for term in telegraph_terms)
+
+    def _combat_log_color(self, line: str, overlay: bool = False):
+        if self._is_telegraph_message(line):
+            return self.colors["telegraph"]
+        return (240, 240, 240) if overlay else self.colors["text"]
+
+    @staticmethod
+    def _truncate_text(font: pygame.font.Font, text: str, max_width: int) -> str:
+        def measured_width(value: str) -> int:
+            if hasattr(font, "size"):
+                return font.size(value)[0]
+            return len(value) * 8
+
+        if max_width <= 0 or measured_width(text) <= max_width:
+            return text
+
+        ellipsis = "..."
+        ellipsis_width = measured_width(ellipsis)
+        clipped = text
+        while clipped and measured_width(clipped) + ellipsis_width > max_width:
+            clipped = clipped[:-1]
+        return f"{clipped}{ellipsis}" if clipped else ellipsis
+
+    def _render_status_icons(self, icons, x, y, max_width, max_rows=2):
         if not icons:
             return
 
@@ -294,13 +398,17 @@ class CombatView:
         icon_h = 18
         padding = 6
         per_row = max(1, max_width // (icon_w + padding))
+        visible_icons = self._compact_status_icons(icons, per_row, max_rows)
 
-        for idx, (label, is_positive) in enumerate(icons):
+        for idx, (label, is_positive) in enumerate(visible_icons):
             row = idx // per_row
             col = idx % per_row
             icon_x = x + col * (icon_w + padding)
             icon_y = y + row * (icon_h + padding)
-            color = self.status_colors["positive" if is_positive else "negative"]
+            if is_positive is None:
+                color = self.status_colors["overflow"]
+            else:
+                color = self.status_colors["positive" if is_positive else "negative"]
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
             pygame.draw.rect(self.screen, color, rect, border_radius=4)
@@ -312,12 +420,48 @@ class CombatView:
     
     def reload_enemy_sprite(self, enemy):
         """Force reload of enemy sprite (e.g., after shapeshifting)."""
-        sprite_name = enemy.name.lower().replace(" ", "_")
-        cache_key = f"{sprite_name}"
-        # Remove old cached sprite if exists
-        if cache_key in self.sprite_cache:
-            del self.sprite_cache[cache_key]
-    
+        for sprite_name in self._enemy_sprite_base_names(enemy):
+            self.sprite_cache.pop(self._enemy_sprite_cache_key(sprite_name), None)
+            self.sprite_cache.pop(self._enemy_sprite_cache_key(f"{sprite_name}_hidden"), None)
+
+    def _enemy_sprite_base_name(self, enemy: object) -> str:
+        names = self._enemy_sprite_base_names(enemy)
+        return names[0] if names else ""
+
+    @staticmethod
+    def _normalize_sprite_name(value: object) -> str:
+        return value.lower().replace(" ", "_") if isinstance(value, str) else ""
+
+    @classmethod
+    def _unique_sprite_names(cls, *names: object) -> list[str]:
+        unique = []
+        seen = set()
+        for name in names:
+            normalized = cls._normalize_sprite_name(name)
+            if normalized and normalized not in seen:
+                unique.append(normalized)
+                seen.add(normalized)
+        return unique
+
+    def _enemy_sprite_base_names(self, enemy: object) -> list[str]:
+        name_base = self._normalize_sprite_name(getattr(enemy, "name", ""))
+        picture = getattr(enemy, "picture", "")
+        picture_base = ""
+        picture_ext = ""
+        if isinstance(picture, str) and picture:
+            picture_path = os.path.basename(picture)
+            picture_base, picture_ext = os.path.splitext(picture_path)
+
+        # Explicit PNG pictures are alternate combat forms. Legacy .txt pictures
+        # are ASCII-art filenames and often do not match the generated PNG names.
+        if picture_ext.lower() == ".png":
+            return self._unique_sprite_names(picture_base, name_base)
+        return self._unique_sprite_names(name_base, picture_base)
+
+    @staticmethod
+    def _enemy_sprite_cache_key(sprite_name: str) -> str:
+        return sprite_name
+
     def _get_enemy_sprite(self, enemy, has_sight=False):
         """
         Load enemy sprite from file based on enemy type.
@@ -329,38 +473,39 @@ class CombatView:
         Returns:
             pygame.Surface or None if sprite not found
         """
-        sprite_name = enemy.name.lower().replace(" ", "_")
-        
-        if not sprite_name:
+        sprite_names = self._enemy_sprite_base_names(enemy)
+
+        if not sprite_names:
             return None
-        
-        # Create cache key
-        cache_key = f"{sprite_name}"
-        
-        # Check cache first
-        if cache_key in self.sprite_cache:
-            return self.sprite_cache[cache_key]
-        
-        # Build sprite filename
-        sprite_filename = f"{sprite_name}.png"
-        if not has_sight and enemy.name == "Invisible Stalker":
-            sprite_filename = f"{sprite_name}_hidden.png"
-        sprite_path = os.path.join(self.enemy_sprite_dir, sprite_filename)
-        if not os.path.exists(sprite_path):
-            sprite_path = os.path.join(self.sprite_dir, sprite_filename)
-        
-        # Try to load sprite
-        if os.path.exists(sprite_path):
+
+        sprite_filenames = []
+        for sprite_name in sprite_names:
+            if not has_sight and getattr(enemy, "name", "") == "Invisible Stalker":
+                sprite_filenames.append(f"{sprite_name}_hidden.png")
+            else:
+                sprite_filenames.append(f"{sprite_name}.png")
+
+        for sprite_filename in self._unique_sprite_names(*sprite_filenames):
+            cache_key = self._enemy_sprite_cache_key(os.path.splitext(sprite_filename)[0])
+            if cache_key in self.sprite_cache:
+                return self.sprite_cache[cache_key]
+
+            sprite_path = self.enemy_sprite_dir / sprite_filename
+            if not os.path.exists(sprite_path):
+                sprite_path = self.sprite_dir / sprite_filename
+
+            if not os.path.exists(sprite_path):
+                continue
+
             try:
-                sprite = pygame.image.load(sprite_path)
+                sprite = pygame.image.load(str(sprite_path))
                 # Always use convert_alpha to preserve transparency
                 sprite = sprite.convert_alpha()
                 self.sprite_cache[cache_key] = sprite
                 return sprite
             except pygame.error as e:
                 print(f"Failed to load sprite {sprite_path}: {e}")
-                return None
-        
+
         return None
     
     def _has_sight(self, player_char):
@@ -403,7 +548,7 @@ class CombatView:
         # Return sprite as-is - it's already colored from generation
         return sprite
     
-    def render_combat(self, player_char, enemy, actions, selected_action=0):
+    def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None):
         """Render the complete combat view."""
         # Update animations
         self.update_animations()
@@ -417,7 +562,11 @@ class CombatView:
         
         # Render enemy in center
         self._render_enemy(enemy, has_sight)
-        
+
+        # Render current turn indicator
+        self._render_turn_indicator(player_char, enemy, current_turn=current_turn)
+        self._render_telegraph_banner(overlay=False)
+
         # Render player status at bottom left
         self._render_player_status(player_char)
         
@@ -652,15 +801,12 @@ class CombatView:
         for message in self.combat_log[start:end]:
             if lines_rendered >= max_lines:
                 break
-                
-            # Split message on newlines to handle multi-line messages properly
-            message_lines = [line for line in message.split('\n') if line.strip()]
-            
-            for line in message_lines:
+
+            for line in self._wrap_log_line(message):
                 if lines_rendered >= max_lines:
                     break
                     
-                msg_surf = font.render(line, True, self.colors['text'])
+                msg_surf = font.render(line, True, self._combat_log_color(line))
                 self.screen.blit(msg_surf, (15, y))
                 y += line_height
                 lines_rendered += 1
@@ -713,7 +859,7 @@ class CombatView:
         has_sight = self._has_sight(player_char)
         
         # Try to load enemy sprite
-        sprite = self._get_enemy_sprite(enemy)
+        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
         
         if sprite:
             # Colorize the sprite based on enemy type
@@ -812,8 +958,11 @@ class CombatView:
             if icons:
                 self._render_status_icons(icons, bar_x, bar_y + bar_height + 8, max_width=bar_width)
 
-    def render_combat_overlay(self, player_char, enemy, actions, selected_action):
+    def render_combat_overlay(self, player_char, enemy, actions, selected_action, current_turn=None):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
+        self._render_turn_indicator(player_char, enemy, current_turn=current_turn, overlay=True)
+        self._render_telegraph_banner(overlay=True)
+
         # Render combat log at bottom-left
         self._render_combat_log_overlay()
         
@@ -851,15 +1000,12 @@ class CombatView:
         for message in messages_to_show:
             if lines_rendered >= max_lines:
                 break
-                
-            # Split message on newlines to handle multi-line messages properly
-            message_lines = [line for line in message.split('\n') if line.strip()]
-            
-            for line in message_lines:
+
+            for line in self._wrap_log_line(message):
                 if lines_rendered >= max_lines:
                     break
                     
-                msg_surf = font.render(line, True, (240, 240, 240))
+                msg_surf = font.render(line, True, self._combat_log_color(line, overlay=True))
                 self.screen.blit(msg_surf, (15, y))
                 y += line_height
                 lines_rendered += 1
@@ -922,3 +1068,72 @@ class CombatView:
             # Action text
             action_surf = action_font.render(action, True, (240, 240, 240))
             self.screen.blit(action_surf, (x, y))
+
+    def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False):
+        """Render a compact banner showing whose turn is active."""
+        if current_turn not in {"player", "enemy"}:
+            return
+
+        view_width = int(self.screen_width * 0.65) if overlay else self.combat_width
+        label = "Your Turn" if current_turn == "player" else "Enemy Turn"
+        sublabel = getattr(player_char, "name", "Player") if current_turn == "player" else getattr(enemy, "name", "Enemy")
+        color = self.colors["turn_player" if current_turn == "player" else "turn_enemy"]
+
+        font = pygame.font.Font(None, 26)
+        small_font = pygame.font.Font(None, 18)
+        label_surf = font.render(label, True, (255, 255, 255))
+        sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
+
+        width = min(max(label_surf.get_width() + 48, sublabel_surf.get_width() + 48, 180), view_width - 30)
+        rect = pygame.Rect(15, 170 if overlay else 12, width, 58)
+
+        if overlay:
+            panel = pygame.Surface(rect.size)
+            panel.set_alpha(210)
+            panel.fill((18, 18, 24))
+            self.screen.blit(panel, rect.topleft)
+        else:
+            pygame.draw.rect(self.screen, (18, 18, 24), rect)
+
+        pygame.draw.rect(self.screen, color, rect, 3)
+        pygame.draw.circle(self.screen, color, (rect.left + 18, rect.centery), 6)
+        self.screen.blit(label_surf, (rect.left + 34, rect.top + 8))
+        self.screen.blit(sublabel_surf, (rect.left + 34, rect.top + 34))
+
+    def _latest_telegraph_line(self) -> str | None:
+        for message in reversed(self.combat_log):
+            for line in reversed([segment.strip() for segment in message.split("\n") if segment.strip()]):
+                if self._is_telegraph_message(line):
+                    return line
+        return None
+
+    def _render_telegraph_banner(self, overlay: bool = False) -> None:
+        line = self._latest_telegraph_line()
+        if not line:
+            return
+
+        available_width = self.screen_width - self.combat_width - 24 if overlay else self.combat_width - 30
+        if available_width <= 0:
+            return
+
+        title_font = pygame.font.Font(None, 22)
+        body_font = pygame.font.Font(None, 18)
+        title_text = "Telegraph"
+        title_surf = title_font.render(title_text, True, (255, 255, 255))
+        body_surf = body_font.render(self._truncate_text(body_font, line, max(120, available_width - 48)), True, self.colors["telegraph"])
+
+        width = min(max(title_surf.get_width(), body_surf.get_width()) + 52, available_width)
+        height = 54
+        x = self.combat_width + 12 if overlay else self.combat_width - width - 12
+        y = 12
+        rect = pygame.Rect(x, y, width, height)
+
+        panel = pygame.Surface(rect.size)
+        panel.set_alpha(220)
+        panel.fill((22, 18, 12))
+        self.screen.blit(panel, rect.topleft)
+
+        pygame.draw.rect(self.screen, self.colors["telegraph"], rect, 2)
+        pygame.draw.circle(self.screen, self.colors["telegraph"], (rect.left + 16, rect.centery), 6)
+        self.screen.blit(title_surf, (rect.left + 30, rect.top + 6))
+        self.screen.blit(body_surf, (rect.left + 30, rect.top + 28))

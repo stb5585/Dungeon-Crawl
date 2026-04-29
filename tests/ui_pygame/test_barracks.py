@@ -12,12 +12,14 @@ from src.ui_pygame.gui import barracks
 
 class FakePopup:
     messages = []
+    calls = []
 
     def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
         self.message = message
         FakePopup.messages.append(message)
 
     def show(self, **_kwargs):
+        FakePopup.calls.append(_kwargs)
         return True
 
 
@@ -28,7 +30,7 @@ class FakeQuantityPopup:
         self.max_quantity = max_quantity
         self.action = action
 
-    def show(self):
+    def show(self, **_kwargs):
         return FakeQuantityPopup.responses.pop(0)
 
 
@@ -64,6 +66,7 @@ def _make_player():
 
 def test_visit_barracks_routes_and_special_event(monkeypatch):
     FakePopup.messages = []
+    FakePopup.calls = []
     player = _make_player()
     player.special_inventory = {"Brass Key": [SimpleNamespace(name="Brass Key")]}
     presenter = _make_presenter()
@@ -109,6 +112,7 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
     assert rendered == ["Sergeant quest"]
     assert storage_calls == [True]
     assert any("Joffrey's Letter" in message for message in FakePopup.messages)
+    assert any(call.get("flush_events") for call in FakePopup.calls)
     assert ("Brass Key", 1, False, True, True) in player.inventory_calls
     assert ("Joffrey's Letter", 1, False, False, True) in player.inventory_calls
     assert ("Great Health Potion", 5, False, False, False) in player.inventory_calls
@@ -116,6 +120,7 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
 
 def test_manage_storage_store_and_retrieve(monkeypatch):
     FakePopup.messages = []
+    FakePopup.calls = []
     FakeQuantityPopup.responses = [2, 1]
     player = _make_player()
     player.inventory = {"Potion": [SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion")]}
@@ -156,10 +161,12 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
     assert ("Elixir", 1, True, False, False) in player.inventory_calls
     assert any("Stored 2x Potion" in message for message in FakePopup.messages)
     assert any("Retrieved 1x Elixir" in message for message in FakePopup.messages)
+    assert any(call.get("flush_events") for call in FakePopup.calls)
 
 
 def test_store_and_retrieve_empty_states(monkeypatch):
     FakePopup.messages = []
+    FakePopup.calls = []
     player = _make_player()
     presenter = _make_presenter()
     monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
@@ -171,3 +178,4 @@ def test_store_and_retrieve_empty_states(monkeypatch):
 
     assert "You have no items to store." in FakePopup.messages
     assert "Your storage is empty." in FakePopup.messages
+    assert any(call.get("flush_events") for call in FakePopup.calls)

@@ -88,9 +88,14 @@ class DummySurface:
 class RecordingFont:
     def __init__(self):
         self.render_calls = []
+        self.color_calls = []
+
+    def size(self, text):
+        return (max(8, len(text) * 8), 20)
 
     def render(self, text, _antialias, _color):
         self.render_calls.append(text)
+        self.color_calls.append((text, _color))
         return DummySurface((max(8, len(text) * 8), 20), text=text)
 
 
@@ -183,12 +188,112 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("REG", True) in icons
 
 
+def test_combat_log_wraps_long_charge_messages(monkeypatch):
+    view = _make_view()
+    font = RecordingFont()
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    message = "Goblin is lowering their head and building momentum for a devastating charge that needs wrapping."
+    view.add_combat_message(message)
+
+    assert len(view.combat_log) > 1
+
+    view._render_combat_log()
+
+    assert len(font.render_calls) > 1
+    assert all(font.size(text)[0] <= view.combat_width - 30 for text in font.render_calls)
+
+
+def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
+    view = _make_view()
+    player = SimpleNamespace(name="Hero")
+    enemy = SimpleNamespace(name="Goblin")
+    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
+    rect_calls = []
+    circle_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: circle_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+
+    view._render_turn_indicator(player, enemy, current_turn="player")
+    view._render_turn_indicator(player, enemy, current_turn="enemy", overlay=True)
+    view._render_turn_indicator(player, enemy, current_turn=None)
+
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+    colors = [args[1] for args, _kwargs in rect_calls if len(args) > 1]
+
+    assert "Your Turn" in rendered_text
+    assert "Enemy Turn" in rendered_text
+    assert "Goblin" in rendered_text
+    assert view.colors["turn_player"] in colors
+    assert view.colors["turn_enemy"] in colors
+    assert circle_calls
+
+
+def test_render_combat_does_not_default_to_player_turn(monkeypatch):
+    view = _make_view()
+    player = _make_character()
+    enemy = SimpleNamespace(name="Goblin")
+    recorded_turns = []
+
+    monkeypatch.setattr(view, "update_animations", lambda: None)
+    monkeypatch.setattr(view.screen, "fill", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_enemy", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_turn_indicator", lambda *_args, **kwargs: recorded_turns.append(kwargs.get("current_turn")))
+    monkeypatch.setattr(view, "_render_telegraph_banner", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_player_status", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_action_menu", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_combat_log", lambda *_args, **_kwargs: None)
+
+    view.render_combat(player, enemy, actions=[])
+
+    assert recorded_turns == [None]
+
+
+def test_telegraph_banner_uses_latest_matching_log_line(monkeypatch):
+    view = _make_view()
+    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
+    rect_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+
+    view.combat_log = [
+        "Goblin attacks.",
+        "Goblin is lowering their head and building momentum!",
+        "Hero blocks.",
+    ]
+
+    view._render_telegraph_banner(overlay=False)
+    view._render_telegraph_banner(overlay=True)
+
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+
+    assert "Telegraph" in rendered_text
+    assert any("lowering their head" in text for text in rendered_text)
+    assert any(args[1] == view.colors["telegraph"] for args, _kwargs in rect_calls if len(args) > 1)
+
+
 def test_sprite_loading_reload_and_sight_rules(monkeypatch):
     view = _make_view()
-    enemy = SimpleNamespace(name="Invisible Stalker")
+    enemy = SimpleNamespace(name="Invisible Stalker", picture="invisible_stalker.txt")
     loaded = []
 
-    monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: path.endswith("_hidden.png"))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: str(path).endswith("_hidden.png"))
     monkeypatch.setattr(
         "src.ui_pygame.gui.combat_view.pygame.image.load",
         lambda path: loaded.append(path) or DummySurface((32, 32)),
@@ -203,7 +308,21 @@ def test_sprite_loading_reload_and_sight_rules(monkeypatch):
     assert loaded == []
 
     view.reload_enemy_sprite(enemy)
-    assert "invisible_stalker" not in view.sprite_cache
+    assert "invisible_stalker_hidden" not in view.sprite_cache
+
+    loaded.clear()
+    palette_enemy = SimpleNamespace(name="Jester", picture="jester3.png")
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: str(path).endswith("jester3.png"))
+    sprite = view._get_enemy_sprite(palette_enemy, has_sight=True)
+    assert isinstance(sprite, DummySurface)
+    assert loaded and loaded[0].endswith("jester3.png")
+
+    loaded.clear()
+    legacy_picture_enemy = SimpleNamespace(name="Giant Rat", picture="giantrat.txt")
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: str(path).endswith("giant_rat.png"))
+    sprite = view._get_enemy_sprite(legacy_picture_enemy, has_sight=True)
+    assert isinstance(sprite, DummySurface)
+    assert loaded and loaded[0].endswith("giant_rat.png")
 
     player = _make_character()
     assert view._has_sight(player) is False
@@ -222,9 +341,23 @@ def test_render_helpers_cover_icons_player_status_and_logs(monkeypatch):
     font_small = RecordingFont()
     font_medium = RecordingFont()
     font_large = RecordingFont()
-    fonts = iter([font_small, font_medium, font_large, RecordingFont(), RecordingFont(), RecordingFont()])
+    fonts = [
+        font_small,
+        font_medium,
+        font_large,
+        RecordingFont(),
+        RecordingFont(),
+        RecordingFont(),
+        RecordingFont(),
+        RecordingFont(),
+        RecordingFont(),
+        RecordingFont(),
+    ]
 
-    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.font.Font",
+        lambda *_args, **_kwargs: fonts.pop(0) if fonts else RecordingFont(),
+    )
     rect_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
 
@@ -245,15 +378,53 @@ def test_render_helpers_cover_icons_player_status_and_logs(monkeypatch):
 
     view.combat_log = [f"Msg {i}" for i in range(9)]
     view.log_scroll_offset = 2
-    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont()])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    fonts = [RecordingFont(), RecordingFont(), RecordingFont()]
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.font.Font",
+        lambda *_args, **_kwargs: fonts.pop(0) if fonts else RecordingFont(),
+    )
     view._render_combat_log_overlay()
 
-    fonts = iter([RecordingFont(), RecordingFont()])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    fonts = [RecordingFont(), RecordingFont()]
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.font.Font",
+        lambda *_args, **_kwargs: fonts.pop(0) if fonts else RecordingFont(),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
     view._render_action_menu_overlay(["Attack", "Skills", "Items"], 1)
     assert rect_calls
+
+
+def test_status_icons_compact_overflow_and_telegraph_log_color(monkeypatch):
+    view = _make_view()
+    font = RecordingFont()
+    rect_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+
+    icons = [(f"E{i}", i % 2 == 0) for i in range(6)]
+    view._render_status_icons(icons, 10, 20, max_width=90, max_rows=2)
+
+    assert font.render_calls == ["E0", "E1", "E2", "+3"]
+    assert view.status_colors["overflow"] in [args[1] for args, _kwargs in rect_calls if len(args) > 1]
+
+    normal_line = "Hero attacks."
+    telegraph_line = "Goblin is lowering their head and building momentum!"
+    font.render_calls.clear()
+    font.color_calls.clear()
+    view.combat_log = [telegraph_line, normal_line]
+    view.log_scroll_offset = 0
+
+    view._render_combat_log()
+    assert (telegraph_line, view.colors["telegraph"]) in font.color_calls
+    assert (normal_line, view.colors["text"]) in font.color_calls
+
+    font.color_calls.clear()
+    view._render_combat_log_overlay()
+    assert (telegraph_line, view.colors["telegraph"]) in font.color_calls
+    assert (normal_line, (240, 240, 240)) in font.color_calls
 
 
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
@@ -297,3 +468,44 @@ def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
     view._render_combat_log = lambda: view.screen.blit(DummySurface((10, 10), text="log"), (0, 0))
     view.render_combat(player, enemy, ["Attack", "Defend"], selected_action=1)
     assert any(getattr(surface, "text", "") == "menu:1" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
+
+
+def test_render_enemy_in_dungeon_draws_name_based_sprite_for_legacy_picture(monkeypatch):
+    view = _make_view()
+    player = _make_character()
+    enemy = SimpleNamespace(
+        name="Giant Rat",
+        picture="giantrat.txt",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    loaded = []
+    scaled = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: str(path).endswith("giant_rat.png"))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.image.load",
+        lambda path: loaded.append(path) or DummySurface((32, 32), text="source-enemy"),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.transform.scale",
+        lambda surface, size: scaled.append((surface, size)) or DummySurface(size, text="scaled-enemy"),
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+
+    view.render_enemy_in_dungeon(player, enemy)
+
+    assert loaded and loaded[0].endswith("giant_rat.png")
+    assert scaled and scaled[0][1] == (320, 320)
+    assert any(
+        getattr(surface, "text", "") == "scaled-enemy"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )

@@ -212,6 +212,29 @@ def test_dungeon_renderer_special_tiles_smoke():
     pygame.quit()
 
 
+def test_dungeon_renderer_applies_soft_vignette_to_viewport():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    renderer = DungeonRenderer(presenter)
+    screen.fill((220, 220, 220))
+
+    renderer.overlays.render_vignette()
+
+    left_corner = screen.get_at((2, 2))
+    center = screen.get_at((150, 150))
+    divider = screen.get_at((int(640 * 0.65) - 1, 150))
+    right_hud = screen.get_at((500, 150))
+
+    assert left_corner.r < center.r
+    assert left_corner.g < center.g
+    assert left_corner.b < center.b
+    assert divider.r < center.r
+    assert right_hud.r == 220 and right_hud.g == 220 and right_hud.b == 220
+
+    pygame.quit()
+
+
 def test_texture_library_does_not_tile_ladder_pit_panels():
     pygame.init()
     textures = TextureLibrary()
@@ -224,6 +247,63 @@ def test_texture_library_does_not_tile_ladder_pit_panels():
     assert textures.get_panel_texture("d2:center_floor", "floor_pit").get_size() == (floor.get_width() * 5, floor.get_height())
     assert textures.get_panel_texture("d2:right_corridor_outer_ceiling", "ceiling_pit").get_size() == ceiling.get_size()
     assert textures.get_panel_texture("d2:right_corridor_outer_floor", "floor_pit").get_size() == floor.get_size()
+
+    pygame.quit()
+
+
+def test_texture_library_resolves_repo_assets_when_cwd_changes(tmp_path, monkeypatch):
+    pygame.init()
+    monkeypatch.chdir(tmp_path)
+
+    textures = TextureLibrary()
+
+    assert textures.get_texture("wall").get_width() > 0
+    assert textures.get_special_texture("stairs_down") is not None
+    assert textures.get_enemy_texture("Minotaur", size=32) is not None
+
+    pygame.quit()
+
+
+def test_texture_library_records_missing_asset_fallbacks(tmp_path):
+    pygame.init()
+    textures = TextureLibrary(tileset_base=tmp_path / "missing_tiles")
+
+    wall = textures.get_texture("wall")
+    special = textures.get_special_texture("stairs_down", size=24)
+    enemy = textures.get_enemy_texture("Missing Enemy", size=24)
+    fallbacks = textures.get_asset_fallbacks()
+
+    assert wall.get_size() == (128, 128)
+    assert special is not None
+    assert max(special.get_size()) == 24
+    assert enemy is None
+    assert fallbacks["texture:wall"].endswith("walls/brick.png")
+    assert fallbacks["special:stairs_down"].endswith("special_tiles/stairs_down.png")
+    assert fallbacks["enemy:Missing Enemy"].endswith("sprites/enemies/missing_enemy.png")
+
+    fallbacks.clear()
+    assert "texture:wall" in textures.get_asset_fallbacks()
+
+    pygame.quit()
+
+
+def test_texture_library_limits_projected_surface_cache():
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    textures = TextureLibrary(projected_cache_limit=2)
+    quad = Quad(((0.0, 0.0), (64.0, 0.0), (64.0, 64.0), (0.0, 64.0)))
+
+    for width in (128, 129, 130):
+        textures.get_projected_surface(
+            panel_id="d1:center_floor",
+            texture_key="floor",
+            quad=quad,
+            darkness=0.0,
+            view_size=(width, 128),
+        )
+
+    assert len(textures._projected_cache) == 2
+    assert all(cache_key[0] != (128, 128) for cache_key in textures._projected_cache)
 
     pygame.quit()
 
@@ -499,6 +579,68 @@ def test_scene_renderer_renders_side_corridor_outer_wall_in_side_wall_layer():
     pygame.quit()
 
 
+def test_scene_renderer_keeps_outer_side_corridor_door_state_on_outer_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (1, 2, 1): LockedDoor(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d2:right_corridor_outer_wall", "door_closed") in calls
+    assert ("d2:right_corridor_outer_wall", "wall") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_outer_side_corridor_open_door_state_on_outer_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (1, 2, 1): OpenDoor(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d2:right_corridor_outer_wall", "door_open") in calls
+    assert ("d2:right_corridor_outer_wall", "wall") not in calls
+
+    pygame.quit()
+
+
 def test_scene_renderer_adds_three_depth3_endcaps_per_side_for_full_back_wall():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -607,7 +749,48 @@ def test_scene_renderer_renders_side_special_tiles_in_opening():
 
     scene_renderer.render(player, world)
 
-    assert ("ChestRoom", 1, "left", True) in rendered_tiles
+    assert ("ChestRoom", 2, "left", True) in rendered_tiles
+
+    pygame.quit()
+
+
+def test_scene_renderer_advances_side_floor_sprite_depth_when_next_zone_is_visible():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): ChestRoom(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (2, -1, 1): OpenTile(),
+        (2, 1, 1): OpenTile(),
+    }
+
+    rendered_tiles = []
+    original_render_special_tile = scene_renderer._render_special_tile
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        rendered_tiles.append((type(tile).__name__ if tile else None, depth, side, lateral_view))
+        return original_render_special_tile(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+
+    scene_renderer.render(player, world)
+
+    assert ("ChestRoom", 2, "left", True) in rendered_tiles
 
     pygame.quit()
 
@@ -672,6 +855,53 @@ def test_scene_renderer_hides_side_doors_behind_center_wall():
 
     assert ("d1:left_blocker_slot0", "door_closed") not in calls
     assert ("d1:right_blocker_slot0", "door_closed") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_single_side_door_and_other_side_special_behind_center_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, -1, 1): LockedDoor(),
+        (1, 1, 1): ChestRoom(),
+    }
+
+    projected_calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        projected_calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    rendered_tiles = []
+    original_render_special_tile = scene_renderer._render_special_tile
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        rendered_tiles.append((type(tile).__name__ if tile else None, depth, side, lateral_view))
+        return original_render_special_tile(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer._render_special_tile = recording_render_special_tile
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:left_blocker_slot0", "door_closed") in projected_calls
+    assert ("ChestRoom", 2, "right", True) in rendered_tiles
 
     pygame.quit()
 
@@ -892,7 +1122,7 @@ def test_lateral_stairs_sprite_rect_uses_extra_overscan():
     assert left_rect.right == rect.right
 
 
-def test_side_floor_special_clip_rect_expands_toward_center():
+def test_side_floor_special_clip_rect_keeps_chest_behind_blocking_corner():
     rect = pygame.Rect(100, 200, 80, 60)
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -1297,6 +1527,45 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
     assert ("Minotaur", 80) in enemy_calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_renders_defeated_boss_replacement_visual():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    rect = pygame.Rect(120, 120, 160, 160)
+
+    special_calls = []
+    enemy_calls = []
+    original_get_special_texture = scene_renderer.textures.get_special_texture
+    original_get_enemy_texture = scene_renderer.textures.get_enemy_texture
+
+    def recording_get_special_texture(texture_key, size=None):
+        special_calls.append((texture_key, size))
+        return original_get_special_texture(texture_key, size)
+
+    def recording_get_enemy_texture(enemy_name, size=None):
+        enemy_calls.append((enemy_name, size))
+        return original_get_enemy_texture(enemy_name, size)
+
+    scene_renderer.textures.get_special_texture = recording_get_special_texture
+    scene_renderer.textures.get_enemy_texture = recording_get_enemy_texture
+
+    before = pygame.image.tostring(screen, "RGBA")
+    scene_renderer._render_special_tile(
+        BossRoom(enemy=DummyEnemy("Minotaur"), defeated=True),
+        rect,
+        darkness=0.0,
+        depth=1,
+    )
+    after = pygame.image.tostring(screen, "RGBA")
+
+    assert ("burial_site", 112) in special_calls
+    assert enemy_calls == []
+    assert before != after
 
     pygame.quit()
 

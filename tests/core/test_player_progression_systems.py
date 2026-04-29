@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import items, player as player_module
+from src.core import items, map_tiles, player as player_module
 from src.core.player import (
     REALM_OF_CAMBION_LEVEL,
     _extract_tile_type,
@@ -184,6 +184,7 @@ class TestPlayerTopLevelHelpers:
             return {(99, z, z): SimpleNamespace(source=Path(path).name, z=z)}
 
         monkeypatch.setattr(player_module, "_load_tiled_map", fake_load_tiled_map)
+        monkeypatch.setattr(player_module, "MAP_FILES_DIR", map_dir)
         monkeypatch.chdir(tmp_path)
 
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -194,6 +195,16 @@ class TestPlayerTopLevelHelpers:
         assert player.world_dict[(99, 1, 1)].source == "map_level_1.json"
         assert player.world_dict[(99, 7, 7)].source == "map_funhouse.json"
         assert player.world_dict[(99, REALM_OF_CAMBION_LEVEL, REALM_OF_CAMBION_LEVEL)].source == "map_realm_cambion.json"
+
+    def test_load_tiles_finds_repo_maps_when_cwd_changes(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        player.load_tiles()
+
+        assert player.world_dict
+        assert any(pos[2] == 1 for pos in player.world_dict)
+        assert (5, 10, 1) in player.world_dict
 
 
 class TestPlayerProgressionAndMenus:
@@ -364,6 +375,27 @@ class TestPlayerProgressionAndMenus:
         assert "Mana Drain" not in drain_player.spellbook["Skills"]
         assert "Health/Mana Drain" in drain_player.spellbook["Skills"]
 
+    def test_level_up_handles_non_named_parent_ability(self, monkeypatch):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
+        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
+
+        class ObjectParentSpell(object):
+            def __init__(self):
+                self.name = "Sunburst"
+
+        monkeypatch.setattr(player_module.abilities, "spell_dict", {"Warrior": {"2": ObjectParentSpell}})
+        monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {}})
+        rolls = iter([1, 1, 0, 0, 0, 0])
+        monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
+
+        textbox = RecordingTextBox()
+        game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: None))
+        player.level_up(game=game, textbox=textbox)
+
+        joined_messages = "\n".join(textbox.messages)
+        assert "You have gained the ability to cast Sunburst." in joined_messages
+        assert "Sunburst" in player.spellbook["Spells"]
+
     def test_inventory_and_screen_helpers_cover_errors_and_navigation(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         game = SimpleNamespace()
@@ -505,7 +537,7 @@ class TestPlayerProgressionAndMenus:
         player.location_x, player.location_y, player.location_z = (1, 2, 7)
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
         calls = []
-        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: calls.append((item.name, subtract))
+        player.modify_inventory = lambda item, num=1, subtract=False, **kwargs: calls.append((item.name, subtract, kwargs.get("rare", False)))
         battle_calls = []
 
         class FunhouseMimicChestTile:
@@ -544,8 +576,8 @@ class TestPlayerProgressionAndMenus:
 
         assert player.state == "fight"
         assert chest_tile.open is True
-        assert any(name == "Treasure" for name, _subtract in calls)
-        assert any(name == "Jester Token" for name, _subtract in calls)
+        assert any(name == "Treasure" and rare is False for name, _subtract, rare in calls)
+        assert any(name == "Jester Token" and rare is True for name, _subtract, rare in calls)
         assert battle_calls == ["Mimic-4"]
         assert player.gold > 0
 
@@ -577,6 +609,20 @@ class TestPlayerProgressionAndMenus:
         assert player.gameplay_stats["steps_taken"] == 1
         assert player.dwarf_hangover_steps == 1
 
+        player.location_x, player.location_y, player.location_z = (0, 0, 7)
+        player.facing = "north"
+        player.world_dict[(0, 0, 7)] = map_tiles.FunhouseEmptyPath(0, 0, 7)
+        player.world_dict[(0, -1, 7)] = map_tiles.JesterBossRoom(0, -1, 7)
+        events = []
+        player.move_forward(game=SimpleNamespace(special_event=lambda name: events.append(name)))
+        assert (player.location_x, player.location_y) == (0, 0)
+        assert events == [map_tiles.JESTER_FORCE_FIELD_EVENT]
+
+        player.special_inventory["Jester Token"] = [items.JesterToken() for _ in range(4)]
+        player.move_forward(game=None)
+        assert (player.location_x, player.location_y) == (0, -1)
+
+        player.location_z = 0
         player.stairs_up()
         assert player.location_z == -1
         assert player.gameplay_stats["stairs_used"] == 1

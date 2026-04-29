@@ -3875,7 +3875,7 @@ class Scroll(Misc):
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = f"{user.name} uses {self.name}.\n"
-        use_str += self.spell.cast(user, target=target, special=True)
+        use_str += str(self.spell.cast(user, target=target, special=True))
         self.charges -= 1
         if not self.charges:
             use_str += "The scroll crumbles to dust in your hands!\n"

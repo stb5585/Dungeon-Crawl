@@ -253,6 +253,39 @@ def return_to_underground_spring(player_char):
     player_char.facing = "east"
 
 
+JESTER_TOKEN_NAME = "Jester Token"
+JESTER_TOKENS_REQUIRED = 4
+JESTER_FORCE_FIELD_EVENT = "Jester Force Field"
+_CARDINAL_DIRECTIONS = {
+    (1, 0): "East",
+    (-1, 0): "West",
+    (0, -1): "North",
+    (0, 1): "South",
+}
+
+
+def jester_token_count(player_char) -> int:
+    """Count Jester Tokens across both inventories for backward compatibility."""
+    count = 0
+    for inventory_name in ("special_inventory", "inventory"):
+        inventory = getattr(player_char, inventory_name, {})
+        for item_list in inventory.values():
+            count += sum(1 for item in item_list if getattr(item, "name", None) == JESTER_TOKEN_NAME)
+    return count
+
+
+def jester_force_field_blocks(tile, player_char, facing: str) -> bool:
+    """Return True when a funhouse force field should block forward movement."""
+    if type(tile).__name__ != "FunhouseEmptyPath":
+        return False
+    blocked = tile._boss_direction(player_char)
+    if not blocked:
+        return False
+    if blocked.lower() != facing:
+        return False
+    return jester_token_count(player_char) < JESTER_TOKENS_REQUIRED
+
+
 def update_chalice_location(game):
     """Hide or reveal the Golden Chalice altar based on quest progression."""
     player_char = game.player_char
@@ -631,6 +664,47 @@ class FunhouseEmptyPath(EmptyCavePath):
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+        self.read = False
+
+    def _boss_direction(self, player_char):
+        for (dx, dy), direction in _CARDINAL_DIRECTIONS.items():
+            tile = player_char.world_dict.get((self.x + dx, self.y + dy, self.z))
+            if tile is None:
+                continue
+            if type(tile).__name__ != "JesterBossRoom":
+                continue
+            if getattr(tile, "defeated", False):
+                return None
+            return direction
+        return None
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        blocked = self._boss_direction(game.player_char)
+        if blocked and jester_token_count(game.player_char) < JESTER_TOKENS_REQUIRED:
+            intro_str += "A shimmering force field seals off the Jester's sanctum.\n"
+        elif blocked:
+            intro_str += "The force field flickers and fades before you.\n"
+        return intro_str
+
+    def available_actions(self, player_char):
+        blocked = self._boss_direction(player_char)
+        if blocked and jester_token_count(player_char) < JESTER_TOKENS_REQUIRED:
+            return self.adjacent_moves(player_char, [actions_dict["CharacterMenu"]], blocked=blocked.lower())
+        return super().available_actions(player_char)
+
+    def special_text(self, game):
+        blocked = self._boss_direction(game.player_char)
+        if not blocked:
+            return None
+        token_count = jester_token_count(game.player_char)
+        if token_count < JESTER_TOKENS_REQUIRED:
+            self.read = False
+            return "A crackling force field bars the way to the Jester."
+        if not self.read:
+            self.read = True
+            return "Your Jester Tokens resonate and the force field drops."
+        return None
 
 
 class FunhousePath(CavePath):
@@ -1163,36 +1237,12 @@ class JesterBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = enemies.Jester
-        self.tokens_required = 4
+        self.tokens_required = JESTER_TOKENS_REQUIRED
 
     def intro_text(self, game):
         if not self.enemy:
             return "The twisted carnival around you suddenly snaps back to reality. You have vanquished the Jester.\n"
         return super().intro_text(game)
-    
-    def modify_player(self, game):
-        """Check for tokens before allowing combat with Jester."""
-        self.visited = True
-        self.adjacent_visited(game.player_char)
-        
-        # Count Jester Tokens in inventory
-        token_count = len([item for items in game.player_char.inventory.values() for item in items 
-                          if hasattr(item, 'name') and item.name == "Jester Token"])
-        
-        if token_count < self.tokens_required:
-            # Not enough tokens - turn player away
-            msg = f"The Jester emerges from the shadows, blocking your path.\n"
-            msg += f"'Not ready yet, carnival wanderer! Return when you've collected more of my tokens.'\n"
-            msg += f"Tokens collected: {token_count}/{self.tokens_required}\n"
-            if hasattr(game, 'add_message'):
-                game.add_message(msg)
-            return
-        
-        # Enough tokens - proceed with normal combat startup
-        if not self.defeated:
-            self.generate_enemy()
-            if self.enemy.is_alive():
-                self.enter_combat(game.player_char)
     
     def special_text(self, game):
         """Handle victory condition and exit the funhouse."""

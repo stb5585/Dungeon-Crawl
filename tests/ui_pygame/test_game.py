@@ -331,3 +331,78 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
     game.cleanup()
     assert cleanup_calls == [True]
+
+
+def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(
+        name="Hero",
+        level=SimpleNamespace(level=6),
+        gameplay_stats={
+            "steps_taken": "12",
+            "stairs_used": 3,
+            "enemies_defeated": 4,
+            "deaths": 1,
+            "flees": 2,
+            "highest_level_reached": 5,
+            "highest_damage_dealt": 99,
+            "highest_damage_taken": 42,
+        },
+        town_heal=lambda: None,
+        _suppress_heal_message=True,
+        special_inventory={},
+        quest_dict={"Side": {}},
+        warp_point=False,
+        quit=False,
+    )
+
+    popup_messages = []
+    popup_kwargs = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
+            return True
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    formatted = pygame_game.PygameGame.format_gameplay_statistics(game.player_char)
+    assert "Steps Taken: 12" in formatted
+    assert "Highest Level Reached: 6" in formatted
+
+    game.show_gameplay_statistics(background_draw_func=lambda: None)
+    assert "Adventure Statistics" in popup_messages[-1][0]
+    assert popup_messages[-1][1] is False
+    assert popup_kwargs[-1]["flush_events"] is True
+    assert popup_kwargs[-1]["require_key_release"] is True
+
+    options_seen = []
+
+    class FakeTownMenu:
+        def __init__(self, _presenter):
+            self.calls = 0
+
+        def draw_background(self):
+            return None
+
+        def draw_menu_panel(self, _options):
+            return None
+
+        def navigate(self, options):
+            options_seen.append(tuple(options))
+            self.calls += 1
+            if self.calls == 1:
+                return options.index("Statistics")
+            return len(options) - 1
+
+    stats_calls = []
+    monkeypatch.setattr(pygame_game, "TownMenuScreen", FakeTownMenu)
+    game.show_gameplay_statistics = lambda background_draw_func=None: stats_calls.append(background_draw_func)
+
+    assert game.town_menu() == "quit"
+    assert stats_calls
+    assert any("Statistics" in options for options in options_seen)

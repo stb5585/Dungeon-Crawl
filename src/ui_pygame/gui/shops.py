@@ -20,7 +20,7 @@ class ShopManager(TownScreenBase):
         """Visit Griswold's Blacksmith - weapons and shields."""
         if self.player_char.player_level() < 5:
             popup = ConfirmationPopup(self.presenter, "Sorry but the blacksmith is currently closed. Try again later.", show_buttons=False)
-            popup.show()
+            popup.show(flush_events=True, require_key_release=True)
             return
         
         # Check for unobtainium ultimate weapon quest
@@ -48,7 +48,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
-                popup.show()
+                popup.show(flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
@@ -87,7 +87,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Good luck on your adventures!", show_buttons=False)
-                popup.show()
+                popup.show(flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
@@ -113,7 +113,7 @@ class ShopManager(TownScreenBase):
         """Visit the Jeweler - rings and pendants."""
         if self.player_char.player_level() < 10:
             popup = ConfirmationPopup(self.presenter, "Sorry but the jeweler is currently closed. Try again later.", show_buttons=False)
-            popup.show()
+            popup.show(flush_events=True, require_key_release=True)
             return
         
         from .quest_manager import QuestManager
@@ -132,7 +132,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "May fortune favor you!", show_buttons=False)
-                popup.show()
+                popup.show(flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
@@ -305,7 +305,11 @@ class ShopManager(TownScreenBase):
             max_qty = min(self.player_char.gold // cost, 99) if cost > 0 else 99
             
             qty_popup = QuantityPopup(self.presenter, item.name, cost, max_qty)
-            quantity = qty_popup.show(background_draw_func=bg_func)
+            quantity = qty_popup.show(
+                background_draw_func=bg_func,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if quantity is None or quantity == 0:
                 continue
@@ -323,7 +327,11 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Buy {quantity}x {item.name} for {total_cost}g?"
             )
-            confirmed = confirm_popup.show(background_draw_func=bg_func)
+            confirmed = confirm_popup.show(
+                background_draw_func=bg_func,
+                flush_events=True,
+                require_key_release=True,
+            )
             if not confirmed:
                 continue
 
@@ -337,7 +345,7 @@ class ShopManager(TownScreenBase):
                 f"Purchased {quantity}x {item.name}!\n\nGold remaining: {self.player_char.gold}",
                 show_buttons=False
             )
-            summary_popup.show(background_draw_func=bg_func)
+            summary_popup.show(background_draw_func=bg_func, flush_events=True, require_key_release=True)
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
@@ -462,7 +470,7 @@ class ShopManager(TownScreenBase):
         
         if not self.player_char.inventory:
             popup = ConfirmationPopup(self.presenter, "You have nothing to sell!", show_buttons=False)
-            popup.show(background_draw_func=bg_func if bg_func else None)
+            popup.show(background_draw_func=bg_func if bg_func else None, flush_events=True, require_key_release=True)
             return
         
         # Create ShopScreen once outside the loop to preserve cursor position
@@ -487,7 +495,7 @@ class ShopManager(TownScreenBase):
                     "You have no items to sell.",
                     show_buttons=False
                 )
-                popup.show(background_draw_func=bg_func if bg_func else None)
+                popup.show(background_draw_func=bg_func if bg_func else None, flush_events=True, require_key_release=True)
                 return
             
             # Update the item list (preserves cursor position)
@@ -509,7 +517,11 @@ class ShopManager(TownScreenBase):
             from .confirmation_popup import QuantityPopup
             shop_screen.draw_all(do_flip=False)
             qty_popup = QuantityPopup(self.presenter, item.name, sell_price, count, action="sell", default_quantity=count)
-            quantity = qty_popup.show(background_draw_func=bg_func if bg_func else None)
+            quantity = qty_popup.show(
+                background_draw_func=bg_func if bg_func else None,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if quantity is None or quantity == 0:
                 continue
@@ -523,7 +535,11 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 f"Sell {quantity}x {item.name} for {total_gold}g?"
             )
-            confirm = confirm_popup.show(background_draw_func=bg_func if bg_func else None)
+            confirm = confirm_popup.show(
+                background_draw_func=bg_func if bg_func else None,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if confirm:
                 self.player_char.gold += total_gold
@@ -536,7 +552,7 @@ class ShopManager(TownScreenBase):
                     f"Sold {quantity}x {item.name} for {total_gold}g!\n\nGold: {self.player_char.gold}",
                     show_buttons=False
                 )
-                summary_popup.show(background_draw_func=bg_func if bg_func else None)
+                summary_popup.show(background_draw_func=bg_func if bg_func else None, flush_events=True, require_key_release=True)
                 # Continue selling (will reload inventory)
             else:
                 # Continue browsing
@@ -561,7 +577,7 @@ class ShopManager(TownScreenBase):
             
             if choice is None or choice == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Come back anytime!", show_buttons=False)
-                popup.show(background_draw_func=bg_func)
+                popup.show(background_draw_func=bg_func, flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
                 # Show buy submenu

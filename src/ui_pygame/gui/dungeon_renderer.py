@@ -25,6 +25,7 @@ class DungeonRenderer:
     def render_dungeon_view(self, player_char, world_dict):
         self._refresh_screen_refs()
         self.scene_renderer.render(player_char, world_dict)
+        self.overlays.render_vignette()
 
     def render_message_area(self, messages, scroll_offset=0, lines_per_page=4):
         self._refresh_screen_refs()

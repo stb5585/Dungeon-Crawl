@@ -329,6 +329,10 @@ class DungeonManager:
             min_display_seconds=2.0,
         )
 
+    def _npc_image_path(self, filename: str) -> str:
+        """Return the repo-relative path for an NPC portrait asset."""
+        return os.path.join("src", "ui_pygame", "assets", "sprites", "npcs", filename)
+
     def _load_dungeon_background(self):
         """Load and scale the dungeon background once."""
         if self._dungeon_background_loaded:
@@ -468,6 +472,16 @@ class DungeonManager:
             if blocked_dir and blocked_dir.lower() == self.player_char.facing:
                 self.add_message("An invisible force prevents you from moving forward!")
                 return False
+
+        current_tile = self.get_current_tile()
+        if current_tile and map_tiles.jester_force_field_blocks(current_tile, self.player_char, self.player_char.facing):
+            self._show_special_event_dialogue(
+                map_tiles.JESTER_FORCE_FIELD_EVENT,
+                title="Jester",
+                image_path=self._npc_image_path("jester.png"),
+            )
+            self.add_message("A crackling force field prevents you from moving forward!")
+            return False
 
         # Record previous position for tiles that inspect it (doors, blockers, etc.)
         self.player_char.previous_location = (
@@ -852,7 +866,7 @@ class DungeonManager:
             if is_funhouse_mimic:
                 from src.core import items as items_module
                 token = items_module.JesterToken()
-                self.player_char.modify_inventory(token)
+                self.player_char.modify_inventory(token, rare=True)
                 self.add_message(f"A shimmering {token.name} manifests as the Mimic dissolves!")
         else:
             self.loot_popup.show_loot([], "Empty Chest")
@@ -1029,7 +1043,7 @@ class DungeonManager:
         """Handle underground spring interaction."""
         from .confirmation_popup import ConfirmationPopup
 
-        nimue_image_path = os.path.join("src", "ui_pygame", "assets", "sprites", "npcs", "nimue.png")
+        nimue_image_path = self._npc_image_path("nimue.png")
         popup = ConfirmationPopup(
             self.presenter,
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
@@ -1186,7 +1200,11 @@ class DungeonManager:
             "Anti-Magic Terminal",
             "Enter the 4-digit override code",
         )
-        code = popup.show(background_draw_func=self._dungeon_dialog_background)
+        code = popup.show(
+            background_draw_func=self._dungeon_dialog_background,
+            flush_events=True,
+            require_key_release=True,
+        )
         if code is None:
             self.add_message("You step away from the terminal.")
             return
