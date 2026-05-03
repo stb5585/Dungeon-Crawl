@@ -50,11 +50,18 @@ dungeon-crawl-pygame = "game_pygame:main"
 where = ["."]
 include = ["src*"]
 
+[tool.setuptools.package-data]
+"src.core.data" = [
+    "abilities/*.yaml",
+    "content/*.json",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+pythonpath = ["."]
 addopts = [
     "--verbose",
     "--strict-markers",
