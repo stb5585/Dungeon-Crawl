@@ -6,6 +6,13 @@ Displays character stats, minimap, inventory quick-access, and other UI elements
 import pygame
 
 from src.core import map_tiles
+from .status_icons import (
+    STATUS_ICON_COLORS,
+    compact_status_icons,
+    fit_status_icon_label,
+    prioritize_status_icons,
+    status_icon_color,
+)
 
 
 class DungeonHUD:
@@ -37,6 +44,7 @@ class DungeonHUD:
         self.hp_color = (200, 50, 50)
         self.mp_color = (50, 100, 200)
         self.exp_color = (100, 200, 100)
+        self.status_colors = STATUS_ICON_COLORS
         
     def render_hud(self, player_char, combat_mode=False, enemy=None):
         """Render the complete HUD.
@@ -162,9 +170,9 @@ class DungeonHUD:
         except (AttributeError, TypeError, ValueError):
             pass
 
-        return icons
+        return prioritize_status_icons(icons)
 
-    def _render_status_icons(self, player_char, y_offset):
+    def _render_status_icons(self, player_char, y_offset, max_rows=2):
         x_margin = self.hud_x + 20
         icons = self._collect_status_icons(player_char)
         if not icons:
@@ -175,24 +183,26 @@ class DungeonHUD:
         padding = 6
         max_width = self.hud_width - 40
         per_row = max(1, max_width // (icon_w + padding))
+        visible_icons = compact_status_icons(icons, per_row, max_rows)
         font = pygame.font.Font(None, 16)
 
-        for idx, (label, is_positive) in enumerate(icons):
+        for idx, (label, is_positive) in enumerate(visible_icons):
             row = idx // per_row
             col = idx % per_row
             icon_x = x_margin + col * (icon_w + padding)
             icon_y = y_offset + row * (icon_h + padding)
-            color = (70, 170, 90) if is_positive else (190, 70, 70)
+            color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
             pygame.draw.rect(self.screen, color, rect, border_radius=4)
             pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
 
-            text_surf = font.render(label, True, (255, 255, 255))
+            fitted_label = fit_status_icon_label(font, label, icon_w - 6)
+            text_surf = font.render(fitted_label, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=rect.center)
             self.screen.blit(text_surf, text_rect)
 
-        rows = (len(icons) + per_row - 1) // per_row
+        rows = (len(visible_icons) + per_row - 1) // per_row
         return y_offset + rows * (icon_h + padding)
     
     def _render_character_info(self, player_char, y_offset):

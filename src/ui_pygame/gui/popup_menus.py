@@ -206,7 +206,7 @@ class BasePopupMenu:
         pygame.display.flip()
         return self.screen.copy()
 
-    def show(self, player_char):
+    def show(self, player_char, flush_events: bool = False, require_key_release: bool = False):
         # Prepare items
         self.build_items(player_char)
         if not self.items:
@@ -223,6 +223,9 @@ class BasePopupMenu:
         running = True
         result = None
         clock = self.presenter.clock
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
 
         # Render and capture background once to prevent flicker
         self.parent_screen.draw_all(player_char, do_flip=False)
@@ -233,87 +236,92 @@ class BasePopupMenu:
         if hasattr(self.presenter, "set_background_provider"):
             self.presenter.set_background_provider(lambda: menu_surface_ref[0] or self.screen.copy())
 
-        while running:
-            self.draw_background(background_surface)
-            self.draw_popup(player_char)
-            self.draw_list()
-            self.draw_details(player_char)
-            pygame.display.flip()
-            menu_surface_ref[0] = self.screen.copy()
+        try:
+            while running:
+                self.draw_background(background_surface)
+                self.draw_popup(player_char)
+                self.draw_list()
+                self.draw_details(player_char)
+                pygame.display.flip()
+                menu_surface_ref[0] = self.screen.copy()
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    import sys
-                    sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if self.handle_key_down(player_char, event):
-                        self.parent_screen.draw_all(player_char, do_flip=False)
-                        background_surface = self.screen.copy()
-                        menu_surface_ref[0] = None
-                        continue
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                        result = None
-                    elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                        if self.items:
-                            current_item = self.items[self.selected_index]
-                            # Skip headers
-                            if not (isinstance(current_item, dict) and current_item.get("is_header")):
-                                result = self.on_select(player_char, current_item)
-                                # If on_select returns None, keep menu open (for actions that update in place)
-                                if result is not None:
-                                    running = False
-                                else:
-                                    # Rebuild display after action
-                                    self.parent_screen.draw_all(player_char, do_flip=False)
-                                    background_surface = self.screen.copy()
-                                    menu_surface_ref[0] = None
-                    elif event.key == pygame.K_UP:
-                        if self.items:
-                            self.selected_index -= 1
-                            while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        import sys
+                        sys.exit()
+                    elif event.type == pygame.KEYUP and require_key_release:
+                        input_armed = True
+                    elif event.type == pygame.KEYDOWN:
+                        if not input_armed:
+                            continue
+                        if self.handle_key_down(player_char, event):
+                            self.parent_screen.draw_all(player_char, do_flip=False)
+                            background_surface = self.screen.copy()
+                            menu_surface_ref[0] = None
+                            continue
+                        if event.key == pygame.K_ESCAPE:
+                            running = False
+                            result = None
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                            if self.items:
+                                current_item = self.items[self.selected_index]
+                                # Skip headers
+                                if not (isinstance(current_item, dict) and current_item.get("is_header")):
+                                    result = self.on_select(player_char, current_item)
+                                    # If on_select returns None, keep menu open (for actions that update in place)
+                                    if result is not None:
+                                        running = False
+                                    else:
+                                        # Rebuild display after action
+                                        self.parent_screen.draw_all(player_char, do_flip=False)
+                                        background_surface = self.screen.copy()
+                                        menu_surface_ref[0] = None
+                        elif event.key == pygame.K_UP:
+                            if self.items:
                                 self.selected_index -= 1
-                            if self.selected_index < 0:
-                                # Wrap to last selectable item
-                                self.selected_index = len(self.items) - 1
                                 while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
                                     self.selected_index -= 1
-                        self._ensure_visible()
-                    elif event.key == pygame.K_DOWN:
-                        if self.items:
-                            self.selected_index += 1
-                            while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index % len(self.items)], dict) and self.items[self.selected_index % len(self.items)].get("is_header"):
+                                if self.selected_index < 0:
+                                    # Wrap to last selectable item
+                                    self.selected_index = len(self.items) - 1
+                                    while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                        self.selected_index -= 1
+                            self._ensure_visible()
+                        elif event.key == pygame.K_DOWN:
+                            if self.items:
                                 self.selected_index += 1
-                            if self.selected_index >= len(self.items):
-                                self.selected_index = 0
+                                while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index % len(self.items)], dict) and self.items[self.selected_index % len(self.items)].get("is_header"):
+                                    self.selected_index += 1
+                                if self.selected_index >= len(self.items):
+                                    self.selected_index = 0
+                                    while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                        self.selected_index += 1
+                            self._ensure_visible()
+                        elif event.key == pygame.K_PAGEUP:
+                            if self.items:
+                                max_visible = max(1, self.list_rect.height // self.line_height)
+                                self.selected_index = max(0, self.selected_index - max_visible)
+                                while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                    self.selected_index -= 1
+                                if self.selected_index < 0:
+                                    self.selected_index = 0
+                            self._ensure_visible()
+                        elif event.key == pygame.K_PAGEDOWN:
+                            if self.items:
+                                max_visible = max(1, self.list_rect.height // self.line_height)
+                                self.selected_index = min(len(self.items) - 1, self.selected_index + max_visible)
                                 while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
                                     self.selected_index += 1
-                        self._ensure_visible()
-                    elif event.key == pygame.K_PAGEUP:
-                        if self.items:
-                            max_visible = max(1, self.list_rect.height // self.line_height)
-                            self.selected_index = max(0, self.selected_index - max_visible)
-                            while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                self.selected_index -= 1
-                            if self.selected_index < 0:
-                                self.selected_index = 0
-                        self._ensure_visible()
-                    elif event.key == pygame.K_PAGEDOWN:
-                        if self.items:
-                            max_visible = max(1, self.list_rect.height // self.line_height)
-                            self.selected_index = min(len(self.items) - 1, self.selected_index + max_visible)
-                            while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                self.selected_index += 1
-                            if self.selected_index >= len(self.items):
-                                self.selected_index = len(self.items) - 1
-                                while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                    self.selected_index -= 1
-                        self._ensure_visible()
-            clock.tick(30)
-
-        if hasattr(self.presenter, "set_background_provider"):
-            self.presenter.set_background_provider(prev_provider)
+                                if self.selected_index >= len(self.items):
+                                    self.selected_index = len(self.items) - 1
+                                    while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+                                        self.selected_index -= 1
+                            self._ensure_visible()
+                clock.tick(30)
+        finally:
+            if hasattr(self.presenter, "set_background_provider"):
+                self.presenter.set_background_provider(prev_provider)
 
         return result
 
@@ -554,7 +562,7 @@ class InventoryPopupMenu(BasePopupMenu):
             original_draw_bg = action_popup.draw_background
             action_popup.draw_background = lambda surf: self.screen.blit(base_bg, (0, 0))
 
-            result = action_popup.show(player_char)
+            result = action_popup.show(player_char, flush_events=True, require_key_release=True)
             action_popup.draw_background = original_draw_bg
 
             if not result or result[0] != "selection":
@@ -859,9 +867,10 @@ class EquipmentPopupMenu(BasePopupMenu):
         # Temporarily override draw_background for nested popup
         original_draw_bg = action_popup.draw_background
         action_popup.draw_background = lambda surf: self.screen.blit(action_bg, (0, 0))
-        
-        result = action_popup.show(player_char)
-        action_popup.draw_background = original_draw_bg
+        try:
+            result = action_popup.show(player_char, flush_events=True, require_key_release=True)
+        finally:
+            action_popup.draw_background = original_draw_bg
         
         if result and result[0] == "selection":
             selected = result[1]

@@ -497,9 +497,13 @@ class RewardSelectionPopup:
         if do_flip:
             pygame.display.flip()
 
-    def show(self) -> int | None:
+    def show(self, flush_events: bool = False, require_key_release: bool = False) -> int | None:
+        if flush_events:
+            pygame.event.clear()
+
         background = self._get_background_surface()
         clock = self.presenter.clock
+        input_armed = not require_key_release
 
         if not self.items:
             return None
@@ -507,12 +511,18 @@ class RewardSelectionPopup:
         while True:
             self.draw_popup(background)
 
+            if require_key_release and not input_armed:
+                if not any(pygame.key.get_pressed()):
+                    input_armed = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_UP:
                         self.selected_index = (self.selected_index - 1) % len(self.items)
                     elif event.key == pygame.K_DOWN:
@@ -546,7 +556,7 @@ def confirm_yes_no(presenter, message) -> bool:
         bool: True for Yes, False for No (ESC also returns False)
     """
     popup = ConfirmationPopup(presenter, message)
-    return popup.show()
+    return popup.show(flush_events=True, require_key_release=True)
 
 
 class QuantityPopup:

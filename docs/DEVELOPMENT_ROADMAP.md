@@ -1,6 +1,6 @@
 # Dungeon Crawl — Development Roadmap
 
-*Updated: April 2026*
+*Updated: May 2026*
 
 This roadmap is organized by implementation status instead of historical planning order. It is intended to answer three questions quickly:
 
@@ -247,7 +247,12 @@ Verification note:
 
 - Repo inspection confirms that baseline status icons, telegraph UI, and a dedicated turn-indicator banner exist in pygame combat.
 - Combat status icons now cap visible rows and collapse excess effects into a `+N` marker.
+- Combat status icons now sort urgent negative effects ahead of positive buffs before overflow compaction, so control/status hazards stay visible when many effects are active.
+- Urgent negative combat status icons now use a stronger alert color after prioritization, improving readability when many effects are active.
+- Combat status icon labels now trim to fit inside their compact pills instead of spilling over when future labels run long.
+- Combat and combat-mode dungeon HUD status icons now share the same priority, overflow, and color helper logic to avoid future presentation drift.
 - Charging / telegraph-style combat log lines now render with a warning color in both combat overlay modes.
+- Charging / telegraph-style combat log lines now wrap against the narrower dungeon-combat overlay pane as well as the main combat pane.
 - Telegraph messages now also surface in a dedicated warning banner, and the turn indicator now uses fixed player/enemy turn labels for cleaner readability.
 
 ### Dungeon Rendering / Presentation Polish
@@ -267,6 +272,11 @@ Verification note:
 - The dungeon viewport now gets a soft edge vignette so the rendered scene feels less abruptly cut off.
 - The viewport edge treatment now uses layered bands and a subtle separator so the dungeon frame reads more cleanly against the HUD.
 - Side floor sprites now advance to the visible next-zone depth when the corridor extends forward, and floor-sprite clip regions expand accordingly.
+- Depth-2 side floor-special geometry now has regression coverage to keep left/right props in the outer lanes as they advance to depth-3 placement.
+- Side-view chest sprites now render upright instead of being perspective-skewed like floor decals.
+- Left-side side-corridor floor-special routing now has outer depth-3 floor regression coverage to match the existing right-side checks.
+- Combat-mode dungeon HUD status icons now share the priority/overflow behavior used by the main combat view.
+- Outer side-corridor door regression coverage now checks left-side open and closed doors as well as the existing right-side cases.
 
 ### Character / Shop UX
 
@@ -279,7 +289,7 @@ Remaining work:
 
 Verification note:
 
-- Repo inspection and `docs/notes.txt` both still point to shop tabs and character-menu redesign as unfinished work.
+- Repo inspection still points to shop tabs and character-menu redesign as unfinished work.
 
 ### Input / Redraw Behavior
 
@@ -297,6 +307,15 @@ Verification note:
 - Quantity and code-entry popups now support the same `flush_events` / `require_key_release` protections as confirmation popups, with shop, barracks, and anti-magic terminal flows using them.
 - Level-up info, stat selection, and inventory confirm/drop popups now use the same stale-input guard so buffered key presses do not skip modal choices.
 - Remaining shop, barracks, and combat-end confirmation popups now use the same stale-input guard too, so the modal behavior is consistent across the main pygame menu flows.
+- The shared `confirm_yes_no()` helper now opts into `flush_events` and `require_key_release`, extending the stale-input guard to simple yes/no confirmations that use the helper.
+- Inn, church, and quest-manager fallback popups now consistently use stale-input guards, and town-manager popups share a common background redraw helper.
+- Reward-selection popups now support the same stale-input guard used by confirmation, quantity, and code-entry popups.
+- Top-level pygame game-flow confirmations now use shared stale-input guards, including debug-mode notices, race/class confirmation, town-menu confirmations, and warp-point prompts.
+- Dungeon save/quit menu confirmations, Golden Chalice pickup confirmation, and the character-screen empty-key-items notice now use the same guarded modal input behavior.
+- Shared pygame popup menus can now wait for key release before accepting selection input, and nested inventory action menus opt into that guard.
+- Nested equipment action menus now opt into the same popup-menu stale-input guard as inventory action menus.
+- Shared pygame popup menus now restore the previous background provider even if a popup exits through an exception.
+- The barracks leave popup now redraws over the barracks menu background while using the shared stale-input guard.
 
 ### 3. Broader Test Coverage
 
@@ -485,6 +504,7 @@ Current progress:
 - Added a dedicated pygame combat turn-indicator treatment
 - Added combat status-icon overflow handling and telegraph-colored combat log lines
 - Added a dedicated telegraph banner and cleaner fixed-label turn indicator in pygame combat
+- Prioritized combat status icons before overflow compaction so stun/sleep/silence/prone-style hazards remain visible ahead of buffs
 - Confirmed that the active pygame stabilization hotspot is the dungeon renderer / smoke-test surface
 - Added defeated-boss replacement visuals and open/closed minimap icon states for doors and chests
 - Added dungeon texture-library fallback diagnostics for missing wall, special-tile, and enemy sprite assets
@@ -493,6 +513,23 @@ Current progress:
 - Refined the dungeon viewport edge vignette into layered bands plus a subtle HUD separator
 - Tightened side-corridor floor-sprite depth and clip behavior so opening sprites follow the deeper corridor geometry
 - Extended stale-input protection to quantity, code-entry, level-up, inventory, shop, barracks, and combat-end modal flows
+- Extended the same status-icon priority/overflow behavior to the combat-mode dungeon HUD
+- Added left-side outer-corridor door-state smoke coverage to match the existing right-side checks
+- Extended stale-input protection to shared `confirm_yes_no()` prompts
+- Standardized inn/church town-manager popups on shared guarded popup kwargs with background redraw support
+- Extended guarded popup behavior through quest-manager fallback messages, accept/decline prompts, reward selection, and Busboy event fallbacks
+- Extended guarded popup behavior to top-level game confirmations, dungeon save/quit and chalice prompts, and the character-menu empty-key-items notice
+- Extracted shared pygame status-icon priority, overflow, and color helpers for combat view and combat-mode dungeon HUD
+- Added depth-2 side floor-special geometry coverage so side props stay aligned with depth-3 outer-lane placement
+- Added high-alert coloring for urgent negative combat status icons in both combat view and combat-mode dungeon HUD
+- Added compact status-label fitting so long labels cannot overflow their icon pills
+- Tightened combat-log wrapping for the narrower dungeon-combat overlay pane so charge/telegraph lines stay inside both log surfaces
+- Extended stale-input protection into reusable popup-menu selection loops and the nested inventory action menu
+- Extended stale-input protection to nested equipment action menus
+- Hardened reusable popup-menu background-provider restoration with a `finally` guard
+- Kept the barracks leave popup on its local background while preserving guarded modal input
+- Fixed side-view chest sprite rendering so chests stay upright instead of skewing through the lateral floor projection path
+- Added left-side outer depth-3 floor-special smoke coverage for side-corridor presentation parity
 
 Current stabilization priorities:
 
@@ -659,12 +696,21 @@ Primary workstreams:
 
 - Combat UI polish
   - completed: status icons cap visible rows and show a `+N` overflow marker under many simultaneous effects
+  - completed: status icons prioritize urgent negative effects before positive buffs so overflow preserves the most actionable states
+  - completed: combat view and combat-mode dungeon HUD now share status-icon priority/overflow/color helpers
+  - completed: urgent negative status icons now receive a stronger alert color in both combat status displays
+  - completed: compact status-icon labels now trim to fit their pills
   - completed: telegraph-like combat log lines use warning coloring in both combat render modes
+  - completed: telegraph-like combat log lines wrap to the active combat-log pane width in both render modes
   - completed: telegraph messages also surface in a dedicated warning banner
   - refine the current turn-indicator treatment if playtesting shows it is not sufficient
   - evaluate where lightweight spell or hit effects add clarity rather than noise
 - Dungeon renderer and exploration polish
   - resolve remaining wall, door, and side-corridor edge cases in the scene renderer
+  - completed: left and right outer side-corridor door-state smoke tests cover open/closed texture preservation
+  - completed: depth-2 side floor-special placement is covered for left/right outer-lane parity
+  - completed: side-view chest sprites now render upright rather than using skewed floor projection
+  - completed: left-side side-corridor floor-special routing is covered for outer depth-3 placement
   - finish special-tile placement polish for floor-bound sprites and future migrated props
   - remove or rewrite any outdated rendering assumptions left over from the legacy dungeon renderer
   - make smoke-test expectations and renderer behavior converge so regressions are caught early
@@ -677,6 +723,14 @@ Primary workstreams:
   - standardize popup behavior across town, shop, dungeon, and combat interactions
 - Input, redraw, and presentation consistency
   - extend stale-input protections anywhere buffered input can still skip a prompt or transition
+  - completed: simple yes/no helper confirmations now use the same stale-input guard as direct confirmation popups
+  - completed: inn/church town popups and quest-manager fallback popups now use guarded modal input consistently
+  - completed: reward-selection popups now support stale-input guards
+  - completed: high-traffic top-level game, dungeon-menu, and character-menu notice popups now use guarded modal input
+  - completed: reusable popup-menu selection loops and nested inventory action menus can wait for key release before accepting input
+  - completed: nested equipment action menus can wait for key release before accepting input
+  - completed: reusable popup-menu background providers are restored through a `finally` guard
+  - completed: barracks leave messaging preserves its local background redraw while using guarded input
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient
@@ -782,20 +836,30 @@ Definition of done for Phase 4:
 4. Test what changes. New renderer, combat, and quest work should come with direct test coverage.
 5. Treat this document as a living status file. If a section is complete, move it rather than leaving it buried in planned work.
 
+---
+
+## Improvements
+
+- Increase the number of Old Keys given out for quest rewards
+
+---
 
 ## Bug Fixes
 
-Recently resolved:
+Resolved:
 
-- The charge messages now wrap in the combat logger, so long telegraph lines stay inside the pane.
+- Jump now clears its forced-action state after the landing resolves, returning control instead of repeating the skill.
+- Active Jump now resolves before Berserk can force a basic attack, preserving `Unstoppable` Jump behavior.
+- Duration-1 incapacitation now still consumes the current combat turn before expiring, so stun/sleep no longer clear before skipping action.
+- Character-screen submenu popups now use the stale-input/key-release guard used by other pygame modal overlays.
+- Left-side side-corridor ladder ceilings now have mirrored renderer regression coverage for center ceiling slot routing.
 - Jump no longer cancels when stun lands during the charge if the skill has `Unstoppable` active.
 - Side-corridor outer wall doors now keep their door textures instead of collapsing into plain wall art, for both open and closed states.
 - Shields unequip correctly when equipping a two-handed weapon through the pygame equipment popup and the core equip path.
 - The combat turn indicator now stays hidden until initiative is known, instead of defaulting to the player's turn.
 - Chest sprites now stay behind the blocking corner in the side-view depth=2 corridor case.
-
-Resolved:
-
+- Side-view chest sprites now render upright instead of being distorted by lateral floor projection.
+- Charge/telegraph messages now wrap against both the main combat log and the narrower dungeon-combat overlay log pane.
 - Combat enemy sprites failed to render for legacy `.txt` `enemy.picture` values. Sprite lookup now falls back to enemy-name PNG assets, uses cwd-independent asset paths, and has regression coverage for the dungeon-combat render path.
 
 New follow-up items:

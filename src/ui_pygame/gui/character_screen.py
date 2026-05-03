@@ -530,14 +530,14 @@ class CharacterScreen(TownScreenBase):
                         # Open popup overlays for relevant menus; keep loop after closing
                         if chosen == "Inventory":
                             popup = InventoryPopupMenu(self.presenter, self)
-                            popup.show(player_char)
+                            popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Equipment":
                             popup = EquipmentPopupMenu(self.presenter, self)
-                            _ = popup.show(player_char)
+                            _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Quests":
                             from .popup_menus import QuestPopupMenu
                             popup = QuestPopupMenu(self.presenter, self)
-                            _ = popup.show(player_char)
+                            _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Key Items":
                             # Check if there are any key items
                             special_inv = getattr(player_char, "special_inventory", {})
@@ -552,7 +552,7 @@ class CharacterScreen(TownScreenBase):
                                     "You do not have any key items.",
                                     show_buttons=False
                                 )
-                                popup.show()
+                                popup.show(flush_events=True, require_key_release=True)
                             else:
                                 popup = SimpleListPopupMenu(
                                     self.presenter,
@@ -560,7 +560,7 @@ class CharacterScreen(TownScreenBase):
                                     title="Key Items",
                                     source_fn=self._get_key_items_list,
                                 )
-                                _ = popup.show(player_char)
+                                _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Specials":
                             popup = SimpleListPopupMenu(
                                 self.presenter,
@@ -568,13 +568,13 @@ class CharacterScreen(TownScreenBase):
                                 title="Special Abilities",
                                 source_fn=self._get_specials_list,
                             )
-                            _ = popup.show(player_char)
+                            _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Jump Mods":
                             popup = JumpModsPopupMenu(self.presenter, self, title="Jump Modifications")
-                            _ = popup.show(player_char)
+                            _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Totem Aspects":
                             popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
-                            _ = popup.show(player_char)
+                            _ = popup.show(player_char, flush_events=True, require_key_release=True)
                         elif chosen == "Exit Menu":
                             return "Exit Menu"
                         elif chosen == "Quit Game":

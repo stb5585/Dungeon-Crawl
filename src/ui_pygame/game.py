@@ -108,6 +108,19 @@ class PygameGame:
         # Attach shim so existing code using `game.stdscr.getch()` works in GUI mode
         self.stdscr = _PygameStdscr(self.presenter)
 
+    @staticmethod
+    def _popup_show_kwargs(background_draw_func=None, min_display_ms: int | None = None):
+        """Common modal-popup options for top-level pygame flows."""
+        kwargs = {
+            "flush_events": True,
+            "require_key_release": True,
+        }
+        if background_draw_func is not None:
+            kwargs["background_draw_func"] = background_draw_func
+        if min_display_ms is not None:
+            kwargs["min_display_ms"] = min_display_ms
+        return kwargs
+
     def special_event(self, name: str):
         """GUI implementation of narrative special events.
 
@@ -310,11 +323,11 @@ class PygameGame:
             if confirm_yes_no(self.presenter, "Debug Mode - Turn off random encounters?"):
                 self._random_combat = False
                 popup = ConfirmationPopup(self.presenter, "Random encounters disabled", show_buttons=False)
-                popup.show()
+                popup.show(**self._popup_show_kwargs())
             else:
                 self._random_combat = True
                 popup = ConfirmationPopup(self.presenter, "Random encounters enabled", show_buttons=False)
-                popup.show()
+                popup.show(**self._popup_show_kwargs())
         
         # Create main menu screen
         main_menu = MainMenuScreen(self.presenter)
@@ -363,7 +376,7 @@ class PygameGame:
                 f"You have selected {race_name} as your race. Continue?",
                 show_buttons=True,
             )
-            if confirm_race.show():
+            if confirm_race.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to class selection
             # No selected, loop back to race selection
         
@@ -382,7 +395,7 @@ class PygameGame:
                 f"You have selected {class_name} as your class. Continue?",
                 show_buttons=True,
             )
-            if confirm_class.show():
+            if confirm_class.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to name input
             # No selected, loop back to class selection
         
@@ -534,7 +547,7 @@ class PygameGame:
             # Check if we should suppress the heal message (loading in town)
             if not getattr(self.player_char, '_suppress_heal_message', False):
                 popup = ConfirmationPopup(self.presenter, "You rest in town. HP and MP fully restored.", show_buttons=False)
-                popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+                popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
             else:
                 # Clear the flag after first use
                 self.player_char._suppress_heal_message = False
@@ -549,14 +562,14 @@ class PygameGame:
             self.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
             self.player_char.modify_inventory(items.DeadSoldier(), subtract=True, rare=True)
             popup = ConfirmationPopup(self.presenter, "You have completed the quest Rookie Mistake.", show_buttons=False)
-            popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+            popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
 
         while True:
             choice_idx = town_screen.navigate(options)
             
             if choice_idx is None or choice_idx == len(options) - 1:  # Quit
                 popup = ConfirmationPopup(self.presenter, "Return to the main menu?")
-                if popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))):
+                if popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))):
                     return "quit"
                 continue
             choice_label = options[choice_idx]
@@ -595,7 +608,7 @@ class PygameGame:
 
             elif choice_label == "Old Warehouse":
                 popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
-                popup.show(background_draw_func=lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))
+                popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
 
             elif choice_label == "Character Menu":
                 self.show_character_info()
@@ -660,7 +673,7 @@ class PygameGame:
             self.presenter,
             f"Hello, {self.player_char.name}.\n\nDo you want to warp down to level 5?",
         )
-        if confirm.show(background_draw_func=background_draw_func):
+        if confirm.show(**self._popup_show_kwargs(background_draw_func)):
             # Mark the destination as visited
             if (3, 0, 5) in self.player_char.world_dict:
                 if not self.player_char.world_dict[(3, 0, 5)].visited:
@@ -680,7 +693,7 @@ class PygameGame:
                 "taking you deep into the dungeon.",
                 show_buttons=False,
             )
-            popup.show(background_draw_func=background_draw_func)
+            popup.show(**self._popup_show_kwargs(background_draw_func))
             
             # Warp player to level 5
             self.player_char.location_x = 3
@@ -696,7 +709,7 @@ class PygameGame:
                 "Not a problem, come back when you change your mind.",
                 show_buttons=False,
             )
-            popup.show(background_draw_func=background_draw_func)
+            popup.show(**self._popup_show_kwargs(background_draw_func))
     
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""

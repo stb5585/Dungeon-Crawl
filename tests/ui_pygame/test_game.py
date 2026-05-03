@@ -192,6 +192,7 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
 def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     popup_messages = []
+    popup_kwargs = []
     presenter_messages = []
     progress_calls = []
     presenter = SimpleNamespace(
@@ -216,7 +217,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
             popup_messages.append(message)
             self.message = message
 
-        def show(self, **_kwargs):
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
             return True
 
     class FakeMenu:
@@ -239,6 +241,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.main_menu()
     assert game._random_combat is True
     assert any("Random encounters enabled" in msg for msg in popup_messages)
+    assert popup_kwargs[-1]["flush_events"] is True
+    assert popup_kwargs[-1]["require_key_release"] is True
     assert any("Settings" in opts for opts in menu_calls)
     assert any("coming soon" in message.lower() for _title, message in presenter_messages)
     assert game.running is False
@@ -276,6 +280,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert len(presenter_messages) == 5
 
     confirm_results = iter([True, False])
+    popup_kwargs.clear()
 
     class FakePopup2:
         def __init__(self, presenter_obj, message, show_buttons=False, **_kwargs):
@@ -283,7 +288,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
             self.message = message
             self._show_buttons = show_buttons
 
-        def show(self, **_kwargs):
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
             if "Do you want to warp down to level 5?" in self.message:
                 return next(confirm_results)
             return True
@@ -299,6 +305,9 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         quit=False,
     )
     assert game.use_warp_point(background_draw_func=lambda: None) == "dungeon"
+    assert popup_kwargs[0]["flush_events"] is True
+    assert popup_kwargs[0]["require_key_release"] is True
+    assert callable(popup_kwargs[0]["background_draw_func"])
     assert game.player_char.location_x == 3 and game.player_char.location_z == 5
     assert game.player_char.world_dict[(3, 0, 5)].visited is True
     assert game.player_char.world_dict[(3, 0, 5)].warped is True

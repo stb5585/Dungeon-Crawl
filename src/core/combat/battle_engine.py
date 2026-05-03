@@ -187,6 +187,10 @@ class BattleEngine:
         """
         result = PreTurnResult()
 
+        # Capture activity before ticking durations so single-turn control-loss
+        # effects still consume the current turn when they expire this tick.
+        active_at_turn_start, inactive_reason_at_turn_start = self.attacker.check_active()
+
         # Process status effects (poison ticks, bleed, regen, etc.)
         effects_text = self.attacker.effects()
         if effects_text:
@@ -207,6 +211,11 @@ class BattleEngine:
             result.can_act = False
             return result
 
+        if not active_at_turn_start:
+            result.can_act = False
+            result.inactive_reason = inactive_reason_at_turn_start
+            return result
+
         # Check if the attacker can act this turn
         active, text = self.attacker.check_active()
         if not active:
@@ -222,17 +231,8 @@ class BattleEngine:
         Returns a ForcedAction when the attacker must perform a specific action
         (berserk, charging skill, jump), or None when the actor has free choice.
         """
-        # Berserk forces a basic attack
-        if self.attacker.status_effects["Berserk"].active:
-            return ForcedAction(action="Attack")
-
-        # Ongoing charging ability (e.g. Charge, Crushing Blow)
-        if self.charging_ability and self.attacker == self.player:
-            charge_owner, ability_name, _skill_obj = self.charging_ability
-            if charge_owner == self.attacker:
-                return ForcedAction(action="Use Skill", choice=ability_name)
-
-        # Jump in progress
+        # Jump in progress. Resolve the airborne/charging state before Berserk
+        # can force a basic attack, especially when Unstoppable is active.
         if self.attacker.class_effects["Jump"].active:
             skills = self.attacker.spellbook.get("Skills", {})
             jump_choice = next((name for name in skills if "Jump" in name), None)
@@ -253,6 +253,17 @@ class BattleEngine:
             if jump_choice:
                 self.attacker.class_effects["Jump"].active = False
                 return ForcedAction(action="Use Skill", choice=jump_choice)
+
+        # Berserk forces a basic attack unless a higher-priority forced action
+        # such as an active Jump has already claimed the turn.
+        if self.attacker.status_effects["Berserk"].active:
+            return ForcedAction(action="Attack")
+
+        # Ongoing charging ability (e.g. Charge, Crushing Blow)
+        if self.charging_ability and self.attacker == self.player:
+            charge_owner, ability_name, _skill_obj = self.charging_ability
+            if charge_owner == self.attacker:
+                return ForcedAction(action="Use Skill", choice=ability_name)
 
         # Enemy with a charging skill in progress
         if self.attacker != self.player:
@@ -623,9 +634,10 @@ class BattleEngine:
 
         elif "Jump" in skill.name:
             charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
-            if charge_time > 0:
+            if charge_time > 0 and not already_charging:
                 self.attacker.class_effects["Jump"].active = True
             message += skill.use(self.attacker, target=self.defender)
+            self.attacker.class_effects["Jump"].active = bool(getattr(skill, "charging", False))
 
         elif hasattr(skill, 'get_charge_time') and skill.get_charge_time() > 0:
             # Charging abilities (Charge, Crushing Blow, etc.)

@@ -64,6 +64,10 @@ class UndergroundSpring:
     enter = True
 
 
+class FirePath:
+    enter = True
+
+
 class Portal:
     enter = True
 
@@ -641,6 +645,45 @@ def test_scene_renderer_keeps_outer_side_corridor_open_door_state_on_outer_wall(
     pygame.quit()
 
 
+def test_scene_renderer_keeps_left_outer_side_corridor_door_states_on_outer_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (1, -2, 1): LockedDoor(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer.render(player, world)
+
+    assert ("d2:left_corridor_outer_wall", "door_closed") in calls
+    assert ("d2:left_corridor_outer_wall", "wall") not in calls
+
+    calls.clear()
+    world[(1, -2, 1)] = OpenDoor()
+    scene_renderer.render(player, world)
+
+    assert ("d2:left_corridor_outer_wall", "door_open") in calls
+    assert ("d2:left_corridor_outer_wall", "wall") not in calls
+
+    pygame.quit()
+
+
 def test_scene_renderer_adds_three_depth3_endcaps_per_side_for_full_back_wall():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -1182,6 +1225,173 @@ def test_side_floor_special_clip_rect_keeps_chest_behind_blocking_corner():
     assert portal_clip == rect
     assert chest_clip == rect
     assert unclipped_boulder is None
+
+    pygame.quit()
+
+
+def test_lateral_chest_floor_sprite_stays_upright_without_projection(monkeypatch):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    sprite = pygame.Surface((24, 24), pygame.SRCALPHA)
+    sprite.fill((200, 140, 40, 255))
+
+    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite)
+
+    def fail_project(*_args, **_kwargs):
+        raise AssertionError("side-view chests should not be perspective-projected")
+
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon.renderer.project_texture_to_quad", fail_project)
+
+    scene_renderer._render_floor_sprite(
+        "chest_closed",
+        pygame.Rect(100, 120, 80, 70),
+        darkness=0,
+        depth=2,
+        kind="chest",
+        side="left",
+        lateral_view=True,
+    )
+
+    pygame.quit()
+
+
+def test_depth2_side_floor_special_geometry_stays_in_outer_lanes():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (2, -1, 1): ChestRoom(),
+        (2, 1, 1): ChestRoom(),
+    }
+
+    _, zones = _build_scene_commands(scene_renderer, player, world)
+    view_w, _view_h = scene_renderer._get_viewport_size()
+
+    left_opening = scene_renderer._get_side_opening_rect(zones[2], "left")
+    right_opening = scene_renderer._get_side_opening_rect(zones[2], "right")
+    left_rect = scene_renderer._get_side_special_render_rect(
+        left_opening,
+        ChestRoom(),
+        "left",
+        center_tile=OpenTile(),
+        zone=zones[2],
+        next_zone=zones[3],
+        depth=2,
+    )
+    right_rect = scene_renderer._get_side_special_render_rect(
+        right_opening,
+        ChestRoom(),
+        "right",
+        center_tile=OpenTile(),
+        zone=zones[2],
+        next_zone=zones[3],
+        depth=2,
+    )
+    left_floor, right_floor = (
+        scene_renderer._get_side_special_surface_geometry(zones[2], zones[3], "left", 2)[0],
+        scene_renderer._get_side_special_surface_geometry(zones[2], zones[3], "right", 2)[0],
+    )
+
+    assert scene_renderer._get_side_special_surface_geometry(zones[2], zones[3], "left", 2)[2] == 3
+    assert scene_renderer._get_side_special_surface_geometry(zones[2], zones[3], "right", 2)[2] == 3
+    assert round(left_rect.x) == round(left_floor.bounding_rect().x)
+    assert round(right_rect.x) == round(right_floor.bounding_rect().x)
+    assert round(left_rect.w) == round(right_rect.w)
+    assert left_rect.x + left_rect.w < view_w / 2
+    assert right_rect.x > view_w / 2
+
+    pygame.quit()
+
+
+def test_scene_renderer_places_depth2_side_floor_sprites_at_depth3_edges():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (2, -1, 1): ChestRoom(),
+        (2, 1, 1): ChestRoom(),
+    }
+    view_w, _view_h = scene_renderer._get_viewport_size()
+    rendered_tiles = []
+    original_render_special_tile = scene_renderer._render_special_tile
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        rendered_tiles.append((type(tile).__name__ if tile else None, rect, depth, side, lateral_view))
+        return original_render_special_tile(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+
+    scene_renderer.render(player, world)
+
+    left_chest = next(item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "left")
+    right_chest = next(item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "right")
+
+    assert left_chest[2:] == (3, "left", True)
+    assert right_chest[2:] == (3, "right", True)
+    assert left_chest[1].right < view_w / 2
+    assert right_chest[1].left > view_w / 2
+
+    pygame.quit()
+
+
+def test_scene_renderer_routes_left_side_floor_special_to_outer_depth3_floor():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (2, -1, 1): FirePath(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key, quad.bounding_rect()))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    left_floor = next(
+        item for item in calls
+        if item[0] == "d3:left_corridor_outer_floor" and item[1] == "floor_fire"
+    )
+    assert left_floor[2].right < scene_renderer._get_viewport_size()[0] / 2
+    assert not any(panel_id == "d3:right_corridor_outer_floor" for panel_id, _texture, _rect in calls)
 
     pygame.quit()
 
@@ -1818,6 +2028,42 @@ def test_scene_renderer_routes_side_ladder_ceiling_through_center_ceiling_slot_o
     assert not any(panel_id == "d1:right_opening_special_ceiling" for panel_id, _ in calls)
     assert scene_renderer.textures.get_surface_slot_overrides() == {
         "ceiling:visible:d2:xp1": "ceiling_pit",
+    }
+
+    pygame.quit()
+
+
+def test_scene_renderer_routes_left_side_ladder_ceiling_through_center_ceiling_slot_override():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): LadderUp(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d2:center_ceiling_slot1", "ceiling_pit") in calls
+    assert ("d2:center_ceiling", "ceiling") not in calls
+    assert not any(panel_id == "d1:left_opening_special_ceiling" for panel_id, _ in calls)
+    assert scene_renderer.textures.get_surface_slot_overrides() == {
+        "ceiling:visible:d2:xm1": "ceiling_pit",
     }
 
     pygame.quit()

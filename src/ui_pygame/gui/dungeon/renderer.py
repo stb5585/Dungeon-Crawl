@@ -1580,9 +1580,13 @@ class SceneRenderer:
             sprite_rect.y = rect.y + (rect.height - sprite_rect.height) // 2
 
         if lateral_view and side is not None:
-            quad = self._get_lateral_floor_sprite_quad(sprite_rect, side)
-            projected = project_texture_to_quad(sprite, quad, darkness=darkness)
-            self.screen.blit(projected.surface, projected.topleft)
+            if kind == "chest":
+                shaded = self._apply_darkness_to_surface(sprite, darkness)
+                self.screen.blit(shaded, sprite_rect.topleft)
+            else:
+                quad = self._get_lateral_floor_sprite_quad(sprite_rect, side)
+                projected = project_texture_to_quad(sprite, quad, darkness=darkness)
+                self.screen.blit(projected.surface, projected.topleft)
             return
 
         shaded = self._apply_darkness_to_surface(sprite, darkness)

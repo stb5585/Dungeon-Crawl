@@ -33,6 +33,13 @@ class QuestManager:
         self.wrap_width = wrap_width  # characters
         self.renderer_preserve_formatting = renderer_preserve_formatting
 
+    @staticmethod
+    def _popup_show_kwargs() -> dict[str, bool]:
+        return {"flush_events": True, "require_key_release": True}
+
+    def _show_popup(self, popup):
+        return popup.show(**self._popup_show_kwargs())
+
     def _format_for_renderer(self, text: str) -> str:
         if self.renderer_preserve_formatting:
             return text
@@ -63,7 +70,7 @@ class QuestManager:
             self.quest_text_renderer(wrapped)
         else:
             popup = ConfirmationPopup(self.presenter, wrapped, show_buttons=False)
-            popup.show()
+            self._show_popup(popup)
 
     def _handle_chalice_giver_hint(self, giver: str) -> bool:
         quest_data = self.player_char.quest_dict.get("Side", {}).get("The Holy Grail of Quests")
@@ -170,7 +177,7 @@ class QuestManager:
                 header_text += wrapped_end
                 wrapped_end = "\n".join(textwrap.wrap(header_text, width=self.wrap_width))
                 popup = ConfirmationPopup(self.presenter, wrapped_end, show_buttons=False)
-                popup.show()
+                self._show_popup(popup)
 
         # Rewards
         exp = qdata.get('Experience', 0) * max(1, getattr(self.player_char.level, 'pro_level', 1))
@@ -268,7 +275,7 @@ class QuestManager:
                             reward_items,
                             format_item_info,
                         )
-                        choice = popup.show()
+                        choice = popup.show(**self._popup_show_kwargs())
                         if choice is None:
                             # If user backs out of menu, keep asking until a choice is made
                             continue
@@ -304,7 +311,7 @@ class QuestManager:
             self.quest_text_renderer(self._format_for_renderer(combined_msg))
         else:
             popup = ConfirmationPopup(self.presenter, combined_msg, show_buttons=False)
-            popup.show()
+            self._show_popup(popup)
 
         # Then apply experience and trigger level-up(s)
         self.player_char.level.exp += exp
@@ -404,7 +411,7 @@ class QuestManager:
                     self.quest_text_renderer(wrapped_text)
                 else:
                     popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
-                    popup.show()
+                    self._show_popup(popup)
             
             # Transfer "Where's the Beef?" quest to Busboy if it exists
             if "Where's the Beef?" in self.player_char.quest_dict.get("Side", {}):
@@ -421,7 +428,7 @@ class QuestManager:
                     else:
                         wrapped_transfer = "\n".join(textwrap.wrap(transfer_msg, width=self.wrap_width))
                         popup = ConfirmationPopup(self.presenter, wrapped_transfer, show_buttons=False)
-                        popup.show()
+                        self._show_popup(popup)
     
     def _already_killed(self, enemy_name: str) -> bool:
         kill_dict = getattr(self.player_char, 'kill_dict', {})
@@ -450,7 +457,7 @@ class QuestManager:
             wrapped_text = "\n".join(textwrap.wrap(text, width=self.wrap_width))
             wrapped_text = header_text + wrapped_text
             popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
-            popup.show()
+            self._show_popup(popup)
         
         # Separate Accept/Decline menu
         if self.quest_choice_renderer:
@@ -458,7 +465,7 @@ class QuestManager:
             accepted = choice == 0
         else:
             popup = ConfirmationPopup(self.presenter, "Accept this quest?")
-            accepted = popup.show()
+            accepted = self._show_popup(popup)
 
         if accepted:
             # Add a copy of quest to player quest log
@@ -505,7 +512,7 @@ class QuestManager:
                     response,
                     show_buttons=False,
                 )
-                popup.show()
+                self._show_popup(popup)
             return True
         else:
             # Use personalized rejection response from RESPONSE_MAP
@@ -514,7 +521,7 @@ class QuestManager:
                 self.quest_text_renderer(self._format_for_renderer(response))
             else:
                 popup = ConfirmationPopup(self.presenter, response, show_buttons=False)
-                popup.show()
+                self._show_popup(popup)
             return False
 
     def check_and_offer(self, giver: str, show_help: bool = True, suppress_no_quests_message: bool = False) -> tuple[bool, bool]:
@@ -608,11 +615,11 @@ class QuestManager:
                 else:
                     wrapped_hint = "\n".join(textwrap.wrap(hint, width=self.wrap_width))
                     popup = ConfirmationPopup(self.presenter, wrapped_hint, show_buttons=False)
-                    popup.show()
+                    self._show_popup(popup)
                 showed_message = True
         elif not quest_was_offered and not suppress_no_quests_message:
             # Only show "no quests" if no quest was offered at all and not suppressed
             popup = ConfirmationPopup(self.presenter, "I have no new quests for you at this time.", show_buttons=False)
-            popup.show()
+            self._show_popup(popup)
             showed_message = True
         return did_action, showed_message

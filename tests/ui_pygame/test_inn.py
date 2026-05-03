@@ -12,13 +12,15 @@ from src.ui_pygame.gui import inn
 
 class FakePopup:
     messages = []
+    show_kwargs = []
 
     def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
         self.message = message
         self.show_buttons = show_buttons
         FakePopup.messages.append(message)
 
-    def show(self):
+    def show(self, **kwargs):
+        FakePopup.show_kwargs.append(kwargs)
         return True
 
 
@@ -52,6 +54,7 @@ def _make_presenter():
 
 def test_visit_inn_and_patron_helpers(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player(level=30)
     presenter = _make_presenter()
     monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
@@ -78,6 +81,9 @@ def test_visit_inn_and_patron_helpers(monkeypatch):
 
     assert calls == ["talk", "bounty"]
     assert "Come back whenever you'd like." in FakePopup.messages
+    assert FakePopup.show_kwargs[-1]["flush_events"] is True
+    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
+    assert callable(FakePopup.show_kwargs[-1]["background_draw_func"])
 
     player.quest_dict["Main"] = {"A Bad Dream": {"Turned In": False}}
     assert manager._build_patron_list() == ["Barkeep", "Waitress", "Drunkard", "Soldier", "Hooded Figure", "Back"]
@@ -92,6 +98,7 @@ def test_visit_inn_and_patron_helpers(monkeypatch):
 
 def test_talk_to_patrons_accepts_quest_or_shows_hint(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player(level=12)
     presenter = _make_presenter()
     monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
@@ -135,6 +142,7 @@ def test_talk_to_patrons_accepts_quest_or_shows_hint(monkeypatch):
 
 def test_bounty_accept_turn_in_and_view(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player(level=20)
     presenter = _make_presenter()
     presenter.game = SimpleNamespace(
@@ -176,6 +184,8 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     manager.accept_bounty()
     assert "Goblin Hunt" in player.quest_dict["Bounty"]
     assert any("Bounty Accepted: Goblin Hunt" in message for message in FakePopup.messages)
+    assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
+    assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
 
     manager.accept_bounty()
     assert "No new bounties available at this time." in FakePopup.messages

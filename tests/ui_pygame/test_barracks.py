@@ -113,6 +113,7 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
     assert storage_calls == [True]
     assert any("Joffrey's Letter" in message for message in FakePopup.messages)
     assert any(call.get("flush_events") for call in FakePopup.calls)
+    assert all(call.get("background_draw_func") for call in FakePopup.calls)
     assert ("Brass Key", 1, False, True, True) in player.inventory_calls
     assert ("Joffrey's Letter", 1, False, False, True) in player.inventory_calls
     assert ("Great Health Potion", 5, False, False, False) in player.inventory_calls

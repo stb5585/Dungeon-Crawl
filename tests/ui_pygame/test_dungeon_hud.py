@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.ui_pygame.gui import dungeon_hud
+from src.ui_pygame.gui.status_icons import prioritize_status_icons
 
 
 class DummySurface:
@@ -150,6 +151,7 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("REG", True) in icons
     assert ("BLE", True) in icons
     assert ("MW2", True) in icons
+    assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
     player.spellbook = {"Skills": {}}
     assert ("MW2", True) not in hud._collect_status_icons(player)
@@ -157,6 +159,36 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     y = hud._render_status_icons(_make_player(), 100)
     assert y > 100
     assert bundle.screen.blit_calls
+
+
+def test_status_icons_compact_overflow_in_combat_hud(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    font = RecordingFont()
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
+
+    icons = prioritize_status_icons(
+        [
+            ("ATK", True),
+            ("REG", True),
+            ("PSN", False),
+            ("STN", False),
+            ("MSH", True),
+            ("PRN", False),
+            ("BLE", True),
+            ("MW2", True),
+        ]
+    )
+
+    assert icons[:3] == [("STN", False), ("PRN", False), ("PSN", False)]
+
+    y = hud._render_status_icons(_make_player(), 100, max_rows=1)
+
+    assert y == 124
+    assert any(text.startswith("+") for text in font.render_calls)
+    colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
+    assert hud.status_colors["overflow"] in colors
+    assert hud.status_colors["urgent_negative"] in colors
 
 
 def test_character_info_resource_bars_stats_and_quick_info(monkeypatch):

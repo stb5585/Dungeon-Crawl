@@ -226,6 +226,38 @@ def test_reward_selection_popup_draw_and_show_confirm_branch(monkeypatch):
     assert empty_popup.show() is None
 
 
+def test_reward_selection_popup_can_flush_and_wait_for_key_release(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    popup = confirmation_popup.RewardSelectionPopup(
+        presenter,
+        "Rewards",
+        [SimpleNamespace(name="Potion")],
+        detail_provider=lambda item: item.name,
+    )
+
+    class FakeConfirm:
+        def __init__(self, _presenter, _message, show_buttons=True):
+            pass
+
+        def show(self, **_kwargs):
+            return True
+
+    clear_calls = []
+    pressed_states = iter([[1], []])
+    event_batches = iter([
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr(confirmation_popup, "ConfirmationPopup", FakeConfirm)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: next(pressed_states))
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    assert popup.show(flush_events=True, require_key_release=True) == 0
+    assert clear_calls == [True]
+
+
 def test_quantity_popup_draw_and_show_cover_adjustment_confirmation_and_cancel(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -332,9 +364,35 @@ def test_confirm_yes_no_helper_delegates_to_popup(monkeypatch):
         def __init__(self, received_presenter, message):
             self.received_presenter = received_presenter
             self.message = message
+            self.show_kwargs = None
 
-        def show(self):
+        def show(self, **kwargs):
+            self.show_kwargs = kwargs
             return True
 
     monkeypatch.setattr(confirmation_popup, "ConfirmationPopup", FakeConfirm)
     assert confirmation_popup.confirm_yes_no(presenter, "Continue?") is True
+
+
+def test_confirm_yes_no_uses_stale_input_guard(monkeypatch):
+    presenter = _make_presenter()
+    created = []
+
+    class FakeConfirm:
+        def __init__(self, received_presenter, message):
+            self.received_presenter = received_presenter
+            self.message = message
+            self.show_kwargs = None
+            created.append(self)
+
+        def show(self, **kwargs):
+            self.show_kwargs = kwargs
+            return False
+
+    monkeypatch.setattr(confirmation_popup, "ConfirmationPopup", FakeConfirm)
+
+    assert confirmation_popup.confirm_yes_no(presenter, "Quit?") is False
+    assert created[0].show_kwargs == {
+        "flush_events": True,
+        "require_key_release": True,
+    }

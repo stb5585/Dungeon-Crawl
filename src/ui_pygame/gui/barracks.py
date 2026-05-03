@@ -65,7 +65,11 @@ class BarracksManager(TownScreenBase):
             
             if choice_idx is None or choice_idx == 2:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Take care, soldier.", show_buttons=False)
-                popup.show(flush_events=True, require_key_release=True)
+                popup.show(
+                    background_draw_func=draw_barracks_background,
+                    flush_events=True,
+                    require_key_release=True,
+                )
                 break
             
             elif choice_idx == 0:  # Quests

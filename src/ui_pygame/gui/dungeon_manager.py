@@ -1405,7 +1405,12 @@ class DungeonManager:
             show_buttons=True,
         )
         
-        if popup.show():
+        if popup.show(
+            background_draw_func=self._dungeon_dialog_background,
+            flush_events=True,
+            require_key_release=True,
+            min_display_ms=300,
+        ):
             if chalice_tile.pickup_chalice_action(self.game):
                 self.add_message("You obtain the Golden Chalice!")
                 self.add_message("Quest completed: The Holy Grail of Quests")
@@ -1863,14 +1868,22 @@ class DungeonManager:
         elif menu_options[choice] == "Save Game":
             from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "Save your progress?")
-            if popup.show():
+            if popup.show(
+                background_draw_func=self._dungeon_dialog_background,
+                flush_events=True,
+                require_key_release=True,
+            ):
                 self.game.save_game()
                 self.add_message("Game saved!")
 
         elif menu_options[choice] == "Quit Game (No Save)":
             from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, "Quit without saving? Progress will be lost.")
-            if popup.show():
+            if popup.show(
+                background_draw_func=self._dungeon_dialog_background,
+                flush_events=True,
+                require_key_release=True,
+            ):
                 self.add_message("Exiting game...")
                 self.running = False
                 self.player_char.quit = True

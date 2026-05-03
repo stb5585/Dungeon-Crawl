@@ -95,6 +95,14 @@ class TownScreenBase:
         self.screen.blit(overlay, (rect.x, rect.y))
         return overlay
 
+    def popup_show_kwargs(self):
+        """Common modal-popup options for town screens."""
+        return {
+            "background_draw_func": self.draw_background,
+            "flush_events": True,
+            "require_key_release": True,
+        }
+
     def display_quest_text(self, quest_text):
         """Display quest text in the content area with slow printing animation."""
         import time

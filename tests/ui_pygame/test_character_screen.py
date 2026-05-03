@@ -201,3 +201,89 @@ def test_character_screen_draw_helpers_and_composition(monkeypatch):
     assert draw_background_calls
     assert ("info", "Hero") in panel_calls
     assert flip_calls
+
+
+def test_empty_key_items_notice_uses_stale_input_guard(monkeypatch):
+    presenter = _make_presenter()
+    screen = character_screen.CharacterScreen(presenter)
+    player = _make_player()
+    player.special_inventory = {}
+    player.spellbook = {"Spells": {}, "Skills": {}}
+    player.in_town = lambda: False
+    screen.current_selection = 4
+
+    popup_kwargs = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False):
+            assert message == "You do not have any key items."
+            assert show_buttons is False
+
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
+            return True
+
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert popup_kwargs == [{"flush_events": True, "require_key_release": True}]
+
+
+def test_character_submenus_use_stale_input_guard(monkeypatch):
+    guarded_kwargs_by_title = {}
+    popup_classes = {}
+
+    class FakePopup:
+        def __init__(self, _presenter, _owner, title=None, **_kwargs):
+            self.title = title or self.__class__.__name__
+
+        def show(self, _player_char, **kwargs):
+            guarded_kwargs_by_title[self.title] = kwargs
+            return None
+
+    def fake_popup_class(title):
+        cls = type(title, (FakePopup,), {})
+        popup_classes[title] = cls
+        return cls
+
+    monkeypatch.setattr(character_screen, "InventoryPopupMenu", fake_popup_class("Inventory"))
+    monkeypatch.setattr(character_screen, "EquipmentPopupMenu", fake_popup_class("Equipment"))
+    monkeypatch.setattr(character_screen, "SimpleListPopupMenu", FakePopup)
+    monkeypatch.setattr(character_screen, "JumpModsPopupMenu", FakePopup)
+    monkeypatch.setattr(character_screen, "TotemAspectsPopupMenu", FakePopup)
+
+    import src.ui_pygame.gui.popup_menus as popup_menus
+
+    monkeypatch.setattr(popup_menus, "QuestPopupMenu", fake_popup_class("Quests"))
+
+    expected_guard = {"flush_events": True, "require_key_release": True}
+    selections = {
+        "Inventory": 0,
+        "Equipment": 1,
+        "Quests": 2,
+        "Key Items": 4,
+        "Special Abilities": 5,
+        "Jump Modifications": 6,
+        "Totem Aspects": 7,
+    }
+
+    for title, selection in selections.items():
+        presenter = _make_presenter()
+        screen = character_screen.CharacterScreen(presenter)
+        player = _make_player()
+        screen.current_selection = selection
+        event_batches = iter([
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ])
+        monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+        assert screen.navigate(player) == "Exit Menu"
+        assert guarded_kwargs_by_title[title] == expected_guard

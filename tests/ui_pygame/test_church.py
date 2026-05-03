@@ -12,12 +12,14 @@ from src.ui_pygame.gui import church
 
 class FakePopup:
     messages = []
+    show_kwargs = []
 
     def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
         self.message = message
         FakePopup.messages.append(message)
 
-    def show(self):
+    def show(self, **kwargs):
+        FakePopup.show_kwargs.append(kwargs)
         return True
 
 
@@ -60,6 +62,7 @@ def _make_presenter():
 
 def test_visit_church_routes_actions(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player()
     presenter = _make_presenter()
     monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
@@ -98,10 +101,14 @@ def test_visit_church_routes_actions(monkeypatch):
     assert calls == ["promotion", "save"]
     assert rendered == ["Priest quest"]
     assert "Let the light of Elysia guide you." in FakePopup.messages
+    assert FakePopup.show_kwargs[-1]["flush_events"] is True
+    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
+    assert callable(FakePopup.show_kwargs[-1]["background_draw_func"])
 
 
 def test_handle_promotion_guards_and_save_game(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player()
     presenter = _make_presenter()
     monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
@@ -111,6 +118,8 @@ def test_handle_promotion_guards_and_save_game(monkeypatch):
     player.level.level = 20
     manager.handle_promotion()
     assert "You need to be level 30 before you can promote your character." in FakePopup.messages
+    assert FakePopup.show_kwargs[-1]["flush_events"] is True
+    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
 
     player.level.level = 30
     player.level.pro_level = 3
@@ -136,6 +145,7 @@ def test_handle_promotion_guards_and_save_game(monkeypatch):
 
 def test_handle_promotion_success_and_cancel(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player()
     player.level.level = 30
     presenter = _make_presenter()
@@ -189,6 +199,7 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
 
 def test_handle_promotion_advanced_branches(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     player = _make_player()
     player.level.level = 30
     player.race = SimpleNamespace(cls_res={"First": ["Warlock", "Summoner"]})

@@ -783,7 +783,7 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
         def __init__(self, *_args, **_kwargs):
             pass
 
-        def show(self):
+        def show(self, **_kwargs):
             return True
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirmMenu)
@@ -1026,16 +1026,22 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     manager.player_char.quit = False
     manager._popup_menu = lambda title, options: 2
 
+    confirm_kwargs = []
+
     class FakeConfirmSave:
         def __init__(self, *_args, **_kwargs):
             pass
 
-        def show(self):
+        def show(self, **kwargs):
+            confirm_kwargs.append(kwargs)
             return True
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirmSave)
     manager._show_menu()
     assert "saved" in manager.messages or "Game saved!" in manager.messages
+    assert confirm_kwargs[-1]["flush_events"] is True
+    assert confirm_kwargs[-1]["require_key_release"] is True
+    assert callable(confirm_kwargs[-1]["background_draw_func"])
 
     manager.renderer = SimpleNamespace(
         render_dungeon_view=lambda *_args, **_kwargs: None,
@@ -1070,11 +1076,14 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
     assert manager._popup_menu("Menu", ["One", "Two"]) is None
 
+    false_confirm_kwargs = []
+
     class FalseConfirm:
         def __init__(self, *_args, **_kwargs):
             pass
 
-        def show(self):
+        def show(self, **kwargs):
+            false_confirm_kwargs.append(kwargs)
             return False
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FalseConfirm)
@@ -1082,6 +1091,8 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
     manager._popup_menu = lambda title, options: 2
     manager._show_menu()
     assert notices == ["This menu is not yet implemented in the dungeon."]
+    assert false_confirm_kwargs[-1]["flush_events"] is True
+    assert false_confirm_kwargs[-1]["require_key_release"] is True
 
     manager.renderer = SimpleNamespace(
         render_dungeon_view=lambda *_args, **_kwargs: None,

@@ -11,6 +11,14 @@ import sys
 
 import pygame
 
+from .status_icons import (
+    STATUS_ICON_COLORS,
+    compact_status_icons,
+    fit_status_icon_label,
+    prioritize_status_icons,
+    status_icon_color,
+)
+
 ASSETS_BASE_DIR = Path(__file__).resolve().parents[1] / "assets"
 
 
@@ -117,11 +125,7 @@ class CombatView:
         self.log_scroll_offset = 0
 
         # Status icon colors
-        self.status_colors = {
-            "positive": (70, 170, 90),
-            "negative": (190, 70, 70),
-            "overflow": (95, 95, 110),
-        }
+        self.status_colors = STATUS_ICON_COLORS
         
         # Sprite cache
         self.sprite_cache = {}
@@ -208,12 +212,12 @@ class CombatView:
                 kept_lines.append(line.strip())
         return kept_lines
 
-    def _wrap_log_line(self, line: str) -> list[str]:
+    def _wrap_log_line(self, line: str, max_width: int | None = None) -> list[str]:
         """Wrap a combat log line to the combat pane width."""
         if not line:
             return []
 
-        max_width = max(160, self.combat_width - 30)
+        max_width = max(160, max_width if max_width is not None else self.combat_width - 30)
         font = pygame.font.Font(None, 20)
         wrapped: list[str] = []
         for paragraph in line.split("\n"):
@@ -332,21 +336,7 @@ class CombatView:
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
 
-        return icons
-
-    @staticmethod
-    def _compact_status_icons(icons, per_row: int, max_rows: int | None):
-        icon_list = list(icons)
-        if max_rows is None or max_rows <= 0:
-            return icon_list
-
-        capacity = max(1, per_row * max_rows)
-        if len(icon_list) <= capacity:
-            return icon_list
-
-        visible_count = max(0, capacity - 1)
-        hidden_count = len(icon_list) - visible_count
-        return icon_list[:visible_count] + [(f"+{hidden_count}", None)]
+        return prioritize_status_icons(icons)
 
     @staticmethod
     def _is_telegraph_message(line: str) -> bool:
@@ -398,23 +388,21 @@ class CombatView:
         icon_h = 18
         padding = 6
         per_row = max(1, max_width // (icon_w + padding))
-        visible_icons = self._compact_status_icons(icons, per_row, max_rows)
+        visible_icons = compact_status_icons(icons, per_row, max_rows)
 
         for idx, (label, is_positive) in enumerate(visible_icons):
             row = idx // per_row
             col = idx % per_row
             icon_x = x + col * (icon_w + padding)
             icon_y = y + row * (icon_h + padding)
-            if is_positive is None:
-                color = self.status_colors["overflow"]
-            else:
-                color = self.status_colors["positive" if is_positive else "negative"]
+            color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
             pygame.draw.rect(self.screen, color, rect, border_radius=4)
             pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
 
-            text_surf = font.render(label, True, (255, 255, 255))
+            fitted_label = fit_status_icon_label(font, label, icon_w - 6)
+            text_surf = font.render(fitted_label, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=rect.center)
             self.screen.blit(text_surf, text_rect)
     
@@ -802,7 +790,7 @@ class CombatView:
             if lines_rendered >= max_lines:
                 break
 
-            for line in self._wrap_log_line(message):
+            for line in self._wrap_log_line(message, max_width=self.combat_width - 30):
                 if lines_rendered >= max_lines:
                     break
                     
@@ -1001,7 +989,7 @@ class CombatView:
             if lines_rendered >= max_lines:
                 break
 
-            for line in self._wrap_log_line(message):
+            for line in self._wrap_log_line(message, max_width=view_width - 30):
                 if lines_rendered >= max_lines:
                     break
                     

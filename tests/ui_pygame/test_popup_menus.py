@@ -6,6 +6,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pygame
+import pytest
 
 from src.ui_pygame.gui import popup_menus
 
@@ -192,6 +193,50 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     assert result[0] == "selected"
 
 
+def test_base_popup_can_wait_for_key_release_before_accepting_input(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = DemoPopup(presenter, parent, title="Test")
+    player = _make_player()
+
+    events = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+
+    result = popup.show(player, require_key_release=True)
+
+    assert result == ("selected", "Alpha")
+
+
+def test_base_popup_restores_background_provider_on_error(monkeypatch):
+    _patch_visuals(monkeypatch)
+    providers = []
+    presenter = _make_presenter()
+    presenter._background_provider = "previous-provider"
+    presenter.set_background_provider = lambda provider: providers.append(provider) or setattr(
+        presenter,
+        "_background_provider",
+        provider,
+    )
+    parent = _make_parent()
+
+    class ExplodingPopup(DemoPopup):
+        def draw_list(self):
+            raise RuntimeError("boom")
+
+    popup = ExplodingPopup(presenter, parent, title="Test")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        popup.show(_make_player())
+
+    assert providers[-1] == "previous-provider"
+    assert presenter._background_provider == "previous-provider"
+
+
 def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -250,7 +295,9 @@ def test_inventory_popup_on_select_uses_nested_selection_popup(monkeypatch):
         def __init__(self, *_args, **_kwargs):
             self.draw_background = lambda surf: None
 
-        def show(self, _player_char):
+        def show(self, _player_char, **_kwargs):
+            assert _kwargs["flush_events"] is True
+            assert _kwargs["require_key_release"] is True
             return next(actions)
 
     monkeypatch.setattr(popup_menus, "SelectionPopup", FakeSelectionPopup)
@@ -286,7 +333,9 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
         def __init__(self, *_args, **_kwargs):
             self.draw_background = lambda surf: None
 
-        def show(self, _player_char):
+        def show(self, _player_char, **_kwargs):
+            assert _kwargs["flush_events"] is True
+            assert _kwargs["require_key_release"] is True
             return ("selection", "Cancel")
 
     monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", FakeEquipPopup)
@@ -459,7 +508,9 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
         def __init__(self, *_args, **_kwargs):
             self.draw_background = lambda surf: None
 
-        def show(self, _player_char):
+        def show(self, _player_char, **_kwargs):
+            assert _kwargs["flush_events"] is True
+            assert _kwargs["require_key_release"] is True
             return next(actions)
 
     real_equipment_selection_popup = popup_menus.EquipmentSelectionPopup

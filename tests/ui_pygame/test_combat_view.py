@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.ui_pygame.gui import combat_view
+from src.ui_pygame.gui.status_icons import prioritize_status_icons
 
 
 @pytest.fixture(autouse=True)
@@ -186,6 +187,7 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("BRK", False) in icons
     assert ("PRN", False) in icons
     assert ("REG", True) in icons
+    assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
 
 def test_combat_log_wraps_long_charge_messages(monkeypatch):
@@ -204,6 +206,15 @@ def test_combat_log_wraps_long_charge_messages(monkeypatch):
 
     assert len(font.render_calls) > 1
     assert all(font.size(text)[0] <= view.combat_width - 30 for text in font.render_calls)
+
+    font.render_calls.clear()
+    view.combat_log = [
+        "Goblin is lowering their head and building momentum for a devastating overlay charge that must fit the narrower dungeon combat pane."
+    ]
+    view._render_combat_log_overlay()
+    overlay_width = int(view.screen_width * 0.65) - 30
+    assert len(font.render_calls) > 1
+    assert all(font.size(text)[0] <= overlay_width for text in font.render_calls)
 
 
 def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
@@ -425,6 +436,33 @@ def test_status_icons_compact_overflow_and_telegraph_log_color(monkeypatch):
     view._render_combat_log_overlay()
     assert (telegraph_line, view.colors["telegraph"]) in font.color_calls
     assert (normal_line, (240, 240, 240)) in font.color_calls
+
+
+def test_status_icon_priority_keeps_urgent_effects_visible_before_overflow(monkeypatch):
+    view = _make_view()
+    font = RecordingFont()
+    rect_calls = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+
+    icons = prioritize_status_icons(
+        [
+            ("ATK", True),
+            ("REG", True),
+            ("PSN", False),
+            ("STN", False),
+            ("MSH", True),
+            ("PRN", False),
+        ]
+    )
+
+    assert icons[:3] == [("STN", False), ("PRN", False), ("PSN", False)]
+
+    view._render_status_icons(icons, 10, 20, max_width=90, max_rows=2)
+    assert font.render_calls == ["STN", "PRN", "PSN", "+3"]
+    colors = [args[1] for args, _kwargs in rect_calls if len(args) > 1]
+    assert view.status_colors["urgent_negative"] in colors
 
 
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):

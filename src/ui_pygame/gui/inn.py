@@ -32,7 +32,7 @@ class InnManager(TownScreenBase):
             
             if choice_idx is None or choice_idx == 2:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
-                popup.show()
+                popup.show(**self.popup_show_kwargs())
                 break
             
             elif choice_idx == 0:  # Talk to patrons
@@ -122,7 +122,7 @@ class InnManager(TownScreenBase):
                 # but keep a fallback to show a general tavern flavor comment.
                 patron_dialogue = random.choice(TAVERN_FLAVOR_DIALOGUES)
                 popup = ConfirmationPopup(self.presenter, patron_dialogue, show_buttons=False)
-                popup.show()
+                popup.show(**self.popup_show_kwargs())
     
     def show_bounty_board(self):
         """Show and manage bounty quests from the tavern."""
@@ -168,7 +168,7 @@ class InnManager(TownScreenBase):
         
         if not bounties_available:
             popup = ConfirmationPopup(self.presenter, "No new bounties available at this time.", show_buttons=False)
-            popup.show()
+            popup.show(**self.popup_show_kwargs())
             return
         
         bounty_screen = LocationMenuScreen(self.presenter, "Accept Bounty")
@@ -198,13 +198,13 @@ class InnManager(TownScreenBase):
             f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
         )
         popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
-        popup.show()
+        popup.show(**self.popup_show_kwargs())
     
     def turn_in_bounty(self, completable):
         """Turn in completed bounties using the inn UI."""
         if not completable:
             popup = ConfirmationPopup(self.presenter, "No bounties to turn in.", show_buttons=False)
-            popup.show()
+            popup.show(**self.popup_show_kwargs())
             return
 
         bounty_screen = LocationMenuScreen(self.presenter, "Turn In Bounty")
@@ -219,7 +219,7 @@ class InnManager(TownScreenBase):
         bounty_data = self.player_char.quest_dict['Bounty'].get(bounty_name)
         if not bounty_data:
             popup = ConfirmationPopup(self.presenter, "That bounty is no longer available.", show_buttons=False)
-            popup.show()
+            popup.show(**self.popup_show_kwargs())
             return
 
         bounty = bounty_data[0]
@@ -248,7 +248,7 @@ class InnManager(TownScreenBase):
 
         reward_msg = "\n".join(reward_lines)
         popup = ConfirmationPopup(self.presenter, reward_msg, show_buttons=False)
-        popup.show()
+        popup.show(**self.popup_show_kwargs())
 
         # Remove completed bounty
         del self.player_char.quest_dict['Bounty'][bounty_name]
@@ -266,7 +266,7 @@ class InnManager(TownScreenBase):
         
         if not bounty_dict:
             popup = ConfirmationPopup(self.presenter, "No active bounties.\n\nCheck back later for new opportunities!", show_buttons=False)
-            popup.show()
+            popup.show(**self.popup_show_kwargs())
             return
         
         bounty_screen = LocationMenuScreen(self.presenter, "Active Bounties")

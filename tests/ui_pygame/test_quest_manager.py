@@ -46,13 +46,15 @@ class ShieldReward(DummyItem):
 class FakePopup:
     messages = []
     responses = []
+    show_kwargs = []
 
     def __init__(self, _presenter, message, show_buttons=True):
         self.message = message
         self.show_buttons = show_buttons
         FakePopup.messages.append((message, show_buttons))
 
-    def show(self, **_kwargs):
+    def show(self, **kwargs):
+        FakePopup.show_kwargs.append(kwargs)
         if FakePopup.responses:
             return FakePopup.responses.pop(0)
         return None
@@ -60,12 +62,14 @@ class FakePopup:
 
 class FakeRewardSelectionPopup:
     responses = []
+    show_kwargs = []
 
     def __init__(self, _presenter, _title, items, detail_provider):
         self.items = items
         self.detail_provider = detail_provider
 
-    def show(self):
+    def show(self, **kwargs):
+        FakeRewardSelectionPopup.show_kwargs.append(kwargs)
         return FakeRewardSelectionPopup.responses.pop(0)
 
 
@@ -169,9 +173,15 @@ def test_show_hint_eligible_quests_and_random_help(monkeypatch):
     assert manager.get_random_help_hint("Guide") == "Find the key."
 
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
     manager_no_renderer = _manager(player, wrap_width=10)
     manager_no_renderer._show_hint("This is a popup hint")
     assert "This is a" in FakePopup.messages[-1][0]
+    assert FakePopup.show_kwargs[-1] == {
+        "flush_events": True,
+        "require_key_release": True,
+    }
 
 
 def test_can_offer_and_already_killed_helpers():
@@ -266,6 +276,7 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
     player.quest_dict["Side"]["Where's the Beef?"] = {"Turned In": False}
 
     FakeRewardSelectionPopup.responses = [None, 1]
+    FakeRewardSelectionPopup.show_kwargs = []
     monkeypatch.setattr(quest_manager, "RewardSelectionPopup", FakeRewardSelectionPopup)
     monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
     monkeypatch.setattr(
@@ -278,6 +289,8 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
     manager._turn_in("A Bad Dream", "Side")
 
     assert any(call[0] == "Shield Reward" for call in player.inventory_calls)
+    assert all(kwargs["flush_events"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
+    assert all(kwargs["require_key_release"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
     beef = player.quest_dict["Side"]["Where's the Beef?"]
     assert beef["Who"] == "Busboy"
     assert "help feed a lot of people" in beef["End Text"]
@@ -346,6 +359,7 @@ def test_turn_in_popup_reward_variants_and_collect_cleanup(monkeypatch):
     player.inventory["Reward Blade"] = [DummyItem()]
     player.special_inventory["Reward Blade"] = [DummyItem()]
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
     monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
 
@@ -357,6 +371,8 @@ def test_turn_in_popup_reward_variants_and_collect_cleanup(monkeypatch):
     assert "Reward Blade" not in player.special_inventory
     assert "Reward Blade" in player.inventory
     assert any("Warp Point access" in message for message, _buttons in FakePopup.messages)
+    assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
+    assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
 
     player.quest_dict["Side"]["Gold Trial"] = {
         "End Text": "",
@@ -375,6 +391,7 @@ def test_offer_without_renderer_and_check_and_offer_side_branches(monkeypatch):
     player = _make_player(level=20)
     FakePopup.messages = []
     FakePopup.responses = [None, True, None, False]
+    FakePopup.show_kwargs = []
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
     monkeypatch.setattr(quest_manager, "RESPONSE_MAP", {"Priest": ["Blessings.", "Come back later."]})
 
@@ -384,6 +401,8 @@ def test_offer_without_renderer_and_check_and_offer_side_branches(monkeypatch):
 
     assert accepted is True
     assert declined is False
+    assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
+    assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
     assert "Popup Quest" in player.quest_dict["Main"]
     assert any("Blessings." in message for message, _buttons in FakePopup.messages)
     assert any("Come back later." in message for message, _buttons in FakePopup.messages)
@@ -415,6 +434,7 @@ def test_handle_quest_events_popup_fallback(monkeypatch):
     player = _make_player()
     player.quest_dict["Side"]["Where's the Beef?"] = {"Turned In": False}
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
     monkeypatch.setattr(
         "src.core.data.data_loader.get_special_events",
@@ -425,4 +445,6 @@ def test_handle_quest_events_popup_fallback(monkeypatch):
     manager._handle_quest_events("A Bad Dream")
 
     assert any("Busboy popup line" in message for message, _buttons in FakePopup.messages)
+    assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
+    assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
     assert player.quest_dict["Side"]["Where's the Beef?"]["Who"] == "Busboy"
