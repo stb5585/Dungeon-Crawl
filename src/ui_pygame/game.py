@@ -340,7 +340,11 @@ class PygameGame:
             menu_options.append('Settings')
             menu_options.append('Exit')
             
-            choice = main_menu.navigate(menu_options)
+            choice = main_menu.navigate(
+                menu_options,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice is None:
                 # ESC pressed
@@ -365,7 +369,11 @@ class PygameGame:
         while True:
             # Choose race using RaceSelectionScreen
             race_screen = RaceSelectionScreen(self.presenter)
-            race_name = race_screen.navigate(self.races_dict)
+            race_name = race_screen.navigate(
+                self.races_dict,
+                flush_events=True,
+                require_key_release=True,
+            )
             if race_name is None:
                 return None  # ESC pressed, return to main menu
             race = self.races_dict[race_name]()  # Instantiate the race class
@@ -384,7 +392,13 @@ class PygameGame:
         while True:
             # Choose class using ClassSelectionScreen
             class_screen = ClassSelectionScreen(self.presenter)
-            class_name = class_screen.navigate(race_name, race, self.classes_dict)
+            class_name = class_screen.navigate(
+                race_name,
+                race,
+                self.classes_dict,
+                flush_events=True,
+                require_key_release=True,
+            )
             if class_name is None:
                 return None  # ESC pressed, return to main menu
             char_class = self.classes_dict[class_name]["class"]()  # Get class from nested dict
@@ -430,7 +444,11 @@ class PygameGame:
         
         # Use the new LoadGameScreen interface
         load_screen = LoadGameScreen(self.presenter)
-        selected_file = load_screen.navigate(self.load_files)
+        selected_file = load_screen.navigate(
+            self.load_files,
+            flush_events=True,
+            require_key_release=True,
+        )
         
         if selected_file is None:
             return None
@@ -565,7 +583,11 @@ class PygameGame:
             popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
 
         while True:
-            choice_idx = town_screen.navigate(options)
+            choice_idx = town_screen.navigate(
+                options,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice_idx is None or choice_idx == len(options) - 1:  # Quit
                 popup = ConfirmationPopup(self.presenter, "Return to the main menu?")
@@ -719,7 +741,11 @@ class PygameGame:
         shop_screen = ShopSelectionScreen(self.presenter)
         
         while True:
-            choice = shop_screen.navigate(shop_options)
+            choice = shop_screen.navigate(
+                shop_options,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice is None or choice == 3:  # Go Back
                 break

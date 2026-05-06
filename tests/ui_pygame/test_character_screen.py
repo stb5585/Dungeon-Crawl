@@ -225,14 +225,20 @@ def test_empty_key_items_notice_uses_stale_input_guard(monkeypatch):
 
     event_batches = iter([
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYUP, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYUP, key=pygame.K_ESCAPE)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
     ])
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.clear", lambda: clear_calls.append(True))
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
     assert popup_kwargs == [{"flush_events": True, "require_key_release": True}]
+    assert clear_calls == [True]
 
 
 def test_character_submenus_use_stale_input_guard(monkeypatch):
@@ -279,7 +285,9 @@ def test_character_submenus_use_stale_input_guard(monkeypatch):
         player = _make_player()
         screen.current_selection = selection
         event_batches = iter([
+            [pygame.event.Event(pygame.KEYUP, key=pygame.K_RETURN)],
             [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.KEYUP, key=pygame.K_ESCAPE)],
             [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
         ])
         monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
@@ -287,3 +295,18 @@ def test_character_submenus_use_stale_input_guard(monkeypatch):
 
         assert screen.navigate(player) == "Exit Menu"
         assert guarded_kwargs_by_title[title] == expected_guard
+
+
+def test_character_screen_navigation_can_opt_out_of_stale_input_guard(monkeypatch):
+    presenter = _make_presenter()
+    screen = character_screen.CharacterScreen(presenter)
+    player = _make_player()
+
+    clear_calls = []
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.clear", lambda: clear_calls.append(True))
+    event_batches = iter([[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
+    monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player, flush_events=False, require_key_release=False) == "Exit Menu"
+    assert clear_calls == []

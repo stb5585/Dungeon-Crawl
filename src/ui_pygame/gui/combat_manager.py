@@ -79,6 +79,33 @@ class GUICombatManager:
             return True
         return False
 
+    def _clear_pending_input(self) -> bool:
+        """Clear buffered events and require a fresh key release before selection input."""
+        pygame.event.clear()
+        return False
+
+    @staticmethod
+    def _arm_guarded_input(event, input_armed: bool) -> bool:
+        if event.type == pygame.KEYUP:
+            return True
+        return input_armed
+
+    @staticmethod
+    def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
+        """Trim text to the rendered width available for compact combat overlays."""
+        if max_width <= 0 or font.size(text)[0] <= max_width:
+            return text
+
+        ellipsis = "..."
+        ellipsis_width = font.size(ellipsis)[0]
+        if ellipsis_width >= max_width:
+            return ellipsis
+
+        trimmed = text
+        while trimmed and font.size(trimmed)[0] + ellipsis_width > max_width:
+            trimmed = trimmed[:-1]
+        return f"{trimmed.rstrip()}{ellipsis}"
+
     def _show_slot_machine_reveal(self, user: Character, target: Character) -> str:
         """Animate a Slot Machine spin popup and reveal digits left-to-right."""
         digits = [str(random.randint(0, 9)) for _ in range(3)]
@@ -372,6 +399,7 @@ class GUICombatManager:
         # Get available actions
         actions = self.available_actions
         selected_action = 0
+        input_armed = self._clear_pending_input()
         
         action_taken = False
         
@@ -384,6 +412,10 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
 
                 if self._handle_combat_log_scroll_event(event):
                     continue
@@ -609,6 +641,7 @@ class GUICombatManager:
 
         selected = 0
         active = getattr(totem_skill, "active_aspect", "")
+        input_armed = self._clear_pending_input()
         while True:
             self._render_combat_frame(player_char, enemy, [], -1)
             options = []
@@ -623,6 +656,9 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None
@@ -650,6 +686,7 @@ class GUICombatManager:
         # Create selection menu
         selected = 0
         scroll_offset = 0
+        input_armed = self._clear_pending_input()
         while True:
             # Render combat with item menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
@@ -666,6 +703,9 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -700,6 +740,7 @@ class GUICombatManager:
         
         selected = 0
         scroll_offset = 0
+        input_armed = self._clear_pending_input()
         while True:
             # Render combat with spell menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
@@ -717,6 +758,9 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -751,6 +795,7 @@ class GUICombatManager:
         
         selected = 0
         scroll_offset = 0
+        input_armed = self._clear_pending_input()
         while True:
             # Render combat with skill menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
@@ -768,6 +813,9 @@ class GUICombatManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
@@ -834,11 +882,15 @@ class GUICombatManager:
                 highlight_rect = pygame.Rect(menu_x + 10, option_y - 3, menu_width - 30, 30)
                 pygame.draw.rect(self.screen, (80, 80, 100), highlight_rect)
             
-            # Truncate text if too long
-            if len(option) > 40:
-                option = option[:37] + "..."
-            
-            option_surf = font_medium.render(f"{i+1}. {option}", True, (255, 255, 255))
+            prefix = f"{i+1}. "
+            max_text_width = menu_width - 58
+            option = self._fit_text_to_width(
+                font_medium,
+                option,
+                max_text_width - font_medium.size(prefix)[0],
+            )
+
+            option_surf = font_medium.render(f"{prefix}{option}", True, (255, 255, 255))
             self.screen.blit(option_surf, (menu_x + 20, option_y))
             option_y += 30
         

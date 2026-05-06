@@ -39,7 +39,14 @@ class LootPopup:
         self.animation_time = 0
         self.max_animation_time = 30  # frames
     
-    def show_loot(self, items, chest_type="Chest", background_draw_func=None):
+    def show_loot(
+        self,
+        items,
+        chest_type="Chest",
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Display loot popup and wait for player to acknowledge.
         
@@ -56,11 +63,20 @@ class LootPopup:
         items = [item for item in items if item is not None]
         
         if not items:
-            return self._show_empty_chest(chest_type, background_draw_func)
+            return self._show_empty_chest(
+                chest_type,
+                background_draw_func,
+                flush_events=flush_events,
+                require_key_release=require_key_release,
+            )
 
         if background_draw_func is None:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         self.animation_time = 0
         waiting = True
@@ -70,7 +86,11 @@ class LootPopup:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
+                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    if not input_armed:
+                        continue
                     if self.animation_time >= self.max_animation_time:
                         waiting = False
             
@@ -83,19 +103,33 @@ class LootPopup:
             
             clock.tick(60)
     
-    def _show_empty_chest(self, chest_type, background_draw_func=None):
+    def _show_empty_chest(
+        self,
+        chest_type,
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """Show empty chest message."""
         waiting = True
 
         if background_draw_func is None:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
+                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    if not input_armed:
+                        continue
                     waiting = False
             
             background_draw_func()
@@ -248,7 +282,13 @@ class LootPopup:
         c3 = c1 + 1
         return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2)
     
-    def show_unlock_prompt(self, locked_type="chest", background_draw_func=None):
+    def show_unlock_prompt(
+        self,
+        locked_type="chest",
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Show prompt asking if player wants to use a key.
         
@@ -267,12 +307,20 @@ class LootPopup:
         if background_draw_func is None:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
+                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key in [pygame.K_UP, pygame.K_w]:
                         selected = (selected - 1) % len(options)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:

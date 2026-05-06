@@ -8,6 +8,7 @@ import pygame
 from src.core import map_tiles
 from .status_icons import (
     STATUS_ICON_COLORS,
+    combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
     prioritize_status_icons,
@@ -170,7 +171,7 @@ class DungeonHUD:
         except (AttributeError, TypeError, ValueError):
             pass
 
-        return prioritize_status_icons(icons)
+        return prioritize_status_icons(combine_duplicate_status_icons(icons))
 
     def _render_status_icons(self, player_char, y_offset, max_rows=2):
         x_margin = self.hud_x + 20
@@ -178,7 +179,7 @@ class DungeonHUD:
         if not icons:
             return y_offset
 
-        icon_w = 36
+        icon_w = 42
         icon_h = 18
         padding = 6
         max_width = self.hud_width - 40

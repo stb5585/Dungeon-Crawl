@@ -42,6 +42,16 @@ class OpenDoor:
     open = True
 
 
+class OreVaultDoor:
+    enter = False
+    open = False
+
+    def __init__(self, detected=False, open=False):
+        self.detected = detected
+        self.open = open
+        self.enter = open
+
+
 class ChestRoom:
     enter = True
     locked = False
@@ -336,6 +346,15 @@ def test_texture_library_describes_floor_slot_ids():
     assert textures.describe_floor_slot_ids("d2:right_corridor_outer_floor") == (
         "floor:corridor_outer:right:d2:tile",
     )
+    assert textures.describe_floor_slot_ids("d2:left_corridor_outer_floor") == (
+        "floor:corridor_outer:left:d2:tile",
+    )
+    assert textures.describe_floor_slot_ids("d3:right_corridor_outer_floor") == (
+        "floor:corridor_outer:right:d3:tile",
+    )
+    assert textures.describe_floor_slot_ids("d3:left_corridor_outer_floor") == (
+        "floor:corridor_outer:left:d3:tile",
+    )
 
 
 def test_texture_library_describes_depth3_center_slot_spans():
@@ -408,6 +427,15 @@ def test_texture_library_describes_ceiling_and_wall_slot_ids():
     assert textures.describe_ceiling_slot_ids("d2:right_corridor_outer_ceiling") == (
         "ceiling:corridor_outer:right:d2:tile",
     )
+    assert textures.describe_ceiling_slot_ids("d2:left_corridor_outer_ceiling") == (
+        "ceiling:corridor_outer:left:d2:tile",
+    )
+    assert textures.describe_ceiling_slot_ids("d3:right_corridor_outer_ceiling") == (
+        "ceiling:corridor_outer:right:d3:tile",
+    )
+    assert textures.describe_ceiling_slot_ids("d3:left_corridor_outer_ceiling") == (
+        "ceiling:corridor_outer:left:d3:tile",
+    )
     assert textures.describe_wall_slot_ids("d1:back_wall") == (
         "wall:visible:d1:center",
     )
@@ -418,6 +446,10 @@ def test_texture_library_describes_ceiling_and_wall_slot_ids():
     assert textures.describe_wall_slot_ids("d2:right_corridor_outer_wall") == (
         "wall:visible:d2:corridor_outer:right:near",
         "wall:visible:d2:corridor_outer:right:far",
+    )
+    assert textures.describe_wall_slot_ids("d2:left_corridor_outer_wall") == (
+        "wall:visible:d2:corridor_outer:left:near",
+        "wall:visible:d2:corridor_outer:left:far",
     )
 
 
@@ -579,6 +611,35 @@ def test_scene_renderer_renders_side_corridor_outer_wall_in_side_wall_layer():
 
     corridor_wall = next(command for command in commands if command.panel_id == "d2:right_corridor_outer_wall")
     assert corridor_wall.order == 3
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_left_depth3_outer_corridor_wall_continuation():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (2, -1, 1): OpenTile(),
+        (1, -2, 1): WallTile(),
+        (2, -2, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+    }
+
+    commands, _ = _build_scene_commands(scene_renderer, player, world)
+
+    assert any(command.panel_id == "d2:left_corridor_outer_wall" for command in commands)
+    depth3_wall = next(command for command in commands if command.panel_id == "d3:left_corridor_outer_wall")
+    assert depth3_wall.texture_key == "wall"
+    assert depth3_wall.order == 3
+    assert not any(command.panel_id == "d3:right_corridor_outer_wall" for command in commands)
 
     pygame.quit()
 
@@ -1055,6 +1116,164 @@ def test_scene_renderer_does_not_render_current_tile_door():
     pygame.quit()
 
 
+def test_scene_renderer_renders_detected_ore_vault_door_as_closed_door():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OreVaultDoor(detected=True),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall_slot0", "door_closed") in calls
+    assert ("d1:back_wall", "wall") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_hidden_ore_vault_door_as_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OreVaultDoor(detected=False),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall", "wall") in calls
+    assert ("d1:back_wall_slot0", "door_closed") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_treats_open_ore_vault_door_as_open_passage():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OreVaultDoor(detected=True, open=True),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall_slot0", "door_open") not in calls
+    assert ("d1:back_wall", "wall") not in calls
+    assert any(panel_id == "d2:center_floor" for panel_id, _texture in calls)
+
+    pygame.quit()
+
+
+def test_scene_renderer_renders_detected_side_ore_vault_door_in_opening():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): OreVaultDoor(detected=True),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:left_blocker_slot0", "door_closed") in calls
+    assert ("d1:left_blocker", "wall") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_hidden_side_ore_vault_door_as_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): OreVaultDoor(detected=False),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:left_blocker", "wall") in calls
+    assert ("d1:left_blocker_slot0", "door_closed") not in calls
+
+    pygame.quit()
+
+
 def test_scene_renderer_renders_center_special_tiles_back_to_front():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -1392,6 +1611,43 @@ def test_scene_renderer_routes_left_side_floor_special_to_outer_depth3_floor():
     )
     assert left_floor[2].right < scene_renderer._get_viewport_size()[0] / 2
     assert not any(panel_id == "d3:right_corridor_outer_floor" for panel_id, _texture, _rect in calls)
+
+    pygame.quit()
+
+
+def test_scene_renderer_routes_right_side_floor_special_to_outer_depth3_floor():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (2, 1, 1): FirePath(),
+        (1, -1, 1): OpenTile(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key, quad.bounding_rect()))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    right_floor = next(
+        item for item in calls
+        if item[0] == "d3:right_corridor_outer_floor" and item[1] == "floor_fire"
+    )
+    assert right_floor[2].left > scene_renderer._get_viewport_size()[0] / 2
+    assert not any(panel_id == "d3:left_corridor_outer_floor" for panel_id, _texture, _rect in calls)
 
     pygame.quit()
 

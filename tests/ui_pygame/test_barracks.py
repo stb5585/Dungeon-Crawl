@@ -98,7 +98,7 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
         def draw_all(self):
             return None
 
-        def navigate(self, _options, reset_cursor=False):
+        def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(nav_values)
 
         def display_quest_text(self, text):
@@ -139,10 +139,10 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
         def __init__(self, _presenter, _title):
             pass
 
-        def navigate(self, _options, reset_cursor=False):
+        def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(nav_values)
 
-        def navigate_with_content(self, _items):
+        def navigate_with_content(self, _items, **_kwargs):
             return next(content_values)
 
     monkeypatch.setattr("src.ui_pygame.gui.barracks.LocationMenuScreen", FakeLocationMenuScreen)

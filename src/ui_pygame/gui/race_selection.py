@@ -398,7 +398,12 @@ class RaceSelectionScreen:
             
             self.race_data[race_name] = race_info
     
-    def navigate(self, races_dict):
+    def navigate(
+        self,
+        races_dict,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate race selection and return selected race name.
         
@@ -412,6 +417,10 @@ class RaceSelectionScreen:
         
         if not self.races:
             return None
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while True:
             self.draw_all()
@@ -421,7 +430,11 @@ class RaceSelectionScreen:
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_UP:
                         self.current_selection = (self.current_selection - 1) % len(self.races)
                     elif event.key == pygame.K_DOWN:

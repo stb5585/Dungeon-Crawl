@@ -141,9 +141,38 @@ def test_show_loot_normalizes_items_and_uses_default_background(monkeypatch):
     assert bundle.clocks[0].ticks and bundle.clocks[0].ticks[-1] == 60
 
     empty_calls = []
-    monkeypatch.setattr(popup, "_show_empty_chest", lambda chest_type, background_draw_func=None: empty_calls.append((chest_type, background_draw_func)) or "empty")
+    monkeypatch.setattr(
+        popup,
+        "_show_empty_chest",
+        lambda chest_type, background_draw_func=None, **kwargs: empty_calls.append((chest_type, background_draw_func, kwargs)) or "empty",
+    )
     assert popup.show_loot(None, chest_type="Chest") == "empty"
     assert empty_calls[0][0] == "Chest"
+
+
+def test_show_loot_can_wait_for_stale_input_release(monkeypatch):
+    bundle = _make_popup(monkeypatch)
+    popup = bundle.popup
+    popup.max_animation_time = 0
+    clears = []
+    render_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.clear", lambda: clears.append(True))
+    monkeypatch.setattr(popup, "_render_loot_popup", lambda items, chest_type: render_calls.append(chest_type))
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN)],
+        [SimpleNamespace(type=pygame.KEYUP)],
+        [SimpleNamespace(type=pygame.KEYDOWN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    popup.show_loot(
+        [SimpleNamespace(name="Potion")],
+        flush_events=True,
+        require_key_release=True,
+    )
+
+    assert clears == [True]
+    assert render_calls == ["Chest", "Chest", "Chest"]
 
 
 def test_show_empty_chest_and_background_helper(monkeypatch):
@@ -165,6 +194,26 @@ def test_show_empty_chest_and_background_helper(monkeypatch):
     assert popup._get_background_surface() == "bg"
     popup.presenter = SimpleNamespace(get_background_surface=lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     assert popup._get_background_surface() == "screen-copy"
+
+
+def test_empty_chest_can_wait_for_stale_input_release(monkeypatch):
+    bundle = _make_popup(monkeypatch)
+    popup = bundle.popup
+    clears = []
+    render_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.clear", lambda: clears.append(True))
+    monkeypatch.setattr(popup, "_render_empty_chest", lambda chest_type: render_calls.append(chest_type))
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONUP)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    popup._show_empty_chest("Chest", flush_events=True, require_key_release=True)
+
+    assert clears == [True]
+    assert render_calls == ["Chest", "Chest", "Chest"]
 
 
 def test_render_loot_popup_item_empty_and_unlock_prompt_branches(monkeypatch):
@@ -245,3 +294,27 @@ def test_show_unlock_prompt_navigation_and_exit_paths(monkeypatch):
     ])
     monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.get", lambda: next(event_batches, []))
     assert popup.show_unlock_prompt("chest") is False
+
+
+def test_show_unlock_prompt_can_wait_for_stale_input_release(monkeypatch):
+    bundle = _make_popup(monkeypatch)
+    popup = bundle.popup
+    clears = []
+    render_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.clear", lambda: clears.append(True))
+    monkeypatch.setattr(
+        popup,
+        "_render_unlock_prompt",
+        lambda locked_type, options, selected: render_calls.append((locked_type, selected)),
+    )
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    assert popup.show_unlock_prompt("chest", flush_events=True, require_key_release=True) is False
+    assert clears == [True]
+    assert render_calls == [("chest", 0), ("chest", 0), ("chest", 1)]

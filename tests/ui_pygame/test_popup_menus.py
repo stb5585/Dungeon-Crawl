@@ -307,6 +307,36 @@ def test_inventory_popup_on_select_uses_nested_selection_popup(monkeypatch):
     popup.on_select(player, popup.items[0])
 
 
+def test_inventory_popup_restores_nested_action_background_on_error(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    popup = popup_menus.InventoryPopupMenu(presenter, parent)
+    popup.build_items(player)
+
+    class ExplodingSelectionPopup:
+        def __init__(self, *_args, **_kwargs):
+            self.draw_background = lambda surf: "original"
+
+        def show(self, _player_char, **_kwargs):
+            raise RuntimeError("nested boom")
+
+    action_popup_ref = {}
+
+    def fake_selection_popup(*args, **kwargs):
+        action_popup = ExplodingSelectionPopup(*args, **kwargs)
+        action_popup_ref["popup"] = action_popup
+        return action_popup
+
+    monkeypatch.setattr(popup_menus, "SelectionPopup", fake_selection_popup)
+
+    with pytest.raises(RuntimeError, match="nested boom"):
+        popup.on_select(player, popup.items[0])
+
+    assert action_popup_ref["popup"].draw_background("bg") == "original"
+
+
 def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

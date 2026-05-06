@@ -153,6 +153,10 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("MW2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
+    player.class_effects["Attack"] = _effect()
+    icons = hud._collect_status_icons(player)
+    assert ("ATK2", True) in icons
+
     player.spellbook = {"Skills": {}}
     assert ("MW2", True) not in hud._collect_status_icons(player)
 
@@ -189,6 +193,47 @@ def test_status_icons_compact_overflow_in_combat_hud(monkeypatch):
     colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
     assert hud.status_colors["overflow"] in colors
     assert hud.status_colors["urgent_negative"] in colors
+
+
+def test_dense_combat_hud_status_icons_keep_urgent_counts_and_overflow(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    font = RecordingFont()
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
+    player = _make_player()
+    player.status_effects.update({
+        "Stun": _effect(),
+        "Poison": _effect(),
+        "Sleep": _effect(),
+        "Silence": _effect(),
+        "Prone": _effect(),
+    })
+    player.physical_effects.update({
+        "Stun": _effect(),
+        "Prone": _effect(),
+        "Disarm": _effect(),
+    })
+    player.stat_effects.update({
+        "Magic": _effect(extra=2),
+        "Speed": _effect(extra=1),
+    })
+    player.magic_effects.update({
+        "Mana Shield": _effect(),
+        "Reflect": _effect(),
+        "Resist Fire": _effect(),
+    })
+
+    icons = hud._collect_status_icons(player)
+    assert icons[:4] == [("STN2", False), ("SLP", False), ("SIL", False), ("PRN2", False)]
+
+    y = hud._render_status_icons(player, 100, max_rows=1)
+
+    assert y == 124
+    assert font.render_calls[:4] == ["STN2", "SLP", "SIL", "PRN2"]
+    assert any(text.startswith("+") for text in font.render_calls)
+    colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
+    assert hud.status_colors["urgent_negative"] in colors
+    assert hud.status_colors["overflow"] in colors
 
 
 def test_character_info_resource_bars_stats_and_quick_info(monkeypatch):

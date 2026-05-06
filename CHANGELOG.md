@@ -1,5 +1,19 @@
 # Dungeon Crawl - Changelog
 
+## [Unreleased] - 2026-05-06
+
+### Changed
+
+#### Pygame Renderer and Combat UI Polish
+- Improved combat status icon readability with urgent-effect prioritization, duplicate compaction, counted labels, Maelstrom Weapon stack visibility, stronger alert coloring, and shared helper behavior across the main combat view and dungeon-combat HUD.
+- Tightened combat telegraph presentation with warning-colored wrapped log lines, a dedicated banner that tracks the full latest telegraph message, and clearing behavior after non-telegraph follow-up messages.
+- Fit long combat selection labels and turn-indicator subtitles by rendered width so dense item/spell/skill names and long player/enemy names stay inside their UI surfaces.
+- Hardened stale-input handling across Pygame popups and navigation loops, including town menus, class/race/load/shop selection, shared popup menus, dungeon escape/loot/key-use prompts, combat action/submenu selectors, shop screens, and the character screen.
+- Expanded dungeon renderer smoke coverage around side-corridor walls, open/closed and hidden Ore Vault doors, side-door state preservation, depth-3 outer floor/ceiling slot routing, and left/right floor-special placement parity.
+
+### Documentation
+- Updated `docs/DEVELOPMENT_ROADMAP.md` with the completed Pygame polish items and current follow-up notes.
+
 ## [Unreleased] - 2026-02-22
 
 ### Added

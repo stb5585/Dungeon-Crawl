@@ -80,7 +80,7 @@ def test_visit_church_routes_actions(monkeypatch):
         def __init__(self, _presenter, _title):
             pass
 
-        def navigate(self, _options, reset_cursor=False):
+        def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(selections)
 
         def display_quest_text(self, text):

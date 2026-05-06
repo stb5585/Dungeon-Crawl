@@ -30,7 +30,12 @@ class ChurchManager(TownScreenBase):
         church_screen = LocationMenuScreen(self.presenter, "Church of Elysia")
         
         while True:
-            choice_idx = church_screen.navigate(church_options, reset_cursor=False)
+            choice_idx = church_screen.navigate(
+                church_options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice_idx is None or choice_idx == 3:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Let the light of Elysia guide you.", show_buttons=False)

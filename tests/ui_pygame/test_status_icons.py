@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
+    combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
     is_urgent_status_icon,
@@ -37,6 +38,29 @@ def test_status_icon_priority_orders_urgent_debuffs_before_buffs():
     assert is_urgent_status_icon("ATK", True) is False
 
 
+def test_duplicate_status_icons_collapse_into_counted_priority_pills():
+    icons = combine_duplicate_status_icons(
+        [
+            ("ATK", True),
+            ("ATK", True),
+            ("REG", True),
+            ("PSN", False),
+            ("PSN", False),
+        ]
+    )
+
+    assert icons == [
+        ("ATK2", True),
+        ("REG", True),
+        ("PSN2", False),
+    ]
+    assert prioritize_status_icons(icons) == [
+        ("PSN2", False),
+        ("REG", True),
+        ("ATK2", True),
+    ]
+
+
 def test_compact_status_icons_and_colors():
     icons = [(f"E{i}", i % 2 == 0) for i in range(6)]
 
@@ -50,6 +74,7 @@ def test_compact_status_icons_and_colors():
     assert status_icon_color(True) == STATUS_ICON_COLORS["positive"]
     assert status_icon_color(False) == STATUS_ICON_COLORS["negative"]
     assert status_icon_color(False, "STN") == STATUS_ICON_COLORS["urgent_negative"]
+    assert status_icon_color(False, "PSN2") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(None) == STATUS_ICON_COLORS["overflow"]
 
 

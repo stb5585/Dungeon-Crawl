@@ -251,9 +251,17 @@ Verification note:
 - Urgent negative combat status icons now use a stronger alert color after prioritization, improving readability when many effects are active.
 - Combat status icon labels now trim to fit inside their compact pills instead of spilling over when future labels run long.
 - Combat and combat-mode dungeon HUD status icons now share the same priority, overflow, and color helper logic to avoid future presentation drift.
+- Main combat status icons now include the Maelstrom Weapon stack marker already shown in the dungeon combat HUD, keeping stacked passive state visible across combat presentations.
+- Repeated same-label combat status icons now collapse into counted pills such as `ATK2` / `PSN2`, reducing crowding before overflow compaction.
+- Dense dungeon-combat HUD status rows now have regression coverage proving urgent counted effects stay visible ahead of overflow.
+- Dungeon-combat HUD status pills are now slightly wider so counted labels such as `STN2` remain readable before overflow compaction.
 - Charging / telegraph-style combat log lines now render with a warning color in both combat overlay modes.
 - Charging / telegraph-style combat log lines now wrap against the narrower dungeon-combat overlay pane as well as the main combat pane.
 - Telegraph messages now also surface in a dedicated warning banner, and the turn indicator now uses fixed player/enemy turn labels for cleaner readability.
+- Telegraph banners now keep the full latest unwrapped telegraph message for truncation instead of depending on combat-log wrap fragments.
+- Telegraph banners now clear when later non-telegraph combat messages arrive, avoiding stale charge warnings after the charged action resolves.
+- Combat selection overlays now fit long item, spell, skill, and Totem labels by rendered pixel width instead of raw character count, preserving readable compact menus.
+- Combat turn-indicator subtitles now trim long player/enemy names to the banner width so unusual names do not spill into neighboring UI.
 
 ### Dungeon Rendering / Presentation Polish
 
@@ -277,6 +285,13 @@ Verification note:
 - Left-side side-corridor floor-special routing now has outer depth-3 floor regression coverage to match the existing right-side checks.
 - Combat-mode dungeon HUD status icons now share the priority/overflow behavior used by the main combat view.
 - Outer side-corridor door regression coverage now checks left-side open and closed doors as well as the existing right-side cases.
+- Detected but closed Ore Vault doors now render as closed door wall planes while still leaving undetected Ore Vault doors visually hidden as normal walls.
+- Side-opening Ore Vault door rendering now has matching detected/hidden regression coverage, preserving hidden-wall presentation until the door is revealed.
+- Open Ore Vault doors now have renderer coverage that preserves their current open-passage presentation.
+- Left-side outer corridor floor, ceiling, and wall slot IDs now have parity regression coverage alongside the existing right-side checks.
+- Left depth-3 outer side-corridor wall continuation now has smoke coverage so deeper side-wall routing stays stable.
+- Depth-3 outer side-corridor floor and ceiling slot IDs now have left/right regression coverage, keeping deeper corridor surface routing stable.
+- Right-side outer depth-3 floor-special routing now has matching smoke coverage with the existing left-side case.
 
 ### Character / Shop UX
 
@@ -316,6 +331,15 @@ Verification note:
 - Nested equipment action menus now opt into the same popup-menu stale-input guard as inventory action menus.
 - Shared pygame popup menus now restore the previous background provider even if a popup exits through an exception.
 - The barracks leave popup now redraws over the barracks menu background while using the shared stale-input guard.
+- Promotion confirmation popups now use the shared town popup guard/background behavior.
+- Nested inventory action menus now restore their temporary background override even if a nested popup exits through an exception.
+- Loot and locked-door/chest key-use popups now support stale-input guards and use cached dungeon backgrounds when invoked from dungeon interactions.
+- The in-dungeon escape menu now uses the same stale-input guard so the key press that opens it cannot immediately choose an option.
+- Load-game, shop-selection, and reusable town location menus now support guarded navigation input, with main entry flows opting into stale-input protection.
+- Main-menu, race-selection, class-selection, and town-hub navigation loops now support the same guarded input behavior, and the top-level game flow opts into it.
+- Combat action-grid and combat submenu selectors now clear buffered input and wait for key release before accepting selection input.
+- Reusable shop-screen option and item navigation loops now clear buffered input and wait for key release before accepting selection input.
+- Top-level character-screen navigation now clears buffered input and waits for key release before accepting menu choices.
 
 ### 3. Broader Test Coverage
 
@@ -530,6 +554,29 @@ Current progress:
 - Kept the barracks leave popup on its local background while preserving guarded modal input
 - Fixed side-view chest sprite rendering so chests stay upright instead of skewing through the lateral floor projection path
 - Added left-side outer depth-3 floor-special smoke coverage for side-corridor presentation parity
+- Fixed detected closed Ore Vault door rendering so the dungeon scene treats it as a visible blocking door instead of an open corridor
+- Added Maelstrom Weapon stack visibility to the main combat status-icon row
+- Extended guarded popup/background behavior to promotion confirmations and hardened nested inventory action-menu restoration on exceptional exits
+- Collapsed duplicate combat status icons into counted compact pills before overflow handling
+- Added side-opening Ore Vault door regression coverage for detected versus hidden presentation
+- Extended stale-input protection and cached-background rendering to loot and key-use dungeon popups
+- Kept telegraph banners tied to the full latest unwrapped warning line so long charge messages do not degrade into partial fragments
+- Added open Ore Vault door renderer coverage for the current open-passage behavior
+- Extended stale-input protection to the in-dungeon escape menu
+- Cleared active telegraph banners after non-telegraph combat messages so resolved charge warnings do not linger
+- Extended guarded navigation input to load-game, shop-selection, and reusable town location menus
+- Added left-side outer corridor floor/ceiling/wall slot-ID parity coverage for future renderer edits
+- Extended guarded navigation input to main-menu, race-selection, class-selection, and town-hub selection loops
+- Added dense dungeon-combat HUD status-icon coverage for urgent counted effects plus overflow behavior
+- Widened dungeon-combat HUD status pills enough to preserve counted four-character labels before fitting/truncation
+- Extended guarded input to the combat action grid plus item, spell, skill, and Totem aspect selection overlays
+- Added left depth-3 outer side-corridor wall continuation smoke coverage
+- Extended guarded input to reusable shop-screen option and item selection loops
+- Tightened combat selection overlay label fitting for long item/spell/skill/Totem names
+- Added depth-3 outer side-corridor floor/ceiling slot-ID parity coverage
+- Extended guarded input to top-level character-screen navigation
+- Tightened combat turn-indicator name fitting for long player/enemy names
+- Added right-side outer depth-3 floor-special smoke coverage
 
 Current stabilization priorities:
 
@@ -700,6 +747,8 @@ Primary workstreams:
   - completed: combat view and combat-mode dungeon HUD now share status-icon priority/overflow/color helpers
   - completed: urgent negative status icons now receive a stronger alert color in both combat status displays
   - completed: compact status-icon labels now trim to fit their pills
+  - completed: combat selection overlays now fit long labels by rendered pixel width
+  - completed: combat turn-indicator subtitles now fit long names inside the banner
   - completed: telegraph-like combat log lines use warning coloring in both combat render modes
   - completed: telegraph-like combat log lines wrap to the active combat-log pane width in both render modes
   - completed: telegraph messages also surface in a dedicated warning banner
@@ -711,6 +760,8 @@ Primary workstreams:
   - completed: depth-2 side floor-special placement is covered for left/right outer-lane parity
   - completed: side-view chest sprites now render upright rather than using skewed floor projection
   - completed: left-side side-corridor floor-special routing is covered for outer depth-3 placement
+  - completed: depth-3 outer side-corridor floor and ceiling slot IDs are covered on both sides
+  - completed: right-side side-corridor floor-special routing is covered for outer depth-3 placement
   - finish special-tile placement polish for floor-bound sprites and future migrated props
   - remove or rewrite any outdated rendering assumptions left over from the legacy dungeon renderer
   - make smoke-test expectations and renderer behavior converge so regressions are caught early
@@ -731,6 +782,8 @@ Primary workstreams:
   - completed: nested equipment action menus can wait for key release before accepting input
   - completed: reusable popup-menu background providers are restored through a `finally` guard
   - completed: barracks leave messaging preserves its local background redraw while using guarded input
+  - completed: reusable shop-screen option and item selectors now use the same stale-input guard
+  - completed: top-level character-screen navigation now uses the same stale-input guard
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient

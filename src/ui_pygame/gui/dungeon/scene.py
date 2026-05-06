@@ -39,7 +39,7 @@ def is_wall(tile) -> bool:
         return True
 
     if tile_type == "OreVaultDoor":
-        return not (getattr(tile, "open", False) or getattr(tile, "detected", False))
+        return not getattr(tile, "open", False)
 
     # Doors now render on structural wall planes instead of the old sprite path.
     # Treat them as walls for scene extraction so the renderer emits the matching

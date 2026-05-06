@@ -72,7 +72,7 @@ def test_visit_inn_and_patron_helpers(monkeypatch):
         def __init__(self, _presenter, _title):
             pass
 
-        def navigate(self, _options, reset_cursor=False):
+        def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(selections)
 
     monkeypatch.setattr("src.ui_pygame.gui.inn.LocationMenuScreen", FakeLocationMenuScreen)
@@ -113,7 +113,7 @@ def test_talk_to_patrons_accepts_quest_or_shows_hint(monkeypatch):
         def __init__(self, _presenter, _title):
             pass
 
-        def navigate(self, _options, reset_cursor=False):
+        def navigate(self, _options, reset_cursor=False, **_kwargs):
             if not rendered:
                 return 0
             return 1
@@ -167,12 +167,12 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
         def __init__(self, _presenter, title):
             self.title = title
 
-        def navigate(self, options, reset_cursor=False):
+        def navigate(self, options, reset_cursor=False, **_kwargs):
             if self.title == "Turn In Bounty":
                 return 0
             return None
 
-        def navigate_with_content(self, items):
+        def navigate_with_content(self, items, **_kwargs):
             if self.title == "Accept Bounty":
                 return 0
             if self.title == "Active Bounties":

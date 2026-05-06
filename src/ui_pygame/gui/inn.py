@@ -28,7 +28,12 @@ class InnManager(TownScreenBase):
         inn_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog Tavern")
         
         while True:
-            choice_idx = inn_screen.navigate(inn_options, reset_cursor=False)
+            choice_idx = inn_screen.navigate(
+                inn_options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice_idx is None or choice_idx == 2:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
@@ -90,7 +95,12 @@ class InnManager(TownScreenBase):
         while True:
             # Rebuild patron list each iteration to reflect quest state changes
             options = self._build_patron_list()
-            choice = patrons_screen.navigate(options, reset_cursor=False)
+            choice = patrons_screen.navigate(
+                options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             if choice is None or (choice is not None and options[choice] == 'Back'):
                 return
 
@@ -139,7 +149,12 @@ class InnManager(TownScreenBase):
             if completable:
                 bounty_options.insert(1, "Turn In Bounty")
             
-            choice_idx = bounty_screen.navigate(bounty_options, reset_cursor=False)
+            choice_idx = bounty_screen.navigate(
+                bounty_options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice_idx is None or bounty_options[choice_idx] == "Leave":
                 break
@@ -177,7 +192,11 @@ class InnManager(TownScreenBase):
         bounty_display = [(name, 0) for name in bounties_available]
         bounty_display.append(("Back", 0))
         
-        choice = bounty_screen.navigate_with_content(bounty_display)
+        choice = bounty_screen.navigate_with_content(
+            bounty_display,
+            flush_events=True,
+            require_key_release=True,
+        )
         
         if choice is None or bounty_display[choice][0] == "Back":
             return
@@ -210,7 +229,12 @@ class InnManager(TownScreenBase):
         bounty_screen = LocationMenuScreen(self.presenter, "Turn In Bounty")
         bounty_options = list(completable) + ["Back"]
 
-        choice_idx = bounty_screen.navigate(bounty_options, reset_cursor=False)
+        choice_idx = bounty_screen.navigate(
+            bounty_options,
+            reset_cursor=False,
+            flush_events=True,
+            require_key_release=True,
+        )
 
         if choice_idx is None or bounty_options[choice_idx] == "Back":
             return
@@ -283,7 +307,11 @@ class InnManager(TownScreenBase):
         
         bounty_display.append(("Back", 0))
         
-        choice = bounty_screen.navigate_with_content(bounty_display)
+        choice = bounty_screen.navigate_with_content(
+            bounty_display,
+            flush_events=True,
+            require_key_release=True,
+        )
         
         if choice is None or bounty_display[choice][0] == "Back":
             return

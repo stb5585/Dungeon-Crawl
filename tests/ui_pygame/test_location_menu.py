@@ -138,6 +138,19 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     assert screen.navigate(["Rest", "Leave"], reset_cursor=False) is None
     assert screen.current_option == 1
 
+    screen.current_option = 0
+    clear_calls = []
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.clear", lambda: clear_calls.append(True))
+    assert screen.navigate(["Rest", "Leave"], flush_events=True, require_key_release=True) == 1
+    assert clear_calls == [True]
+
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
     ])
@@ -162,6 +175,19 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate_with_content(items) == len(items) - 1
     assert screen.scroll_offset > 0
+
+    screen.current_option = 0
+    screen.scroll_offset = 0
+    clear_calls.clear()
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate_with_content(items, flush_events=True, require_key_release=True) == 1
+    assert clear_calls == [True]
 
 
 def test_location_menu_quit_event_raises(monkeypatch):

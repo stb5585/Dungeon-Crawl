@@ -446,7 +446,22 @@ class CharacterScreen(TownScreenBase):
         if do_flip:
             pygame.display.flip()
 
-    def navigate(self, player_char):
+    @staticmethod
+    def _arm_guarded_input(event, input_armed):
+        if event.type == pygame.KEYUP:
+            return True
+        return input_armed
+
+    @staticmethod
+    def _prepare_guarded_input(flush_events=True, require_key_release=True):
+        if flush_events:
+            try:
+                pygame.event.clear()
+            except pygame.error:
+                pass
+        return not require_key_release
+
+    def navigate(self, player_char, flush_events=True, require_key_release=True):
         """
         Navigate the character menu and return selected option.
         
@@ -474,6 +489,7 @@ class CharacterScreen(TownScreenBase):
         menu_options.append("Quit Game")
         self.menu_options = menu_options
         started_in_town = player_char.in_town()
+        input_armed = self._prepare_guarded_input(flush_events, require_key_release)
         
         while True:
             if not started_in_town and player_char.in_town():
@@ -486,6 +502,9 @@ class CharacterScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     # Calculate dynamic rows for 2-column layout
                     rows = (len(self.menu_options) + 1) // 2

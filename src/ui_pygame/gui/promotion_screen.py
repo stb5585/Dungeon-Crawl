@@ -244,7 +244,7 @@ class PromotionScreen(TownScreenBase):
                             self.presenter,
                             f"Promote to {selected_name}?"
                         )
-                        if popup.show():
+                        if popup.show(**self.popup_show_kwargs()):
                             return selected_name
                     elif event.key == pygame.K_ESCAPE:
                         return None

@@ -159,11 +159,13 @@ def test_promotion_screen_navigation(monkeypatch):
 
     class FakePopup:
         responses = [True]
+        show_kwargs = []
 
         def __init__(self, _presenter, _message):
             pass
 
-        def show(self):
+        def show(self, **kwargs):
+            FakePopup.show_kwargs.append(kwargs)
             return FakePopup.responses.pop(0)
 
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.ConfirmationPopup", FakePopup)
@@ -173,6 +175,9 @@ def test_promotion_screen_navigation(monkeypatch):
     ])
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate() == "Knight"
+    assert FakePopup.show_kwargs[-1]["flush_events"] is True
+    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
+    assert callable(FakePopup.show_kwargs[-1]["background_draw_func"])
 
     screen.current_selection = 1
     event_batches = iter([

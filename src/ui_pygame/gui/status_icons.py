@@ -33,24 +33,50 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
 }
 
 
+def _priority_label(label: str) -> str:
+    stripped = label.rstrip("0123456789")
+    if stripped in URGENT_NEGATIVE_STATUS_LABELS or stripped in IMPORTANT_POSITIVE_STATUS_LABELS:
+        return stripped
+    return label
+
+
 def status_icon_priority(label: str, is_positive: bool | None) -> tuple[int, int, str]:
     """Return a stable sort key that keeps urgent combat states visible."""
+    priority_label = _priority_label(label)
     if is_positive is None:
         return (2, 50, label)
     if not is_positive:
-        return (0, URGENT_NEGATIVE_STATUS_LABELS.get(label, 50), label)
-    return (1, IMPORTANT_POSITIVE_STATUS_LABELS.get(label, 50), label)
+        return (0, URGENT_NEGATIVE_STATUS_LABELS.get(priority_label, 50), label)
+    return (1, IMPORTANT_POSITIVE_STATUS_LABELS.get(priority_label, 50), label)
 
 
 def is_urgent_status_icon(label: str, is_positive: bool | None) -> bool:
     """Return whether an icon should receive high-alert presentation."""
-    return is_positive is False and label in URGENT_NEGATIVE_STATUS_LABELS
+    return is_positive is False and _priority_label(label) in URGENT_NEGATIVE_STATUS_LABELS
 
 
 def prioritize_status_icons(icons) -> list[StatusIcon]:
     indexed_icons = list(enumerate(icons))
     indexed_icons.sort(key=lambda item: (*status_icon_priority(*item[1]), item[0]))
     return [icon for _index, icon in indexed_icons]
+
+
+def combine_duplicate_status_icons(icons) -> list[StatusIcon]:
+    """Collapse repeated same-label status icons into one compact counted pill."""
+    counts: dict[StatusIcon, int] = {}
+    order: list[StatusIcon] = []
+    for icon in icons:
+        if icon not in counts:
+            counts[icon] = 0
+            order.append(icon)
+        counts[icon] += 1
+
+    combined: list[StatusIcon] = []
+    for label, is_positive in order:
+        count = counts[(label, is_positive)]
+        combined_label = f"{label}{count}" if count > 1 else label
+        combined.append((combined_label, is_positive))
+    return combined
 
 
 def compact_status_icons(icons, per_row: int, max_rows: int | None) -> list[StatusIcon]:

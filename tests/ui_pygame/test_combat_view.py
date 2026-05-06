@@ -136,6 +136,8 @@ def _make_character():
         stat_effects={"Attack": _effect(extra=2), "Defense": _effect(extra=-1)},
         magic_effects={"Totem": _effect(), "Regen": _effect(), "Jump": _effect()},
         class_effects={"Power Chant": _effect()},
+        maelstrom_hits=2,
+        spellbook={"Skills": {"Maelstrom Weapon": object()}},
     )
 
 
@@ -182,12 +184,19 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert view._effect_label("Mystery") == "MYS"
 
     icons = view._collect_status_icons(_make_character())
-    assert ("ATK", True) in icons
+    assert ("ATK2", True) in icons
     assert ("DEF", True) in icons
     assert ("BRK", False) in icons
     assert ("PRN", False) in icons
     assert ("REG", True) in icons
+    assert ("MW2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
+
+    character = _make_character()
+    character.magic_effects["Totem"].active = True
+    icons = view._collect_status_icons(character)
+    assert ("ATK2", True) in icons
+    assert ("ATK", True) not in icons
 
 
 def test_combat_log_wraps_long_charge_messages(monkeypatch):
@@ -220,7 +229,9 @@ def test_combat_log_wraps_long_charge_messages(monkeypatch):
 def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
     view = _make_view()
     player = SimpleNamespace(name="Hero")
-    enemy = SimpleNamespace(name="Goblin")
+    enemy = SimpleNamespace(
+        name="Goblin With An Extremely Long Formal Dungeon Title And Several More Ceremonial Names"
+    )
     fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
     rect_calls = []
     circle_calls = []
@@ -243,7 +254,9 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
 
     assert "Your Turn" in rendered_text
     assert "Enemy Turn" in rendered_text
-    assert "Goblin" in rendered_text
+    enemy_label = next(text for text in rendered_text if text.startswith("Goblin"))
+    assert enemy_label.endswith("...")
+    assert RecordingFont().size(enemy_label)[0] <= int(view.screen_width * 0.65) - 30 - 48
     assert view.colors["turn_player"] in colors
     assert view.colors["turn_enemy"] in colors
     assert circle_calls
@@ -297,6 +310,31 @@ def test_telegraph_banner_uses_latest_matching_log_line(monkeypatch):
     assert "Telegraph" in rendered_text
     assert any("lowering their head" in text for text in rendered_text)
     assert any(args[1] == view.colors["telegraph"] for args, _kwargs in rect_calls if len(args) > 1)
+
+
+def test_telegraph_banner_uses_full_unwrapped_latest_message(monkeypatch):
+    view = _make_view()
+    long_message = (
+        "Hydra is gathering enough stormlight for an extremely long telegraph message "
+        "that wraps inside the combat log but should stay whole for banner truncation."
+    )
+    view.add_combat_message(long_message)
+
+    assert len(view.combat_log) > 1
+    assert view._latest_telegraph_line() == long_message
+    view.reset_combat_log()
+    assert view._latest_telegraph_line() is None
+
+
+def test_telegraph_banner_clears_after_non_telegraph_message(monkeypatch):
+    view = _make_view()
+    view.add_combat_message("Hydra is gathering enough stormlight to strike next turn.")
+    assert view._latest_telegraph_line() is not None
+
+    view.add_combat_message("Hydra unleashes the storm!")
+
+    assert view._latest_telegraph_line() is None
+    assert any("unleashes" in line for line in view.combat_log)
 
 
 def test_sprite_loading_reload_and_sight_rules(monkeypatch):

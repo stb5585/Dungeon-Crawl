@@ -561,9 +561,10 @@ class InventoryPopupMenu(BasePopupMenu):
             # Temporarily override draw_background for nested popup
             original_draw_bg = action_popup.draw_background
             action_popup.draw_background = lambda surf: self.screen.blit(base_bg, (0, 0))
-
-            result = action_popup.show(player_char, flush_events=True, require_key_release=True)
-            action_popup.draw_background = original_draw_bg
+            try:
+                result = action_popup.show(player_char, flush_events=True, require_key_release=True)
+            finally:
+                action_popup.draw_background = original_draw_bg
 
             if not result or result[0] != "selection":
                 break

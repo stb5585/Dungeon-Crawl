@@ -189,6 +189,66 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     assert game.bounties["Goblin"]["reward"] == 50
 
 
+def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    route_kwargs = []
+    game.presenter = SimpleNamespace(
+        show_message=lambda _message: None,
+        get_text_input=lambda _prompt: "Ada",
+    )
+
+    class FakeRace:
+        name = "Human"
+
+    class FakeClass:
+        name = "Warrior"
+
+    class FakeRaceScreen:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, races_dict, **kwargs):
+            route_kwargs.append(("race", kwargs))
+            return "Human"
+
+    class FakeClassScreen:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, race_name, race, classes_dict, **kwargs):
+            route_kwargs.append(("class", kwargs))
+            return "Warrior"
+
+    class FakePopup:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def show(self, **_kwargs):
+            return True
+
+    game.races_dict = {"Human": FakeRace}
+    game.classes_dict = {"Warrior": {"class": FakeClass}}
+    game._build_player_character = lambda race_name, class_name, name: SimpleNamespace(
+        race_name=race_name,
+        class_name=class_name,
+        name=name,
+        health=SimpleNamespace(max=20),
+        mana=SimpleNamespace(max=10),
+    )
+    game.initialize_managers = lambda: None
+    monkeypatch.setattr(pygame_game, "RaceSelectionScreen", FakeRaceScreen)
+    monkeypatch.setattr(pygame_game, "ClassSelectionScreen", FakeClassScreen)
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    player = game.new_game()
+
+    assert player.name == "Ada"
+    assert route_kwargs == [
+        ("race", {"flush_events": True, "require_key_release": True}),
+        ("class", {"flush_events": True, "require_key_release": True}),
+    ]
+
+
 def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     popup_messages = []
@@ -225,8 +285,9 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         def __init__(self, presenter_obj):
             self.presenter_obj = presenter_obj
 
-        def navigate(self, options):
+        def navigate(self, options, **kwargs):
             menu_calls.append(tuple(options))
+            popup_kwargs.append(kwargs)
             return menu_choices.pop(0)
 
     menu_calls = []
@@ -256,7 +317,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         def __init__(self, presenter_obj):
             self.presenter_obj = presenter_obj
 
-        def navigate(self, save_files):
+        def navigate(self, save_files, **kwargs):
+            popup_kwargs.append(kwargs)
             return navigate_results.pop(0)
 
     navigate_results = ["save1", "save2"]
@@ -270,6 +332,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     loaded = pygame_game.PygameGame.load_game(game)
     assert loaded.quit is False
     assert loaded._suppress_heal_message is True
+    assert popup_kwargs[-1]["flush_events"] is True
+    assert popup_kwargs[-1]["require_key_release"] is True
     assert progress_calls
     assert init_calls
     assert pygame_game.PygameGame.load_game(game) is None
@@ -401,8 +465,9 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
         def draw_menu_panel(self, _options):
             return None
 
-        def navigate(self, options):
+        def navigate(self, options, **kwargs):
             options_seen.append(tuple(options))
+            popup_kwargs.append(kwargs)
             self.calls += 1
             if self.calls == 1:
                 return options.index("Statistics")
@@ -415,3 +480,5 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert game.town_menu() == "quit"
     assert stats_calls
     assert any("Statistics" in options for options in options_seen)
+    assert popup_kwargs[-1]["flush_events"] is True
+    assert popup_kwargs[-1]["require_key_release"] is True

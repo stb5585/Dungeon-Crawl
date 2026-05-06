@@ -163,7 +163,13 @@ class LocationMenuScreen(TownScreenBase):
                         self.screen.blit(text_surface, (text_x, text_y))
                         text_y += 25
     
-    def navigate(self, options, reset_cursor: bool = True):
+    def navigate(
+        self,
+        options,
+        reset_cursor: bool = True,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate the menu and return the selected option index.
         
@@ -185,6 +191,10 @@ class LocationMenuScreen(TownScreenBase):
             else:
                 self.current_option = 0
             self.scroll_offset = 0  # Reset scroll when options change
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while True:
             self.draw_all()
@@ -194,7 +204,11 @@ class LocationMenuScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_ESCAPE:
                         return None
                     elif event.key == pygame.K_UP:
@@ -261,7 +275,12 @@ class LocationMenuScreen(TownScreenBase):
             self.screen.blit(text, text_rect)
             y += 40
 
-    def navigate_with_content(self, items_data):
+    def navigate_with_content(
+        self,
+        items_data,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate menu with items displayed in the right content area.
         items_data: list of tuples (item_name, quantity) to display and navigate on right
@@ -280,6 +299,10 @@ class LocationMenuScreen(TownScreenBase):
         content_height = self.height - top_height
         line_height = 28
         max_visible = (content_height - 80) // line_height  # Reserve space for top/bottom padding
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while True:
             self.draw_background()
@@ -300,7 +323,11 @@ class LocationMenuScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_ESCAPE:
                         return None
                     elif event.key == pygame.K_UP:

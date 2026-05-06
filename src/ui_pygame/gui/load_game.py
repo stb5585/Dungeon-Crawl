@@ -233,7 +233,12 @@ class LoadGameScreen:
                     'file': save_file
                 })
     
-    def navigate(self, save_files):
+    def navigate(
+        self,
+        save_files,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate the load game screen and return selected save file path.
         
@@ -247,6 +252,10 @@ class LoadGameScreen:
         
         if not self.save_data:
             return None
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while True:
             self.draw_all()
@@ -256,7 +265,11 @@ class LoadGameScreen:
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_UP:
                         self.current_selection = (self.current_selection - 1) % len(self.save_data)
                     elif event.key == pygame.K_DOWN:

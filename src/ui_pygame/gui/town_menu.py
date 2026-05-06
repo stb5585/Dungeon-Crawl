@@ -77,7 +77,12 @@ class TownMenuScreen(TownScreenBase):
             self.screen.blit(instr_text, instr_rect)
             instructions_y += 25
     
-    def navigate(self, options):
+    def navigate(
+        self,
+        options,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate the town menu and return selected option index.
         
@@ -87,7 +92,10 @@ class TownMenuScreen(TownScreenBase):
         Returns:
             int: Index of selected option, or None if cancelled
         """
-        
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
+
         while True:
             # Draw everything
             self.draw_background()
@@ -100,7 +108,11 @@ class TownMenuScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_UP:
                         self.current_selection = (self.current_selection - 1) % len(options)
                     elif event.key == pygame.K_DOWN:

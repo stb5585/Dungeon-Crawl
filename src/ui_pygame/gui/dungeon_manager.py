@@ -293,6 +293,10 @@ class DungeonManager:
         """Draw current dungeon frame as dialogue background."""
         self._render()
 
+    def _draw_cached_popup_background(self):
+        """Draw the latest cached dungeon frame for lightweight popups."""
+        self.presenter.screen.blit(self._get_popup_background(), (0, 0))
+
     def _show_dungeon_dialogue(self, message: str, title: str = "", image_path: str = ""):
         """Show split dialogue panel with optional NPC image on the left."""
         self.presenter.show_message(
@@ -808,7 +812,13 @@ class DungeonManager:
                 self.add_message("You skillfully pick the lock!")
             elif "Key" in self.player_char.inventory:
                 # Ask if they want to use a key with visual popup
-                use_key = self.loot_popup.show_unlock_prompt("chest")
+                self._refresh_cached_frame()
+                use_key = self.loot_popup.show_unlock_prompt(
+                    "chest",
+                    background_draw_func=self._draw_cached_popup_background,
+                    flush_events=True,
+                    require_key_release=True,
+                )
                 if use_key:
                     chest_tile.locked = False
                     self.player_char.modify_inventory(
@@ -857,7 +867,14 @@ class DungeonManager:
             loot_item = chest_tile.loot()
             # Show the loot popup first
             chest_name = "Locked Chest" if "Locked" in tile_type else "Chest"
-            self.loot_popup.show_loot(loot_item, chest_name)
+            self._refresh_cached_frame()
+            self.loot_popup.show_loot(
+                loot_item,
+                chest_name,
+                background_draw_func=self._draw_cached_popup_background,
+                flush_events=True,
+                require_key_release=True,
+            )
             # Then add to inventory
             self.player_char.modify_inventory(loot_item)
             self.add_message(f"Obtained {loot_item.name}!")
@@ -869,7 +886,14 @@ class DungeonManager:
                 self.player_char.modify_inventory(token, rare=True)
                 self.add_message(f"A shimmering {token.name} manifests as the Mimic dissolves!")
         else:
-            self.loot_popup.show_loot([], "Empty Chest")
+            self._refresh_cached_frame()
+            self.loot_popup.show_loot(
+                [],
+                "Empty Chest",
+                background_draw_func=self._draw_cached_popup_background,
+                flush_events=True,
+                require_key_release=True,
+            )
 
     def _interact_door(self, door_tile):
         """Handle door interaction."""
@@ -935,7 +959,13 @@ class DungeonManager:
             door_tile.blocked = None
             self.add_message("You skillfully pick the lock and open the door!")
         elif "Old Key" in self.player_char.inventory:
-            use_key = self.loot_popup.show_unlock_prompt("door")
+            self._refresh_cached_frame()
+            use_key = self.loot_popup.show_unlock_prompt(
+                "door",
+                background_draw_func=self._draw_cached_popup_background,
+                flush_events=True,
+                require_key_release=True,
+            )
             if use_key:
                 door_tile.locked = False
                 door_tile.open = True
@@ -1846,7 +1876,12 @@ class DungeonManager:
             menu_options.append("Save Game")
         menu_options.append("Quit Game (No Save)")
 
-        choice = self._popup_menu("Dungeon Menu", menu_options)
+        choice = self._popup_menu(
+            "Dungeon Menu",
+            menu_options,
+            flush_events=True,
+            require_key_release=True,
+        )
 
         # Handle None (menu closed without selection)
         if choice is None or choice == 0:  # Resume
@@ -1888,7 +1923,13 @@ class DungeonManager:
                 self.running = False
                 self.player_char.quit = True
 
-    def _popup_menu(self, title: str, options: list[str]):
+    def _popup_menu(
+        self,
+        title: str,
+        options: list[str],
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """Lightweight modal popup menu drawn over the current view.
 
         Returns the selected index or None if canceled.
@@ -1899,6 +1940,9 @@ class DungeonManager:
 
         # Snapshot current frame as background
         background = screen.copy()
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
 
         # Layout
         panel_width = self.presenter.width // 2
@@ -1946,7 +1990,11 @@ class DungeonManager:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+                if event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 if event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key in (pygame.K_UP, pygame.K_w):
                         selected = (selected - 1) % len(options)
                     elif event.key in (pygame.K_DOWN, pygame.K_s):

@@ -61,7 +61,12 @@ class BarracksManager(TownScreenBase):
             )
         
         while True:
-            choice_idx = barracks_screen.navigate(barracks_options, reset_cursor=False)
+            choice_idx = barracks_screen.navigate(
+                barracks_options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice_idx is None or choice_idx == 2:  # Leave
                 popup = ConfirmationPopup(self.presenter, "Take care, soldier.", show_buttons=False)
@@ -95,7 +100,12 @@ class BarracksManager(TownScreenBase):
         storage_screen = LocationMenuScreen(self.presenter, "Storage Locker")
         
         while True:
-            choice = storage_screen.navigate(storage_options, reset_cursor=False)
+            choice = storage_screen.navigate(
+                storage_options,
+                reset_cursor=False,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice is None or (choice is not None and storage_options[choice] == "Leave"):
                 break
@@ -146,7 +156,11 @@ class BarracksManager(TownScreenBase):
             items_display.append(("Back", 0))
             
             # Show items list in right panel and navigate on right
-            choice = store_screen.navigate_with_content(items_display)
+            choice = store_screen.navigate_with_content(
+                items_display,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice is None or items_display[choice][0] == "Back":
                 return
@@ -198,7 +212,11 @@ class BarracksManager(TownScreenBase):
             storage_display.append(("Back", 0))
             
             # Show items list in right panel and navigate on right
-            choice = storage_screen.navigate_with_content(storage_display)
+            choice = storage_screen.navigate_with_content(
+                storage_display,
+                flush_events=True,
+                require_key_release=True,
+            )
             
             if choice is None or storage_display[choice][0] == "Back":
                 return

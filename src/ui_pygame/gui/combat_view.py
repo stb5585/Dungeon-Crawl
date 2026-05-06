@@ -13,6 +13,7 @@ import pygame
 
 from .status_icons import (
     STATUS_ICON_COLORS,
+    combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
     prioritize_status_icons,
@@ -123,6 +124,8 @@ class CombatView:
         self.max_log_lines = 200
         self.log_lines_per_page = 5
         self.log_scroll_offset = 0
+        self._active_telegraph_line: str | None = None
+        self._suppress_logged_telegraph_banner = False
 
         # Status icon colors
         self.status_colors = STATUS_ICON_COLORS
@@ -162,8 +165,15 @@ class CombatView:
         cleaned_lines = self._filter_status_message(str(message))
         if not cleaned_lines:
             return
+        has_telegraph_line = any(self._is_telegraph_message(line) for line in cleaned_lines)
+        if not has_telegraph_line:
+            self._active_telegraph_line = None
+            self._suppress_logged_telegraph_banner = True
         was_at_bottom = self.log_scroll_offset >= self._max_log_scroll()
         for line in cleaned_lines:
+            if self._is_telegraph_message(line):
+                self._active_telegraph_line = line
+                self._suppress_logged_telegraph_banner = False
             self.combat_log.extend(self._wrap_log_line(line))
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
@@ -183,6 +193,8 @@ class CombatView:
         """Clear combat log history and reset scrolling."""
         self.combat_log.clear()
         self.log_scroll_offset = 0
+        self._active_telegraph_line = None
+        self._suppress_logged_telegraph_banner = False
 
     def _filter_status_message(self, message):
         """Remove status-effect log lines to keep the log focused on actions."""
@@ -336,7 +348,15 @@ class CombatView:
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
 
-        return prioritize_status_icons(icons)
+        try:
+            maelstrom_hits = int(getattr(character, "maelstrom_hits", 0))
+            skills = getattr(character, "spellbook", {}).get("Skills", {})
+            if "Maelstrom Weapon" in skills and maelstrom_hits > 0:
+                icons.append((f"MW{maelstrom_hits}", True))
+        except (AttributeError, TypeError, ValueError):
+            pass
+
+        return prioritize_status_icons(combine_duplicate_status_icons(icons))
 
     @staticmethod
     def _is_telegraph_message(line: str) -> bool:
@@ -1070,9 +1090,11 @@ class CombatView:
         font = pygame.font.Font(None, 26)
         small_font = pygame.font.Font(None, 18)
         label_surf = font.render(label, True, (255, 255, 255))
-        sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
 
-        width = min(max(label_surf.get_width() + 48, sublabel_surf.get_width() + 48, 180), view_width - 30)
+        max_width = max(120, view_width - 30)
+        width = min(max(label_surf.get_width() + 48, small_font.size(sublabel)[0] + 48, 180), max_width)
+        sublabel = self._truncate_text(small_font, sublabel, width - 48)
+        sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
         rect = pygame.Rect(15, 170 if overlay else 12, width, 58)
 
         if overlay:
@@ -1089,6 +1111,10 @@ class CombatView:
         self.screen.blit(sublabel_surf, (rect.left + 34, rect.top + 34))
 
     def _latest_telegraph_line(self) -> str | None:
+        if self._active_telegraph_line:
+            return self._active_telegraph_line
+        if self._suppress_logged_telegraph_banner:
+            return None
         for message in reversed(self.combat_log):
             for line in reversed([segment.strip() for segment in message.split("\n") if segment.strip()]):
                 if self._is_telegraph_message(line):

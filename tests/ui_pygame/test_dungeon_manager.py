@@ -507,8 +507,8 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     unlock_prompts = []
     combat_calls = []
     manager.loot_popup = SimpleNamespace(
-        show_unlock_prompt=lambda kind: unlock_prompts.append(kind) or True,
-        show_loot=lambda loot, label: loot_calls.append((getattr(loot, "name", loot), label)),
+        show_unlock_prompt=lambda kind, **kwargs: unlock_prompts.append((kind, kwargs)) or True,
+        show_loot=lambda loot, label, **kwargs: loot_calls.append((getattr(loot, "name", loot), label, kwargs)),
     )
     manager.combat_manager.start_combat = lambda player_char, enemy, tile: combat_calls.append((enemy.level, tile)) or True
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
@@ -538,10 +538,16 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     manager._interact_chest(chest, "LockedChest")
     assert chest.open is True
     assert chest.locked is False
-    assert unlock_prompts == ["chest"]
+    assert unlock_prompts[0][0] == "chest"
+    assert unlock_prompts[0][1]["flush_events"] is True
+    assert unlock_prompts[0][1]["require_key_release"] is True
+    assert callable(unlock_prompts[0][1]["background_draw_func"])
     assert combat_calls[0][0] == 2
     assert ("Gold Ring", {}) in player.inventory_calls
-    assert loot_calls[-1] == ("Gold Ring", "Locked Chest")
+    assert loot_calls[-1][0:2] == ("Gold Ring", "Locked Chest")
+    assert loot_calls[-1][2]["flush_events"] is True
+    assert loot_calls[-1][2]["require_key_release"] is True
+    assert callable(loot_calls[-1][2]["background_draw_func"])
 
     funhouse = SimpleNamespace(
         open=False,
@@ -555,13 +561,14 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
 
     empty = SimpleNamespace(open=False, locked=False, loot=None, generate_loot=lambda: None)
     manager._interact_chest(empty, "Chest")
-    assert loot_calls[-1] == ([], "Empty Chest")
+    assert loot_calls[-1][0:2] == ([], "Empty Chest")
 
 
 def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     manager, _presenter, player, game = _make_manager(monkeypatch)
-    manager.loot_popup = SimpleNamespace(show_unlock_prompt=lambda kind: True, show_loot=lambda *_args: None)
+    manager.loot_popup = SimpleNamespace(show_unlock_prompt=lambda kind, **_kwargs: True, show_loot=lambda *_args, **_kwargs: None)
     dirty_calls = []
+    manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
     manager._mark_view_dirty = lambda: dirty_calls.append("dirty")
     manager._show_dungeon_choice = lambda prompt, options: 0
 
@@ -773,11 +780,23 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
     assert manager._popup_menu("Menu", ["A", "B"]) == 1
 
+    events = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, []))
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    assert manager._popup_menu("Menu", ["A", "B"], flush_events=True, require_key_release=True) == 1
+    assert clear_calls == [True]
+
     manager.character_screen = SimpleNamespace(navigate=lambda _player: "Exit Menu")
     manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: manager.messages.append("saved"), debug_level_up=lambda: manager.messages.append("debug-level"))
-    manager._popup_menu = lambda title, options: 0
+    manager._popup_menu = lambda title, options, **_kwargs: 0
     manager._show_menu()
-    manager._popup_menu = lambda title, options: len(options) - 1
+    manager._popup_menu = lambda title, options, **_kwargs: len(options) - 1
 
     class FakeConfirmMenu:
         def __init__(self, *_args, **_kwargs):
@@ -1018,13 +1037,13 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     manager.character_screen = SimpleNamespace(navigate=lambda _player: "Quit Game")
     manager.game = SimpleNamespace(debug_mode=True, running=True, save_game=lambda: manager.messages.append("saved"))
     manager.running = True
-    manager._popup_menu = lambda title, options: 1
+    manager._popup_menu = lambda title, options, **_kwargs: 1
     manager._show_menu()
     assert manager.game.running is False and manager.running is False
 
     manager.running = True
     manager.player_char.quit = False
-    manager._popup_menu = lambda title, options: 2
+    manager._popup_menu = lambda title, options, **_kwargs: 2
 
     confirm_kwargs = []
 
@@ -1088,7 +1107,7 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FalseConfirm)
     manager.game.debug_mode = True
-    manager._popup_menu = lambda title, options: 2
+    manager._popup_menu = lambda title, options, **_kwargs: 2
     manager._show_menu()
     assert notices == ["This menu is not yet implemented in the dungeon."]
     assert false_confirm_kwargs[-1]["flush_events"] is True
@@ -1126,7 +1145,7 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
     manager.game.running = True
     char_choices = iter(["Inventory", "Exit Menu"])
     manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
-    manager._popup_menu = lambda title, options: 1
+    manager._popup_menu = lambda title, options, **_kwargs: 1
     manager._show_menu()
     assert notices[-1] == "This menu is not yet implemented in the dungeon."
 

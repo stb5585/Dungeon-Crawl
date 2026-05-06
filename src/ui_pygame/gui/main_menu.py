@@ -118,7 +118,12 @@ class MainMenuScreen:
         self.draw_menu()
         pygame.display.flip()
     
-    def navigate(self, options):
+    def navigate(
+        self,
+        options,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Navigate the main menu and return selected option index.
         
@@ -129,6 +134,10 @@ class MainMenuScreen:
             int: Index of selected option, or None if cancelled
         """
         self.options = options
+
+        if flush_events:
+            pygame.event.clear()
+        input_armed = not require_key_release
         
         while True:
             self.draw()
@@ -138,7 +147,11 @@ class MainMenuScreen:
                     pygame.quit()
                     import sys
                     sys.exit()
+                elif event.type == pygame.KEYUP and require_key_release:
+                    input_armed = True
                 elif event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
                     if event.key == pygame.K_UP:
                         self.current_option = (self.current_option - 1) % len(self.options)
                     elif event.key == pygame.K_DOWN:

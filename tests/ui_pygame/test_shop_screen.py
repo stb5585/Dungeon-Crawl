@@ -264,8 +264,12 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     screen = _make_shop(monkeypatch)
     monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
 
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.clear", lambda: clear_calls.append(True))
     option_events = iter(
         [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         ]
@@ -278,6 +282,8 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     screen.scroll_offset = 0
     item_events = iter(
         [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
@@ -289,6 +295,20 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     assert choice[0] == "Item 20"
     assert screen.current_item == 20
     assert screen.scroll_offset == 2
+    assert clear_calls == [True, True]
 
     screen.item_list = []
     assert screen.navigate_items() is None
+
+
+def test_navigation_helpers_can_opt_out_of_stale_input_guard(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
+
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.clear", lambda: clear_calls.append(True))
+    option_events = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.get", lambda: next(option_events, []))
+
+    assert screen.navigate_options(flush_events=False, require_key_release=False) == "Buy"
+    assert clear_calls == []

@@ -120,6 +120,19 @@ def test_shop_selection_navigate_selects_wraps_and_cancels(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.shop_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(["Blacksmith", "Jeweler", "Leave"]) is None
 
+    screen.current_selection = 0
+    clear_calls = []
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.shop_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr("src.ui_pygame.gui.shop_selection.pygame.event.clear", lambda: clear_calls.append(True))
+    assert screen.navigate(["Blacksmith", "Jeweler", "Leave"], flush_events=True, require_key_release=True) == 1
+    assert clear_calls == [True]
+
 
 def test_shop_selection_quit_event_raises(monkeypatch):
     presenter = _make_presenter()

@@ -50,6 +50,9 @@ class RecordingFont:
             get_rect=lambda **kwargs: pygame.Rect(0, 0, max(8, len(text) * 8), 24),
         )
 
+    def size(self, text):
+        return (max(8, len(text) * 8), 24)
+
 
 class DummyCombatView:
     def __init__(self, screen, presenter):
@@ -435,6 +438,8 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Scroll": [SimpleNamespace(name="Scroll of Ice", subtyp="Scroll")],
     }
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -445,6 +450,7 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert menu_calls[-1][2] == 1
 
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_ESCAPE)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
@@ -460,6 +466,7 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Ice": SimpleNamespace(cost=2, passive=False),
     }
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -477,11 +484,41 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Jump": SimpleNamespace(cost=3, passive=False),
     }
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_skill(player, enemy) == "Jump"
+
+
+def test_select_totem_aspect_ignores_stale_confirm_until_key_release(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    menu_calls = []
+    manager._render_selection_menu = lambda title, options, selected, scroll_offset=0: menu_calls.append(
+        (title, tuple(options), selected, scroll_offset)
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    totem = SimpleNamespace(
+        active_aspect="Wolf",
+        get_unlocked_aspects=lambda _player: ["Wolf", "Bear"],
+    )
+
+    assert manager._select_totem_aspect(player, enemy, totem) == "Bear"
+    assert clear_calls == [True]
+    assert menu_calls[0][1] == ("Wolf (Active)", "Bear")
 
 
 def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch):
@@ -504,7 +541,9 @@ def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch)
     manager._render_selection_menu("Choose Action", long_options, selected=13, scroll_offset=99)
 
     assert "Choose Action" in large_font.render_calls
-    assert any(text.startswith("13. Option 12") and text.endswith("...") for text in medium_font.render_calls)
+    fitted_option = next(text for text in medium_font.render_calls if text.startswith("13. Option 12"))
+    assert fitted_option.endswith("...")
+    assert medium_font.size(fitted_option)[0] <= 342
     assert "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel" in small_font.render_calls
     assert draw_calls
 
@@ -643,6 +682,8 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     )
     manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -654,6 +695,7 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     manager.available_actions = ["Attack", "Defend", "Items"]
     actions.clear()
     event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_3)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))

@@ -356,6 +356,18 @@ class ShopScreen(TownScreenBase):
         self.draw_gold()
         if do_flip:
             pygame.display.flip()
+
+    @staticmethod
+    def _arm_guarded_input(event, input_armed):
+        if event.type == pygame.KEYUP:
+            return True
+        return input_armed
+
+    @staticmethod
+    def _prepare_guarded_input(flush_events=True, require_key_release=True):
+        if flush_events:
+            pygame.event.clear()
+        return not require_key_release
     
     def update_item_list(self, itemdict, buy_or_sell):
         """
@@ -441,8 +453,9 @@ class ShopScreen(TownScreenBase):
             # Store item data (no formatting needed - we render at fixed positions)
             self.item_list.append((name, item, sell_price, owned))
     
-    def navigate_options(self):
+    def navigate_options(self, flush_events=True, require_key_release=True):
         """Navigate the main menu options (Buy, Sell, Quests, Leave)."""
+        input_armed = self._prepare_guarded_input(flush_events, require_key_release)
         while True:
             self.draw_all()
             
@@ -451,6 +464,9 @@ class ShopScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return "Leave"
@@ -463,7 +479,7 @@ class ShopScreen(TownScreenBase):
             
             self.presenter.clock.tick(30)
     
-    def navigate_items(self):
+    def navigate_items(self, flush_events=True, require_key_release=True):
         """Navigate the item list and return selected item."""
         # Handle empty item list
         if not self.item_list:
@@ -471,6 +487,7 @@ class ShopScreen(TownScreenBase):
         
         # Calculate max visible items (must match draw_shop_list)
         max_visible = 19
+        input_armed = self._prepare_guarded_input(flush_events, require_key_release)
             
         while True:
             self.draw_all()
@@ -480,6 +497,9 @@ class ShopScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return None

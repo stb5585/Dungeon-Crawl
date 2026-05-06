@@ -151,6 +151,18 @@ def test_race_selection_navigation_and_quit(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(races) is None
 
+    clear_calls = []
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_SPACE)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.clear", lambda: clear_calls.append(True))
+    assert screen.navigate(races, flush_events=True, require_key_release=True) == "Human"
+    assert clear_calls == [True]
+
     monkeypatch.setattr(screen, "set_races", lambda *_args: setattr(screen, "races", []))
     assert screen.navigate(races) is None
 
