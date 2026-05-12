@@ -98,6 +98,16 @@ def normalize_gameplay_stats(gameplay_stats=None, *, current_level=1):
     return normalized
 
 
+def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[str, int]:
+    """Return normalized gameplay statistics with derived display counters."""
+    summary = normalize_gameplay_stats(gameplay_stats, current_level=current_level)
+    summary["encounters_survived"] = max(
+        0,
+        summary["enemies_defeated"] + summary["flees"] - summary["deaths"],
+    )
+    return summary
+
+
 def load_char(char=None, filename=None, is_tmp=False):
     """
     Initializes the character based on the save file using the data-driven save system.

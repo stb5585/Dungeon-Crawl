@@ -19,6 +19,7 @@ from src.core.player import (
     _parse_tiled_properties,
     load_char,
     normalize_gameplay_stats,
+    summarize_gameplay_stats,
 )
 from tests.test_framework import TestGameState
 
@@ -72,6 +73,18 @@ class TestPlayerTopLevelHelpers:
         assert normalized["steps_taken"] == 7
         assert normalized["deaths"] == 0
         assert normalized["highest_level_reached"] == 5
+
+        summary = summarize_gameplay_stats(
+            {
+                "enemies_defeated": "4",
+                "flees": 2,
+                "deaths": "1",
+                "highest_level_reached": "3",
+            },
+            current_level=6,
+        )
+        assert summary["encounters_survived"] == 5
+        assert summary["highest_level_reached"] == 6
 
         loaded = SimpleNamespace(name="Loaded Hero")
         load_calls = []

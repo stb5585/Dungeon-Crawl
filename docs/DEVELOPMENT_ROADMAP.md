@@ -601,6 +601,7 @@ Current progress:
 - Hardened renderer surface-slot overrides so invalid debug/test entries are ignored while valid neighboring floor, ceiling, and wall overrides still apply
 - Improved combat status-icon ordering so counted labels use count-aware stable tie-breaks without overriding urgent-status priority
 - Hardened pygame presenter popup-background fallback so broken or empty providers are cleared after falling back to the screen copy
+- Extracted a core gameplay-stat summary helper so pygame statistics and tests share normalized derived counters
 
 Current stabilization priorities:
 
@@ -625,6 +626,7 @@ Current non-visual Phase 1 track:
   - completed: persistent player-side counters for steps, stairs, deaths, flees, defeats, and high-water combat stats
   - completed: expose the tracked data through a player-facing pygame statistics popup
   - completed: show derived encounters survived and tolerate malformed legacy stat values in the popup formatter
+  - completed: share derived gameplay-stat summary counters through a core helper for UI/tooling reuse
   - remaining: decide whether richer history or run-summary views are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves

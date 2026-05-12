@@ -14,6 +14,7 @@ import pygame
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import classes_dict
 from src.core.data.data_loader import get_special_events
+from src.core.player import summarize_gameplay_stats
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
 from src.core import items
@@ -651,36 +652,26 @@ class PygameGame:
         """Return a player-facing summary of persistent gameplay counters."""
         stats = getattr(player_char, "gameplay_stats", {}) or {}
 
-        def stat_value(key: str) -> int:
-            try:
-                return int(stats.get(key, 0))
-            except (TypeError, ValueError):
-                return 0
-
         try:
             current_level = int(getattr(getattr(player_char, "level", None), "level", 1) or 1)
         except (TypeError, ValueError):
             current_level = 1
-        highest_level = max(stat_value("highest_level_reached"), current_level)
-        encounters_survived = max(
-            0,
-            stat_value("enemies_defeated") + stat_value("flees") - stat_value("deaths"),
-        )
+        summary = summarize_gameplay_stats(stats, current_level=current_level)
 
         return "\n".join(
             (
                 "Adventure Statistics",
                 "",
-                f"Steps Taken: {stat_value('steps_taken')}",
-                f"Stairs Used: {stat_value('stairs_used')}",
-                f"Enemies Defeated: {stat_value('enemies_defeated')}",
-                f"Deaths: {stat_value('deaths')}",
-                f"Flees: {stat_value('flees')}",
-                f"Encounters Survived: {encounters_survived}",
+                f"Steps Taken: {summary['steps_taken']}",
+                f"Stairs Used: {summary['stairs_used']}",
+                f"Enemies Defeated: {summary['enemies_defeated']}",
+                f"Deaths: {summary['deaths']}",
+                f"Flees: {summary['flees']}",
+                f"Encounters Survived: {summary['encounters_survived']}",
                 "",
-                f"Highest Level Reached: {highest_level}",
-                f"Highest Damage Dealt: {stat_value('highest_damage_dealt')}",
-                f"Highest Damage Taken: {stat_value('highest_damage_taken')}",
+                f"Highest Level Reached: {summary['highest_level_reached']}",
+                f"Highest Damage Dealt: {summary['highest_damage_dealt']}",
+                f"Highest Damage Taken: {summary['highest_damage_taken']}",
             )
         )
 
