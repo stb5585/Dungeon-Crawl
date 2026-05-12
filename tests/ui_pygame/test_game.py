@@ -453,7 +453,23 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
 
     formatted = pygame_game.PygameGame.format_gameplay_statistics(game.player_char)
     assert "Steps Taken: 12" in formatted
+    assert "Encounters Survived: 5" in formatted
     assert "Highest Level Reached: 6" in formatted
+
+    broken_stats_player = SimpleNamespace(
+        level=SimpleNamespace(level="bad"),
+        gameplay_stats={
+            "steps_taken": object(),
+            "enemies_defeated": 1,
+            "flees": 0,
+            "deaths": 5,
+            "highest_damage_taken": None,
+        },
+    )
+    broken_formatted = pygame_game.PygameGame.format_gameplay_statistics(broken_stats_player)
+    assert "Steps Taken: 0" in broken_formatted
+    assert "Encounters Survived: 0" in broken_formatted
+    assert "Highest Level Reached: 1" in broken_formatted
 
     game.show_gameplay_statistics(background_draw_func=lambda: None)
     assert "Adventure Statistics" in popup_messages[-1][0]

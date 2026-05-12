@@ -414,6 +414,7 @@ Completed foundation work:
 - High-water marks now include highest level reached and peak damage dealt / taken
 - Targeted tests cover statistics defaults, persistence, and core combat hooks
 - A player-facing Statistics entry is available from the pygame town menu
+- The pygame statistics popup now includes a derived encounters-survived line and defensive formatting for missing legacy values
 
 Remaining work:
 
@@ -587,6 +588,7 @@ Current progress:
 - Switched the pygame Settings placeholder to the shared guarded modal popup path so buffered menu input cannot skip it
 - Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
+- Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 
 Current stabilization priorities:
 
@@ -609,6 +611,7 @@ Current non-visual Phase 1 track:
 - Gameplay-statistics foundation
   - completed: persistent player-side counters for steps, stairs, deaths, flees, defeats, and high-water combat stats
   - completed: expose the tracked data through a player-facing pygame statistics popup
+  - completed: show derived encounters survived and tolerate malformed legacy stat values in the popup formatter
   - remaining: decide whether richer history or run-summary views are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves

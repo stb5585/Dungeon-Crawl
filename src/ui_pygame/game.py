@@ -662,6 +662,10 @@ class PygameGame:
         except (TypeError, ValueError):
             current_level = 1
         highest_level = max(stat_value("highest_level_reached"), current_level)
+        encounters_survived = max(
+            0,
+            stat_value("enemies_defeated") + stat_value("flees") - stat_value("deaths"),
+        )
 
         return "\n".join(
             (
@@ -672,6 +676,7 @@ class PygameGame:
                 f"Enemies Defeated: {stat_value('enemies_defeated')}",
                 f"Deaths: {stat_value('deaths')}",
                 f"Flees: {stat_value('flees')}",
+                f"Encounters Survived: {encounters_survived}",
                 "",
                 f"Highest Level Reached: {highest_level}",
                 f"Highest Damage Dealt: {stat_value('highest_damage_dealt')}",

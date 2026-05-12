@@ -38,6 +38,11 @@
 - [ ] Accept and complete a main quest that grants item rewards.
   - Expected: Quest completion and turned-in state are recorded correctly.
 
+### Statistics
+- [ ] Open the Statistics entry from the pygame town menu.
+  - Expected: The popup includes steps, stairs, defeats, deaths, flees, encounters survived, and high-water combat stats.
+  - Expected: Missing or old save data displays as zeroes instead of crashing.
+
 ### Developer Tooling
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
