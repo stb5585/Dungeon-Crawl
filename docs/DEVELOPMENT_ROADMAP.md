@@ -622,6 +622,7 @@ Current progress:
 - Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
 - Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads
 - Added BattleLogger event-type and flag-count diagnostics to compact battle summaries
+- Added compact combat status-icon layout diagnostics for visible, hidden, overflow, and urgent-visible counts
 
 Current stabilization priorities:
 
@@ -675,6 +676,8 @@ Current non-visual Phase 1 track:
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis
   - completed: battle logger compact summaries now expose event-type and flag counts without raw event rows
   - remaining: decide whether game/debug flows should automatically persist these logs
+- Combat status presentation
+  - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues

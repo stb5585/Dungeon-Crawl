@@ -25,6 +25,8 @@
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Resize the game window or view a crowded combat overlay.
   - Expected: Status icon labels remain clipped to the icon pill instead of spilling into neighboring UI.
+- [ ] Inspect combat status layout diagnostics with many active effects.
+  - Expected: Visible, hidden, overflow, and urgent-visible counts match the status row shown on screen.
 
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.

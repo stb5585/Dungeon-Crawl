@@ -104,6 +104,27 @@ def compact_status_icons(icons, per_row: int, max_rows: int | None) -> list[Stat
     return icon_list[:visible_count] + [(f"+{hidden_count}", None)]
 
 
+def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> dict[str, int | str | None]:
+    """Return compact layout diagnostics for a status-icon row."""
+    icon_list = list(icons)
+    visible_icons = compact_status_icons(icon_list, per_row, max_rows)
+    overflow_label = None
+    if visible_icons and visible_icons[-1][1] is None and visible_icons[-1][0].startswith("+"):
+        overflow_label = visible_icons[-1][0]
+    hidden_count = max(0, len(icon_list) - len([icon for icon in visible_icons if icon[1] is not None]))
+    return {
+        "input_count": len(icon_list),
+        "visible_count": len(visible_icons),
+        "hidden_count": hidden_count,
+        "urgent_visible_count": sum(
+            1 for label, is_positive in visible_icons if is_urgent_status_icon(label, is_positive)
+        ),
+        "per_row": per_row,
+        "max_rows": max_rows,
+        "overflow_label": overflow_label,
+    }
+
+
 def fit_status_icon_label(font, label: str, max_width: int) -> str:
     """Shorten an icon label so it stays inside the icon pill."""
     def measured_width(value: str) -> int:

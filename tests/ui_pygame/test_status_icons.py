@@ -7,6 +7,7 @@ from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
     compact_status_icons,
+    describe_status_icon_layout,
     fit_status_icon_label,
     is_urgent_status_icon,
     prioritize_status_icons,
@@ -80,6 +81,37 @@ def test_compact_status_icons_and_colors():
     assert status_icon_color(False, "BRG") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(False, "PSN2") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(None) == STATUS_ICON_COLORS["overflow"]
+
+
+def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
+    icons = prioritize_status_icons(
+        [
+            ("ATK", True),
+            ("STN", False),
+            ("PSN", False),
+            ("REG", True),
+            ("BLD", False),
+        ]
+    )
+
+    assert describe_status_icon_layout(icons, per_row=2, max_rows=2) == {
+        "input_count": 5,
+        "visible_count": 4,
+        "hidden_count": 2,
+        "urgent_visible_count": 3,
+        "per_row": 2,
+        "max_rows": 2,
+        "overflow_label": "+2",
+    }
+    assert describe_status_icon_layout(icons[:2], per_row=2, max_rows=None) == {
+        "input_count": 2,
+        "visible_count": 2,
+        "hidden_count": 0,
+        "urgent_visible_count": 2,
+        "per_row": 2,
+        "max_rows": None,
+        "overflow_label": None,
+    }
 
 
 def test_fit_status_icon_label_keeps_text_inside_icon():
