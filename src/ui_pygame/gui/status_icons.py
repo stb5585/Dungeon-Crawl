@@ -113,7 +113,9 @@ def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> di
     overflow_label = None
     if visible_icons and visible_icons[-1][1] is None and visible_icons[-1][0].startswith("+"):
         overflow_label = visible_icons[-1][0]
-    hidden_count = max(0, len(icon_list) - len([icon for icon in visible_icons if icon[1] is not None]))
+    visible_real_count = len([icon for icon in visible_icons if icon[1] is not None])
+    hidden_icons = icon_list[visible_real_count:]
+    hidden_count = max(0, len(hidden_icons))
     return {
         "input_count": len(icon_list),
         "visible_count": len(visible_icons),
@@ -121,6 +123,10 @@ def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> di
         "urgent_visible_count": sum(
             1 for label, is_positive in visible_icons if is_urgent_status_icon(label, is_positive)
         ),
+        "urgent_hidden_count": sum(
+            1 for label, is_positive in hidden_icons if is_urgent_status_icon(label, is_positive)
+        ),
+        "has_overflow": overflow_label is not None,
         "capacity": capacity,
         "row_count": (len(visible_icons) + normalized_per_row - 1) // normalized_per_row,
         "per_row": per_row,

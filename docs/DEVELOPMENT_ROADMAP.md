@@ -631,6 +631,7 @@ Current progress:
 - Added default sound/music asset diagnostics for the runtime's expected SFX and music names
 - Added visible-save metadata summaries for count, total size, and largest player-visible save diagnostics
 - Added BattleLogger positive damage attribution by actor and target to compact battle summaries
+- Extended combat status-icon layout diagnostics with overflow state and hidden urgent-status counts
 
 Current stabilization priorities:
 
@@ -692,6 +693,7 @@ Current non-visual Phase 1 track:
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
   - completed: status-icon layout diagnostics now report capacity and row count for dense overlay validation
+  - completed: status-icon layout diagnostics now report whether overflow is active and whether urgent statuses were hidden
 - Sound/music content visibility
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
   - completed: default audio diagnostics now use the runtime's expected SFX and music name lists for content checks
