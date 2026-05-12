@@ -40,7 +40,7 @@ This roadmap is organized by implementation status instead of historical plannin
 
 ### Verified Repo Metrics
 
-- Test files under `tests/` (all buckets): `76`
+- Test files under `tests/` (all buckets): `78`
 - YAML ability definitions under `src/core/data/abilities/`: `179`
 - Event types in `EventType`: `38`
 
@@ -350,7 +350,7 @@ Testing work remains ongoing.
 Current state note:
 
 - The old roadmap metric of “13 test files” is outdated. The repo now contains substantially more test modules, but coverage gaps still remain in the areas below.
-- The current tracked `test_*.py` module count is `76`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
+- The current tracked `test_*.py` module count is `78`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
 - The latest full-suite run confirmed by the user is `1398` passing tests with `81%` total coverage across `src/`.
 - The `ui_pygame` bucket is now broadly stabilized for Phase 1 coverage work; every currently measured module there is at or above `70%`.
 - The test buckets now use package markers (`__init__.py`) so identically named files like `test_battle.py` and `test_town.py` collect cleanly across domains.
@@ -577,6 +577,7 @@ Current progress:
 - Extended guarded input to top-level character-screen navigation
 - Tightened combat turn-indicator name fitting for long player/enemy names
 - Added right-side outer depth-3 floor-special smoke coverage
+- Increased Old Key quest rewards for early/main quest turn-ins and added loader-level regression coverage for the new reward counts
 
 Current stabilization priorities:
 
@@ -893,7 +894,9 @@ Definition of done for Phase 4:
 
 ## Improvements
 
-- Increase the number of Old Keys given out for quest rewards
+Resolved:
+
+- Increased the number of Old Keys given out for quest rewards
 
 ---
 

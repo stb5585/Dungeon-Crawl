@@ -11,7 +11,7 @@
           "End Text": "I'm glad to hear you took that butcher out. Here's an item that should help you in any future quests.",
           "Help Text": "If you are having trouble finding the Minotaur, he is located north of the entrance to the town.",
           "Reward": ["OldKey"],
-          "Reward Number": 1,
+          "Reward Number": 2,
           "Experience": 200,
           "Completed": false,
           "Turned In": false
@@ -65,7 +65,7 @@
           "End Text": "My pendant...Elysia take me...he left me these keys last I saw of him...please avenge my love...(the waitress runs out sobbing...)",
           "Help Text": "An adventurer came in earlier. He said he saw Joffrey on the second floor of the dungeon. Joffrey had just unlocked a door in the northeast corner.",
           "Reward": ["OldKey"],
-          "Reward Number": 2,
+          "Reward Number": 3,
           "Experience": 3500,
           "Completed": false,
           "Turned In": false

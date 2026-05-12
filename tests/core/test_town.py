@@ -97,6 +97,22 @@ def test_get_quest_dict_uses_cache(monkeypatch):
     assert calls["count"] == 1
 
 
+def test_old_key_quest_rewards_are_intentionally_generous():
+    from src.core import items
+    from src.core.data import data_loader
+
+    data_loader.clear_cache()
+    quests = data_loader.get_quests()
+
+    butcher = quests["Barkeep"]["Main"]["10"]["The Butcher"]
+    bad_dream = quests["Waitress"]["Main"]["35"]["A Bad Dream"]
+
+    assert butcher["Reward"] == [items.OldKey]
+    assert butcher["Reward Number"] == 2
+    assert bad_dream["Reward"] == [items.OldKey]
+    assert bad_dream["Reward Number"] == 3
+
+
 def test_holy_grail_rotation_hints_cover_hooded_and_sergeant_states():
     from src.core.town import get_holy_grail_rotation_hints
 
