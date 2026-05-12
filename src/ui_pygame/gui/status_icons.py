@@ -17,10 +17,11 @@ URGENT_NEGATIVE_STATUS_LABELS = {
     "SIL": 2,
     "PRN": 3,
     "BLD": 4,
-    "DSA": 5,
-    "DOM": 6,
-    "PSN": 7,
-    "RND": 8,
+    "BRG": 5,
+    "DSA": 6,
+    "DOM": 7,
+    "PSN": 8,
+    "RND": 9,
 }
 
 IMPORTANT_POSITIVE_STATUS_LABELS = {

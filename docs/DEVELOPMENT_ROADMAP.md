@@ -262,6 +262,7 @@ Verification note:
 - Telegraph banners now clear when later non-telegraph combat messages arrive, avoiding stale charge warnings after the charged action resolves.
 - Combat selection overlays now fit long item, spell, skill, and Totem labels by rendered pixel width instead of raw character count, preserving readable compact menus.
 - Combat turn-indicator subtitles now trim long player/enemy names to the banner width so unusual names do not spill into neighboring UI.
+- Blind Rage now has a distinct urgent `BRG` status icon label in both main combat and dungeon-combat HUD status rows.
 
 ### Dungeon Rendering / Presentation Polish
 
@@ -583,6 +584,7 @@ Current progress:
 - Hardened EventBus bounded history so `max_history=0` disables history storage without disabling subscribers
 - Hardened action-queue helper scheduling by clamping negative delays/cast times and tagging helper-created actions with debug metadata
 - Switched the pygame Settings placeholder to the shared guarded modal popup path so buffered menu input cannot skip it
+- Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
 
 Current stabilization priorities:
 

@@ -270,6 +270,7 @@ class CombatView:
         labels = {
             "Berserk": "BRK",
             "Blind": "BLD",
+            "Blind Rage": "BRG",
             "Doom": "DOM",
             "Poison": "PSN",
             "Silence": "SIL",

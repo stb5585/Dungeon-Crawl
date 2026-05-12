@@ -153,6 +153,9 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("MW2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
+    player.status_effects["Blind Rage"] = SimpleNamespace(active=True)
+    assert ("BRG", False) in hud._collect_status_icons(player)
+
     player.class_effects["Attack"] = _effect()
     icons = hud._collect_status_icons(player)
     assert ("ATK2", True) in icons

@@ -2,6 +2,11 @@
 
 ## Recently Changed
 
+### Combat Status Icons
+- [ ] Trigger or simulate Blind Rage in combat.
+  - Expected: The status row shows a distinct `BRG` icon.
+  - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
+
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.
   - Expected: A guarded modal message appears saying the settings menu is coming soon.

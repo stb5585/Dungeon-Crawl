@@ -193,6 +193,10 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
     character = _make_character()
+    character.status_effects["Blind Rage"] = SimpleNamespace(active=True)
+    assert ("BRG", False) in view._collect_status_icons(character)
+
+    character = _make_character()
     character.magic_effects["Totem"].active = True
     icons = view._collect_status_icons(character)
     assert ("ATK2", True) in icons

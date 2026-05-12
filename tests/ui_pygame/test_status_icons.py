@@ -23,11 +23,13 @@ def test_status_icon_priority_orders_urgent_debuffs_before_buffs():
         ("STN", False),
         ("MSH", True),
         ("PRN", False),
+        ("BRG", False),
     ]
 
     assert prioritize_status_icons(icons) == [
         ("STN", False),
         ("PRN", False),
+        ("BRG", False),
         ("PSN", False),
         ("MSH", True),
         ("REG", True),
@@ -35,6 +37,7 @@ def test_status_icon_priority_orders_urgent_debuffs_before_buffs():
     ]
     assert status_icon_priority("UNK", False) < status_icon_priority("MSH", True)
     assert is_urgent_status_icon("STN", False) is True
+    assert is_urgent_status_icon("BRG", False) is True
     assert is_urgent_status_icon("ATK", True) is False
 
 
@@ -74,6 +77,7 @@ def test_compact_status_icons_and_colors():
     assert status_icon_color(True) == STATUS_ICON_COLORS["positive"]
     assert status_icon_color(False) == STATUS_ICON_COLORS["negative"]
     assert status_icon_color(False, "STN") == STATUS_ICON_COLORS["urgent_negative"]
+    assert status_icon_color(False, "BRG") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(False, "PSN2") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(None) == STATUS_ICON_COLORS["overflow"]
 
