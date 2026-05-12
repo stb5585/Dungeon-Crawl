@@ -14,6 +14,8 @@
   - Expected: Projected-surface cache diagnostics report a bounded cache size.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
   - Expected: Fallback counts identify the affected asset category without changing dungeon rendering.
+- [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
+  - Expected: Loaded state, fallback counts, cache size/limit, and override counts are visible in one diagnostic payload.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.

@@ -618,6 +618,7 @@ Current progress:
 - Standardized shared confirmation, choice, reward, quantity, and code-entry popup background fallback so empty or live-screen providers fall back to copied surfaces
 - Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
 - Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
+- Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
 
 Current stabilization priorities:
 
@@ -639,6 +640,7 @@ Current stabilization priorities:
   - panel diagnostics now include default and effective texture keys for each surface slot
   - projected-surface cache diagnostics expose current size and configured limit
   - asset fallback diagnostics now expose compact counts by asset category for quick renderer/debug checks
+  - aggregate texture-library diagnostics now combine fallback/cache/override state for quick debug assertions
 
 Current non-visual Phase 1 track:
 

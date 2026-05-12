@@ -185,6 +185,16 @@ class TextureLibrary:
             "limit": self._projected_cache_limit,
         }
 
+    def get_diagnostics(self) -> dict[str, int | bool | dict[str, int]]:
+        """Return compact texture-library state for renderer/debug checks."""
+        return {
+            "loaded": self._loaded,
+            "fallback_counts": self.get_asset_fallback_counts(),
+            "projected_cache": self.get_projected_cache_stats(),
+            "surface_slot_override_count": len(self.get_surface_slot_overrides()),
+            "surface_slot_revision": self._surface_slot_revision,
+        }
+
     def _record_asset_fallback(self, category: str, texture_key: str, path: str | os.PathLike[str]) -> None:
         self._asset_fallbacks[f"{category}:{texture_key}"] = str(path)
 

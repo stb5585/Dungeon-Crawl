@@ -282,6 +282,14 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     pygame.init()
     textures = TextureLibrary(tileset_base=tmp_path / "missing_tiles")
 
+    assert textures.get_diagnostics() == {
+        "loaded": False,
+        "fallback_counts": {},
+        "projected_cache": {"size": 0, "limit": 512},
+        "surface_slot_override_count": 0,
+        "surface_slot_revision": 0,
+    }
+
     wall = textures.get_texture("wall")
     special = textures.get_special_texture("stairs_down", size=24)
     enemy = textures.get_enemy_texture("Missing Enemy", size=24)
@@ -305,6 +313,17 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     counts = textures.get_asset_fallback_counts()
     counts["texture"] = 0
     assert textures.get_asset_fallback_counts()["texture"] == len(TEXTURE_PATHS)
+    assert textures.get_diagnostics() == {
+        "loaded": True,
+        "fallback_counts": {
+            "texture": len(TEXTURE_PATHS),
+            "special": 1,
+            "enemy": 1,
+        },
+        "projected_cache": {"size": 0, "limit": 512},
+        "surface_slot_override_count": 0,
+        "surface_slot_revision": 0,
+    }
 
     pygame.quit()
 
@@ -328,6 +347,7 @@ def test_texture_library_limits_projected_surface_cache():
 
     assert len(textures._projected_cache) == 2
     assert textures.get_projected_cache_stats() == {"size": 2, "limit": 2}
+    assert textures.get_diagnostics()["projected_cache"] == {"size": 2, "limit": 2}
     assert all(cache_key[0] != (128, 128) for cache_key in textures._projected_cache)
 
     pygame.quit()
