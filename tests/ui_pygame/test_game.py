@@ -253,6 +253,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     popup_messages = []
     popup_kwargs = []
+    popup_show_calls = []
     presenter_messages = []
     progress_calls = []
     presenter = SimpleNamespace(
@@ -279,6 +280,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
         def show(self, **kwargs):
             popup_kwargs.append(kwargs)
+            popup_show_calls.append((self.message, kwargs))
             return True
 
     class FakeMenu:
@@ -305,7 +307,13 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True
     assert any("Settings" in opts for opts in menu_calls)
-    assert any("coming soon" in message.lower() for _title, message in presenter_messages)
+    settings_calls = [
+        kwargs for message, kwargs in popup_show_calls
+        if "settings menu coming soon" in message.lower()
+    ]
+    assert settings_calls
+    assert settings_calls[-1]["flush_events"] is True
+    assert settings_calls[-1]["require_key_release"] is True
     assert game.running is False
 
     presenter_messages.clear()

@@ -358,8 +358,8 @@ class PygameGame:
                 if self.player_char:
                     self.run()
             elif menu_options[choice] == 'Settings':
-                # TODO: Implement settings menu
-                self.presenter.show_message("Settings menu coming soon!")
+                popup = ConfirmationPopup(self.presenter, "Settings menu coming soon!", show_buttons=False)
+                popup.show(**self._popup_show_kwargs())
             elif menu_options[choice] == 'Exit':
                 self.running = False
                 

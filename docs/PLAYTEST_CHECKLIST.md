@@ -2,6 +2,11 @@
 
 ## Recently Changed
 
+### Main Menu
+- [ ] Choose Settings from the pygame main menu.
+  - Expected: A guarded modal message appears saying the settings menu is coming soon.
+  - Expected: The key press used to choose Settings does not immediately dismiss the message.
+
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.
   - Expected: The reward message grants 2 Old Keys.

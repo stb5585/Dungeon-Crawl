@@ -582,6 +582,7 @@ Current progress:
 - Added BattleLogger JSON file export support for debugger/tooling workflows
 - Hardened EventBus bounded history so `max_history=0` disables history storage without disabling subscribers
 - Hardened action-queue helper scheduling by clamping negative delays/cast times and tagging helper-created actions with debug metadata
+- Switched the pygame Settings placeholder to the shared guarded modal popup path so buffered menu input cannot skip it
 
 Current stabilization priorities:
 
@@ -792,6 +793,7 @@ Primary workstreams:
   - completed: barracks leave messaging preserves its local background redraw while using guarded input
   - completed: reusable shop-screen option and item selectors now use the same stale-input guard
   - completed: top-level character-screen navigation now uses the same stale-input guard
+  - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient
