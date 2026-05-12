@@ -605,6 +605,7 @@ Current progress:
 - Added panel-scoped renderer surface-slot override diagnostics for focused side-corridor and door debugging
 - Hardened SaveManager filename handling for blank names and made save deletion explicitly file-only
 - Hardened combat status-icon label fitting for zero-width and overflow marker edge cases
+- Added compact BattleLogger summary payloads for debug views that do not need raw per-event rows
 
 Current stabilization priorities:
 
@@ -643,6 +644,7 @@ Current non-visual Phase 1 track:
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
   - completed: battle logger can persist structured JSON logs directly to disk for local analysis
+  - completed: battle logger can export compact metadata + summary payloads without raw event rows
   - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis

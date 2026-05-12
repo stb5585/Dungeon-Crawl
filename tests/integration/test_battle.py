@@ -769,6 +769,30 @@ class TestBattleLogger:
         assert summary["total_damage_logged"] == 10
         assert summary["max_damage_logged"] == 10
 
+    def test_summary_payload_omits_raw_events_for_compact_debug_views(self):
+        from src.core.combat.battle_logger import BattleLogger
+        from tests.test_framework import TestGameState
+
+        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
+        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        enemy.enemy_typ = "TestEnemy"
+
+        logger = BattleLogger()
+        logger.start_battle(player, enemy, initiative=True, boss=False)
+        logger.log_event("Attack", actor=player, target=enemy, damage=10)
+        logger.log_event("Spell", actor=player, target=enemy, damage=4)
+        logger.end_battle(result="victory", winner=player.name, boss=False)
+
+        payload = logger.summary_payload()
+
+        assert "events" not in payload
+        assert payload["metadata"]["player"]["name"] == "Hero"
+        assert payload["metadata"]["enemy"]["name"] == "Slime"
+        assert payload["metadata"]["result"] == "victory"
+        assert payload["summary"]["event_count"] == 2
+        assert payload["summary"]["event_types"] == {"Attack": 1, "Spell": 1}
+        assert payload["summary"]["total_damage_logged"] == 14
+
     def test_serialize_value_handles_dataclasses_collections_and_objects(self):
         from src.core.combat.battle_logger import BattleLogger
 

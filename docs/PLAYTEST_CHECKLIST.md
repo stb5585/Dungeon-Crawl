@@ -73,6 +73,8 @@
   - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
+- [ ] Generate a compact battle-log summary during a debug/tooling check.
+  - Expected: The payload includes battle metadata and aggregate summary counts without raw event rows.
 - [ ] Run an event-bus history check with history disabled.
   - Expected: Subscribers still receive events while history remains empty.
 - [ ] Run focused action-queue tests after combat scheduling changes.

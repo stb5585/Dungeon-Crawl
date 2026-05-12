@@ -161,6 +161,20 @@ class BattleLogger:
             "summary": self.build_summary(),
         }
 
+    def summary_payload(self) -> dict:
+        """Export compact combat metadata and summary without raw per-event logs."""
+        metadata = self._serialize_value(self.metadata)
+        return {
+            "metadata": {
+                "player": metadata.get("player"),
+                "enemy": metadata.get("enemy"),
+                "boss": metadata.get("boss"),
+                "result": metadata.get("result"),
+                "winner": metadata.get("winner"),
+            },
+            "summary": self.build_summary(),
+        }
+
     def export_json(self, *, indent: int = 2) -> str:
         """Export the structured combat record as JSON text."""
         return json.dumps(self.export_payload(), indent=indent, sort_keys=True)
