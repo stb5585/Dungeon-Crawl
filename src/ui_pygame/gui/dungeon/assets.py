@@ -345,6 +345,22 @@ class TextureLibrary:
         overrides.update(self._manual_surface_slot_overrides)
         return overrides
 
+    def describe_panel_surface_slot_overrides(
+        self,
+        panel_id: str,
+        texture_key: str | None = None,
+    ) -> dict[str, str]:
+        """Return active slot overrides that affect one projected panel."""
+        plan = self._get_surface_panel_plan(panel_id, texture_key=texture_key)
+        if plan is None:
+            return {}
+        overrides = self.get_surface_slot_overrides()
+        return {
+            slot_id: overrides[slot_id]
+            for slot_id in plan.slot_ids
+            if slot_id in overrides
+        }
+
     def has_any_surface_slot_overrides(self) -> bool:
         """Return whether manual or scene-driven surface slot overrides are active."""
         return bool(self._manual_surface_slot_overrides or self._scene_surface_slot_overrides)

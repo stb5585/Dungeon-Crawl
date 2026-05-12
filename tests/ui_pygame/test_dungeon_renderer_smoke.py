@@ -530,6 +530,33 @@ def test_texture_library_reports_scene_surface_slot_overrides():
     assert textures.has_any_surface_slot_overrides() is False
 
 
+def test_texture_library_describes_panel_surface_slot_overrides():
+    textures = TextureLibrary()
+    textures.set_scene_surface_slot_overrides(
+        {
+            "floor:corridor_outer:right:d2:tile": "floor_pit",
+            "ceiling:visible:d2:x0": "ceiling_pit",
+            "wall:visible:d1:center": "door_closed",
+        }
+    )
+    textures.set_wall_slot_override("wall:visible:d1:center", "door_open")
+
+    assert textures.describe_panel_surface_slot_overrides(
+        "d2:right_corridor_outer_floor",
+        "floor",
+    ) == {"floor:corridor_outer:right:d2:tile": "floor_pit"}
+    assert textures.describe_panel_surface_slot_overrides("d2:center_ceiling", "ceiling") == {
+        "ceiling:visible:d2:x0": "ceiling_pit",
+    }
+    assert textures.describe_panel_surface_slot_overrides("d1:back_wall", "wall") == {
+        "wall:visible:d1:center": "door_open",
+    }
+    assert textures.describe_panel_surface_slot_overrides("unknown_panel", "floor") == {}
+
+    textures.clear_scene_surface_slot_overrides()
+    assert textures.describe_panel_surface_slot_overrides("d2:center_ceiling", "ceiling") == {}
+
+
 def test_texture_library_ignores_invalid_surface_slot_overrides():
     pygame.init()
     textures = TextureLibrary()

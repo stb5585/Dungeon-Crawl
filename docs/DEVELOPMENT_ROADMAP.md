@@ -602,6 +602,7 @@ Current progress:
 - Improved combat status-icon ordering so counted labels use count-aware stable tie-breaks without overriding urgent-status priority
 - Hardened pygame presenter popup-background fallback so broken or empty providers are cleared after falling back to the screen copy
 - Extracted a core gameplay-stat summary helper so pygame statistics and tests share normalized derived counters
+- Added panel-scoped renderer surface-slot override diagnostics for focused side-corridor and door debugging
 
 Current stabilization priorities:
 
@@ -619,6 +620,7 @@ Current stabilization priorities:
 - Asset fallback visibility
   - use the texture-library fallback diagnostics when renderer tests or manual play hit missing assets
   - invalid renderer surface-slot override entries are filtered before they can affect panel composition
+  - panel-scoped surface-slot override diagnostics are available for focused renderer smoke tests
 
 Current non-visual Phase 1 track:
 
