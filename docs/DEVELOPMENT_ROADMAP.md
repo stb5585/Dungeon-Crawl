@@ -599,6 +599,7 @@ Current progress:
 - Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
 - Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
 - Hardened renderer surface-slot overrides so invalid debug/test entries are ignored while valid neighboring floor, ceiling, and wall overrides still apply
+- Improved combat status-icon ordering so counted labels use count-aware stable tie-breaks without overriding urgent-status priority
 
 Current stabilization priorities:
 
@@ -777,6 +778,7 @@ Primary workstreams:
   - completed: combat view and combat-mode dungeon HUD now share status-icon priority/overflow/color helpers
   - completed: urgent negative status icons now receive a stronger alert color in both combat status displays
   - completed: compact status-icon labels now trim to fit their pills
+  - completed: counted status-icon labels now use stable count-aware ordering inside the existing priority buckets
   - completed: combat selection overlays now fit long labels by rendered pixel width
   - completed: combat turn-indicator subtitles now fit long names inside the banner
   - completed: telegraph-like combat log lines use warning coloring in both combat render modes

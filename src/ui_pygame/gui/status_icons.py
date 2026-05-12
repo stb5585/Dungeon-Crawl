@@ -34,21 +34,31 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
 }
 
 
-def _priority_label(label: str) -> str:
+def _split_counted_label(label: str) -> tuple[str, int]:
     stripped = label.rstrip("0123456789")
+    if not stripped:
+        return label, 1
+    suffix = label[len(stripped):]
+    count = int(suffix) if suffix else 1
+    return stripped, count
+
+
+def _priority_label(label: str) -> str:
+    stripped, _count = _split_counted_label(label)
     if stripped in URGENT_NEGATIVE_STATUS_LABELS or stripped in IMPORTANT_POSITIVE_STATUS_LABELS:
         return stripped
     return label
 
 
-def status_icon_priority(label: str, is_positive: bool | None) -> tuple[int, int, str]:
+def status_icon_priority(label: str, is_positive: bool | None) -> tuple[int, int, int, str]:
     """Return a stable sort key that keeps urgent combat states visible."""
     priority_label = _priority_label(label)
+    sort_label, count = _split_counted_label(label)
     if is_positive is None:
-        return (2, 50, label)
+        return (2, 50, -count, sort_label)
     if not is_positive:
-        return (0, URGENT_NEGATIVE_STATUS_LABELS.get(priority_label, 50), label)
-    return (1, IMPORTANT_POSITIVE_STATUS_LABELS.get(priority_label, 50), label)
+        return (0, URGENT_NEGATIVE_STATUS_LABELS.get(priority_label, 50), -count, sort_label)
+    return (1, IMPORTANT_POSITIVE_STATUS_LABELS.get(priority_label, 50), -count, sort_label)
 
 
 def is_urgent_status_icon(label: str, is_positive: bool | None) -> bool:

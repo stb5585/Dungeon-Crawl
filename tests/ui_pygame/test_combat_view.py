@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.ui_pygame.gui import combat_view
-from src.ui_pygame.gui.status_icons import prioritize_status_icons
+from src.ui_pygame.gui.status_icons import combine_duplicate_status_icons, prioritize_status_icons
 
 
 @pytest.fixture(autouse=True)
@@ -505,6 +505,35 @@ def test_status_icon_priority_keeps_urgent_effects_visible_before_overflow(monke
     assert font.render_calls == ["STN", "PRN", "PSN", "+3"]
     colors = [args[1] for args, _kwargs in rect_calls if len(args) > 1]
     assert view.status_colors["urgent_negative"] in colors
+
+
+def test_status_icon_priority_uses_counts_as_stable_tie_breaker():
+    icons = prioritize_status_icons(
+        combine_duplicate_status_icons(
+            [
+                ("BLE", False),
+                ("PSN", False),
+                ("PSN", False),
+                ("PSN", False),
+                ("PSN", False),
+                ("WND", False),
+                ("WND", False),
+                ("WND", False),
+                ("STN", False),
+                ("ATK", True),
+                ("MSH", True),
+            ]
+        )
+    )
+
+    assert icons == [
+        ("STN", False),
+        ("PSN4", False),
+        ("WND3", False),
+        ("BLE", False),
+        ("MSH", True),
+        ("ATK", True),
+    ]
 
 
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
