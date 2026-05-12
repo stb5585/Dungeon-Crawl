@@ -607,6 +607,7 @@ Current progress:
 - Hardened combat status-icon label fitting for zero-width and overflow marker edge cases
 - Added compact BattleLogger summary payloads for debug views that do not need raw per-event rows
 - Extended renderer panel diagnostics to report default and effective texture keys per surface slot
+- Hardened SaveManager loading so directory-like save entries are treated as missing files
 
 Current stabilization priorities:
 
@@ -642,6 +643,7 @@ Current non-visual Phase 1 track:
   - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
   - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
   - completed: blank save names are rejected and delete operations refuse directories
+  - completed: load operations treat directory-like save entries as missing files
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

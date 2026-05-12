@@ -897,7 +897,7 @@ class SaveManager:
         try:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
             
-            if not os.path.exists(filepath):
+            if not os.path.isfile(filepath):
                 return None
             
             # Load JSON
