@@ -987,6 +987,43 @@ class TestEventBus:
         assert received[0].data["value"] == 2
         assert len(bus.get_history()) == 1
 
+    def test_diagnostics_summarize_state_without_raw_events(self):
+        from src.core.events.event_bus import EventBus, EventType
+
+        bus = EventBus(max_history=2)
+        received = []
+        bus.subscribe(EventType.ATTACK, lambda event: received.append(event.data["turn"]))
+        bus.emit_simple(EventType.ATTACK, {"turn": 1})
+        bus.emit_simple(EventType.DEFEND, {"turn": 2})
+        bus.emit_simple(EventType.ATTACK, {"turn": 3})
+
+        assert bus.get_diagnostics() == {
+            "enabled": True,
+            "history_size": 2,
+            "max_history": 2,
+            "history_counts": {"DEFEND": 1, "ATTACK": 1},
+            "subscriber_counts": {"ATTACK": 1},
+        }
+
+        bus.disable()
+        bus.emit_simple(EventType.ATTACK, {"turn": 4})
+        assert bus.get_diagnostics()["enabled"] is False
+        assert received == [1, 3]
+
+    def test_diagnostics_reflect_disabled_history_storage(self):
+        from src.core.events.event_bus import EventBus, EventType
+
+        bus = EventBus(max_history=0)
+        bus.emit_simple(EventType.ATTACK, {"turn": 1})
+
+        assert bus.get_diagnostics() == {
+            "enabled": True,
+            "history_size": 0,
+            "max_history": 0,
+            "history_counts": {},
+            "subscriber_counts": {},
+        }
+
     def test_emit_continues_after_callback_error(self, capsys):
         from src.core.events.event_bus import EventBus, EventType
 

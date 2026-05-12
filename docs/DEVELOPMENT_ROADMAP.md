@@ -617,6 +617,7 @@ Current progress:
 - Added compact texture-library fallback counts so missing wall, special-tile, and enemy assets can be checked without scanning raw paths
 - Standardized shared confirmation, choice, reward, quantity, and code-entry popup background fallback so empty or live-screen providers fall back to copied surfaces
 - Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
+- Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
 
 Current stabilization priorities:
 
@@ -673,6 +674,7 @@ Current non-visual Phase 1 track:
   - prefer medium-sized deterministic helper modules and shared UI/menu layers over sprawling end-to-end screen loops when the goal is near-term percentage lift plus regression value
   - compact EventBus history counts are now available for focused debug/test assertions
   - compact EventBus subscriber counts are now available for duplicate-subscription diagnostics
+  - compact EventBus diagnostics now summarize enabled/history/subscriber state without requiring raw event inspection
 - Small core-quality tasks
   - resolve narrow TODOs that are self-contained, non-visual, and low-risk in `save_system.py`, `battle_logger.py`, `character.py`, and related core modules
 

@@ -236,6 +236,16 @@ class EventBus:
             for event_type, callbacks in self._subscribers.items()
             if callbacks
         }
+
+    def get_diagnostics(self) -> dict[str, Any]:
+        """Return compact event-bus state for debug screens and tests."""
+        return {
+            "enabled": self._enabled,
+            "history_size": len(self._history),
+            "max_history": self._max_history,
+            "history_counts": self.get_history_counts(),
+            "subscriber_counts": self.get_subscriber_counts(),
+        }
     
     def enable(self) -> None:
         """Enable event processing."""
