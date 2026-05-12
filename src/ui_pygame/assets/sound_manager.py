@@ -253,12 +253,32 @@ class SoundManager:
             "current_music": self.current_music,
         }
 
+    @staticmethod
+    def summarize_audio_asset_diagnostics(diagnostics: dict[str, object]) -> dict[str, int]:
+        """Return compact availability counts for an audio diagnostics payload."""
+        sfx = diagnostics.get("sfx", {})
+        music = diagnostics.get("music", {})
+        sfx_available = sum(1 for item in sfx.values() if item.get("available"))
+        music_available = sum(1 for item in music.values() if item.get("available"))
+        return {
+            "sfx_total": len(sfx),
+            "sfx_available": sfx_available,
+            "sfx_missing": len(sfx) - sfx_available,
+            "music_total": len(music),
+            "music_available": music_available,
+            "music_missing": len(music) - music_available,
+        }
+
     def describe_default_audio_assets(self) -> dict[str, object]:
         """Return availability diagnostics for the runtime's expected audio assets."""
         return self.describe_audio_assets(
             sfx_names=DEFAULT_SFX_NAMES,
             music_names=DEFAULT_MUSIC_NAMES,
         )
+
+    def summarize_default_audio_assets(self) -> dict[str, int]:
+        """Return availability counts for the runtime's expected audio assets."""
+        return self.summarize_audio_asset_diagnostics(self.describe_default_audio_assets())
 
     def load_sfx(self, sound_name: str) -> pygame.mixer.Sound | None:
         """

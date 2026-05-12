@@ -632,6 +632,7 @@ Current progress:
 - Added visible-save metadata summaries for count, total size, and largest player-visible save diagnostics
 - Added BattleLogger positive damage attribution by actor and target to compact battle summaries
 - Extended combat status-icon layout diagnostics with overflow state and hidden urgent-status counts
+- Added sound/music availability summary counts for expected audio asset diagnostics
 
 Current stabilization priorities:
 
@@ -697,6 +698,7 @@ Current non-visual Phase 1 track:
 - Sound/music content visibility
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
   - completed: default audio diagnostics now use the runtime's expected SFX and music name lists for content checks
+  - completed: audio diagnostics now summarize available and missing SFX/music counts for quick content audits
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues

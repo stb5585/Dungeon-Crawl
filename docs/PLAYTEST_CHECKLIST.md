@@ -95,6 +95,7 @@
 - [ ] Run sound/music asset diagnostics for expected combat, town, and menu audio.
   - Expected: Present sound/music files report available paths, while missing placeholder content is reported without crashing or playing audio.
   - Expected: Default diagnostics include the runtime's combat, town, shop, church, inn, dungeon, and final-combat audio names.
+  - Expected: Summary counts report available and missing SFX/music assets.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.
