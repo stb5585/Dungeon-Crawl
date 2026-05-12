@@ -99,6 +99,8 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "visible_count": 4,
         "hidden_count": 2,
         "urgent_visible_count": 3,
+        "capacity": 4,
+        "row_count": 2,
         "per_row": 2,
         "max_rows": 2,
         "overflow_label": "+2",
@@ -108,10 +110,13 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "visible_count": 2,
         "hidden_count": 0,
         "urgent_visible_count": 2,
+        "capacity": None,
+        "row_count": 1,
         "per_row": 2,
         "max_rows": None,
         "overflow_label": None,
     }
+    assert describe_status_icon_layout(icons[:3], per_row=0, max_rows=1)["row_count"] == 1
 
 
 def test_fit_status_icon_label_keeps_text_inside_icon():

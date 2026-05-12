@@ -627,6 +627,7 @@ Current progress:
 - Added sound/music asset availability diagnostics for checking expected SFX and music content without loading or playing assets
 - Added SaveManager visible-save metadata listing that mirrors load-menu filtering without parsing save contents
 - Added BattleLogger actor and target count diagnostics to compact battle summaries without raw event rows
+- Extended combat status-icon layout diagnostics with capacity and rendered row counts for dense status rows
 
 Current stabilization priorities:
 
@@ -685,6 +686,7 @@ Current non-visual Phase 1 track:
   - remaining: decide whether game/debug flows should automatically persist these logs
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
+  - completed: status-icon layout diagnostics now report capacity and row count for dense overlay validation
 - Sound/music content visibility
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
 - Test debt that removes skips or weak assertions
