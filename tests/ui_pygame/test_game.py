@@ -23,6 +23,48 @@ def test_signal_handler_quits_and_exits(monkeypatch):
     assert exit_codes == [0]
 
 
+def test_cleanup_clears_background_provider_and_quits(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    cleanup_calls = []
+    provider_values = []
+    quit_calls = []
+    game.presenter = SimpleNamespace(
+        cleanup=lambda: cleanup_calls.append(True),
+        set_background_provider=lambda provider: provider_values.append(provider),
+    )
+    monkeypatch.setattr(pygame_game.pygame, "quit", lambda: quit_calls.append(True))
+
+    game.cleanup()
+
+    assert cleanup_calls == [True]
+    assert provider_values == [None]
+    assert quit_calls == [True]
+
+
+def test_cleanup_clears_background_provider_when_presenter_cleanup_fails(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    cleanup_calls = []
+    provider_values = []
+    quit_calls = []
+
+    def fail_cleanup():
+        cleanup_calls.append(True)
+        raise RuntimeError("cleanup failed")
+
+    game.presenter = SimpleNamespace(
+        cleanup=fail_cleanup,
+        set_background_provider=lambda provider: provider_values.append(provider),
+    )
+    monkeypatch.setattr(pygame_game.pygame, "quit", lambda: quit_calls.append(True))
+
+    with pytest.raises(RuntimeError, match="cleanup failed"):
+        game.cleanup()
+
+    assert cleanup_calls == [True]
+    assert provider_values == [None]
+    assert quit_calls == [True]
+
+
 def test_init_build_character_and_default_character(monkeypatch):
     class FakePresenter:
         def __init__(self):

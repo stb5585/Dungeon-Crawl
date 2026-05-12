@@ -595,6 +595,7 @@ Current progress:
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
 - Hardened tile-state restore against malformed per-tile payloads
+- Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
 
 Current stabilization priorities:
 
@@ -810,6 +811,7 @@ Primary workstreams:
   - completed: reusable shop-screen option and item selectors now use the same stale-input guard
   - completed: top-level character-screen navigation now uses the same stale-input guard
   - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
+  - completed: top-level pygame cleanup clears presenter background providers during shutdown
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient

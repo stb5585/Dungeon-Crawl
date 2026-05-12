@@ -816,8 +816,12 @@ class PygameGame:
         
     def cleanup(self):
         """Clean up resources."""
-        self.presenter.cleanup()
-        pygame.quit()
+        try:
+            self.presenter.cleanup()
+        finally:
+            if hasattr(self.presenter, "set_background_provider"):
+                self.presenter.set_background_provider(None)
+            pygame.quit()
 
 
 def main():
