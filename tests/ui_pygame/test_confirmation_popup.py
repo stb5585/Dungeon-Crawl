@@ -104,6 +104,10 @@ def test_confirmation_popup_wrap_visible_lines_and_background_helpers(monkeypatc
 
     presenter.get_background_surface = lambda: "bg-surface"
     assert popup._get_background_surface() == "bg-surface"
+    presenter.get_background_surface = lambda: None
+    assert popup._get_background_surface() == "copied-surface"
+    presenter.get_background_surface = lambda: presenter.screen
+    assert popup._get_background_surface() == "copied-surface"
     presenter.get_background_surface = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
     assert popup._get_background_surface() == "copied-surface"
 

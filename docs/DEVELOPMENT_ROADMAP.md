@@ -612,6 +612,7 @@ Current progress:
 - Added compact EventBus history counts for debug/test checks without walking raw event lists
 - Added projected-surface cache diagnostics for renderer smoke tests and debugging
 - Added save/load regression coverage for corrupt normal and temporary JSON save files
+- Hardened confirmation popup background fallback when providers return the live screen or no surface
 
 Current stabilization priorities:
 
@@ -842,6 +843,7 @@ Primary workstreams:
   - completed: top-level pygame cleanup clears presenter background providers during shutdown
   - completed: presenter popup-background fallback clears broken or empty providers after fallback
   - completed: level-up popup helpers fall back to screen copies when providers return empty or live-screen surfaces
+  - completed: confirmation popups fall back to screen copies when providers return empty or live-screen surfaces
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient
