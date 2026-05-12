@@ -158,6 +158,41 @@ def test_load_sfx_uses_cache_and_fallback_extensions(tmp_path, fake_mixer):
     assert state["loaded_sounds"][0].path.endswith("hit.ogg")
 
 
+def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, fake_mixer):
+    _state, _music = fake_mixer
+    assets_dir = _make_assets_dir(tmp_path)
+    (assets_dir / "sounds" / "hit.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "heal.ogg").write_bytes(b"ogg")
+    (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
+    manager = sound_module.SoundManager(assets_dir=str(assets_dir))
+    manager.current_music = "town"
+    manager.sfx_cache["hit"] = FakeSound("hit")
+
+    assert manager.resolve_sfx_path("hit") == assets_dir / "sounds" / "hit.wav"
+    assert manager.resolve_sfx_path("heal") == assets_dir / "sounds" / "heal.ogg"
+    assert manager.resolve_music_path("town") == assets_dir / "music" / "town.mp3"
+
+    diagnostics = manager.describe_audio_assets(
+        sfx_names=("hit", "heal", "missing"),
+        music_names=("town", "battle"),
+    )
+
+    assert diagnostics == {
+        "enabled": True,
+        "sfx": {
+            "hit": {"available": True, "path": str(assets_dir / "sounds" / "hit.wav")},
+            "heal": {"available": True, "path": str(assets_dir / "sounds" / "heal.ogg")},
+            "missing": {"available": False, "path": None},
+        },
+        "music": {
+            "town": {"available": True, "path": str(assets_dir / "music" / "town.mp3")},
+            "battle": {"available": False, "path": None},
+        },
+        "loaded_sfx_count": 1,
+        "current_music": "town",
+    }
+
+
 def test_load_sfx_returns_none_for_missing_files_or_loader_errors(tmp_path, fake_mixer):
     state, _music = fake_mixer
     assets_dir = _make_assets_dir(tmp_path)

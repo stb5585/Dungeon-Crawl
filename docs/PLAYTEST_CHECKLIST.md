@@ -88,6 +88,8 @@
   - Expected: Encounters survived is never negative, even after old or manually edited save data.
 
 ### Developer Tooling
+- [ ] Run sound/music asset diagnostics for expected combat, town, and menu audio.
+  - Expected: Present sound/music files report available paths, while missing placeholder content is reported without crashing or playing audio.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.

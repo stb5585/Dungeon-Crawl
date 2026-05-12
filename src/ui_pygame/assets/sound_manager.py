@@ -174,6 +174,51 @@ class SoundManager:
         """Handle level up event."""
         self.play_sfx("level_up")
 
+    def resolve_sfx_path(self, sound_name: str) -> Path | None:
+        """Return the first available sound-effect asset path."""
+        for extension in ("wav", "ogg"):
+            sound_path = self.sounds_dir / f"{sound_name}.{extension}"
+            if sound_path.exists():
+                return sound_path
+        return None
+
+    def resolve_music_path(self, music_name: str) -> Path | None:
+        """Return the first available music asset path."""
+        for extension in ("ogg", "mp3"):
+            music_path = self.music_dir / f"{music_name}.{extension}"
+            if music_path.exists():
+                return music_path
+        return None
+
+    def describe_audio_assets(
+        self,
+        *,
+        sfx_names: tuple[str, ...] = (),
+        music_names: tuple[str, ...] = (),
+    ) -> dict[str, object]:
+        """Return compact audio asset availability diagnostics without loading assets."""
+        sfx = {
+            name: {
+                "available": (path := self.resolve_sfx_path(name)) is not None,
+                "path": str(path) if path is not None else None,
+            }
+            for name in sfx_names
+        }
+        music = {
+            name: {
+                "available": (path := self.resolve_music_path(name)) is not None,
+                "path": str(path) if path is not None else None,
+            }
+            for name in music_names
+        }
+        return {
+            "enabled": self.enabled,
+            "sfx": sfx,
+            "music": music,
+            "loaded_sfx_count": len(self.sfx_cache),
+            "current_music": self.current_music,
+        }
+
     def load_sfx(self, sound_name: str) -> pygame.mixer.Sound | None:
         """
         Load a sound effect from cache or file.
@@ -191,12 +236,8 @@ class SoundManager:
         if sound_name in self.sfx_cache:
             return self.sfx_cache[sound_name]
         
-        # Try to load from file
-        sound_path = self.sounds_dir / f"{sound_name}.wav"
-        if not sound_path.exists():
-            sound_path = self.sounds_dir / f"{sound_name}.ogg"
-        
-        if not sound_path.exists():
+        sound_path = self.resolve_sfx_path(sound_name)
+        if sound_path is None:
             logger.debug(f"Sound file not found: {sound_name}")
             return None
         
@@ -245,11 +286,8 @@ class SoundManager:
         if not self.enabled:
             return
             
-        music_path = self.music_dir / f"{music_name}.ogg"
-        if not music_path.exists():
-            music_path = self.music_dir / f"{music_name}.mp3"
-        
-        if not music_path.exists():
+        music_path = self.resolve_music_path(music_name)
+        if music_path is None:
             logger.debug(f"Music file not found: {music_name}")
             return
         
