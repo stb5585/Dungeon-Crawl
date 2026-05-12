@@ -36,6 +36,8 @@
   - Expected: The popup draws over a copied background instead of mutating the live screen surface.
 - [ ] Level up and open the stat-selection prompt after changing screens.
   - Expected: Level-up overlays use a copied background and do not smear or redraw over the live screen unexpectedly.
+- [ ] Open choice, reward, quantity, and code-entry popups after changing screens.
+  - Expected: Each popup draws over the current copied view instead of reusing a live or empty background surface.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

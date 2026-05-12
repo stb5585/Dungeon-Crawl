@@ -112,6 +112,34 @@ def test_confirmation_popup_wrap_visible_lines_and_background_helpers(monkeypatc
     assert popup._get_background_surface() == "copied-surface"
 
 
+def test_all_popup_background_helpers_reject_live_or_empty_provider(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+
+    popups = [
+        confirmation_popup.ConfirmationPopup(presenter, "Proceed?"),
+        confirmation_popup.ChoicePopup(presenter, "Pick", ["Alpha"]),
+        confirmation_popup.RewardSelectionPopup(
+            presenter,
+            "Rewards",
+            [SimpleNamespace(name="Potion")],
+            detail_provider=lambda item: item.name,
+        ),
+        confirmation_popup.QuantityPopup(presenter, "Potion"),
+        confirmation_popup.CodeEntryPopup(presenter, "Vault", "Enter code"),
+    ]
+
+    for popup in popups:
+        presenter.get_background_surface = lambda: "provided-background"
+        assert popup._get_background_surface() == "provided-background"
+        presenter.get_background_surface = lambda: None
+        assert popup._get_background_surface() == "copied-surface"
+        presenter.get_background_surface = lambda: presenter.screen
+        assert popup._get_background_surface() == "copied-surface"
+        presenter.get_background_surface = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+        assert popup._get_background_surface() == "copied-surface"
+
+
 def test_confirmation_popup_show_handles_navigation_and_message_only(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

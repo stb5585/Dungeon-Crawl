@@ -5,6 +5,18 @@ Confirmation popup for character creation decisions.
 import pygame
 
 
+def _get_safe_background_surface(presenter, screen):
+    """Return a copied popup background when provider output is unusable."""
+    if hasattr(presenter, "get_background_surface"):
+        try:
+            surface = presenter.get_background_surface()
+            if surface is not None and surface is not screen:
+                return surface
+        except Exception:
+            pass
+    return screen.copy()
+
+
 class ConfirmationPopup:
     """
     A Yes/No confirmation popup that appears over the current screen.
@@ -219,14 +231,7 @@ class ConfirmationPopup:
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):
-        if hasattr(self.presenter, "get_background_surface"):
-            try:
-                surface = self.presenter.get_background_surface()
-                if surface is not None and surface is not self.screen:
-                    return surface
-            except Exception:
-                pass
-        return self.screen.copy()
+        return _get_safe_background_surface(self.presenter, self.screen)
 
 
 class ChoicePopup:
@@ -290,14 +295,7 @@ class ChoicePopup:
         return lines
 
     def _get_background_surface(self):
-        if hasattr(self.presenter, "get_background_surface"):
-            try:
-                surface = self.presenter.get_background_surface()
-                if surface is not None:
-                    return surface
-            except Exception:
-                pass
-        return self.screen.copy()
+        return _get_safe_background_surface(self.presenter, self.screen)
 
     def draw_popup(self, background_surface, do_flip: bool = True):
         self.screen.blit(background_surface, (0, 0))
@@ -409,14 +407,7 @@ class RewardSelectionPopup:
         self.line_height = 24
 
     def _get_background_surface(self):
-        if hasattr(self.presenter, "get_background_surface"):
-            try:
-                surface = self.presenter.get_background_surface()
-                if surface is not None:
-                    return surface
-            except Exception:
-                pass
-        return self.screen.copy()
+        return _get_safe_background_surface(self.presenter, self.screen)
 
     def _wrap_text(self, text: str, max_width: int) -> list[str]:
         if not text:
@@ -773,14 +764,7 @@ class QuantityPopup:
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):
-        if hasattr(self.presenter, "get_background_surface"):
-            try:
-                surface = self.presenter.get_background_surface()
-                if surface is not None:
-                    return surface
-            except Exception:
-                pass
-        return self.screen.copy()
+        return _get_safe_background_surface(self.presenter, self.screen)
 
 
 class CodeEntryPopup:
@@ -867,7 +851,7 @@ class CodeEntryPopup:
 
         background = None
         if background_draw_func is None:
-            background = self.screen.copy()
+            background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
 
         def finish(result):
@@ -907,3 +891,6 @@ class CodeEntryPopup:
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     return finish("".join(str(digit) for digit in self.digits))
             self.presenter.clock.tick(30)
+
+    def _get_background_surface(self):
+        return _get_safe_background_surface(self.presenter, self.screen)

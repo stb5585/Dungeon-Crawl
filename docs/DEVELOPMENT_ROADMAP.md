@@ -615,6 +615,7 @@ Current progress:
 - Hardened confirmation popup background fallback when providers return the live screen or no surface
 - Added compact EventBus subscriber counts for debug/test diagnostics
 - Added compact texture-library fallback counts so missing wall, special-tile, and enemy assets can be checked without scanning raw paths
+- Standardized shared confirmation, choice, reward, quantity, and code-entry popup background fallback so empty or live-screen providers fall back to copied surfaces
 
 Current stabilization priorities:
 
@@ -848,6 +849,7 @@ Primary workstreams:
   - completed: presenter popup-background fallback clears broken or empty providers after fallback
   - completed: level-up popup helpers fall back to screen copies when providers return empty or live-screen surfaces
   - completed: confirmation popups fall back to screen copies when providers return empty or live-screen surfaces
+  - completed: shared pygame confirmation/choice/reward/quantity/code-entry popups now use the same copied-surface fallback rule
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient
