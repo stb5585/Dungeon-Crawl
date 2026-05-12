@@ -835,16 +835,21 @@ class SaveManager:
     TMP_DIR = "tmp_files"
 
     @staticmethod
+    def is_valid_save_filename(filename: object) -> bool:
+        """Return True when filename is safe to resolve inside save directories."""
+        separators = {os.sep, os.altsep, "/", "\\"}
+        return (
+            isinstance(filename, str)
+            and bool(filename.strip())
+            and filename not in {".", ".."}
+            and not os.path.isabs(filename)
+            and not any(sep and sep in filename for sep in separators)
+        )
+
+    @staticmethod
     def _resolve_save_path(filename: str, is_tmp: bool = False) -> str:
         """Return a save path confined to the configured save directory."""
-        separators = {os.sep, os.altsep, "/", "\\"}
-        if (
-            not isinstance(filename, str)
-            or not filename.strip()
-            or filename in {".", ".."}
-            or os.path.isabs(filename)
-            or any(sep and sep in filename for sep in separators)
-        ):
+        if not SaveManager.is_valid_save_filename(filename):
             raise ValueError(f"Invalid save filename: {filename!r}")
 
         directory = SaveManager.TMP_DIR if is_tmp else SaveManager.SAVE_DIR

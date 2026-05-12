@@ -163,6 +163,18 @@ def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
 
     player = TestGameState.create_player(name="Traveler", class_name="Warrior", race_name="Human", level=10)
 
+    assert SaveManager.is_valid_save_filename("hero.save") is True
+    assert SaveManager.is_valid_save_filename("hero.tmp") is True
+    assert SaveManager.is_valid_save_filename("../outside.save") is False
+    assert SaveManager.is_valid_save_filename("nested/hero.save") is False
+    assert SaveManager.is_valid_save_filename("nested\\hero.save") is False
+    assert SaveManager.is_valid_save_filename(str(tmp_path / "hero.save")) is False
+    assert SaveManager.is_valid_save_filename("   ") is False
+    assert SaveManager.is_valid_save_filename(".") is False
+    assert SaveManager.is_valid_save_filename("..") is False
+    assert SaveManager.is_valid_save_filename(None) is False
+    assert SaveManager.is_valid_save_filename(42) is False
+
     assert SaveManager.save_player(player, "../outside.save") is False
     assert SaveManager.load_player("../outside.save", skip_tiles=True) is None
     assert SaveManager.delete_save("../outside.save") is False

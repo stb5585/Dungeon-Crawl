@@ -616,6 +616,7 @@ Current progress:
 - Added compact EventBus subscriber counts for debug/test diagnostics
 - Added compact texture-library fallback counts so missing wall, special-tile, and enemy assets can be checked without scanning raw paths
 - Standardized shared confirmation, choice, reward, quantity, and code-entry popup background fallback so empty or live-screen providers fall back to copied surfaces
+- Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
 
 Current stabilization priorities:
 
@@ -655,6 +656,7 @@ Current non-visual Phase 1 track:
   - completed: blank save names are rejected and delete operations refuse directories
   - completed: load operations treat directory-like save entries as missing files
   - completed: corrupt save JSON loads return `None` without deleting the original file
+  - completed: save-filename validation is now available as a public helper for menu/debug callers before file operations
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
