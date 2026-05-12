@@ -228,6 +228,14 @@ class EventBus:
         """Return compact event-type counts for the retained event history."""
         history = self.get_history(event_type)
         return dict(Counter(event.type.name for event in history))
+
+    def get_subscriber_counts(self) -> dict[str, int]:
+        """Return compact subscriber counts by event type for diagnostics."""
+        return {
+            event_type.name: len(callbacks)
+            for event_type, callbacks in self._subscribers.items()
+            if callbacks
+        }
     
     def enable(self) -> None:
         """Enable event processing."""

@@ -932,8 +932,10 @@ class TestEventBus:
 
         bus.subscribe(EventType.ATTACK, handler)
         bus.subscribe(EventType.ATTACK, handler)
+        assert bus.get_subscriber_counts() == {"ATTACK": 1}
         bus.emit_simple(EventType.ATTACK, {"value": 7})
         bus.unsubscribe(EventType.ATTACK, handler)
+        assert bus.get_subscriber_counts() == {}
         bus.emit_simple(EventType.ATTACK, {"value": 8})
 
         assert received == [7]

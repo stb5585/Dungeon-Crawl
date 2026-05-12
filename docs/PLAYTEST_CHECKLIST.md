@@ -88,5 +88,7 @@
   - Expected: Subscribers still receive events while history remains empty.
 - [ ] Inspect compact event-bus history counts during a debug/test run.
   - Expected: Counts reflect only retained history and remain empty when history is disabled.
+- [ ] Inspect compact event-bus subscriber counts during a debug/test run.
+  - Expected: Duplicate subscriptions are counted once, and unsubscribed callbacks disappear from the counts.
 - [ ] Run focused action-queue tests after combat scheduling changes.
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.

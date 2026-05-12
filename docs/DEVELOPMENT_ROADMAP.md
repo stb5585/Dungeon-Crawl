@@ -613,6 +613,7 @@ Current progress:
 - Added projected-surface cache diagnostics for renderer smoke tests and debugging
 - Added save/load regression coverage for corrupt normal and temporary JSON save files
 - Hardened confirmation popup background fallback when providers return the live screen or no surface
+- Added compact EventBus subscriber counts for debug/test diagnostics
 
 Current stabilization priorities:
 
@@ -666,6 +667,7 @@ Current non-visual Phase 1 track:
   - current high-leverage coverage targets have shifted away from `ui_pygame` and now primarily live in the remaining medium-coverage `core` and `ui_curses` modules
   - prefer medium-sized deterministic helper modules and shared UI/menu layers over sprawling end-to-end screen loops when the goal is near-term percentage lift plus regression value
   - compact EventBus history counts are now available for focused debug/test assertions
+  - compact EventBus subscriber counts are now available for duplicate-subscription diagnostics
 - Small core-quality tasks
   - resolve narrow TODOs that are self-contained, non-visual, and low-risk in `save_system.py`, `battle_logger.py`, `character.py`, and related core modules
 
