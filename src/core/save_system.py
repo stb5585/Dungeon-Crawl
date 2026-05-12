@@ -928,6 +928,34 @@ class SaveManager:
             if filename.endswith('.save') and os.path.isfile(filepath):
                 saves.append(filename)
         return sorted(saves)
+
+    @staticmethod
+    def describe_save_file(filename: object, is_tmp: bool = False) -> dict[str, object]:
+        """Return filesystem metadata for one save entry without reading its contents."""
+        metadata: dict[str, object] = {
+            "filename": filename,
+            "is_tmp": is_tmp,
+            "valid": SaveManager.is_valid_save_filename(filename),
+            "path": None,
+            "exists": False,
+            "is_file": False,
+            "is_dir": False,
+            "size": None,
+        }
+        if not metadata["valid"]:
+            return metadata
+
+        filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
+        metadata["path"] = filepath
+        metadata["exists"] = os.path.exists(filepath)
+        metadata["is_file"] = os.path.isfile(filepath)
+        metadata["is_dir"] = os.path.isdir(filepath)
+        if metadata["is_file"]:
+            try:
+                metadata["size"] = os.path.getsize(filepath)
+            except OSError:
+                metadata["size"] = None
+        return metadata
     
     @staticmethod
     def delete_save(filename: str) -> bool:

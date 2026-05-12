@@ -155,6 +155,51 @@ def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):
     assert SaveManager.load_player("hero.save", skip_tiles=True) is None
 
 
+def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+    SaveManager.ensure_dirs()
+
+    (save_dir / "hero.save").write_text("{not json", encoding="utf-8")
+    (save_dir / "folder.save").mkdir()
+    (tmp_dir / "hero.tmp").write_text("tmp", encoding="utf-8")
+
+    assert SaveManager.describe_save_file("hero.save") == {
+        "filename": "hero.save",
+        "is_tmp": False,
+        "valid": True,
+        "path": str(save_dir / "hero.save"),
+        "exists": True,
+        "is_file": True,
+        "is_dir": False,
+        "size": len("{not json"),
+    }
+    assert SaveManager.describe_save_file("missing.save") == {
+        "filename": "missing.save",
+        "is_tmp": False,
+        "valid": True,
+        "path": str(save_dir / "missing.save"),
+        "exists": False,
+        "is_file": False,
+        "is_dir": False,
+        "size": None,
+    }
+    assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
+    assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["path"] == str(tmp_dir / "hero.tmp")
+    assert SaveManager.describe_save_file("../outside.save") == {
+        "filename": "../outside.save",
+        "is_tmp": False,
+        "valid": False,
+        "path": None,
+        "exists": False,
+        "is_file": False,
+        "is_dir": False,
+        "size": None,
+    }
+
+
 def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"

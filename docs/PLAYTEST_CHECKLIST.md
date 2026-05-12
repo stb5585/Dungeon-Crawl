@@ -66,6 +66,8 @@
   - Expected: The game refuses the invalid entry without loading directories, deleting directories, or creating blank-name saves.
 - [ ] Validate save names from a debug/menu path before attempting load or delete.
   - Expected: Normal `.save` names pass; blank, absolute, path-bearing, and non-text entries are rejected.
+- [ ] Inspect save-file metadata for a normal save, missing save, directory entry, and temp save.
+  - Expected: Validity, file/directory state, existence, size, and tmp-vs-normal location are reported without loading the save.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 - [ ] Attempt to load a corrupted save file.

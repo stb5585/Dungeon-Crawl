@@ -620,6 +620,7 @@ Current progress:
 - Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
 - Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
 - Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
+- Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads
 
 Current stabilization priorities:
 
@@ -662,6 +663,7 @@ Current non-visual Phase 1 track:
   - completed: load operations treat directory-like save entries as missing files
   - completed: corrupt save JSON loads return `None` without deleting the original file
   - completed: save-filename validation is now available as a public helper for menu/debug callers before file operations
+  - completed: save-file metadata diagnostics can report validity, path type, existence, and file size without parsing JSON
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
