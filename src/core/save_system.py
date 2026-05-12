@@ -956,6 +956,14 @@ class SaveManager:
             except OSError:
                 metadata["size"] = None
         return metadata
+
+    @staticmethod
+    def list_save_metadata() -> list[dict[str, object]]:
+        """Return metadata for player-visible save files in load-menu order."""
+        return [
+            SaveManager.describe_save_file(filename)
+            for filename in SaveManager.list_saves()
+        ]
     
     @staticmethod
     def delete_save(filename: str) -> bool:

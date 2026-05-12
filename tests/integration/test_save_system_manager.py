@@ -200,6 +200,26 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
     }
 
 
+def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+    SaveManager.ensure_dirs()
+
+    (save_dir / "zeta.save").write_text("z", encoding="utf-8")
+    (save_dir / "alpha.save").write_text("alpha", encoding="utf-8")
+    (save_dir / "alpha.save.tmp").write_text("partial", encoding="utf-8")
+    (save_dir / "folder.save").mkdir()
+
+    metadata = SaveManager.list_save_metadata()
+
+    assert [entry["filename"] for entry in metadata] == ["alpha.save", "zeta.save"]
+    assert [entry["size"] for entry in metadata] == [len("alpha"), len("z")]
+    assert all(entry["valid"] and entry["is_file"] for entry in metadata)
+    assert all(not entry["is_tmp"] for entry in metadata)
+
+
 def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"

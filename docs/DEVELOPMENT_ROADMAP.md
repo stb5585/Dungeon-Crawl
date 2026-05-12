@@ -625,6 +625,7 @@ Current progress:
 - Added compact combat status-icon layout diagnostics for visible, hidden, overflow, and urgent-visible counts
 - Added renderer surface-slot override diagnostics that split manual and scene override counts while tracking revision changes
 - Added sound/music asset availability diagnostics for checking expected SFX and music content without loading or playing assets
+- Added SaveManager visible-save metadata listing that mirrors load-menu filtering without parsing save contents
 
 Current stabilization priorities:
 
@@ -669,6 +670,7 @@ Current non-visual Phase 1 track:
   - completed: corrupt save JSON loads return `None` without deleting the original file
   - completed: save-filename validation is now available as a public helper for menu/debug callers before file operations
   - completed: save-file metadata diagnostics can report validity, path type, existence, and file size without parsing JSON
+  - completed: visible-save metadata can now be listed in load-menu order while excluding temp leftovers and directories
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

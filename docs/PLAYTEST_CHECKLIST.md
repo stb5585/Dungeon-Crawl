@@ -71,6 +71,8 @@
   - Expected: Normal `.save` names pass; blank, absolute, path-bearing, and non-text entries are rejected.
 - [ ] Inspect save-file metadata for a normal save, missing save, directory entry, and temp save.
   - Expected: Validity, file/directory state, existence, size, and tmp-vs-normal location are reported without loading the save.
+- [ ] Inspect visible-save metadata from the load-game path.
+  - Expected: Metadata appears in the same order as the load menu and excludes temporary leftovers and directories.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 - [ ] Attempt to load a corrupted save file.
