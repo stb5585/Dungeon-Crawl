@@ -628,6 +628,7 @@ Current progress:
 - Added SaveManager visible-save metadata listing that mirrors load-menu filtering without parsing save contents
 - Added BattleLogger actor and target count diagnostics to compact battle summaries without raw event rows
 - Extended combat status-icon layout diagnostics with capacity and rendered row counts for dense status rows
+- Added default sound/music asset diagnostics for the runtime's expected SFX and music names
 
 Current stabilization priorities:
 
@@ -689,6 +690,7 @@ Current non-visual Phase 1 track:
   - completed: status-icon layout diagnostics now report capacity and row count for dense overlay validation
 - Sound/music content visibility
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
+  - completed: default audio diagnostics now use the runtime's expected SFX and music name lists for content checks
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues

@@ -16,6 +16,40 @@ from src.core.events.event_bus import EventBus, EventType
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_SFX_NAMES = (
+    "combat_start",
+    "victory",
+    "flee",
+    "defeat",
+    "critical_hit",
+    "heavy_hit",
+    "hit",
+    "heal",
+    "spell_fire",
+    "spell_ice",
+    "spell_lightning",
+    "spell_heal",
+    "spell_cast",
+    "poison",
+    "stun",
+    "burn",
+    "player_death",
+    "enemy_death",
+    "level_up",
+)
+
+DEFAULT_MUSIC_NAMES = (
+    "town",
+    "shop",
+    "church",
+    "inn",
+    "dungeon",
+    "combat_normal",
+    "combat_boss",
+    "combat_final",
+)
+
+
 class SoundManager:
     """Manages sound effects and background music."""
 
@@ -218,6 +252,13 @@ class SoundManager:
             "loaded_sfx_count": len(self.sfx_cache),
             "current_music": self.current_music,
         }
+
+    def describe_default_audio_assets(self) -> dict[str, object]:
+        """Return availability diagnostics for the runtime's expected audio assets."""
+        return self.describe_audio_assets(
+            sfx_names=DEFAULT_SFX_NAMES,
+            music_names=DEFAULT_MUSIC_NAMES,
+        )
 
     def load_sfx(self, sound_name: str) -> pygame.mixer.Sound | None:
         """

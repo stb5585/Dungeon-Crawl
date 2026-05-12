@@ -192,6 +192,13 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
         "current_music": "town",
     }
 
+    default_diagnostics = manager.describe_default_audio_assets()
+    assert "combat_start" in default_diagnostics["sfx"]
+    assert "combat_final" in default_diagnostics["music"]
+    assert default_diagnostics["sfx"]["hit"]["available"] is True
+    assert default_diagnostics["music"]["town"]["available"] is True
+    assert default_diagnostics["music"]["combat_final"]["available"] is False
+
 
 def test_load_sfx_returns_none_for_missing_files_or_loader_errors(tmp_path, fake_mixer):
     state, _music = fake_mixer
