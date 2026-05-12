@@ -135,13 +135,14 @@ class ActionQueue:
         Returns:
             The scheduled action object
         """
+        normalized_delay = max(0, delay)
         action = ScheduledAction(
             actor=actor,
             action_type=action_type,
             target=target,
             priority=priority,
             callback=callback,
-            delay=delay,
+            delay=normalized_delay,
             speed_modifier=speed_modifier,
             params=params,
             metadata={
@@ -317,7 +318,6 @@ def create_attack_action(
     """
     priority = ActionPriority.HIGH if fast else ActionPriority.NORMAL
     
-    # This is a placeholder - would be populated with actual combat logic
     return ScheduledAction(
         actor=actor,
         action_type=ActionType.ATTACK,
@@ -325,6 +325,7 @@ def create_attack_action(
         priority=priority,
         callback=attack_callback,
         speed_modifier=1.5 if fast else 1.0,
+        metadata={"helper": "attack", "fast": fast},
     )
 
 
@@ -346,7 +347,8 @@ def create_spell_action(
     Returns:
         The scheduled action
     """
-    priority = ActionPriority.DELAYED if cast_time > 0 else ActionPriority.NORMAL
+    normalized_cast_time = max(0, cast_time)
+    priority = ActionPriority.DELAYED if normalized_cast_time > 0 else ActionPriority.NORMAL
     
     return ScheduledAction(
         actor=actor,
@@ -354,6 +356,7 @@ def create_spell_action(
         target=target,
         priority=priority,
         callback=spell_callback,
-        delay=cast_time,
+        delay=normalized_cast_time,
         speed_modifier=0.8,  # Spells are generally slower
+        metadata={"helper": "spell", "cast_time": normalized_cast_time},
     )

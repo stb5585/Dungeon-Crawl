@@ -581,6 +581,7 @@ Current progress:
 - Tightened the analytics quick-balance helper so it returns an explicit empty `BalanceReport` instead of falling through as `None`
 - Added BattleLogger JSON file export support for debugger/tooling workflows
 - Hardened EventBus bounded history so `max_history=0` disables history storage without disabling subscribers
+- Hardened action-queue helper scheduling by clamping negative delays/cast times and tagging helper-created actions with debug metadata
 
 Current stabilization priorities:
 
@@ -613,6 +614,7 @@ Current non-visual Phase 1 track:
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
   - completed: battle logger can persist structured JSON logs directly to disk for local analysis
   - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
+  - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
   - remaining: decide whether simulator/debug tooling should persist or consume these logs directly
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement

@@ -33,3 +33,5 @@
   - Expected: The file is created with metadata, events, and summary sections.
 - [ ] Run an event-bus history check with history disabled.
   - Expected: Subscribers still receive events while history remains empty.
+- [ ] Run focused action-queue tests after combat scheduling changes.
+  - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.

@@ -190,6 +190,21 @@ def test_action_queue_management_helpers_cover_clear_round_filter_and_cancel():
     assert queue.queue == []
 
 
+def test_action_queue_clamps_negative_delays():
+    queue = ActionQueue()
+    actor = MockCharWithStats("Hero", 12)
+
+    action = queue.schedule(
+        actor=actor,
+        action_type=ActionType.ATTACK,
+        callback=lambda **_: None,
+        delay=-3,
+    )
+
+    assert action.delay == 0
+    assert action.is_ready() is True
+
+
 def test_turn_manager_round_flow_and_helpers(monkeypatch):
     from src.core.combat.action_queue import TurnManager
 
@@ -225,5 +240,20 @@ def test_create_attack_and_spell_action_helpers():
 
     assert fast_attack.priority == ActionPriority.HIGH
     assert fast_attack.speed_modifier == 1.5
+    assert fast_attack.metadata == {"helper": "attack", "fast": True}
     assert spell.priority == ActionPriority.DELAYED
     assert spell.delay == 2
+    assert spell.metadata == {"helper": "spell", "cast_time": 2}
+
+
+def test_create_spell_action_clamps_negative_cast_time_to_instant():
+    from src.core.combat.action_queue import create_spell_action
+
+    actor = MockCharWithStats("Hero", 12)
+    target = MockCharWithStats("Goblin", 9)
+
+    spell = create_spell_action(actor, target, lambda **_: "zap", cast_time=-2)
+
+    assert spell.priority == ActionPriority.NORMAL
+    assert spell.delay == 0
+    assert spell.metadata == {"helper": "spell", "cast_time": 0}
