@@ -9,6 +9,7 @@
   - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
 - [ ] Enable renderer surface-slot debugging while checking a side corridor.
   - Expected: Debug overlay information corresponds to the visible panel being inspected.
+  - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.

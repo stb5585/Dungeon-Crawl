@@ -557,6 +557,30 @@ def test_texture_library_describes_panel_surface_slot_overrides():
     assert textures.describe_panel_surface_slot_overrides("d2:center_ceiling", "ceiling") == {}
 
 
+def test_texture_library_describes_panel_surface_slot_state():
+    textures = TextureLibrary()
+    textures.set_scene_surface_slot_overrides({"floor:visible:d2:x0": "floor_pit"})
+    textures.set_floor_slot_override("floor:visible:d2:xp1", "floor_fire")
+
+    state = textures.describe_panel_surface_slot_state("d2:center_floor", "floor")
+
+    assert state[2] == {
+        "slot_id": "floor:visible:d2:x0",
+        "default_texture_key": "floor",
+        "texture_key": "floor_pit",
+        "overridden": True,
+    }
+    assert state[3] == {
+        "slot_id": "floor:visible:d2:xp1",
+        "default_texture_key": "floor",
+        "texture_key": "floor_fire",
+        "overridden": True,
+    }
+    assert state[0]["texture_key"] == "floor"
+    assert state[0]["overridden"] is False
+    assert textures.describe_panel_surface_slot_state("unknown_panel", "floor") == ()
+
+
 def test_texture_library_ignores_invalid_surface_slot_overrides():
     pygame.init()
     textures = TextureLibrary()

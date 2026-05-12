@@ -361,6 +361,26 @@ class TextureLibrary:
             if slot_id in overrides
         }
 
+    def describe_panel_surface_slot_state(
+        self,
+        panel_id: str,
+        texture_key: str | None = None,
+    ) -> tuple[dict[str, str | bool], ...]:
+        """Return default/effective texture keys for each slot in a projected panel."""
+        plan = self._get_surface_panel_plan(panel_id, texture_key=texture_key)
+        if plan is None:
+            return ()
+        overrides = self.get_surface_slot_overrides()
+        return tuple(
+            {
+                "slot_id": slot_id,
+                "default_texture_key": default_texture_key,
+                "texture_key": overrides.get(slot_id, default_texture_key),
+                "overridden": slot_id in overrides,
+            }
+            for slot_id, default_texture_key in zip(plan.slot_ids, plan.slot_texture_keys)
+        )
+
     def has_any_surface_slot_overrides(self) -> bool:
         """Return whether manual or scene-driven surface slot overrides are active."""
         return bool(self._manual_surface_slot_overrides or self._scene_surface_slot_overrides)

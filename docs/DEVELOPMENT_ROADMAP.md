@@ -606,6 +606,7 @@ Current progress:
 - Hardened SaveManager filename handling for blank names and made save deletion explicitly file-only
 - Hardened combat status-icon label fitting for zero-width and overflow marker edge cases
 - Added compact BattleLogger summary payloads for debug views that do not need raw per-event rows
+- Extended renderer panel diagnostics to report default and effective texture keys per surface slot
 
 Current stabilization priorities:
 
@@ -624,6 +625,7 @@ Current stabilization priorities:
   - use the texture-library fallback diagnostics when renderer tests or manual play hit missing assets
   - invalid renderer surface-slot override entries are filtered before they can affect panel composition
   - panel-scoped surface-slot override diagnostics are available for focused renderer smoke tests
+  - panel diagnostics now include default and effective texture keys for each surface slot
 
 Current non-visual Phase 1 track:
 
