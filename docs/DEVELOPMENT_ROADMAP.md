@@ -609,6 +609,7 @@ Current progress:
 - Extended renderer panel diagnostics to report default and effective texture keys per surface slot
 - Hardened SaveManager loading so directory-like save entries are treated as missing files
 - Hardened level-up and stat-selection popup background fallback when providers return the live screen or no surface
+- Added compact EventBus history counts for debug/test checks without walking raw event lists
 
 Current stabilization priorities:
 
@@ -659,6 +660,7 @@ Current non-visual Phase 1 track:
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues
   - current high-leverage coverage targets have shifted away from `ui_pygame` and now primarily live in the remaining medium-coverage `core` and `ui_curses` modules
   - prefer medium-sized deterministic helper modules and shared UI/menu layers over sprawling end-to-end screen loops when the goal is near-term percentage lift plus regression value
+  - compact EventBus history counts are now available for focused debug/test assertions
 - Small core-quality tasks
   - resolve narrow TODOs that are self-contained, non-visual, and low-risk in `save_system.py`, `battle_logger.py`, `character.py`, and related core modules
 

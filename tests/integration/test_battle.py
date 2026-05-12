@@ -951,6 +951,8 @@ class TestEventBus:
         assert len(history) == 2
         assert [event.type for event in history] == [EventType.DEFEND, EventType.ATTACK]
         assert [event.data["turn"] for event in bus.get_history(EventType.ATTACK)] == [3]
+        assert bus.get_history_counts() == {"DEFEND": 1, "ATTACK": 1}
+        assert bus.get_history_counts(EventType.ATTACK) == {"ATTACK": 1}
 
     def test_zero_max_history_disables_history_storage_but_not_callbacks(self):
         from src.core.events.event_bus import EventBus, EventType
@@ -965,6 +967,7 @@ class TestEventBus:
         assert received == [1, 2]
         assert bus.get_history() == []
         assert bus.get_history(EventType.ATTACK) == []
+        assert bus.get_history_counts() == {}
 
     def test_disable_prevents_callbacks_and_history_growth(self):
         from src.core.events.event_bus import EventBus, EventType

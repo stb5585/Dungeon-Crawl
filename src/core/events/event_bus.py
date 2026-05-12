@@ -8,6 +8,7 @@ Events are emitted by the game engine and can be consumed by different presenter
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable
@@ -222,6 +223,11 @@ class EventBus:
         if event_type is None:
             return self._history.copy()
         return [e for e in self._history if e.type == event_type]
+
+    def get_history_counts(self, event_type: EventType | None = None) -> dict[str, int]:
+        """Return compact event-type counts for the retained event history."""
+        history = self.get_history(event_type)
+        return dict(Counter(event.type.name for event in history))
     
     def enable(self) -> None:
         """Enable event processing."""

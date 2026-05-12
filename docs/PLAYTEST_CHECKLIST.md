@@ -80,5 +80,7 @@
   - Expected: The payload includes battle metadata and aggregate summary counts without raw event rows.
 - [ ] Run an event-bus history check with history disabled.
   - Expected: Subscribers still receive events while history remains empty.
+- [ ] Inspect compact event-bus history counts during a debug/test run.
+  - Expected: Counts reflect only retained history and remain empty when history is disabled.
 - [ ] Run focused action-queue tests after combat scheduling changes.
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
