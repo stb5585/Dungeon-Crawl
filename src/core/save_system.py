@@ -964,6 +964,23 @@ class SaveManager:
             SaveManager.describe_save_file(filename)
             for filename in SaveManager.list_saves()
         ]
+
+    @staticmethod
+    def summarize_save_metadata() -> dict[str, object]:
+        """Return compact summary diagnostics for player-visible save files."""
+        metadata = SaveManager.list_save_metadata()
+        sizes = [entry["size"] for entry in metadata if isinstance(entry.get("size"), int)]
+        largest = max(
+            metadata,
+            key=lambda entry: entry["size"] if isinstance(entry.get("size"), int) else -1,
+            default=None,
+        )
+        return {
+            "visible_count": len(metadata),
+            "total_size": sum(sizes),
+            "largest_save": None if largest is None else largest["filename"],
+            "largest_size": None if largest is None else largest["size"],
+        }
     
     @staticmethod
     def delete_save(filename: str) -> bool:

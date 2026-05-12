@@ -629,6 +629,7 @@ Current progress:
 - Added BattleLogger actor and target count diagnostics to compact battle summaries without raw event rows
 - Extended combat status-icon layout diagnostics with capacity and rendered row counts for dense status rows
 - Added default sound/music asset diagnostics for the runtime's expected SFX and music names
+- Added visible-save metadata summaries for count, total size, and largest player-visible save diagnostics
 
 Current stabilization priorities:
 
@@ -674,6 +675,7 @@ Current non-visual Phase 1 track:
   - completed: save-filename validation is now available as a public helper for menu/debug callers before file operations
   - completed: save-file metadata diagnostics can report validity, path type, existence, and file size without parsing JSON
   - completed: visible-save metadata can now be listed in load-menu order while excluding temp leftovers and directories
+  - completed: visible-save metadata summaries now expose count, total size, and largest save without parsing save payloads
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

@@ -218,6 +218,21 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
     assert [entry["size"] for entry in metadata] == [len("alpha"), len("z")]
     assert all(entry["valid"] and entry["is_file"] for entry in metadata)
     assert all(not entry["is_tmp"] for entry in metadata)
+    assert SaveManager.summarize_save_metadata() == {
+        "visible_count": 2,
+        "total_size": len("alpha") + len("z"),
+        "largest_save": "alpha.save",
+        "largest_size": len("alpha"),
+    }
+
+    (save_dir / "alpha.save").unlink()
+    (save_dir / "zeta.save").unlink()
+    assert SaveManager.summarize_save_metadata() == {
+        "visible_count": 0,
+        "total_size": 0,
+        "largest_save": None,
+        "largest_size": None,
+    }
 
 
 def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
