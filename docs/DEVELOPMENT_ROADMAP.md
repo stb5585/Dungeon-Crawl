@@ -626,6 +626,7 @@ Current progress:
 - Added renderer surface-slot override diagnostics that split manual and scene override counts while tracking revision changes
 - Added sound/music asset availability diagnostics for checking expected SFX and music content without loading or playing assets
 - Added SaveManager visible-save metadata listing that mirrors load-menu filtering without parsing save contents
+- Added BattleLogger actor and target count diagnostics to compact battle summaries without raw event rows
 
 Current stabilization priorities:
 
@@ -680,6 +681,7 @@ Current non-visual Phase 1 track:
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis
   - completed: battle logger compact summaries now expose event-type and flag counts without raw event rows
+  - completed: battle logger compact summaries now expose actor and target counts for quick turn-flow sanity checks
   - remaining: decide whether game/debug flows should automatically persist these logs
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
