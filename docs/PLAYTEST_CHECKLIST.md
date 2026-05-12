@@ -94,7 +94,7 @@
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.
-  - Expected: The payload includes battle metadata and aggregate summary counts without raw event rows.
+  - Expected: The payload includes battle metadata, event-type counts, flag counts, and aggregate summary counts without raw event rows.
 - [ ] Run an event-bus history check with history disabled.
   - Expected: Subscribers still receive events while history remains empty.
 - [ ] Inspect compact event-bus history counts during a debug/test run.

@@ -621,6 +621,7 @@ Current progress:
 - Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
 - Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
 - Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads
+- Added BattleLogger event-type and flag-count diagnostics to compact battle summaries
 
 Current stabilization priorities:
 
@@ -672,6 +673,7 @@ Current non-visual Phase 1 track:
   - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis
+  - completed: battle logger compact summaries now expose event-type and flag counts without raw event rows
   - remaining: decide whether game/debug flows should automatically persist these logs
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement

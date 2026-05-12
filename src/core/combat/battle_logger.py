@@ -137,16 +137,27 @@ class BattleLogger:
             "end_time": datetime.datetime.now().isoformat(),
         })
 
+    def get_event_type_counts(self) -> dict[str, int]:
+        """Return compact event-type counts for logged battle events."""
+        return dict(Counter(event["event_type"] for event in self.events))
+
+    def get_flag_counts(self) -> dict[str, int]:
+        """Return compact flag counts for logged battle events."""
+        flags = Counter()
+        for event in self.events:
+            flags.update(str(flag) for flag in event.get("flags", ()))
+        return dict(flags)
+
     def build_summary(self) -> dict:
         """Create a compact battle summary for debugging and analysis."""
-        event_counts = Counter(event["event_type"] for event in self.events)
         damage_events = [event for event in self.events if isinstance(event.get("damage"), int)]
         total_damage = sum(max(0, event["damage"]) for event in damage_events)
 
         return {
             "turns": self.turn_counter,
             "event_count": len(self.events),
-            "event_types": dict(event_counts),
+            "event_types": self.get_event_type_counts(),
+            "flag_counts": self.get_flag_counts(),
             "total_damage_logged": total_damage,
             "max_damage_logged": max((event["damage"] for event in damage_events), default=0),
             "result": self.metadata.get("result"),

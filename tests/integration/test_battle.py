@@ -755,8 +755,8 @@ class TestBattleLogger:
 
         logger = BattleLogger()
         logger.start_battle(player, enemy, initiative=True, boss=False)
-        logger.log_event("Attack", actor=player, target=enemy, damage=10)
-        logger.log_event("Attack", actor=enemy, target=player, damage=-3)
+        logger.log_event("Attack", actor=player, target=enemy, damage=10, flags=["critical"])
+        logger.log_event("Attack", actor=enemy, target=player, damage=-3, flags=["miss", "dodge"])
         logger.log_event("Spell", actor=player, target=enemy, damage=None)
         logger.next_turn()
         logger.end_battle(result="victory", winner=player.name, boss=False)
@@ -766,8 +766,11 @@ class TestBattleLogger:
         assert summary["turns"] == 1
         assert summary["event_count"] == 3
         assert summary["event_types"] == {"Attack": 2, "Spell": 1}
+        assert summary["flag_counts"] == {"critical": 1, "miss": 1, "dodge": 1}
         assert summary["total_damage_logged"] == 10
         assert summary["max_damage_logged"] == 10
+        assert logger.get_event_type_counts() == {"Attack": 2, "Spell": 1}
+        assert logger.get_flag_counts() == {"critical": 1, "miss": 1, "dodge": 1}
 
     def test_summary_payload_omits_raw_events_for_compact_debug_views(self):
         from src.core.combat.battle_logger import BattleLogger
@@ -779,8 +782,8 @@ class TestBattleLogger:
 
         logger = BattleLogger()
         logger.start_battle(player, enemy, initiative=True, boss=False)
-        logger.log_event("Attack", actor=player, target=enemy, damage=10)
-        logger.log_event("Spell", actor=player, target=enemy, damage=4)
+        logger.log_event("Attack", actor=player, target=enemy, damage=10, flags=["critical"])
+        logger.log_event("Spell", actor=player, target=enemy, damage=4, flags=["critical"])
         logger.end_battle(result="victory", winner=player.name, boss=False)
 
         payload = logger.summary_payload()
@@ -791,6 +794,7 @@ class TestBattleLogger:
         assert payload["metadata"]["result"] == "victory"
         assert payload["summary"]["event_count"] == 2
         assert payload["summary"]["event_types"] == {"Attack": 1, "Spell": 1}
+        assert payload["summary"]["flag_counts"] == {"critical": 2}
         assert payload["summary"]["total_damage_logged"] == 14
 
     def test_serialize_value_handles_dataclasses_collections_and_objects(self):
