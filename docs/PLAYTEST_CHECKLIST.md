@@ -37,6 +37,8 @@
   - Expected: The Old Key count persists.
 - [ ] Open the Load Game menu after a failed or interrupted save attempt.
   - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
+- [ ] Load an older or partially malformed save with tile-state data.
+  - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 
 ### Quest Log
 - [ ] Accept and complete a main quest that grants item rewards.

@@ -71,9 +71,13 @@ def test_enemy_state_serializer_round_trips_class_and_instance_state():
 
 def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path):
     marker = tmp_path / "should_not_exist.txt"
-    world = {(1, 2, 3): SimpleNamespace(visited=False, near=False, open=False)}
+    world = {
+        (1, 2, 3): SimpleNamespace(visited=False, near=False, open=False),
+        (4, 5, 6): SimpleNamespace(visited=False, near=False, open=False),
+    }
     tile_states = {
         "(1, 2, 3)": {"visited": True},
+        "(4, 5, 6)": "not-a-state-dict",
         "[1, 2, 3]": {"visited": False},
         "(1, 2)": {"visited": False},
         f"__import__('pathlib').Path({str(marker)!r}).write_text('bad')": {"visited": False},
@@ -82,6 +86,7 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
     TileStateSerializer.restore_tile_state(world, tile_states)
 
     assert world[(1, 2, 3)].visited is True
+    assert world[(4, 5, 6)].visited is False
     assert not marker.exists()
 
 

@@ -214,6 +214,9 @@ class TileStateSerializer:
     def restore_tile_state(world_dict: dict, tile_states: dict) -> None:
         """Restore tile state from serialized data."""
         for pos_str, state in tile_states.items():
+            if not isinstance(state, dict):
+                continue
+
             # Parse position string back to tuple
             try:
                 pos = ast.literal_eval(pos_str)  # e.g., "(5,10,1)"

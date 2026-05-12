@@ -528,6 +528,7 @@ Current progress:
 - Added atomic SaveManager writes so a failed save does not corrupt the previous file
 - Added save/tmp filename confinement and deterministic save-list ordering
 - Save listing now ignores atomic-write leftovers and `.save` directories, keeping load-game choices limited to real save files
+- Tile-state restoration now skips malformed per-tile state payloads while preserving valid neighboring tile state.
 - Upgraded the battle logger from raw event capture only to structured payload and JSON export support
 - Confirmed that stale-input protection is present in key flows but still not broad enough to mark complete
 - Added a dedicated pygame combat turn-indicator treatment
@@ -593,6 +594,7 @@ Current progress:
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
+- Hardened tile-state restore against malformed per-tile payloads
 
 Current stabilization priorities:
 
@@ -622,6 +624,7 @@ Current non-visual Phase 1 track:
   - completed: added round-trip coverage for mutable quest, inventory, storage, and tile-state persistence
   - completed: SaveManager writes are atomic and reject path-bearing save names
   - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
+  - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
