@@ -286,7 +286,13 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
         "loaded": False,
         "fallback_counts": {},
         "projected_cache": {"size": 0, "limit": 512},
-        "surface_slot_override_count": 0,
+        "surface_slot_overrides": {
+            "manual_count": 0,
+            "scene_count": 0,
+            "total_count": 0,
+            "has_overrides": False,
+            "revision": 0,
+        },
         "surface_slot_revision": 0,
     }
 
@@ -321,7 +327,13 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
             "enemy": 1,
         },
         "projected_cache": {"size": 0, "limit": 512},
-        "surface_slot_override_count": 0,
+        "surface_slot_overrides": {
+            "manual_count": 0,
+            "scene_count": 0,
+            "total_count": 0,
+            "has_overrides": False,
+            "revision": 0,
+        },
         "surface_slot_revision": 0,
     }
 
@@ -552,12 +564,44 @@ def test_texture_library_can_override_individual_ceiling_and_wall_slots():
 def test_texture_library_reports_scene_surface_slot_overrides():
     textures = TextureLibrary()
     assert textures.has_any_surface_slot_overrides() is False
+    assert textures.get_surface_slot_override_diagnostics() == {
+        "manual_count": 0,
+        "scene_count": 0,
+        "total_count": 0,
+        "has_overrides": False,
+        "revision": 0,
+    }
 
     textures.set_scene_surface_slot_overrides({"wall:visible:d1:center": "door_closed"})
     assert textures.has_any_surface_slot_overrides() is True
     assert textures.get_surface_slot_overrides() == {"wall:visible:d1:center": "door_closed"}
+    assert textures.get_surface_slot_override_diagnostics() == {
+        "manual_count": 0,
+        "scene_count": 1,
+        "total_count": 1,
+        "has_overrides": True,
+        "revision": 1,
+    }
+
+    textures.set_wall_slot_override("wall:visible:d1:center", "door_open")
+    assert textures.get_surface_slot_override_diagnostics() == {
+        "manual_count": 1,
+        "scene_count": 1,
+        "total_count": 1,
+        "has_overrides": True,
+        "revision": 2,
+    }
+    assert textures.get_diagnostics()["surface_slot_overrides"]["manual_count"] == 1
 
     textures.clear_scene_surface_slot_overrides()
+    assert textures.get_surface_slot_override_diagnostics() == {
+        "manual_count": 1,
+        "scene_count": 0,
+        "total_count": 1,
+        "has_overrides": True,
+        "revision": 3,
+    }
+    textures.clear_surface_slot_overrides()
     assert textures.has_any_surface_slot_overrides() is False
 
 

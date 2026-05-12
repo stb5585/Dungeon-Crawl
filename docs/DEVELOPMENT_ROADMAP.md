@@ -623,6 +623,7 @@ Current progress:
 - Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads
 - Added BattleLogger event-type and flag-count diagnostics to compact battle summaries
 - Added compact combat status-icon layout diagnostics for visible, hidden, overflow, and urgent-visible counts
+- Added renderer surface-slot override diagnostics that split manual and scene override counts while tracking revision changes
 
 Current stabilization priorities:
 
@@ -645,6 +646,7 @@ Current stabilization priorities:
   - projected-surface cache diagnostics expose current size and configured limit
   - asset fallback diagnostics now expose compact counts by asset category for quick renderer/debug checks
   - aggregate texture-library diagnostics now combine fallback/cache/override state for quick debug assertions
+  - surface-slot override diagnostics now distinguish manual overrides from scene-driven overrides during renderer smoke checks
 
 Current non-visual Phase 1 track:
 

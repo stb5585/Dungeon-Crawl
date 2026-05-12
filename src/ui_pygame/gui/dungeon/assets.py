@@ -191,7 +191,7 @@ class TextureLibrary:
             "loaded": self._loaded,
             "fallback_counts": self.get_asset_fallback_counts(),
             "projected_cache": self.get_projected_cache_stats(),
-            "surface_slot_override_count": len(self.get_surface_slot_overrides()),
+            "surface_slot_overrides": self.get_surface_slot_override_diagnostics(),
             "surface_slot_revision": self._surface_slot_revision,
         }
 
@@ -369,6 +369,16 @@ class TextureLibrary:
         overrides = dict(self._scene_surface_slot_overrides)
         overrides.update(self._manual_surface_slot_overrides)
         return overrides
+
+    def get_surface_slot_override_diagnostics(self) -> dict[str, int | bool]:
+        """Return compact manual/scene surface-slot override state."""
+        return {
+            "manual_count": len(self._manual_surface_slot_overrides),
+            "scene_count": len(self._scene_surface_slot_overrides),
+            "total_count": len(self.get_surface_slot_overrides()),
+            "has_overrides": self.has_any_surface_slot_overrides(),
+            "revision": self._surface_slot_revision,
+        }
 
     def describe_panel_surface_slot_overrides(
         self,

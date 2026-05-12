@@ -10,6 +10,7 @@
 - [ ] Enable renderer surface-slot debugging while checking a side corridor.
   - Expected: Debug overlay information corresponds to the visible panel being inspected.
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
+  - Expected: Manual and scene-driven override counts are distinguishable while debugging.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
   - Expected: Projected-surface cache diagnostics report a bounded cache size.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
