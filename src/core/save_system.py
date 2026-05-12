@@ -940,6 +940,7 @@ class SaveManager:
             "exists": False,
             "is_file": False,
             "is_dir": False,
+            "loadable": False,
             "size": None,
         }
         if not metadata["valid"]:
@@ -950,6 +951,7 @@ class SaveManager:
         metadata["exists"] = os.path.exists(filepath)
         metadata["is_file"] = os.path.isfile(filepath)
         metadata["is_dir"] = os.path.isdir(filepath)
+        metadata["loadable"] = bool(metadata["valid"] and metadata["is_file"])
         if metadata["is_file"]:
             try:
                 metadata["size"] = os.path.getsize(filepath)
@@ -977,6 +979,7 @@ class SaveManager:
         )
         return {
             "visible_count": len(metadata),
+            "visible_filenames": [entry["filename"] for entry in metadata],
             "total_size": sum(sizes),
             "largest_save": None if largest is None else largest["filename"],
             "largest_size": None if largest is None else largest["size"],

@@ -174,6 +174,7 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "exists": True,
         "is_file": True,
         "is_dir": False,
+        "loadable": True,
         "size": len("{not json"),
     }
     assert SaveManager.describe_save_file("missing.save") == {
@@ -184,9 +185,11 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "exists": False,
         "is_file": False,
         "is_dir": False,
+        "loadable": False,
         "size": None,
     }
     assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
+    assert SaveManager.describe_save_file("folder.save")["loadable"] is False
     assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["path"] == str(tmp_dir / "hero.tmp")
     assert SaveManager.describe_save_file("../outside.save") == {
         "filename": "../outside.save",
@@ -196,6 +199,7 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "exists": False,
         "is_file": False,
         "is_dir": False,
+        "loadable": False,
         "size": None,
     }
 
@@ -220,6 +224,7 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
     assert all(not entry["is_tmp"] for entry in metadata)
     assert SaveManager.summarize_save_metadata() == {
         "visible_count": 2,
+        "visible_filenames": ["alpha.save", "zeta.save"],
         "total_size": len("alpha") + len("z"),
         "largest_save": "alpha.save",
         "largest_size": len("alpha"),
@@ -229,6 +234,7 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
     (save_dir / "zeta.save").unlink()
     assert SaveManager.summarize_save_metadata() == {
         "visible_count": 0,
+        "visible_filenames": [],
         "total_size": 0,
         "largest_save": None,
         "largest_size": None,

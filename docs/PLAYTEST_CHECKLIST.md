@@ -75,6 +75,7 @@
 - [ ] Inspect visible-save metadata from the load-game path.
   - Expected: Metadata appears in the same order as the load menu and excludes temporary leftovers and directories.
   - Expected: Summary diagnostics report visible save count, total size, and largest visible save without opening the save payload.
+  - Expected: Loadable entries and visible filename lists match the load menu.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 - [ ] Attempt to load a corrupted save file.
