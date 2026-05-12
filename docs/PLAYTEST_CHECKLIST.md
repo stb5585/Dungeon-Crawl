@@ -12,6 +12,8 @@
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
   - Expected: Projected-surface cache diagnostics report a bounded cache size.
+- [ ] Run asset fallback diagnostics with a missing or renamed test asset.
+  - Expected: Fallback counts identify the affected asset category without changing dungeon rendering.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.

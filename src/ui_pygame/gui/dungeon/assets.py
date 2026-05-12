@@ -170,6 +170,14 @@ class TextureLibrary:
         """Return missing or failed asset paths that are using fallback behavior."""
         return dict(self._asset_fallbacks)
 
+    def get_asset_fallback_counts(self) -> dict[str, int]:
+        """Return fallback counts grouped by asset category for diagnostics."""
+        counts: dict[str, int] = {}
+        for fallback_key in self._asset_fallbacks:
+            category, _separator, _texture_key = fallback_key.partition(":")
+            counts[category] = counts.get(category, 0) + 1
+        return counts
+
     def get_projected_cache_stats(self) -> dict[str, int]:
         """Return projected-surface cache stats for renderer diagnostics."""
         return {

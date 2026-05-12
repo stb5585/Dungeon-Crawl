@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pygame
 
-from src.ui_pygame.gui.dungeon.assets import TextureLibrary
+from src.ui_pygame.gui.dungeon.assets import TEXTURE_PATHS, TextureLibrary
 from src.ui_pygame.gui.dungeon.geometry import build_depth_rect, build_next_depth_rect, build_zone_geometry
 from src.ui_pygame.gui.dungeon.geometry import Quad
 from src.ui_pygame.gui.dungeon.projector import project_texture_to_quad
@@ -294,9 +294,17 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert fallbacks["texture:wall"].endswith("walls/brick.png")
     assert fallbacks["special:stairs_down"].endswith("special_tiles/stairs_down.png")
     assert fallbacks["enemy:Missing Enemy"].endswith("sprites/enemies/missing_enemy.png")
+    assert textures.get_asset_fallback_counts() == {
+        "texture": len(TEXTURE_PATHS),
+        "special": 1,
+        "enemy": 1,
+    }
 
     fallbacks.clear()
     assert "texture:wall" in textures.get_asset_fallbacks()
+    counts = textures.get_asset_fallback_counts()
+    counts["texture"] = 0
+    assert textures.get_asset_fallback_counts()["texture"] == len(TEXTURE_PATHS)
 
     pygame.quit()
 
