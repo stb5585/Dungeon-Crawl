@@ -84,6 +84,8 @@ class TestPlayerTopLevelHelpers:
             current_level=6,
         )
         assert summary["encounters_survived"] == 5
+        assert summary["combat_outcomes"] == 7
+        assert summary["total_activity"] == 7
         assert summary["highest_level_reached"] == 6
 
         loaded = SimpleNamespace(name="Loaded Hero")

@@ -78,6 +78,7 @@
 ### Statistics
 - [ ] Open the Statistics entry from the pygame town menu.
   - Expected: The popup includes steps, stairs, defeats, deaths, flees, encounters survived, and high-water combat stats.
+  - Expected: Combat outcomes and total activity derive from the existing counters.
   - Expected: Missing or old save data displays as zeroes instead of crashing.
   - Expected: Encounters survived is never negative, even after old or manually edited save data.
 

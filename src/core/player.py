@@ -105,6 +105,14 @@ def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[st
         0,
         summary["enemies_defeated"] + summary["flees"] - summary["deaths"],
     )
+    summary["combat_outcomes"] = (
+        summary["enemies_defeated"] + summary["flees"] + summary["deaths"]
+    )
+    summary["total_activity"] = (
+        summary["steps_taken"]
+        + summary["stairs_used"]
+        + summary["combat_outcomes"]
+    )
     return summary
 
 

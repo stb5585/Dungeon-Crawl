@@ -619,6 +619,7 @@ Current progress:
 - Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
 - Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
 - Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
+- Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
 
 Current stabilization priorities:
 
@@ -649,6 +650,7 @@ Current non-visual Phase 1 track:
   - completed: expose the tracked data through a player-facing pygame statistics popup
   - completed: show derived encounters survived and tolerate malformed legacy stat values in the popup formatter
   - completed: share derived gameplay-stat summary counters through a core helper for UI/tooling reuse
+  - completed: gameplay-stat summaries now include derived combat-outcome and total-activity counters from existing save data
   - remaining: decide whether richer history or run-summary views are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves
