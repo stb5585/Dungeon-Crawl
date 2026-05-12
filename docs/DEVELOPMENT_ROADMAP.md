@@ -611,6 +611,7 @@ Current progress:
 - Hardened level-up and stat-selection popup background fallback when providers return the live screen or no surface
 - Added compact EventBus history counts for debug/test checks without walking raw event lists
 - Added projected-surface cache diagnostics for renderer smoke tests and debugging
+- Added save/load regression coverage for corrupt normal and temporary JSON save files
 
 Current stabilization priorities:
 
@@ -648,6 +649,7 @@ Current non-visual Phase 1 track:
   - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
   - completed: blank save names are rejected and delete operations refuse directories
   - completed: load operations treat directory-like save entries as missing files
+  - completed: corrupt save JSON loads return `None` without deleting the original file
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

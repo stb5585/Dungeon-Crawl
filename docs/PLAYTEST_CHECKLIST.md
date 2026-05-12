@@ -58,6 +58,8 @@
   - Expected: The game refuses the invalid entry without loading directories, deleting directories, or creating blank-name saves.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
+- [ ] Attempt to load a corrupted save file.
+  - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 
 ### Quest Log
 - [ ] Accept and complete a main quest that grants item rewards.

@@ -286,3 +286,21 @@ def test_save_manager_returns_false_or_none_on_failures(monkeypatch, tmp_path):
 
     assert SaveManager.load_player("missing.save", skip_tiles=True) is None
     assert SaveManager.delete_save("missing.save") is False
+
+
+def test_save_manager_corrupt_json_load_returns_none_without_deleting_file(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+    SaveManager.ensure_dirs()
+
+    save_path = save_dir / "corrupt.save"
+    tmp_path_file = tmp_dir / "corrupt.tmp"
+    save_path.write_text("{bad json", encoding="utf-8")
+    tmp_path_file.write_text("{bad json", encoding="utf-8")
+
+    assert SaveManager.load_player("corrupt.save", skip_tiles=True) is None
+    assert SaveManager.load_player("corrupt.tmp", is_tmp=True, skip_tiles=True) is None
+    assert save_path.read_text(encoding="utf-8") == "{bad json"
+    assert tmp_path_file.read_text(encoding="utf-8") == "{bad json"
