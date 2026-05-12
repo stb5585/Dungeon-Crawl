@@ -132,6 +132,8 @@ def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):
 
     assert SaveManager.save_player(player, "hero.save") is True
     assert SaveManager.save_player(player, "alpha.save") is True
+    (save_dir / "hero.save.tmp").write_text("partial", encoding="utf-8")
+    (save_dir / "directory.save").mkdir()
     assert "hero.save" in SaveManager.list_saves()
     assert SaveManager.list_saves() == ["alpha.save", "hero.save"]
 

@@ -913,7 +913,12 @@ class SaveManager:
         SaveManager.ensure_dirs()
         if not os.path.isdir(SaveManager.SAVE_DIR):
             return []
-        return sorted(f for f in os.listdir(SaveManager.SAVE_DIR) if f.endswith('.save'))
+        saves = []
+        for filename in os.listdir(SaveManager.SAVE_DIR):
+            filepath = os.path.join(SaveManager.SAVE_DIR, filename)
+            if filename.endswith('.save') and os.path.isfile(filepath):
+                saves.append(filename)
+        return sorted(saves)
     
     @staticmethod
     def delete_save(filename: str) -> bool:

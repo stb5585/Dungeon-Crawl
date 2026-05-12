@@ -524,6 +524,7 @@ Current progress:
 - Added broader save/load round-trip coverage for mutable player inventories, quest data, and tile state restoration
 - Added atomic SaveManager writes so a failed save does not corrupt the previous file
 - Added save/tmp filename confinement and deterministic save-list ordering
+- Save listing now ignores atomic-write leftovers and `.save` directories, keeping load-game choices limited to real save files
 - Upgraded the battle logger from raw event capture only to structured payload and JSON export support
 - Confirmed that stale-input protection is present in key flows but still not broad enough to mark complete
 - Added a dedicated pygame combat turn-indicator treatment
@@ -585,6 +586,7 @@ Current progress:
 - Hardened action-queue helper scheduling by clamping negative delays/cast times and tagging helper-created actions with debug metadata
 - Switched the pygame Settings placeholder to the shared guarded modal popup path so buffered menu input cannot skip it
 - Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
+- Hardened SaveManager listing to hide temporary save leftovers and directory entries
 
 Current stabilization priorities:
 
@@ -612,6 +614,7 @@ Current non-visual Phase 1 track:
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves
   - completed: added round-trip coverage for mutable quest, inventory, storage, and tile-state persistence
   - completed: SaveManager writes are atomic and reject path-bearing save names
+  - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

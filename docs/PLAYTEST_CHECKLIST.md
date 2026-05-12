@@ -31,6 +31,8 @@
 ### Save/Load
 - [ ] Save after receiving Old Keys, quit, and reload.
   - Expected: The Old Key count persists.
+- [ ] Open the Load Game menu after a failed or interrupted save attempt.
+  - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
 
 ### Quest Log
 - [ ] Accept and complete a main quest that grants item rewards.
