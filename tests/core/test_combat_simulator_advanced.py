@@ -186,7 +186,7 @@ def test_combat_level_handles_property_errors_and_plain_values():
     assert _combat_level(SimpleNamespace(level=SimpleNamespace(level=12))) == 12
 
 
-def test_balance_report_handles_equal_win_rates_and_quick_balance_placeholder():
+def test_balance_report_handles_equal_win_rates_and_quick_balance_empty_report():
     from src.core.analytics.combat_simulator import BalanceReport, quick_balance_test
 
     report = BalanceReport(
@@ -201,7 +201,10 @@ def test_balance_report_handles_equal_win_rates_and_quick_balance_placeholder():
     summary = report.generate_summary()
     assert "COMBAT BALANCE REPORT" in summary
     assert "Win Rates by Class" in summary
-    assert quick_balance_test("Warrior", level=10) is None
+    quick_report = quick_balance_test("Warrior", level=10)
+    assert quick_report.total_battles == 0
+    assert quick_report.results == []
+    assert quick_report.win_rates == {}
 
 
 def test_simulate_battle_records_all_event_accounting_branches(monkeypatch):

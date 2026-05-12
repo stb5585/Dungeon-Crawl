@@ -578,6 +578,7 @@ Current progress:
 - Tightened combat turn-indicator name fitting for long player/enemy names
 - Added right-side outer depth-3 floor-special smoke coverage
 - Increased Old Key quest rewards for early/main quest turn-ins and added loader-level regression coverage for the new reward counts
+- Tightened the analytics quick-balance helper so it returns an explicit empty `BalanceReport` instead of falling through as `None`
 
 Current stabilization priorities:
 
@@ -608,6 +609,7 @@ Current non-visual Phase 1 track:
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
+  - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
   - remaining: decide whether simulator/debug tooling should persist or consume these logs directly
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement

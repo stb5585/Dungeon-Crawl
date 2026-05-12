@@ -25,3 +25,7 @@
 ### Quest Log
 - [ ] Accept and complete a main quest that grants item rewards.
   - Expected: Quest completion and turned-in state are recorded correctly.
+
+### Developer Tooling
+- [ ] Run a focused combat simulator test after analytics changes.
+  - Expected: The quick balance helper returns a report object even when no simulations are configured.

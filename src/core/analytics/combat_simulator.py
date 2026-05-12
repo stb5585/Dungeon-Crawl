@@ -764,6 +764,7 @@ def quick_balance_test(class_name: str, level: int = 10) -> BalanceReport:
     Returns:
         Balance report
     """
-    # This would need to be implemented with actual character creation
-    # Placeholder for now
-    pass
+    # Character factory wiring for full class-vs-class simulations is still
+    # future work; return a real empty report so callers can handle the helper
+    # consistently while that broader feature is deferred.
+    return BalanceReport(total_battles=0, results=[])
