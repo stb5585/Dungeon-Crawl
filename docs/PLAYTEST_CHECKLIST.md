@@ -46,6 +46,8 @@
 ### Developer Tooling
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
+- [ ] Export a combat simulator balance report to JSON.
+  - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
 - [ ] Run an event-bus history check with history disabled.

@@ -8,9 +8,11 @@ and generating reports for game balancing purposes.
 from __future__ import annotations
 
 import copy
+import json
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -159,6 +161,32 @@ class BalanceReport:
             for effect, count in result.status_effects_applied.items():
                 freq[effect] += count
         return dict(freq)
+
+    def export_payload(self) -> dict:
+        """Export report metrics and raw combat stats for tooling."""
+        return {
+            "total_battles": self.total_battles,
+            "average_turns": self.average_turns,
+            "median_turns": self.median_turns,
+            "close_fight_rate": self.close_fight_rate,
+            "stomp_rate": self.stomp_rate,
+            "win_rates": dict(self.win_rates),
+            "ability_usage": self.get_ability_usage(),
+            "status_effect_frequency": self.get_status_effect_frequency(),
+            "outliers": self.identify_outliers(),
+            "results": [result.__dict__.copy() for result in self.results],
+        }
+
+    def export_json(self, *, indent: int = 2) -> str:
+        """Export the balance report as JSON text."""
+        return json.dumps(self.export_payload(), indent=indent, sort_keys=True)
+
+    def export_json_file(self, path: str | Path, *, indent: int = 2) -> Path:
+        """Write the balance report JSON to disk and return its path."""
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(self.export_json(indent=indent), encoding="utf-8")
+        return output_path
     
     def identify_outliers(self, threshold: float = 2.0) -> dict[str, list]:
         """

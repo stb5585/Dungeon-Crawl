@@ -206,6 +206,7 @@ Completed outcomes:
 - BattleEngine-backed combat simulator is functional
 - Usable for regression checks and balance comparisons
 - Supports the balance workflow described in the roadmap
+- Balance reports can now export structured JSON payloads and files for debug/tooling workflows
 
 Metric note:
 
@@ -589,6 +590,7 @@ Current progress:
 - Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
+- Added structured JSON payload/file export support to combat simulator balance reports
 
 Current stabilization priorities:
 
@@ -624,7 +626,8 @@ Current non-visual Phase 1 track:
   - completed: battle logger can persist structured JSON logs directly to disk for local analysis
   - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
-  - remaining: decide whether simulator/debug tooling should persist or consume these logs directly
+  - completed: simulator balance reports now export structured JSON payloads and files for local analysis
+  - remaining: decide whether game/debug flows should automatically persist these logs
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues

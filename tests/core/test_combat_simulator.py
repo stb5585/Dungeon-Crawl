@@ -121,6 +121,38 @@ def test_balance_report_aggregates_metrics_and_usage():
     assert report.get_status_effect_frequency() == {"Bleed": 3, "Burn": 2}
 
 
+def test_balance_report_exports_payload_json_and_file(tmp_path):
+    import json
+
+    from src.core.analytics.combat_simulator import BalanceReport
+
+    report = BalanceReport(
+        total_battles=1,
+        results=[
+            _make_stat(
+                winner_class="Warrior",
+                loser_class="Mage",
+                turns=4,
+                abilities={"Attack": 2},
+                statuses={"Blind": 1},
+            )
+        ],
+    )
+
+    payload = report.export_payload()
+    assert payload["total_battles"] == 1
+    assert payload["ability_usage"] == {"Attack": 2}
+    assert payload["status_effect_frequency"] == {"Blind": 1}
+    assert payload["results"][0]["winner_class"] == "Warrior"
+
+    json_payload = json.loads(report.export_json())
+    assert json_payload["win_rates"] == {"Warrior": 100.0}
+
+    output_path = report.export_json_file(tmp_path / "reports" / "balance.json")
+    saved_payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert saved_payload["median_turns"] == 4
+
+
 def test_balance_report_identifies_manual_outliers_and_summary_mentions_sections(monkeypatch):
     from src.core.analytics.combat_simulator import BalanceReport
 
