@@ -294,6 +294,7 @@ Verification note:
 - Left depth-3 outer side-corridor wall continuation now has smoke coverage so deeper side-wall routing stays stable.
 - Depth-3 outer side-corridor floor and ceiling slot IDs now have left/right regression coverage, keeping deeper corridor surface routing stable.
 - Right-side outer depth-3 floor-special routing now has matching smoke coverage with the existing left-side case.
+- Texture-library surface-slot override state now has a public debug/test helper with manual and scene override coverage.
 
 ### Character / Shop UX
 
@@ -591,6 +592,7 @@ Current progress:
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Added structured JSON payload/file export support to combat simulator balance reports
+- Added renderer texture-library helper coverage for manual and scene surface-slot override state
 
 Current stabilization priorities:
 

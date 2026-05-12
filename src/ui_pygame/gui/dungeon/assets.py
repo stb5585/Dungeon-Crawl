@@ -345,6 +345,10 @@ class TextureLibrary:
         overrides.update(self._manual_surface_slot_overrides)
         return overrides
 
+    def has_any_surface_slot_overrides(self) -> bool:
+        """Return whether manual or scene-driven surface slot overrides are active."""
+        return bool(self._manual_surface_slot_overrides or self._scene_surface_slot_overrides)
+
     def get_floor_slot_overrides(self) -> dict[str, str]:
         return self.get_surface_slot_overrides()
 

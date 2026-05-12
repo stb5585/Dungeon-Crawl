@@ -480,14 +480,18 @@ def test_texture_library_can_override_individual_floor_slots():
     pygame.init()
     textures = TextureLibrary()
 
+    assert textures.has_any_surface_slot_overrides() is False
+
     baseline = textures.get_panel_texture("d2:right_corridor_outer_floor", "floor")
     textures.set_floor_slot_override("floor:corridor_outer:right:d2:tile", "floor_pit")
+    assert textures.has_any_surface_slot_overrides() is True
     overridden = textures.get_panel_texture("d2:right_corridor_outer_floor", "floor")
 
     assert overridden.get_size() == baseline.get_size()
     assert pygame.image.tostring(overridden, "RGBA") != pygame.image.tostring(baseline, "RGBA")
 
     textures.clear_floor_slot_overrides()
+    assert textures.has_any_surface_slot_overrides() is False
     restored = textures.get_panel_texture("d2:right_corridor_outer_floor", "floor")
     assert restored.get_size() == baseline.get_size()
 
@@ -512,6 +516,18 @@ def test_texture_library_can_override_individual_ceiling_and_wall_slots():
 
     textures.clear_surface_slot_overrides()
     pygame.quit()
+
+
+def test_texture_library_reports_scene_surface_slot_overrides():
+    textures = TextureLibrary()
+    assert textures.has_any_surface_slot_overrides() is False
+
+    textures.set_scene_surface_slot_overrides({"wall:visible:d1:center": "door_closed"})
+    assert textures.has_any_surface_slot_overrides() is True
+    assert textures.get_surface_slot_overrides() == {"wall:visible:d1:center": "door_closed"}
+
+    textures.clear_scene_surface_slot_overrides()
+    assert textures.has_any_surface_slot_overrides() is False
 
 
 def test_scene_renderer_can_disable_darkness_via_env():

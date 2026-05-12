@@ -2,6 +2,10 @@
 
 ## Recently Changed
 
+### Dungeon Rendering
+- [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
+  - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
+
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
