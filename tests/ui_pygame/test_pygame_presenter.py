@@ -299,9 +299,11 @@ def test_presenter_background_helpers_and_cleanup(monkeypatch):
 
     presenter.set_background_provider(lambda: None)
     assert presenter.get_background_surface() is not None
+    assert presenter._background_provider is None
 
     presenter.set_background_provider(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     assert presenter.get_background_surface() is not None
+    assert presenter._background_provider is None
 
     presenter.clear()
     presenter.update()

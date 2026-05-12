@@ -600,6 +600,7 @@ Current progress:
 - Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
 - Hardened renderer surface-slot overrides so invalid debug/test entries are ignored while valid neighboring floor, ceiling, and wall overrides still apply
 - Improved combat status-icon ordering so counted labels use count-aware stable tie-breaks without overriding urgent-status priority
+- Hardened pygame presenter popup-background fallback so broken or empty providers are cleared after falling back to the screen copy
 
 Current stabilization priorities:
 
@@ -818,6 +819,7 @@ Primary workstreams:
   - completed: top-level character-screen navigation now uses the same stale-input guard
   - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
   - completed: top-level pygame cleanup clears presenter background providers during shutdown
+  - completed: presenter popup-background fallback clears broken or empty providers after fallback
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient

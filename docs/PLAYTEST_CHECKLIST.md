@@ -21,6 +21,8 @@
   - Expected: The key press used to choose Settings does not immediately dismiss the message.
 - [ ] Quit from a pygame session after visiting dungeon or popup-heavy screens.
   - Expected: The game exits cleanly without leaving stale popup backgrounds or hanging the window.
+- [ ] Open several popups after moving between town, dungeon, and combat views.
+  - Expected: A stale or unavailable popup background falls back cleanly instead of repeating an old scene.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

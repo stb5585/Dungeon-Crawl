@@ -1081,9 +1081,13 @@ class PygamePresenter(GamePresenter):
         try:
             surface = self._background_provider()
         except Exception:
+            self._background_provider = None
             return self.screen.copy()
 
-        if surface is None or surface is self.screen:
+        if surface is None:
+            self._background_provider = None
+            return self.screen.copy()
+        if surface is self.screen:
             return self.screen.copy()
 
         return surface
