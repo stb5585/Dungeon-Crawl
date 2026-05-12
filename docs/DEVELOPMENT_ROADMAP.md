@@ -603,6 +603,7 @@ Current progress:
 - Hardened pygame presenter popup-background fallback so broken or empty providers are cleared after falling back to the screen copy
 - Extracted a core gameplay-stat summary helper so pygame statistics and tests share normalized derived counters
 - Added panel-scoped renderer surface-slot override diagnostics for focused side-corridor and door debugging
+- Hardened SaveManager filename handling for blank names and made save deletion explicitly file-only
 
 Current stabilization priorities:
 
@@ -636,6 +637,7 @@ Current non-visual Phase 1 track:
   - completed: SaveManager writes are atomic and reject path-bearing save names
   - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
   - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
+  - completed: blank save names are rejected and delete operations refuse directories
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

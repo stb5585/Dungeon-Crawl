@@ -166,7 +166,15 @@ def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
     assert SaveManager.save_player(player, "../outside.save") is False
     assert SaveManager.load_player("../outside.save", skip_tiles=True) is None
     assert SaveManager.delete_save("../outside.save") is False
+    assert SaveManager.save_player(player, "   ") is False
+    assert SaveManager.load_player("   ", skip_tiles=True) is None
+    assert SaveManager.delete_save("   ") is False
     assert not (tmp_path / "outside.save").exists()
+    assert not (save_dir / "   ").exists()
+
+    (save_dir / "folder.save").mkdir(parents=True)
+    assert SaveManager.delete_save("folder.save") is False
+    assert (save_dir / "folder.save").is_dir()
 
 
 def test_save_manager_failed_atomic_write_preserves_existing_save(monkeypatch, tmp_path):

@@ -47,6 +47,8 @@
   - Expected: The Old Key count persists.
 - [ ] Open the Load Game menu after a failed or interrupted save attempt.
   - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
+- [ ] Attempt to delete or load invalid save entries such as blank names or folder-like entries.
+  - Expected: The game refuses the invalid entry without deleting directories or creating blank-name saves.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 

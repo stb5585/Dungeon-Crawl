@@ -839,7 +839,8 @@ class SaveManager:
         """Return a save path confined to the configured save directory."""
         separators = {os.sep, os.altsep, "/", "\\"}
         if (
-            not filename
+            not isinstance(filename, str)
+            or not filename.strip()
             or filename in {".", ".."}
             or os.path.isabs(filename)
             or any(sep and sep in filename for sep in separators)
@@ -928,7 +929,7 @@ class SaveManager:
         """Delete a save file."""
         try:
             filepath = SaveManager._resolve_save_path(filename)
-            if os.path.exists(filepath):
+            if os.path.isfile(filepath):
                 os.remove(filepath)
                 return True
         except Exception:
