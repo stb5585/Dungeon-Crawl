@@ -127,7 +127,7 @@ class EventBus:
     def __init__(self, max_history: int = 1000):
         self._subscribers: dict[EventType, list[Callable]] = {}
         self._history: list[GameEvent] = []
-        self._max_history: int = max_history
+        self._max_history: int = max(0, max_history)
         self._enabled: bool = True
     
     def subscribe(self, event_type: EventType, callback: Callable[[GameEvent], None]) -> None:
@@ -168,9 +168,10 @@ class EventBus:
             return
         
         # Store in history (bounded)
-        self._history.append(event)
-        if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+        if self._max_history > 0:
+            self._history.append(event)
+            if len(self._history) > self._max_history:
+                self._history = self._history[-self._max_history:]
         
         # Notify subscribers
         if event.type in self._subscribers:

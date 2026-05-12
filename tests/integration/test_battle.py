@@ -725,6 +725,26 @@ class TestBattleLogger:
         assert payload["metadata"]["boss"] is True
         assert payload["summary"]["winner"] == "Slime"
 
+    def test_export_json_file_writes_payload_to_parent_directory(self, tmp_path):
+        from src.core.combat.battle_logger import BattleLogger
+        from tests.test_framework import TestGameState
+
+        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
+        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        enemy.enemy_typ = "TestEnemy"
+
+        logger = BattleLogger()
+        logger.start_battle(player, enemy, initiative=True, boss=False)
+        logger.log_event("Attack", actor=player, target=enemy, damage=8)
+        logger.end_battle(result="victory", winner=player.name, boss=False)
+
+        output_path = logger.export_json_file(tmp_path / "logs" / "battle.json")
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+        assert output_path.name == "battle.json"
+        assert payload["metadata"]["player"]["name"] == "Hero"
+        assert payload["summary"]["total_damage_logged"] == 8
+
     def test_build_summary_counts_event_types_and_ignores_negative_damage(self):
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
@@ -907,6 +927,20 @@ class TestEventBus:
         assert len(history) == 2
         assert [event.type for event in history] == [EventType.DEFEND, EventType.ATTACK]
         assert [event.data["turn"] for event in bus.get_history(EventType.ATTACK)] == [3]
+
+    def test_zero_max_history_disables_history_storage_but_not_callbacks(self):
+        from src.core.events.event_bus import EventBus, EventType
+
+        bus = EventBus(max_history=0)
+        received = []
+        bus.subscribe(EventType.ATTACK, lambda event: received.append(event.data["turn"]))
+
+        bus.emit_simple(EventType.ATTACK, {"turn": 1})
+        bus.emit_simple(EventType.ATTACK, {"turn": 2})
+
+        assert received == [1, 2]
+        assert bus.get_history() == []
+        assert bus.get_history(EventType.ATTACK) == []
 
     def test_disable_prevents_callbacks_and_history_growth(self):
         from src.core.events.event_bus import EventBus, EventType

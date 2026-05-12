@@ -9,6 +9,7 @@ import datetime
 import json
 from collections import Counter
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -163,6 +164,13 @@ class BattleLogger:
     def export_json(self, *, indent: int = 2) -> str:
         """Export the structured combat record as JSON text."""
         return json.dumps(self.export_payload(), indent=indent, sort_keys=True)
+
+    def export_json_file(self, path: str | Path, *, indent: int = 2) -> Path:
+        """Write the structured combat record as UTF-8 JSON and return its path."""
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(self.export_json(indent=indent), encoding="utf-8")
+        return output_path
 
     def export(self) -> list:
         """
