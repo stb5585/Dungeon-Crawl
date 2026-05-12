@@ -13,7 +13,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.ui_pygame.gui import combat_view
-from src.ui_pygame.gui.status_icons import combine_duplicate_status_icons, prioritize_status_icons
+from src.ui_pygame.gui.status_icons import (
+    combine_duplicate_status_icons,
+    fit_status_icon_label,
+    prioritize_status_icons,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -534,6 +538,14 @@ def test_status_icon_priority_uses_counts_as_stable_tie_breaker():
         ("MSH", True),
         ("ATK", True),
     ]
+
+
+def test_status_icon_label_fitting_handles_zero_width_pills():
+    font = RecordingFont()
+
+    assert fit_status_icon_label(font, "BRG", 0) == "."
+    assert fit_status_icon_label(font, "+12", -1) == "+"
+    assert fit_status_icon_label(font, "BRG", 999) == "BRG"
 
 
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):

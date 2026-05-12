@@ -16,6 +16,8 @@
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
+- [ ] Resize the game window or view a crowded combat overlay.
+  - Expected: Status icon labels remain clipped to the icon pill instead of spilling into neighboring UI.
 
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.

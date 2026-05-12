@@ -112,7 +112,7 @@ def fit_status_icon_label(font, label: str, max_width: int) -> str:
         return len(value) * 8
 
     if max_width <= 0:
-        return label
+        return "+" if label.startswith("+") else "."
     if measured_width(label) <= max_width:
         return label
     if label.startswith("+"):

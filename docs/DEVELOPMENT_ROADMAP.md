@@ -604,6 +604,7 @@ Current progress:
 - Extracted a core gameplay-stat summary helper so pygame statistics and tests share normalized derived counters
 - Added panel-scoped renderer surface-slot override diagnostics for focused side-corridor and door debugging
 - Hardened SaveManager filename handling for blank names and made save deletion explicitly file-only
+- Hardened combat status-icon label fitting for zero-width and overflow marker edge cases
 
 Current stabilization priorities:
 
@@ -786,6 +787,7 @@ Primary workstreams:
   - completed: urgent negative status icons now receive a stronger alert color in both combat status displays
   - completed: compact status-icon labels now trim to fit their pills
   - completed: counted status-icon labels now use stable count-aware ordering inside the existing priority buckets
+  - completed: status-icon fitting now handles zero-width pills and overflow markers without returning oversized labels
   - completed: combat selection overlays now fit long labels by rendered pixel width
   - completed: combat turn-indicator subtitles now fit long names inside the banner
   - completed: telegraph-like combat log lines use warning coloring in both combat render modes
