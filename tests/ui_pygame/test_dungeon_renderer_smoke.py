@@ -530,6 +530,56 @@ def test_texture_library_reports_scene_surface_slot_overrides():
     assert textures.has_any_surface_slot_overrides() is False
 
 
+def test_texture_library_ignores_invalid_surface_slot_overrides():
+    pygame.init()
+    textures = TextureLibrary()
+    baseline_floor = textures.get_panel_texture("d2:right_corridor_outer_floor", "floor")
+    baseline_ceiling = textures.get_panel_texture("d2:center_ceiling", "ceiling")
+    baseline_wall = textures.get_panel_texture("d1:right_wall", "wall")
+
+    textures.set_surface_slot_overrides(
+        {
+            "floor:corridor_outer:right:d2:tile": "floor_pit",
+            "ceiling:visible:d2:xp1": "missing_texture",
+            "wall:visible:d1:right:right:near": "floor_funhouse",
+            "enemy:visible:d1:center": "wall",
+        }
+    )
+    overrides = textures.get_surface_slot_overrides()
+
+    assert overrides == {
+        "floor:corridor_outer:right:d2:tile": "floor_pit",
+        "wall:visible:d1:right:right:near": "floor_funhouse",
+    }
+    assert textures.has_floor_slot_override("d2:right_corridor_outer_floor") is True
+    assert textures.has_ceiling_slot_override("d2:center_ceiling") is False
+    assert textures.has_wall_slot_override("d1:right_wall") is True
+    assert pygame.image.tostring(
+        textures.get_panel_texture("d2:right_corridor_outer_floor", "floor"),
+        "RGBA",
+    ) != pygame.image.tostring(baseline_floor, "RGBA")
+    assert pygame.image.tostring(
+        textures.get_panel_texture("d2:center_ceiling", "ceiling"),
+        "RGBA",
+    ) == pygame.image.tostring(baseline_ceiling, "RGBA")
+    assert pygame.image.tostring(
+        textures.get_panel_texture("d1:right_wall", "wall"),
+        "RGBA",
+    ) != pygame.image.tostring(baseline_wall, "RGBA")
+
+    textures.clear_surface_slot_overrides()
+    textures.set_scene_surface_slot_overrides(
+        {
+            "wall:visible:d1:center": "not_a_texture",
+            "ceiling:visible:d2:x0": "ceiling_pit",
+        }
+    )
+
+    assert textures.get_surface_slot_overrides() == {"ceiling:visible:d2:x0": "ceiling_pit"}
+
+    pygame.quit()
+
+
 def test_scene_renderer_can_disable_darkness_via_env():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))

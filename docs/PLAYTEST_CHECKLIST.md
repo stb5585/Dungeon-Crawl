@@ -5,6 +5,8 @@
 ### Dungeon Rendering
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
+- [ ] Revisit a room after moving through side corridors and backtracking.
+  - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.

@@ -353,6 +353,8 @@ class TextureLibrary:
         return self.get_surface_slot_overrides()
 
     def set_surface_slot_override(self, slot_id: str, texture_key: str) -> None:
+        if not self._is_valid_surface_slot_override(slot_id, texture_key):
+            return
         self._manual_surface_slot_overrides[slot_id] = texture_key
         self._bump_surface_slot_revision()
 
@@ -366,15 +368,17 @@ class TextureLibrary:
         self.set_surface_slot_override(slot_id, texture_key)
 
     def set_surface_slot_overrides(self, overrides: dict[str, str]) -> None:
-        if overrides == self._manual_surface_slot_overrides:
+        filtered = self._filter_surface_slot_overrides(overrides)
+        if filtered == self._manual_surface_slot_overrides:
             return
-        self._manual_surface_slot_overrides = dict(overrides)
+        self._manual_surface_slot_overrides = filtered
         self._bump_surface_slot_revision()
 
     def set_scene_surface_slot_overrides(self, overrides: dict[str, str]) -> None:
-        if overrides == self._scene_surface_slot_overrides:
+        filtered = self._filter_surface_slot_overrides(overrides)
+        if filtered == self._scene_surface_slot_overrides:
             return
-        self._scene_surface_slot_overrides = dict(overrides)
+        self._scene_surface_slot_overrides = filtered
         self._bump_surface_slot_revision()
 
     def set_floor_slot_overrides(self, overrides: dict[str, str]) -> None:
@@ -404,6 +408,23 @@ class TextureLibrary:
     def _bump_surface_slot_revision(self) -> None:
         self._surface_slot_revision += 1
         self._panel_texture_cache.clear()
+
+    @staticmethod
+    def _is_valid_surface_slot_override(slot_id: object, texture_key: object) -> bool:
+        return (
+            isinstance(slot_id, str)
+            and slot_id.startswith(("floor:", "ceiling:", "wall:"))
+            and isinstance(texture_key, str)
+            and texture_key in TEXTURE_PATHS
+        )
+
+    @classmethod
+    def _filter_surface_slot_overrides(cls, overrides: dict[str, str]) -> dict[str, str]:
+        return {
+            slot_id: texture_key
+            for slot_id, texture_key in overrides.items()
+            if cls._is_valid_surface_slot_override(slot_id, texture_key)
+        }
 
     def _get_surface_panel_override_signature(self, panel_id: str, texture_key: str):
         plan = self._get_surface_panel_plan(panel_id, texture_key)

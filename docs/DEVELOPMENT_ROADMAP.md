@@ -598,6 +598,7 @@ Current progress:
 - Hardened tile-state restore against malformed per-tile payloads
 - Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
 - Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
+- Hardened renderer surface-slot overrides so invalid debug/test entries are ignored while valid neighboring floor, ceiling, and wall overrides still apply
 
 Current stabilization priorities:
 
@@ -614,6 +615,7 @@ Current stabilization priorities:
   - continue floor-bound placement polish for future props beyond the completed defeated-boss replacement visual
 - Asset fallback visibility
   - use the texture-library fallback diagnostics when renderer tests or manual play hit missing assets
+  - invalid renderer surface-slot override entries are filtered before they can affect panel composition
 
 Current non-visual Phase 1 track:
 
