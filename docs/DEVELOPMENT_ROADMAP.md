@@ -207,6 +207,7 @@ Completed outcomes:
 - Usable for regression checks and balance comparisons
 - Supports the balance workflow described in the roadmap
 - Balance reports can now export structured JSON payloads and files for debug/tooling workflows
+- Balance reports can now export compact summary payloads for lightweight dashboards without raw per-battle results
 
 Metric note:
 
@@ -596,6 +597,7 @@ Current progress:
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
 - Hardened tile-state restore against malformed per-tile payloads
 - Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
+- Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
 
 Current stabilization priorities:
 

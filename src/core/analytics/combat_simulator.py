@@ -177,6 +177,25 @@ class BalanceReport:
             "results": [result.__dict__.copy() for result in self.results],
         }
 
+    def summary_payload(self, *, ability_limit: int = 5, status_limit: int = 5) -> dict:
+        """Export compact report metrics for dashboards and quick balance checks."""
+        status_frequency = self.get_status_effect_frequency()
+        return {
+            "total_battles": self.total_battles,
+            "average_turns": self.average_turns,
+            "median_turns": self.median_turns,
+            "close_fight_rate": self.close_fight_rate,
+            "stomp_rate": self.stomp_rate,
+            "win_rates": dict(self.win_rates),
+            "most_used_abilities": self.get_most_used_abilities(max(0, ability_limit)),
+            "most_common_status_effects": sorted(
+                status_frequency.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )[:max(0, status_limit)],
+            "outliers": self.identify_outliers(),
+        }
+
     def export_json(self, *, indent: int = 2) -> str:
         """Export the balance report as JSON text."""
         return json.dumps(self.export_payload(), indent=indent, sort_keys=True)

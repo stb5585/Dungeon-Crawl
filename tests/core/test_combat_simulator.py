@@ -153,6 +153,43 @@ def test_balance_report_exports_payload_json_and_file(tmp_path):
     assert saved_payload["median_turns"] == 4
 
 
+def test_balance_report_summary_payload_is_compact_and_limited():
+    from src.core.analytics.combat_simulator import BalanceReport
+
+    report = BalanceReport(
+        total_battles=2,
+        results=[
+            _make_stat(
+                winner_class="Warrior",
+                loser_class="Mage",
+                turns=4,
+                abilities={"Attack": 2, "Slash": 1},
+                statuses={"Bleed": 3},
+            ),
+            _make_stat(
+                winner_class="Mage",
+                loser_class="Warrior",
+                turns=6,
+                abilities={"Fireball": 4, "Attack": 1},
+                statuses={"Burn": 2, "Bleed": 1},
+            ),
+        ],
+    )
+
+    payload = report.summary_payload(ability_limit=2, status_limit=1)
+
+    assert "results" not in payload
+    assert "ability_usage" not in payload
+    assert "status_effect_frequency" not in payload
+    assert payload["total_battles"] == 2
+    assert payload["win_rates"] == {"Warrior": 50.0, "Mage": 50.0}
+    assert payload["most_used_abilities"] == [("Fireball", 4), ("Attack", 3)]
+    assert payload["most_common_status_effects"] == [("Bleed", 4)]
+    empty_payload = report.summary_payload(ability_limit=-1, status_limit=-1)
+    assert empty_payload["most_used_abilities"] == []
+    assert empty_payload["most_common_status_effects"] == []
+
+
 def test_balance_report_identifies_manual_outliers_and_summary_mentions_sections(monkeypatch):
     from src.core.analytics.combat_simulator import BalanceReport
 
