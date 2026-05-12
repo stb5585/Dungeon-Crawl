@@ -170,6 +170,13 @@ class TextureLibrary:
         """Return missing or failed asset paths that are using fallback behavior."""
         return dict(self._asset_fallbacks)
 
+    def get_projected_cache_stats(self) -> dict[str, int]:
+        """Return projected-surface cache stats for renderer diagnostics."""
+        return {
+            "size": len(self._projected_cache),
+            "limit": self._projected_cache_limit,
+        }
+
     def _record_asset_fallback(self, category: str, texture_key: str, path: str | os.PathLike[str]) -> None:
         self._asset_fallbacks[f"{category}:{texture_key}"] = str(path)
 

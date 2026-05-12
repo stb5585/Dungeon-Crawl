@@ -307,6 +307,8 @@ def test_texture_library_limits_projected_surface_cache():
     textures = TextureLibrary(projected_cache_limit=2)
     quad = Quad(((0.0, 0.0), (64.0, 0.0), (64.0, 64.0), (0.0, 64.0)))
 
+    assert textures.get_projected_cache_stats() == {"size": 0, "limit": 2}
+
     for width in (128, 129, 130):
         textures.get_projected_surface(
             panel_id="d1:center_floor",
@@ -317,6 +319,7 @@ def test_texture_library_limits_projected_surface_cache():
         )
 
     assert len(textures._projected_cache) == 2
+    assert textures.get_projected_cache_stats() == {"size": 2, "limit": 2}
     assert all(cache_key[0] != (128, 128) for cache_key in textures._projected_cache)
 
     pygame.quit()

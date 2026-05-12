@@ -610,6 +610,7 @@ Current progress:
 - Hardened SaveManager loading so directory-like save entries are treated as missing files
 - Hardened level-up and stat-selection popup background fallback when providers return the live screen or no surface
 - Added compact EventBus history counts for debug/test checks without walking raw event lists
+- Added projected-surface cache diagnostics for renderer smoke tests and debugging
 
 Current stabilization priorities:
 
@@ -629,6 +630,7 @@ Current stabilization priorities:
   - invalid renderer surface-slot override entries are filtered before they can affect panel composition
   - panel-scoped surface-slot override diagnostics are available for focused renderer smoke tests
   - panel diagnostics now include default and effective texture keys for each surface slot
+  - projected-surface cache diagnostics expose current size and configured limit
 
 Current non-visual Phase 1 track:
 

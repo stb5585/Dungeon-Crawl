@@ -10,6 +10,8 @@
 - [ ] Enable renderer surface-slot debugging while checking a side corridor.
   - Expected: Debug overlay information corresponds to the visible panel being inspected.
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
+- [ ] Run renderer diagnostics after moving through several dungeon views.
+  - Expected: Projected-surface cache diagnostics report a bounded cache size.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.
