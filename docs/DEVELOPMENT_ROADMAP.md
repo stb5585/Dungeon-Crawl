@@ -608,6 +608,7 @@ Current progress:
 - Added compact BattleLogger summary payloads for debug views that do not need raw per-event rows
 - Extended renderer panel diagnostics to report default and effective texture keys per surface slot
 - Hardened SaveManager loading so directory-like save entries are treated as missing files
+- Hardened level-up and stat-selection popup background fallback when providers return the live screen or no surface
 
 Current stabilization priorities:
 
@@ -834,6 +835,7 @@ Primary workstreams:
   - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
   - completed: top-level pygame cleanup clears presenter background providers during shutdown
   - completed: presenter popup-background fallback clears broken or empty providers after fallback
+  - completed: level-up popup helpers fall back to screen copies when providers return empty or live-screen surfaces
   - standardize background-provider usage so popups inherit the correct view consistently
   - keep cached-view logic correct across resolution changes, area transitions, and combat entry/exit
   - remove duplicated or per-screen redraw logic where a shared approach is sufficient

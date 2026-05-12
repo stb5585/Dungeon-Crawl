@@ -108,6 +108,10 @@ def test_level_up_popup_prepares_draws_and_shows(monkeypatch):
 
     presenter.get_background_surface = lambda: "bg-surface"
     assert popup._get_background_surface() == "bg-surface"
+    presenter.get_background_surface = lambda: None
+    assert popup._get_background_surface() == "screen-copy"
+    presenter.get_background_surface = lambda: presenter.screen
+    assert popup._get_background_surface() == "screen-copy"
     presenter.get_background_surface = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
     assert popup._get_background_surface() == "screen-copy"
 
@@ -160,6 +164,10 @@ def test_stat_selection_popup_draws_and_selects(monkeypatch):
 
     presenter.get_background_surface = lambda: "bg-surface"
     assert popup._get_background_surface() == "bg-surface"
+    presenter.get_background_surface = lambda: None
+    assert popup._get_background_surface() == "screen-copy"
+    presenter.get_background_surface = lambda: presenter.screen
+    assert popup._get_background_surface() == "screen-copy"
     presenter.get_background_surface = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
     assert popup._get_background_surface() == "screen-copy"
 

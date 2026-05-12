@@ -135,7 +135,7 @@ class LevelUpPopup:
         if hasattr(self.presenter, "get_background_surface"):
             try:
                 surface = self.presenter.get_background_surface()
-                if surface is not None:
+                if surface is not None and surface is not self.screen:
                     return surface
             except Exception:
                 pass
