@@ -156,6 +156,22 @@ class BattleLogger:
         """Return compact event counts by target character."""
         return dict(Counter(event["target"] for event in self.events if event.get("target")))
 
+    def get_damage_by_actor(self) -> dict[str, int]:
+        """Return positive logged damage totals grouped by acting character."""
+        damage = Counter()
+        for event in self.events:
+            if event.get("actor") and isinstance(event.get("damage"), int):
+                damage[event["actor"]] += max(0, event["damage"])
+        return dict(damage)
+
+    def get_damage_by_target(self) -> dict[str, int]:
+        """Return positive logged damage totals grouped by target character."""
+        damage = Counter()
+        for event in self.events:
+            if event.get("target") and isinstance(event.get("damage"), int):
+                damage[event["target"]] += max(0, event["damage"])
+        return dict(damage)
+
     def build_summary(self) -> dict:
         """Create a compact battle summary for debugging and analysis."""
         damage_events = [event for event in self.events if isinstance(event.get("damage"), int)]
@@ -168,6 +184,8 @@ class BattleLogger:
             "flag_counts": self.get_flag_counts(),
             "actor_counts": self.get_actor_counts(),
             "target_counts": self.get_target_counts(),
+            "damage_by_actor": self.get_damage_by_actor(),
+            "damage_by_target": self.get_damage_by_target(),
             "total_damage_logged": total_damage,
             "max_damage_logged": max((event["damage"] for event in damage_events), default=0),
             "result": self.metadata.get("result"),

@@ -769,12 +769,16 @@ class TestBattleLogger:
         assert summary["flag_counts"] == {"critical": 1, "miss": 1, "dodge": 1}
         assert summary["actor_counts"] == {"Hero": 2, "Slime": 1}
         assert summary["target_counts"] == {"Slime": 2, "Hero": 1}
+        assert summary["damage_by_actor"] == {"Hero": 10, "Slime": 0}
+        assert summary["damage_by_target"] == {"Slime": 10, "Hero": 0}
         assert summary["total_damage_logged"] == 10
         assert summary["max_damage_logged"] == 10
         assert logger.get_event_type_counts() == {"Attack": 2, "Spell": 1}
         assert logger.get_flag_counts() == {"critical": 1, "miss": 1, "dodge": 1}
         assert logger.get_actor_counts() == {"Hero": 2, "Slime": 1}
         assert logger.get_target_counts() == {"Slime": 2, "Hero": 1}
+        assert logger.get_damage_by_actor() == {"Hero": 10, "Slime": 0}
+        assert logger.get_damage_by_target() == {"Slime": 10, "Hero": 0}
 
     def test_summary_payload_omits_raw_events_for_compact_debug_views(self):
         from src.core.combat.battle_logger import BattleLogger
@@ -801,6 +805,8 @@ class TestBattleLogger:
         assert payload["summary"]["flag_counts"] == {"critical": 2}
         assert payload["summary"]["actor_counts"] == {"Hero": 2}
         assert payload["summary"]["target_counts"] == {"Slime": 2}
+        assert payload["summary"]["damage_by_actor"] == {"Hero": 14}
+        assert payload["summary"]["damage_by_target"] == {"Slime": 14}
         assert payload["summary"]["total_damage_logged"] == 14
 
     def test_serialize_value_handles_dataclasses_collections_and_objects(self):

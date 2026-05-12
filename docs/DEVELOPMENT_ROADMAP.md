@@ -630,6 +630,7 @@ Current progress:
 - Extended combat status-icon layout diagnostics with capacity and rendered row counts for dense status rows
 - Added default sound/music asset diagnostics for the runtime's expected SFX and music names
 - Added visible-save metadata summaries for count, total size, and largest player-visible save diagnostics
+- Added BattleLogger positive damage attribution by actor and target to compact battle summaries
 
 Current stabilization priorities:
 
@@ -686,6 +687,7 @@ Current non-visual Phase 1 track:
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis
   - completed: battle logger compact summaries now expose event-type and flag counts without raw event rows
   - completed: battle logger compact summaries now expose actor and target counts for quick turn-flow sanity checks
+  - completed: battle logger compact summaries now expose positive damage totals by actor and target
   - remaining: decide whether game/debug flows should automatically persist these logs
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
