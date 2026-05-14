@@ -657,7 +657,12 @@ def test_texture_library_describes_panel_surface_slot_overrides():
 
 def test_texture_library_describes_panel_surface_slot_state():
     textures = TextureLibrary()
-    textures.set_scene_surface_slot_overrides({"floor:visible:d2:x0": "floor_pit"})
+    textures.set_scene_surface_slot_overrides(
+        {
+            "floor:visible:d2:x0": "floor_pit",
+            "floor:visible:d2:xp1": "floor_pit",
+        }
+    )
     textures.set_floor_slot_override("floor:visible:d2:xp1", "floor_fire")
 
     state = textures.describe_panel_surface_slot_state("d2:center_floor", "floor")
@@ -667,15 +672,18 @@ def test_texture_library_describes_panel_surface_slot_state():
         "default_texture_key": "floor",
         "texture_key": "floor_pit",
         "overridden": True,
+        "override_source": "scene",
     }
     assert state[3] == {
         "slot_id": "floor:visible:d2:xp1",
         "default_texture_key": "floor",
         "texture_key": "floor_fire",
         "overridden": True,
+        "override_source": "manual",
     }
     assert state[0]["texture_key"] == "floor"
     assert state[0]["overridden"] is False
+    assert state[0]["override_source"] == "none"
     assert textures.describe_panel_surface_slot_state("unknown_panel", "floor") == ()
 
 

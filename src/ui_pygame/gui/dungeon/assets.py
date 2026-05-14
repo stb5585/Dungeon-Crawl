@@ -418,17 +418,28 @@ class TextureLibrary:
         panel_id: str,
         texture_key: str | None = None,
     ) -> tuple[dict[str, str | bool], ...]:
-        """Return default/effective texture keys for each slot in a projected panel."""
+        """Return default/effective texture keys and override sources for one panel."""
         plan = self._get_surface_panel_plan(panel_id, texture_key=texture_key)
         if plan is None:
             return ()
-        overrides = self.get_surface_slot_overrides()
+
+        def get_override_source(slot_id: str) -> str:
+            if slot_id in self._manual_surface_slot_overrides:
+                return "manual"
+            if slot_id in self._scene_surface_slot_overrides:
+                return "scene"
+            return "none"
+
         return tuple(
             {
                 "slot_id": slot_id,
                 "default_texture_key": default_texture_key,
-                "texture_key": overrides.get(slot_id, default_texture_key),
-                "overridden": slot_id in overrides,
+                "texture_key": self._manual_surface_slot_overrides.get(
+                    slot_id,
+                    self._scene_surface_slot_overrides.get(slot_id, default_texture_key),
+                ),
+                "overridden": get_override_source(slot_id) != "none",
+                "override_source": get_override_source(slot_id),
             }
             for slot_id, default_texture_key in zip(plan.slot_ids, plan.slot_texture_keys)
         )

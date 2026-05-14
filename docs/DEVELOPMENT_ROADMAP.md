@@ -607,6 +607,7 @@ Current progress:
 - SaveManager now exposes compact save-directory diagnostics for visible saves, temporary leftovers, directory-like save entries, and ignored files.
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
+- Extended panel surface-slot state diagnostics to label each slot as default, scene-overridden, or manually overridden
 - Hardened tile-state restore against malformed per-tile payloads
 - Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
 - Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
