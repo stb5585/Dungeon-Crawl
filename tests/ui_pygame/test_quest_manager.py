@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from types import SimpleNamespace
 
+from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
 
 
@@ -114,6 +116,16 @@ def _make_player(level=12):
 
 def _manager(player=None, **kwargs):
     return quest_manager.QuestManager(_make_presenter(), player or _make_player(), **kwargs)
+
+
+def _content_quest(giver: str, category: str, quest_name: str) -> dict:
+    for quest_by_level in get_quests()[giver][category].values():
+        if quest_name in quest_by_level:
+            quest_data = deepcopy(quest_by_level[quest_name])
+            quest_data["Completed"] = True
+            quest_data["Turned In"] = False
+            return quest_data
+    raise AssertionError(f"Missing quest fixture: {giver} {category} {quest_name}")
 
 
 def test_formatting_and_chalice_hint_helpers(monkeypatch):
@@ -295,6 +307,25 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
     assert beef["Who"] == "Busboy"
     assert "help feed a lot of people" in beef["End Text"]
     assert any("Busboy event line 1" in text for text in rendered)
+
+
+def test_content_old_key_rewards_turn_in_through_pygame_manager(monkeypatch):
+    player = _make_player()
+    player.quest_dict["Main"]["The Butcher"] = _content_quest("Barkeep", "Main", "The Butcher")
+    player.quest_dict["Main"]["A Bad Dream"] = _content_quest("Waitress", "Main", "A Bad Dream")
+    rendered = []
+    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text))
+    monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
+    monkeypatch.setattr(manager, "_handle_quest_events", lambda _quest_name: None)
+
+    manager._turn_in("The Butcher", "Main")
+    manager._turn_in("A Bad Dream", "Main")
+
+    assert [call[0] for call in player.inventory_calls].count("Old Key") == 5
+    assert any("Reward: Old Key x2" in text for text in rendered)
+    assert any("Reward: Old Key x3" in text for text in rendered)
+    assert player.quest_dict["Main"]["The Butcher"]["Turned In"] is True
+    assert player.quest_dict["Main"]["A Bad Dream"]["Turned In"] is True
 
 
 def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):

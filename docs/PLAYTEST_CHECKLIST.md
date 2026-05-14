@@ -62,9 +62,11 @@
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.
   - Expected: The reward message grants 2 Old Keys.
   - Expected: The inventory shows 2 more Old Keys than before turn-in.
+  - Expected: The quest-manager turn-in path records the quest as turned in after granting the keys.
 - [ ] Turn in "A Bad Dream" after locating Joffrey.
   - Expected: The reward message grants 3 Old Keys.
   - Expected: The inventory shows 3 more Old Keys than before turn-in.
+  - Expected: The quest-manager turn-in path records the quest as turned in after granting the keys.
 
 ## Regression Areas
 
@@ -78,6 +80,7 @@
 ### Save/Load
 - [ ] Save after receiving Old Keys, quit, and reload.
   - Expected: The Old Key count persists.
+  - Expected: Multi-key quest rewards survive a SaveManager round trip.
 - [ ] Open the Load Game menu after a failed or interrupted save attempt.
   - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
 - [ ] Attempt to delete or load invalid save entries such as blank names or folder-like entries.

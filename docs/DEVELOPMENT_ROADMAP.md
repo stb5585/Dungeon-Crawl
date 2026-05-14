@@ -592,6 +592,8 @@ Current progress:
 - Tightened combat turn-indicator name fitting for long player/enemy names
 - Added right-side outer depth-3 floor-special smoke coverage
 - Increased Old Key quest rewards for early/main quest turn-ins and added loader-level regression coverage for the new reward counts
+- Added pygame quest-manager turn-in regression coverage for the Old Key rewards and their turned-in state
+- Added SaveManager round-trip regression coverage for Old Key inventory counts
 - Tightened the analytics quick-balance helper so it returns an explicit empty `BalanceReport` instead of falling through as `None`
 - Added BattleLogger JSON file export support for debugger/tooling workflows
 - Hardened EventBus bounded history so `max_history=0` disables history storage without disabling subscribers

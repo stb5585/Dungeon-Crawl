@@ -178,6 +178,24 @@ def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):
     assert SaveManager.load_player("hero.save", skip_tiles=True) is None
 
 
+def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+
+    player = TestGameState.create_player(name="KeySaver", class_name="Warrior", race_name="Human", level=10)
+    player.inventory = {"Old Key": [items.OldKey() for _ in range(5)]}
+
+    assert SaveManager.save_player(player, "keys.save") is True
+    restored = SaveManager.load_player("keys.save", skip_tiles=True)
+
+    assert restored is not None
+    assert "Old Key" in restored.inventory
+    assert len(restored.inventory["Old Key"]) == 5
+    assert all(item.name == "Old Key" for item in restored.inventory["Old Key"])
+
+
 def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"
