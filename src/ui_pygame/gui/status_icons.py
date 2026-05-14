@@ -45,6 +45,36 @@ def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:
     return (label, extra > 0)
 
 
+def describe_stat_effect_icon_filtering(stat_effects, labeler=None) -> dict[str, object]:
+    """Return diagnostics for stat effects hidden before icon layout."""
+    if labeler is None:
+        labeler = lambda name: str(name)[:3].upper()
+
+    active_labels: list[str] = []
+    emitted_labels: list[str] = []
+    skipped_zero_labels: list[str] = []
+
+    for name, effect in stat_effects.items():
+        label = labeler(name)
+        if not getattr(effect, "active", False):
+            continue
+        active_labels.append(label)
+        icon = stat_effect_status_icon(label, effect)
+        if icon is None:
+            skipped_zero_labels.append(label)
+        else:
+            emitted_labels.append(icon[0])
+
+    return {
+        "active_stat_effect_count": len(active_labels),
+        "emitted_stat_icon_count": len(emitted_labels),
+        "skipped_zero_stat_icon_count": len(skipped_zero_labels),
+        "active_stat_effect_labels": tuple(active_labels),
+        "emitted_stat_icon_labels": tuple(emitted_labels),
+        "skipped_zero_stat_icon_labels": tuple(skipped_zero_labels),
+    }
+
+
 def _split_counted_label(label: str) -> tuple[str, int]:
     stripped = label.rstrip("0123456789")
     if not stripped:

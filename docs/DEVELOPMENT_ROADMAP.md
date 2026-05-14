@@ -603,6 +603,7 @@ Current progress:
 - Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
 - Suppressed zero-value Enfeeble/stat-effect reporting and stale zero-value combat status icons so no-change debuffs do not read as positive buffs.
 - Centralized zero-value stat-effect icon filtering so combat view and dungeon HUD share the same no-op suppression rule.
+- Added stat-effect icon filtering diagnostics so zero-value suppressed status effects can be audited without rendering combat.
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Gameplay-stat normalization now clamps negative legacy/manual counter values before derived statistics are displayed.

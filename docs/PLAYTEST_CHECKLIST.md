@@ -36,6 +36,7 @@
   - Expected: Overflow state and hidden urgent-status count make it clear whether high-priority effects were hidden.
   - Expected: Positive, negative, and neutral visible/hidden counts match the rendered icon mix.
   - Expected: Visible/hidden label lists identify exactly which status pills were shown or compacted.
+  - Expected: Stat-effect icon filtering diagnostics identify active zero-value effects that were suppressed before rendering.
 
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.

@@ -9,6 +9,7 @@ from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
     compact_status_icons,
+    describe_stat_effect_icon_filtering,
     describe_status_icon_layout,
     fit_status_icon_label,
     is_urgent_status_icon,
@@ -92,6 +93,24 @@ def test_stat_effect_status_icon_skips_inactive_and_zero_value_changes():
     assert stat_effect_status_icon("ATK", SimpleNamespace(active=True, extra=3)) == ("ATK", True)
     assert stat_effect_status_icon("DEF", SimpleNamespace(active=True, extra=-2)) == ("DEF", False)
     assert stat_effect_status_icon("MYS", SimpleNamespace(active=True)) is None
+
+
+def test_describe_stat_effect_icon_filtering_reports_skipped_zero_changes():
+    stat_effects = {
+        "Attack": SimpleNamespace(active=True, extra=0),
+        "Defense": SimpleNamespace(active=True, extra=-2),
+        "Magic": SimpleNamespace(active=True, extra=3),
+        "Speed": SimpleNamespace(active=False, extra=4),
+    }
+
+    assert describe_stat_effect_icon_filtering(stat_effects) == {
+        "active_stat_effect_count": 3,
+        "emitted_stat_icon_count": 2,
+        "skipped_zero_stat_icon_count": 1,
+        "active_stat_effect_labels": ("ATT", "DEF", "MAG"),
+        "emitted_stat_icon_labels": ("DEF", "MAG"),
+        "skipped_zero_stat_icon_labels": ("ATT",),
+    }
 
 
 def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
