@@ -225,7 +225,6 @@ def test_empty_key_items_notice_uses_stale_input_guard(monkeypatch):
 
     event_batches = iter([
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [pygame.event.Event(pygame.KEYUP, key=pygame.K_RETURN)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
         [pygame.event.Event(pygame.KEYUP, key=pygame.K_ESCAPE)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
@@ -233,12 +232,30 @@ def test_empty_key_items_notice_uses_stale_input_guard(monkeypatch):
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.clear", lambda: clear_calls.append(True))
+    pressed_states = iter([[1], [], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
     assert popup_kwargs == [{"flush_events": True, "require_key_release": True}]
     assert clear_calls == [True]
+
+
+def test_character_navigation_guard_accepts_fresh_key_without_keyup(monkeypatch):
+    presenter = _make_presenter()
+    screen = character_screen.CharacterScreen(presenter)
+    player = _make_player()
+    player.in_town = lambda: True
+    screen.current_selection = 3
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_screen.pygame.event.get",
+        lambda: [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+    )
+
+    assert screen.navigate(player, flush_events=True, require_key_release=True) == "Exit Menu"
 
 
 def test_character_submenus_use_stale_input_guard(monkeypatch):

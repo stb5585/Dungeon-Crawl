@@ -17,6 +17,7 @@ from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import Player
 from .combat_view import CombatView
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .level_up import LevelUpScreen
 
 if TYPE_CHECKING:
@@ -81,14 +82,11 @@ class GUICombatManager:
 
     def _clear_pending_input(self) -> bool:
         """Clear buffered events and require a fresh key release before selection input."""
-        pygame.event.clear()
-        return False
+        return prepare_guarded_input(flush_events=True, require_key_release=True)
 
     @staticmethod
     def _arm_guarded_input(event, input_armed: bool) -> bool:
-        if event.type == pygame.KEYUP:
-            return True
-        return input_armed
+        return update_input_armed_from_event(event, True, input_armed)
 
     @staticmethod
     def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
@@ -408,6 +406,7 @@ class GUICombatManager:
             self._render_combat_frame(player_char, enemy, actions, selected_action)
             
             # Handle input
+            input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -652,6 +651,7 @@ class GUICombatManager:
             self._render_selection_menu("Select Totem Aspect", options, selected)
             pygame.display.flip()
 
+            input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -699,6 +699,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Handle input
+            input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -754,6 +755,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Handle input
+            input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -809,6 +811,7 @@ class GUICombatManager:
             pygame.display.flip()
             
             # Handle input
+            input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()

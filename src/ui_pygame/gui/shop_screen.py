@@ -10,6 +10,7 @@ from textwrap import wrap
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .town_base import TownScreenBase
 
 
@@ -359,15 +360,14 @@ class ShopScreen(TownScreenBase):
 
     @staticmethod
     def _arm_guarded_input(event, input_armed):
-        if event.type == pygame.KEYUP:
-            return True
-        return input_armed
+        return update_input_armed_from_event(event, True, input_armed)
 
     @staticmethod
     def _prepare_guarded_input(flush_events=True, require_key_release=True):
-        if flush_events:
-            pygame.event.clear()
-        return not require_key_release
+        return prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
     
     def update_item_list(self, itemdict, buy_or_sell):
         """
@@ -459,6 +459,7 @@ class ShopScreen(TownScreenBase):
         while True:
             self.draw_all()
             
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -492,6 +493,7 @@ class ShopScreen(TownScreenBase):
         while True:
             self.draw_all()
             
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()

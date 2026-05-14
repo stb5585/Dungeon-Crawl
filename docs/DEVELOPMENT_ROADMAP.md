@@ -347,6 +347,7 @@ Verification note:
 - Combat action-grid and combat submenu selectors now clear buffered input and wait for key release before accepting selection input.
 - Reusable shop-screen option and item navigation loops now clear buffered input and wait for key release before accepting selection input.
 - Top-level character-screen navigation now clears buffered input and waits for key release before accepting menu choices.
+- Combat action-grid/submenu, shop-screen, and character-screen guards now also arm from current keyboard state so a fresh first key press is not blocked when no KEYUP event is pending.
 
 ### 3. Broader Test Coverage
 
@@ -931,6 +932,7 @@ Primary workstreams:
   - completed: barracks leave messaging preserves its local background redraw while using guarded input
   - completed: reusable shop-screen option and item selectors now use the same stale-input guard
   - completed: top-level character-screen navigation now uses the same stale-input guard
+  - completed: combat, shop, and character selectors now arm from current keyboard state as well as release events
   - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
   - completed: top-level pygame cleanup clears presenter background providers during shutdown
   - completed: presenter popup-background fallback clears broken or empty providers after fallback

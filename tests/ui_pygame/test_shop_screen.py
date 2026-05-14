@@ -266,10 +266,11 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
 
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.clear", lambda: clear_calls.append(True))
+    pressed_states = iter([[1], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     option_events = iter(
         [
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         ]
@@ -280,10 +281,11 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     screen.item_list = [(f"Item {i}", DummyItem(f"Item {i}"), 10, 0) for i in range(25)]
     screen.current_item = 18
     screen.scroll_offset = 0
+    pressed_states = iter([[1], [], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     item_events = iter(
         [
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
@@ -312,3 +314,15 @@ def test_navigation_helpers_can_opt_out_of_stale_input_guard(monkeypatch):
 
     assert screen.navigate_options(flush_events=False, require_key_release=False) == "Buy"
     assert clear_calls == []
+
+
+def test_navigation_guard_accepts_fresh_key_without_keyup(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.shop_screen.pygame.event.get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    )
+
+    assert screen.navigate_options(flush_events=True, require_key_release=True) == "Buy"

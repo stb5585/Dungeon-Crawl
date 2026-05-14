@@ -52,6 +52,8 @@
   - Expected: Each popup draws over the current copied view instead of reusing a live or empty background surface.
   - Expected: Confirmation, reward, quantity, and code-entry popups all wait for the same buffered-key release rule before accepting input.
   - Expected: If no keys are currently held, the next fresh key press is accepted even if no synthetic KEYUP event arrives first.
+- [ ] Enter combat or a character/shop selector after a previous key-driven transition.
+  - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

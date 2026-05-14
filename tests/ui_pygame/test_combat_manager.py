@@ -437,9 +437,10 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Bomb": [SimpleNamespace(name="Bomb", subtyp="Throwing")],
         "Scroll": [SimpleNamespace(name="Scroll of Ice", subtyp="Scroll")],
     }
+    pressed_states = iter([[1], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -465,8 +466,8 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Fireball": SimpleNamespace(cost=4, passive=False),
         "Ice": SimpleNamespace(cost=2, passive=False),
     }
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -483,8 +484,8 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Slash": SimpleNamespace(cost=1, passive=False),
         "Jump": SimpleNamespace(cost=3, passive=False),
     }
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -504,9 +505,10 @@ def test_select_totem_aspect_ignores_stale_confirm_until_key_release(monkeypatch
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    pressed_states = iter([[1], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -681,9 +683,10 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
         companion_turn=lambda: "Fairy assists",
     )
     manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    pressed_states = iter([[1], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
@@ -694,8 +697,8 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
 
     manager.available_actions = ["Attack", "Defend", "Items"]
     actions.clear()
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_3)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
