@@ -420,6 +420,7 @@ Completed foundation work:
 - Targeted tests cover statistics defaults, persistence, and core combat hooks
 - A player-facing Statistics entry is available from the pygame town menu
 - The pygame statistics popup now includes a derived encounters-survived line and defensive formatting for missing legacy values
+- The pygame statistics popup now includes derived exploration-action and combat-survival-rate lines without adding save-format fields
 
 Remaining work:
 
@@ -700,6 +701,7 @@ Current non-visual Phase 1 track:
   - completed: show derived encounters survived and tolerate malformed legacy stat values in the popup formatter
   - completed: share derived gameplay-stat summary counters through a core helper for UI/tooling reuse
   - completed: gameplay-stat summaries now include derived combat-outcome and total-activity counters from existing save data
+  - completed: gameplay-stat summaries now include exploration-action and combat-survival-rate counters for the pygame Statistics popup
   - remaining: decide whether richer history or run-summary views are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves

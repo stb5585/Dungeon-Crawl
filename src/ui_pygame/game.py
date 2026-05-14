@@ -669,6 +669,8 @@ class PygameGame:
                 f"Flees: {summary['flees']}",
                 f"Encounters Survived: {summary['encounters_survived']}",
                 f"Combat Outcomes: {summary['combat_outcomes']}",
+                f"Combat Survival Rate: {summary['combat_survival_rate_percent']}%",
+                f"Exploration Actions: {summary['exploration_actions']}",
                 f"Total Activity: {summary['total_activity']}",
                 "",
                 f"Highest Level Reached: {summary['highest_level_reached']}",

@@ -497,6 +497,8 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert "Steps Taken: 12" in formatted
     assert "Encounters Survived: 5" in formatted
     assert "Combat Outcomes: 7" in formatted
+    assert "Combat Survival Rate: 71%" in formatted
+    assert "Exploration Actions: 15" in formatted
     assert "Total Activity: 22" in formatted
     assert "Highest Level Reached: 6" in formatted
 
@@ -514,6 +516,8 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert "Steps Taken: 0" in broken_formatted
     assert "Encounters Survived: 0" in broken_formatted
     assert "Combat Outcomes: 6" in broken_formatted
+    assert "Combat Survival Rate: 0%" in broken_formatted
+    assert "Exploration Actions: 0" in broken_formatted
     assert "Total Activity: 6" in broken_formatted
     assert "Highest Level Reached: 1" in broken_formatted
 

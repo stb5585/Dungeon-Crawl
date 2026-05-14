@@ -99,6 +99,8 @@ class TestPlayerTopLevelHelpers:
         )
         assert summary["encounters_survived"] == 5
         assert summary["combat_outcomes"] == 7
+        assert summary["combat_survival_rate_percent"] == 71
+        assert summary["exploration_actions"] == 0
         assert summary["total_activity"] == 7
         assert summary["highest_level_reached"] == 6
 

@@ -112,10 +112,15 @@ def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[st
     summary["combat_outcomes"] = (
         summary["enemies_defeated"] + summary["flees"] + summary["deaths"]
     )
+    summary["exploration_actions"] = summary["steps_taken"] + summary["stairs_used"]
     summary["total_activity"] = (
-        summary["steps_taken"]
-        + summary["stairs_used"]
+        summary["exploration_actions"]
         + summary["combat_outcomes"]
+    )
+    summary["combat_survival_rate_percent"] = (
+        0
+        if summary["combat_outcomes"] <= 0
+        else (summary["encounters_survived"] * 100) // summary["combat_outcomes"]
     )
     return summary
 
