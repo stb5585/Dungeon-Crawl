@@ -17,6 +17,7 @@ from .status_icons import (
     compact_status_icons,
     fit_status_icon_label,
     prioritize_status_icons,
+    stat_effect_status_icon,
     status_icon_color,
 )
 
@@ -340,8 +341,10 @@ class CombatView:
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), False))
         for name, effect in character.stat_effects.items():
-            if effect.active and name not in skip_effects and effect.extra != 0:
-                icons.append((self._effect_label(name), effect.extra >= 0))
+            if name not in skip_effects:
+                icon = stat_effect_status_icon(self._effect_label(name), effect)
+                if icon is not None:
+                    icons.append(icon)
         for name, effect in character.magic_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), name in positive_magic))

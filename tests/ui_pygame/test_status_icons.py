@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -11,6 +13,7 @@ from src.ui_pygame.gui.status_icons import (
     fit_status_icon_label,
     is_urgent_status_icon,
     prioritize_status_icons,
+    stat_effect_status_icon,
     status_icon_color,
     status_icon_priority,
 )
@@ -81,6 +84,14 @@ def test_compact_status_icons_and_colors():
     assert status_icon_color(False, "BRG") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(False, "PSN2") == STATUS_ICON_COLORS["urgent_negative"]
     assert status_icon_color(None) == STATUS_ICON_COLORS["overflow"]
+
+
+def test_stat_effect_status_icon_skips_inactive_and_zero_value_changes():
+    assert stat_effect_status_icon("ATK", SimpleNamespace(active=False, extra=4)) is None
+    assert stat_effect_status_icon("ATK", SimpleNamespace(active=True, extra=0)) is None
+    assert stat_effect_status_icon("ATK", SimpleNamespace(active=True, extra=3)) == ("ATK", True)
+    assert stat_effect_status_icon("DEF", SimpleNamespace(active=True, extra=-2)) == ("DEF", False)
+    assert stat_effect_status_icon("MYS", SimpleNamespace(active=True)) is None
 
 
 def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():

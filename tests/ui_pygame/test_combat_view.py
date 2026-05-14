@@ -208,6 +208,7 @@ def test_combat_log_filters_scrolls_and_status_helpers():
 
     character.stat_effects["Magic"] = _effect(extra=0)
     assert ("MAG", True) not in view._collect_status_icons(character)
+    assert ("MAG", False) not in view._collect_status_icons(character)
 
 
 def test_combat_log_wraps_long_charge_messages(monkeypatch):

@@ -34,6 +34,17 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
 }
 
 
+def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:
+    """Return a stat-effect icon, skipping active no-op stat changes."""
+    try:
+        extra = effect.extra
+    except AttributeError:
+        return None
+    if not getattr(effect, "active", False) or extra == 0:
+        return None
+    return (label, extra > 0)
+
+
 def _split_counted_label(label: str) -> tuple[str, int]:
     stripped = label.rstrip("0123456789")
     if not stripped:
