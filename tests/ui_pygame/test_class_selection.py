@@ -163,6 +163,8 @@ def test_class_selection_navigation_and_quit(monkeypatch):
     assert screen.navigate("Elf", race, classes) is None
 
     clear_calls = []
+    pressed_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
@@ -173,6 +175,12 @@ def test_class_selection_navigation_and_quit(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.class_selection.pygame.event.clear", lambda: clear_calls.append(True))
     assert screen.navigate("Elf", race, classes, flush_events=True, require_key_release=True) == "Mage"
     assert clear_calls == [True]
+
+    screen.current_selection = 0
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.class_selection.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate("Elf", race, classes, flush_events=True, require_key_release=True) == "Warrior"
 
     monkeypatch.setattr(screen, "set_classes", lambda *_args: setattr(screen, "available_classes", []))
     assert screen.navigate("Elf", race, classes) is None

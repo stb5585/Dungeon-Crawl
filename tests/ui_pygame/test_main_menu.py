@@ -107,6 +107,8 @@ def test_main_menu_draw_and_navigation(monkeypatch):
 
     screen.current_option = 0
     clear_calls = []
+    pressed_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
@@ -117,6 +119,12 @@ def test_main_menu_draw_and_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.clear", lambda: clear_calls.append(True))
     assert screen.navigate(["New Game", "Load Game", "Quit"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
+
+    screen.current_option = 0
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["New Game", "Load Game", "Quit"], flush_events=True, require_key_release=True) == 0
 
 
 def test_main_menu_quit_event_raises_system_exit(monkeypatch):

@@ -5,6 +5,7 @@ Provides a consistent menu interface with background support, using ShopScreen-s
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .town_base import TownScreenBase
 
 
@@ -192,21 +193,22 @@ class LocationMenuScreen(TownScreenBase):
                 self.current_option = 0
             self.scroll_offset = 0  # Reset scroll when options change
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         while True:
             self.draw_all()
             
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
-                elif event.type == pygame.KEYUP and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
                     if event.key == pygame.K_ESCAPE:
@@ -300,9 +302,10 @@ class LocationMenuScreen(TownScreenBase):
         line_height = 28
         max_visible = (content_height - 80) // line_height  # Reserve space for top/bottom padding
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         while True:
             self.draw_background()
@@ -318,14 +321,14 @@ class LocationMenuScreen(TownScreenBase):
             self.draw_content(items_data=formatted_items)
             pygame.display.flip()
             
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
-                elif event.type == pygame.KEYUP and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
                     if event.key == pygame.K_ESCAPE:

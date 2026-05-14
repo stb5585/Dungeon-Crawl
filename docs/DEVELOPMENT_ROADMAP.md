@@ -344,6 +344,7 @@ Verification note:
 - The in-dungeon escape menu now uses the same stale-input guard so the key press that opens it cannot immediately choose an option.
 - Load-game, shop-selection, and reusable town location menus now support guarded navigation input, with main entry flows opting into stale-input protection.
 - Main-menu, race-selection, class-selection, and town-hub navigation loops now support the same guarded input behavior, and the top-level game flow opts into it.
+- Main-menu, town-menu, load-game, shop-selection, location, race-selection, and class-selection guards now arm from current keyboard state to avoid first-key stalls after transitions.
 - Combat action-grid and combat submenu selectors now clear buffered input and wait for key release before accepting selection input.
 - Reusable shop-screen option and item navigation loops now clear buffered input and wait for key release before accepting selection input.
 - Top-level character-screen navigation now clears buffered input and waits for key release before accepting menu choices.
@@ -933,6 +934,7 @@ Primary workstreams:
   - completed: reusable shop-screen option and item selectors now use the same stale-input guard
   - completed: top-level character-screen navigation now uses the same stale-input guard
   - completed: combat, shop, and character selectors now arm from current keyboard state as well as release events
+  - completed: top-level menu/navigation screens now use current-key-state arming in addition to release events
   - completed: pygame main-menu Settings placeholder now uses the guarded modal popup path
   - completed: top-level pygame cleanup clears presenter background providers during shutdown
   - completed: presenter popup-background fallback clears broken or empty providers after fallback

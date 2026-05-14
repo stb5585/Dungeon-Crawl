@@ -4,6 +4,8 @@ Character creation screen for class selection - matches curses terminal layout.
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+
 # Mapping of base classes to their available first-tier promotions
 # This defines the class progression paths
 PROMOTION_PATHS = {
@@ -389,21 +391,22 @@ class ClassSelectionScreen:
         if not self.available_classes:
             return None
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         while True:
             self.draw_all()
             
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
-                elif event.type == pygame.KEYUP and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
                     if event.key == pygame.K_UP:

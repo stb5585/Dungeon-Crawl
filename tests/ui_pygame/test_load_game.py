@@ -150,6 +150,8 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     assert screen.navigate(["a.save", "b.save"]) is None
 
     clear_calls = []
+    pressed_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
@@ -160,3 +162,9 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.clear", lambda: clear_calls.append(True))
     assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "b.save"
     assert clear_calls == [True]
+
+    screen.current_selection = 0
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "a.save"

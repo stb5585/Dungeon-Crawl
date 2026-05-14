@@ -118,6 +118,8 @@ def test_town_menu_navigation_and_debug_level(monkeypatch):
 
     screen.current_selection = 0
     clear_calls = []
+    pressed_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_SPACE)],
@@ -128,6 +130,12 @@ def test_town_menu_navigation_and_debug_level(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.clear", lambda: clear_calls.append(True))
     assert screen.navigate(["Shop", "Inn", "Quit"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
+
+    screen.current_selection = 0
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)]])
+    monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["Shop", "Inn", "Quit"], flush_events=True, require_key_release=True) == 0
 
 
 def test_town_menu_quit_event_raises(monkeypatch):
