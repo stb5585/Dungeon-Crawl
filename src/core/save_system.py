@@ -981,6 +981,8 @@ class SaveManager:
             "filename": filename,
             "is_tmp": is_tmp,
             "valid": SaveManager.is_valid_save_filename(filename),
+            "expected_extension": ".tmp" if is_tmp else ".save",
+            "extension_matches_expected": False,
             "path": None,
             "exists": False,
             "is_file": False,
@@ -991,6 +993,9 @@ class SaveManager:
         if not metadata["valid"]:
             return metadata
 
+        metadata["extension_matches_expected"] = str(filename).endswith(
+            str(metadata["expected_extension"])
+        )
         filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
         metadata["path"] = filepath
         metadata["exists"] = os.path.exists(filepath)
@@ -1025,7 +1030,9 @@ class SaveManager:
         return {
             "visible_count": len(metadata),
             "visible_filenames": [entry["filename"] for entry in metadata],
+            "loadable_count": sum(1 for entry in metadata if entry.get("loadable")),
             "total_size": sum(sizes),
+            "empty_save_count": sum(1 for size in sizes if size == 0),
             "largest_save": None if largest is None else largest["filename"],
             "largest_size": None if largest is None else largest["size"],
         }

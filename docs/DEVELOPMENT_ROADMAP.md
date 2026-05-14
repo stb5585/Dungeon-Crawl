@@ -705,8 +705,10 @@ Current non-visual Phase 1 track:
   - completed: corrupt save JSON loads return `None` without deleting the original file
   - completed: save-filename validation is now available as a public helper for menu/debug callers before file operations
   - completed: save-file metadata diagnostics can report validity, path type, existence, and file size without parsing JSON
+  - completed: save-file metadata diagnostics now report the expected extension and whether the filename matches it
   - completed: visible-save metadata can now be listed in load-menu order while excluding temp leftovers and directories
   - completed: visible-save metadata summaries now expose count, total size, and largest save without parsing save payloads
+  - completed: visible-save metadata summaries now include loadable and empty-save counts for menu/debug checks
   - completed: save metadata diagnostics now expose loadability and visible filenames for load-menu sanity checks
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure

@@ -186,6 +186,8 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "filename": "hero.save",
         "is_tmp": False,
         "valid": True,
+        "expected_extension": ".save",
+        "extension_matches_expected": True,
         "path": str(save_dir / "hero.save"),
         "exists": True,
         "is_file": True,
@@ -197,6 +199,8 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "filename": "missing.save",
         "is_tmp": False,
         "valid": True,
+        "expected_extension": ".save",
+        "extension_matches_expected": True,
         "path": str(save_dir / "missing.save"),
         "exists": False,
         "is_file": False,
@@ -207,10 +211,14 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
     assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
     assert SaveManager.describe_save_file("folder.save")["loadable"] is False
     assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["path"] == str(tmp_dir / "hero.tmp")
+    assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["extension_matches_expected"] is True
+    assert SaveManager.describe_save_file("hero.tmp", is_tmp=False)["extension_matches_expected"] is False
     assert SaveManager.describe_save_file("../outside.save") == {
         "filename": "../outside.save",
         "is_tmp": False,
         "valid": False,
+        "expected_extension": ".save",
+        "extension_matches_expected": False,
         "path": None,
         "exists": False,
         "is_file": False,
@@ -229,26 +237,30 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
 
     (save_dir / "zeta.save").write_text("z", encoding="utf-8")
     (save_dir / "alpha.save").write_text("alpha", encoding="utf-8")
+    (save_dir / "empty.save").write_text("", encoding="utf-8")
     (save_dir / "alpha.save.tmp").write_text("partial", encoding="utf-8")
     (save_dir / "folder.save").mkdir()
 
     metadata = SaveManager.list_save_metadata()
 
-    assert [entry["filename"] for entry in metadata] == ["alpha.save", "zeta.save"]
-    assert [entry["size"] for entry in metadata] == [len("alpha"), len("z")]
+    assert [entry["filename"] for entry in metadata] == ["alpha.save", "empty.save", "zeta.save"]
+    assert [entry["size"] for entry in metadata] == [len("alpha"), 0, len("z")]
     assert all(entry["valid"] and entry["is_file"] for entry in metadata)
     assert all(not entry["is_tmp"] for entry in metadata)
+    assert all(entry["extension_matches_expected"] for entry in metadata)
     assert SaveManager.summarize_save_metadata() == {
-        "visible_count": 2,
-        "visible_filenames": ["alpha.save", "zeta.save"],
+        "visible_count": 3,
+        "visible_filenames": ["alpha.save", "empty.save", "zeta.save"],
+        "loadable_count": 3,
         "total_size": len("alpha") + len("z"),
+        "empty_save_count": 1,
         "largest_save": "alpha.save",
         "largest_size": len("alpha"),
     }
     (save_dir / "notes.txt").write_text("ignore me", encoding="utf-8")
     assert SaveManager.summarize_save_directory() == {
-        "visible_count": 2,
-        "visible_filenames": ["alpha.save", "zeta.save"],
+        "visible_count": 3,
+        "visible_filenames": ["alpha.save", "empty.save", "zeta.save"],
         "tmp_leftover_count": 1,
         "directory_entry_count": 1,
         "ignored_entry_count": 1,
@@ -256,10 +268,13 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
 
     (save_dir / "alpha.save").unlink()
     (save_dir / "zeta.save").unlink()
+    (save_dir / "empty.save").unlink()
     assert SaveManager.summarize_save_metadata() == {
         "visible_count": 0,
         "visible_filenames": [],
+        "loadable_count": 0,
         "total_size": 0,
+        "empty_save_count": 0,
         "largest_save": None,
         "largest_size": None,
     }

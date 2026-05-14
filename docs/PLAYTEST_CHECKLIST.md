@@ -76,10 +76,12 @@
   - Expected: Normal `.save` names pass; blank, absolute, path-bearing, and non-text entries are rejected.
 - [ ] Inspect save-file metadata for a normal save, missing save, directory entry, and temp save.
   - Expected: Validity, file/directory state, existence, size, and tmp-vs-normal location are reported without loading the save.
+  - Expected: Expected extension and extension-match state are visible for normal and tmp save paths.
 - [ ] Inspect visible-save metadata from the load-game path.
   - Expected: Metadata appears in the same order as the load menu and excludes temporary leftovers and directories.
   - Expected: Summary diagnostics report visible save count, total size, and largest visible save without opening the save payload.
   - Expected: Loadable entries and visible filename lists match the load menu.
+  - Expected: Summary diagnostics include loadable and empty-save counts.
 - [ ] Inspect save-directory diagnostics after creating a normal save, a `.tmp` leftover, a `.save` directory, and an unrelated file.
   - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
 - [ ] Load an older or partially malformed save with tile-state data.
