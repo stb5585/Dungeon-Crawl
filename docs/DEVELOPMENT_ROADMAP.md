@@ -627,6 +627,12 @@ Current progress:
 
 Latest focused phase:
 
+- Completed a diagnostic-focused stabilization pass across renderer texture diagnostics, popup background providers, and save tile-state payload inspection.
+- Added regression coverage for renderer cache capacity/fullness, popup background fallback counts, and malformed tile-state payload summaries.
+- Deferred larger renderer geometry changes, shop-tab UX, character-menu redesign, and content/balance expansion to later phases because this pass stayed on small, low-risk debug and regression helpers.
+
+Previous focused phase:
+
 - Completed a compact stabilization pass across combat status readability, save/stat diagnostics, and EventBus debug payloads.
 - Added regression coverage for zero-value stat debuffs, stale zero-value status icons, negative legacy gameplay counters, save-directory entry counting, and extended EventBus diagnostics.
 - Deferred larger renderer, shop-tab, character-menu, and content-expansion work to later phases because they exceed the intended small-task scope of this pass.
