@@ -112,6 +112,19 @@ def test_confirmation_popup_wrap_visible_lines_and_background_helpers(monkeypatc
     assert popup._get_background_surface() == "copied-surface"
 
 
+def test_release_guard_allows_input_after_buffered_keys_clear(monkeypatch):
+    pressed_states = iter([[1], [], [1]])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed",
+        lambda: next(pressed_states),
+    )
+
+    assert confirmation_popup._release_guard_allows_input(True, False) is False
+    assert confirmation_popup._release_guard_allows_input(True, False) is True
+    assert confirmation_popup._release_guard_allows_input(True, True) is True
+    assert confirmation_popup._release_guard_allows_input(False, False) is True
+
+
 def test_all_popup_background_helpers_reject_live_or_empty_provider(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

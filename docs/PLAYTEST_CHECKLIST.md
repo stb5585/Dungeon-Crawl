@@ -50,6 +50,7 @@
   - Expected: Level-up overlays use a copied background and do not smear or redraw over the live screen unexpectedly.
 - [ ] Open choice, reward, quantity, and code-entry popups after changing screens.
   - Expected: Each popup draws over the current copied view instead of reusing a live or empty background surface.
+  - Expected: Confirmation, reward, quantity, and code-entry popups all wait for the same buffered-key release rule before accepting input.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

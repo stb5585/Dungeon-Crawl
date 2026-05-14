@@ -17,6 +17,13 @@ def _get_safe_background_surface(presenter, screen):
     return screen.copy()
 
 
+def _release_guard_allows_input(require_key_release: bool, input_armed: bool) -> bool:
+    """Return whether guarded modal input can accept keydown events."""
+    if input_armed or not require_key_release:
+        return True
+    return not any(pygame.key.get_pressed())
+
+
 class ConfirmationPopup:
     """
     A Yes/No confirmation popup that appears over the current screen.
@@ -198,9 +205,7 @@ class ConfirmationPopup:
             self.draw_popup()
             
             # Arm input once all keys are released (prevents buffered input from skipping popups)
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = _release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -502,9 +507,7 @@ class RewardSelectionPopup:
         while True:
             self.draw_popup(background)
 
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = _release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -713,9 +716,7 @@ class QuantityPopup:
             self.draw_popup(background_draw_func)
             pygame.display.flip()
 
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = _release_guard_allows_input(require_key_release, input_armed)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -865,9 +866,7 @@ class CodeEntryPopup:
 
         while True:
             self.draw_popup(background_draw_func)
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = _release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
