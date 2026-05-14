@@ -239,12 +239,15 @@ class EventBus:
 
     def get_diagnostics(self) -> dict[str, Any]:
         """Return compact event-bus state for debug screens and tests."""
+        subscriber_counts = self.get_subscriber_counts()
         return {
             "enabled": self._enabled,
             "history_size": len(self._history),
             "max_history": self._max_history,
+            "history_full": self._max_history > 0 and len(self._history) >= self._max_history,
             "history_counts": self.get_history_counts(),
-            "subscriber_counts": self.get_subscriber_counts(),
+            "subscriber_counts": subscriber_counts,
+            "subscriber_total": sum(subscriber_counts.values()),
         }
     
     def enable(self) -> None:

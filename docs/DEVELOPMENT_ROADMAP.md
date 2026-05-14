@@ -622,6 +622,7 @@ Current progress:
 - Standardized shared confirmation, choice, reward, quantity, and code-entry popup background fallback so empty or live-screen providers fall back to copied surfaces
 - Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
 - Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
+- EventBus diagnostics now also report whether bounded history is full and the compact subscriber total.
 - Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
 - Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
 - Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads

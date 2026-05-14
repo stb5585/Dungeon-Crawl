@@ -1017,8 +1017,10 @@ class TestEventBus:
             "enabled": True,
             "history_size": 2,
             "max_history": 2,
+            "history_full": True,
             "history_counts": {"DEFEND": 1, "ATTACK": 1},
             "subscriber_counts": {"ATTACK": 1},
+            "subscriber_total": 1,
         }
 
         bus.disable()
@@ -1036,8 +1038,10 @@ class TestEventBus:
             "enabled": True,
             "history_size": 0,
             "max_history": 0,
+            "history_full": False,
             "history_counts": {},
             "subscriber_counts": {},
+            "subscriber_total": 0,
         }
 
     def test_emit_continues_after_callback_error(self, capsys):
