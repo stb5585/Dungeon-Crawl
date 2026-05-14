@@ -711,6 +711,7 @@ Current non-visual Phase 1 track:
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics
   - completed: simulator balance reports now export structured JSON payloads and files for local analysis
   - completed: battle logger compact summaries now expose event-type and flag counts without raw event rows
+  - completed: battle logger compact summaries now split numeric damage-event count from positive-damage-event count
   - completed: battle logger compact summaries now expose actor and target counts for quick turn-flow sanity checks
   - completed: battle logger compact summaries now expose positive damage totals by actor and target
   - remaining: decide whether game/debug flows should automatically persist these logs

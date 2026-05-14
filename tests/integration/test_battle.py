@@ -765,6 +765,8 @@ class TestBattleLogger:
 
         assert summary["turns"] == 1
         assert summary["event_count"] == 3
+        assert summary["damage_event_count"] == 2
+        assert summary["positive_damage_event_count"] == 1
         assert summary["event_types"] == {"Attack": 2, "Spell": 1}
         assert summary["flag_counts"] == {"critical": 1, "miss": 1, "dodge": 1}
         assert summary["actor_counts"] == {"Hero": 2, "Slime": 1}
@@ -801,6 +803,8 @@ class TestBattleLogger:
         assert payload["metadata"]["enemy"]["name"] == "Slime"
         assert payload["metadata"]["result"] == "victory"
         assert payload["summary"]["event_count"] == 2
+        assert payload["summary"]["damage_event_count"] == 2
+        assert payload["summary"]["positive_damage_event_count"] == 2
         assert payload["summary"]["event_types"] == {"Attack": 1, "Spell": 1}
         assert payload["summary"]["flag_counts"] == {"critical": 2}
         assert payload["summary"]["actor_counts"] == {"Hero": 2}

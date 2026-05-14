@@ -175,11 +175,14 @@ class BattleLogger:
     def build_summary(self) -> dict:
         """Create a compact battle summary for debugging and analysis."""
         damage_events = [event for event in self.events if isinstance(event.get("damage"), int)]
+        positive_damage_events = [event for event in damage_events if event["damage"] > 0]
         total_damage = sum(max(0, event["damage"]) for event in damage_events)
 
         return {
             "turns": self.turn_counter,
             "event_count": len(self.events),
+            "damage_event_count": len(damage_events),
+            "positive_damage_event_count": len(positive_damage_events),
             "event_types": self.get_event_type_counts(),
             "flag_counts": self.get_flag_counts(),
             "actor_counts": self.get_actor_counts(),
