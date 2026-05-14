@@ -12,11 +12,11 @@
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
   - Expected: Manual and scene-driven override counts are distinguishable while debugging.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
-  - Expected: Projected-surface cache diagnostics report a bounded cache size.
+  - Expected: Projected-surface cache diagnostics report bounded cache size, remaining capacity, and full/not-full state.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
   - Expected: Fallback counts identify the affected asset category without changing dungeon rendering.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
-  - Expected: Loaded state, fallback counts, cache size/limit, and override counts are visible in one diagnostic payload.
+  - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
 
 ### Combat Status Icons
 - [ ] Trigger or simulate Blind Rage in combat.

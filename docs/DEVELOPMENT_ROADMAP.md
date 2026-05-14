@@ -664,8 +664,10 @@ Current stabilization priorities:
   - invalid renderer surface-slot override entries are filtered before they can affect panel composition
   - panel-scoped surface-slot override diagnostics are available for focused renderer smoke tests
   - panel diagnostics now include default and effective texture keys for each surface slot
-  - projected-surface cache diagnostics expose current size and configured limit
-  - asset fallback diagnostics now expose compact counts by asset category for quick renderer/debug checks
+- projected-surface cache diagnostics expose current size and configured limit
+- projected-surface cache diagnostics now also expose remaining capacity and full/not-full state
+- asset fallback diagnostics now expose compact counts by asset category for quick renderer/debug checks
+- aggregate texture diagnostics now include total fallback count alongside per-category counts
   - aggregate texture-library diagnostics now combine fallback/cache/override state for quick debug assertions
   - surface-slot override diagnostics now distinguish manual overrides from scene-driven overrides during renderer smoke checks
 

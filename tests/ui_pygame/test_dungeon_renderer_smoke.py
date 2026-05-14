@@ -285,7 +285,8 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert textures.get_diagnostics() == {
         "loaded": False,
         "fallback_counts": {},
-        "projected_cache": {"size": 0, "limit": 512},
+        "fallback_total": 0,
+        "projected_cache": {"size": 0, "limit": 512, "remaining": 512, "full": False},
         "surface_slot_overrides": {
             "manual_count": 0,
             "scene_count": 0,
@@ -326,7 +327,8 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
             "special": 1,
             "enemy": 1,
         },
-        "projected_cache": {"size": 0, "limit": 512},
+        "fallback_total": len(TEXTURE_PATHS) + 2,
+        "projected_cache": {"size": 0, "limit": 512, "remaining": 512, "full": False},
         "surface_slot_overrides": {
             "manual_count": 0,
             "scene_count": 0,
@@ -346,7 +348,12 @@ def test_texture_library_limits_projected_surface_cache():
     textures = TextureLibrary(projected_cache_limit=2)
     quad = Quad(((0.0, 0.0), (64.0, 0.0), (64.0, 64.0), (0.0, 64.0)))
 
-    assert textures.get_projected_cache_stats() == {"size": 0, "limit": 2}
+    assert textures.get_projected_cache_stats() == {
+        "size": 0,
+        "limit": 2,
+        "remaining": 2,
+        "full": False,
+    }
 
     for width in (128, 129, 130):
         textures.get_projected_surface(
@@ -358,8 +365,18 @@ def test_texture_library_limits_projected_surface_cache():
         )
 
     assert len(textures._projected_cache) == 2
-    assert textures.get_projected_cache_stats() == {"size": 2, "limit": 2}
-    assert textures.get_diagnostics()["projected_cache"] == {"size": 2, "limit": 2}
+    assert textures.get_projected_cache_stats() == {
+        "size": 2,
+        "limit": 2,
+        "remaining": 0,
+        "full": True,
+    }
+    assert textures.get_diagnostics()["projected_cache"] == {
+        "size": 2,
+        "limit": 2,
+        "remaining": 0,
+        "full": True,
+    }
     assert all(cache_key[0] != (128, 128) for cache_key in textures._projected_cache)
 
     pygame.quit()

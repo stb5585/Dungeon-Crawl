@@ -180,16 +180,21 @@ class TextureLibrary:
 
     def get_projected_cache_stats(self) -> dict[str, int]:
         """Return projected-surface cache stats for renderer diagnostics."""
+        size = len(self._projected_cache)
         return {
-            "size": len(self._projected_cache),
+            "size": size,
             "limit": self._projected_cache_limit,
+            "remaining": max(0, self._projected_cache_limit - size),
+            "full": size >= self._projected_cache_limit,
         }
 
     def get_diagnostics(self) -> dict[str, int | bool | dict[str, int]]:
         """Return compact texture-library state for renderer/debug checks."""
+        fallback_counts = self.get_asset_fallback_counts()
         return {
             "loaded": self._loaded,
-            "fallback_counts": self.get_asset_fallback_counts(),
+            "fallback_counts": fallback_counts,
+            "fallback_total": sum(fallback_counts.values()),
             "projected_cache": self.get_projected_cache_stats(),
             "surface_slot_overrides": self.get_surface_slot_override_diagnostics(),
             "surface_slot_revision": self._surface_slot_revision,
