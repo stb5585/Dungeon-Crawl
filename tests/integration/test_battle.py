@@ -1022,7 +1022,10 @@ class TestEventBus:
             "history_size": 2,
             "max_history": 2,
             "history_full": True,
+            "history_remaining": 0,
+            "history_event_types": ["ATTACK", "DEFEND"],
             "history_counts": {"DEFEND": 1, "ATTACK": 1},
+            "subscriber_event_types": ["ATTACK"],
             "subscriber_counts": {"ATTACK": 1},
             "subscriber_total": 1,
         }
@@ -1043,7 +1046,10 @@ class TestEventBus:
             "history_size": 0,
             "max_history": 0,
             "history_full": False,
+            "history_remaining": 0,
+            "history_event_types": [],
             "history_counts": {},
+            "subscriber_event_types": [],
             "subscriber_counts": {},
             "subscriber_total": 0,
         }

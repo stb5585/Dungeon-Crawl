@@ -741,6 +741,7 @@ Current non-visual Phase 1 track:
   - compact EventBus history counts are now available for focused debug/test assertions
   - compact EventBus subscriber counts are now available for duplicate-subscription diagnostics
   - compact EventBus diagnostics now summarize enabled/history/subscriber state without requiring raw event inspection
+  - compact EventBus diagnostics now include retained-history remaining capacity plus sorted history/subscriber event-type lists
 - Small core-quality tasks
   - resolve narrow TODOs that are self-contained, non-visual, and low-risk in `save_system.py`, `battle_logger.py`, `character.py`, and related core modules
 

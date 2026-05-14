@@ -129,5 +129,6 @@
 - [ ] Inspect compact event-bus diagnostics during a debug/test run.
   - Expected: Enabled state, history size/limit, retained event counts, and subscriber counts are visible without raw event rows.
   - Expected: Diagnostics also expose whether bounded history is full and the total subscriber count.
+  - Expected: Diagnostics expose remaining history capacity plus sorted retained-history and subscriber event-type lists.
 - [ ] Run focused action-queue tests after combat scheduling changes.
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
