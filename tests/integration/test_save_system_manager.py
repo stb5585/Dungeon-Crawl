@@ -76,7 +76,7 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
         (4, 5, 6): SimpleNamespace(visited=False, near=False, open=False),
     }
     tile_states = {
-        "(1, 2, 3)": {"visited": True},
+        "(1, 2, 3)": {"visited": True, "open": True, "mystery": "legacy"},
         "(4, 5, 6)": "not-a-state-dict",
         "[1, 2, 3]": {"visited": False},
         "(1, 2)": {"visited": False},
@@ -90,6 +90,9 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
         "malformed_position_count": 3,
         "malformed_state_count": 1,
         "missing_world_position_count": 1,
+        "restorable_attribute_counts": {"open": 1, "visited": 1},
+        "unknown_attribute_count": 1,
+        "unknown_attribute_keys": ("mystery",),
     }
     assert TileStateSerializer.summarize_tile_state_payload(world, None) == {
         "total_entries": 0,
@@ -97,11 +100,15 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
         "malformed_position_count": 0,
         "malformed_state_count": 0,
         "missing_world_position_count": 0,
+        "restorable_attribute_counts": {},
+        "unknown_attribute_count": 0,
+        "unknown_attribute_keys": (),
     }
 
     TileStateSerializer.restore_tile_state(world, tile_states)
 
     assert world[(1, 2, 3)].visited is True
+    assert world[(1, 2, 3)].open is True
     assert world[(4, 5, 6)].visited is False
     assert not marker.exists()
 
@@ -262,8 +269,11 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
         "visible_count": 3,
         "visible_filenames": ["alpha.save", "empty.save", "zeta.save"],
         "tmp_leftover_count": 1,
+        "tmp_leftover_filenames": ["alpha.save.tmp"],
         "directory_entry_count": 1,
+        "directory_entry_filenames": ["folder.save"],
         "ignored_entry_count": 1,
+        "ignored_filenames": ["notes.txt"],
     }
 
     (save_dir / "alpha.save").unlink()

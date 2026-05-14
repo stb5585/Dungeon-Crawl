@@ -707,6 +707,7 @@ Current non-visual Phase 1 track:
   - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
   - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
   - completed: tile-state payload diagnostics count valid entries, malformed position keys, malformed state payloads, and positions absent from the current world
+  - completed: tile-state payload diagnostics now expose restorable attribute counts plus unknown legacy/custom attribute keys
   - completed: blank save names are rejected and delete operations refuse directories
   - completed: load operations treat directory-like save entries as missing files
   - completed: corrupt save JSON loads return `None` without deleting the original file
@@ -717,6 +718,7 @@ Current non-visual Phase 1 track:
   - completed: visible-save metadata summaries now expose count, total size, and largest save without parsing save payloads
   - completed: visible-save metadata summaries now include loadable and empty-save counts for menu/debug checks
   - completed: save metadata diagnostics now expose loadability and visible filenames for load-menu sanity checks
+  - completed: save-directory diagnostics now include grouped hidden-entry filename lists for temp leftovers, directory-like saves, and ignored files
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling

@@ -86,9 +86,11 @@
   - Expected: Summary diagnostics include loadable and empty-save counts.
 - [ ] Inspect save-directory diagnostics after creating a normal save, a `.tmp` leftover, a `.save` directory, and an unrelated file.
   - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
+  - Expected: Hidden-entry filename lists identify temp leftovers, directory-like saves, and ignored files.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
   - Expected: Tile-state diagnostics count valid entries, malformed positions, malformed state payloads, and positions absent from the loaded world.
+  - Expected: Tile-state diagnostics identify restorable attribute counts and any unknown legacy/custom attribute keys.
 - [ ] Attempt to load a corrupted save file.
   - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 

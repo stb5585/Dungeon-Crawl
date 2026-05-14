@@ -176,6 +176,22 @@ class AbilitySerializer:
 class TileStateSerializer:
     """Serializes/deserializes tile state (mutable attributes)."""
 
+    RESTORABLE_STATE_KEYS = frozenset(
+        {
+            "visited",
+            "near",
+            "open",
+            "read",
+            "blocked",
+            "warped",
+            "defeated",
+            "enemy_state",
+            "drink",
+            "nimue",
+            "nimue_met_before",
+        }
+    )
+
     @staticmethod
     def _parse_position_key(pos_str: object) -> tuple[int, int, int] | None:
         try:
@@ -277,7 +293,7 @@ class TileStateSerializer:
                 tile.nimue_met_before = state['nimue_met_before']
 
     @staticmethod
-    def summarize_tile_state_payload(world_dict: dict, tile_states: object) -> dict[str, int]:
+    def summarize_tile_state_payload(world_dict: dict, tile_states: object) -> dict[str, object]:
         """Return compact diagnostics for serialized tile-state data."""
         if not isinstance(tile_states, dict):
             return {
@@ -286,12 +302,17 @@ class TileStateSerializer:
                 "malformed_position_count": 0,
                 "malformed_state_count": 0,
                 "missing_world_position_count": 0,
+                "restorable_attribute_counts": {},
+                "unknown_attribute_count": 0,
+                "unknown_attribute_keys": (),
             }
 
         malformed_positions = 0
         malformed_states = 0
         missing_world_positions = 0
         valid_entries = 0
+        restorable_attribute_counts: dict[str, int] = {}
+        unknown_attribute_keys: set[str] = set()
 
         for pos_str, state in tile_states.items():
             if not isinstance(state, dict):
@@ -305,6 +326,11 @@ class TileStateSerializer:
                 missing_world_positions += 1
                 continue
             valid_entries += 1
+            for key in state:
+                if key in TileStateSerializer.RESTORABLE_STATE_KEYS:
+                    restorable_attribute_counts[key] = restorable_attribute_counts.get(key, 0) + 1
+                else:
+                    unknown_attribute_keys.add(str(key))
 
         return {
             "total_entries": len(tile_states),
@@ -312,6 +338,9 @@ class TileStateSerializer:
             "malformed_position_count": malformed_positions,
             "malformed_state_count": malformed_states,
             "missing_world_position_count": missing_world_positions,
+            "restorable_attribute_counts": dict(sorted(restorable_attribute_counts.items())),
+            "unknown_attribute_count": len(unknown_attribute_keys),
+            "unknown_attribute_keys": tuple(sorted(unknown_attribute_keys)),
         }
 
 
@@ -1042,27 +1071,30 @@ class SaveManager:
         """Return compact diagnostics for visible and hidden save-directory entries."""
         SaveManager.ensure_dirs()
         visible = set(SaveManager.list_saves())
-        directory_entries = 0
-        tmp_leftovers = 0
-        ignored_entries = 0
+        directory_entry_filenames: list[str] = []
+        tmp_leftover_filenames: list[str] = []
+        ignored_filenames: list[str] = []
 
         for filename in os.listdir(SaveManager.SAVE_DIR):
             filepath = os.path.join(SaveManager.SAVE_DIR, filename)
             if filename in visible:
                 continue
             if filename.endswith(".tmp"):
-                tmp_leftovers += 1
+                tmp_leftover_filenames.append(filename)
             elif filename.endswith(".save") and os.path.isdir(filepath):
-                directory_entries += 1
+                directory_entry_filenames.append(filename)
             else:
-                ignored_entries += 1
+                ignored_filenames.append(filename)
 
         return {
             "visible_count": len(visible),
             "visible_filenames": sorted(visible),
-            "tmp_leftover_count": tmp_leftovers,
-            "directory_entry_count": directory_entries,
-            "ignored_entry_count": ignored_entries,
+            "tmp_leftover_count": len(tmp_leftover_filenames),
+            "tmp_leftover_filenames": sorted(tmp_leftover_filenames),
+            "directory_entry_count": len(directory_entry_filenames),
+            "directory_entry_filenames": sorted(directory_entry_filenames),
+            "ignored_entry_count": len(ignored_filenames),
+            "ignored_filenames": sorted(ignored_filenames),
         }
     
     @staticmethod
