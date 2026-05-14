@@ -178,6 +178,17 @@ class TextureLibrary:
             counts[category] = counts.get(category, 0) + 1
         return counts
 
+    def get_asset_fallback_keys_by_category(self) -> dict[str, list[str]]:
+        """Return fallback texture keys grouped by asset category."""
+        grouped: dict[str, list[str]] = {}
+        for fallback_key in self._asset_fallbacks:
+            category, _separator, texture_key = fallback_key.partition(":")
+            grouped.setdefault(category, []).append(texture_key)
+        return {
+            category: sorted(texture_keys)
+            for category, texture_keys in sorted(grouped.items())
+        }
+
     def get_projected_cache_stats(self) -> dict[str, int]:
         """Return projected-surface cache stats for renderer diagnostics."""
         size = len(self._projected_cache)
@@ -194,6 +205,7 @@ class TextureLibrary:
         return {
             "loaded": self._loaded,
             "fallback_counts": fallback_counts,
+            "fallback_keys": self.get_asset_fallback_keys_by_category(),
             "fallback_total": sum(fallback_counts.values()),
             "projected_cache": self.get_projected_cache_stats(),
             "surface_slot_overrides": self.get_surface_slot_override_diagnostics(),

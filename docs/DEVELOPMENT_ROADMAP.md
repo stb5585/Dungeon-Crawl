@@ -680,6 +680,7 @@ Current stabilization priorities:
 - projected-surface cache diagnostics expose current size and configured limit
 - projected-surface cache diagnostics now also expose remaining capacity and full/not-full state
 - asset fallback diagnostics now expose compact counts by asset category for quick renderer/debug checks
+- asset fallback diagnostics now expose grouped fallback texture keys by category for quick missing-asset identification
 - aggregate texture diagnostics now include total fallback count alongside per-category counts
   - aggregate texture-library diagnostics now combine fallback/cache/override state for quick debug assertions
   - surface-slot override diagnostics now distinguish manual overrides from scene-driven overrides during renderer smoke checks

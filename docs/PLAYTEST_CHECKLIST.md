@@ -15,6 +15,7 @@
   - Expected: Projected-surface cache diagnostics report bounded cache size, remaining capacity, and full/not-full state.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
   - Expected: Fallback counts identify the affected asset category without changing dungeon rendering.
+  - Expected: Fallback key lists identify the affected texture, special-tile, or enemy asset names by category.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
 

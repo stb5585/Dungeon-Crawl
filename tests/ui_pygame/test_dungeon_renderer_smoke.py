@@ -285,6 +285,7 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert textures.get_diagnostics() == {
         "loaded": False,
         "fallback_counts": {},
+        "fallback_keys": {},
         "fallback_total": 0,
         "projected_cache": {"size": 0, "limit": 512, "remaining": 512, "full": False},
         "surface_slot_overrides": {
@@ -314,6 +315,10 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
         "special": 1,
         "enemy": 1,
     }
+    fallback_keys = textures.get_asset_fallback_keys_by_category()
+    assert fallback_keys["enemy"] == ["Missing Enemy"]
+    assert fallback_keys["special"] == ["stairs_down"]
+    assert "wall" in fallback_keys["texture"]
 
     fallbacks.clear()
     assert "texture:wall" in textures.get_asset_fallbacks()
@@ -327,6 +332,7 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
             "special": 1,
             "enemy": 1,
         },
+        "fallback_keys": fallback_keys,
         "fallback_total": len(TEXTURE_PATHS) + 2,
         "projected_cache": {"size": 0, "limit": 512, "remaining": 512, "full": False},
         "surface_slot_overrides": {
