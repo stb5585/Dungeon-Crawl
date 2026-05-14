@@ -623,6 +623,12 @@ Current progress:
 - Exposed SaveManager save-filename validation for UI/debug checks while preserving existing path-confinement behavior
 - Added compact EventBus diagnostics combining enabled state, history bounds, history counts, and subscriber counts
 - EventBus diagnostics now also report whether bounded history is full and the compact subscriber total.
+
+Latest focused phase:
+
+- Completed a compact stabilization pass across combat status readability, save/stat diagnostics, and EventBus debug payloads.
+- Added regression coverage for zero-value stat debuffs, stale zero-value status icons, negative legacy gameplay counters, save-directory entry counting, and extended EventBus diagnostics.
+- Deferred larger renderer, shop-tab, character-menu, and content-expansion work to later phases because they exceed the intended small-task scope of this pass.
 - Added aggregate texture-library diagnostics for loaded state, fallback counts, projected cache state, and surface-slot override state
 - Added derived combat-outcome and total-activity counters to gameplay-stat summaries without adding new save fields
 - Added SaveManager save-file metadata diagnostics for menu/debug checks without reading save payloads
