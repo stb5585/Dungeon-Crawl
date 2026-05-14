@@ -5,6 +5,8 @@ Displays level up bonuses in a popup overlay.
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input
+
 
 class LevelUpPopup:
     """
@@ -96,11 +98,11 @@ class LevelUpPopup:
         Args:
             background_draw_func: Optional function to draw the background
         """
-        if flush_events:
-            pygame.event.clear()
-
         waiting = True
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -117,9 +119,7 @@ class LevelUpPopup:
             pygame.display.flip()
             
             # Handle input
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

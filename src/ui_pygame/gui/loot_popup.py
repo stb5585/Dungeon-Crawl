@@ -4,6 +4,8 @@ Displays chest contents with visual flair.
 """
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+
 
 class LootPopup:
     """Display loot from chests with an attractive popup."""
@@ -74,21 +76,22 @@ class LootPopup:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         self.animation_time = 0
         waiting = True
         clock = pygame.time.Clock()
         
         while waiting:
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
-                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                     if not input_armed:
                         continue
                     if self.animation_time >= self.max_animation_time:
@@ -117,17 +120,18 @@ class LootPopup:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         while waiting:
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
-                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                     if not input_armed:
                         continue
                     waiting = False
@@ -308,17 +312,18 @@ class LootPopup:
             background = self._get_background_surface()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
 
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
         
         while waiting:
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return False
-                elif event.type in (pygame.KEYUP, pygame.MOUSEBUTTONUP) and require_key_release:
-                    input_armed = True
-                elif event.type == pygame.KEYDOWN:
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
                     if event.key in [pygame.K_UP, pygame.K_w]:

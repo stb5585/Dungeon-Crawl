@@ -48,6 +48,7 @@
   - Expected: The popup draws over a copied background instead of mutating the live screen surface.
 - [ ] Level up and open the stat-selection prompt after changing screens.
   - Expected: Level-up overlays use a copied background and do not smear or redraw over the live screen unexpectedly.
+  - Expected: Level-up and stat-selection prompts accept the first fresh key once no key is held, even without a KEYUP event.
 - [ ] Open choice, reward, quantity, and code-entry popups after changing screens.
   - Expected: Each popup draws over the current copied view instead of reusing a live or empty background surface.
   - Expected: Confirmation, reward, quantity, and code-entry popups all wait for the same buffered-key release rule before accepting input.
@@ -70,6 +71,7 @@
 ### Locked Doors
 - [ ] Try opening a locked dungeon door with at least one Old Key.
   - Expected: The door opens and consumes one Old Key.
+  - Expected: The key-use prompt accepts the first fresh confirmation/cancel key after stale input clears.
 - [ ] Try opening a locked dungeon door with no Old Keys or lockpick option.
   - Expected: The door stays locked and shows the missing-key prompt.
 

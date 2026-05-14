@@ -326,6 +326,7 @@ Verification note:
 - Stale-input protection is already present in multiple popup and dungeon flows (`flush_events`, `require_key_release`, and targeted `pygame.event.clear()` usage), but it is not yet uniform enough to mark this area complete.
 - Quantity and code-entry popups now support the same `flush_events` / `require_key_release` protections as confirmation popups, with shop, barracks, and anti-magic terminal flows using them.
 - Level-up info, stat selection, and inventory confirm/drop popups now use the same stale-input guard so buffered key presses do not skip modal choices.
+- Level-up info, stat selection, loot, empty-chest, and unlock-key prompts now use the shared current-key-state guard behavior.
 - Remaining shop, barracks, and combat-end confirmation popups now use the same stale-input guard too, so the modal behavior is consistent across the main pygame menu flows.
 - The shared `confirm_yes_no()` helper now opts into `flush_events` and `require_key_release`, extending the stale-input guard to simple yes/no confirmations that use the helper.
 - Inn, church, and quest-manager fallback popups now consistently use stale-input guards, and town-manager popups share a common background redraw helper.
@@ -926,6 +927,7 @@ Primary workstreams:
   - completed: reward-selection popups now support stale-input guards
   - completed: shared modal popup release checks now route through one helper for confirmation, reward, quantity, and code-entry popups
   - completed: modal popup stale-input guards now use a reusable helper that supports both current-key-state and release-event arming
+  - completed: level-up, stat-selection, loot, empty-chest, and unlock-key popups now share current-key-state guarded input behavior
   - completed: high-traffic top-level game, dungeon-menu, and character-menu notice popups now use guarded modal input
   - completed: reusable popup-menu selection loops and nested inventory action menus can wait for key release before accepting input
   - completed: nested equipment action menus can wait for key release before accepting input

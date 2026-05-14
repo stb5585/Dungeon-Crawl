@@ -5,6 +5,8 @@ Displays a popup menu for selecting which stat to increase.
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input
+
 
 class StatSelectionPopup:
     """
@@ -62,12 +64,12 @@ class StatSelectionPopup:
         Returns:
             The name of the selected stat
         """
-        if flush_events:
-            pygame.event.clear()
-
         self.result = None
         selecting = True
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -84,9 +86,7 @@ class StatSelectionPopup:
             pygame.display.flip()
             
             # Handle input
-            if require_key_release and not input_armed:
-                if not any(pygame.key.get_pressed()):
-                    input_armed = True
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
