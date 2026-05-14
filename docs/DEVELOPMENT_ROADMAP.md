@@ -605,6 +605,7 @@ Current progress:
 - Hardened renderer surface-slot overrides so invalid debug/test entries are ignored while valid neighboring floor, ceiling, and wall overrides still apply
 - Improved combat status-icon ordering so counted labels use count-aware stable tie-breaks without overriding urgent-status priority
 - Hardened pygame presenter popup-background fallback so broken or empty providers are cleared after falling back to the screen copy
+- Pygame presenter popup-background diagnostics now expose provider presence and fallback counts for stale-provider audits.
 - Extracted a core gameplay-stat summary helper so pygame statistics and tests share normalized derived counters
 - Added panel-scoped renderer surface-slot override diagnostics for focused side-corridor and door debugging
 - Hardened SaveManager filename handling for blank names and made save deletion explicitly file-only
@@ -697,7 +698,7 @@ Current non-visual Phase 1 track:
   - remaining: broaden only if new persistence failures appear in specific systems
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
-  - completed: battle logger can persist structured JSON logs directly to disk for local analysis
+- completed: battle logger can persist structured JSON logs directly to disk for local analysis
   - completed: battle logger can export compact metadata + summary payloads without raw event rows
   - completed: quick-balance helper now returns an explicit empty report while full class factory wiring remains deferred
   - completed: action-queue helper actions now carry lightweight metadata for debugging/analytics

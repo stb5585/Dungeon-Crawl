@@ -290,20 +290,42 @@ def test_presenter_background_helpers_and_cleanup(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
 
+    assert presenter.get_background_provider_diagnostics() == {
+        "has_provider": False,
+        "fallback_count": 0,
+    }
     copied = presenter.get_background_surface()
     assert copied is not presenter.screen
+    assert presenter.get_background_provider_diagnostics()["fallback_count"] == 1
 
     background = DummySurface((320, 240))
     presenter.set_background_provider(lambda: background)
     assert presenter.get_background_surface() is background
+    assert presenter.get_background_provider_diagnostics() == {
+        "has_provider": True,
+        "fallback_count": 1,
+    }
 
     presenter.set_background_provider(lambda: None)
     assert presenter.get_background_surface() is not None
     assert presenter._background_provider is None
+    assert presenter.get_background_provider_diagnostics() == {
+        "has_provider": False,
+        "fallback_count": 2,
+    }
 
     presenter.set_background_provider(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     assert presenter.get_background_surface() is not None
     assert presenter._background_provider is None
+    assert presenter.get_background_provider_diagnostics()["fallback_count"] == 3
+
+    presenter.set_background_provider(lambda: presenter.screen)
+    live_screen_fallback = presenter.get_background_surface()
+    assert live_screen_fallback is not presenter.screen
+    assert presenter.get_background_provider_diagnostics() == {
+        "has_provider": True,
+        "fallback_count": 4,
+    }
 
     presenter.clear()
     presenter.update()

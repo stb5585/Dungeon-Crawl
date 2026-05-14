@@ -105,6 +105,7 @@ class PygamePresenter(GamePresenter):
         self.fps = 60
 
         self._background_provider: Callable[[], pygame.Surface] | None = None
+        self._background_provider_fallbacks: int = 0
         
         # Combat state
         self.player: Character | None = None
@@ -1073,22 +1074,33 @@ class PygamePresenter(GamePresenter):
         """Set a callable that returns the most recent scene background."""
         self._background_provider = provider
 
+    def get_background_provider_diagnostics(self) -> dict[str, int | bool]:
+        """Return compact popup-background provider state for debug checks."""
+        return {
+            "has_provider": self._background_provider is not None,
+            "fallback_count": self._background_provider_fallbacks,
+        }
+
+    def _fallback_background_surface(self, *, clear_provider: bool = False) -> pygame.Surface:
+        self._background_provider_fallbacks += 1
+        if clear_provider:
+            self._background_provider = None
+        return self.screen.copy()
+
     def get_background_surface(self) -> pygame.Surface:
         """Return the latest cached background surface for popup overlays."""
         if self._background_provider is None:
-            return self.screen.copy()
+            return self._fallback_background_surface()
 
         try:
             surface = self._background_provider()
         except Exception:
-            self._background_provider = None
-            return self.screen.copy()
+            return self._fallback_background_surface(clear_provider=True)
 
         if surface is None:
-            self._background_provider = None
-            return self.screen.copy()
+            return self._fallback_background_surface(clear_provider=True)
         if surface is self.screen:
-            return self.screen.copy()
+            return self._fallback_background_surface()
 
         return surface
         

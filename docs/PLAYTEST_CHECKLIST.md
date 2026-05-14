@@ -40,6 +40,7 @@
   - Expected: The game exits cleanly without leaving stale popup backgrounds or hanging the window.
 - [ ] Open several popups after moving between town, dungeon, and combat views.
   - Expected: A stale or unavailable popup background falls back cleanly instead of repeating an old scene.
+  - Expected: Popup-background diagnostics expose provider presence and fallback count after stale-provider fallbacks.
 - [ ] Open a yes/no or message confirmation after a screen transition.
   - Expected: The popup draws over a copied background instead of mutating the live screen surface.
 - [ ] Level up and open the stat-selection prompt after changing screens.
