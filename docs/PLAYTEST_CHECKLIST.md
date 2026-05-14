@@ -31,6 +31,7 @@
 - [ ] Inspect combat status layout diagnostics with many active effects.
   - Expected: Visible, hidden, overflow, urgent-visible, capacity, and row counts match the status row shown on screen.
   - Expected: Overflow state and hidden urgent-status count make it clear whether high-priority effects were hidden.
+  - Expected: Positive, negative, and neutral visible/hidden counts match the rendered icon mix.
 
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.

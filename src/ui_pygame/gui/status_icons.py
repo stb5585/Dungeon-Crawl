@@ -116,10 +116,22 @@ def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> di
     visible_real_count = len([icon for icon in visible_icons if icon[1] is not None])
     hidden_icons = icon_list[visible_real_count:]
     hidden_count = max(0, len(hidden_icons))
+    visible_positive_count = sum(1 for _label, is_positive in visible_icons if is_positive is True)
+    visible_negative_count = sum(1 for _label, is_positive in visible_icons if is_positive is False)
+    visible_neutral_count = sum(1 for _label, is_positive in visible_icons if is_positive is None)
+    hidden_positive_count = sum(1 for _label, is_positive in hidden_icons if is_positive is True)
+    hidden_negative_count = sum(1 for _label, is_positive in hidden_icons if is_positive is False)
+    hidden_neutral_count = sum(1 for _label, is_positive in hidden_icons if is_positive is None)
     return {
         "input_count": len(icon_list),
         "visible_count": len(visible_icons),
         "hidden_count": hidden_count,
+        "visible_positive_count": visible_positive_count,
+        "visible_negative_count": visible_negative_count,
+        "visible_neutral_count": visible_neutral_count,
+        "hidden_positive_count": hidden_positive_count,
+        "hidden_negative_count": hidden_negative_count,
+        "hidden_neutral_count": hidden_neutral_count,
         "urgent_visible_count": sum(
             1 for label, is_positive in visible_icons if is_urgent_status_icon(label, is_positive)
         ),

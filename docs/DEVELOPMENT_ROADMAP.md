@@ -716,6 +716,7 @@ Current non-visual Phase 1 track:
   - remaining: decide whether game/debug flows should automatically persist these logs
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
+  - completed: status-icon layout diagnostics now split visible and hidden icons into positive, negative, and neutral counts
   - completed: status-icon layout diagnostics now report capacity and row count for dense overlay validation
   - completed: status-icon layout diagnostics now report whether overflow is active and whether urgent statuses were hidden
 - Sound/music content visibility
