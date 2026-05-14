@@ -160,6 +160,9 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     icons = hud._collect_status_icons(player)
     assert ("ATK2", True) in icons
 
+    player.stat_effects["Magic"] = _effect(extra=0)
+    assert ("MAG", True) not in hud._collect_status_icons(player)
+
     player.spellbook = {"Skills": {}}
     assert ("MW2", True) not in hud._collect_status_icons(player)
 

@@ -265,6 +265,7 @@ Verification note:
 - Combat selection overlays now fit long item, spell, skill, and Totem labels by rendered pixel width instead of raw character count, preserving readable compact menus.
 - Combat turn-indicator subtitles now trim long player/enemy names to the banner width so unusual names do not spill into neighboring UI.
 - Blind Rage now has a distinct urgent `BRG` status icon label in both main combat and dungeon-combat HUD status rows.
+- Zero-value stat debuffs are now suppressed at effect/reporting time, and stale zero-value stat effects no longer render as green combat status icons.
 
 ### Dungeon Rendering / Presentation Polish
 
@@ -591,6 +592,7 @@ Current progress:
 - Hardened action-queue helper scheduling by clamping negative delays/cast times and tagging helper-created actions with debug metadata
 - Switched the pygame Settings placeholder to the shared guarded modal popup path so buffered menu input cannot skip it
 - Added distinct Blind Rage status-icon labeling and urgent prioritization for combat readability
+- Suppressed zero-value Enfeeble/stat-effect reporting and stale zero-value combat status icons so no-change debuffs do not read as positive buffs.
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Added structured JSON payload/file export support to combat simulator balance reports

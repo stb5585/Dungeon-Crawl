@@ -206,6 +206,9 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("ATK2", True) in icons
     assert ("ATK", True) not in icons
 
+    character.stat_effects["Magic"] = _effect(extra=0)
+    assert ("MAG", True) not in view._collect_status_icons(character)
+
 
 def test_combat_log_wraps_long_charge_messages(monkeypatch):
     view = _make_view()

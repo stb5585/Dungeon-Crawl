@@ -39,6 +39,9 @@ class StatModifierEffect(Effect):
     
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         """Apply the stat modification to the target."""
+        if self.modifier == 0:
+            return
+
         # Check if target already has this effect
         effect_key = self.stat_name.title()
         

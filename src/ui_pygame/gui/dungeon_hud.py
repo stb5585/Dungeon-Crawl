@@ -153,7 +153,7 @@ class DungeonHUD:
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), False))
         for name, effect in character.stat_effects.items():
-            if effect.active and name not in skip_effects:
+            if effect.active and name not in skip_effects and effect.extra != 0:
                 icons.append((self._effect_label(name), effect.extra >= 0))
         for name, effect in character.magic_effects.items():
             if effect.active and name not in skip_effects:

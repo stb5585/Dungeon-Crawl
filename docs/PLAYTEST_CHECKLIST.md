@@ -22,6 +22,8 @@
 - [ ] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
+- [ ] Cast Enfeeble against a target with extremely low attack/defense.
+  - Expected: Zero-value attack/defense changes are not reported and do not appear as green status icons.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Resize the game window or view a crowded combat overlay.

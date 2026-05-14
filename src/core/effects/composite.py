@@ -762,9 +762,13 @@ class DynamicMultiDebuffEffect(Effect):
             stat_name = spec["stat_name"]
             combat_attr = spec["combat_attr"]
             amount = getattr(target.combat, combat_attr, 10) // self.amount_divisor
+            if amount <= 0:
+                continue
             lo = amount // max(2, 9 - dv)
             hi = amount // max(1, 5 - dv)
-            stat_mod = _rng.randint(max(0, lo), max(1, hi))
+            stat_mod = _rng.randint(max(0, lo), max(0, hi))
+            if stat_mod <= 0:
+                continue
 
             target.stat_effects[stat_name].active = True
             target.stat_effects[stat_name].duration = dur

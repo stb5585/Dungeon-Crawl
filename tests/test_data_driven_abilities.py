@@ -1005,6 +1005,43 @@ class TestBatch2NewEffects:
         assert target.stat_effects["Defense"].extra < 0
         assert len(result.extra.get("messages", [])) == 2
 
+    def test_dynamic_multi_debuff_skips_zero_stat_changes(self):
+        from src.core.effects import DynamicMultiDebuffEffect
+        from src.core.combat.combat_result import CombatResult
+        actor = self._make_char()
+        actor.stats.intel = 10
+        target = self._make_char()
+        target.combat.attack = 0
+        target.combat.defense = 0
+        effect = DynamicMultiDebuffEffect(
+            stats=[
+                {"stat_name": "Attack", "combat_attr": "attack"},
+                {"stat_name": "Defense", "combat_attr": "defense"},
+            ],
+            scaling_stat="intel", scaling_divisor=10,
+            amount_divisor=10, duration_min=3,
+        )
+        result = CombatResult(action="Test")
+        effect.apply(actor, target, result)
+
+        assert not target.stat_effects["Attack"].active
+        assert not target.stat_effects["Defense"].active
+        assert result.effects_applied["Stat"] == []
+        assert result.extra.get("messages", []) == []
+
+    def test_fixed_stat_modifier_skips_zero_changes(self):
+        from src.core.effects import StatModifierEffect
+        from src.core.combat.combat_result import CombatResult
+        actor = self._make_char()
+        target = self._make_char()
+        effect = StatModifierEffect("attack", 0, 3)
+        result = CombatResult(action="Test")
+
+        effect.apply(actor, target, result)
+
+        assert not target.stat_effects["Attack"].active
+        assert result.effects_applied["Stat"] == []
+
     def test_cleanse_effect(self):
         from src.core.effects import CleanseEffect
         from src.core.combat.combat_result import CombatResult
