@@ -195,9 +195,13 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
         "sfx_total": 3,
         "sfx_available": 2,
         "sfx_missing": 1,
+        "sfx_available_names": ["hit", "heal"],
+        "sfx_missing_names": ["missing"],
         "music_total": 2,
         "music_available": 1,
         "music_missing": 1,
+        "music_available_names": ["town"],
+        "music_missing_names": ["battle"],
     }
 
     default_diagnostics = manager.describe_default_audio_assets()
@@ -209,6 +213,8 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     default_summary = manager.summarize_default_audio_assets()
     assert default_summary["sfx_available"] == 2
     assert default_summary["music_available"] == 1
+    assert "hit" in default_summary["sfx_available_names"]
+    assert "combat_final" in default_summary["music_missing_names"]
 
 
 def test_load_sfx_returns_none_for_missing_files_or_loader_errors(tmp_path, fake_mixer):

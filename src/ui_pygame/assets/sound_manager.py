@@ -258,15 +258,21 @@ class SoundManager:
         """Return compact availability counts for an audio diagnostics payload."""
         sfx = diagnostics.get("sfx", {})
         music = diagnostics.get("music", {})
-        sfx_available = sum(1 for item in sfx.values() if item.get("available"))
-        music_available = sum(1 for item in music.values() if item.get("available"))
+        sfx_available_names = [name for name, item in sfx.items() if item.get("available")]
+        sfx_missing_names = [name for name, item in sfx.items() if not item.get("available")]
+        music_available_names = [name for name, item in music.items() if item.get("available")]
+        music_missing_names = [name for name, item in music.items() if not item.get("available")]
         return {
             "sfx_total": len(sfx),
-            "sfx_available": sfx_available,
-            "sfx_missing": len(sfx) - sfx_available,
+            "sfx_available": len(sfx_available_names),
+            "sfx_missing": len(sfx_missing_names),
+            "sfx_available_names": sfx_available_names,
+            "sfx_missing_names": sfx_missing_names,
             "music_total": len(music),
-            "music_available": music_available,
-            "music_missing": len(music) - music_available,
+            "music_available": len(music_available_names),
+            "music_missing": len(music_missing_names),
+            "music_available_names": music_available_names,
+            "music_missing_names": music_missing_names,
         }
 
     def describe_default_audio_assets(self) -> dict[str, object]:

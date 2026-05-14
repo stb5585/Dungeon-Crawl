@@ -723,6 +723,7 @@ Current non-visual Phase 1 track:
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
   - completed: default audio diagnostics now use the runtime's expected SFX and music name lists for content checks
   - completed: audio diagnostics now summarize available and missing SFX/music counts for quick content audits
+  - completed: audio diagnostics now include available and missing SFX/music name lists alongside summary counts
 - Test debt that removes skips or weak assertions
   - replace skipped or placeholder-oriented tests with real assertions where the missing functionality is now small enough to implement
   - strengthen agent-friendly regression coverage in core systems before Phase 2 polish work continues
