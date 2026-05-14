@@ -98,6 +98,8 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "input_count": 5,
         "visible_count": 4,
         "hidden_count": 2,
+        "visible_labels": ("STN", "BLD", "PSN", "+2"),
+        "hidden_labels": ("REG", "ATK"),
         "visible_positive_count": 0,
         "visible_negative_count": 3,
         "visible_neutral_count": 1,
@@ -106,6 +108,8 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "hidden_neutral_count": 0,
         "urgent_visible_count": 3,
         "urgent_hidden_count": 0,
+        "urgent_visible_labels": ("STN", "BLD", "PSN"),
+        "urgent_hidden_labels": (),
         "has_overflow": True,
         "capacity": 4,
         "row_count": 2,
@@ -117,6 +121,8 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "input_count": 2,
         "visible_count": 2,
         "hidden_count": 0,
+        "visible_labels": ("STN", "BLD"),
+        "hidden_labels": (),
         "visible_positive_count": 0,
         "visible_negative_count": 2,
         "visible_neutral_count": 0,
@@ -125,6 +131,8 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         "hidden_neutral_count": 0,
         "urgent_visible_count": 2,
         "urgent_hidden_count": 0,
+        "urgent_visible_labels": ("STN", "BLD"),
+        "urgent_hidden_labels": (),
         "has_overflow": False,
         "capacity": None,
         "row_count": 1,
@@ -143,6 +151,9 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
     assert describe_status_icon_layout(unprioritized_icons, per_row=2, max_rows=1)[
         "urgent_hidden_count"
     ] == 2
+    assert describe_status_icon_layout(unprioritized_icons, per_row=2, max_rows=1)[
+        "urgent_hidden_labels"
+    ] == ("STN", "PSN")
 
 
 def test_fit_status_icon_label_keeps_text_inside_icon():

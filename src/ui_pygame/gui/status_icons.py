@@ -104,7 +104,7 @@ def compact_status_icons(icons, per_row: int, max_rows: int | None) -> list[Stat
     return icon_list[:visible_count] + [(f"+{hidden_count}", None)]
 
 
-def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> dict[str, int | str | None]:
+def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> dict[str, object]:
     """Return compact layout diagnostics for a status-icon row."""
     icon_list = list(icons)
     visible_icons = compact_status_icons(icon_list, per_row, max_rows)
@@ -122,22 +122,28 @@ def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> di
     hidden_positive_count = sum(1 for _label, is_positive in hidden_icons if is_positive is True)
     hidden_negative_count = sum(1 for _label, is_positive in hidden_icons if is_positive is False)
     hidden_neutral_count = sum(1 for _label, is_positive in hidden_icons if is_positive is None)
+    visible_urgent_labels = tuple(
+        label for label, is_positive in visible_icons if is_urgent_status_icon(label, is_positive)
+    )
+    hidden_urgent_labels = tuple(
+        label for label, is_positive in hidden_icons if is_urgent_status_icon(label, is_positive)
+    )
     return {
         "input_count": len(icon_list),
         "visible_count": len(visible_icons),
         "hidden_count": hidden_count,
+        "visible_labels": tuple(label for label, _is_positive in visible_icons),
+        "hidden_labels": tuple(label for label, _is_positive in hidden_icons),
         "visible_positive_count": visible_positive_count,
         "visible_negative_count": visible_negative_count,
         "visible_neutral_count": visible_neutral_count,
         "hidden_positive_count": hidden_positive_count,
         "hidden_negative_count": hidden_negative_count,
         "hidden_neutral_count": hidden_neutral_count,
-        "urgent_visible_count": sum(
-            1 for label, is_positive in visible_icons if is_urgent_status_icon(label, is_positive)
-        ),
-        "urgent_hidden_count": sum(
-            1 for label, is_positive in hidden_icons if is_urgent_status_icon(label, is_positive)
-        ),
+        "urgent_visible_count": len(visible_urgent_labels),
+        "urgent_hidden_count": len(hidden_urgent_labels),
+        "urgent_visible_labels": visible_urgent_labels,
+        "urgent_hidden_labels": hidden_urgent_labels,
         "has_overflow": overflow_label is not None,
         "capacity": capacity,
         "row_count": (len(visible_icons) + normalized_per_row - 1) // normalized_per_row,

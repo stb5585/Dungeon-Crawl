@@ -33,6 +33,7 @@
   - Expected: Visible, hidden, overflow, urgent-visible, capacity, and row counts match the status row shown on screen.
   - Expected: Overflow state and hidden urgent-status count make it clear whether high-priority effects were hidden.
   - Expected: Positive, negative, and neutral visible/hidden counts match the rendered icon mix.
+  - Expected: Visible/hidden label lists identify exactly which status pills were shown or compacted.
 
 ### Main Menu
 - [ ] Choose Settings from the pygame main menu.

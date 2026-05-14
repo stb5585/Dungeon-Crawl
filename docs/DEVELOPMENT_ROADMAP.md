@@ -735,6 +735,7 @@ Current non-visual Phase 1 track:
   - completed: status-icon layout diagnostics now split visible and hidden icons into positive, negative, and neutral counts
   - completed: status-icon layout diagnostics now report capacity and row count for dense overlay validation
   - completed: status-icon layout diagnostics now report whether overflow is active and whether urgent statuses were hidden
+  - completed: status-icon layout diagnostics now expose visible/hidden label lists plus urgent visible/hidden label lists for focused readability audits
 - Sound/music content visibility
   - completed: sound manager diagnostics can report expected sound-effect and music asset availability without requiring final content
   - completed: default audio diagnostics now use the runtime's expected SFX and music name lists for content checks
