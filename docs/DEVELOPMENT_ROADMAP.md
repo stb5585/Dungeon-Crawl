@@ -595,6 +595,8 @@ Current progress:
 - Suppressed zero-value Enfeeble/stat-effect reporting and stale zero-value combat status icons so no-change debuffs do not read as positive buffs.
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
+- Gameplay-stat normalization now clamps negative legacy/manual counter values before derived statistics are displayed.
+- SaveManager now exposes compact save-directory diagnostics for visible saves, temporary leftovers, directory-like save entries, and ignored files.
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
 - Hardened tile-state restore against malformed per-tile payloads

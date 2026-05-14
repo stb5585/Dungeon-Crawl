@@ -229,6 +229,14 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
         "largest_save": "alpha.save",
         "largest_size": len("alpha"),
     }
+    (save_dir / "notes.txt").write_text("ignore me", encoding="utf-8")
+    assert SaveManager.summarize_save_directory() == {
+        "visible_count": 2,
+        "visible_filenames": ["alpha.save", "zeta.save"],
+        "tmp_leftover_count": 1,
+        "directory_entry_count": 1,
+        "ignored_entry_count": 1,
+    }
 
     (save_dir / "alpha.save").unlink()
     (save_dir / "zeta.save").unlink()

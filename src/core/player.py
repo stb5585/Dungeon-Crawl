@@ -87,11 +87,15 @@ def normalize_gameplay_stats(gameplay_stats=None, *, current_level=1):
 
     for key in GAMEPLAY_STATS_DEFAULTS:
         try:
-            normalized[key] = int(normalized.get(key, GAMEPLAY_STATS_DEFAULTS[key]))
+            normalized[key] = max(
+                0,
+                int(normalized.get(key, GAMEPLAY_STATS_DEFAULTS[key])),
+            )
         except (TypeError, ValueError):
             normalized[key] = GAMEPLAY_STATS_DEFAULTS[key]
 
     normalized["highest_level_reached"] = max(
+        1,
         int(current_level or 1),
         normalized["highest_level_reached"],
     )

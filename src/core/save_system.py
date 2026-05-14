@@ -984,6 +984,34 @@ class SaveManager:
             "largest_save": None if largest is None else largest["filename"],
             "largest_size": None if largest is None else largest["size"],
         }
+
+    @staticmethod
+    def summarize_save_directory() -> dict[str, object]:
+        """Return compact diagnostics for visible and hidden save-directory entries."""
+        SaveManager.ensure_dirs()
+        visible = set(SaveManager.list_saves())
+        directory_entries = 0
+        tmp_leftovers = 0
+        ignored_entries = 0
+
+        for filename in os.listdir(SaveManager.SAVE_DIR):
+            filepath = os.path.join(SaveManager.SAVE_DIR, filename)
+            if filename in visible:
+                continue
+            if filename.endswith(".tmp"):
+                tmp_leftovers += 1
+            elif filename.endswith(".save") and os.path.isdir(filepath):
+                directory_entries += 1
+            else:
+                ignored_entries += 1
+
+        return {
+            "visible_count": len(visible),
+            "visible_filenames": sorted(visible),
+            "tmp_leftover_count": tmp_leftovers,
+            "directory_entry_count": directory_entries,
+            "ignored_entry_count": ignored_entries,
+        }
     
     @staticmethod
     def delete_save(filename: str) -> bool:

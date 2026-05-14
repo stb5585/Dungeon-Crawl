@@ -78,6 +78,8 @@
   - Expected: Metadata appears in the same order as the load menu and excludes temporary leftovers and directories.
   - Expected: Summary diagnostics report visible save count, total size, and largest visible save without opening the save payload.
   - Expected: Loadable entries and visible filename lists match the load menu.
+- [ ] Inspect save-directory diagnostics after creating a normal save, a `.tmp` leftover, a `.save` directory, and an unrelated file.
+  - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
 - [ ] Attempt to load a corrupted save file.
@@ -93,6 +95,7 @@
   - Expected: Combat outcomes and total activity derive from the existing counters.
   - Expected: Missing or old save data displays as zeroes instead of crashing.
   - Expected: Encounters survived is never negative, even after old or manually edited save data.
+  - Expected: Negative legacy/manual counters are displayed as zeroes before derived totals are calculated.
 
 ### Developer Tooling
 - [ ] Run sound/music asset diagnostics for expected combat, town, and menu audio.

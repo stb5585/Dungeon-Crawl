@@ -74,6 +74,20 @@ class TestPlayerTopLevelHelpers:
         assert normalized["deaths"] == 0
         assert normalized["highest_level_reached"] == 5
 
+        clamped = normalize_gameplay_stats(
+            {
+                "steps_taken": -10,
+                "stairs_used": "-3",
+                "highest_damage_taken": -99,
+                "highest_level_reached": -2,
+            },
+            current_level=-4,
+        )
+        assert clamped["steps_taken"] == 0
+        assert clamped["stairs_used"] == 0
+        assert clamped["highest_damage_taken"] == 0
+        assert clamped["highest_level_reached"] == 1
+
         summary = summarize_gameplay_stats(
             {
                 "enemies_defeated": "4",
