@@ -687,6 +687,7 @@ Current non-visual Phase 1 track:
   - completed: SaveManager writes are atomic and reject path-bearing save names
   - completed: SaveManager lists only real `.save` files, ignoring temp leftovers and directories
   - completed: tile-state restore ignores malformed per-tile state payloads without aborting valid restores
+  - completed: tile-state payload diagnostics count valid entries, malformed position keys, malformed state payloads, and positions absent from the current world
   - completed: blank save names are rejected and delete operations refuse directories
   - completed: load operations treat directory-like save entries as missing files
   - completed: corrupt save JSON loads return `None` without deleting the original file

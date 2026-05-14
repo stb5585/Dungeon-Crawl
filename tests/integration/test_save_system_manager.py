@@ -80,7 +80,23 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
         "(4, 5, 6)": "not-a-state-dict",
         "[1, 2, 3]": {"visited": False},
         "(1, 2)": {"visited": False},
+        "(9, 9, 9)": {"visited": True},
         f"__import__('pathlib').Path({str(marker)!r}).write_text('bad')": {"visited": False},
+    }
+
+    assert TileStateSerializer.summarize_tile_state_payload(world, tile_states) == {
+        "total_entries": 6,
+        "valid_entries": 1,
+        "malformed_position_count": 3,
+        "malformed_state_count": 1,
+        "missing_world_position_count": 1,
+    }
+    assert TileStateSerializer.summarize_tile_state_payload(world, None) == {
+        "total_entries": 0,
+        "valid_entries": 0,
+        "malformed_position_count": 0,
+        "malformed_state_count": 0,
+        "missing_world_position_count": 0,
     }
 
     TileStateSerializer.restore_tile_state(world, tile_states)

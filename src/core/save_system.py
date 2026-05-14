@@ -175,6 +175,21 @@ class AbilitySerializer:
 
 class TileStateSerializer:
     """Serializes/deserializes tile state (mutable attributes)."""
+
+    @staticmethod
+    def _parse_position_key(pos_str: object) -> tuple[int, int, int] | None:
+        try:
+            pos = ast.literal_eval(pos_str)
+        except (ValueError, SyntaxError, TypeError):
+            return None
+
+        if (
+            not isinstance(pos, tuple)
+            or len(pos) != 3
+            or not all(isinstance(coord, int) for coord in pos)
+        ):
+            return None
+        return pos
     
     @staticmethod
     def serialize_tile_state(world_dict: dict) -> dict[str, dict]:
@@ -218,16 +233,8 @@ class TileStateSerializer:
                 continue
 
             # Parse position string back to tuple
-            try:
-                pos = ast.literal_eval(pos_str)  # e.g., "(5,10,1)"
-            except (ValueError, SyntaxError, TypeError):
-                continue
-
-            if (
-                not isinstance(pos, tuple)
-                or len(pos) != 3
-                or not all(isinstance(coord, int) for coord in pos)
-            ):
+            pos = TileStateSerializer._parse_position_key(pos_str)
+            if pos is None:
                 continue
             
             if pos not in world_dict:
@@ -268,6 +275,44 @@ class TileStateSerializer:
                 tile.nimue = state['nimue']
             if 'nimue_met_before' in state and hasattr(tile, 'nimue_met_before'):
                 tile.nimue_met_before = state['nimue_met_before']
+
+    @staticmethod
+    def summarize_tile_state_payload(world_dict: dict, tile_states: object) -> dict[str, int]:
+        """Return compact diagnostics for serialized tile-state data."""
+        if not isinstance(tile_states, dict):
+            return {
+                "total_entries": 0,
+                "valid_entries": 0,
+                "malformed_position_count": 0,
+                "malformed_state_count": 0,
+                "missing_world_position_count": 0,
+            }
+
+        malformed_positions = 0
+        malformed_states = 0
+        missing_world_positions = 0
+        valid_entries = 0
+
+        for pos_str, state in tile_states.items():
+            if not isinstance(state, dict):
+                malformed_states += 1
+                continue
+            pos = TileStateSerializer._parse_position_key(pos_str)
+            if pos is None:
+                malformed_positions += 1
+                continue
+            if pos not in world_dict:
+                missing_world_positions += 1
+                continue
+            valid_entries += 1
+
+        return {
+            "total_entries": len(tile_states),
+            "valid_entries": valid_entries,
+            "malformed_position_count": malformed_positions,
+            "malformed_state_count": malformed_states,
+            "missing_world_position_count": missing_world_positions,
+        }
 
 
 class EnemyStateSerializer:
