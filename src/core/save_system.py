@@ -1018,6 +1018,7 @@ class SaveManager:
             "is_dir": False,
             "loadable": False,
             "size": None,
+            "empty": False,
         }
         if not metadata["valid"]:
             return metadata
@@ -1034,8 +1035,10 @@ class SaveManager:
         if metadata["is_file"]:
             try:
                 metadata["size"] = os.path.getsize(filepath)
+                metadata["empty"] = metadata["size"] == 0
             except OSError:
                 metadata["size"] = None
+                metadata["empty"] = False
         return metadata
 
     @staticmethod
@@ -1095,6 +1098,11 @@ class SaveManager:
             "directory_entry_filenames": sorted(directory_entry_filenames),
             "ignored_entry_count": len(ignored_filenames),
             "ignored_filenames": sorted(ignored_filenames),
+            "hidden_entry_count": (
+                len(tmp_leftover_filenames)
+                + len(directory_entry_filenames)
+                + len(ignored_filenames)
+            ),
         }
     
     @staticmethod

@@ -219,6 +219,7 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "is_dir": False,
         "loadable": True,
         "size": len("{not json"),
+        "empty": False,
     }
     assert SaveManager.describe_save_file("missing.save") == {
         "filename": "missing.save",
@@ -232,6 +233,7 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "is_dir": False,
         "loadable": False,
         "size": None,
+        "empty": False,
     }
     assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
     assert SaveManager.describe_save_file("folder.save")["loadable"] is False
@@ -250,6 +252,7 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "is_dir": False,
         "loadable": False,
         "size": None,
+        "empty": False,
     }
 
 
@@ -270,6 +273,7 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
 
     assert [entry["filename"] for entry in metadata] == ["alpha.save", "empty.save", "zeta.save"]
     assert [entry["size"] for entry in metadata] == [len("alpha"), 0, len("z")]
+    assert [entry["empty"] for entry in metadata] == [False, True, False]
     assert all(entry["valid"] and entry["is_file"] for entry in metadata)
     assert all(not entry["is_tmp"] for entry in metadata)
     assert all(entry["extension_matches_expected"] for entry in metadata)
@@ -292,6 +296,7 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
         "directory_entry_filenames": ["folder.save"],
         "ignored_entry_count": 1,
         "ignored_filenames": ["notes.txt"],
+        "hidden_entry_count": 3,
     }
 
     (save_dir / "alpha.save").unlink()

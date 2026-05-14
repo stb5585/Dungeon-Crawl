@@ -91,6 +91,7 @@
 - [ ] Inspect save-file metadata for a normal save, missing save, directory entry, and temp save.
   - Expected: Validity, file/directory state, existence, size, and tmp-vs-normal location are reported without loading the save.
   - Expected: Expected extension and extension-match state are visible for normal and tmp save paths.
+  - Expected: Empty files are flagged directly in individual save metadata.
 - [ ] Inspect visible-save metadata from the load-game path.
   - Expected: Metadata appears in the same order as the load menu and excludes temporary leftovers and directories.
   - Expected: Summary diagnostics report visible save count, total size, and largest visible save without opening the save payload.
@@ -99,6 +100,7 @@
 - [ ] Inspect save-directory diagnostics after creating a normal save, a `.tmp` leftover, a `.save` directory, and an unrelated file.
   - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
   - Expected: Hidden-entry filename lists identify temp leftovers, directory-like saves, and ignored files.
+  - Expected: Hidden-entry totals match temp leftovers plus directory-like saves plus ignored files.
 - [ ] Load an older or partially malformed save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
   - Expected: Tile-state diagnostics count valid entries, malformed positions, malformed state payloads, and positions absent from the loaded world.

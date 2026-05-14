@@ -605,6 +605,7 @@ Current progress:
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Gameplay-stat normalization now clamps negative legacy/manual counter values before derived statistics are displayed.
 - SaveManager now exposes compact save-directory diagnostics for visible saves, temporary leftovers, directory-like save entries, and ignored files.
+- SaveManager save-file metadata now flags empty files, and save-directory diagnostics include total hidden entries.
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
 - Extended panel surface-slot state diagnostics to label each slot as default, scene-overridden, or manually overridden
