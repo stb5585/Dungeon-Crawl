@@ -4,6 +4,8 @@ Confirmation popup for character creation decisions.
 
 import pygame
 
+from .input_guards import prepare_guarded_input, release_guard_allows_input
+
 
 def _get_safe_background_surface(presenter, screen):
     """Return a copied popup background when provider output is unusable."""
@@ -15,13 +17,6 @@ def _get_safe_background_surface(presenter, screen):
         except Exception:
             pass
     return screen.copy()
-
-
-def _release_guard_allows_input(require_key_release: bool, input_armed: bool) -> bool:
-    """Return whether guarded modal input can accept keydown events."""
-    if input_armed or not require_key_release:
-        return True
-    return not any(pygame.key.get_pressed())
 
 
 class ConfirmationPopup:
@@ -177,9 +172,6 @@ class ConfirmationPopup:
         Returns:
             True if Yes (or any key if no buttons), False if No
         """
-        if flush_events:
-            pygame.event.clear()
-
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -187,7 +179,10 @@ class ConfirmationPopup:
 
         start_ms = pygame.time.get_ticks()
         self._start_ms = start_ms
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         def finish(result: bool) -> bool:
             if background_draw_func is not None:
@@ -205,7 +200,7 @@ class ConfirmationPopup:
             self.draw_popup()
             
             # Arm input once all keys are released (prevents buffered input from skipping popups)
-            input_armed = _release_guard_allows_input(require_key_release, input_armed)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -494,12 +489,12 @@ class RewardSelectionPopup:
             pygame.display.flip()
 
     def show(self, flush_events: bool = False, require_key_release: bool = False) -> int | None:
-        if flush_events:
-            pygame.event.clear()
-
         background = self._get_background_surface()
         clock = self.presenter.clock
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         if not self.items:
             return None
@@ -507,7 +502,7 @@ class RewardSelectionPopup:
         while True:
             self.draw_popup(background)
 
-            input_armed = _release_guard_allows_input(require_key_release, input_armed)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -695,9 +690,6 @@ class QuantityPopup:
         Returns:
             int: Selected quantity, or None if cancelled
         """
-        if flush_events:
-            pygame.event.clear()
-
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -710,13 +702,16 @@ class QuantityPopup:
                 self.screen.blit(background, (0, 0))
             return result
 
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         while True:
             self.draw_popup(background_draw_func)
             pygame.display.flip()
 
-            input_armed = _release_guard_allows_input(require_key_release, input_armed)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -847,9 +842,6 @@ class CodeEntryPopup:
         pygame.display.flip()
 
     def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
-        if flush_events:
-            pygame.event.clear()
-
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -862,11 +854,14 @@ class CodeEntryPopup:
                 self.screen.blit(background, (0, 0))
             return result
 
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         while True:
             self.draw_popup(background_draw_func)
-            input_armed = _release_guard_allows_input(require_key_release, input_armed)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

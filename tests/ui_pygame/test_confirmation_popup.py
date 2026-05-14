@@ -8,6 +8,11 @@ from types import SimpleNamespace
 import pygame
 
 from src.ui_pygame.gui import confirmation_popup
+from src.ui_pygame.gui.input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 
 
 class RenderedText:
@@ -115,14 +120,25 @@ def test_confirmation_popup_wrap_visible_lines_and_background_helpers(monkeypatc
 def test_release_guard_allows_input_after_buffered_keys_clear(monkeypatch):
     pressed_states = iter([[1], [], [1]])
     monkeypatch.setattr(
-        "src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed",
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
         lambda: next(pressed_states),
     )
 
-    assert confirmation_popup._release_guard_allows_input(True, False) is False
-    assert confirmation_popup._release_guard_allows_input(True, False) is True
-    assert confirmation_popup._release_guard_allows_input(True, True) is True
-    assert confirmation_popup._release_guard_allows_input(False, False) is True
+    assert release_guard_allows_input(True, False) is False
+    assert release_guard_allows_input(True, False) is True
+    assert release_guard_allows_input(True, True) is True
+    assert release_guard_allows_input(False, False) is True
+
+
+def test_shared_input_guard_prepare_and_event_release(monkeypatch):
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [1])
+
+    assert prepare_guarded_input(flush_events=True, require_key_release=True) is False
+    assert clear_calls == [True]
+    assert update_input_armed_from_event(_event(pygame.KEYDOWN, pygame.K_RETURN), True, False) is False
+    assert update_input_armed_from_event(_event(pygame.KEYUP, pygame.K_RETURN), True, False) is True
 
 
 def test_all_popup_background_helpers_reject_live_or_empty_provider(monkeypatch):

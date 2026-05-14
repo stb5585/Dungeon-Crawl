@@ -331,6 +331,7 @@ Verification note:
 - Inn, church, and quest-manager fallback popups now consistently use stale-input guards, and town-manager popups share a common background redraw helper.
 - Reward-selection popups now support the same stale-input guard used by confirmation, quantity, and code-entry popups.
 - Shared confirmation, reward-selection, quantity, and code-entry popups now use one guarded-input release helper so stale-input audits check the same arming rule.
+- Shared modal popup guards now live in a reusable input helper that can arm from current keyboard state as well as release events.
 - Top-level pygame game-flow confirmations now use shared stale-input guards, including debug-mode notices, race/class confirmation, town-menu confirmations, and warp-point prompts.
 - Dungeon save/quit menu confirmations, Golden Chalice pickup confirmation, and the character-screen empty-key-items notice now use the same guarded modal input behavior.
 - Shared pygame popup menus can now wait for key release before accepting selection input, and nested inventory action menus opt into that guard.
@@ -922,6 +923,7 @@ Primary workstreams:
   - completed: inn/church town popups and quest-manager fallback popups now use guarded modal input consistently
   - completed: reward-selection popups now support stale-input guards
   - completed: shared modal popup release checks now route through one helper for confirmation, reward, quantity, and code-entry popups
+  - completed: modal popup stale-input guards now use a reusable helper that supports both current-key-state and release-event arming
   - completed: high-traffic top-level game, dungeon-menu, and character-menu notice popups now use guarded modal input
   - completed: reusable popup-menu selection loops and nested inventory action menus can wait for key release before accepting input
   - completed: nested equipment action menus can wait for key release before accepting input
