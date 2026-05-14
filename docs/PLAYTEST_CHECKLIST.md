@@ -59,6 +59,8 @@
   - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
 - [ ] Move through main, town, load-game, shop-selection, race, class, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
+- [ ] Open the in-dungeon popup menu after a key-driven transition.
+  - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

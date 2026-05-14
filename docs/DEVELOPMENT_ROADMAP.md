@@ -577,6 +577,7 @@ Current progress:
 - Kept telegraph banners tied to the full latest unwrapped warning line so long charge messages do not degrade into partial fragments
 - Added open Ore Vault door renderer coverage for the current open-passage behavior
 - Extended stale-input protection to the in-dungeon escape menu
+- Switched the in-dungeon popup menu to the shared physical-key-state input guard so fresh keys are accepted without a KEYUP event.
 - Cleared active telegraph banners after non-telegraph combat messages so resolved charge warnings do not linger
 - Extended guarded navigation input to load-game, shop-selection, and reusable town location menus
 - Added left-side outer corridor floor/ceiling/wall slot-ID parity coverage for future renderer edits

@@ -789,6 +789,7 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, []))
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [1])
     assert manager._popup_menu("Menu", ["A", "B"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
 
@@ -808,6 +809,24 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirmMenu)
     manager._show_menu()
     assert manager.player_char.quit is True
+
+
+def test_dungeon_popup_menu_guard_accepts_fresh_key_without_keyup(monkeypatch):
+    manager, _presenter, _player, _game = _make_manager(monkeypatch)
+
+    events = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, []))
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    assert manager._popup_menu("Menu", ["A", "B"], flush_events=True, require_key_release=True) == 0
+    assert clear_calls == [True]
 
     move_calls = []
     manager.move_forward = lambda: move_calls.append("forward")

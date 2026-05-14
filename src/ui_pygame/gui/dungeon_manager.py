@@ -17,6 +17,11 @@ from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
 from .dungeon_hud import DungeonHUD
 from .dungeon_renderer import DungeonRenderer
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .loot_popup import LootPopup
 
 
@@ -1940,9 +1945,10 @@ class DungeonManager:
 
         # Snapshot current frame as background
         background = screen.copy()
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         # Layout
         panel_width = self.presenter.width // 2
@@ -1986,12 +1992,12 @@ class DungeonManager:
 
         while True:
             draw()
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                if event.type == pygame.KEYUP and require_key_release:
-                    input_armed = True
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
