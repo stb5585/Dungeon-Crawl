@@ -444,6 +444,29 @@ class TextureLibrary:
             for slot_id, default_texture_key in zip(plan.slot_ids, plan.slot_texture_keys)
         )
 
+    def summarize_panel_surface_slot_state(
+        self,
+        panel_id: str,
+        texture_key: str | None = None,
+    ) -> dict[str, object]:
+        """Return compact source counts for one panel's surface slots."""
+        state = self.describe_panel_surface_slot_state(panel_id, texture_key=texture_key)
+        source_counts = {"none": 0, "scene": 0, "manual": 0}
+        for slot in state:
+            source = str(slot.get("override_source", "none"))
+            source_counts[source] = source_counts.get(source, 0) + 1
+
+        return {
+            "panel_id": panel_id,
+            "texture_key": texture_key,
+            "slot_count": len(state),
+            "overridden_count": sum(1 for slot in state if slot.get("overridden")),
+            "default_count": source_counts.get("none", 0),
+            "scene_override_count": source_counts.get("scene", 0),
+            "manual_override_count": source_counts.get("manual", 0),
+            "has_overrides": any(slot.get("overridden") for slot in state),
+        }
+
     def has_any_surface_slot_overrides(self) -> bool:
         """Return whether manual or scene-driven surface slot overrides are active."""
         return bool(self._manual_surface_slot_overrides or self._scene_surface_slot_overrides)

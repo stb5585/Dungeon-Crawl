@@ -687,6 +687,45 @@ def test_texture_library_describes_panel_surface_slot_state():
     assert textures.describe_panel_surface_slot_state("unknown_panel", "floor") == ()
 
 
+def test_texture_library_summarizes_panel_surface_slot_state_sources():
+    textures = TextureLibrary()
+    textures.set_scene_surface_slot_overrides(
+        {
+            "floor:corridor_outer:right:d2:tile": "floor_pit",
+            "floor:corridor_outer:left:d2:tile": "floor_pit",
+        }
+    )
+    textures.set_floor_slot_override("floor:corridor_outer:right:d2:tile", "floor_fire")
+
+    assert textures.summarize_panel_surface_slot_state(
+        "d2:right_corridor_outer_floor",
+        "floor",
+    ) == {
+        "panel_id": "d2:right_corridor_outer_floor",
+        "texture_key": "floor",
+        "slot_count": 1,
+        "overridden_count": 1,
+        "default_count": 0,
+        "scene_override_count": 0,
+        "manual_override_count": 1,
+        "has_overrides": True,
+    }
+    assert textures.summarize_panel_surface_slot_state(
+        "d2:left_corridor_outer_floor",
+        "floor",
+    )["scene_override_count"] == 1
+    assert textures.summarize_panel_surface_slot_state("unknown_panel", "floor") == {
+        "panel_id": "unknown_panel",
+        "texture_key": "floor",
+        "slot_count": 0,
+        "overridden_count": 0,
+        "default_count": 0,
+        "scene_override_count": 0,
+        "manual_override_count": 0,
+        "has_overrides": False,
+    }
+
+
 def test_texture_library_ignores_invalid_surface_slot_overrides():
     pygame.init()
     textures = TextureLibrary()

@@ -16,6 +16,7 @@
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
   - Expected: Manual and scene-driven override counts are distinguishable while debugging.
   - Expected: Per-slot state identifies whether the texture came from defaults, scene overrides, or manual overrides.
+  - Expected: Per-panel summaries count default, scene override, and manual override slot sources for quick side-corridor checks.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
   - Expected: Projected-surface cache diagnostics report bounded cache size, remaining capacity, and full/not-full state.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.

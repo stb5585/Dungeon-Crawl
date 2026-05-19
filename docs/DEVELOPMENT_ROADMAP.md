@@ -616,6 +616,7 @@ Current progress:
 - Added structured JSON payload/file export support to combat simulator balance reports
 - Added renderer texture-library helper coverage for manual and scene surface-slot override state
 - Extended panel surface-slot state diagnostics to label each slot as default, scene-overridden, or manually overridden
+- Added compact per-panel surface-slot source summaries for side-corridor and door diagnostics.
 - Hardened tile-state restore against malformed per-tile payloads
 - Hardened top-level pygame cleanup so presenter background providers are cleared and pygame quits even if presenter cleanup raises
 - Added compact combat simulator balance summary payloads with limited top-ability and top-status lists
@@ -707,6 +708,7 @@ Current stabilization priorities:
 - aggregate texture diagnostics now include total fallback count alongside per-category counts
   - aggregate texture-library diagnostics now combine fallback/cache/override state for quick debug assertions
   - surface-slot override diagnostics now distinguish manual overrides from scene-driven overrides during renderer smoke checks
+  - per-panel surface-slot summaries now count default, scene, and manual sources for focused side-corridor checks
 
 Current non-visual Phase 1 track:
 
