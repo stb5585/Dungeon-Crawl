@@ -206,10 +206,32 @@ def test_base_popup_can_wait_for_key_release_before_accepting_input(monkeypatch)
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [1])
 
     result = popup.show(player, require_key_release=True)
 
     assert result == ("selected", "Alpha")
+
+
+def test_base_popup_accepts_fresh_key_without_keyup(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = DemoPopup(presenter, parent, title="Test")
+    player = _make_player()
+
+    events = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    clear_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    result = popup.show(player, flush_events=True, require_key_release=True)
+
+    assert result == ("selected", "Alpha")
+    assert clear_calls == [True]
 
 
 def test_base_popup_restores_background_provider_on_error(monkeypatch):

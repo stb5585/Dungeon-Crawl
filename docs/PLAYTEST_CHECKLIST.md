@@ -66,6 +66,8 @@
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
 - [ ] Open the in-dungeon popup menu after a key-driven transition.
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
+- [ ] Open inventory, equipment, or quest popups after a key-driven transition.
+  - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

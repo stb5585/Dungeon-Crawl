@@ -337,6 +337,7 @@ Verification note:
 - Top-level pygame game-flow confirmations now use shared stale-input guards, including debug-mode notices, race/class confirmation, town-menu confirmations, and warp-point prompts.
 - Dungeon save/quit menu confirmations, Golden Chalice pickup confirmation, and the character-screen empty-key-items notice now use the same guarded modal input behavior.
 - Shared pygame popup menus can now wait for key release before accepting selection input, and nested inventory action menus opt into that guard.
+- Shared inventory/equipment/quest popup menus now use the current-key-state guard, so fresh keys are accepted even if no KEYUP event is delivered.
 - Nested equipment action menus now opt into the same popup-menu stale-input guard as inventory action menus.
 - Shared pygame popup menus now restore the previous background provider even if a popup exits through an exception.
 - The barracks leave popup now redraws over the barracks menu background while using the shared stale-input guard.
@@ -579,6 +580,7 @@ Current progress:
 - Added open Ore Vault door renderer coverage for the current open-passage behavior
 - Extended stale-input protection to the in-dungeon escape menu
 - Switched the in-dungeon popup menu to the shared physical-key-state input guard so fresh keys are accepted without a KEYUP event.
+- Switched reusable inventory/equipment/quest popup menus to the shared physical-key-state input guard.
 - Cleared active telegraph banners after non-telegraph combat messages so resolved charge warnings do not linger
 - Extended guarded navigation input to load-game, shop-selection, and reusable town location menus
 - Added left-side outer corridor floor/ceiling/wall slot-ID parity coverage for future renderer edits

@@ -7,6 +7,11 @@ import pygame
 from src.core import items
 from src.core import map_tiles
 from .confirmation_popup import ConfirmationPopup
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 
 
 class BasePopupMenu:
@@ -223,9 +228,10 @@ class BasePopupMenu:
         running = True
         result = None
         clock = self.presenter.clock
-        if flush_events:
-            pygame.event.clear()
-        input_armed = not require_key_release
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
 
         # Render and capture background once to prevent flicker
         self.parent_screen.draw_all(player_char, do_flip=False)
@@ -244,15 +250,17 @@ class BasePopupMenu:
                 self.draw_details(player_char)
                 pygame.display.flip()
                 menu_surface_ref[0] = self.screen.copy()
+                input_armed = release_guard_allows_input(require_key_release, input_armed)
 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         import sys
                         sys.exit()
-                    elif event.type == pygame.KEYUP and require_key_release:
-                        input_armed = True
-                    elif event.type == pygame.KEYDOWN:
+                    input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                    if event.type == pygame.KEYUP:
+                        continue
+                    if event.type == pygame.KEYDOWN:
                         if not input_armed:
                             continue
                         if self.handle_key_down(player_char, event):
