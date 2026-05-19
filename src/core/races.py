@@ -191,11 +191,11 @@ class HalfGiant(Race):
                                                         "union between humans and giants does occur. These half giants "
                                                         "dwarf most men but are seen as runts amongst their giant "
                                                         "brethren. Their brutish nature make the excellent Warriors "
-                                                        "and not much else. Half giants have  mild resistances to "
-                                                        "poisons and physical damage but they are weak against most "
-                                                        "other magics, especially holy spells.",
-                         strength=15, intel=7, wisdom=8, con=14, charisma=6, dex=10,
-                         base_attack=4, base_defense=2, base_magic=1, base_magic_def=1,
+                                                        "and not much else. Half giants have mild resistances to "
+                                                        "poisons and physical damage but poor agility and sharp "
+                                                        "weaknesses against most other magics, especially holy spells.",
+                         strength=15, intel=7, wisdom=8, con=14, charisma=6, dex=8,
+                         base_attack=4, base_defense=2, base_magic=1, base_magic_def=0,
                          cls_res={"Base": ["Warrior", "Footpad", "Healer", "Pathfinder"],
                                   "First": ["Weapon Master",
                                             "Inquisitor",
@@ -205,16 +205,16 @@ class HalfGiant(Race):
                                              "Seeker",
                                              "Monk",
                                              "Beast Master"]},
-                         resistance={"Fire": -0.1,
-                                     "Ice": -0.1,
-                                     "Electric": -0.1,
-                                     "Water": -0.1,
-                                     "Earth": -0.1,
-                                     "Wind": -0.1,
-                                     "Shadow": 0.,
-                                     "Holy": -0.3,
-                                     "Poison": 0.33,
-                                     "Physical": 0.2}
+                         resistance={"Fire": -0.15,
+                                     "Ice": -0.15,
+                                     "Electric": -0.15,
+                                     "Water": -0.15,
+                                     "Earth": -0.15,
+                                     "Wind": -0.15,
+                                     "Shadow": -0.1,
+                                     "Holy": -0.4,
+                                     "Poison": 0.2,
+                                     "Physical": 0.15}
                          ,
                          virtue=RacialTrait(
                              name="Perseverance",

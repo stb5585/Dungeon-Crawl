@@ -2,6 +2,10 @@
 
 ## Recently Changed
 
+### Balance
+- [ ] Start a Half Giant Warrior and compare early durability against magic/status-heavy enemies.
+  - Expected: Half Giant keeps strength/constitution advantages but has lower agility, lower magic defense, and sharper magical weaknesses.
+
 ### Dungeon Rendering
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.

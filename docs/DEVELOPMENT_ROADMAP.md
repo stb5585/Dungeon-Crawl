@@ -158,6 +158,7 @@ Completed initial-pass items:
 - Weapon crit rebalance
 - Disarm updated to affect total weapon output
 - Mimic scaling adjustments
+- Half Giant early-game tuning now preserves strength/constitution identity while sharpening agility, magic-defense, and resistance drawbacks.
 
 Completed tooling items:
 
@@ -604,6 +605,7 @@ Current progress:
 - Suppressed zero-value Enfeeble/stat-effect reporting and stale zero-value combat status icons so no-change debuffs do not read as positive buffs.
 - Centralized zero-value stat-effect icon filtering so combat view and dungeon HUD share the same no-op suppression rule.
 - Added stat-effect icon filtering diagnostics so zero-value suppressed status effects can be audited without rendering combat.
+- Tuned Half Giant drawbacks so Giant Warrior-style starts keep their physical identity but carry clearer low-agility and magic-vulnerability costs.
 - Hardened SaveManager listing to hide temporary save leftovers and directory entries
 - Added a derived encounters-survived line plus defensive legacy-value handling to the pygame statistics popup
 - Gameplay-stat normalization now clamps negative legacy/manual counter values before derived statistics are displayed.
