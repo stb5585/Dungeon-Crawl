@@ -138,6 +138,11 @@ class SoundManager:
     def _on_combat_start(self, event):
         """Handle combat start event."""
         self.play_sfx("combat_start")
+        self.play_location_music(
+            "combat",
+            boss=bool(event.data.get("boss", False)),
+            final=bool(event.data.get("final", False)),
+        )
 
     def _on_combat_end(self, event):
         """Handle combat end event."""

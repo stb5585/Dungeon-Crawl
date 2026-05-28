@@ -414,7 +414,13 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     _state, _music = fake_mixer
     manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)))
     calls = []
+    music_calls = []
     monkeypatch.setattr(manager, "play_sfx", lambda name, volume=None, loops=0: calls.append((name, volume, loops)))
+    monkeypatch.setattr(
+        manager,
+        "play_location_music",
+        lambda location, **kwargs: music_calls.append((location, kwargs)) or "combat_normal",
+    )
 
     manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={}))
     manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True}))
@@ -467,4 +473,25 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
         ("player_death", None, 0),
         ("enemy_death", None, 0),
         ("level_up", None, 0),
+    ]
+    assert music_calls == [("combat", {"boss": False, "final": False})]
+
+
+def test_combat_start_music_uses_boss_and_final_flags(tmp_path, fake_mixer, monkeypatch):
+    _state, _music = fake_mixer
+    manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)))
+    music_calls = []
+    monkeypatch.setattr(manager, "play_sfx", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        manager,
+        "play_location_music",
+        lambda location, **kwargs: music_calls.append((location, kwargs)) or "combat_boss",
+    )
+
+    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True}))
+    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"final": True}))
+
+    assert music_calls == [
+        ("combat", {"boss": True, "final": False}),
+        ("combat", {"boss": False, "final": True}),
     ]
