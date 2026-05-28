@@ -951,6 +951,7 @@ Primary workstreams:
   - decide whether the character menu needs a full redesign or a focused cleanup pass
   - reduce friction in inventory, equipment, and comparison flows
   - decide whether shop tabs should replace the current shop mode selection flow
+  - completed: reusable pygame shop item lists now support PageUp/PageDown plus Home/End navigation for long inventories
   - standardize popup behavior across town, shop, dungeon, and combat interactions
 - Input, redraw, and presentation consistency
   - extend stale-input protections anywhere buffered input can still skip a prompt or transition

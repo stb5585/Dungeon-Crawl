@@ -78,6 +78,11 @@
   - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
 
+### Shops
+- [ ] Navigate a pygame shop with more than one page of buy or sell items.
+  - Expected: PageUp/PageDown move by a visible page while keeping the highlighted item on screen.
+  - Expected: Home/End jump to the first and last item without corrupting scroll position.
+
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.
   - Expected: The reward message grants 2 Old Keys.

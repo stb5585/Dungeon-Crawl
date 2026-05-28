@@ -303,6 +303,31 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     assert screen.navigate_items() is None
 
 
+def test_item_navigation_supports_page_home_and_end_keys(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    screen.item_list = [(f"Item {i}", DummyItem(f"Item {i}"), 10, 0) for i in range(45)]
+
+    item_events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEUP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_END)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_HOME)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.get", lambda: next(item_events, []))
+
+    choice = screen.navigate_items(flush_events=True, require_key_release=True)
+
+    assert choice[0] == "Item 0"
+    assert screen.current_item == 0
+    assert screen.scroll_offset == 0
+
+
 def test_navigation_helpers_can_opt_out_of_stale_input_guard(monkeypatch):
     screen = _make_shop(monkeypatch)
     monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)

@@ -368,6 +368,20 @@ class ShopScreen(TownScreenBase):
             flush_events=flush_events,
             require_key_release=require_key_release,
         )
+
+    @staticmethod
+    def _visible_item_count() -> int:
+        """Return the number of item rows visible in the shop list."""
+        return 19
+
+    def _keep_current_item_visible(self) -> None:
+        """Adjust scroll offset so the current item remains visible."""
+        max_visible = self._visible_item_count()
+        if self.current_item < self.scroll_offset:
+            self.scroll_offset = self.current_item
+        elif self.current_item >= self.scroll_offset + max_visible:
+            self.scroll_offset = self.current_item - max_visible + 1
+        self.scroll_offset = max(0, min(self.scroll_offset, max(0, len(self.item_list) - 1)))
     
     def update_item_list(self, itemdict, buy_or_sell):
         """
@@ -487,7 +501,7 @@ class ShopScreen(TownScreenBase):
             return None
         
         # Calculate max visible items (must match draw_shop_list)
-        max_visible = 19
+        max_visible = self._visible_item_count()
         input_armed = self._prepare_guarded_input(flush_events, require_key_release)
             
         while True:
@@ -507,18 +521,22 @@ class ShopScreen(TownScreenBase):
                         return None
                     elif event.key == pygame.K_UP:
                         self.current_item = (self.current_item - 1) % len(self.item_list)
-                        # Adjust scroll offset to keep current item visible
-                        if self.current_item < self.scroll_offset:
-                            self.scroll_offset = self.current_item
-                        elif self.current_item >= self.scroll_offset + max_visible:
-                            self.scroll_offset = self.current_item - max_visible + 1
+                        self._keep_current_item_visible()
                     elif event.key == pygame.K_DOWN:
                         self.current_item = (self.current_item + 1) % len(self.item_list)
-                        # Adjust scroll offset to keep current item visible
-                        if self.current_item >= self.scroll_offset + max_visible:
-                            self.scroll_offset = self.current_item - max_visible + 1
-                        elif self.current_item < self.scroll_offset:
-                            self.scroll_offset = self.current_item
+                        self._keep_current_item_visible()
+                    elif event.key == pygame.K_PAGEUP:
+                        self.current_item = max(0, self.current_item - max_visible)
+                        self._keep_current_item_visible()
+                    elif event.key == pygame.K_PAGEDOWN:
+                        self.current_item = min(len(self.item_list) - 1, self.current_item + max_visible)
+                        self._keep_current_item_visible()
+                    elif event.key == pygame.K_HOME:
+                        self.current_item = 0
+                        self._keep_current_item_visible()
+                    elif event.key == pygame.K_END:
+                        self.current_item = len(self.item_list) - 1
+                        self._keep_current_item_visible()
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         display_str, item, cost, owned = self.item_list[self.current_item]
                         return (display_str, item, cost, owned)
