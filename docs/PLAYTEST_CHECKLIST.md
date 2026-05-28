@@ -175,6 +175,9 @@
   - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
+- [ ] Finish a pygame combat encounter while debug mode is enabled.
+  - Expected: A structured battle log JSON file is written under `debug_logs/battles/`.
+  - Expected: Normal non-debug combat endings do not create automatic debug battle-log files.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.
   - Expected: The payload includes battle metadata, event-type counts, flag counts, actor/target counts, and aggregate summary counts without raw event rows.
   - Expected: Damage-row counts distinguish all numeric damage events from positive-damage events.

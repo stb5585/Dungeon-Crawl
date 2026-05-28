@@ -414,6 +414,42 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert popup_messages[0] == "You fled from combat!"
 
 
+def test_debug_battle_log_persistence_is_opt_in_and_sanitized(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    manager.game.debug_mode = False
+    manager.presenter.debug_mode = False
+
+    exported = []
+    manager.logger = SimpleNamespace(
+        metadata={
+            "player": {"name": "Ada Hero"},
+            "enemy": {"name": "Slime/Blob"},
+        },
+        export_json_file=lambda path: exported.append(path) or path,
+    )
+
+    assert manager._persist_debug_battle_log("victory") is None
+    assert exported == []
+
+    manager.game.debug_mode = True
+    output_path = manager._persist_debug_battle_log("victory")
+
+    assert output_path is exported[0]
+    assert output_path.parent.parts[-2:] == ("debug_logs", "battles")
+    assert output_path.name.endswith("-ada-hero-vs-slime-blob-victory.json")
+
+
+def test_debug_battle_log_persistence_ignores_export_errors(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    manager.game.debug_mode = True
+    manager.logger = SimpleNamespace(
+        metadata={},
+        export_json_file=lambda _path: (_ for _ in ()).throw(OSError("disk full")),
+    )
+
+    assert manager._persist_debug_battle_log("defeat") is None
+
+
 def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()

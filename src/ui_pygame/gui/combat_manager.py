@@ -4,6 +4,8 @@ Handles combat flow with GUI rendering, delegating core game logic to BattleEngi
 """
 from __future__ import annotations
 
+import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import random
@@ -32,6 +34,13 @@ _DISPLAY_TO_ENGINE = {
     "Skills": "Use Skill",
     "Items": "Use Item",
 }
+
+
+def _battle_log_slug(value: object) -> str:
+    """Return a filesystem-friendly token for debug battle-log filenames."""
+    text = str(value or "unknown").strip().lower()
+    slug = "".join(char if char.isalnum() else "-" for char in text)
+    return "-".join(part for part in slug.split("-") if part) or "unknown"
 
 
 class GUICombatManager:
@@ -83,6 +92,28 @@ class GUICombatManager:
     def _clear_pending_input(self) -> bool:
         """Clear buffered events and require a fresh key release before selection input."""
         return prepare_guarded_input(flush_events=True, require_key_release=True)
+
+    def _persist_debug_battle_log(self, result: str) -> Path | None:
+        """Persist the current battle log when debug logging is enabled."""
+        if not (
+            getattr(self.game, "debug_mode", False)
+            or getattr(self.presenter, "debug_mode", False)
+        ):
+            return None
+
+        metadata = getattr(self.logger, "metadata", {}) or {}
+        player_name = metadata.get("player", {}).get("name", "player")
+        enemy_name = metadata.get("enemy", {}).get("name", "enemy")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        filename = (
+            f"{timestamp}-"
+            f"{_battle_log_slug(player_name)}-vs-{_battle_log_slug(enemy_name)}-"
+            f"{_battle_log_slug(result)}.json"
+        )
+        try:
+            return self.logger.export_json_file(Path("debug_logs") / "battles" / filename)
+        except Exception:
+            return None
 
     @staticmethod
     def _arm_guarded_input(event, input_armed: bool) -> bool:
@@ -1081,6 +1112,7 @@ class GUICombatManager:
         if player_char.in_town():
             player_char.effects(end=True)
             self.logger.end_battle(result="Escaped", winner=None, boss=False)
+            self._persist_debug_battle_log("escaped")
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
@@ -1091,6 +1123,7 @@ class GUICombatManager:
 
         # Let the engine handle all bookkeeping (exp, loot, quests, kill tracking, etc.)
         outcome = self.engine.end_battle()
+        self._persist_debug_battle_log(outcome.result)
 
         if outcome.result == "defeat":
             self._render_combat_frame(player_char, enemy, [], -1)
