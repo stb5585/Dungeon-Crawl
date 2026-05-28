@@ -72,6 +72,22 @@ def _combat_level(ch: object) -> int:
         return 1
 
 
+def armor_spell_modifier(armor: object) -> int:
+    """Return the spell-damage modifier granted by armor."""
+    explicit_mod = getattr(armor, "spell_mod", None)
+    if explicit_mod is not None:
+        try:
+            return int(explicit_mod)
+        except (TypeError, ValueError):
+            return 0
+    if getattr(armor, "subtyp", None) == "Cloth":
+        try:
+            return max(0, int(getattr(armor, "armor", 0)) // 4)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+
 # functions
 def sigmoid(x: float) -> float:
     return 1 / (1 + exp(-x))
@@ -1537,6 +1553,7 @@ class Character:
                 magic_mod += self.equipment['OffHand'].mod
             if self.equipment['Weapon'].subtyp == 'Staff':
                 magic_mod += int(self.equipment['Weapon'].damage * 0.75)
+            magic_mod += armor_spell_modifier(self.equipment.get("Armor"))
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':

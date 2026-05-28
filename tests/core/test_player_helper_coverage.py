@@ -232,10 +232,17 @@ class TestPlayerHelperCoverage:
             weight=0,
         )
         shadowcaster.equipment["Pendant"] = items.PlatinumNecklace()
+        shadowcaster.equipment["Armor"] = items.NoArmor()
         shadowcaster.stat_effects["Magic"].active = True
         shadowcaster.stat_effects["Magic"].extra = 3
 
         assert shadowcaster.check_mod("magic") == 201
+
+        shadowcaster.equipment["Armor"] = items.WizardRobe()
+        assert shadowcaster.check_mod("magic") == 211
+
+        shadowcaster.equipment["Armor"] = SimpleNamespace(subtyp="Cloth", armor=20, spell_mod=9)
+        assert shadowcaster.check_mod("magic") == 219
 
     def test_check_mod_support_branches_cover_luck_speed_and_armor_variants(self, monkeypatch):
         rogue = TestGameState.create_player(class_name="Rogue", race_name="Human")

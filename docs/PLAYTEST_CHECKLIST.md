@@ -77,6 +77,9 @@
 - [ ] Open the pygame Character Menu before and after equipping stronger armor.
   - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
+- [ ] Equip cloth armor such as Wizard's Robe and inspect Spell Modifier.
+  - Expected: Cloth armor contributes a spell modifier bonus while non-cloth armor does not.
+  - Expected: Future armor with explicit `spell_mod` uses that value instead of the derived cloth armor bonus.
 
 ### Shops
 - [ ] Navigate a pygame shop with more than one page of buy or sell items.

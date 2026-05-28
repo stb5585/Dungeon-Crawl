@@ -463,6 +463,7 @@ Planned work:
 - Elemental armor options or modification system
 - Special effects on ultimate armor
 - Spell modifiers on cloth armor
+  - completed: cloth armor now contributes to `check_mod("magic")` through a shared armor spell-modifier helper, with explicit `spell_mod` support for future item definitions
 - Weapon efficiency stat
 - Stat-themed item naming
 - Enemy item use / stolen consumables

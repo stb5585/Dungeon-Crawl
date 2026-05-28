@@ -25,7 +25,7 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
-from .character import Character
+from .character import Character, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
 
@@ -2137,6 +2137,7 @@ class Player(Character):
                 magic_mod += self.equipment['OffHand'].mod
             if self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
                 magic_mod += int(self.equipment['Weapon'].damage * 0.75)
+            magic_mod += armor_spell_modifier(self.equipment.get("Armor"))
             if self.equipment['Pendant'] is not None and 'Magic Damage' in self.equipment['Pendant'].mod:
                 magic_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
