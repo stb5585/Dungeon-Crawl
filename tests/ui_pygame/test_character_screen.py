@@ -117,7 +117,7 @@ def _make_player():
     player.current_weight = lambda: 55
     player.max_weight = lambda: 40
     player.critical_chance = lambda _slot: 0.125
-    player.check_mod = lambda mod: {"weapon": 18, "shield": 15, "magic def": 7, "magic": 9, "heal": 4}.get(mod, 0)
+    player.check_mod = lambda mod: {"weapon": 18, "armor": 22, "shield": 15, "magic def": 7, "magic": 9, "heal": 4}.get(mod, 0)
     player.in_town = lambda: False
     return player
 
@@ -184,6 +184,7 @@ def test_character_screen_draw_helpers_and_composition(monkeypatch):
     screen.draw_stats(player)
     assert "Hit Points:" in presenter.large_font.render_calls
     assert "18" in {str(call).strip() for call in presenter.large_font.render_calls}
+    assert "22" in {str(call).strip() for call in presenter.large_font.render_calls}
     assert "Critical Chance:" in presenter.large_font.render_calls
     assert "Equipped Gear" in presenter.large_font.render_calls
     assert "Weight/Max:" in presenter.large_font.render_calls

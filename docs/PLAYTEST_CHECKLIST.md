@@ -74,6 +74,9 @@
 - [ ] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.
+- [ ] Open the pygame Character Menu before and after equipping stronger armor.
+  - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
+  - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

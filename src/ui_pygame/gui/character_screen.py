@@ -175,6 +175,14 @@ class CharacterScreen(TownScreenBase):
         except (AttributeError, KeyError, TypeError, ValueError):
             return int(getattr(getattr(player_char, "combat", None), "attack", 0))
 
+    @staticmethod
+    def _get_display_defense(player_char) -> int:
+        """Return the armor-adjusted defense value shown in the character menu."""
+        try:
+            return int(player_char.check_mod("armor"))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return int(getattr(getattr(player_char, "combat", None), "defense", 0))
+
     def draw_info(self, player_char):
         """Draw character info header."""
         self.draw_semi_transparent_panel(self.info_rect)
@@ -327,7 +335,7 @@ class CharacterScreen(TownScreenBase):
         combat_stats = [
             ("Attack:", str(self._get_display_attack(player_char))),
             ("Critical Chance:", f"{player_char.critical_chance('Weapon') * 100:.1f}%"),
-            ("Defense:", str(player_char.combat.defense)),
+            ("Defense:", str(self._get_display_defense(player_char))),
             ("Block Chance:", f"{player_char.check_mod('shield')}%"),
             ("Spell Defense:", str(player_char.check_mod('magic def'))),
             ("Spell Modifier:", str(player_char.check_mod('magic'))),
