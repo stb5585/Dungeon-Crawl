@@ -144,6 +144,7 @@ Note:
 
 - YAML `telegraph_message` is currently the canonical telegraph source
 - `Enemy.action_stack["telegraph"]` and `Enemy.action_stack["delay"]` remain future-integration hooks rather than fully consumed scheduling inputs
+- Enemy priority selection now records the chosen `action_stack` entry as metadata, so delay and telegraph hooks can be inspected by UI/tooling before deeper scheduler integration.
 
 ### 7. Initial Balance / Tuning Pass
 
@@ -491,6 +492,7 @@ Clarification:
 
 - The runtime sound/music system exists already; what remains is mostly content completion and polish.
 - Repo inspection confirms that the music runtime exists, but the `src/ui_pygame/assets/music/` directory still lacks real music assets beyond documentation.
+- Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
 
 ---
 
@@ -558,6 +560,8 @@ Current progress:
 - Tightened side-corridor floor-sprite depth and clip behavior so opening sprites follow the deeper corridor geometry
 - Extended stale-input protection to quantity, code-entry, level-up, inventory, shop, barracks, and combat-end modal flows
 - Extended the same status-icon priority/overflow behavior to the combat-mode dungeon HUD
+- Added stable enemy action metadata for selected weighted `action_stack` entries, including ability, priority, delay, and telegraph fields.
+- Added checked-path details to audio asset diagnostics for missing SFX/music follow-up work.
 - Added left-side outer-corridor door-state smoke coverage to match the existing right-side checks
 - Extended stale-input protection to shared `confirm_yes_no()` prompts
 - Standardized inn/church town-manager popups on shared guarded popup kwargs with background redraw support

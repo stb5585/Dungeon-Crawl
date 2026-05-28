@@ -133,8 +133,18 @@
   - Expected: Negative legacy/manual counters are displayed as zeroes before derived totals are calculated.
 
 ### Developer Tooling
+- [ ] Generate or inspect a `CombatResult` / `CombatResultGroup` diagnostic payload after combat.
+  - Expected: Actor and target are represented by names, not full character objects.
+  - Expected: Mutating the exported dictionary does not mutate the live combat result's `effects_applied` or `extra` data.
+- [ ] Inspect a weapon through equipment/debug output after setting `crit_chance`.
+  - Expected: `crit_chance` and legacy `crit` stay in sync.
+  - Expected: Character critical-hit chance uses `crit_chance` when it is available.
+- [ ] Run an enemy weighted-action selection diagnostic for an action with telegraph/delay metadata.
+  - Expected: The selected action metadata includes ability, priority, delay, telegraph, and `from_action_stack`.
+  - Expected: Metadata clears after fallback or non-`action_stack` selection so stale telegraphs are not reported.
 - [ ] Run sound/music asset diagnostics for expected combat, town, and menu audio.
   - Expected: Present sound/music files report available paths, while missing placeholder content is reported without crashing or playing audio.
+  - Expected: Missing sound/music entries report the checked candidate filenames for supported extensions.
   - Expected: Default diagnostics include the runtime's combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
   - Expected: Summary payloads include available and missing SFX/music name lists.
@@ -160,5 +170,8 @@
   - Expected: Enabled state, history size/limit, retained event counts, and subscriber counts are visible without raw event rows.
   - Expected: Diagnostics also expose whether bounded history is full and the total subscriber count.
   - Expected: Diagnostics expose remaining history capacity plus sorted retained-history and subscriber event-type lists.
+- [ ] Emit an event while one subscriber unsubscribes itself.
+  - Expected: Other subscribers for the same event still receive the in-flight event.
+  - Expected: The unsubscribed callback is not called on later emissions.
 - [ ] Run focused action-queue tests after combat scheduling changes.
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
