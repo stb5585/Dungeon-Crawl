@@ -5,6 +5,7 @@ Load Game screen for Pygame GUI - matches the shop layout with character details
 import pygame
 
 from src.core.save_system import SaveManager
+from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 
 
@@ -233,6 +234,43 @@ class LoadGameScreen:
                     'level': '?',
                     'file': save_file
                 })
+
+    def delete_selected_save(self) -> bool:
+        """Delete the currently selected save file after confirmation."""
+        if not self.save_data or self.current_selection >= len(self.save_data):
+            return False
+
+        save_file = self.save_data[self.current_selection]['file']
+        popup = ConfirmationPopup(
+            self.presenter,
+            f"Delete {save_file}? This cannot be undone.",
+        )
+        if not popup.show(
+            background_draw_func=self.draw_all,
+            flush_events=True,
+            require_key_release=True,
+        ):
+            return False
+
+        if not SaveManager.delete_save(save_file):
+            notice = ConfirmationPopup(
+                self.presenter,
+                f"Could not delete {save_file}.",
+                show_buttons=False,
+            )
+            notice.show(
+                background_draw_func=self.draw_all,
+                flush_events=True,
+                require_key_release=True,
+            )
+            return False
+
+        del self.save_data[self.current_selection]
+        if save_file in self.save_files:
+            self.save_files.remove(save_file)
+        if self.current_selection >= len(self.save_data):
+            self.current_selection = max(0, len(self.save_data) - 1)
+        return True
     
     def navigate(
         self,
@@ -278,6 +316,14 @@ class LoadGameScreen:
                         self.current_selection = (self.current_selection + 1) % len(self.save_data)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         return self.save_data[self.current_selection]['file']
+                    elif event.key in (pygame.K_DELETE, pygame.K_BACKSPACE):
+                        self.delete_selected_save()
+                        if not self.save_data:
+                            return None
+                        input_armed = prepare_guarded_input(
+                            flush_events=True,
+                            require_key_release=True,
+                        )
                     elif event.key == pygame.K_ESCAPE:
                         return None
             

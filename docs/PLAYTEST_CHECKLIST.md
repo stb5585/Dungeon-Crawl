@@ -100,6 +100,9 @@
   - Expected: Multi-key quest rewards survive a SaveManager round trip.
 - [ ] Open the Load Game menu after a failed or interrupted save attempt.
   - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
+- [ ] Delete a real save file from the pygame Load Game menu.
+  - Expected: The delete action asks for confirmation before removing the selected save file.
+  - Expected: The deleted save disappears from the list and the next visible save can still be loaded.
 - [ ] Attempt to delete or load invalid save entries such as blank names or folder-like entries.
   - Expected: The game refuses the invalid entry without loading directories, deleting directories, or creating blank-name saves.
 - [ ] Validate save names from a debug/menu path before attempting load or delete.

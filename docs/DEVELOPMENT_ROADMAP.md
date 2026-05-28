@@ -758,6 +758,7 @@ Current non-visual Phase 1 track:
   - completed: save metadata diagnostics now expose loadability and visible filenames for load-menu sanity checks
   - completed: save-directory diagnostics now include grouped hidden-entry filename lists for temp leftovers, directory-like saves, and ignored files
   - remaining: broaden only if new persistence failures appear in specific systems
+  - completed: pygame load-game navigation can delete selected save files through the hardened SaveManager delete path
 - Combat/logging infrastructure
   - completed: battle logger now supports structured payload and JSON export for debugging/tooling
 - completed: battle logger can persist structured JSON logs directly to disk for local analysis
