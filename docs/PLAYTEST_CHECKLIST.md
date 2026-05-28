@@ -82,6 +82,8 @@
 - [ ] Navigate a pygame shop with more than one page of buy or sell items.
   - Expected: PageUp/PageDown move by a visible page while keeping the highlighted item on screen.
   - Expected: Home/End jump to the first and last item without corrupting scroll position.
+- [ ] Inspect an elemental weapon or armor item in the curses shop screen.
+  - Expected: The item description includes an `Element: ...` line for any item type with elemental metadata.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

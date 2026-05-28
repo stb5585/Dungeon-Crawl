@@ -599,6 +599,39 @@ def test_shop_menu_configures_items_mods_and_navigation(monkeypatch):
     assert any("Old Key" in item for item in menu2.item_str_list)
 
 
+def test_shop_menu_item_description_shows_element_for_any_item_type(monkeypatch):
+    created = []
+    monkeypatch.setattr(curses_menus.curses, "newwin", _fake_newwin_factory(created))
+    game = _make_game()
+    game.player_char.in_town = lambda: True
+    game.player_char.player_level = lambda: 20
+    game.player_char.shop_price_scale = lambda: 1.0
+
+    class ArmorFactory:
+        def __call__(self):
+            return SimpleNamespace(
+                name="Flame Mail",
+                typ="Armor",
+                description="Armor forged near a volcano.",
+                rarity=0.9,
+                value=100,
+                element="Fire",
+            )
+
+    menu = curses_menus.ShopMenu(game, "Shop here")
+    menu.buy_or_sell = "Buy"
+    menu.itemdict = {"Armor": [ArmorFactory()]}
+    menu.config_item_str()
+    menu.current_item = 0
+
+    menu.draw_item_desc()
+
+    assert any(
+        call[0] == "addstr" and len(call[1]) >= 3 and call[1][2] == "Element: Fire"
+        for call in menu.item_desc_win.calls
+    )
+
+
 def test_character_menu_draws_panels_and_navigates(monkeypatch):
     created = []
     monkeypatch.setattr(curses_menus.curses, "newwin", _fake_newwin_factory(created))

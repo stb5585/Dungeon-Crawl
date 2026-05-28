@@ -468,6 +468,7 @@ Planned work:
 - Continue `crit` parameter cleanup to `crit_chance`
   - a backward-compatible `Weapon.crit_chance` alias now exists, and character critical-hit math prefers it when present
   - new weapon definitions can now use the `crit_chance` constructor keyword while legacy `crit` callers continue to work
+  - curses shop item descriptions now show elemental metadata for any item type that exposes an `element`, including future elemental armor.
 
 ### 4. Racial Passives
 

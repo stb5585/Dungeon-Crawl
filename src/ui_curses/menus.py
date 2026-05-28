@@ -974,8 +974,14 @@ class ShopMenu:
                 for i, line in enumerate(lines):
                     self.item_desc_win.addstr(self.height // 8 + i - (len(lines) // 2),
                                             (self.width // 3) - (len(line) // 2), line)
-                if item.typ == "Weapon" and item.element:  # TODO change to include armor
-                    pass
+                element = getattr(item, "element", None)
+                if element:
+                    element_line = f"Element: {element}"
+                    self.item_desc_win.addstr(
+                        self.height // 8 + len(lines) + 1 - (len(lines) // 2),
+                        (self.width // 3) - (len(element_line) // 2),
+                        element_line,
+                    )
         self.item_desc_win.box()
 
     def draw_shop_list(self):
