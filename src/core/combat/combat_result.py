@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -21,7 +22,7 @@ class CombatResult:
     block_amount: int | None = None
     damage: int | None = None
     healing: int | None = None
-    effects_applied: dict[str, list] = field(default_factory=lambda: {
+    effects_applied: dict[str, list[Any]] = field(default_factory=lambda: {
         'Status': [],
         'Physical': [],
         'Stat': [],
@@ -47,8 +48,8 @@ class CombatResult:
             "block_amount": self.block_amount,
             "damage": self.damage,
             "healing": self.healing,
-            "effects_applied": self.effects_applied,
-            "extra": self.extra,
+            "effects_applied": deepcopy(self.effects_applied),
+            "extra": deepcopy(self.extra),
             "message": self.message,
         }
 
