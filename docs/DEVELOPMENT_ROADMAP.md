@@ -466,6 +466,7 @@ Planned work:
 - Enemy item use / stolen consumables
 - Continue `crit` parameter cleanup to `crit_chance`
   - a backward-compatible `Weapon.crit_chance` alias now exists, and character critical-hit math prefers it when present
+  - new weapon definitions can now use the `crit_chance` constructor keyword while legacy `crit` callers continue to work
 
 ### 4. Racial Passives
 
@@ -493,6 +494,7 @@ Clarification:
 - The runtime sound/music system exists already; what remains is mostly content completion and polish.
 - Repo inspection confirms that the music runtime exists, but the `src/ui_pygame/assets/music/` directory still lacks real music assets beyond documentation.
 - Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
+- SoundManager now has location/context music routing for town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
 
 ---
 
@@ -562,6 +564,8 @@ Current progress:
 - Extended the same status-icon priority/overflow behavior to the combat-mode dungeon HUD
 - Added stable enemy action metadata for selected weighted `action_stack` entries, including ability, priority, delay, and telegraph fields.
 - Added checked-path details to audio asset diagnostics for missing SFX/music follow-up work.
+- Added SoundManager location/context music-theme routing for future music integration.
+- Extended weapon construction to accept the clearer `crit_chance` keyword without breaking existing item definitions.
 - Added left-side outer-corridor door-state smoke coverage to match the existing right-side checks
 - Extended stale-input protection to shared `confirm_yes_no()` prompts
 - Standardized inn/church town-manager popups on shared guarded popup kwargs with background redraw support

@@ -139,6 +139,7 @@
 - [ ] Inspect a weapon through equipment/debug output after setting `crit_chance`.
   - Expected: `crit_chance` and legacy `crit` stay in sync.
   - Expected: Character critical-hit chance uses `crit_chance` when it is available.
+  - Expected: New weapon definitions can pass `crit_chance=` to the constructor without using ambiguous legacy `crit` values.
 - [ ] Run an enemy weighted-action selection diagnostic for an action with telegraph/delay metadata.
   - Expected: The selected action metadata includes ability, priority, delay, telegraph, and `from_action_stack`.
   - Expected: Metadata clears after fallback or non-`action_stack` selection so stale telegraphs are not reported.
@@ -148,6 +149,9 @@
   - Expected: Default diagnostics include the runtime's combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
   - Expected: Summary payloads include available and missing SFX/music name lists.
+- [ ] Trigger location music routing from town, shops, church, inn, dungeon, and combat contexts.
+  - Expected: Town, shop-family, church, inn, dungeon, normal-combat, boss-combat, and final-combat contexts map to distinct runtime music theme names.
+  - Expected: Unknown locations fall back to the town theme instead of failing.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.
