@@ -53,6 +53,25 @@ class TestEquipmentBasics:
         assert weapon.crit == 0.42
         assert "Critical Chance: 42%" in str(weapon)
 
+    def test_weapon_constructor_accepts_crit_chance_keyword(self):
+        """New weapon definitions can use crit_chance without legacy crit ambiguity."""
+        weapon = items.Weapon(
+            name="Test Blade",
+            description="A test weapon.",
+            value=1,
+            rarity=1.0,
+            damage=3,
+            crit=None,
+            handed=1,
+            subtyp="Sword",
+            unequip=False,
+            off=True,
+            crit_chance=0.37,
+        )
+
+        assert weapon.crit == 0.37
+        assert weapon.crit_chance == 0.37
+
     def test_character_critical_chance_prefers_crit_chance_alias(self):
         """Character crit math should use the clearer weapon API when present."""
         player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")

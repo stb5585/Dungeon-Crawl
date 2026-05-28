@@ -115,11 +115,24 @@ class Weapon(Item):
     ignore: boolean indicating whether the weapon automatically ignores armor when calculating damage
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float, damage: int,
-                 crit: float, handed: int, subtyp: str, unequip: bool, off: bool) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        value: int,
+        rarity: float,
+        damage: int,
+        crit: float | None,
+        handed: int,
+        subtyp: str,
+        unequip: bool,
+        off: bool,
+        *,
+        crit_chance: float | None = None,
+    ) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.damage = damage
-        self.crit = crit
+        self.crit = crit if crit_chance is None else crit_chance
         self.handed = handed
         self.unequip = unequip
         self.off = off
