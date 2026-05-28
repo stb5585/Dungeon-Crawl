@@ -496,6 +496,7 @@ Clarification:
 - Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
 - SoundManager now has location/context music routing for town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
 - Pygame top-level town/shop/church/inn/barracks/dungeon flows now request location music through that routing, and repeated requests for the active theme do not restart the track.
+- Combat-start events now route normal, boss, and final combat music through the same theme helper, with pre-combat location music restored after combat ends when available.
 
 ---
 
@@ -568,6 +569,7 @@ Current progress:
 - Added SoundManager location/context music-theme routing for future music integration.
 - Wired pygame top-level location transitions into SoundManager music-theme routing.
 - Added a repeat-theme guard so location music requests do not restart the currently active track unless forced.
+- Routed combat-start events to normal/boss/final combat music themes and restored the previous location theme after combat end.
 - Extended weapon construction to accept the clearer `crit_chance` keyword without breaking existing item definitions.
 - Added left-side outer-corridor door-state smoke coverage to match the existing right-side checks
 - Extended stale-input protection to shared `confirm_yes_no()` prompts

@@ -154,6 +154,8 @@
   - Expected: Unknown locations fall back to the town theme instead of failing.
   - Expected: Entering top-level pygame town, shop, church, inn, barracks, and dungeon flows requests the matching theme without crashing when audio is unavailable.
   - Expected: Re-entering the same location does not restart the already active track unless forced.
+  - Expected: Combat start requests normal, boss, or final combat music from combat event context.
+  - Expected: Ending combat restores the previous non-combat location theme when one was active.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.
