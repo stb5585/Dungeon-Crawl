@@ -488,7 +488,6 @@ Still planned:
 
 - Replace placeholder sound effects with final assets
 - Add background music assets
-- Support location-based music themes
 
 Clarification:
 
