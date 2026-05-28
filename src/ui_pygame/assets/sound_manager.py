@@ -84,6 +84,7 @@ class SoundManager:
         # Sound caches
         self.sfx_cache: dict[str, pygame.mixer.Sound] = {}
         self.current_music: str | None = None
+        self._pre_combat_music: str | None = None
         
         # Volume settings (0.0 to 1.0)
         self.master_volume = 1.0
@@ -138,6 +139,8 @@ class SoundManager:
     def _on_combat_start(self, event):
         """Handle combat start event."""
         self.play_sfx("combat_start")
+        if not (self.current_music or "").startswith("combat_"):
+            self._pre_combat_music = self.current_music
         self.play_location_music(
             "combat",
             boss=bool(event.data.get("boss", False)),
@@ -152,6 +155,9 @@ class SoundManager:
             self.play_sfx("flee")
         else:
             self.play_sfx("defeat")
+        if self._pre_combat_music:
+            self.play_music(self._pre_combat_music)
+            self._pre_combat_music = None
 
     def _on_damage_dealt(self, event):
         """Handle damage dealt event."""

@@ -495,3 +495,33 @@ def test_combat_start_music_uses_boss_and_final_flags(tmp_path, fake_mixer, monk
         ("combat", {"boss": True, "final": False}),
         ("combat", {"boss": False, "final": True}),
     ]
+
+
+def test_combat_end_restores_previous_location_music(tmp_path, fake_mixer, monkeypatch):
+    _state, _music = fake_mixer
+    manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)))
+    manager.current_music = "dungeon"
+    music_calls = []
+    sfx_calls = []
+    monkeypatch.setattr(manager, "play_sfx", lambda name, **_kwargs: sfx_calls.append(name))
+    monkeypatch.setattr(
+        manager,
+        "play_location_music",
+        lambda location, **kwargs: setattr(manager, "current_music", "combat_boss") or music_calls.append(("location", location, kwargs)),
+    )
+    monkeypatch.setattr(
+        manager,
+        "play_music",
+        lambda music_name, **_kwargs: setattr(manager, "current_music", music_name) or music_calls.append(("music", music_name)),
+    )
+
+    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True}))
+    manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True}))
+
+    assert sfx_calls == ["combat_start", "victory"]
+    assert music_calls == [
+        ("location", "combat", {"boss": True, "final": False}),
+        ("music", "dungeon"),
+    ]
+    assert manager.current_music == "dungeon"
+    assert manager._pre_combat_music is None
