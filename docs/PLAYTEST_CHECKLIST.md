@@ -122,6 +122,9 @@
 ### Quest Log
 - [ ] Accept and complete a main quest that grants item rewards.
   - Expected: Quest completion and turned-in state are recorded correctly.
+- [ ] Inspect quest status summary diagnostics after accepting, completing, and turning in quests.
+  - Expected: Main/Side/Bounty category counts distinguish total, completed, turned-in, ready-to-turn-in, and active quests.
+  - Expected: Malformed or legacy non-dictionary quest entries are ignored instead of crashing diagnostics.
 
 ### Statistics
 - [ ] Open the Statistics entry from the pygame town menu.

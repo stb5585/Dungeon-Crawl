@@ -381,6 +381,7 @@ Medium-priority remaining coverage:
 - Save/load round trips
   - foundation coverage now exists for inventory/storage, quest serialization, mutable tile state, SaveManager file IO, and gameplay-stat persistence
 - Quest completion flows
+  - pygame quest-manager diagnostics now summarize completed, turned-in, ready-to-turn-in, active, and total quest counts by category
 - Enemy AI behavior
 
 Lower-priority remaining coverage:
@@ -571,6 +572,7 @@ Current progress:
 - Added a repeat-theme guard so location music requests do not restart the currently active track unless forced.
 - Routed combat-start events to normal/boss/final combat music themes and restored the previous location theme after combat end.
 - Extended weapon construction to accept the clearer `crit_chance` keyword without breaking existing item definitions.
+- Added quest status summary diagnostics for completion/turn-in flow audits.
 - Added left-side outer-corridor door-state smoke coverage to match the existing right-side checks
 - Extended stale-input protection to shared `confirm_yes_no()` prompts
 - Standardized inn/church town-manager popups on shared guarded popup kwargs with background redraw support
