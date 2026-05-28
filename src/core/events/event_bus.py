@@ -126,7 +126,7 @@ class EventBus:
     """
     
     def __init__(self, max_history: int = 1000):
-        self._subscribers: dict[EventType, list[Callable]] = {}
+        self._subscribers: dict[EventType, list[Callable[[GameEvent], None]]] = {}
         self._history: list[GameEvent] = []
         self._max_history: int = max(0, max_history)
         self._enabled: bool = True
@@ -146,7 +146,7 @@ class EventBus:
         if callback not in self._subscribers[event_type]:
             self._subscribers[event_type].append(callback)
     
-    def unsubscribe(self, event_type: EventType, callback: Callable) -> None:
+    def unsubscribe(self, event_type: EventType, callback: Callable[[GameEvent], None]) -> None:
         """
         Unsubscribe from an event type.
         
@@ -176,7 +176,7 @@ class EventBus:
         
         # Notify subscribers
         if event.type in self._subscribers:
-            for callback in self._subscribers[event.type]:
+            for callback in tuple(self._subscribers[event.type]):
                 try:
                     callback(event)
                 except Exception as e:
