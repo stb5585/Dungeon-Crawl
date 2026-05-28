@@ -108,6 +108,7 @@ class PygameGame:
 
         # Attach shim so existing code using `game.stdscr.getch()` works in GUI mode
         self.stdscr = _PygameStdscr(self.presenter)
+        self._play_location_music("town")
 
     @staticmethod
     def _popup_show_kwargs(background_draw_func=None, min_display_ms: int | None = None):
@@ -121,6 +122,16 @@ class PygameGame:
         if min_display_ms is not None:
             kwargs["min_display_ms"] = min_display_ms
         return kwargs
+
+    def _play_location_music(self, location: str, *, boss: bool = False, final: bool = False) -> str | None:
+        """Play a location music theme when audio is available, without affecting gameplay."""
+        sound_manager = getattr(self.presenter, "sound_manager", None)
+        if sound_manager is None or not hasattr(sound_manager, "play_location_music"):
+            return None
+        try:
+            return sound_manager.play_location_music(location, boss=boss, final=final)
+        except Exception:
+            return None
 
     def special_event(self, name: str):
         """GUI implementation of narrative special events.
@@ -538,6 +549,7 @@ class PygameGame:
 
     def town_menu(self):
         """Display town menu and handle selection."""
+        self._play_location_music("town")
         # Build options list first so it can be reused for popups
         options = [
             "Visit Barracks",
@@ -735,6 +747,7 @@ class PygameGame:
     
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""
+        self._play_location_music("shop")
         shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Go Back"]
         
         # Create shop selection screen
@@ -759,18 +772,22 @@ class PygameGame:
     
     def visit_church(self):
         """Visit the Church - managed by ChurchManager."""
+        self._play_location_music("church")
         self.church_manager.visit_church()
     
     def visit_barracks(self):
         """Visit the Barracks - managed by BarracksManager."""
+        self._play_location_music("town")
         self.barracks_manager.visit_barracks()
     
     def visit_inn(self):
         """Visit the Inn/Tavern - managed by InnManager."""
+        self._play_location_music("inn")
         self.inn_manager.visit_inn()
     
     def enter_dungeon(self):
         """Enter first-person dungeon exploration mode."""
+        self._play_location_music("dungeon")
         # Use DungeonManager for exploration
         self.dungeon_manager.explore_dungeon()
 

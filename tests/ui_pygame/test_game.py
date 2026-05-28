@@ -231,6 +231,65 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     assert game.bounties["Goblin"]["reward"] == 50
 
 
+def test_location_music_wrapper_is_defensive_and_routes_to_sound_manager():
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    calls = []
+    game.presenter = SimpleNamespace(
+        sound_manager=SimpleNamespace(
+            play_location_music=lambda location, **kwargs: calls.append((location, kwargs)) or "theme"
+        )
+    )
+
+    assert game._play_location_music("dungeon", boss=True) == "theme"
+    assert calls == [("dungeon", {"boss": True, "final": False})]
+
+    game.presenter.sound_manager.play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("audio"))
+    assert game._play_location_music("town") is None
+
+    game.presenter.sound_manager = None
+    assert game._play_location_music("town") is None
+
+
+def test_top_level_flows_request_location_music(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    music_calls = []
+    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    game.presenter = SimpleNamespace(set_background_provider=lambda _provider: None)
+    game.shop_manager = SimpleNamespace(
+        visit_blacksmith=lambda: None,
+        visit_alchemist=lambda: None,
+        visit_jeweler=lambda: None,
+    )
+    game.church_manager = SimpleNamespace(visit_church=lambda: None)
+    game.barracks_manager = SimpleNamespace(visit_barracks=lambda: None)
+    game.inn_manager = SimpleNamespace(visit_inn=lambda: None)
+    game.dungeon_manager = SimpleNamespace(explore_dungeon=lambda: None)
+    game.player_char = SimpleNamespace(quit=False)
+
+    class FakeShopSelection:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, _options, **_kwargs):
+            return 3
+
+    monkeypatch.setattr(pygame_game, "ShopSelectionScreen", FakeShopSelection)
+
+    game.visit_shop()
+    game.visit_church()
+    game.visit_barracks()
+    game.visit_inn()
+    game.enter_dungeon()
+
+    assert music_calls == [
+        ("shop", {}),
+        ("church", {}),
+        ("town", {}),
+        ("inn", {}),
+        ("dungeon", {}),
+    ]
+
+
 def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     route_kwargs = []
