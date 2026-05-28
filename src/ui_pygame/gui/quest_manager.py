@@ -159,6 +159,46 @@ class QuestManager:
         # No requirements, can offer
         return True
 
+    def get_quest_status_summary(self) -> dict[str, Any]:
+        """Return compact quest completion/turn-in counts for diagnostics."""
+        categories: dict[str, dict[str, int]] = {}
+        totals = {
+            "quests": 0,
+            "completed": 0,
+            "turned_in": 0,
+            "ready_to_turn_in": 0,
+            "active": 0,
+        }
+
+        for category, quests in getattr(self.player_char, "quest_dict", {}).items():
+            category_counts = {
+                "quests": 0,
+                "completed": 0,
+                "turned_in": 0,
+                "ready_to_turn_in": 0,
+                "active": 0,
+            }
+            if not isinstance(quests, dict):
+                categories[category] = category_counts
+                continue
+
+            for quest_data in quests.values():
+                if not isinstance(quest_data, dict):
+                    continue
+                completed = bool(quest_data.get("Completed", False))
+                turned_in = bool(quest_data.get("Turned In", False))
+                category_counts["quests"] += 1
+                category_counts["completed"] += int(completed)
+                category_counts["turned_in"] += int(turned_in)
+                category_counts["ready_to_turn_in"] += int(completed and not turned_in)
+                category_counts["active"] += int(not turned_in)
+
+            categories[category] = category_counts
+            for key in totals:
+                totals[key] += category_counts[key]
+
+        return {"categories": categories, "totals": totals}
+
     def _turn_in(self, quest_name: str, typ: str) -> None:
         qdata = self.player_char.quest_dict[typ][quest_name]
         # Show end-of-quest text from quest giver if available

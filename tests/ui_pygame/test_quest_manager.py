@@ -373,6 +373,56 @@ def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):
     assert "no new quests" in FakePopup.messages[-1][0].lower()
 
 
+def test_quest_status_summary_counts_completion_and_turnin_state():
+    player = _make_player()
+    player.quest_dict = {
+        "Main": {
+            "Ready": {"Completed": True, "Turned In": False},
+            "Done": {"Completed": True, "Turned In": True},
+            "Active": {"Completed": False, "Turned In": False},
+        },
+        "Side": {
+            "Legacy Missing Completed": {"Turned In": False},
+            "Malformed": "not-a-dict",
+        },
+        "Bounty": {},
+    }
+    manager = _manager(player)
+
+    assert manager.get_quest_status_summary() == {
+        "categories": {
+            "Main": {
+                "quests": 3,
+                "completed": 2,
+                "turned_in": 1,
+                "ready_to_turn_in": 1,
+                "active": 2,
+            },
+            "Side": {
+                "quests": 1,
+                "completed": 0,
+                "turned_in": 0,
+                "ready_to_turn_in": 0,
+                "active": 1,
+            },
+            "Bounty": {
+                "quests": 0,
+                "completed": 0,
+                "turned_in": 0,
+                "ready_to_turn_in": 0,
+                "active": 0,
+            },
+        },
+        "totals": {
+            "quests": 4,
+            "completed": 2,
+            "turned_in": 1,
+            "ready_to_turn_in": 1,
+            "active": 3,
+        },
+    }
+
+
 def test_turn_in_popup_reward_variants_and_collect_cleanup(monkeypatch):
     player = _make_player()
     player.max_level = lambda: True
