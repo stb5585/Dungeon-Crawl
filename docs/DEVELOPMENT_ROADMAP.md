@@ -40,7 +40,7 @@ This roadmap is organized by implementation status instead of historical plannin
 
 ### Verified Repo Metrics
 
-- Test files under `tests/` (all buckets): `78`
+- Test files under `tests/` (all buckets): `81`
 - YAML ability definitions under `src/core/data/abilities/`: `179`
 - Event types in `EventType`: `38`
 
@@ -190,6 +190,7 @@ Partially completed from the original roadmap’s earlier phases:
 
 - Type-hint cleanup has begun
 - `character.py` and `combat_result.py` were explicitly called out as completed in the earlier execution phases
+- `CombatResult` now uses a more precise typed effects mapping and snapshots mutable payloads when converted to dictionaries
 - Combat basics coverage was expanded enough to mark earlier stabilization phases complete
 
 Clarification:
@@ -362,7 +363,7 @@ Testing work remains ongoing.
 Current state note:
 
 - The old roadmap metric of “13 test files” is outdated. The repo now contains substantially more test modules, but coverage gaps still remain in the areas below.
-- The current tracked `test_*.py` module count is `78`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
+- The current tracked `test_*.py` module count is `81`, with active work now organized across `tests/core`, `tests/integration`, `tests/ui_pygame`, and `tests/ui_curses`.
 - The latest full-suite run confirmed by the user is `1398` passing tests with `81%` total coverage across `src/`.
 - The `ui_pygame` bucket is now broadly stabilized for Phase 1 coverage work; every currently measured module there is at or above `70%`.
 - The test buckets now use package markers (`__init__.py`) so identically named files like `test_battle.py` and `test_town.py` collect cleanly across domains.
@@ -372,6 +373,7 @@ High-priority remaining coverage:
 - Ability effects across the full ability set
 - Status-effect interaction scenarios
 - Combat-result consistency checks
+  - focused `CombatResult` / `CombatResultGroup` snapshot and ordering coverage now exists
 
 Medium-priority remaining coverage:
 
@@ -383,6 +385,7 @@ Medium-priority remaining coverage:
 Lower-priority remaining coverage:
 
 - Event bus emissions / infrastructure-level checks
+  - focused event-bus diagnostics and unsubscribe-during-emit regression coverage now exists
 
 ### 4. Broader Type Hinting And Docstrings
 
@@ -460,7 +463,8 @@ Planned work:
 - Weapon efficiency stat
 - Stat-themed item naming
 - Enemy item use / stolen consumables
-- `crit` parameter cleanup to `crit_chance`
+- Continue `crit` parameter cleanup to `crit_chance`
+  - a backward-compatible `Weapon.crit_chance` alias now exists, and character critical-hit math prefers it when present
 
 ### 4. Racial Passives
 
