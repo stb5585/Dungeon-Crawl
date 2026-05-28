@@ -118,6 +118,7 @@ class Enemy(Character):
         self.experience = exp
         self.enemy_typ: str = ""
         self.action_stack: list[dict] = []
+        self.last_action_stack_entry: dict | None = None
         # Ability names that can only be used once per combat by this enemy.
         self.single_use_abilities: set[str] = set()
         self._used_single_use_abilities: set[str] = set()
@@ -167,6 +168,7 @@ class Enemy(Character):
         return text
 
     def options(self, target: Character, action_list: list[str], tile: object) -> tuple[str, str | None]:
+        self.last_action_stack_entry = None
         if self.status_effects["Berserk"].active:
             return "Attack", None
         if self.turtle or self.magic_effects["Ice Block"].active:
@@ -242,6 +244,7 @@ class Enemy(Character):
         Ensures enemies use abilities strategically, not just random selection.
         """
         # Build weighted pool of available actions from action_stack
+        self.last_action_stack_entry = None
         weighted_actions = []
         
         for action_entry in self.action_stack:
@@ -310,20 +313,22 @@ class Enemy(Character):
             
             # Add action to weighted pool proportional to priority weight
             for _ in range(weight):
-                weighted_actions.append((action_type, ability_name))
+                weighted_actions.append((action_type, ability_name, dict(action_entry)))
         
         # If no weighted actions available, fall back to standard options() logic
         if not weighted_actions:
             return self._fallback_action_selection(target, tile)
         
         # Choose from weighted pool (higher priority = more copies in pool = higher selection chance)
-        action_type, ability_name = random.choice(weighted_actions)
+        action_type, ability_name, action_entry = random.choice(weighted_actions)
+        self.last_action_stack_entry = action_entry
         if ability_name in self.single_use_abilities:
             self._used_single_use_abilities.add(ability_name)
         return action_type, ability_name
 
     def _fallback_action_selection(self, target: Character, tile: object) -> tuple[str, str | None]:
         """Fallback to standard random action selection if action_stack can't be used."""
+        self.last_action_stack_entry = None
         if self.name != 'Test' and not self.tunnel:
             action_list = ["Attack"]
         else:
@@ -388,6 +393,21 @@ class Enemy(Character):
             self._used_single_use_abilities.add(ability)
         
         return action, ability
+
+    def get_last_action_metadata(self) -> dict[str, object]:
+        """Return metadata from the last selected action_stack entry."""
+        entry = self.last_action_stack_entry or {}
+        try:
+            delay = max(0, int(entry.get("delay", 0) or 0))
+        except (TypeError, ValueError):
+            delay = 0
+        return {
+            "ability": entry.get("ability"),
+            "priority": entry.get("priority"),
+            "delay": delay,
+            "telegraph": entry.get("telegraph"),
+            "from_action_stack": bool(entry),
+        }
 
     def _resolve_priority_condition(self, condition: dict, fallback_priority: ActionPriority,
                                      target: Character, tile: object) -> ActionPriority:

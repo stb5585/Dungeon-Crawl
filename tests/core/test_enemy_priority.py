@@ -153,3 +153,51 @@ def test_single_use_ability_only_selected_once(monkeypatch):
 
     assert (first_action, first_ability) == ("Cast Spell", "Regen")
     assert (second_action, second_ability) == ("Attack", "Attack")
+
+
+def test_action_stack_selection_records_delay_and_telegraph_metadata(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.action_stack = [
+        {
+            "ability": "Disarm",
+            "priority": ActionPriority.HIGH,
+            "delay": 2,
+            "telegraph": "raising a hook to catch the weapon",
+        },
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    action, ability = enemy.options(target, [], None)
+    metadata = enemy.get_last_action_metadata()
+
+    assert (action, ability) == ("Use Skill", "Disarm")
+    assert metadata == {
+        "ability": "Disarm",
+        "priority": ActionPriority.HIGH,
+        "delay": 2,
+        "telegraph": "raising a hook to catch the weapon",
+        "from_action_stack": True,
+    }
+
+
+def test_action_stack_metadata_clears_on_fallback_selection(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.last_action_stack_entry = {"ability": "Disarm", "delay": "bad"}
+    enemy.action_stack = []
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    action, ability = enemy.options(target, [], None)
+
+    assert (action, ability) == ("Attack", None)
+    assert enemy.get_last_action_metadata() == {
+        "ability": None,
+        "priority": None,
+        "delay": 0,
+        "telegraph": None,
+        "from_action_stack": False,
+    }
