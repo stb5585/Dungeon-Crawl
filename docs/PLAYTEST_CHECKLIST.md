@@ -70,6 +70,11 @@
 - [ ] Open inventory, equipment, or quest popups after a key-driven transition.
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
 
+### Character Menu
+- [ ] Open the pygame Character Menu before and after equipping a stronger weapon.
+  - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
+  - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.
+
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.
   - Expected: The reward message grants 2 Old Keys.

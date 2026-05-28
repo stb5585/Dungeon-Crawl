@@ -1106,6 +1106,7 @@ Resolved:
 - Side-view chest sprites now render upright instead of being distorted by lateral floor projection.
 - Charge/telegraph messages now wrap against both the main combat log and the narrower dungeon-combat overlay log pane.
 - Combat enemy sprites failed to render for legacy `.txt` `enemy.picture` values. Sprite lookup now falls back to enemy-name PNG assets, uses cwd-independent asset paths, and has regression coverage for the dungeon-combat render path.
+- The pygame Character Menu now displays weapon-adjusted attack via the same `check_mod("weapon")` path used by equipment previews and melee damage.
 
 New follow-up items:
 
