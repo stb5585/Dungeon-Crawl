@@ -302,6 +302,28 @@ def test_play_music_handles_busy_track_and_fallback_files(tmp_path, fake_mixer):
     assert manager.current_music == "battle"
 
 
+def test_location_music_routes_context_to_theme_names(tmp_path, fake_mixer, monkeypatch):
+    _state, _music = fake_mixer
+    manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)))
+    calls = []
+    monkeypatch.setattr(
+        manager,
+        "play_music",
+        lambda music_name, loops=-1, fade_ms=1000: calls.append((music_name, loops, fade_ms)),
+    )
+
+    assert manager.resolve_music_theme("Town") == "town"
+    assert manager.resolve_music_theme("Blacksmith") == "shop"
+    assert manager.resolve_music_theme("Final Room", final=True) == "combat_final"
+    assert manager.resolve_music_theme("Combat", boss=True) == "combat_boss"
+    assert manager.resolve_music_theme("Unknown Place") == "town"
+
+    theme = manager.play_location_music("Dungeon", loops=2, fade_ms=250)
+
+    assert theme == "dungeon"
+    assert calls == [("dungeon", 2, 250)]
+
+
 def test_play_music_missing_or_erroring_files_are_safe(tmp_path, fake_mixer):
     _state, music = fake_mixer
     assets_dir = _make_assets_dir(tmp_path)

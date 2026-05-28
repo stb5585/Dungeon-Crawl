@@ -49,6 +49,18 @@ DEFAULT_MUSIC_NAMES = (
     "combat_final",
 )
 
+LOCATION_MUSIC_THEMES = {
+    "town": "town",
+    "shop": "shop",
+    "blacksmith": "shop",
+    "alchemist": "shop",
+    "jeweler": "shop",
+    "church": "church",
+    "inn": "inn",
+    "dungeon": "dungeon",
+    "combat": "combat_normal",
+}
+
 
 class SoundManager:
     """Manages sound effects and background music."""
@@ -293,6 +305,36 @@ class SoundManager:
     def summarize_default_audio_assets(self) -> dict[str, int]:
         """Return availability counts for the runtime's expected audio assets."""
         return self.summarize_audio_asset_diagnostics(self.describe_default_audio_assets())
+
+    def resolve_music_theme(
+        self,
+        location: str,
+        *,
+        boss: bool = False,
+        final: bool = False,
+    ) -> str:
+        """Map a game location/context to a background music asset name."""
+        if final:
+            return "combat_final"
+        if boss:
+            return "combat_boss"
+
+        normalized = location.strip().lower().replace(" ", "_").replace("-", "_")
+        return LOCATION_MUSIC_THEMES.get(normalized, "town")
+
+    def play_location_music(
+        self,
+        location: str,
+        *,
+        boss: bool = False,
+        final: bool = False,
+        loops: int = -1,
+        fade_ms: int = 1000,
+    ) -> str:
+        """Play the music theme for a game location and return the chosen theme name."""
+        theme = self.resolve_music_theme(location, boss=boss, final=final)
+        self.play_music(theme, loops=loops, fade_ms=fade_ms)
+        return theme
 
     def load_sfx(self, sound_name: str) -> pygame.mixer.Sound | None:
         """
