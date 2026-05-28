@@ -330,10 +330,12 @@ class SoundManager:
         final: bool = False,
         loops: int = -1,
         fade_ms: int = 1000,
+        force: bool = False,
     ) -> str:
         """Play the music theme for a game location and return the chosen theme name."""
         theme = self.resolve_music_theme(location, boss=boss, final=final)
-        self.play_music(theme, loops=loops, fade_ms=fade_ms)
+        if force or theme != self.current_music:
+            self.play_music(theme, loops=loops, fade_ms=fade_ms)
         return theme
 
     def load_sfx(self, sound_name: str) -> pygame.mixer.Sound | None:

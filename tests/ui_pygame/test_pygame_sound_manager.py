@@ -323,6 +323,13 @@ def test_location_music_routes_context_to_theme_names(tmp_path, fake_mixer, monk
     assert theme == "dungeon"
     assert calls == [("dungeon", 2, 250)]
 
+    manager.current_music = "dungeon"
+    assert manager.play_location_music("Dungeon") == "dungeon"
+    assert calls == [("dungeon", 2, 250)]
+
+    assert manager.play_location_music("Dungeon", force=True, fade_ms=10) == "dungeon"
+    assert calls == [("dungeon", 2, 250), ("dungeon", -1, 10)]
+
 
 def test_play_music_missing_or_erroring_files_are_safe(tmp_path, fake_mixer):
     _state, music = fake_mixer
