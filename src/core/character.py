@@ -617,7 +617,9 @@ class Character:
         )
         crit_chance = base_crit
         if self.equipment.get(att) is not None:
-            crit_chance += float(getattr(self.equipment[att], "crit", 0.0) or 0.0) * WEAPON_CRIT_WEIGHT
+            weapon = self.equipment[att]
+            weapon_crit = getattr(weapon, "crit_chance", getattr(weapon, "crit", 0.0))
+            crit_chance += float(weapon_crit or 0.0) * WEAPON_CRIT_WEIGHT
         if self.cls.name == "Seeker":
             crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
         

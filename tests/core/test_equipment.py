@@ -12,6 +12,7 @@ Tests the player equipment system including:
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
@@ -40,6 +41,31 @@ class TestEquipmentBasics:
         for slot, item in player.equipment.items():
             assert item is not None, f"Equipment slot {slot} should not be None"
             assert hasattr(item, 'name'), f"Equipment in {slot} should have a name attribute"
+
+    def test_weapon_crit_chance_alias_tracks_legacy_crit(self):
+        """Weapons expose crit_chance while preserving legacy crit storage."""
+        weapon = items.Rapier()
+
+        assert weapon.crit_chance == weapon.crit
+
+        weapon.crit_chance = 0.42
+
+        assert weapon.crit == 0.42
+        assert "Critical Chance: 42%" in str(weapon)
+
+    def test_character_critical_chance_prefers_crit_chance_alias(self):
+        """Character crit math should use the clearer weapon API when present."""
+        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        legacy_weapon = SimpleNamespace(crit=0.0)
+        aliased_weapon = SimpleNamespace(crit=0.0, crit_chance=0.4)
+
+        player.equipment["Weapon"] = legacy_weapon
+        legacy_chance = player.critical_chance("Weapon")
+
+        player.equipment["Weapon"] = aliased_weapon
+        aliased_chance = player.critical_chance("Weapon")
+
+        assert aliased_chance > legacy_chance
 
 
 class TestTwoHandedWeaponLogic:

@@ -105,7 +105,8 @@ class Weapon(Item):
     """
     Subclass of the Item class
     damage: the base damage for each weapon
-    crit: chance to double damage; higher number means lower chance to crit (calculation: 1 / crit parameter)
+    crit: legacy storage for critical-hit chance as a 0..1 ratio
+    crit_chance: preferred alias for critical-hit chance as a 0..1 ratio
     handed: identifies weapon as 1-handed or 2-handed; 2-handed weapons prohibit the ability to use a shield
     unequip: boolean parameter indicating whether the object the base class used when an item is unequipped
     off: whether the weapon can be equipped in the offhand
@@ -129,6 +130,15 @@ class Weapon(Item):
         self.ignore = False
         self.element = None
 
+    @property
+    def crit_chance(self) -> float:
+        """Critical-hit chance as a 0..1 ratio."""
+        return self.crit
+
+    @crit_chance.setter
+    def crit_chance(self, value: float) -> None:
+        self.crit = value
+
     def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
@@ -136,7 +146,7 @@ class Weapon(Item):
                 f"Type: {self.subtyp}\n"
                 f"{self.handed}-handed\n"
                 f"Damage: {self.damage}\n"
-                f"Critical Chance: {int(self.crit * 100)}%\n"
+                f"Critical Chance: {int(self.crit_chance * 100)}%\n"
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 
