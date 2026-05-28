@@ -553,6 +553,9 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
 
     formatted = pygame_game.PygameGame.format_gameplay_statistics(game.player_char)
+    assert "Exploration" in formatted
+    assert "Combat" in formatted
+    assert "Records" in formatted
     assert "Steps Taken: 12" in formatted
     assert "Encounters Survived: 5" in formatted
     assert "Combat Outcomes: 7" in formatted

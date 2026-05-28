@@ -20,6 +20,7 @@ from src.core.player import (
     load_char,
     normalize_gameplay_stats,
     summarize_gameplay_stats,
+    summarize_gameplay_stat_groups,
 )
 from tests.test_framework import TestGameState
 
@@ -103,6 +104,27 @@ class TestPlayerTopLevelHelpers:
         assert summary["exploration_actions"] == 0
         assert summary["total_activity"] == 7
         assert summary["highest_level_reached"] == 6
+
+        groups = summarize_gameplay_stat_groups(
+            {
+                "steps_taken": 12,
+                "stairs_used": 3,
+                "enemies_defeated": 4,
+                "flees": 2,
+                "deaths": 1,
+                "highest_damage_dealt": 99,
+            },
+            current_level=6,
+        )
+        assert groups["exploration"] == {
+            "steps_taken": 12,
+            "stairs_used": 3,
+            "exploration_actions": 15,
+        }
+        assert groups["combat"]["encounters_survived"] == 5
+        assert groups["combat"]["combat_survival_rate_percent"] == 71
+        assert groups["records"]["highest_damage_dealt"] == 99
+        assert groups["records"]["total_activity"] == 22
 
         loaded = SimpleNamespace(name="Loaded Hero")
         load_calls = []

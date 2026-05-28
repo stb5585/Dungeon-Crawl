@@ -432,10 +432,11 @@ Completed foundation work:
 - A player-facing Statistics entry is available from the pygame town menu
 - The pygame statistics popup now includes a derived encounters-survived line and defensive formatting for missing legacy values
 - The pygame statistics popup now includes derived exploration-action and combat-survival-rate lines without adding save-format fields
+- The pygame statistics popup now groups current counters into Exploration, Combat, and Records sections using a shared core summary helper
 
 Remaining work:
 
-- Decide whether richer history, run summaries, or permanent account-style statistics are worth adding later
+- Decide whether richer history, run summaries, or permanent account-style statistics beyond the current grouped popup are worth adding later
 
 Verification note:
 
@@ -738,7 +739,8 @@ Current non-visual Phase 1 track:
   - completed: share derived gameplay-stat summary counters through a core helper for UI/tooling reuse
   - completed: gameplay-stat summaries now include derived combat-outcome and total-activity counters from existing save data
   - completed: gameplay-stat summaries now include exploration-action and combat-survival-rate counters for the pygame Statistics popup
-  - remaining: decide whether richer history or run-summary views are worth adding later
+  - completed: gameplay-stat summaries now provide grouped Exploration, Combat, and Records payloads for UI/tooling displays
+  - remaining: decide whether persistent history or run-summary views beyond the grouped current-run display are worth adding later
 - Save/load robustness
   - completed: collect-quest item deserialization now resolves both serialized items and legacy string saves
   - completed: added round-trip coverage for mutable quest, inventory, storage, and tile-state persistence
@@ -901,7 +903,7 @@ Recommended immediate fix order:
 5. Return to the remaining core combat/content clusters only if they offer better leverage than the next shared `ui_curses` helper module
 6. Decide whether structured battle logs need file persistence or simulator integration next
 7. Continue renderer presentation cleanup around wall, door, side-corridor, and vignette edge cases
-8. Revisit statistics only if richer history/run-summary behavior becomes a clear gameplay need
+8. Revisit statistics only if persistent history/run-summary behavior becomes a clear gameplay need
 
 Definition of done for Phase 1:
 
@@ -1045,7 +1047,7 @@ Primary workstreams:
 
 - Gameplay statistics
   - decide which stats are worth persisting permanently versus showing only for the current run
-  - decide whether the current town-menu statistics popup needs richer grouping or history views
+  - decide whether the current town-menu statistics popup needs history views beyond its current grouped sections
   - reuse existing tracked state where possible before adding new persistence fields
 - Quest and realm expansion
   - prioritize unfinished or lightly implemented questlines and realm content

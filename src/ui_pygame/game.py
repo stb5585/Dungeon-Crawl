@@ -14,7 +14,7 @@ import pygame
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import classes_dict
 from src.core.data.data_loader import get_special_events
-from src.core.player import summarize_gameplay_stats
+from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
 from src.core import items
@@ -668,26 +668,33 @@ class PygameGame:
             current_level = int(getattr(getattr(player_char, "level", None), "level", 1) or 1)
         except (TypeError, ValueError):
             current_level = 1
-        summary = summarize_gameplay_stats(stats, current_level=current_level)
+        groups = summarize_gameplay_stat_groups(stats, current_level=current_level)
+        exploration = groups["exploration"]
+        combat = groups["combat"]
+        records = groups["records"]
 
         return "\n".join(
             (
                 "Adventure Statistics",
                 "",
-                f"Steps Taken: {summary['steps_taken']}",
-                f"Stairs Used: {summary['stairs_used']}",
-                f"Enemies Defeated: {summary['enemies_defeated']}",
-                f"Deaths: {summary['deaths']}",
-                f"Flees: {summary['flees']}",
-                f"Encounters Survived: {summary['encounters_survived']}",
-                f"Combat Outcomes: {summary['combat_outcomes']}",
-                f"Combat Survival Rate: {summary['combat_survival_rate_percent']}%",
-                f"Exploration Actions: {summary['exploration_actions']}",
-                f"Total Activity: {summary['total_activity']}",
+                "Exploration",
+                f"Steps Taken: {exploration['steps_taken']}",
+                f"Stairs Used: {exploration['stairs_used']}",
+                f"Exploration Actions: {exploration['exploration_actions']}",
                 "",
-                f"Highest Level Reached: {summary['highest_level_reached']}",
-                f"Highest Damage Dealt: {summary['highest_damage_dealt']}",
-                f"Highest Damage Taken: {summary['highest_damage_taken']}",
+                "Combat",
+                f"Enemies Defeated: {combat['enemies_defeated']}",
+                f"Deaths: {combat['deaths']}",
+                f"Flees: {combat['flees']}",
+                f"Encounters Survived: {combat['encounters_survived']}",
+                f"Combat Outcomes: {combat['combat_outcomes']}",
+                f"Combat Survival Rate: {combat['combat_survival_rate_percent']}%",
+                "",
+                "Records",
+                f"Total Activity: {records['total_activity']}",
+                f"Highest Level Reached: {records['highest_level_reached']}",
+                f"Highest Damage Dealt: {records['highest_damage_dealt']}",
+                f"Highest Damage Taken: {records['highest_damage_taken']}",
             )
         )
 

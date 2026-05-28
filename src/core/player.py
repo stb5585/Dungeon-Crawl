@@ -125,6 +125,32 @@ def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[st
     return summary
 
 
+def summarize_gameplay_stat_groups(gameplay_stats=None, *, current_level=1) -> dict[str, dict[str, int]]:
+    """Return gameplay statistics organized for grouped UI displays."""
+    summary = summarize_gameplay_stats(gameplay_stats, current_level=current_level)
+    return {
+        "exploration": {
+            "steps_taken": summary["steps_taken"],
+            "stairs_used": summary["stairs_used"],
+            "exploration_actions": summary["exploration_actions"],
+        },
+        "combat": {
+            "enemies_defeated": summary["enemies_defeated"],
+            "deaths": summary["deaths"],
+            "flees": summary["flees"],
+            "encounters_survived": summary["encounters_survived"],
+            "combat_outcomes": summary["combat_outcomes"],
+            "combat_survival_rate_percent": summary["combat_survival_rate_percent"],
+        },
+        "records": {
+            "highest_level_reached": summary["highest_level_reached"],
+            "highest_damage_dealt": summary["highest_damage_dealt"],
+            "highest_damage_taken": summary["highest_damage_taken"],
+            "total_activity": summary["total_activity"],
+        },
+    }
+
+
 def load_char(char=None, filename=None, is_tmp=False):
     """
     Initializes the character based on the save file using the data-driven save system.

@@ -152,6 +152,7 @@
   - Expected: Missing or old save data displays as zeroes instead of crashing.
   - Expected: Encounters survived is never negative, even after old or manually edited save data.
   - Expected: Negative legacy/manual counters are displayed as zeroes before derived totals are calculated.
+  - Expected: Current-run counters are grouped under Exploration, Combat, and Records headings.
 
 ### Developer Tooling
 - [ ] Generate or inspect a `CombatResult` / `CombatResultGroup` diagnostic payload after combat.
