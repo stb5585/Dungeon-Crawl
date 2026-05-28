@@ -210,19 +210,25 @@ class SoundManager:
 
     def resolve_sfx_path(self, sound_name: str) -> Path | None:
         """Return the first available sound-effect asset path."""
-        for extension in ("wav", "ogg"):
-            sound_path = self.sounds_dir / f"{sound_name}.{extension}"
+        for sound_path in self.get_sfx_candidate_paths(sound_name):
             if sound_path.exists():
                 return sound_path
         return None
 
     def resolve_music_path(self, music_name: str) -> Path | None:
         """Return the first available music asset path."""
-        for extension in ("ogg", "mp3"):
-            music_path = self.music_dir / f"{music_name}.{extension}"
+        for music_path in self.get_music_candidate_paths(music_name):
             if music_path.exists():
                 return music_path
         return None
+
+    def get_sfx_candidate_paths(self, sound_name: str) -> tuple[Path, ...]:
+        """Return sound-effect filenames checked for a sound name."""
+        return tuple(self.sounds_dir / f"{sound_name}.{extension}" for extension in ("wav", "ogg"))
+
+    def get_music_candidate_paths(self, music_name: str) -> tuple[Path, ...]:
+        """Return music filenames checked for a music name."""
+        return tuple(self.music_dir / f"{music_name}.{extension}" for extension in ("ogg", "mp3"))
 
     def describe_audio_assets(
         self,
@@ -235,6 +241,7 @@ class SoundManager:
             name: {
                 "available": (path := self.resolve_sfx_path(name)) is not None,
                 "path": str(path) if path is not None else None,
+                "checked_paths": [str(candidate) for candidate in self.get_sfx_candidate_paths(name)],
             }
             for name in sfx_names
         }
@@ -242,6 +249,7 @@ class SoundManager:
             name: {
                 "available": (path := self.resolve_music_path(name)) is not None,
                 "path": str(path) if path is not None else None,
+                "checked_paths": [str(candidate) for candidate in self.get_music_candidate_paths(name)],
             }
             for name in music_names
         }

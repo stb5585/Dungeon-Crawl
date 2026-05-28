@@ -171,6 +171,14 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert manager.resolve_sfx_path("hit") == assets_dir / "sounds" / "hit.wav"
     assert manager.resolve_sfx_path("heal") == assets_dir / "sounds" / "heal.ogg"
     assert manager.resolve_music_path("town") == assets_dir / "music" / "town.mp3"
+    assert manager.get_sfx_candidate_paths("hit") == (
+        assets_dir / "sounds" / "hit.wav",
+        assets_dir / "sounds" / "hit.ogg",
+    )
+    assert manager.get_music_candidate_paths("town") == (
+        assets_dir / "music" / "town.ogg",
+        assets_dir / "music" / "town.mp3",
+    )
 
     diagnostics = manager.describe_audio_assets(
         sfx_names=("hit", "heal", "missing"),
@@ -180,13 +188,48 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert diagnostics == {
         "enabled": True,
         "sfx": {
-            "hit": {"available": True, "path": str(assets_dir / "sounds" / "hit.wav")},
-            "heal": {"available": True, "path": str(assets_dir / "sounds" / "heal.ogg")},
-            "missing": {"available": False, "path": None},
+            "hit": {
+                "available": True,
+                "path": str(assets_dir / "sounds" / "hit.wav"),
+                "checked_paths": [
+                    str(assets_dir / "sounds" / "hit.wav"),
+                    str(assets_dir / "sounds" / "hit.ogg"),
+                ],
+            },
+            "heal": {
+                "available": True,
+                "path": str(assets_dir / "sounds" / "heal.ogg"),
+                "checked_paths": [
+                    str(assets_dir / "sounds" / "heal.wav"),
+                    str(assets_dir / "sounds" / "heal.ogg"),
+                ],
+            },
+            "missing": {
+                "available": False,
+                "path": None,
+                "checked_paths": [
+                    str(assets_dir / "sounds" / "missing.wav"),
+                    str(assets_dir / "sounds" / "missing.ogg"),
+                ],
+            },
         },
         "music": {
-            "town": {"available": True, "path": str(assets_dir / "music" / "town.mp3")},
-            "battle": {"available": False, "path": None},
+            "town": {
+                "available": True,
+                "path": str(assets_dir / "music" / "town.mp3"),
+                "checked_paths": [
+                    str(assets_dir / "music" / "town.ogg"),
+                    str(assets_dir / "music" / "town.mp3"),
+                ],
+            },
+            "battle": {
+                "available": False,
+                "path": None,
+                "checked_paths": [
+                    str(assets_dir / "music" / "battle.ogg"),
+                    str(assets_dir / "music" / "battle.mp3"),
+                ],
+            },
         },
         "loaded_sfx_count": 1,
         "current_music": "town",
