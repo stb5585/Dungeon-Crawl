@@ -356,6 +356,9 @@ class ShopManager(TownScreenBase):
         
         # Item name and type
         info_lines.append(f"Type: {item.typ}")
+        themed_name = items_module.stat_themed_item_name(item)
+        if themed_name != item.name:
+            info_lines.append(f"Theme Name: {themed_name}")
         if hasattr(item, 'subtyp'):
             info_lines.append(f"Subtype: {item.subtyp}")
         

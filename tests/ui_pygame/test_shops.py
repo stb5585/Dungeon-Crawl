@@ -336,6 +336,7 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     info = manager._format_item_info(DummyItem(name="New Sword", typ="Weapon", subtyp="Sword", description="A very long description that should wrap neatly in the info panel for testing.", value=75, damage=12, weight=3))
     assert "Type: Weapon" in info
     assert "Subtype: Sword" in info
+    assert "Theme Name: Mighty New Sword" in info
     assert "Damage: 12" in info
     assert "Efficiency: 4.00 dmg/wt" in info
     assert "Value: 75g" in info

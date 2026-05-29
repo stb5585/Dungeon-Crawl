@@ -21,6 +21,15 @@ if TYPE_CHECKING:
 # Functions
 _rarity_table_cache: dict[str, list] | None = None
 _RARITY_BUCKETS = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
+_STAT_THEME_PREFIXES = {
+    "strength": "Mighty",
+    "intelligence": "Arcane",
+    "wisdom": "Sage",
+    "constitution": "Stalwart",
+    "charisma": "Fortunate",
+    "dexterity": "Swift",
+    "resistance": "Warded",
+}
 
 
 def weapon_efficiency(weapon: object) -> float:
@@ -33,6 +42,46 @@ def weapon_efficiency(weapon: object) -> float:
     if weight <= 0:
         return damage
     return damage / weight
+
+
+def stat_theme_for_item(item: object) -> str | None:
+    """Infer the primary stat theme for an item without mutating it."""
+    explicit_theme = getattr(item, "stat_theme", None)
+    if explicit_theme:
+        return str(explicit_theme)
+
+    name = str(getattr(item, "name", ""))
+    mod = str(getattr(item, "mod", ""))
+    subtyp = str(getattr(item, "subtyp", ""))
+    typ = str(getattr(item, "typ", ""))
+
+    if "Strength" in name or "Physical Damage" in mod:
+        return "strength"
+    if "Intelligence" in name or "Magic Damage" in mod or subtyp in {"Staff", "Tome", "Rod"}:
+        return "intelligence"
+    if "Wisdom" in name or "Magic Defense" in mod or "Status-" in mod:
+        return "wisdom"
+    if "Constitution" in name or "Physical Defense" in mod or typ == "Armor":
+        return "constitution"
+    if "Charisma" in name or "Luck" in mod:
+        return "charisma"
+    if "Dexterity" in name or mod in {"Accuracy", "Dodge"} or subtyp in {"Dagger", "Ninja Blade"}:
+        return "dexterity"
+    if "Resist-" in mod or getattr(item, "element", None):
+        return "resistance"
+    if typ == "Weapon" and getattr(item, "damage", 0):
+        return "strength"
+    return None
+
+
+def stat_themed_item_name(item: object) -> str:
+    """Return a generated display name that reflects the item's stat theme."""
+    name = str(getattr(item, "name", "Unknown Item"))
+    theme = stat_theme_for_item(item)
+    prefix = _STAT_THEME_PREFIXES.get(theme or "")
+    if not prefix or name.startswith(f"{prefix} "):
+        return name
+    return f"{prefix} {name}"
 
 
 def _build_rarity_table() -> dict[str, list]:

@@ -127,6 +127,13 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert low_bucket_pick is rarity_table["1"][0]
     assert high_bucket_pick is rarity_table["8"][0]
 
+    assert items.stat_theme_for_item(items.PowerRing()) == "strength"
+    assert items.stat_theme_for_item(items.RubyLocket()) == "wisdom"
+    assert items.stat_theme_for_item(items.Rapier()) == "strength"
+    assert items.stat_theme_for_item(items.FireChain()) == "resistance"
+    assert items.stat_themed_item_name(items.PowerRing()) == "Mighty Power Ring"
+    assert items.stat_themed_item_name(items.Item("Pebble", "A pebble.", 0, 1.0, "Misc")) == "Pebble"
+
     assert isinstance(items.remove_equipment("Weapon"), items.NoWeapon)
     assert isinstance(items.remove_equipment("OffHand"), items.NoOffHand)
     assert isinstance(items.remove_equipment("Armor"), items.NoArmor)

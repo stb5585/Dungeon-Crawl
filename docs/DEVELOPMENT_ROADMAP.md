@@ -469,6 +469,7 @@ Planned work:
 - Weapon efficiency stat
   - completed: weapons now expose a display-only efficiency stat derived from damage per weight point, and pygame shop item info shows the comparison value
 - Stat-themed item naming
+  - completed: item metadata can now produce display-only stat-themed names, and pygame shop item info surfaces the generated name without mutating canonical item names
 - Enemy item use / stolen consumables
 - Continue `crit` parameter cleanup to `crit_chance`
   - a backward-compatible `Weapon.crit_chance` alias now exists, and character critical-hit math prefers it when present
