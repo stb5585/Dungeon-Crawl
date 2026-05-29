@@ -354,6 +354,7 @@ Verification note:
 - Reusable shop-screen option and item navigation loops now clear buffered input and wait for key release before accepting selection input.
 - Top-level character-screen navigation now clears buffered input and waits for key release before accepting menu choices.
 - Combat action-grid/submenu, shop-screen, and character-screen guards now also arm from current keyboard state so a fresh first key press is not blocked when no KEYUP event is pending.
+- Reusable shop-screen item lists now clamp preserved scroll offsets to a valid visible page and show the current item range for long inventories.
 
 ### 3. Broader Test Coverage
 
@@ -619,6 +620,7 @@ Current progress:
 - Added left depth-3 outer side-corridor wall continuation smoke coverage
 - Extended guarded input to reusable shop-screen option and item selection loops
 - Tightened combat selection overlay label fitting for long item/spell/skill/Totem names
+- Added long-inventory shop-list range display and preserved-scroll clamping so shop item selections stay visible after inventory changes.
 - Added depth-3 outer side-corridor floor/ceiling slot-ID parity coverage
 - Extended guarded input to top-level character-screen navigation
 - Tightened combat turn-indicator name fitting for long player/enemy names

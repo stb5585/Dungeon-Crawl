@@ -208,11 +208,21 @@ class ShopScreen(TownScreenBase):
         self.screen.blit(owned_header, (owned_col_x, header_y))
         
         # Draw items (scrollable)
-        max_visible = 19  # Show 19 items at a time (matching curses)
+        max_visible = self._visible_item_count()
         line_height = (self.list_rect.height - 40) // max_visible
         
         visible_start = self.scroll_offset
         visible_end = min(self.scroll_offset + max_visible, len(self.item_list))
+        if len(self.item_list) > max_visible:
+            range_text = self.small_font.render(
+                f"{visible_start + 1}-{visible_end} / {len(self.item_list)}",
+                True,
+                self.colors.GOLD,
+            )
+            self.screen.blit(
+                range_text,
+                (self.list_rect.right - range_text.get_width() - 10, self.list_rect.bottom - 22),
+            )
         
         for i in range(visible_start, visible_end):
             display_str, item, cost, owned = self.item_list[i]
@@ -374,6 +384,10 @@ class ShopScreen(TownScreenBase):
         """Return the number of item rows visible in the shop list."""
         return 19
 
+    def _max_scroll_offset(self) -> int:
+        """Return the highest scroll offset that can still fill the list window."""
+        return max(0, len(self.item_list) - self._visible_item_count())
+
     def _keep_current_item_visible(self) -> None:
         """Adjust scroll offset so the current item remains visible."""
         max_visible = self._visible_item_count()
@@ -381,7 +395,7 @@ class ShopScreen(TownScreenBase):
             self.scroll_offset = self.current_item
         elif self.current_item >= self.scroll_offset + max_visible:
             self.scroll_offset = self.current_item - max_visible + 1
-        self.scroll_offset = max(0, min(self.scroll_offset, max(0, len(self.item_list) - 1)))
+        self.scroll_offset = max(0, min(self.scroll_offset, self._max_scroll_offset()))
     
     def update_item_list(self, itemdict, buy_or_sell):
         """
@@ -407,7 +421,8 @@ class ShopScreen(TownScreenBase):
         else:
             # Clamp to valid range in case list size changed
             self.current_item = min(self.current_item, max(0, len(self.item_list) - 1))
-            self.scroll_offset = min(self.scroll_offset, max(0, len(self.item_list) - 1))
+            self.scroll_offset = min(self.scroll_offset, self._max_scroll_offset())
+            self._keep_current_item_visible()
     
     def _build_buy_list(self, itemdict):
         """Build item list for buying."""
@@ -447,11 +462,6 @@ class ShopScreen(TownScreenBase):
                 # Store item data (no formatting needed - we render at fixed positions)
                 self.item_list.append((item.name, item, adj_cost, owned))
         
-        # Add navigation options
-        if len(self.item_list) > 19:
-            # TODO: Implement pagination
-            pass
-    
     def _build_sell_list(self, itemdict):
         """Build item list for selling."""
         for name, items_list in itemdict.items():

@@ -191,6 +191,26 @@ def test_update_item_list_builds_buy_and_sell_lists_with_filters(monkeypatch):
     assert screen.scroll_offset == 0
 
 
+def test_update_item_list_keeps_preserved_selection_visible_after_shrink(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    screen.buy_or_sell = "Sell"
+    screen.current_item = 20
+    screen.scroll_offset = 20
+
+    itemdict = {f"Item {i}": [DummyItem(f"Item {i}")] for i in range(10)}
+    screen.update_item_list(itemdict, "Sell")
+
+    assert screen.current_item == 9
+    assert screen.scroll_offset == 0
+
+    screen.item_list = [(f"Item {i}", DummyItem(f"Item {i}"), 10, 0) for i in range(45)]
+    screen.current_item = 44
+    screen.scroll_offset = 99
+    screen._keep_current_item_visible()
+
+    assert screen.scroll_offset == 26
+
+
 def test_build_buy_list_secret_shop_filters_to_mid_rarity_band(monkeypatch):
     screen = _make_shop(monkeypatch, in_town=False, level=20, background_image="dungeon.png")
     itemdict = {
@@ -220,6 +240,10 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     screen.draw_item_desc()
     screen.draw_gold()
 
+    screen.item_list = [(f"Item {i}", DummyItem(f"Item {i}"), 10, 0) for i in range(25)]
+    screen.scroll_offset = 2
+    screen.draw_shop_list()
+
     called = []
     screen.draw_background = lambda: called.append("background")
     screen.draw_top = lambda: called.append("top")
@@ -233,6 +257,7 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
 
     assert "wrapped description" in "".join(screen.normal_font.render_calls)
     assert "250G" in screen.normal_font.render_calls
+    assert "3-21 / 25" in screen.small_font.render_calls
     assert called == ["background", "top", "options", "desc", "list", "mod", "gold", "background", "top", "options", "desc", "list", "mod", "gold"]
     assert flip_calls == [True]
 
