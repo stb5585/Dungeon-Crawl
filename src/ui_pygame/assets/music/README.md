@@ -6,6 +6,7 @@ This directory contains background music for Dungeon Crawl.
 
 - `.ogg` - Recommended (compressed, loopable)
 - `.mp3` - Supported but OGG preferred
+- `.wav` - Supported for local/staged assets; convert to OGG for final compressed tracks when practical
 
 ## Music Tracks
 
@@ -14,8 +15,10 @@ This directory contains background music for Dungeon Crawl.
 - `shop.ogg` - Shop ambient music
 - `church.ogg` - Church ambient music
 - `inn.ogg` - Inn/tavern music
+- `eerie_dungeon_background.wav` - Current staged dungeon theme; resolved by the runtime `dungeon` theme alias
 
 ### Dungeons
+- `dungeon.ogg` - Generic dungeon theme
 - `dungeon_floor1.ogg` - Early dungeon floors
 - `dungeon_floor2.ogg` - Mid dungeon floors
 - `dungeon_floor3.ogg` - Deep dungeon floors
@@ -40,4 +43,4 @@ This directory contains background music for Dungeon Crawl.
 
 ## Creating Placeholder Music
 
-For development without music assets, the game will simply run without background music. The sound system gracefully handles missing files.
+For development without music assets, the game will simply run without background music. The sound system gracefully handles missing files. Theme aliases may point a stable runtime name, such as `dungeon`, at a more descriptive staged filename while final track names are still being settled.

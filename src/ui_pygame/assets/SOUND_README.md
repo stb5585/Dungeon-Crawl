@@ -27,7 +27,7 @@ This creates simple beep sounds in `src/ui_pygame/assets/sounds/` for developmen
 You'll hear:
 - **Menu sounds** when navigating (arrow keys, enter, escape)
 - **Combat sounds** during battles (hits, crits, spells, etc.)
-- **Background music** (if music files are present)
+- **Background music** when matching music files are present; the current `dungeon` theme can resolve `music/eerie_dungeon_background.wav`
 
 ## Sound Categories
 
@@ -86,6 +86,7 @@ If you prefer to play without sound, the system gracefully handles missing audio
 - **Simultaneous Sounds**: Up to 16 at once
 - **Sound Caching**: Effects are loaded once and reused
 - **Music Streaming**: Music files are streamed (not cached)
+- **Music Formats**: OGG, MP3, and WAV are supported for background music lookup
 
 ## For More Information
 
