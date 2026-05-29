@@ -95,6 +95,9 @@
   - Expected: Dragon Hide can scorch attackers with fire retaliation damage.
   - Expected: Aegis Breastplate can shock attackers and may stun them.
   - Expected: Genji Armor can recover a portion of incoming damage after a hit.
+- [ ] Equip armor with elemental metadata and inspect matching resistance behavior.
+  - Expected: Matching elemental armor contributes resistance through combat resistance checks.
+  - Expected: Non-matching elements do not receive the armor resistance bonus.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

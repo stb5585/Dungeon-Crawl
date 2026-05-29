@@ -88,6 +88,21 @@ def armor_spell_modifier(armor: object) -> int:
     return 0
 
 
+def armor_resistance_modifier(armor: object, typ: str | None) -> float:
+    """Return elemental resistance granted by armor metadata."""
+    if typ is None:
+        return 0.0
+    explicit_mod = getattr(armor, "resist_mod", None)
+    if explicit_mod is not None and getattr(armor, "element", None) in [typ, "Elemental"]:
+        try:
+            return float(explicit_mod)
+        except (TypeError, ValueError):
+            return 0.0
+    if getattr(armor, "element", None) == typ:
+        return 0.25
+    return 0.0
+
+
 # functions
 def sigmoid(x: float) -> float:
     return 1 / (1 + exp(-x))
@@ -1577,7 +1592,8 @@ class Character:
         if mod == 'resist':
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
                 return -0.25
-            res_mod = self.resistance[typ]
+            res_mod = self.resistance.get(typ, 0)
+            res_mod += armor_resistance_modifier(self.equipment.get("Armor"), typ)
             if self.flying:
                 if typ == 'Earth':
                     res_mod = 1

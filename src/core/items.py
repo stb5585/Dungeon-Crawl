@@ -198,6 +198,7 @@ class Armor(Item):
         self.armor = armor
         self.unequip = unequip
         self.typ = 'Armor'
+        self.element = None
 
     def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
@@ -2338,7 +2339,7 @@ class Aegis(Armor):
                          value=0, rarity=0., armor=36, subtyp='Medium', unequip=False)
         self.weight = 18
         self.special = True
-        self.element = "Lightning"
+        self.element = "Electric"
 
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]

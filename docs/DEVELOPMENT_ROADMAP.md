@@ -461,6 +461,7 @@ Status: `Planned`
 Planned work:
 
 - Elemental armor options or modification system
+  - completed: armor elemental metadata can now grant matching resistance through a shared helper used by player and character resistance checks
 - Special effects on ultimate armor
   - completed: ultimate armor rewards now use the existing armor special-effect hook for mana restoration, fire retaliation, lightning shock/stun, and damage recovery effects
 - Spell modifiers on cloth armor

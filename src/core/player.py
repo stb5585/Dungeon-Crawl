@@ -25,7 +25,7 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
-from .character import Character, armor_spell_modifier
+from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
 
@@ -2183,6 +2183,7 @@ class Player(Character):
                     res_mod += 0.5
             if self.equipment['OffHand'].name == "Svalinn" and typ == "Fire":
                 res_mod += 0.25
+            res_mod += armor_resistance_modifier(self.equipment.get("Armor"), typ)
             if self.cls.name == "Archbishop" and self.class_effects["Power Up"].active:
                 res_mod += 0.25
             if self.cls.name == "Geomancer" and self.class_effects["Power Up"].active and \

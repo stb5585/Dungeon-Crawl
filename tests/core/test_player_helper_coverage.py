@@ -281,8 +281,9 @@ class TestPlayerHelperCoverage:
         geomancer.resistance["Fire"] = 0.1
         geomancer.equipment["Pendant"] = items.FireChain()
         geomancer.equipment["OffHand"] = items.Svalinn()
+        geomancer.equipment["Armor"] = items.DragonHide()
 
-        assert geomancer.check_mod("resist", typ="Fire") == pytest.approx(1.35)
+        assert geomancer.check_mod("resist", typ="Fire") == pytest.approx(1.6)
 
         geomancer.flying = True
         assert geomancer.check_mod("resist", typ="Earth") == pytest.approx(1.5)

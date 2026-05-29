@@ -305,6 +305,15 @@ def test_ultimate_armor_special_effects_cover_magic_fire_lightning_and_recovery(
     assert results[-1].extra["Genji Damage Recovered"] == 8
 
 
+def test_elemental_armor_metadata_contributes_character_resistance():
+    defender = create_test_character("Defender", level_num=10)
+    defender.resistance["Fire"] = 0.1
+    defender.equipment["Armor"] = items.DragonHide()
+
+    assert defender.check_mod("resist", typ="Fire") == pytest.approx(0.35)
+    assert defender.check_mod("resist", typ="Ice") == pytest.approx(0)
+
+
 def main():
     """Run all tests."""
     print("=" * 70)
