@@ -465,6 +465,7 @@ Planned work:
 - Spell modifiers on cloth armor
   - completed: cloth armor now contributes to `check_mod("magic")` through a shared armor spell-modifier helper, with explicit `spell_mod` support for future item definitions
 - Weapon efficiency stat
+  - completed: weapons now expose a display-only efficiency stat derived from damage per weight point, and pygame shop item info shows the comparison value
 - Stat-themed item naming
 - Enemy item use / stolen consumables
 - Continue `crit` parameter cleanup to `crit_chance`

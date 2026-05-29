@@ -363,6 +363,9 @@ class ShopManager(TownScreenBase):
         info_lines.append("")
         if hasattr(item, 'damage') and item.damage > 0:
             info_lines.append(f"Damage: {item.damage}")
+            efficiency = items_module.weapon_efficiency(item)
+            if efficiency > 0:
+                info_lines.append(f"Efficiency: {efficiency:.2f} dmg/wt")
         if hasattr(item, 'armor') and item.armor > 0:
             info_lines.append(f"Armor: {item.armor}")
         if hasattr(item, 'magic') and item.magic != 0:

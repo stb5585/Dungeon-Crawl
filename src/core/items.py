@@ -23,6 +23,18 @@ _rarity_table_cache: dict[str, list] | None = None
 _RARITY_BUCKETS = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
 
 
+def weapon_efficiency(weapon: object) -> float:
+    """Return weapon damage per weight point for comparison displays."""
+    try:
+        damage = max(0.0, float(getattr(weapon, "damage", 0)))
+        weight = float(getattr(weapon, "weight", 0))
+    except (TypeError, ValueError):
+        return 0.0
+    if weight <= 0:
+        return damage
+    return damage / weight
+
+
 def _build_rarity_table() -> dict[str, list]:
     """Build and cache the rarity-bucketed loot table from items_dict."""
     global _rarity_table_cache
@@ -152,6 +164,11 @@ class Weapon(Item):
     def crit_chance(self, value: float) -> None:
         self.crit = value
 
+    @property
+    def efficiency(self) -> float:
+        """Damage per weapon-weight point for comparison displays."""
+        return weapon_efficiency(self)
+
     def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
@@ -160,6 +177,7 @@ class Weapon(Item):
                 f"{self.handed}-handed\n"
                 f"Damage: {self.damage}\n"
                 f"Critical Chance: {int(self.crit_chance * 100)}%\n"
+                f"Efficiency: {self.efficiency:.2f} dmg/wt\n"
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 

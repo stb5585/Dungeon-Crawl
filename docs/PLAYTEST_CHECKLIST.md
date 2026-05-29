@@ -87,6 +87,9 @@
   - Expected: Home/End jump to the first and last item without corrupting scroll position.
 - [ ] Inspect an elemental weapon or armor item in the curses shop screen.
   - Expected: The item description includes an `Element: ...` line for any item type with elemental metadata.
+- [ ] Inspect a weapon in the pygame shop item-info flow.
+  - Expected: Weapon info includes a display-only efficiency value derived from damage per weight point.
+  - Expected: Efficiency display does not change combat damage, critical chance, or equip eligibility.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

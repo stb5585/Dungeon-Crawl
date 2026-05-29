@@ -156,6 +156,7 @@ class DummyItem:
         value=40,
         rarity=0.8,
         damage=0,
+        weight=0,
         armor=0,
         magic=0,
         magic_defense=0,
@@ -169,6 +170,7 @@ class DummyItem:
         self.value = value
         self.rarity = rarity
         self.damage = damage
+        self.weight = weight
         self.armor = armor
         self.magic = magic
         self.magic_defense = magic_defense
@@ -331,10 +333,11 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     manager.player_char.equipment = {"Weapon": current, "Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring")}
     manager.player_char.equip_diff = lambda _item, _slot, buy=False: "Attack  +5\nDefense  -2\nSpeed  0"
 
-    info = manager._format_item_info(DummyItem(name="New Sword", typ="Weapon", subtyp="Sword", description="A very long description that should wrap neatly in the info panel for testing.", value=75, damage=12))
+    info = manager._format_item_info(DummyItem(name="New Sword", typ="Weapon", subtyp="Sword", description="A very long description that should wrap neatly in the info panel for testing.", value=75, damage=12, weight=3))
     assert "Type: Weapon" in info
     assert "Subtype: Sword" in info
     assert "Damage: 12" in info
+    assert "Efficiency: 4.00 dmg/wt" in info
     assert "Value: 75g" in info
     assert "=== Currently Equipped ===" in info
     assert "(Better)" in info
