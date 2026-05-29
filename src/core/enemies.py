@@ -216,6 +216,9 @@ class Enemy(Character):
                     skill_list.append(skill_name)
             if skill_list:
                 action_list.append("Use Skill")
+        item_list = self._combat_item_choices()
+        if item_list:
+            action_list.append("Use Item")
         if self.is_disarmed():
             action_list.append("Pickup Weapon")
         if self.tunnel:
@@ -231,6 +234,8 @@ class Enemy(Character):
             ability = random.choice(spell_list)
         elif action == "Use Skill":
             ability = random.choice(skill_list)
+        elif action == "Use Item":
+            ability = random.choice(item_list)
         else:
             ability = None
         if ability in self.single_use_abilities:
@@ -262,7 +267,21 @@ class Enemy(Character):
                 continue
             
             # Determine action type and check availability
-            if ability_name == "Attack":
+            item_list = self._combat_item_choices()
+            if ability_name == "Use Item":
+                if not item_list:
+                    continue
+                action_type = "Use Item"
+                ability_name = item_list[0]
+                usable = True
+            elif isinstance(ability_name, str) and ability_name.startswith("Use Item:"):
+                item_name = ability_name.split(":", 1)[1].strip()
+                if item_name not in item_list:
+                    continue
+                action_type = "Use Item"
+                ability_name = item_name
+                usable = True
+            elif ability_name == "Attack":
                 action_type = "Attack"
                 usable = not self.tunnel
             elif ability_name in self.spellbook.get("Spells", {}):
@@ -370,6 +389,9 @@ class Enemy(Character):
                     skill_list.append(skill_name)
             if skill_list:
                 action_list.append("Use Skill")
+        item_list = self._combat_item_choices()
+        if item_list:
+            action_list.append("Use Item")
         
         if self.is_disarmed():
             action_list.append("Pickup Weapon")
@@ -389,10 +411,31 @@ class Enemy(Character):
             ability = random.choice(spell_list)
         elif action == "Use Skill" and skill_list:
             ability = random.choice(skill_list)
+        elif action == "Use Item" and item_list:
+            ability = random.choice(item_list)
         if ability in self.single_use_abilities:
             self._used_single_use_abilities.add(ability)
         
         return action, ability
+
+    def _combat_item_choices(self) -> list[str]:
+        """Return inventory item keys that are useful for this enemy in combat."""
+        choices = []
+        for item_name, entries in self.inventory.items():
+            if not entries:
+                continue
+            item = entries[0]() if isinstance(entries[0], type) else entries[0]
+            if not isinstance(item, items.Potion):
+                continue
+            if item.subtyp == "Health" and self.health.current < self.health.max:
+                choices.append(item_name)
+            elif item.subtyp == "Mana" and self.mana.current < self.mana.max:
+                choices.append(item_name)
+            elif item.subtyp == "Both" and (
+                self.health.current < self.health.max or self.mana.current < self.mana.max
+            ):
+                choices.append(item_name)
+        return choices
 
     def get_last_action_metadata(self) -> dict[str, object]:
         """Return metadata from the last selected action_stack entry."""

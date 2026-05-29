@@ -471,6 +471,7 @@ Planned work:
 - Stat-themed item naming
   - completed: item metadata can now produce display-only stat-themed names, and pygame shop item info surfaces the generated name without mutating canonical item names
 - Enemy item use / stolen consumables
+  - completed: enemies can now choose useful combat consumables from inventory, including class-backed stolen/drop inventory entries, through both legacy and priority action selection paths
 - Continue `crit` parameter cleanup to `crit_chance`
   - a backward-compatible `Weapon.crit_chance` alias now exists, and character critical-hit math prefers it when present
   - new weapon definitions can now use the `crit_chance` constructor keyword while legacy `crit` callers continue to work

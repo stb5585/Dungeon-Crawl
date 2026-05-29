@@ -663,6 +663,8 @@ class BattleEngine:
             return f"{self.attacker.name} can't find {item_key}.\n"
 
         itm = self.attacker.inventory[item_key][0]
+        if isinstance(itm, type):
+            itm = itm()
         target = self.attacker
         if itm.subtyp == "Scroll":
             if itm.spell.subtyp != "Support":

@@ -101,6 +101,9 @@
 - [ ] Inspect stat-bearing equipment in the pygame shop item-info flow.
   - Expected: The info panel can show a generated stat-themed display name based on the item's primary metadata.
   - Expected: The generated display name does not replace the canonical item name used by inventory, quests, or saves.
+- [ ] Fight an enemy carrying a useful combat consumable while it is injured or low on mana.
+  - Expected: The enemy can select `Use Item` and consume a matching potion from class-backed inventory entries.
+  - Expected: Consumed enemy inventory items are removed after use instead of remaining available forever.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

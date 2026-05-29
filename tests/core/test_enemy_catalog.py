@@ -5,10 +5,12 @@ import inspect
 import random
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, enemies, items
+from src.core.combat.battle_engine import BattleEngine
 from tests.test_framework import TestGameState
 
 
@@ -140,3 +142,43 @@ def test_enemy_legacy_options_can_select_spell_and_skill(monkeypatch):
     skill_enemy.spellbook["Skills"]["Disarm"] = abilities.Disarm()
     monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
     assert skill_enemy.options(target, [], None) == ("Use Skill", "Disarm")
+
+
+def test_enemy_can_choose_and_use_combat_consumable_from_inventory(monkeypatch):
+    target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
+    potion_enemy = _make_enemy(name="Potion Goblin")
+    potion_enemy.health.current = 5
+    potion_enemy.state = "fight"
+    potion_enemy.inventory["Health Potion"] = [items.HealthPotion]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+    assert potion_enemy.options(target, [], None) == ("Use Item", "Health Potion")
+
+    engine = BattleEngine(
+        target,
+        potion_enemy,
+        SimpleNamespace(available_actions=lambda _player: []),
+    )
+    engine.attacker = potion_enemy
+    engine.defender = target
+    monkeypatch.setattr("src.core.items.random.randint", lambda _low, high: high)
+
+    message = engine._execute_item("Health Potion")
+
+    assert "healed" in message
+    assert potion_enemy.health.current > 5
+    assert "Health Potion" not in potion_enemy.inventory
+
+
+def test_enemy_priority_stack_can_request_specific_consumable(monkeypatch):
+    target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
+    potion_enemy = _make_enemy(name="Potion Goblin")
+    potion_enemy.health.current = 5
+    potion_enemy.inventory["Health Potion"] = [items.HealthPotion]
+    potion_enemy.action_stack = [
+        {"ability": "Use Item:Health Potion", "priority": enemies.ActionPriority.HIGH},
+    ]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    assert potion_enemy.options(target, [], None) == ("Use Item", "Health Potion")
