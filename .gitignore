@@ -66,6 +66,7 @@ Thumbs.db
 # ignore log files
 *.log
 logs/
+debug_logs/
 *.out
 *.err
 

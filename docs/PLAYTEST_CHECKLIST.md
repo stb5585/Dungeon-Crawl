@@ -192,6 +192,7 @@
 - [ ] Finish a pygame combat encounter while debug mode is enabled.
   - Expected: A structured battle log JSON file is written under `debug_logs/battles/`.
   - Expected: Normal non-debug combat endings do not create automatic debug battle-log files.
+  - Expected: Generated debug battle-log files are ignored by git and do not appear as untracked changes.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.
   - Expected: The payload includes battle metadata, event-type counts, flag counts, actor/target counts, and aggregate summary counts without raw event rows.
   - Expected: Damage-row counts distinguish all numeric damage events from positive-damage events.

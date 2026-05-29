@@ -775,6 +775,7 @@ Current non-visual Phase 1 track:
   - completed: battle logger compact summaries now expose actor and target counts for quick turn-flow sanity checks
   - completed: battle logger compact summaries now expose positive damage totals by actor and target
   - completed: pygame debug-mode combat endings automatically persist structured battle logs under `debug_logs/battles/`
+  - completed: generated debug battle logs are ignored by git so local combat diagnostics do not dirty the worktree
 - Combat status presentation
   - completed: compact status-icon layout diagnostics expose visible/hidden/overflow counts for focused readability checks
   - completed: status-icon layout diagnostics now split visible and hidden icons into positive, negative, and neutral counts
