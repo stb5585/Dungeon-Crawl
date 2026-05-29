@@ -163,26 +163,34 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assets_dir = _make_assets_dir(tmp_path)
     (assets_dir / "sounds" / "hit.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "heal.ogg").write_bytes(b"ogg")
+    (assets_dir / "sounds" / "new_sounds").mkdir()
+    (assets_dir / "sounds" / "new_sounds" / "spring.wav").write_bytes(b"wav")
     (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
+    (assets_dir / "music" / "dungeon.wav").write_bytes(b"wav")
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
     manager.current_music = "town"
     manager.sfx_cache["hit"] = FakeSound("hit")
 
     assert manager.resolve_sfx_path("hit") == assets_dir / "sounds" / "hit.wav"
     assert manager.resolve_sfx_path("heal") == assets_dir / "sounds" / "heal.ogg"
+    assert manager.resolve_sfx_path("spring") == assets_dir / "sounds" / "new_sounds" / "spring.wav"
     assert manager.resolve_music_path("town") == assets_dir / "music" / "town.mp3"
+    assert manager.resolve_music_path("dungeon") == assets_dir / "music" / "dungeon.wav"
     assert manager.get_sfx_candidate_paths("hit") == (
         assets_dir / "sounds" / "hit.wav",
         assets_dir / "sounds" / "hit.ogg",
+        assets_dir / "sounds" / "new_sounds" / "hit.wav",
+        assets_dir / "sounds" / "new_sounds" / "hit.ogg",
     )
     assert manager.get_music_candidate_paths("town") == (
         assets_dir / "music" / "town.ogg",
         assets_dir / "music" / "town.mp3",
+        assets_dir / "music" / "town.wav",
     )
 
     diagnostics = manager.describe_audio_assets(
-        sfx_names=("hit", "heal", "missing"),
-        music_names=("town", "battle"),
+        sfx_names=("hit", "heal", "spring", "missing"),
+        music_names=("town", "dungeon", "battle"),
     )
 
     assert diagnostics == {
@@ -194,6 +202,8 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
                 "checked_paths": [
                     str(assets_dir / "sounds" / "hit.wav"),
                     str(assets_dir / "sounds" / "hit.ogg"),
+                    str(assets_dir / "sounds" / "new_sounds" / "hit.wav"),
+                    str(assets_dir / "sounds" / "new_sounds" / "hit.ogg"),
                 ],
             },
             "heal": {
@@ -202,6 +212,18 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
                 "checked_paths": [
                     str(assets_dir / "sounds" / "heal.wav"),
                     str(assets_dir / "sounds" / "heal.ogg"),
+                    str(assets_dir / "sounds" / "new_sounds" / "heal.wav"),
+                    str(assets_dir / "sounds" / "new_sounds" / "heal.ogg"),
+                ],
+            },
+            "spring": {
+                "available": True,
+                "path": str(assets_dir / "sounds" / "new_sounds" / "spring.wav"),
+                "checked_paths": [
+                    str(assets_dir / "sounds" / "spring.wav"),
+                    str(assets_dir / "sounds" / "spring.ogg"),
+                    str(assets_dir / "sounds" / "new_sounds" / "spring.wav"),
+                    str(assets_dir / "sounds" / "new_sounds" / "spring.ogg"),
                 ],
             },
             "missing": {
@@ -210,6 +232,8 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
                 "checked_paths": [
                     str(assets_dir / "sounds" / "missing.wav"),
                     str(assets_dir / "sounds" / "missing.ogg"),
+                    str(assets_dir / "sounds" / "new_sounds" / "missing.wav"),
+                    str(assets_dir / "sounds" / "new_sounds" / "missing.ogg"),
                 ],
             },
         },
@@ -220,6 +244,16 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
                 "checked_paths": [
                     str(assets_dir / "music" / "town.ogg"),
                     str(assets_dir / "music" / "town.mp3"),
+                    str(assets_dir / "music" / "town.wav"),
+                ],
+            },
+            "dungeon": {
+                "available": True,
+                "path": str(assets_dir / "music" / "dungeon.wav"),
+                "checked_paths": [
+                    str(assets_dir / "music" / "dungeon.ogg"),
+                    str(assets_dir / "music" / "dungeon.mp3"),
+                    str(assets_dir / "music" / "dungeon.wav"),
                 ],
             },
             "battle": {
@@ -228,6 +262,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
                 "checked_paths": [
                     str(assets_dir / "music" / "battle.ogg"),
                     str(assets_dir / "music" / "battle.mp3"),
+                    str(assets_dir / "music" / "battle.wav"),
                 ],
             },
         },
@@ -235,15 +270,15 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
         "current_music": "town",
     }
     assert sound_module.SoundManager.summarize_audio_asset_diagnostics(diagnostics) == {
-        "sfx_total": 3,
-        "sfx_available": 2,
+        "sfx_total": 4,
+        "sfx_available": 3,
         "sfx_missing": 1,
-        "sfx_available_names": ["hit", "heal"],
+        "sfx_available_names": ["hit", "heal", "spring"],
         "sfx_missing_names": ["missing"],
-        "music_total": 2,
-        "music_available": 1,
+        "music_total": 3,
+        "music_available": 2,
         "music_missing": 1,
-        "music_available_names": ["town"],
+        "music_available_names": ["town", "dungeon"],
         "music_missing_names": ["battle"],
     }
 
@@ -255,7 +290,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert default_diagnostics["music"]["combat_final"]["available"] is False
     default_summary = manager.summarize_default_audio_assets()
     assert default_summary["sfx_available"] == 2
-    assert default_summary["music_available"] == 1
+    assert default_summary["music_available"] == 2
     assert "hit" in default_summary["sfx_available_names"]
     assert "combat_final" in default_summary["music_missing_names"]
 

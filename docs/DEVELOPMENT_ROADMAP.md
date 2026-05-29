@@ -502,6 +502,7 @@ Clarification:
 - The runtime sound/music system exists already; what remains is mostly content completion and polish.
 - Repo inspection confirms that the music runtime exists, but the `src/ui_pygame/assets/music/` directory still lacks real music assets beyond documentation.
 - Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
+- Audio asset diagnostics and loading now support `.wav` music files and the nested `sounds/new_sounds/` staging folder, making new local content visible before it is renamed or flattened.
 - SoundManager now has location/context music routing for town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
 - Pygame top-level town/shop/church/inn/barracks/dungeon flows now request location music through that routing, and repeated requests for the active theme do not restart the track.
 - Combat-start events now route normal, boss, and final combat music through the same theme helper, with pre-combat location music restored after combat ends when available.

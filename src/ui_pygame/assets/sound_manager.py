@@ -247,11 +247,14 @@ class SoundManager:
 
     def get_sfx_candidate_paths(self, sound_name: str) -> tuple[Path, ...]:
         """Return sound-effect filenames checked for a sound name."""
-        return tuple(self.sounds_dir / f"{sound_name}.{extension}" for extension in ("wav", "ogg"))
+        paths = []
+        for directory in (self.sounds_dir, self.sounds_dir / "new_sounds"):
+            paths.extend(directory / f"{sound_name}.{extension}" for extension in ("wav", "ogg"))
+        return tuple(paths)
 
     def get_music_candidate_paths(self, music_name: str) -> tuple[Path, ...]:
         """Return music filenames checked for a music name."""
-        return tuple(self.music_dir / f"{music_name}.{extension}" for extension in ("ogg", "mp3"))
+        return tuple(self.music_dir / f"{music_name}.{extension}" for extension in ("ogg", "mp3", "wav"))
 
     def describe_audio_assets(
         self,

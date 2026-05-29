@@ -188,6 +188,7 @@
 - [ ] Run sound/music asset diagnostics for expected combat, town, and menu audio.
   - Expected: Present sound/music files report available paths, while missing placeholder content is reported without crashing or playing audio.
   - Expected: Missing sound/music entries report the checked candidate filenames for supported extensions.
+  - Expected: `.wav` music files and staged `sounds/new_sounds/` effects appear in candidate path diagnostics.
   - Expected: Default diagnostics include the runtime's combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
   - Expected: Summary payloads include available and missing SFX/music name lists.
