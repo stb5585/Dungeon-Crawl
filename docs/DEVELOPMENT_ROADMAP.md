@@ -462,6 +462,7 @@ Planned work:
 
 - Elemental armor options or modification system
 - Special effects on ultimate armor
+  - completed: ultimate armor rewards now use the existing armor special-effect hook for mana restoration, fire retaliation, lightning shock/stun, and damage recovery effects
 - Spell modifiers on cloth armor
   - completed: cloth armor now contributes to `check_mod("magic")` through a shared armor spell-modifier helper, with explicit `spell_mod` support for future item definitions
 - Weapon efficiency stat

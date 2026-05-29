@@ -2170,7 +2170,18 @@ class MerlinRobe(Armor):
                          value=0, rarity=0., armor=30, subtyp='Cloth', unequip=False)
         self.weight = 2
 
-    def special_effect(self, results: CombatResultGroup) -> None:  # TODO
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        mana = getattr(result.target, "mana", None)
+        if mana is None:
+            return results
+        amount = max(1, int((result.damage or 0) * 0.25))
+        before = mana.current
+        mana.current = min(mana.max, mana.current + amount)
+        restored = mana.current - before
+        if restored > 0:
+            result.extra["Mana Restored"] = restored
+            result.message += f"{result.target.name}'s Robes of Merlin restore {restored} mana.\n"
         return results
 
 
@@ -2239,6 +2250,24 @@ class DragonHide(Armor):
                                                          "inconceivably light for this type of armor.",
                          value=0, rarity=0., armor=36, subtyp='Light', unequip=False)
         self.weight = 10
+        self.special = True
+        self.element = "Fire"
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not result.actor or not result.target:
+            return results
+        try:
+            resist = result.actor.check_mod('resist', enemy=result.target, typ=self.element)
+        except KeyError:
+            resist = 0
+        damage = max(0, int((result.damage or 0) * 0.25 * (1 - resist)))
+        if damage > 0:
+            result.actor.health.current -= damage
+            result.extra["Dragon Hide Damage"] = damage
+            result.effects_applied['Magic'].append(self.element)
+            result.message += f"{result.target.name}'s Dragon Hide scorches {result.actor.name} for {damage} fire damage.\n"
+        return results
 
 
 class HideArmor(Armor):
@@ -2308,6 +2337,32 @@ class Aegis(Armor):
                                                                "lightning.",
                          value=0, rarity=0., armor=36, subtyp='Medium', unequip=False)
         self.weight = 18
+        self.special = True
+        self.element = "Lightning"
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not result.actor or not result.target:
+            return results
+        damage = result.damage or 0
+        if damage <= 0:
+            return results
+        try:
+            resist = result.actor.check_mod('resist', enemy=result.target, typ=self.element)
+        except KeyError:
+            resist = 0
+        shock_damage = max(0, int(damage * 0.15 * (1 - resist)))
+        if shock_damage > 0:
+            result.actor.health.current -= shock_damage
+            result.extra["Aegis Shock Damage"] = shock_damage
+            result.effects_applied['Magic'].append(self.element)
+            result.message += f"{result.target.name}'s Aegis shocks {result.actor.name} for {shock_damage} lightning damage.\n"
+        if shock_damage > 0 and random.random() < 0.25:
+            stun = result.actor.status_effects.get("Stun")
+            if stun and not stun.active and result.actor.apply_stun(1, source=self.name, applier=result.target):
+                result.effects_applied['Status'].append('Stun')
+                result.message += f"{result.actor.name} is stunned by the Aegis.\n"
+        return results
 
 
 class RingMail(Armor):
@@ -2381,6 +2436,18 @@ class Genji(Armor):
                                                          "shrug off damage.",
                          value=0, rarity=0., armor=50, subtyp='Heavy', unequip=False)
         self.weight = 25
+        self.special = True
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        if not result.target:
+            return results
+        reduction = max(1, int((result.damage or 0) * 0.20))
+        result.target.health.current = min(result.target.health.max, result.target.health.current + reduction)
+        result.healing = (result.healing or 0) + reduction
+        result.extra["Genji Damage Recovered"] = reduction
+        result.message += f"{result.target.name}'s Genji Armor shrugs off {reduction} damage.\n"
+        return results
 
 
 # Natural armor

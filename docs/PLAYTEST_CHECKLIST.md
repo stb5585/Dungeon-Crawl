@@ -90,6 +90,11 @@
 - [ ] Inspect a weapon in the pygame shop item-info flow.
   - Expected: Weapon info includes a display-only efficiency value derived from damage per weight point.
   - Expected: Efficiency display does not change combat damage, critical chance, or equip eligibility.
+- [ ] Take hits while wearing each ultimate armor reward.
+  - Expected: Robes of Merlin can restore mana after incoming weapon hits.
+  - Expected: Dragon Hide can scorch attackers with fire retaliation damage.
+  - Expected: Aegis Breastplate can shock attackers and may stun them.
+  - Expected: Genji Armor can recover a portion of incoming damage after a hit.
 
 ### Quest Rewards
 - [ ] Turn in "The Butcher" quest at the tavern after defeating the Minotaur.

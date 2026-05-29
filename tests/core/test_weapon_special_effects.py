@@ -249,6 +249,62 @@ def test_armor_special_effect():
     }
 
 
+def _armor_hit_result(attacker, defender, damage=40):
+    result = CombatResult(
+        action="Weapon",
+        actor=attacker,
+        target=defender,
+        hit=True,
+        crit=1.0,
+        damage=damage,
+        healing=0,
+    )
+    results = CombatResultGroup()
+    results.add(result)
+    return results
+
+
+def test_ultimate_armor_special_effects_cover_magic_fire_lightning_and_recovery(monkeypatch):
+    attacker = create_test_character("Attacker", level_num=10)
+    defender = create_test_character("Defender", level_num=10)
+
+    defender.mana.current = 10
+    defender.equipment["Armor"] = items.MerlinRobe()
+    msg = attacker._apply_equipment_effects(defender, "Weapon", 40, 1)
+    assert defender.mana.current == 20
+    assert "restore 10 mana" in msg
+
+    defender.mana.current = 10
+    results = _armor_hit_result(attacker, defender, damage=40)
+    items.MerlinRobe().special_effect(results)
+    assert defender.mana.current == 20
+    assert results[-1].extra["Mana Restored"] == 10
+    assert "restore 10 mana" in results[-1].message
+
+    attacker.health.current = 100
+    results = _armor_hit_result(attacker, defender, damage=40)
+    items.DragonHide().special_effect(results)
+    assert attacker.health.current == 90
+    assert results[-1].extra["Dragon Hide Damage"] == 10
+    assert "Fire" in results[-1].effects_applied["Magic"]
+
+    attacker.health.current = 100
+    monkeypatch.setattr(random, "random", lambda: 0.0)
+    results = _armor_hit_result(attacker, defender, damage=40)
+    items.Aegis().special_effect(results)
+    assert attacker.health.current == 94
+    assert results[-1].extra["Aegis Shock Damage"] == 6
+    assert attacker.status_effects["Stun"].active is True
+    assert "Stun" in results[-1].effects_applied["Status"]
+
+    defender.health.current = 60
+    results = _armor_hit_result(attacker, defender, damage=40)
+    items.Genji().special_effect(results)
+    assert defender.health.current == 68
+    assert results[-1].healing == 8
+    assert results[-1].extra["Genji Damage Recovered"] == 8
+
+
 def main():
     """Run all tests."""
     print("=" * 70)

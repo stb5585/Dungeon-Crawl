@@ -1147,6 +1147,8 @@ class Character:
 
         # Process special effect results
         for res in results.results:
+            if res.message:
+                msg += res.message
             if 'Drain' in res.extra and res.extra['Drain']:
                 drain_amount = res.actor.health.current - (res.actor.health.current - res.damage)
                 msg += f"{res.actor.name} drains {drain_amount} health from {res.target.name}.\n"
