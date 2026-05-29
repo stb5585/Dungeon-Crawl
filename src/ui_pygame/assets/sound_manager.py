@@ -61,6 +61,10 @@ LOCATION_MUSIC_THEMES = {
     "combat": "combat_normal",
 }
 
+MUSIC_ASSET_ALIASES = {
+    "dungeon": ("dungeon", "eerie_dungeon_background"),
+}
+
 
 class SoundManager:
     """Manages sound effects and background music."""
@@ -254,7 +258,12 @@ class SoundManager:
 
     def get_music_candidate_paths(self, music_name: str) -> tuple[Path, ...]:
         """Return music filenames checked for a music name."""
-        return tuple(self.music_dir / f"{music_name}.{extension}" for extension in ("ogg", "mp3", "wav"))
+        names = MUSIC_ASSET_ALIASES.get(music_name, (music_name,))
+        return tuple(
+            self.music_dir / f"{name}.{extension}"
+            for name in names
+            for extension in ("ogg", "mp3", "wav")
+        )
 
     def describe_audio_assets(
         self,

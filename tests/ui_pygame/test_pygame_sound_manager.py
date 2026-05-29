@@ -166,7 +166,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     (assets_dir / "sounds" / "new_sounds").mkdir()
     (assets_dir / "sounds" / "new_sounds" / "spring.wav").write_bytes(b"wav")
     (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
-    (assets_dir / "music" / "dungeon.wav").write_bytes(b"wav")
+    (assets_dir / "music" / "eerie_dungeon_background.wav").write_bytes(b"wav")
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
     manager.current_music = "town"
     manager.sfx_cache["hit"] = FakeSound("hit")
@@ -175,7 +175,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert manager.resolve_sfx_path("heal") == assets_dir / "sounds" / "heal.ogg"
     assert manager.resolve_sfx_path("spring") == assets_dir / "sounds" / "new_sounds" / "spring.wav"
     assert manager.resolve_music_path("town") == assets_dir / "music" / "town.mp3"
-    assert manager.resolve_music_path("dungeon") == assets_dir / "music" / "dungeon.wav"
+    assert manager.resolve_music_path("dungeon") == assets_dir / "music" / "eerie_dungeon_background.wav"
     assert manager.get_sfx_candidate_paths("hit") == (
         assets_dir / "sounds" / "hit.wav",
         assets_dir / "sounds" / "hit.ogg",
@@ -186,6 +186,14 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
         assets_dir / "music" / "town.ogg",
         assets_dir / "music" / "town.mp3",
         assets_dir / "music" / "town.wav",
+    )
+    assert manager.get_music_candidate_paths("dungeon") == (
+        assets_dir / "music" / "dungeon.ogg",
+        assets_dir / "music" / "dungeon.mp3",
+        assets_dir / "music" / "dungeon.wav",
+        assets_dir / "music" / "eerie_dungeon_background.ogg",
+        assets_dir / "music" / "eerie_dungeon_background.mp3",
+        assets_dir / "music" / "eerie_dungeon_background.wav",
     )
 
     diagnostics = manager.describe_audio_assets(
@@ -249,11 +257,14 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
             },
             "dungeon": {
                 "available": True,
-                "path": str(assets_dir / "music" / "dungeon.wav"),
+                "path": str(assets_dir / "music" / "eerie_dungeon_background.wav"),
                 "checked_paths": [
                     str(assets_dir / "music" / "dungeon.ogg"),
                     str(assets_dir / "music" / "dungeon.mp3"),
                     str(assets_dir / "music" / "dungeon.wav"),
+                    str(assets_dir / "music" / "eerie_dungeon_background.ogg"),
+                    str(assets_dir / "music" / "eerie_dungeon_background.mp3"),
+                    str(assets_dir / "music" / "eerie_dungeon_background.wav"),
                 ],
             },
             "battle": {
