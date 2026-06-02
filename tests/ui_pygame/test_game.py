@@ -234,20 +234,27 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
 def test_location_music_wrapper_is_defensive_and_routes_to_sound_manager():
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     calls = []
+    stop_calls = []
     game.presenter = SimpleNamespace(
         sound_manager=SimpleNamespace(
-            play_location_music=lambda location, **kwargs: calls.append((location, kwargs)) or "theme"
+            play_location_music=lambda location, **kwargs: calls.append((location, kwargs)) or "theme",
+            stop_music=lambda **kwargs: stop_calls.append(kwargs),
         )
     )
 
     assert game._play_location_music("dungeon", boss=True) == "theme"
     assert calls == [("dungeon", {"boss": True, "final": False})]
+    game._stop_music(fade_ms=125)
+    assert stop_calls == [{"fade_ms": 125}]
 
     game.presenter.sound_manager.play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("audio"))
     assert game._play_location_music("town") is None
+    game.presenter.sound_manager.stop_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("audio"))
+    game._stop_music()
 
     game.presenter.sound_manager = None
     assert game._play_location_music("town") is None
+    game._stop_music()
 
 
 def test_top_level_flows_request_location_music(monkeypatch):
@@ -264,7 +271,7 @@ def test_top_level_flows_request_location_music(monkeypatch):
     game.barracks_manager = SimpleNamespace(visit_barracks=lambda: None)
     game.inn_manager = SimpleNamespace(visit_inn=lambda: None)
     game.dungeon_manager = SimpleNamespace(explore_dungeon=lambda: None)
-    game.player_char = SimpleNamespace(quit=False)
+    game.player_char = SimpleNamespace(quit=False, in_town=lambda: True)
 
     class FakeShopSelection:
         def __init__(self, _presenter):
@@ -287,6 +294,7 @@ def test_top_level_flows_request_location_music(monkeypatch):
         ("town", {}),
         ("inn", {}),
         ("dungeon", {}),
+        ("town", {}),
     ]
 
 
@@ -372,6 +380,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.load_files = ["save1"]
     game.player_char = None
     game.initialize_managers = lambda: init_calls.append(True)
+    stop_calls = []
+    game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
     init_calls = []
 
     class FakePopup:
@@ -416,6 +426,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert settings_calls[-1]["flush_events"] is True
     assert settings_calls[-1]["require_key_release"] is True
     assert game.running is False
+    assert stop_calls == [{"fade_ms": 250}]
 
     presenter_messages.clear()
     game.load_files = []
@@ -513,6 +524,35 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
     game.cleanup()
     assert cleanup_calls == [True]
+
+
+def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.running = True
+    game.debug_mode = False
+    game.load_files = []
+    game.player_char = None
+    stop_calls = []
+    run_calls = []
+    game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
+    game.new_game = lambda: SimpleNamespace(name="Hero")
+    game.run = lambda: run_calls.append(True)
+
+    class FakeMenu:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, _options, **_kwargs):
+            return menu_choices.pop(0)
+
+    menu_choices = [0, 2]
+    monkeypatch.setattr(pygame_game, "MainMenuScreen", FakeMenu)
+
+    game.main_menu()
+
+    assert run_calls == [True]
+    assert stop_calls == [{"fade_ms": 250}, {"fade_ms": 250}]
 
 
 def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):

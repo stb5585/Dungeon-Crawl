@@ -455,7 +455,7 @@ class SoundManager:
         """
         if pygame.mixer.music.get_busy():
             pygame.mixer.music.fadeout(fade_ms)
-            self.current_music = None
+        self.current_music = None
 
     def pause_music(self):
         """Pause background music."""

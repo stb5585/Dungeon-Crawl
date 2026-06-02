@@ -198,6 +198,7 @@
   - Expected: Town, shop-family, church, inn, dungeon, normal-combat, boss-combat, and final-combat contexts map to distinct runtime music theme names.
   - Expected: Unknown locations fall back to the town theme instead of failing.
   - Expected: Entering top-level pygame town, shop, church, inn, barracks, and dungeon flows requests the matching theme without crashing when audio is unavailable.
+  - Expected: Returning from dungeon exploration to town requests town music, and returning to the main menu stops the active location track.
   - Expected: Re-entering the same location does not restart the already active track unless forced.
   - Expected: Combat start requests normal, boss, or final combat music from combat event context.
   - Expected: Ending combat restores the previous non-combat location theme when one was active.

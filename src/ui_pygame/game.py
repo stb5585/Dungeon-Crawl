@@ -133,6 +133,16 @@ class PygameGame:
         except Exception:
             return None
 
+    def _stop_music(self, *, fade_ms: int = 500) -> None:
+        """Stop active location music when leaving gameplay screens."""
+        sound_manager = getattr(self.presenter, "sound_manager", None)
+        if sound_manager is None or not hasattr(sound_manager, "stop_music"):
+            return
+        try:
+            sound_manager.stop_music(fade_ms=fade_ms)
+        except Exception:
+            return
+
     def special_event(self, name: str):
         """GUI implementation of narrative special events.
 
@@ -330,6 +340,7 @@ class PygameGame:
         
     def main_menu(self):
         """Display main menu and handle selection."""
+        self._stop_music(fade_ms=250)
         # Check debug mode settings
         if self.debug_mode:
             if confirm_yes_no(self.presenter, "Debug Mode - Turn off random encounters?"):
@@ -365,10 +376,12 @@ class PygameGame:
                 self.player_char = self.new_game()
                 if self.player_char:
                     self.run()
+                    self._stop_music(fade_ms=250)
             elif menu_options[choice] == 'Load Game':
                 self.player_char = self.load_game()
                 if self.player_char:
                     self.run()
+                    self._stop_music(fade_ms=250)
             elif menu_options[choice] == 'Settings':
                 popup = ConfirmationPopup(self.presenter, "Settings menu coming soon!", show_buttons=False)
                 popup.show(**self._popup_show_kwargs())
@@ -805,6 +818,9 @@ class PygameGame:
         # Check if player quit the game
         if self.player_char.quit:
             return
+        in_town = getattr(self.player_char, "in_town", None)
+        if callable(in_town) and in_town():
+            self._play_location_music("town")
     
     def show_character_info(self):
         """Display character information using the character screen."""

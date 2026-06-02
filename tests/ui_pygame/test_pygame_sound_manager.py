@@ -416,6 +416,11 @@ def test_stop_pause_resume_and_volume_controls(tmp_path, fake_mixer):
     assert manager.music_volume == 1.0
     assert music.volumes[-2:] == [0.5, 1.0]
 
+    manager.current_music = "dungeon"
+    music.busy = False
+    manager.stop_music()
+    assert manager.current_music is None
+
 
 def test_enable_disable_cleanup_and_singleton_access(tmp_path, fake_mixer, monkeypatch):
     state, music = fake_mixer
