@@ -27,6 +27,7 @@ DEFAULT_SFX_NAMES = (
     "heal",
     "spell_fire",
     "spell_ice",
+    "ice_spell",
     "spell_lightning",
     "spell_heal",
     "spell_cast",
@@ -192,7 +193,7 @@ class SoundManager:
         if 'fire' in spell_name.lower():
             self.play_sfx("spell_fire")
         elif 'ice' in spell_name.lower() or 'frost' in spell_name.lower():
-            self.play_sfx("spell_ice")
+            self.play_sfx("ice_spell")
         elif 'lightning' in spell_name.lower() or 'shock' in spell_name.lower():
             self.play_sfx("spell_lightning")
         elif 'heal' in spell_name.lower():
@@ -208,7 +209,7 @@ class SoundManager:
         if 'fire' in skill_name.lower():
             self.play_sfx("spell_fire")
         elif 'ice' in skill_name.lower() or 'frost' in skill_name.lower():
-            self.play_sfx("spell_ice")
+            self.play_sfx("ice_spell")
         elif 'lightning' in skill_name.lower() or 'shock' in skill_name.lower():
             self.play_sfx("spell_lightning")
         elif 'heal' in skill_name.lower():

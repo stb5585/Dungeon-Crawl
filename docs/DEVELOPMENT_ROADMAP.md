@@ -504,6 +504,7 @@ Clarification:
 - Repo inspection confirms that the music runtime exists, but the `src/ui_pygame/assets/music/` directory still lacks real music assets beyond documentation.
 - Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
 - Audio asset diagnostics and loading now support `.wav` music files and the nested `sounds/new_sounds/` staging folder, making new local content visible before it is renamed or flattened.
+- Ice/frost spell and skill events now route to the staged `ice_spell.wav` SFX asset instead of the generic ice placeholder.
 - Scream/howl/nightmare skill-use events now route to the staged `distorted_scream.wav` SFX asset instead of the generic spell-cast placeholder.
 - Mortal Strike skill-use events now route to the staged `mortal_strike.wav` SFX asset instead of the generic spell-cast placeholder.
 - The dungeon music theme can now resolve the staged `eerie_dungeon_background.wav` asset while keeping the runtime theme name stable as `dungeon`.

@@ -24,6 +24,7 @@ This directory contains sound effects for Dungeon Crawl.
 - `spell_cast.wav` - Generic spell casting
 - `spell_fire.wav` - Fire spell
 - `spell_ice.wav` - Ice/frost spell  
+- `new_sounds/ice_spell.wav` - Staged ice/frost spell and skill effect
 - `spell_lightning.wav` - Lightning/shock spell
 - `spell_heal.wav` - Healing spell
 - `spell_buff.wav` - Buff spell
