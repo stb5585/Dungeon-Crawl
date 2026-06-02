@@ -359,6 +359,7 @@ def test_location_music_routes_context_to_theme_names(tmp_path, fake_mixer, monk
     )
 
     assert manager.resolve_music_theme("Town") == "town"
+    assert manager.resolve_music_theme("Main Menu") == "menu"
     assert manager.resolve_music_theme("Blacksmith") == "shop"
     assert manager.resolve_music_theme("Final Room", final=True) == "combat_final"
     assert manager.resolve_music_theme("Combat", boss=True) == "combat_boss"

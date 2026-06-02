@@ -191,11 +191,11 @@
   - Expected: Missing sound/music entries report the checked candidate filenames for supported extensions.
   - Expected: `.wav` music files and staged `sounds/new_sounds/` effects appear in candidate path diagnostics.
   - Expected: The `dungeon` music theme can resolve `eerie_dungeon_background.wav` without changing the runtime theme name.
-  - Expected: Default diagnostics include the runtime's combat, town, shop, church, inn, dungeon, and final-combat audio names.
+  - Expected: Default diagnostics include the runtime's main-menu, combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
   - Expected: Summary payloads include available and missing SFX/music name lists.
-- [ ] Trigger location music routing from town, shops, church, inn, dungeon, and combat contexts.
-  - Expected: Town, shop-family, church, inn, dungeon, normal-combat, boss-combat, and final-combat contexts map to distinct runtime music theme names.
+- [ ] Trigger location music routing from main menu, town, shops, church, inn, dungeon, and combat contexts.
+  - Expected: Main-menu, town, shop-family, church, inn, dungeon, normal-combat, boss-combat, and final-combat contexts map to distinct runtime music theme names.
   - Expected: Unknown locations fall back to the town theme instead of failing.
   - Expected: Entering top-level pygame town, shop, church, inn, barracks, and dungeon flows requests the matching theme without crashing when audio is unavailable.
   - Expected: Returning from dungeon exploration to town requests town music, and returning to the main menu stops the active location track.

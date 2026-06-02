@@ -39,6 +39,7 @@ DEFAULT_SFX_NAMES = (
 )
 
 DEFAULT_MUSIC_NAMES = (
+    "menu",
     "town",
     "shop",
     "church",
@@ -50,6 +51,8 @@ DEFAULT_MUSIC_NAMES = (
 )
 
 LOCATION_MUSIC_THEMES = {
+    "menu": "menu",
+    "main_menu": "menu",
     "town": "town",
     "shop": "shop",
     "blacksmith": "shop",

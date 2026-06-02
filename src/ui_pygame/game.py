@@ -341,6 +341,7 @@ class PygameGame:
     def main_menu(self):
         """Display main menu and handle selection."""
         self._stop_music(fade_ms=250)
+        self._play_location_music("menu")
         # Check debug mode settings
         if self.debug_mode:
             if confirm_yes_no(self.presenter, "Debug Mode - Turn off random encounters?"):

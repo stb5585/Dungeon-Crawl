@@ -505,7 +505,7 @@ Clarification:
 - Audio asset diagnostics now include every candidate path checked for each SFX/music name, which should make missing-content audits easier while final assets are still incomplete.
 - Audio asset diagnostics and loading now support `.wav` music files and the nested `sounds/new_sounds/` staging folder, making new local content visible before it is renamed or flattened.
 - The dungeon music theme can now resolve the staged `eerie_dungeon_background.wav` asset while keeping the runtime theme name stable as `dungeon`.
-- SoundManager now has location/context music routing for town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
+- SoundManager now has location/context music routing for main menu, town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
 - Pygame top-level town/shop/church/inn/barracks/dungeon flows now request location music through that routing, and repeated requests for the active theme do not restart the track.
 - Combat-start events now route normal, boss, and final combat music through the same theme helper, with pre-combat location music restored after combat ends when available.
 - Main-menu transitions now stop active location music, and dungeon exits that return to town immediately request the town theme so dungeon music does not linger across area boundaries.

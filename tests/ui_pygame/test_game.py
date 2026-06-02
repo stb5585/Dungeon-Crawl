@@ -381,7 +381,9 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.player_char = None
     game.initialize_managers = lambda: init_calls.append(True)
     stop_calls = []
+    music_calls = []
     game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
+    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
     init_calls = []
 
     class FakePopup:
@@ -427,6 +429,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert settings_calls[-1]["require_key_release"] is True
     assert game.running is False
     assert stop_calls == [{"fade_ms": 250}]
+    assert music_calls == [("menu", {})]
 
     presenter_messages.clear()
     game.load_files = []
@@ -534,8 +537,10 @@ def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
     game.load_files = []
     game.player_char = None
     stop_calls = []
+    music_calls = []
     run_calls = []
     game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
+    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
     game.new_game = lambda: SimpleNamespace(name="Hero")
     game.run = lambda: run_calls.append(True)
 
@@ -553,6 +558,7 @@ def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
 
     assert run_calls == [True]
     assert stop_calls == [{"fade_ms": 250}, {"fade_ms": 250}]
+    assert music_calls == [("menu", {})]
 
 
 def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
