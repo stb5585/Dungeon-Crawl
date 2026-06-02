@@ -165,6 +165,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     (assets_dir / "sounds" / "heal.ogg").write_bytes(b"ogg")
     (assets_dir / "sounds" / "new_sounds").mkdir()
     (assets_dir / "sounds" / "new_sounds" / "spring.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "new_sounds" / "distorted_scream.wav").write_bytes(b"wav")
     (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
     (assets_dir / "music" / "eerie_dungeon_background.wav").write_bytes(b"wav")
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
@@ -300,9 +301,10 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert default_diagnostics["music"]["town"]["available"] is True
     assert default_diagnostics["music"]["combat_final"]["available"] is False
     default_summary = manager.summarize_default_audio_assets()
-    assert default_summary["sfx_available"] == 2
+    assert default_summary["sfx_available"] == 3
     assert default_summary["music_available"] == 2
     assert "hit" in default_summary["sfx_available_names"]
+    assert "distorted_scream" in default_summary["sfx_available_names"]
     assert "combat_final" in default_summary["music_missing_names"]
 
 
@@ -491,6 +493,7 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Ice Kick"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"ability_name": "Shock Palm"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Healing Waltz"}))
+    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Screech"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Backflip"}))
     manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Poison"}))
     manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Freeze"}))
@@ -518,6 +521,7 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
         ("spell_ice", None, 0),
         ("spell_lightning", None, 0),
         ("spell_heal", None, 0),
+        ("distorted_scream", None, 0),
         ("spell_cast", None, 0),
         ("poison", None, 0),
         ("stun", None, 0),

@@ -190,6 +190,7 @@
   - Expected: Present sound/music files report available paths, while missing placeholder content is reported without crashing or playing audio.
   - Expected: Missing sound/music entries report the checked candidate filenames for supported extensions.
   - Expected: `.wav` music files and staged `sounds/new_sounds/` effects appear in candidate path diagnostics.
+  - Expected: The staged `distorted_scream.wav` effect appears in default SFX diagnostics when present.
   - Expected: The `dungeon` music theme can resolve `eerie_dungeon_background.wav` without changing the runtime theme name.
   - Expected: Default diagnostics include the runtime's main-menu, combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
@@ -202,6 +203,8 @@
   - Expected: Re-entering the same location does not restart the already active track unless forced.
   - Expected: Combat start requests normal, boss, or final combat music from combat event context.
   - Expected: Ending combat restores the previous non-combat location theme when one was active.
+- [ ] Trigger a scream, howl, or nightmare-style skill-use event.
+  - Expected: The staged `distorted_scream` SFX is requested instead of the generic spell-cast sound.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.

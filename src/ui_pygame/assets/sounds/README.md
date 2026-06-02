@@ -28,6 +28,7 @@ This directory contains sound effects for Dungeon Crawl.
 - `spell_heal.wav` - Healing spell
 - `spell_buff.wav` - Buff spell
 - `spell_debuff.wav` - Debuff spell
+- `new_sounds/distorted_scream.wav` - Staged scream/howl/nightmare skill effect
 
 ### Status Effect Sounds
 - `poison.wav` - Poison/bleed applied
