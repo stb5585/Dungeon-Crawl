@@ -31,6 +31,7 @@ DEFAULT_SFX_NAMES = (
     "spell_heal",
     "spell_cast",
     "distorted_scream",
+    "mortal_strike",
     "poison",
     "stun",
     "burn",
@@ -212,6 +213,8 @@ class SoundManager:
             self.play_sfx("spell_lightning")
         elif 'heal' in skill_name.lower():
             self.play_sfx("spell_heal")
+        elif 'mortal strike' in skill_name.lower():
+            self.play_sfx("mortal_strike")
         elif any(keyword in skill_name.lower() for keyword in ("howl", "screech", "nightmare")):
             self.play_sfx("distorted_scream")
         else:
