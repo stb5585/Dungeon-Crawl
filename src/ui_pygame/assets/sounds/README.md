@@ -28,6 +28,7 @@ This directory contains sound effects for Dungeon Crawl.
 - `spell_lightning.wav` - Lightning/shock spell
 - `spell_heal.wav` - Healing spell
 - `spell_buff.wav` - Buff spell
+- `new_sounds/shield_block_metal_weapon.wav` - Staged shield block impact effect
 - `spell_debuff.wav` - Debuff spell
 - `new_sounds/distorted_scream.wav` - Staged scream/howl/nightmare skill effect
 - `new_sounds/mortal_strike.wav` - Staged Mortal Strike skill effect

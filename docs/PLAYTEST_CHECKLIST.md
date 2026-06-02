@@ -193,6 +193,7 @@
   - Expected: The staged `ice_spell.wav` effect appears in default SFX diagnostics when present.
   - Expected: The staged `distorted_scream.wav` effect appears in default SFX diagnostics when present.
   - Expected: The staged `mortal_strike.wav` effect appears in default SFX diagnostics when present.
+  - Expected: The staged `shield_block_metal_weapon.wav` effect appears in default SFX diagnostics when present.
   - Expected: The `dungeon` music theme can resolve `eerie_dungeon_background.wav` without changing the runtime theme name.
   - Expected: Default diagnostics include the runtime's main-menu, combat, town, shop, church, inn, dungeon, and final-combat audio names.
   - Expected: Summary counts report available and missing SFX/music assets.
@@ -211,6 +212,8 @@
   - Expected: The staged `distorted_scream` SFX is requested instead of the generic spell-cast sound.
 - [ ] Trigger Mortal Strike in combat.
   - Expected: The staged `mortal_strike` SFX is requested instead of the generic spell-cast sound.
+- [ ] Trigger a shield block in combat.
+  - Expected: The staged `shield_block_metal_weapon` SFX is requested for the block event.
 - [ ] Run a focused combat simulator test after analytics changes.
   - Expected: The quick balance helper returns a report object even when no simulations are configured.
 - [ ] Generate a compact combat simulator summary payload.

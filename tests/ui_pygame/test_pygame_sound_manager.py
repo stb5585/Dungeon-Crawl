@@ -168,6 +168,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     (assets_dir / "sounds" / "new_sounds" / "distorted_scream.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "mortal_strike.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "ice_spell.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "new_sounds" / "shield_block_metal_weapon.wav").write_bytes(b"wav")
     (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
     (assets_dir / "music" / "eerie_dungeon_background.wav").write_bytes(b"wav")
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
@@ -303,12 +304,13 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert default_diagnostics["music"]["town"]["available"] is True
     assert default_diagnostics["music"]["combat_final"]["available"] is False
     default_summary = manager.summarize_default_audio_assets()
-    assert default_summary["sfx_available"] == 5
+    assert default_summary["sfx_available"] == 6
     assert default_summary["music_available"] == 2
     assert "hit" in default_summary["sfx_available_names"]
     assert "distorted_scream" in default_summary["sfx_available_names"]
     assert "mortal_strike" in default_summary["sfx_available_names"]
     assert "ice_spell" in default_summary["sfx_available_names"]
+    assert "shield_block_metal_weapon" in default_summary["sfx_available_names"]
     assert "combat_final" in default_summary["music_missing_names"]
 
 
@@ -487,6 +489,7 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"crit": True, "damage": 1}))
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 80}))
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 10}))
+    manager._on_block(GameEvent(type=EventType.BLOCK, timestamp=0, data={"damage_blocked": 25}))
     manager._on_healing(GameEvent(type=EventType.HEALING_DONE, timestamp=0, data={}))
     manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Fireball"}))
     manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Frost Lance"}))
@@ -516,6 +519,7 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
         ("critical_hit", 1.0, 0),
         ("heavy_hit", None, 0),
         ("hit", None, 0),
+        ("shield_block_metal_weapon", None, 0),
         ("heal", None, 0),
         ("spell_fire", None, 0),
         ("ice_spell", None, 0),

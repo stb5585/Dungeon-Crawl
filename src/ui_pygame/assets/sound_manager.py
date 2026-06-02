@@ -33,6 +33,7 @@ DEFAULT_SFX_NAMES = (
     "spell_cast",
     "distorted_scream",
     "mortal_strike",
+    "shield_block_metal_weapon",
     "poison",
     "stun",
     "burn",
@@ -137,6 +138,7 @@ class SoundManager:
         self.event_bus.subscribe(EventType.COMBAT_START, self._on_combat_start)
         self.event_bus.subscribe(EventType.COMBAT_END, self._on_combat_end)
         self.event_bus.subscribe(EventType.DAMAGE_DEALT, self._on_damage_dealt)
+        self.event_bus.subscribe(EventType.BLOCK, self._on_block)
         self.event_bus.subscribe(EventType.HEALING_DONE, self._on_healing)
         self.event_bus.subscribe(EventType.SPELL_CAST, self._on_spell_cast)
         self.event_bus.subscribe(EventType.SKILL_USE, self._on_skill_use)
@@ -180,6 +182,10 @@ class SoundManager:
             self.play_sfx("heavy_hit")
         else:
             self.play_sfx("hit")
+
+    def _on_block(self, event):
+        """Handle shield block events."""
+        self.play_sfx("shield_block_metal_weapon")
 
     def _on_healing(self, event):
         """Handle healing event."""
