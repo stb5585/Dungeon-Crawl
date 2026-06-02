@@ -637,6 +637,8 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
 
 def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     manager, _presenter, player, game = _make_manager(monkeypatch)
+    sfx_calls = []
+    _presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
     manager._animate_nimue_materialization = lambda: manager.messages.append("nimue-animation")
     manager._show_special_event_dialogue = lambda *args, **kwargs: manager.messages.append("nimue-dialogue")
@@ -691,6 +693,7 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
 
     manager._interact_underground_spring(spring)
 
+    assert sfx_calls == ["underground_spring"]
     assert spring.drink is True
     assert spring.defeated is True
     assert spring.nimue is True
@@ -703,6 +706,7 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     player.inventory.pop("Excalibur", None)
     player.equipment["Weapon"] = SimpleNamespace(name="Excalibur")
     manager._interact_underground_spring(spring)
+    assert sfx_calls == ["underground_spring", "underground_spring"]
     assert player.equipment["Weapon"].name == "Excalibur2"
 
 

@@ -34,6 +34,7 @@ DEFAULT_SFX_NAMES = (
     "distorted_scream",
     "mortal_strike",
     "shield_block_metal_weapon",
+    "underground_spring",
     "poison",
     "stun",
     "burn",

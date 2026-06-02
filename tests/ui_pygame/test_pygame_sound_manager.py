@@ -169,6 +169,7 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     (assets_dir / "sounds" / "new_sounds" / "mortal_strike.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "ice_spell.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "shield_block_metal_weapon.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "new_sounds" / "underground_spring.wav").write_bytes(b"wav")
     (assets_dir / "music" / "town.mp3").write_bytes(b"mp3")
     (assets_dir / "music" / "eerie_dungeon_background.wav").write_bytes(b"wav")
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
@@ -304,13 +305,14 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert default_diagnostics["music"]["town"]["available"] is True
     assert default_diagnostics["music"]["combat_final"]["available"] is False
     default_summary = manager.summarize_default_audio_assets()
-    assert default_summary["sfx_available"] == 6
+    assert default_summary["sfx_available"] == 7
     assert default_summary["music_available"] == 2
     assert "hit" in default_summary["sfx_available_names"]
     assert "distorted_scream" in default_summary["sfx_available_names"]
     assert "mortal_strike" in default_summary["sfx_available_names"]
     assert "ice_spell" in default_summary["sfx_available_names"]
     assert "shield_block_metal_weapon" in default_summary["sfx_available_names"]
+    assert "underground_spring" in default_summary["sfx_available_names"]
     assert "combat_final" in default_summary["music_missing_names"]
 
 

@@ -148,6 +148,12 @@ class DungeonManager:
         # Messages affect the UI overlay.
         self.ui_dirty = True
 
+    def _play_sfx(self, sound_name: str):
+        """Play a sound effect when the presenter has an audio manager."""
+        sound_manager = getattr(self.presenter, "sound_manager", None)
+        if sound_manager is not None and hasattr(sound_manager, "play_sfx"):
+            sound_manager.play_sfx(sound_name)
+
     def _max_message_scroll(self) -> int:
         return max(0, len(self.messages) - self.message_lines_per_page)
 
@@ -1091,6 +1097,7 @@ class DungeonManager:
             min_display_ms=300,
         ):
             return
+        self._play_sfx("underground_spring")
 
         # Check for Naivete quest
         if "Naivete" in self.player_char.quest_dict.get("Side", {}):
