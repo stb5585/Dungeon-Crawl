@@ -931,6 +931,7 @@ class DungeonManager:
                 )
                 self.add_message("The Cryptic Key turns smoothly in the hidden lock.")
                 self.add_message("The door swings open, revealing the vault beyond!")
+                self._play_sfx("open_door")
                 self._mark_view_dirty()
                 return
             # Master Key works if player has Keen Eye
@@ -941,6 +942,7 @@ class DungeonManager:
                     door_tile.enter = True
                     door_tile.detected = True
                     self.add_message("You unlock and open the hidden door with the Master Key!")
+                    self._play_sfx("open_door")
                     self._mark_view_dirty()
                     return
             # Master Lockpick works if player has Keen Eye
@@ -951,6 +953,7 @@ class DungeonManager:
                     door_tile.enter = True
                     door_tile.detected = True
                     self.add_message("You skillfully pick the hidden door's lock!")
+                    self._play_sfx("open_door")
                     self._mark_view_dirty()
                     return
             # If we get here, they can't unlock it
@@ -964,11 +967,13 @@ class DungeonManager:
             door_tile.open = True
             door_tile.blocked = None
             self.add_message("You unlock and open the door with the Master Key!")
+            self._play_sfx("open_door")
         elif "Master Lockpick" in self.player_char.spellbook.get("Skills", []):
             door_tile.locked = False
             door_tile.open = True
             door_tile.blocked = None
             self.add_message("You skillfully pick the lock and open the door!")
+            self._play_sfx("open_door")
         elif "Old Key" in self.player_char.inventory:
             self._refresh_cached_frame()
             use_key = self.loot_popup.show_unlock_prompt(
@@ -986,6 +991,7 @@ class DungeonManager:
                     subtract=True
                 )
                 self.add_message("You unlock and open the door with an Old Key!")
+                self._play_sfx("open_door")
             else:
                 self.add_message("The door remains locked.")
         else:

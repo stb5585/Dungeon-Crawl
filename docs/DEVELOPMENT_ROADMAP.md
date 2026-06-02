@@ -509,6 +509,7 @@ Clarification:
 - Mortal Strike skill-use events now route to the staged `mortal_strike.wav` SFX asset instead of the generic spell-cast placeholder.
 - Shield block events now route to the staged `shield_block_metal_weapon.wav` SFX asset.
 - Accepted underground-spring interactions now request the staged `underground_spring.wav` SFX asset.
+- Successful dungeon door unlock/open interactions now request the staged `open_door.wav` SFX asset.
 - The dungeon music theme can now resolve the staged `eerie_dungeon_background.wav` asset while keeping the runtime theme name stable as `dungeon`.
 - SoundManager now has location/context music routing for main menu, town, shops, church, inn, dungeon, normal combat, boss combat, and final combat; actual music assets are still incomplete.
 - Pygame top-level town/shop/church/inn/barracks/dungeon flows now request location music through that routing, and repeated requests for the active theme do not restart the track.

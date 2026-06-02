@@ -565,7 +565,9 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
 
 
 def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
-    manager, _presenter, player, game = _make_manager(monkeypatch)
+    manager, presenter, player, game = _make_manager(monkeypatch)
+    sfx_calls = []
+    presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
     manager.loot_popup = SimpleNamespace(show_unlock_prompt=lambda kind, **_kwargs: True, show_loot=lambda *_args, **_kwargs: None)
     dirty_calls = []
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
@@ -578,12 +580,14 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     assert ore_door.open is True
     assert ore_door.detected is True
     assert dirty_calls == ["dirty"]
+    assert sfx_calls == ["open_door"]
 
     regular = DoorTile(enter=False, locked=True)
     player.inventory["Old Key"] = [SimpleNamespace(name="Old Key")]
     manager._interact_door(regular)
     assert regular.open is True
     assert regular.blocked is None
+    assert sfx_calls == ["open_door", "open_door"]
 
     player.location_z = 2
     relic_tile = SimpleNamespace(read=False)

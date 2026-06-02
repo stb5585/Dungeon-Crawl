@@ -35,6 +35,7 @@ DEFAULT_SFX_NAMES = (
     "mortal_strike",
     "shield_block_metal_weapon",
     "underground_spring",
+    "open_door",
     "poison",
     "stun",
     "burn",
