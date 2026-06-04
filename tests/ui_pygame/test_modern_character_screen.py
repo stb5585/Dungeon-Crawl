@@ -141,6 +141,7 @@ def test_modern_character_tabs_are_generic_and_switchable():
 
     assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
+    assert screen.character_panel_rect.width > screen.combat_panel_rect.width
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
@@ -203,14 +204,14 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Equipment" not in presenter.large_font.render_calls
     assert "XP EARNED" not in presenter.small_font.render_calls
     assert "XP TO NEXT" not in presenter.small_font.render_calls
-    assert "250 earned / 50 to next" in presenter.small_font.render_calls
+    assert "250 XP / 50 next" in presenter.small_font.render_calls
     assert len(draw_line_calls) >= 2
     assert flip_calls
 
     screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
     assert "Equipment" in presenter.large_font.render_calls
-    assert "Equipment Layout" in presenter.large_font.render_calls
+    assert "Equipment Layout" not in presenter.large_font.render_calls
     assert "Item Details" not in presenter.normal_font.render_calls
     assert "Equipment Buffs" in presenter.normal_font.render_calls
     assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.normal_font.render_calls))

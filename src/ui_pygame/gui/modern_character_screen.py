@@ -73,7 +73,7 @@ class ModernCharacterScreen(CharacterScreen):
         self.content_rect = pygame.Rect(margin, content_top, self.width - (margin * 2), content_height)
         self.actions_rect = pygame.Rect(margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height)
 
-        character_width = (self.content_rect.width - gap) // 2
+        character_width = (self.content_rect.width - gap) * 2 // 3
         self.character_panel_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height)
         self.combat_panel_rect = pygame.Rect(self.character_panel_rect.right + gap, self.content_rect.top, self.content_rect.right - self.character_panel_rect.right - gap, self.content_rect.height)
         self.details_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, self.content_rect.width, self.content_rect.height)
@@ -319,7 +319,7 @@ class ModernCharacterScreen(CharacterScreen):
 
     def draw_character_panel(self, player_char):
         y = self._draw_panel(self.character_panel_rect, "Character")
-        portrait_size = min(170, max(126, self.character_panel_rect.width // 2 - 24))
+        portrait_size = min(220, max(150, self.character_panel_rect.width // 2 - 24))
         portrait = pygame.Rect(self.character_panel_rect.left + 16, y, portrait_size, portrait_size)
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, portrait)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
@@ -338,7 +338,7 @@ class ModernCharacterScreen(CharacterScreen):
             self._draw_text(value_text, self.normal_font, self.colors.WHITE, info_x + max(0, info_width - value_width), info_y, info_width)
             info_y += self.normal_font.get_height() + 6
 
-        bar_width = min(info_width, max(160, info_width))
+        bar_width = max(120, info_width // 2)
         bar_rect = pygame.Rect(self.character_panel_rect.right - 16 - bar_width, info_y + 2, bar_width, 18)
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, bar_rect)
         fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)
@@ -347,13 +347,19 @@ class ModernCharacterScreen(CharacterScreen):
         level = getattr(player_char, "level", None)
         exp = getattr(level, "exp", 0)
         to_next = getattr(level, "exp_to_gain", 0)
-        self._draw_text(f"{exp} earned / {to_next} to next", self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
+        self._draw_text(f"{exp} XP / {to_next} next", self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
 
-        y = max(portrait.bottom, bar_rect.bottom + self.small_font.get_height() + 6) + 20
+        attribute_rows = self.build_core_attributes(player_char)
+        attribute_height = self.large_font.get_height() + 8
+        attribute_height += len(attribute_rows) * (self.large_font.get_height() + 8)
+        y = max(
+            max(portrait.bottom, bar_rect.bottom + self.small_font.get_height() + 6) + 20,
+            self.character_panel_rect.bottom - attribute_height - 16,
+        )
         self._draw_divider(self.character_panel_rect, y - 10)
         self._draw_text("Core Attributes", self.large_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
         y += self.large_font.get_height() + 8
-        y = self._draw_key_values(self.build_core_attributes(player_char), self.character_panel_rect, y, font=self.large_font)
+        y = self._draw_key_values(attribute_rows, self.character_panel_rect, y, font=self.large_font)
 
         buffs = self.collect_equipment_buffs(player_char)
         if buffs and y < self.character_panel_rect.bottom - 56:
@@ -439,7 +445,6 @@ class ModernCharacterScreen(CharacterScreen):
         y = self._draw_panel(self.details_rect, "Equipment")
         layout_rect = pygame.Rect(self.details_rect.left + 28, y, self.details_rect.width - 56, self.details_rect.bottom - y - 20)
         slots = self.build_equipment_slots(player_char)
-        self._draw_text("Equipment Layout", self.large_font, self.colors.GOLD, layout_rect.left, layout_rect.top, layout_rect.width)
         self._draw_equipment_paper_doll(slots, layout_rect)
 
         buffs = self.collect_equipment_buffs(player_char)

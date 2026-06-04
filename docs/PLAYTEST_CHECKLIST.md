@@ -96,10 +96,13 @@
   - Expected: Name, class, and level render clearly.
   - Expected: Name, class, and level are right-aligned beside the portrait.
   - Expected: The level-progress bar appears under the Level value on the right side.
+  - Expected: The level-progress bar is about half the width of the character-info column.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
   - Expected: The larger portrait placeholder frame is visible and does not overlap character details.
+  - Expected: The Character panel is wider than the Combat Stats panel to give the portrait more room.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
+  - Expected: Core Attributes are placed near the bottom of the Character panel.
   - Expected: A divider separates the character identity area from Core Attributes.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
   - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
@@ -114,6 +117,7 @@
   - Expected: Weaknesses and Resistances headings and values use larger, readable text.
 - [ ] Inspect the modern Equipment tab.
   - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
+  - Expected: The redundant `Equipment Layout` heading is not shown.
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
   - Expected: The Item Details section is not shown.
   - Expected: Equipped item names render inside the paper-doll slots without overflowing.
