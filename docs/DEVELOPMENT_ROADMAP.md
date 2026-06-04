@@ -71,6 +71,7 @@ Status: `Done`
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, weapon efficiency display, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
+- A parallel modern Pygame Character Menu exists behind the temporary `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` / `use_modern_character_menu` opt-in flag. The legacy menu remains the default while acceptance testing continues.
 
 ### Audio Runtime And Staged Content
 
@@ -109,10 +110,10 @@ Next active priority: `P1 - Pygame UX Polish`.
 
 Status: `Active`
 
-1. Decide the character menu direction.
-   - Option A: focused cleanup of existing panels and equipment comparisons.
-   - Option B: full redesign of character/inventory/equipment presentation.
-   - The next pass should choose one path instead of leaving this as an open-ended item.
+1. Complete modern Character Menu acceptance and iteration.
+   - Direction chosen: full redesign implemented in parallel, with the legacy menu still available and still default.
+   - Implemented: generic Character/Equipment/Effects tabs, XP bar, portrait placeholder, combat-stat block, Helmet UI placeholder, equipment summaries, grouped weaknesses/resistances, active-effect grouping, and town/dungeon opt-in routing.
+   - Remaining: manual visual review at several window sizes, equipment-comparison iteration, richer item-detail formatting, and explicit approval before replacing the legacy default.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
    - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.
 3. Continue popup/background consistency work only where playtesting shows visible issues.
@@ -194,7 +195,7 @@ Status: `Planned`
 
 ## Deferred Or Decision-Gated Items
 
-- Full character menu redesign is decision-gated behind whether focused cleanup is sufficient.
+- Replacing the legacy Character Menu default is decision-gated behind modern-menu acceptance testing and explicit approval.
 - Shop tab UX is decision-gated behind whether the current shop mode flow remains too slow after paging/navigation improvements.
 - Spell/hit particle effects are deferred until the team chooses where animation adds clarity instead of visual noise.
 - Persistent statistics history is deferred until current-run stats feel insufficient in play.

@@ -76,6 +76,50 @@
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
 
 ### Character Menu
+- [ ] Launch pygame with `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` and open the Character Menu from town.
+  - Expected: The modern Character Menu opens instead of the legacy menu.
+  - Expected: Closing the menu returns cleanly to the previous town flow.
+- [ ] Launch pygame without the modern-menu flag and open the Character Menu.
+  - Expected: The legacy Character Menu remains the default.
+  - Expected: Legacy inventory, equipment, quests, key items, specials, Jump Mods, and Totem Aspects behavior still functions.
+- [ ] Open the modern Character Menu from dungeon exploration.
+  - Expected: The modern menu opens over the dungeon background and closes back to exploration.
+  - Expected: Quit Game still exits the dungeon/game flow through the same path as the legacy menu.
+- [ ] Switch between the modern `Character`, `Equipment`, and `Effects` tabs.
+  - Expected: Tab switching works with keyboard input and keeps the action menu usable.
+  - Expected: Future tabs can be added without changing the core tab renderer.
+- [ ] Inspect the modern Character tab with several classes and long character names.
+  - Expected: Name, class, level, experience, and experience-to-next-level render clearly.
+  - Expected: The portrait placeholder frame is visible and does not overlap character details.
+  - Expected: Long names are clipped or fitted without spilling into nearby panels.
+- [ ] Inspect the modern XP bar before and after gaining experience.
+  - Expected: The XP progress bar fill reflects current progress toward the next level.
+  - Expected: Zero or missing XP data does not crash or overfill the bar.
+- [ ] Inspect the modern combat-stat block.
+  - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a compact stat block.
+  - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
+- [ ] Inspect the modern Equipment panel and Equipment tab.
+  - Expected: Weapon, Armor, Helmet, Offhand, Ring, and Pendant appear in that order.
+  - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
+  - Expected: Equipped item names, descriptions, slot information, and basic bonuses render without overflowing.
+  - Expected: Empty slots display a readable empty state.
+- [ ] Inspect the modern Effects tab with no active effects.
+  - Expected: An empty-state message explains that no buffs, debuffs, or temporary effects are active.
+- [ ] Inspect the modern Effects tab with active buffs, debuffs, and temporary effects.
+  - Expected: Buffs, debuffs, and temporary effects are grouped separately.
+  - Expected: Duplicate buff names are shown once.
+  - Expected: Durations and secondary values appear where available.
+- [ ] Inspect modern resistance grouping on characters with weaknesses and resistances.
+  - Expected: Negative values appear under Weaknesses.
+  - Expected: Positive values appear under Resistances.
+  - Expected: Exact values are visible as secondary information.
+  - Expected: Neutral resistance values do not clutter the view.
+- [ ] Resize the pygame window or test smaller supported resolutions with the modern menu enabled.
+  - Expected: Panels remain aligned, text stays readable, and no UI elements overlap incoherently.
+  - Expected: Equipment and effect text clips cleanly instead of spilling into neighboring panels.
+- [ ] Save and load with the modern Character Menu flag both off and on.
+  - Expected: Save/load data is unaffected by switching menu implementations.
+  - Expected: Inventory, equipment management, and character progression remain unchanged.
 - [ ] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.
