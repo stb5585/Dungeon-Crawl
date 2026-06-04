@@ -112,7 +112,7 @@ Status: `Active`
 
 1. Complete modern Character Menu acceptance and iteration.
    - Direction chosen: full redesign implemented in parallel, with the legacy menu still available and still default.
-   - Implemented: generic Character/Equipment/Effects tabs, XP bar, portrait placeholder, combat-stat block, Helmet UI placeholder, equipment summaries, grouped weaknesses/resistances, active-effect grouping, and town/dungeon opt-in routing.
+   - Implemented: generic Character/Equipment tabs, clarified level-progress bar, portrait placeholder, combat-stat block, Helmet UI placeholder, equipment summaries, grouped weaknesses/resistances, equipment-buff reporting, and town/dungeon opt-in routing.
    - Remaining: manual visual review at several window sizes, equipment-comparison iteration, richer item-detail formatting, and explicit approval before replacing the legacy default.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
    - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.

@@ -84,16 +84,21 @@
   - Expected: Legacy inventory, equipment, quests, key items, specials, Jump Mods, and Totem Aspects behavior still functions.
 - [ ] Open the modern Character Menu from dungeon exploration.
   - Expected: The modern menu opens over the dungeon background and closes back to exploration.
-  - Expected: Quit Game still exits the dungeon/game flow through the same path as the legacy menu.
-- [ ] Switch between the modern `Character`, `Equipment`, and `Effects` tabs.
+  - Expected: The modern action menu does not include Quit Game.
+- [ ] Switch between the modern `Character` and `Equipment` tabs.
   - Expected: Tab switching works with keyboard input and keeps the action menu usable.
   - Expected: Future tabs can be added without changing the core tab renderer.
+- [ ] Inspect the modern action menu.
+  - Expected: `Change Equipment` opens the equipment-management popup.
+  - Expected: `Exit Menu` is the final action option.
+  - Expected: `Quit Game` is not listed.
 - [ ] Inspect the modern Character tab with several classes and long character names.
   - Expected: Name, class, level, experience, and experience-to-next-level render clearly.
   - Expected: The portrait placeholder frame is visible and does not overlap character details.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
-- [ ] Inspect the modern XP bar before and after gaining experience.
-  - Expected: The XP progress bar fill reflects current progress toward the next level.
+- [ ] Inspect the modern level-progress bar before and after gaining experience.
+  - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
+  - Expected: The bar fill reflects current progress toward the next level.
   - Expected: Zero or missing XP data does not crash or overfill the bar.
 - [ ] Inspect the modern combat-stat block.
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a compact stat block.
@@ -103,12 +108,10 @@
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
   - Expected: Equipped item names, descriptions, slot information, and basic bonuses render without overflowing.
   - Expected: Empty slots display a readable empty state.
-- [ ] Inspect the modern Effects tab with no active effects.
-  - Expected: An empty-state message explains that no buffs, debuffs, or temporary effects are active.
-- [ ] Inspect the modern Effects tab with active buffs, debuffs, and temporary effects.
-  - Expected: Buffs, debuffs, and temporary effects are grouped separately.
-  - Expected: Duplicate buff names are shown once.
-  - Expected: Durations and secondary values appear where available.
+- [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
+  - Expected: Equipment-derived buffs are reported in the Character or Equipment view.
+  - Expected: Combat-only debuffs and temporary effects are not shown in the Character Menu.
+  - Expected: Duplicate equipment-buff names are shown once.
 - [ ] Inspect modern resistance grouping on characters with weaknesses and resistances.
   - Expected: Negative values appear under Weaknesses.
   - Expected: Positive values appear under Resistances.

@@ -37,16 +37,14 @@ class ResistanceSummary:
 
 
 @dataclass(frozen=True)
-class EffectSummary:
+class EquipmentBuffSummary:
     name: str
-    duration: str = ""
-    detail: str = ""
+    source: str
 
 
 DEFAULT_CHARACTER_TABS = (
     CharacterTab("character", "Character"),
     CharacterTab("equipment", "Equipment"),
-    CharacterTab("effects", "Effects"),
 )
 
 EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant")
@@ -85,6 +83,7 @@ class ModernCharacterScreen(CharacterScreen):
         self.info_rect = self.character_panel_rect
         self.exp_rect = self.character_panel_rect
         self.stats_rect = self.content_rect
+        self.menu_options = self._base_menu_options()
 
     @property
     def active_tab(self) -> CharacterTab:
@@ -153,8 +152,8 @@ class ModernCharacterScreen(CharacterScreen):
             ("Name", str(getattr(player_char, "name", "Adventurer"))),
             ("Class", " ".join(part for part in (race, cls) if part) or "Unknown"),
             ("Level", str(level)),
-            ("Experience", str(exp)),
-            ("To Next", str(to_next)),
+            ("XP Earned", str(exp)),
+            ("XP To Next", str(to_next)),
         ]
 
     def build_core_attributes(self, player_char) -> list[tuple[str, str]]:
@@ -223,42 +222,32 @@ class ModernCharacterScreen(CharacterScreen):
                 resistances.append(summary)
         return {"weaknesses": weaknesses, "resistances": resistances}
 
-    def collect_active_effects(self, player_char) -> dict[str, list[EffectSummary]]:
-        grouped: dict[str, list[EffectSummary]] = {"buffs": [], "debuffs": [], "temporary": []}
-        seen: set[tuple[str, str]] = set()
+    def collect_equipment_buffs(self, player_char) -> list[EquipmentBuffSummary]:
+        equipment = getattr(player_char, "equipment", {}) or {}
+        buffs: list[EquipmentBuffSummary] = []
+        seen: set[str] = set()
 
-        for buff in getattr(player_char, "buffs", []) or []:
-            name = self._attr_name(buff, str(buff))
-            key = ("buffs", name)
-            if name and key not in seen:
-                grouped["buffs"].append(EffectSummary(name))
-                seen.add(key)
+        def add(name: str, source: str) -> None:
+            if not name or name in seen:
+                return
+            buffs.append(EquipmentBuffSummary(name, source))
+            seen.add(name)
 
-        for bucket_name, category in (
-            ("stat_effects", "temporary"),
-            ("magic_effects", "temporary"),
-            ("class_effects", "temporary"),
-            ("status_effects", "debuffs"),
-            ("physical_effects", "debuffs"),
-        ):
-            bucket = getattr(player_char, bucket_name, {}) or {}
-            for name, effect in bucket.items():
-                if not getattr(effect, "active", False):
-                    continue
-                key = (category, str(name))
-                if key in seen:
-                    continue
-                duration = getattr(effect, "duration", "")
-                extra = getattr(effect, "extra", "")
-                detail = f"Value {extra}" if extra not in ("", None, 0) else ""
-                grouped[category].append(EffectSummary(str(name), f"{duration} turns" if duration not in ("", None) else "", detail))
-                seen.add(key)
+        for slot in ("Weapon", "Armor", "OffHand", "Ring", "Pendant"):
+            item = equipment.get(slot)
+            mod = str(getattr(item, "mod", "") or "")
+            if not mod:
+                continue
+            if mod in {"Vision", "Flying", "Invisible", "Accuracy", "Dodge", "Block"} or mod.startswith("Status-"):
+                add(mod, f"{slot}: {self._attr_name(item)}")
 
         if getattr(player_char, "sight", False):
-            key = ("buffs", "Vision")
-            if key not in seen:
-                grouped["buffs"].append(EffectSummary("Vision"))
-        return grouped
+            add("Vision", "Character state")
+        if getattr(player_char, "flying", False):
+            add("Flying", "Character state")
+        if getattr(player_char, "invisible", False):
+            add("Invisible", "Character state")
+        return buffs
 
     def _fit_text(self, text: str, font, max_width: int) -> str:
         if font.size(text)[0] <= max_width:
@@ -318,12 +307,24 @@ class ModernCharacterScreen(CharacterScreen):
         fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)
         pygame.draw.rect(self.screen, self.colors.GREEN, fill_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, bar_rect, 1)
-        self._draw_text("XP Progress", self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
+        level = getattr(player_char, "level", None)
+        exp = getattr(level, "exp", 0)
+        to_next = getattr(level, "exp_to_gain", 0)
+        self._draw_text(f"Level: {exp} earned / {to_next} to next", self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
 
         y = bar_rect.bottom + 34
         self._draw_text("Core Attributes", self.normal_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
         y += self.normal_font.get_height() + 8
-        self._draw_key_values(self.build_core_attributes(player_char), self.character_panel_rect, y)
+        y = self._draw_key_values(self.build_core_attributes(player_char), self.character_panel_rect, y)
+
+        buffs = self.collect_equipment_buffs(player_char)
+        if buffs and y < self.character_panel_rect.bottom - 56:
+            y += 8
+            self._draw_text("Equipment Buffs", self.normal_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
+            y += self.normal_font.get_height() + 6
+            for buff in buffs[:3]:
+                self._draw_text(buff.name, self.small_font, self.colors.WHITE, self.character_panel_rect.left + 20, y, self.character_panel_rect.width - 40)
+                y += self.small_font.get_height() + 4
 
     def draw_combat_panel(self, player_char):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
@@ -347,6 +348,14 @@ class ModernCharacterScreen(CharacterScreen):
             y += self.normal_font.get_height() + 8
             if y > self.equipment_panel_rect.bottom - 28:
                 break
+        buffs = self.collect_equipment_buffs(player_char)
+        if buffs and y < self.equipment_panel_rect.bottom - 48:
+            y += 8
+            self._draw_text("Equipment Buffs", self.normal_font, self.colors.GOLD, self.equipment_panel_rect.left + 16, y, self.equipment_panel_rect.width - 32)
+            y += self.normal_font.get_height() + 6
+            for buff in buffs[:3]:
+                self._draw_text(buff.name, self.small_font, self.colors.WHITE, self.equipment_panel_rect.left + 20, y, self.equipment_panel_rect.width - 40)
+                y += self.small_font.get_height() + 4
 
     def _draw_key_values(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int) -> int:
         label_width = min(160, max((self.normal_font.size(label)[0] for label, _ in rows), default=80) + 8)
@@ -392,33 +401,14 @@ class ModernCharacterScreen(CharacterScreen):
             detail_y += self.small_font.get_height() + 8
             if detail_y > right.bottom - 24:
                 break
-
-    def draw_effects_tab(self, player_char):
-        y = self._draw_panel(self.details_rect, "Effects")
-        grouped = self.collect_active_effects(player_char)
-        if not any(grouped.values()):
-            self._draw_text("No active buffs, debuffs, or temporary effects.", self.normal_font, self.colors.GRAY, self.details_rect.left + 20, y, self.details_rect.width - 40)
-            return
-
-        column_width = (self.details_rect.width - 64) // 3
-        for index, (title, key, color) in enumerate((
-            ("Buffs", "buffs", self.colors.GREEN),
-            ("Debuffs", "debuffs", self.colors.RED),
-            ("Temporary", "temporary", self.colors.BLUE),
-        )):
-            col = pygame.Rect(self.details_rect.left + 20 + (index * (column_width + 12)), y, column_width, self.details_rect.bottom - y - 20)
-            self._draw_text(title, self.normal_font, color, col.left, col.top, col.width)
-            row_y = col.top + self.normal_font.get_height() + 10
-            entries = grouped[key]
-            if not entries:
-                self._draw_text("None", self.small_font, self.colors.GRAY, col.left, row_y, col.width)
-                continue
-            for effect in entries:
-                detail = " - ".join(part for part in (effect.duration, effect.detail) if part)
-                text = effect.name if not detail else f"{effect.name} ({detail})"
-                self._draw_text(text, self.small_font, self.colors.WHITE, col.left, row_y, col.width)
-                row_y += self.small_font.get_height() + 8
-                if row_y > col.bottom - 12:
+        buffs = self.collect_equipment_buffs(player_char)
+        if buffs:
+            self._draw_text("Equipment Buffs", self.normal_font, self.colors.GOLD, right.left, detail_y + 8, right.width)
+            detail_y += self.normal_font.get_height() + 18
+            for buff in buffs:
+                self._draw_text(f"{buff.name}: {buff.source}", self.small_font, self.colors.WHITE, right.left, detail_y, right.width)
+                detail_y += self.small_font.get_height() + 8
+                if detail_y > right.bottom - 24:
                     break
 
     def draw_menu(self):
@@ -441,8 +431,6 @@ class ModernCharacterScreen(CharacterScreen):
             self.draw_equipment_panel(player_char)
         elif self.active_tab.key == "equipment":
             self.draw_equipment_tab(player_char)
-        elif self.active_tab.key == "effects":
-            self.draw_effects_tab(player_char)
         self.draw_menu()
         if do_flip:
             pygame.display.flip()
@@ -451,7 +439,7 @@ class ModernCharacterScreen(CharacterScreen):
         if chosen == "Inventory":
             popup = InventoryPopupMenu(self.presenter, self)
             popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen == "Equipment":
+        elif chosen == "Change Equipment":
             popup = EquipmentPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Quests":
@@ -476,17 +464,19 @@ class ModernCharacterScreen(CharacterScreen):
         elif chosen == "Totem Aspects":
             popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen in ("Exit Menu", "Quit Game"):
+        elif chosen == "Exit Menu":
             return chosen
         return None
 
+    def _base_menu_options(self) -> list[str]:
+        return ["Inventory", "Change Equipment", "Quests", "Key Items", "Specials", "Exit Menu"]
+
     def navigate(self, player_char, flush_events=True, require_key_release=True):
-        menu_options = ["Inventory", "Equipment", "Quests", "Exit Menu", "Key Items", "Specials"]
+        menu_options = self._base_menu_options()
         if self._has_jump_mods(player_char):
-            menu_options.insert(6, "Jump Mods")
+            menu_options.insert(-1, "Jump Mods")
         if self._has_totem_aspects(player_char):
-            menu_options.insert(7, "Totem Aspects")
-        menu_options.append("Quit Game")
+            menu_options.insert(-1, "Totem Aspects")
         self.menu_options = menu_options
         self.current_selection = min(self.current_selection, len(self.menu_options) - 1)
 
@@ -523,8 +513,6 @@ class ModernCharacterScreen(CharacterScreen):
                     self.select_tab("character")
                 elif event.key == pygame.K_2:
                     self.select_tab("equipment")
-                elif event.key == pygame.K_3:
-                    self.select_tab("effects")
                 elif event.key == pygame.K_UP:
                     self.current_selection = (self.current_selection - 1) % len(self.menu_options)
                 elif event.key == pygame.K_DOWN:

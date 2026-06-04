@@ -11,21 +11,22 @@ Opt-in paths:
 
 ## Implemented
 
-- Generic tab model with initial `Character`, `Equipment`, and `Effects` tabs.
-- Character overview with portrait placeholder, level/XP details, and graphical XP progress bar.
+- Generic tab model with initial `Character` and `Equipment` tabs.
+- Character overview with portrait placeholder, level/XP details, and graphical level-progress bar.
 - Core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight.
 - Equipment layout prepared for `Weapon`, `Armor`, `Helmet`, `OffHand`, `Ring`, and `Pendant`.
 - Helmet appears as a future UI slot only. Helmet mechanics are not implemented.
 - Equipment tab with item names, slot labels, descriptions, and summarized bonuses.
-- Effects tab with grouped buffs, debuffs, and temporary effects plus an empty-state message.
+- Equipment-derived persistent buffs such as Vision are shown inside the Character/Equipment views instead of a separate effects screen.
+- The action menu uses `Change Equipment` for the equipment-management popup, keeps `Exit Menu` last, and omits `Quit Game`.
 - Resistance presentation grouped into weaknesses and resistances with exact values as secondary text.
 - Town and dungeon routing through the temporary feature flag while preserving the legacy default.
 
 ## Assumptions
 
-- `level.exp_to_gain` is treated as experience remaining to the next level; XP progress is calculated as `exp / (exp + exp_to_gain)`.
+- `level.exp_to_gain` is treated as experience remaining to the next level; level progress is calculated as `exp / (exp + exp_to_gain)` and labeled as earned XP versus XP to next level.
 - Existing equipment slots use the current save/runtime keys, including `OffHand`. The modern UI displays the user-facing label without changing persistence.
-- Effect buckets are grouped from existing runtime dictionaries: `status_effects` and `physical_effects` are debuffs, while `stat_effects`, `magic_effects`, and `class_effects` are temporary effects.
+- Combat-only debuffs and temporary effects are not shown because they are not persistent outside combat.
 - Future portrait, companion, set-bonus, and reputation systems should use the existing tab/panel structure rather than adding fixed screen positions.
 
 ## Acceptance Gate

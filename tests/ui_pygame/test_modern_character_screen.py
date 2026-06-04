@@ -139,14 +139,14 @@ def _make_player():
 def test_modern_character_tabs_are_generic_and_switchable():
     screen = ModernCharacterScreen(_make_presenter())
 
-    assert [tab.label for tab in screen.tabs] == ["Character", "Equipment", "Effects"]
+    assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
 
-    screen.select_tab("effects")
-    assert screen.active_tab.key == "effects"
+    screen.move_tab(1)
+    assert screen.active_tab.key == "character"
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -171,10 +171,11 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert [entry.name for entry in grouped_resistances["weaknesses"]] == ["Fire", "Ice", "Water"]
     assert [entry.name for entry in grouped_resistances["resistances"]] == ["Poison", "Physical"]
 
-    effects = screen.collect_active_effects(player)
-    assert [effect.name for effect in effects["buffs"]] == ["Might", "Vision"]
-    assert [effect.name for effect in effects["debuffs"]] == ["Poison"]
-    assert [effect.name for effect in effects["temporary"]] == ["Attack", "Regen"]
+    equipment_buffs = screen.collect_equipment_buffs(player)
+    assert [(buff.name, buff.source) for buff in equipment_buffs] == [
+        ("Block", "Ring: Ruby Ring"),
+        ("Vision", "Pendant: Pendant of Sight"),
+    ]
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -192,14 +193,14 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Character" in presenter.large_font.render_calls
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Equipment" in presenter.large_font.render_calls
-    assert "XP Progress" in presenter.small_font.render_calls
+    assert "Level: 250 earned / 50 to next" in presenter.small_font.render_calls
+    assert "Equipment Buffs" in presenter.normal_font.render_calls
     assert flip_calls
 
-    screen.select_tab("effects")
+    screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
-    assert "Effects" in presenter.large_font.render_calls
-    assert "Buffs" in presenter.normal_font.render_calls
-    assert "Debuffs" in presenter.normal_font.render_calls
+    assert "Equipped Items" in presenter.normal_font.render_calls
+    assert "Block: Ring: Ruby Ring" in presenter.small_font.render_calls
 
 
 def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
@@ -209,7 +210,6 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
 
     event_batches = iter([
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
     ])
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
@@ -217,7 +217,22 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
-    assert screen.active_tab.key == "effects"
+    assert screen.active_tab.key == "equipment"
+
+
+def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    event_batches = iter([[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.menu_options == ["Inventory", "Change Equipment", "Quests", "Key Items", "Specials", "Exit Menu"]
+    assert "Quit Game" not in screen.menu_options
 
 
 def test_modern_character_menu_flag_defaults_to_legacy_and_accepts_opt_in(monkeypatch):
