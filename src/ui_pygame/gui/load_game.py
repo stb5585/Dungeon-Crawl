@@ -92,6 +92,7 @@ class LoadGameScreen:
         details = [
             f"Level: {info['level']}",
             f"Race: {info['race']}",
+            f"Sex: {info.get('sex', 'Unknown')}",
             f"Class: {info['class']}",
         ]
         
@@ -195,6 +196,7 @@ class LoadGameScreen:
                     char_data = {
                         'name': getattr(player_char, 'name', 'Unknown').title(),
                         'race': getattr(getattr(player_char, 'race', None), 'name', 'Unknown'),
+                        'sex': getattr(player_char, 'sex', 'Unknown'),
                         'class': getattr(getattr(player_char, 'cls', None), 'name', 'Unknown'),
                         'level': getattr(player_char.level, 'level', 1) if hasattr(player_char, 'level') else 1,
                         'experience': getattr(player_char.level, 'exp', 0) if hasattr(player_char, 'level') else 0,
@@ -221,6 +223,7 @@ class LoadGameScreen:
                     self.save_data.append({
                         'name': 'Corrupted save',
                         'race': '?',
+                        'sex': '?',
                         'class': '?',
                         'level': '?',
                         'file': save_file
@@ -230,6 +233,7 @@ class LoadGameScreen:
                 self.save_data.append({
                     'name': 'Error loading',
                     'race': '?',
+                    'sex': '?',
                     'class': '?',
                     'level': '?',
                     'file': save_file

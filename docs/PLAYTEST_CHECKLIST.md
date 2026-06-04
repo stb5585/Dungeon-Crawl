@@ -74,8 +74,9 @@
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
 - [ ] Open inventory, equipment, or quest popups after a key-driven transition.
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
-  - Expected: Holding Up or Down quick-scrolls long popup lists without skipping selectable rows.
+  - Expected: Holding Up or Down quick-scrolls long popup lists with a short repeat pause and without skipping selectable rows.
   - Expected: Long item descriptions wrap inside the details panel instead of running off-screen.
+  - Expected: Attempting to equip a non-equippable inventory item shows a styled popup over the inventory menu background.
 
 ### Character Menu
 - [ ] Start a new character and choose sex, race, class, and name.
@@ -83,13 +84,10 @@
   - Expected: Sex selection uses the same two-panel visual structure as race and class selection, with a blank description area for now.
   - Expected: Save/load preserves the selected sex.
   - Expected: Existing saves without sex data load as Male.
-- [ ] Launch pygame with `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` and open the Character Menu from town.
-  - Expected: The modern Character Menu opens instead of the legacy menu.
+- [x] Launch pygame without a modern-menu flag and open the Character Menu from town.
+  - Expected: The modern Character Menu opens by default.
   - Expected: Closing the menu returns cleanly to the previous town flow.
-- [ ] Launch pygame without the modern-menu flag and open the Character Menu.
-  - Expected: The legacy Character Menu remains the default.
-  - Expected: Legacy inventory, equipment, quests, key items, specials, Jump Mods, and Totem Aspects behavior still functions.
-- [ ] Open the modern Character Menu from dungeon exploration.
+- [x] Open the modern Character Menu from dungeon exploration.
   - Expected: The modern menu opens over the dungeon background and closes back to exploration.
   - Expected: The modern action menu does not include Quit Game.
 - [ ] Switch between the modern `Character` and `Equipment` tabs.
@@ -151,8 +149,8 @@
 - [ ] Resize the pygame window or test smaller supported resolutions with the modern menu enabled.
   - Expected: Panels remain aligned, text stays readable, and no UI elements overlap incoherently.
   - Expected: Equipment and effect text clips cleanly instead of spilling into neighboring panels.
-- [ ] Save and load with the modern Character Menu flag both off and on.
-  - Expected: Save/load data is unaffected by switching menu implementations.
+- [ ] Save and load after creating characters with different sex choices.
+  - Expected: The load-game save summary shows Sex alongside Level, Race, and Class.
   - Expected: Inventory, equipment management, and character progression remain unchanged.
 - [ ] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.

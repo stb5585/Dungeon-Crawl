@@ -74,6 +74,7 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     player_a = SimpleNamespace(
         name="hero",
         race=SimpleNamespace(name="Human"),
+        sex="Female",
         cls=SimpleNamespace(name="Warrior"),
         level=SimpleNamespace(level=5, exp=123),
         gold=77,
@@ -92,6 +93,7 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     screen.load_save_files(["a.save", "b.save", "c.save"])
 
     assert screen.save_data[0]["name"] == "Hero"
+    assert screen.save_data[0]["sex"] == "Female"
     assert screen.save_data[0]["stats"]["STR"] == 10
     assert screen.save_data[1]["name"] == "Corrupted save"
     assert screen.save_data[2]["name"] == "Error loading"
@@ -103,6 +105,7 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     screen.draw_char_info()
     assert "Level: 5" in presenter.small_font.render_calls
     assert "Race: Human" in presenter.small_font.render_calls
+    assert "Sex: Female" in presenter.small_font.render_calls
     assert "Class: Warrior" in presenter.small_font.render_calls
     assert "Experience: 123" in presenter.small_font.render_calls
     assert "Gold: 77" in presenter.small_font.render_calls
@@ -150,11 +153,9 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     assert screen.navigate(["a.save", "b.save"]) is None
 
     clear_calls = []
-    pressed_states = iter([[1], [1], [], []])
+    pressed_states = iter([[], []])
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])

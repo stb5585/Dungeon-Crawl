@@ -49,7 +49,7 @@ class BasePopupMenu:
         self.selected_index = 0
         self.scroll_offset = 0
         self.line_height = 24
-        self.quick_scroll_delay = 6
+        self.quick_scroll_delay = 10
         self._quick_scroll_frame = 0
 
     def _truncate_text(self, text, max_width):
@@ -385,12 +385,16 @@ class BasePopupMenu:
                                         menu_surface_ref[0] = None
                         elif event.key == pygame.K_UP:
                             self._move_selection(-1)
+                            self._quick_scroll_frame = 0
                         elif event.key == pygame.K_DOWN:
                             self._move_selection(1)
+                            self._quick_scroll_frame = 0
                         elif event.key == pygame.K_PAGEUP:
                             self._page_selection(-1)
+                            self._quick_scroll_frame = 0
                         elif event.key == pygame.K_PAGEDOWN:
                             self._page_selection(1)
+                            self._quick_scroll_frame = 0
                 self._handle_held_scroll()
                 clock.tick(30)
         finally:
@@ -616,7 +620,7 @@ class InventoryPopupMenu(BasePopupMenu):
             if action == "Cancel":
                 break
             if action == "Equip":
-                self._equip_item(player_char, obj, category)
+                self._equip_item(player_char, obj, category, background_surface=action_bg)
                 break
             if action == "Use":
                 self._use_item(player_char, obj, category, background_surface=action_bg)
@@ -647,7 +651,16 @@ class InventoryPopupMenu(BasePopupMenu):
     def help_footer(self) -> str:
         return "Arrows: Navigate  Enter: Select  S: Cycle Sort/Filter  Esc: Close  PgUp/PgDn: Scroll"
     
-    def _equip_item(self, player_char, item, category):
+    def _show_inventory_notice(self, player_char, message: str, background_surface=None) -> None:
+        menu_bg = background_surface or self._capture_menu_surface(player_char)
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(
+            background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0)),
+            flush_events=True,
+            require_key_release=True,
+        )
+
+    def _equip_item(self, player_char, item, category, background_surface=None):
         """Equip an item from inventory with class restrictions respected."""
         # Map item typ to equipment slot
         typ_to_slot = {
@@ -670,23 +683,25 @@ class InventoryPopupMenu(BasePopupMenu):
                 slot = "Pendant"
 
         if not slot:
+            self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
             return
 
         # Enforce class equip restrictions
         if hasattr(player_char, "cls") and hasattr(player_char.cls, "equip_check"):
             if not player_char.cls.equip_check(item, slot):
-                self.presenter.show_message(f"You cannot equip {getattr(item, 'name', 'that item')}.")
+                self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
                 return
         equip_method = getattr(player_char, "equip", None)
         if callable(equip_method):
             result = equip_method(slot, item)
             if result is False:
+                self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
                 return
         else:
             # Check if current item can be unequipped
             current = player_char.equipment.get(slot)
             if current and not getattr(current, "unequip", True):
-                self.presenter.show_message(f"You cannot unequip {getattr(current, 'name', 'this item')}.")
+                self._show_inventory_notice(player_char, f"You cannot unequip {getattr(current, 'name', 'this item')}.", background_surface)
                 return
 
             # Move current item to inventory (if it exists and is not a placeholder)

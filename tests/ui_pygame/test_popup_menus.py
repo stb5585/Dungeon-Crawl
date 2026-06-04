@@ -199,7 +199,7 @@ def test_base_popup_quick_scrolls_when_arrow_key_is_held(monkeypatch):
     popup = DemoPopup(presenter, parent, title="Test")
     popup.items = ["Alpha", "Beta", "Gamma", "Delta"]
     popup.selected_index = 0
-    popup.quick_scroll_delay = 1
+    popup.quick_scroll_delay = 2
 
     class PressedKeys:
         def __getitem__(self, key):
@@ -209,7 +209,9 @@ def test_base_popup_quick_scrolls_when_arrow_key_is_held(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.key.get_pressed", lambda: pressed)
 
     popup._handle_held_scroll()
+    assert popup.selected_index == 0
 
+    popup._handle_held_scroll()
     assert popup.selected_index == 1
 
 
@@ -319,12 +321,23 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
     popup.handle_key_down(player, SimpleNamespace(key=pygame.K_s))
     assert popup.title.startswith("Inventory [Type]")
 
-    shown = []
-    presenter.show_message = lambda message: shown.append(message)
+    notices = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=True):
+            notices.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            assert kwargs["flush_events"] is True
+            assert kwargs["require_key_release"] is True
+            kwargs["background_draw_func"]()
+            return True
+
+    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakePopup)
     no_equip_player = _make_player()
     no_equip_player.cls = SimpleNamespace(equip_check=lambda item, slot: False)
-    popup._equip_item(no_equip_player, DummyItem("Forbidden"), "Weapons")
-    assert shown == ["You cannot equip Forbidden."]
+    popup._equip_item(no_equip_player, DummyItem("Forbidden"), "Weapons", background_surface="inventory-bg")
+    assert notices == [("You cannot equip Forbidden.", False)]
 
     player.equipment["Weapon"] = DummyItem("No Weapon", unequip=True)
     popup._equip_item(player, player.inventory["Weapons"][0], "Weapons")

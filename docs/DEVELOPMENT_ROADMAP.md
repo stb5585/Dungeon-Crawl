@@ -71,7 +71,7 @@ Status: `Done`
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, weapon efficiency display, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
-- A parallel modern Pygame Character Menu exists behind the temporary `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` / `use_modern_character_menu` opt-in flag. The legacy menu remains the default while acceptance testing continues.
+- The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout, dual-wield attack display, and styled inventory equip-failure notices.
 
 ### Audio Runtime And Staged Content
 
@@ -195,7 +195,6 @@ Status: `Planned`
 
 ## Deferred Or Decision-Gated Items
 
-- Replacing the legacy Character Menu default is decision-gated behind modern-menu acceptance testing and explicit approval.
 - Shop tab UX is decision-gated behind whether the current shop mode flow remains too slow after paging/navigation improvements.
 - Spell/hit particle effects are deferred until the team chooses where animation adds clarity instead of visual noise.
 - Persistent statistics history is deferred until current-run stats feel insufficient in play.

@@ -2,12 +2,7 @@
 
 ## Current Status
 
-The modern Pygame Character Menu is implemented in parallel with the legacy menu. The legacy menu remains the default until the modern menu passes acceptance testing and receives explicit approval to replace it.
-
-Opt-in paths:
-
-- Set `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` before launching the pygame client.
-- Set `use_modern_character_menu = True` on the `PygameGame` or presenter object during debug/test setup.
+The modern Pygame Character Menu is now the default town and dungeon character menu after acceptance approval. The legacy implementation remains as shared base infrastructure for the modern screen, but the temporary opt-in flag is no longer used by runtime routing.
 
 ## Implemented
 
@@ -23,7 +18,10 @@ Opt-in paths:
 - Equipment-derived persistent buffs such as Vision are shown inside the Character/Equipment views instead of a separate effects screen.
 - The action menu uses `Change Equipment` for the equipment-management popup, keeps `Exit Menu` last, and omits `Quit Game`.
 - Resistance presentation grouped into side-by-side weaknesses and resistances with exact values as secondary text. The resistance area reserves a static full-capacity block for the 10 possible resistance keys without truncating entries.
-- Town and dungeon routing through the temporary feature flag while preserving the legacy default.
+- Town and dungeon routing open the modern Character Menu by default.
+- Load-game save summaries include character sex alongside level, race, class, experience, gold, and stats.
+- Inventory equip failures use styled modal popups over the current inventory background instead of a plain message screen.
+- Held Up/Down quick-scroll in popup menus now includes a short repeat pause to reduce skipped options.
 
 ## Assumptions
 
@@ -32,11 +30,8 @@ Opt-in paths:
 - Combat-only debuffs and temporary effects are not shown because they are not persistent outside combat.
 - Future companion, set-bonus, and reputation systems should use the existing tab/panel structure rather than adding fixed screen positions.
 
-## Acceptance Gate
+## Follow-Up Validation
 
-Before making the modern menu default:
-
-- Complete the Character Menu Redesign section in `docs/PLAYTEST_CHECKLIST.md`.
-- Verify legacy Character Menu behavior remains available and unchanged.
+- Complete the remaining Character Menu Redesign checks in `docs/PLAYTEST_CHECKLIST.md`.
 - Review the modern menu at small and large pygame window sizes.
-- Decide whether the first default modern release needs equipment comparison in the Equipment tab.
+- Decide whether a future release needs equipment comparison in the Equipment tab.

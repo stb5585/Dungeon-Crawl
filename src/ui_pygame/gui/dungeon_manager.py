@@ -13,8 +13,6 @@ import pygame
 from src.core import items, enemies, companions, map_tiles
 from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
-from .character_menu_config import modern_character_menu_enabled
-from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
 from .dungeon_hud import DungeonHUD
 from .dungeon_renderer import DungeonRenderer
@@ -50,8 +48,7 @@ class DungeonManager:
         # Give combat manager access to dungeon renderer for in-place combat
         self.combat_manager.dungeon_renderer = self.renderer
 
-        # Initialize character screen (shared with town UI)
-        self.character_screen = CharacterScreen(presenter)
+        # Initialize character screen lazily so dungeon backgrounds can be applied.
         self.modern_character_screen = None
 
         # Initialize loot popup
@@ -84,10 +81,8 @@ class DungeonManager:
         self._next_anim_tick = 0
         self._anim_interval_ms = 120  # torch flicker / subtle view effects
 
-        # Apply dungeon background to character menu in-dungeon
-        dungeon_bg = self._load_dungeon_background()
-        if dungeon_bg:
-            self.character_screen.background = dungeon_bg
+        # Load dungeon background for in-dungeon popups and character menu.
+        self._load_dungeon_background()
 
         if hasattr(self.presenter, "set_background_provider"):
             self.presenter.set_background_provider(self._get_popup_background)
@@ -116,9 +111,6 @@ class DungeonManager:
         return self.presenter.screen.copy()
 
     def _get_character_screen(self):
-        if not modern_character_menu_enabled(self.game, self.presenter):
-            return self.character_screen
-
         if self.modern_character_screen is None:
             from .modern_character_screen import ModernCharacterScreen
             self.modern_character_screen = ModernCharacterScreen(self.presenter)
@@ -1881,10 +1873,6 @@ class DungeonManager:
                 choice = self._get_character_screen().navigate(self.player_char)
                 if choice == "Exit Menu" or choice is None:
                     break
-                elif choice == "Quit Game":
-                    self.game.running = False
-                    self.running = False
-                    break
                 else:
                     # Placeholder until inventory/equipment/etc screens exist
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
@@ -1924,10 +1912,6 @@ class DungeonManager:
                 char_choice = self._get_character_screen().navigate(self.player_char)
                 if char_choice == "Exit Menu" or char_choice is None:
                     break
-                elif char_choice == "Quit Game":
-                    self.game.running = False
-                    self.running = False
-                    return
                 else:
                     self.presenter.show_message("This menu is not yet implemented in the dungeon.")
 

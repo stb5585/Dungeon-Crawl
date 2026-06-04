@@ -530,12 +530,11 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         def navigate(self, player):
             return nav_results.pop(0)
 
-    nav_results = ["Quit Game"]
-    monkeypatch.setattr(pygame_game, "CharacterScreen", FakeCharacterScreen)
-    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.confirm_yes_no", lambda presenter_obj, message: True)
+    nav_results = ["Exit Menu"]
+    monkeypatch.setattr(pygame_game, "ModernCharacterScreen", FakeCharacterScreen)
     game.player_char = SimpleNamespace(quit=False)
     game.show_character_info()
-    assert game.player_char.quit is True
+    assert game.player_char.quit is False
 
     game.cleanup()
     assert cleanup_calls == [True]

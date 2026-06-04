@@ -286,7 +286,6 @@ def _make_manager(monkeypatch):
             player_world_dict=None,
         ),
     )
-    monkeypatch.setattr(dungeon_manager, "CharacterScreen", lambda presenter: SimpleNamespace(background=None))
     monkeypatch.setattr(dungeon_manager, "LootPopup", lambda screen, presenter: SimpleNamespace(show_unlock_prompt=lambda kind: True, show_loot=lambda *args: None))
     monkeypatch.setattr("src.ui_pygame.gui.shops.ShopManager", lambda presenter, player_char: SimpleNamespace(visit_secret_shop=lambda: None))
     monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.UltimateArmorShop", lambda presenter: SimpleNamespace(visit_shop=lambda *_args: None))
@@ -1108,7 +1107,7 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
     notices = []
     presenter.show_message = lambda message: notices.append(message)
     char_choices = iter(["Inventory", "Exit Menu"])
-    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: notices.append("saved"))
     manager.running = True
 
@@ -1160,18 +1159,17 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
     notices = []
     presenter.show_message = lambda message: notices.append(message)
 
-    char_choices = iter(["Quit Game"])
-    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    char_choices = iter(["Inventory", "Exit Menu"])
+    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: None)
     manager.running = True
     manager._handle_keypress(pygame.K_c)
-    assert manager.game.running is False
-    assert manager.running is False
+    assert notices[-1] == "This menu is not yet implemented in the dungeon."
 
     manager.running = True
     manager.game.running = True
     char_choices = iter(["Inventory", "Exit Menu"])
-    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager._popup_menu = lambda title, options, **_kwargs: 1
     manager._show_menu()
     assert notices[-1] == "This menu is not yet implemented in the dungeon."

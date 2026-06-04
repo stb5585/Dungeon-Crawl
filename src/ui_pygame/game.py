@@ -21,13 +21,11 @@ from src.core import items
 from .presentation.pygame_presenter import PygamePresenter
 
 # GUI modules
-from .gui.character_menu_config import modern_character_menu_enabled
 from .gui.shops import ShopManager
 from .gui.church import ChurchManager
 from .gui.inn import InnManager
 from .gui.barracks import BarracksManager
 from .gui.dungeon_manager import DungeonManager
-from .gui.character_screen import CharacterScreen
 from .gui.modern_character_screen import ModernCharacterScreen
 from .gui.main_menu import MainMenuScreen
 from .gui.load_game import LoadGameScreen
@@ -79,8 +77,7 @@ class PygameGame:
         self.barracks_manager = None
         self.dungeon_manager = None
         
-        # Initialize character menu
-        # CharacterScreen is created on-demand when needed
+        # Initialize character menu on-demand when needed.
         
         self.presenter.debug_mode = debug_mode  # Propagate debug mode to presenter
 
@@ -461,8 +458,7 @@ class PygameGame:
                 break  # Yes selected, continue to name input
             # No selected, loop back to class selection
         
-        # Get character name (moved to after race and class selection)
-        self.presenter.show_message("Create Your Character")
+        # Get character name after sex, race, and class selection.
         name = self.presenter.get_text_input("Enter your character name:")
         if not name:
             name = "Hero"  # Default name
@@ -848,19 +844,13 @@ class PygameGame:
     
     def show_character_info(self):
         """Display character information using the character screen."""
-        screen_cls = ModernCharacterScreen if modern_character_menu_enabled(self, self.presenter) else CharacterScreen
-        char_screen = screen_cls(self.presenter)
+        char_screen = ModernCharacterScreen(self.presenter)
 
         while True:
             choice = char_screen.navigate(self.player_char)
 
             if choice == "Exit Menu":
                 break
-            elif choice == "Quit Game":
-                from .gui.confirmation_popup import confirm_yes_no
-                if confirm_yes_no(self.presenter, "Are you sure you want to quit?"):
-                    self.player_char.quit = True
-                    break
     
     def save_game(self):
         """Save the current game."""

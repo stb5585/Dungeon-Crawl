@@ -8,7 +8,6 @@ from types import SimpleNamespace
 import pygame
 
 from src.ui_pygame import game as pygame_game
-from src.ui_pygame.gui.character_menu_config import MODERN_CHARACTER_MENU_ENV, modern_character_menu_enabled
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import ModernCharacterScreen, RESISTANCE_ORDER
 
@@ -298,25 +297,8 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
     assert "Quit Game" not in screen.menu_options
 
 
-def test_modern_character_menu_flag_defaults_to_legacy_and_accepts_opt_in(monkeypatch):
-    monkeypatch.delenv(MODERN_CHARACTER_MENU_ENV, raising=False)
-
-    assert modern_character_menu_enabled(SimpleNamespace()) is False
-    assert modern_character_menu_enabled(SimpleNamespace(use_modern_character_menu=True)) is True
-
-    monkeypatch.setenv(MODERN_CHARACTER_MENU_ENV, "1")
-    assert modern_character_menu_enabled(SimpleNamespace()) is True
-
-
-def test_town_character_info_uses_modern_screen_only_when_enabled(monkeypatch):
+def test_town_character_info_uses_modern_screen_by_default(monkeypatch):
     used = []
-
-    class FakeLegacy:
-        def __init__(self, _presenter):
-            used.append("legacy")
-
-        def navigate(self, _player):
-            return "Exit Menu"
 
     class FakeModern:
         def __init__(self, _presenter):
@@ -328,19 +310,14 @@ def test_town_character_info_uses_modern_screen_only_when_enabled(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.presenter = SimpleNamespace()
     game.player_char = SimpleNamespace(quit=False)
-    monkeypatch.setattr(pygame_game, "CharacterScreen", FakeLegacy)
     monkeypatch.setattr(pygame_game, "ModernCharacterScreen", FakeModern)
-    monkeypatch.delenv(MODERN_CHARACTER_MENU_ENV, raising=False)
 
-    game.use_modern_character_menu = False
-    game.show_character_info()
-    game.use_modern_character_menu = True
     game.show_character_info()
 
-    assert used == ["legacy", "modern"]
+    assert used == ["modern"]
 
 
-def test_dungeon_character_screen_router_keeps_legacy_default_and_lazy_loads_modern(monkeypatch):
+def test_dungeon_character_screen_router_lazy_loads_modern_default(monkeypatch):
     created = []
 
     class FakeModern:
@@ -354,15 +331,11 @@ def test_dungeon_character_screen_router_keeps_legacy_default_and_lazy_loads_mod
     monkeypatch.setattr(modern_module, "ModernCharacterScreen", FakeModern)
 
     manager = DungeonManager.__new__(DungeonManager)
-    manager.presenter = SimpleNamespace(use_modern_character_menu=False)
-    manager.game = SimpleNamespace(use_modern_character_menu=False)
-    manager.character_screen = SimpleNamespace(name="legacy")
+    manager.presenter = SimpleNamespace()
+    manager.game = SimpleNamespace()
     manager.modern_character_screen = None
     manager._dungeon_background = "dungeon-bg"
 
-    assert manager._get_character_screen().name == "legacy"
-
-    manager.game.use_modern_character_menu = True
     first = manager._get_character_screen()
     second = manager._get_character_screen()
 
