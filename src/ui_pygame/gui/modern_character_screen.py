@@ -73,7 +73,7 @@ class ModernCharacterScreen(CharacterScreen):
         self.content_rect = pygame.Rect(margin, content_top, self.width - (margin * 2), content_height)
         self.actions_rect = pygame.Rect(margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height)
 
-        character_width = (self.content_rect.width - gap) * 2 // 3
+        character_width = (self.content_rect.width - gap) * 3 // 5
         self.character_panel_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height)
         self.combat_panel_rect = pygame.Rect(self.character_panel_rect.right + gap, self.content_rect.top, self.content_rect.right - self.character_panel_rect.right - gap, self.content_rect.height)
         self.details_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, self.content_rect.width, self.content_rect.height)
@@ -359,7 +359,7 @@ class ModernCharacterScreen(CharacterScreen):
         self._draw_divider(self.character_panel_rect, y - 10)
         self._draw_text("Core Attributes", self.large_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
         y += self.large_font.get_height() + 8
-        y = self._draw_key_values(attribute_rows, self.character_panel_rect, y, font=self.large_font)
+        y = self._draw_key_values(attribute_rows, self.character_panel_rect, y, font=self.large_font, label_padding=36)
 
         buffs = self.collect_equipment_buffs(player_char)
         if buffs and y < self.character_panel_rect.bottom - 56:
@@ -372,27 +372,43 @@ class ModernCharacterScreen(CharacterScreen):
 
     def draw_combat_panel(self, player_char):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
-        y = self._draw_key_values(self.build_combat_stats(player_char), self.combat_panel_rect, y, font=self.large_font)
+        y = self._draw_key_values(self.build_combat_stats(player_char), self.combat_panel_rect, y, font=self.large_font, right_align_values=True)
         groups = self.group_resistances(player_char)
-        y = max(y + 12, self.combat_panel_rect.bottom - 178)
+        y = max(y + 12, self.combat_panel_rect.bottom - 126)
         self._draw_divider(self.combat_panel_rect, y - 10)
-        self._draw_text("Weaknesses", self.large_font, self.colors.RED, self.combat_panel_rect.left + 16, y, self.combat_panel_rect.width - 32)
-        y += self.large_font.get_height() + 6
-        y = self._draw_resistance_group(groups["weaknesses"], self.combat_panel_rect, y, self.colors.RED)
-        y += 10
-        self._draw_text("Resistances", self.large_font, self.colors.GREEN, self.combat_panel_rect.left + 16, y, self.combat_panel_rect.width - 32)
-        y += self.large_font.get_height() + 6
-        self._draw_resistance_group(groups["resistances"], self.combat_panel_rect, y, self.colors.GREEN)
+        column_gap = 12
+        column_width = (self.combat_panel_rect.width - 32 - column_gap) // 2
+        weakness_rect = pygame.Rect(self.combat_panel_rect.left + 16, y, column_width, self.combat_panel_rect.bottom - y - 16)
+        resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
+        self._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
+        self._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
+        group_y = y + self.large_font.get_height() + 6
+        self._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED)
+        self._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN)
 
-    def _draw_key_values(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int, font=None) -> int:
+    def _draw_key_values(
+        self,
+        rows: list[tuple[str, str]],
+        rect: pygame.Rect,
+        y: int,
+        font=None,
+        *,
+        label_padding: int = 10,
+        right_align_values: bool = False,
+    ) -> int:
         font = font or self.normal_font
-        label_width = min(220, max((font.size(label)[0] for label, _ in rows), default=80) + 10)
+        label_width = min(220, max((font.size(label)[0] for label, _ in rows), default=80) + label_padding)
         x = rect.left + 16
         value_x = x + label_width
         max_value_width = rect.right - value_x - 16
         for label, value in rows:
-            self._draw_text(label, font, self.colors.GRAY, x, y, label_width - 10)
-            self._draw_text(value, font, self.colors.WHITE, value_x, y, max_value_width)
+            self._draw_text(label, font, self.colors.GRAY, x, y, label_width - label_padding)
+            value_text = self._fit_text(value, font, max_value_width)
+            draw_x = value_x
+            if right_align_values:
+                value_width = font.size(value_text)[0]
+                draw_x = value_x + max(0, max_value_width - value_width)
+            self._draw_text(value_text, font, self.colors.WHITE, draw_x, y, max_value_width)
             y += font.get_height() + 8
             if y > rect.bottom - 24:
                 break
@@ -400,13 +416,14 @@ class ModernCharacterScreen(CharacterScreen):
 
     def _draw_resistance_group(self, entries: list[ResistanceSummary], rect: pygame.Rect, y: int, color) -> int:
         if not entries:
-            self._draw_text("None", self.normal_font, self.colors.GRAY, rect.left + 20, y, rect.width - 40)
+            self._draw_text("None", self.normal_font, self.colors.GRAY, rect.left, y, rect.width)
             return y + self.normal_font.get_height() + 6
-        x = rect.left + 20
-        for entry in entries[:4]:
+        row_height = self.normal_font.get_height() + 6
+        max_entries = max(1, (rect.bottom - y) // row_height)
+        for entry in entries[:max_entries]:
             text = f"{entry.name} ({entry.value * 100:+.0f}%)"
-            self._draw_text(text, self.normal_font, color, x, y, rect.width - 40)
-            y += self.normal_font.get_height() + 6
+            self._draw_text(text, self.normal_font, color, rect.left, y, rect.width)
+            y += row_height
         return y
 
     def _draw_equipment_slot_box(self, slot: EquipmentSlotSummary, rect: pygame.Rect) -> None:

@@ -100,9 +100,11 @@
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
   - Expected: The larger portrait placeholder frame is visible and does not overlap character details.
   - Expected: The Character panel is wider than the Combat Stats panel to give the portrait more room.
+  - Expected: The Combat Stats panel remains wide enough for stat values and resistance columns.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
   - Expected: Core Attributes are placed near the bottom of the Character panel.
+  - Expected: Core Attribute labels and values have enough horizontal separation to scan cleanly.
   - Expected: A divider separates the character identity area from Core Attributes.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
   - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
@@ -113,8 +115,10 @@
 - [ ] Inspect the modern combat-stat block.
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a larger, readable stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
+  - Expected: Combat stat values are right-aligned in the stat block.
   - Expected: A divider separates Combat Stats from Weaknesses and Resistances.
   - Expected: Weaknesses and Resistances headings and values use larger, readable text.
+  - Expected: Weaknesses and Resistances render side-by-side and avoid overflow with several entries.
 - [ ] Inspect the modern Equipment tab.
   - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
   - Expected: The redundant `Equipment Layout` heading is not shown.

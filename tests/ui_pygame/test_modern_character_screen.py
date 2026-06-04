@@ -142,6 +142,7 @@ def test_modern_character_tabs_are_generic_and_switchable():
     assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
     assert screen.character_panel_rect.width > screen.combat_panel_rect.width
+    assert screen.combat_panel_rect.width > screen.content_rect.width // 3
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
