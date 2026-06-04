@@ -13,6 +13,7 @@ import pygame
 from src.core import items, enemies, companions, map_tiles
 from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
+from .character_menu_config import modern_character_menu_enabled
 from .character_screen import CharacterScreen
 from .combat_manager import GUICombatManager
 from .dungeon_hud import DungeonHUD
@@ -51,6 +52,7 @@ class DungeonManager:
 
         # Initialize character screen (shared with town UI)
         self.character_screen = CharacterScreen(presenter)
+        self.modern_character_screen = None
 
         # Initialize loot popup
         self.loot_popup = LootPopup(presenter.screen, presenter)
@@ -112,6 +114,17 @@ class DungeonManager:
         if self._cached_view is not None:
             return self._cached_view
         return self.presenter.screen.copy()
+
+    def _get_character_screen(self):
+        if not modern_character_menu_enabled(self.game, self.presenter):
+            return self.character_screen
+
+        if self.modern_character_screen is None:
+            from .modern_character_screen import ModernCharacterScreen
+            self.modern_character_screen = ModernCharacterScreen(self.presenter)
+            if self._dungeon_background is not None:
+                self.modern_character_screen.background = self._dungeon_background
+        return self.modern_character_screen
 
     def add_message(self, message: str):
         """Add a message to the message log."""
@@ -1865,7 +1878,7 @@ class DungeonManager:
         elif key == pygame.K_c:
             # Open character screen (same as town)
             while True:
-                choice = self.character_screen.navigate(self.player_char)
+                choice = self._get_character_screen().navigate(self.player_char)
                 if choice == "Exit Menu" or choice is None:
                     break
                 elif choice == "Quit Game":
@@ -1908,7 +1921,7 @@ class DungeonManager:
 
         elif choice == 1:  # Character Menu
             while True:
-                char_choice = self.character_screen.navigate(self.player_char)
+                char_choice = self._get_character_screen().navigate(self.player_char)
                 if char_choice == "Exit Menu" or char_choice is None:
                     break
                 elif char_choice == "Quit Game":

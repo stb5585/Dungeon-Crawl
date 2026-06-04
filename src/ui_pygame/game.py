@@ -21,12 +21,14 @@ from src.core import items
 from .presentation.pygame_presenter import PygamePresenter
 
 # GUI modules
+from .gui.character_menu_config import modern_character_menu_enabled
 from .gui.shops import ShopManager
 from .gui.church import ChurchManager
 from .gui.inn import InnManager
 from .gui.barracks import BarracksManager
 from .gui.dungeon_manager import DungeonManager
 from .gui.character_screen import CharacterScreen
+from .gui.modern_character_screen import ModernCharacterScreen
 from .gui.main_menu import MainMenuScreen
 from .gui.load_game import LoadGameScreen
 from .gui.race_selection import RaceSelectionScreen
@@ -825,7 +827,8 @@ class PygameGame:
     
     def show_character_info(self):
         """Display character information using the character screen."""
-        char_screen = CharacterScreen(self.presenter)
+        screen_cls = ModernCharacterScreen if modern_character_menu_enabled(self, self.presenter) else CharacterScreen
+        char_screen = screen_cls(self.presenter)
 
         while True:
             choice = char_screen.navigate(self.player_char)

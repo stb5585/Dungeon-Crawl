@@ -7,6 +7,9 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.ui_pygame import game as pygame_game
+from src.ui_pygame.gui.character_menu_config import MODERN_CHARACTER_MENU_ENV, modern_character_menu_enabled
+from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import ModernCharacterScreen
 
 
@@ -215,3 +218,76 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "effects"
+
+
+def test_modern_character_menu_flag_defaults_to_legacy_and_accepts_opt_in(monkeypatch):
+    monkeypatch.delenv(MODERN_CHARACTER_MENU_ENV, raising=False)
+
+    assert modern_character_menu_enabled(SimpleNamespace()) is False
+    assert modern_character_menu_enabled(SimpleNamespace(use_modern_character_menu=True)) is True
+
+    monkeypatch.setenv(MODERN_CHARACTER_MENU_ENV, "1")
+    assert modern_character_menu_enabled(SimpleNamespace()) is True
+
+
+def test_town_character_info_uses_modern_screen_only_when_enabled(monkeypatch):
+    used = []
+
+    class FakeLegacy:
+        def __init__(self, _presenter):
+            used.append("legacy")
+
+        def navigate(self, _player):
+            return "Exit Menu"
+
+    class FakeModern:
+        def __init__(self, _presenter):
+            used.append("modern")
+
+        def navigate(self, _player):
+            return "Exit Menu"
+
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(quit=False)
+    monkeypatch.setattr(pygame_game, "CharacterScreen", FakeLegacy)
+    monkeypatch.setattr(pygame_game, "ModernCharacterScreen", FakeModern)
+    monkeypatch.delenv(MODERN_CHARACTER_MENU_ENV, raising=False)
+
+    game.use_modern_character_menu = False
+    game.show_character_info()
+    game.use_modern_character_menu = True
+    game.show_character_info()
+
+    assert used == ["legacy", "modern"]
+
+
+def test_dungeon_character_screen_router_keeps_legacy_default_and_lazy_loads_modern(monkeypatch):
+    created = []
+
+    class FakeModern:
+        def __init__(self, presenter):
+            self.presenter = presenter
+            self.background = None
+            created.append(self)
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "ModernCharacterScreen", FakeModern)
+
+    manager = DungeonManager.__new__(DungeonManager)
+    manager.presenter = SimpleNamespace(use_modern_character_menu=False)
+    manager.game = SimpleNamespace(use_modern_character_menu=False)
+    manager.character_screen = SimpleNamespace(name="legacy")
+    manager.modern_character_screen = None
+    manager._dungeon_background = "dungeon-bg"
+
+    assert manager._get_character_screen().name == "legacy"
+
+    manager.game.use_modern_character_menu = True
+    first = manager._get_character_screen()
+    second = manager._get_character_screen()
+
+    assert first is second
+    assert first.background == "dungeon-bg"
+    assert created == [first]
