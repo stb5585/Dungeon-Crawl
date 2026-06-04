@@ -389,9 +389,29 @@ class ModernCharacterScreen(CharacterScreen):
 
     def draw_combat_panel(self, player_char):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
-        y = self._draw_key_values(self.build_combat_stats(player_char), self.combat_panel_rect, y, font=self.large_font, right_align_values=True)
+        combat_rows = self.build_combat_stats(player_char)
         groups = self.group_resistances(player_char)
-        y = max(y + 12, self.combat_panel_rect.bottom - 126)
+        max_resistance_rows = max(len(groups["weaknesses"]), len(groups["resistances"]), 1)
+        resistance_font = self.small_font if max_resistance_rows > 6 else self.normal_font
+        resistance_row_gap = 3 if max_resistance_rows > 6 else 6
+        resistance_row_height = resistance_font.get_height() + resistance_row_gap
+        resistance_height = self.large_font.get_height() + 6 + (max_resistance_rows * resistance_row_height)
+        resistance_top = max(
+            y + len(combat_rows) * (self.normal_font.get_height() + 3) + 12,
+            self.combat_panel_rect.bottom - resistance_height - 16,
+        )
+        stat_font = self.large_font if resistance_top - y >= len(combat_rows) * (self.large_font.get_height() + 4) else self.normal_font
+        stat_gap = 4 if stat_font is self.large_font else 3
+        y = self._draw_key_values(
+            combat_rows,
+            self.combat_panel_rect,
+            y,
+            font=stat_font,
+            row_gap=stat_gap,
+            right_align_values=True,
+            bottom_limit=resistance_top - 12,
+        )
+        y = max(y + 12, resistance_top)
         self._draw_divider(self.combat_panel_rect, y - 10)
         column_gap = 12
         column_width = (self.combat_panel_rect.width - 32 - column_gap) // 2
@@ -400,8 +420,8 @@ class ModernCharacterScreen(CharacterScreen):
         self._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
         self._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
         group_y = y + self.large_font.get_height() + 6
-        self._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED)
-        self._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN)
+        self._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=resistance_font, row_gap=resistance_row_gap)
+        self._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=resistance_font, row_gap=resistance_row_gap)
 
     def _draw_key_values(
         self,
@@ -412,8 +432,11 @@ class ModernCharacterScreen(CharacterScreen):
         *,
         label_padding: int = 10,
         right_align_values: bool = False,
+        row_gap: int = 8,
+        bottom_limit: int | None = None,
     ) -> int:
         font = font or self.normal_font
+        bottom_limit = bottom_limit if bottom_limit is not None else rect.bottom - 24
         label_width = min(220, max((font.size(label)[0] for label, _ in rows), default=80) + label_padding)
         x = rect.left + 16
         value_x = x + label_width
@@ -426,20 +449,20 @@ class ModernCharacterScreen(CharacterScreen):
                 value_width = font.size(value_text)[0]
                 draw_x = value_x + max(0, max_value_width - value_width)
             self._draw_text(value_text, font, self.colors.WHITE, draw_x, y, max_value_width)
-            y += font.get_height() + 8
-            if y > rect.bottom - 24:
+            y += font.get_height() + row_gap
+            if y > bottom_limit:
                 break
         return y
 
-    def _draw_resistance_group(self, entries: list[ResistanceSummary], rect: pygame.Rect, y: int, color) -> int:
+    def _draw_resistance_group(self, entries: list[ResistanceSummary], rect: pygame.Rect, y: int, color, *, font=None, row_gap: int = 6) -> int:
+        font = font or self.normal_font
         if not entries:
-            self._draw_text("None", self.normal_font, self.colors.GRAY, rect.left, y, rect.width)
-            return y + self.normal_font.get_height() + 6
-        row_height = self.normal_font.get_height() + 6
-        max_entries = max(1, (rect.bottom - y) // row_height)
-        for entry in entries[:max_entries]:
+            self._draw_text("None", font, self.colors.GRAY, rect.left, y, rect.width)
+            return y + font.get_height() + row_gap
+        row_height = font.get_height() + row_gap
+        for entry in entries:
             text = f"{entry.name} ({entry.value * 100:+.0f}%)"
-            self._draw_text(text, self.normal_font, color, rect.left, y, rect.width)
+            self._draw_text(text, font, color, rect.left, y, rect.width)
             y += row_height
         return y
 

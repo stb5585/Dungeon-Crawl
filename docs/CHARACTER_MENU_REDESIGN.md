@@ -22,7 +22,7 @@ Opt-in paths:
 - The Character tab intentionally omits the equipment panel to avoid duplicating the Equipment tab.
 - Equipment-derived persistent buffs such as Vision are shown inside the Character/Equipment views instead of a separate effects screen.
 - The action menu uses `Change Equipment` for the equipment-management popup, keeps `Exit Menu` last, and omits `Quit Game`.
-- Resistance presentation grouped into side-by-side weaknesses and resistances with exact values as secondary text.
+- Resistance presentation grouped into side-by-side weaknesses and resistances with exact values as secondary text. The resistance area adapts for the full set of 10 possible resistance keys without truncating entries.
 - Town and dungeon routing through the temporary feature flag while preserving the legacy default.
 
 ## Assumptions

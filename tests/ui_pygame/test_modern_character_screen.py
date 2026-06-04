@@ -10,7 +10,7 @@ import pygame
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.character_menu_config import MODERN_CHARACTER_MENU_ENV, modern_character_menu_enabled
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
-from src.ui_pygame.gui.modern_character_screen import ModernCharacterScreen
+from src.ui_pygame.gui.modern_character_screen import ModernCharacterScreen, RESISTANCE_ORDER
 
 
 class DummySurface:
@@ -224,6 +224,23 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.normal_font.render_calls))
     assert "Sword" in presenter.normal_font.render_calls
     assert "Block: Ring: Ruby Ring  |  Vision: Pendant: Pendant of Sight" in presenter.small_font.render_calls
+
+
+def test_modern_character_resistance_columns_render_all_possible_entries(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.resistance = {name: -0.1 for name in RESISTANCE_ORDER}
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+
+    screen.draw_all(player)
+    rendered_text = set(presenter.normal_font.render_calls + presenter.small_font.render_calls)
+    for name in RESISTANCE_ORDER:
+        assert f"{name} (-10%)" in rendered_text
 
 
 def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):

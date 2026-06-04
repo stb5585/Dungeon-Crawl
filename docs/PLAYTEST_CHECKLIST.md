@@ -120,6 +120,7 @@
   - Expected: A divider separates Combat Stats from Weaknesses and Resistances.
   - Expected: Weaknesses and Resistances headings and values use larger, readable text.
   - Expected: Weaknesses and Resistances render side-by-side and avoid overflow with several entries.
+  - Expected: All 10 possible resistance keys can appear in one group without being truncated.
 - [ ] Inspect the modern Equipment tab.
   - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
   - Expected: The redundant `Equipment Layout` heading is not shown.
