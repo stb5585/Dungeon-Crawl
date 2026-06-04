@@ -96,17 +96,20 @@
   - Expected: Name, class, level, experience, and experience-to-next-level render clearly.
   - Expected: The portrait placeholder frame is visible and does not overlap character details.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
+  - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
   - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
   - Expected: The bar fill reflects current progress toward the next level.
+  - Expected: The bar does not cover or overlap the XP text.
   - Expected: Zero or missing XP data does not crash or overfill the bar.
 - [ ] Inspect the modern combat-stat block.
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a compact stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
-- [ ] Inspect the modern Equipment panel and Equipment tab.
+- [ ] Inspect the modern Equipment tab.
   - Expected: Weapon, Armor, Helmet, Offhand, Ring, and Pendant appear in that order.
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
-  - Expected: Equipped item names, descriptions, slot information, and basic bonuses render without overflowing.
+  - Expected: Equipped item names, richer descriptions, slot information, and grouped bonuses render without overflowing.
+  - Expected: The details section is descriptive enough to explain what each equipped item is doing.
   - Expected: Empty slots display a readable empty state.
 - [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
   - Expected: Equipment-derived buffs are reported in the Character or Equipment view.
