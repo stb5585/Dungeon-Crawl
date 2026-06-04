@@ -2,6 +2,10 @@
 
 ## Recently Changed
 
+### P0 Verification
+- [x] Run the focused P0 regression bundle for first-key input, music transitions, character stats, Enfeeble zero-value filtering, Half Giant balance, Old Key rewards, locked-door prompts, and audio routing.
+  - Expected: The focused pytest bundle passes without skipped or hanging input-loop tests.
+
 ### Balance
 - [ ] Start a Half Giant Warrior and compare early durability against magic/status-heavy enemies.
   - Expected: Half Giant keeps strength/constitution advantages but has lower agility, lower magic defense, and sharper magical weaknesses.

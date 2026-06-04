@@ -87,19 +87,23 @@ Status: `Done` for runtime integration, `Planned` for final content completion
 
 ### P0 - Current Playtest Regressions And Trust
 
-Status: `Active`
+Status: `Done`
 
-These should be handled before larger feature work because they directly affect confidence in moment-to-moment play.
+Completed in the June 2026 P0 pass:
 
-1. Re-run focused playtest checks for recently fixed areas.
+1. Fixed and covered the reported first-key-blocking issue after combat turn start.
+   - Guarded input now pumps pygame events before reading physical key state.
+   - Regression coverage verifies the combat action grid accepts the first fresh movement/confirm key once no key is held.
+2. Re-ran focused playtest regression coverage for recently fixed areas.
    - Main-menu/dungeon music transitions.
    - Character Menu Attack and Defense stat display.
    - Enfeeble zero-value reporting.
    - Half Giant Warrior early-game balance.
    - Old Key locked-door prompt behavior.
-2. Keep the roadmap and playtest checklist aligned after each implementation pass.
-   - Move resolved bug lines into the resolved archive instead of leaving them as active bugs.
-   - Keep checklist items for newly wired SFX and music transitions.
+   - Audio diagnostics and location/combat music routing.
+3. Updated roadmap and playtest checklist entries for the completed P0 pass.
+
+Next active priority: `P1 - Pygame UX Polish`.
 
 ### P1 - Pygame UX Polish
 
