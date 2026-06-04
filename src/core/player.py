@@ -319,6 +319,7 @@ class Player(Character):
         self.gold = gold
         self.level = level
         self.resistance = resistance
+        self.sex = "Male"
         self.inventory = {}
         self.special_inventory = {}
         self.world_dict = {}

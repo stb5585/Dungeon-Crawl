@@ -68,7 +68,7 @@
 - [ ] Enter combat or a character/shop selector after a previous key-driven transition.
   - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
   - Expected: Combat action-grid navigation accepts the first fresh movement/confirm key after turn start once pygame key state has been pumped.
-- [ ] Move through main, town, load-game, shop-selection, race, class, and location menus after a prior key press.
+- [ ] Move through main, town, load-game, shop-selection, race, sex, class, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
 - [ ] Open the in-dungeon popup menu after a key-driven transition.
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
@@ -76,6 +76,10 @@
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
 
 ### Character Menu
+- [ ] Start a new character and choose race, sex, class, and name.
+  - Expected: Sex selection appears after race selection and before class selection.
+  - Expected: Save/load preserves the selected sex.
+  - Expected: Existing saves without sex data load as Male.
 - [ ] Launch pygame with `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` and open the Character Menu from town.
   - Expected: The modern Character Menu opens instead of the legacy menu.
   - Expected: Closing the menu returns cleanly to the previous town flow.
@@ -99,8 +103,9 @@
   - Expected: The level-progress bar appears under the Level value on the right side.
   - Expected: The level-progress bar is about half the width of the character-info column.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
-  - Expected: The larger portrait placeholder frame is visible and does not overlap character details.
-  - Expected: The Character panel is wider than the Combat Stats panel to give the portrait more room.
+  - Expected: The race/sex portrait renders when a matching portrait asset exists.
+  - Expected: The portrait placeholder remains available if an asset is missing.
+  - Expected: The Character and Combat Stats panels use a balanced 50/50 split.
   - Expected: The Combat Stats panel remains wide enough for stat values and resistance columns.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.

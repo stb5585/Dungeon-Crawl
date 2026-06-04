@@ -112,7 +112,7 @@ Status: `Active`
 
 1. Complete modern Character Menu acceptance and iteration.
    - Direction chosen: full redesign implemented in parallel, with the legacy menu still available and still default.
-   - Implemented: generic Character/Equipment tabs, wider Character panel with half-width right-column level-progress bar, larger portrait placeholder, larger right-aligned Name/Race/Class/Level text, bottom-anchored Core Attributes, larger character/combat/resistance text, right-aligned combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with Helmet UI placeholder, equipment-buff reporting, and town/dungeon opt-in routing.
+   - Implemented: sex selection during character creation, race/sex portrait assets, generic Character/Equipment tabs, 50/50 Character and Combat Stats panels, half-width right-column level-progress bar, larger right-aligned Name/Race/Class/Level text, bottom-anchored Core Attributes, larger character/combat/resistance text, right-aligned combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with Helmet UI placeholder, equipment-buff reporting, and town/dungeon opt-in routing.
    - Remaining: manual visual review at several window sizes, equipment-comparison iteration, richer item-detail formatting, and explicit approval before replacing the legacy default.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
    - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.

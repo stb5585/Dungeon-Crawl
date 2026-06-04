@@ -328,6 +328,14 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
             route_kwargs.append(("class", kwargs))
             return "Warrior"
 
+    class FakeSexScreen:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, **kwargs):
+            route_kwargs.append(("sex", kwargs))
+            return "Female"
+
     class FakePopup:
         def __init__(self, *_args, **_kwargs):
             pass
@@ -337,23 +345,27 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
 
     game.races_dict = {"Human": FakeRace}
     game.classes_dict = {"Warrior": {"class": FakeClass}}
-    game._build_player_character = lambda race_name, class_name, name: SimpleNamespace(
+    game._build_player_character = lambda race_name, class_name, name, sex: SimpleNamespace(
         race_name=race_name,
         class_name=class_name,
         name=name,
+        sex=sex,
         health=SimpleNamespace(max=20),
         mana=SimpleNamespace(max=10),
     )
     game.initialize_managers = lambda: None
     monkeypatch.setattr(pygame_game, "RaceSelectionScreen", FakeRaceScreen)
+    monkeypatch.setattr(pygame_game, "SexSelectionScreen", FakeSexScreen)
     monkeypatch.setattr(pygame_game, "ClassSelectionScreen", FakeClassScreen)
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
 
     player = game.new_game()
 
     assert player.name == "Ada"
+    assert player.sex == "Female"
     assert route_kwargs == [
         ("race", {"flush_events": True, "require_key_release": True}),
+        ("sex", {"flush_events": True, "require_key_release": True}),
         ("class", {"flush_events": True, "require_key_release": True}),
     ]
 

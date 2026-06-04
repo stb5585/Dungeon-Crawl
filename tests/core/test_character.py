@@ -361,6 +361,26 @@ class TestGameplayStatistics:
         assert restored.gameplay_stats["highest_level_reached"] == 9
         assert restored.gameplay_stats["steps_taken"] == 0
 
+    def test_player_data_serializer_persists_sex_and_backfills_legacy_saves(self):
+        player = TestGameState.create_player(
+            name="PortraitHero",
+            class_name="Warrior",
+            race_name="Human",
+            level=5,
+        )
+        player.sex = "Female"
+
+        serialized = PlayerDataSerializer.serialize(player)
+        restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert serialized["sex"] == "Female"
+        assert restored.sex == "Female"
+
+        serialized.pop("sex", None)
+        legacy_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert legacy_restored.sex == "Male"
+
     def test_damage_event_updates_high_water_marks(self):
         attacker = TestGameState.create_player(
             name="Attacker",

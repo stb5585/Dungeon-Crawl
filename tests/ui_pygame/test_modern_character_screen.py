@@ -91,6 +91,7 @@ def _make_player():
     player = SimpleNamespace(
         name="Longnamed Hero of the Northern Gate",
         race=SimpleNamespace(name="Human"),
+        sex="Female",
         cls=SimpleNamespace(name="Warrior"),
         level=SimpleNamespace(level=7, exp=250, exp_to_gain=50),
         health=SimpleNamespace(current=45, max=60),
@@ -141,8 +142,7 @@ def test_modern_character_tabs_are_generic_and_switchable():
 
     assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
-    assert screen.character_panel_rect.width > screen.combat_panel_rect.width
-    assert screen.combat_panel_rect.width > screen.content_rect.width // 3
+    assert abs(screen.character_panel_rect.width - screen.combat_panel_rect.width) <= 1
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
@@ -165,6 +165,13 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
 
     summary = dict(screen.build_character_summary(player))
     assert summary["Race/Class"] == "Human Warrior"
+    assert screen.portrait_filename(player) == "human_female.png"
+
+    player.race = SimpleNamespace(name="Half Elf")
+    player.sex = "Male"
+    assert screen.portrait_filename(player) == "halfelf_male.png"
+    player.race = SimpleNamespace(name="Human")
+    player.sex = "Female"
 
     combat = dict(screen.build_combat_stats(player))
     assert combat["HP"] == "45/60"

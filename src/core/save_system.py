@@ -699,6 +699,7 @@ class PlayerDataSerializer:
             # Character attributes
             'class_name': player.cls.name if player.cls else None,
             'race_name': player.race.name if player.race else None,
+            'sex': getattr(player, 'sex', 'Male'),
             'invisible': player.invisible,
             'flying': player.flying,
             'sight': player.sight,
@@ -781,6 +782,7 @@ class PlayerDataSerializer:
         
         # Restore basic attributes
         player.name = data['name']
+        player.sex = data.get('sex', 'Male')
         player.invisible = data['invisible']
         player.flying = data['flying']
         player.sight = data['sight']

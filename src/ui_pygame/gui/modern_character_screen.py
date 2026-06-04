@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pygame
@@ -50,6 +51,7 @@ DEFAULT_CHARACTER_TABS = (
 EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant")
 RESISTANCE_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
 RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
+PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
 
 
 class ModernCharacterScreen(CharacterScreen):
@@ -74,7 +76,7 @@ class ModernCharacterScreen(CharacterScreen):
         self.content_rect = pygame.Rect(margin, content_top, self.width - (margin * 2), content_height)
         self.actions_rect = pygame.Rect(margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height)
 
-        character_width = (self.content_rect.width - gap) * 3 // 5
+        character_width = (self.content_rect.width - gap) // 2
         self.character_panel_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height)
         self.combat_panel_rect = pygame.Rect(self.character_panel_rect.right + gap, self.content_rect.top, self.content_rect.right - self.character_panel_rect.right - gap, self.content_rect.height)
         self.details_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, self.content_rect.width, self.content_rect.height)
@@ -103,6 +105,28 @@ class ModernCharacterScreen(CharacterScreen):
     @staticmethod
     def _attr_name(value: Any, default: str = "Unknown") -> str:
         return str(getattr(value, "name", default) or default)
+
+    @staticmethod
+    def portrait_filename(player_char) -> str:
+        race = ModernCharacterScreen._attr_name(getattr(player_char, "race", None), "Human")
+        sex = str(getattr(player_char, "sex", "Male") or "Male")
+        race_key = "".join(ch for ch in race.lower() if ch.isalnum())
+        sex_key = "".join(ch for ch in sex.lower() if ch.isalnum()) or "male"
+        if sex_key not in {"male", "female"}:
+            sex_key = "male"
+        return f"{race_key}_{sex_key}.png"
+
+    def portrait_path(self, player_char) -> Path:
+        return PORTRAIT_DIR / self.portrait_filename(player_char)
+
+    def load_portrait(self, player_char):
+        path = self.portrait_path(player_char)
+        if not path.exists():
+            return None
+        try:
+            return pygame.image.load(str(path)).convert_alpha()
+        except (pygame.error, OSError):
+            return None
 
     @staticmethod
     def _call_or_attr(player_char, name: str, default: int = 0) -> int:
@@ -344,7 +368,13 @@ class ModernCharacterScreen(CharacterScreen):
         portrait = pygame.Rect(self.character_panel_rect.left + 16, y, portrait_size, portrait_size)
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, portrait)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
-        self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
+        portrait_surface = self.load_portrait(player_char)
+        if portrait_surface is not None:
+            fitted = pygame.transform.smoothscale(portrait_surface, portrait.size)
+            self.screen.blit(fitted, portrait)
+            pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
+        else:
+            self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
 
         info_x = portrait.right + 16
         info_y = y
@@ -367,7 +397,10 @@ class ModernCharacterScreen(CharacterScreen):
         fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)
         pygame.draw.rect(self.screen, self.colors.GREEN, fill_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, bar_rect, 1)
-        self._draw_text(self.xp_label(player_char), self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
+        xp_label = self.xp_label(player_char)
+        xp_label_width = self.small_font.size(xp_label)[0]
+        xp_label_x = self.character_panel_rect.right - 16 - min(info_width, xp_label_width)
+        self._draw_text(xp_label, self.small_font, self.colors.GRAY, xp_label_x, bar_rect.bottom + 6, info_width)
 
         attribute_rows = self.build_core_attributes(player_char)
         attribute_height = self.large_font.get_height() + 8

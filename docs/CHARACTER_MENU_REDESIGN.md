@@ -12,10 +12,10 @@ Opt-in paths:
 ## Implemented
 
 - Generic tab model with initial `Character` and `Equipment` tabs.
-- Character overview with larger portrait placeholder, larger right-aligned Name, Race/Class, and Level details, and a half-width graphical level-progress bar tucked under Level. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
+- Character overview with race/sex portrait art, larger right-aligned Name, Race/Class, and Level details, and a half-width graphical level-progress bar tucked under Level. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
 - Larger core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight. Core attribute labels have extra spacing before values, and combat values are right-aligned for easier scanning.
 - Dividers separate identity from Core Attributes and Combat Stats from Weaknesses/Resistances.
-- The Character tab uses a wider character panel with a widened combat panel so the portrait remains prominent while combat stats and resistance groups have enough room.
+- The Character tab uses a 50/50 Character and Combat Stats split so both portrait identity and stat/resistance information have stable space.
 - Equipment layout prepared for `Weapon`, `Armor`, `Helmet`, `OffHand`, `Ring`, and `Pendant`.
 - Helmet appears as a future UI slot only. Helmet mechanics are not implemented.
 - Equipment tab with a spread-out paper-doll slot layout and item names, without an extra layout heading.
@@ -30,7 +30,7 @@ Opt-in paths:
 - `level.exp_to_gain` is treated as experience remaining to the next level; level progress is calculated as `exp / (exp + exp_to_gain)` and labeled as earned XP versus XP to next level. The legacy `"MAX"` sentinel renders as a full bar with a max-level label.
 - Existing equipment slots use the current save/runtime keys, including `OffHand`. The modern UI displays the user-facing label without changing persistence.
 - Combat-only debuffs and temporary effects are not shown because they are not persistent outside combat.
-- Future portrait, companion, set-bonus, and reputation systems should use the existing tab/panel structure rather than adding fixed screen positions.
+- Future companion, set-bonus, and reputation systems should use the existing tab/panel structure rather than adding fixed screen positions.
 
 ## Acceptance Gate
 

@@ -33,6 +33,7 @@ from .gui.main_menu import MainMenuScreen
 from .gui.load_game import LoadGameScreen
 from .gui.race_selection import RaceSelectionScreen
 from .gui.class_selection import ClassSelectionScreen
+from .gui.sex_selection import SexSelectionScreen
 from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
 from .gui.town_menu import TownMenuScreen
 from .gui.shop_selection import ShopSelectionScreen
@@ -279,7 +280,7 @@ class PygameGame:
         self.barracks_manager = BarracksManager(self.presenter, self.player_char)
         self.dungeon_manager = DungeonManager(self.presenter, self.player_char, self)
 
-    def _build_player_character(self, race_name, class_name, name="Hero"):
+    def _build_player_character(self, race_name, class_name, name="Hero", sex="Male"):
         """Build a player character from selected race/class and name."""
         from src.core.player import Player
 
@@ -323,6 +324,7 @@ class PygameGame:
             resistance=race.resistance
         )
         player_char.name = name or "Hero"
+        player_char.sex = sex or "Male"
         player_char.race = race
         player_char.cls = char_class
         player_char.equipment = char_class.equipment
@@ -415,6 +417,24 @@ class PygameGame:
             if confirm_race.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to class selection
             # No selected, loop back to race selection
+
+        # Loop for sex selection with confirmation
+        while True:
+            sex_screen = SexSelectionScreen(self.presenter)
+            sex = sex_screen.navigate(
+                flush_events=True,
+                require_key_release=True,
+            )
+            if sex is None:
+                return None  # ESC pressed, return to main menu
+
+            confirm_sex = ConfirmationPopup(
+                self.presenter,
+                f"You have selected {sex} for your character. Continue?",
+                show_buttons=True,
+            )
+            if confirm_sex.show(**self._popup_show_kwargs()):
+                break  # Yes selected, continue to class selection
         
         # Loop for class selection with confirmation
         while True:
@@ -448,12 +468,13 @@ class PygameGame:
             name = "Hero"  # Default name
         
         # Create player character using the same logic as the original game
-        player_char = self._build_player_character(race_name, class_name, name=name)
+        player_char = self._build_player_character(race_name, class_name, name=name, sex=sex)
         
         self.presenter.show_message(
             f"Character Created!\n\n"
             f"Name: {name}\n"
             f"Race: {race_name}\n"
+            f"Sex: {sex}\n"
             f"Class: {class_name}\n\n"
             f"HP: {player_char.health.max}\n"
             f"MP: {player_char.mana.max}"
