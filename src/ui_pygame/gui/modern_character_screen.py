@@ -209,6 +209,14 @@ class ModernCharacterScreen(CharacterScreen):
             ("Dexterity", str(getattr(stats, "dex", 0))),
         ]
 
+    def attack_display(self, player_char) -> str:
+        main_attack = self._check_mod(player_char, "weapon")
+        equipment = getattr(player_char, "equipment", {}) or {}
+        offhand = equipment.get("OffHand") if isinstance(equipment, dict) else None
+        if getattr(offhand, "typ", None) == "Weapon":
+            return f"{main_attack}/{self._check_mod(player_char, 'offhand')}"
+        return str(main_attack)
+
     def build_combat_stats(self, player_char) -> list[tuple[str, str]]:
         health = getattr(player_char, "health", None)
         mana = getattr(player_char, "mana", None)
@@ -221,7 +229,7 @@ class ModernCharacterScreen(CharacterScreen):
         return [
             ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
             ("MP", f"{getattr(mana, 'current', 0)}/{getattr(mana, 'max', 0)}"),
-            ("Attack", str(self._check_mod(player_char, "weapon"))),
+            ("Attack", self.attack_display(player_char)),
             ("Defense", str(self._check_mod(player_char, "armor"))),
             ("Magic Attack", str(self._check_mod(player_char, "magic"))),
             ("Magic Defense", str(self._check_mod(player_char, "magic def"))),
@@ -392,7 +400,7 @@ class ModernCharacterScreen(CharacterScreen):
             self._draw_text(value_text, identity_value_font, self.colors.WHITE, info_x + max(0, info_width - value_width), info_y, info_width)
             info_y += identity_value_font.get_height() + 8
 
-        bar_width = max(120, info_width // 2)
+        bar_width = max(140, info_width * 3 // 4)
         bar_rect = pygame.Rect(self.character_panel_rect.right - 16 - bar_width, info_y + 2, bar_width, 18)
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, bar_rect)
         fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)

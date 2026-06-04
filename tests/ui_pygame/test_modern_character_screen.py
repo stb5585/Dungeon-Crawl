@@ -127,6 +127,7 @@ def _make_player():
     player.critical_chance = lambda _slot: 0.125
     player.check_mod = lambda mod: {
         "weapon": 18,
+        "offhand": 8,
         "armor": 22,
         "shield": 15,
         "magic def": 7,
@@ -176,9 +177,15 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
 
     combat = dict(screen.build_combat_stats(player))
     assert combat["HP"] == "45/60"
+    assert combat["Attack"] == "18"
     assert combat["Magic Defense"] == "7"
     assert combat["Critical"] == "12.5%"
     assert combat["Weight"] == "19/140"
+
+    player.equipment["OffHand"] = SimpleNamespace(name="Dagger", typ="Weapon", subtyp="Dagger")
+    combat = dict(screen.build_combat_stats(player))
+    assert combat["Attack"] == "18/8"
+    player.equipment["OffHand"] = None
 
     slots = screen.build_equipment_slots(player)
     assert [slot.slot for slot in slots] == ["Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant"]

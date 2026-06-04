@@ -104,7 +104,7 @@
   - Expected: Race and Class are shown on separate lines.
   - Expected: Name, Race, Class, and level are right-aligned beside the portrait.
   - Expected: The level-progress bar appears under the Level value on the right side.
-  - Expected: The level-progress bar is about half the width of the character-info column.
+  - Expected: The level-progress bar is wide enough to use most of the character-info column without covering the label.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
   - Expected: The race/sex portrait renders when a matching portrait asset exists.
   - Expected: The portrait placeholder remains available if an asset is missing.
@@ -126,6 +126,7 @@
 - [ ] Inspect the modern combat-stat block.
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a larger, readable stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
+  - Expected: Dual-wielding characters show Attack as main/offhand values, such as `12/8`.
   - Expected: Combat stat values are right-aligned in the stat block.
   - Expected: A divider separates Combat Stats from Weaknesses and Resistances.
   - Expected: Weaknesses and Resistances headings and values use larger, readable text.
