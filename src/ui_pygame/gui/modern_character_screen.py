@@ -133,14 +133,34 @@ class ModernCharacterScreen(CharacterScreen):
             return int(fallback.get(mod, default) or default)
 
     @staticmethod
+    def _non_negative_int(value: Any, default: int = 0) -> int:
+        try:
+            return max(0, int(value or default))
+        except (TypeError, ValueError):
+            return max(0, int(default))
+
+    @staticmethod
     def xp_progress(player_char) -> float:
         level = getattr(player_char, "level", None)
-        exp = max(0, int(getattr(level, "exp", 0) or 0))
-        to_next = max(0, int(getattr(level, "exp_to_gain", 0) or 0))
+        exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
+        raw_to_next = getattr(level, "exp_to_gain", 0)
+        if isinstance(raw_to_next, str) and raw_to_next.upper() == "MAX":
+            return 1.0
+        to_next = ModernCharacterScreen._non_negative_int(raw_to_next)
         total = exp + to_next
         if total <= 0:
             return 0.0
         return max(0.0, min(1.0, exp / total))
+
+    @staticmethod
+    def xp_label(player_char) -> str:
+        level = getattr(player_char, "level", None)
+        exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
+        raw_to_next = getattr(level, "exp_to_gain", 0)
+        if isinstance(raw_to_next, str) and raw_to_next.upper() == "MAX":
+            return f"{exp} XP / MAX level"
+        to_next = ModernCharacterScreen._non_negative_int(raw_to_next)
+        return f"{exp} XP / {to_next} next"
 
     def build_character_summary(self, player_char) -> list[tuple[str, str]]:
         race = self._attr_name(getattr(player_char, "race", None), "")
@@ -344,10 +364,7 @@ class ModernCharacterScreen(CharacterScreen):
         fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)
         pygame.draw.rect(self.screen, self.colors.GREEN, fill_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, bar_rect, 1)
-        level = getattr(player_char, "level", None)
-        exp = getattr(level, "exp", 0)
-        to_next = getattr(level, "exp_to_gain", 0)
-        self._draw_text(f"{exp} XP / {to_next} next", self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
+        self._draw_text(self.xp_label(player_char), self.small_font, self.colors.GRAY, bar_rect.left, bar_rect.bottom + 6, bar_rect.width)
 
         attribute_rows = self.build_core_attributes(player_char)
         attribute_height = self.large_font.get_height() + 8

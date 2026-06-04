@@ -156,6 +156,12 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player = _make_player()
 
     assert screen.xp_progress(player) == 250 / 300
+    assert screen.xp_label(player) == "250 XP / 50 next"
+
+    player.level.exp_to_gain = "MAX"
+    assert screen.xp_progress(player) == 1.0
+    assert screen.xp_label(player) == "250 XP / MAX level"
+    player.level.exp_to_gain = 50
 
     combat = dict(screen.build_combat_stats(player))
     assert combat["HP"] == "45/60"

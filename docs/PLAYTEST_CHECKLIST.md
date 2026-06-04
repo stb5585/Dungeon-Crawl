@@ -112,6 +112,7 @@
   - Expected: The bar fill reflects current progress toward the next level.
   - Expected: The bar does not cover or overlap the XP text.
   - Expected: Zero or missing XP data does not crash or overfill the bar.
+  - Expected: Max-level characters with `exp_to_gain` set to `MAX` show a full bar and do not crash.
 - [ ] Inspect the modern combat-stat block.
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a larger, readable stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.

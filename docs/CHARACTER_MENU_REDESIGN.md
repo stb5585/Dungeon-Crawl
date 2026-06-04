@@ -27,7 +27,7 @@ Opt-in paths:
 
 ## Assumptions
 
-- `level.exp_to_gain` is treated as experience remaining to the next level; level progress is calculated as `exp / (exp + exp_to_gain)` and labeled as earned XP versus XP to next level.
+- `level.exp_to_gain` is treated as experience remaining to the next level; level progress is calculated as `exp / (exp + exp_to_gain)` and labeled as earned XP versus XP to next level. The legacy `"MAX"` sentinel renders as a full bar with a max-level label.
 - Existing equipment slots use the current save/runtime keys, including `OffHand`. The modern UI displays the user-facing label without changing persistence.
 - Combat-only debuffs and temporary effects are not shown because they are not persistent outside combat.
 - Future portrait, companion, set-bonus, and reputation systems should use the existing tab/panel structure rather than adding fixed screen positions.
