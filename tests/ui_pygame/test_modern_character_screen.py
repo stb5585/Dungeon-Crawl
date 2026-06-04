@@ -186,6 +186,8 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
     draw_rect_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)))
+    draw_line_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: draw_line_calls.append((_args, _kwargs)))
     flip_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: flip_calls.append(True))
 
@@ -195,10 +197,14 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Core Attributes" in presenter.large_font.render_calls
     assert "Strength" in presenter.large_font.render_calls
     assert "HP" in presenter.large_font.render_calls
+    assert "Weaknesses" in presenter.large_font.render_calls
+    assert "Resistances" in presenter.large_font.render_calls
+    assert "Fire (-15%)" in presenter.normal_font.render_calls
     assert "Equipment" not in presenter.large_font.render_calls
     assert "XP EARNED" not in presenter.small_font.render_calls
     assert "XP TO NEXT" not in presenter.small_font.render_calls
     assert "250 earned / 50 to next" in presenter.small_font.render_calls
+    assert len(draw_line_calls) >= 2
     assert flip_calls
 
     screen.select_tab("equipment")

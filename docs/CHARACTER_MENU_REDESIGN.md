@@ -12,8 +12,9 @@ Opt-in paths:
 ## Implemented
 
 - Generic tab model with initial `Character` and `Equipment` tabs.
-- Character overview with larger portrait placeholder, right-aligned level details, and a shorter graphical level-progress bar. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
+- Character overview with larger portrait placeholder, right-aligned level details, and a shorter graphical level-progress bar tucked under Level. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
 - Larger core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight.
+- Dividers separate identity from Core Attributes and Combat Stats from Weaknesses/Resistances.
 - Equipment layout prepared for `Weapon`, `Armor`, `Helmet`, `OffHand`, `Ring`, and `Pendant`.
 - Helmet appears as a future UI slot only. Helmet mechanics are not implemented.
 - Equipment tab with a spread-out paper-doll slot layout and item names.
