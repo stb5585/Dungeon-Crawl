@@ -742,6 +742,43 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     assert actions == ["Items"]
 
 
+def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+
+    actions = []
+    manager.available_actions = ["Attack", "Defend", "Items"]
+    manager.engine = SimpleNamespace(
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        companion_turn=lambda: None,
+    )
+    manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
+
+    key_held = {"value": True}
+
+    def fake_pump():
+        key_held["value"] = False
+
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", fake_pump)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
+        lambda: [1] if key_held["value"] else [],
+    )
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["Defend"]
+
+
 def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()

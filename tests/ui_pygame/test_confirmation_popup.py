@@ -119,6 +119,7 @@ def test_confirmation_popup_wrap_visible_lines_and_background_helpers(monkeypatc
 
 def test_release_guard_allows_input_after_buffered_keys_clear(monkeypatch):
     pressed_states = iter([[1], [], [1]])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", lambda: None)
     monkeypatch.setattr(
         "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
         lambda: next(pressed_states),
@@ -128,6 +129,24 @@ def test_release_guard_allows_input_after_buffered_keys_clear(monkeypatch):
     assert release_guard_allows_input(True, False) is True
     assert release_guard_allows_input(True, True) is True
     assert release_guard_allows_input(False, False) is True
+
+
+def test_release_guard_pumps_events_before_reading_key_state(monkeypatch):
+    held = {"value": True}
+    pump_calls = []
+
+    def fake_pump():
+        pump_calls.append(True)
+        held["value"] = False
+
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", fake_pump)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
+        lambda: [1] if held["value"] else [],
+    )
+
+    assert release_guard_allows_input(True, False) is True
+    assert pump_calls == [True]
 
 
 def test_shared_input_guard_prepare_and_event_release(monkeypatch):

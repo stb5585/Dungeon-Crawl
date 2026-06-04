@@ -91,16 +91,13 @@ Status: `Active`
 
 These should be handled before larger feature work because they directly affect confidence in moment-to-moment play.
 
-1. Verify and close the reported first-key-blocking issue after turn starts.
-   - Confirm whether any combat or menu input guard still blocks the first fresh key press.
-   - Add a regression test around the affected input loop once reproduced.
-2. Re-run focused playtest checks for recently fixed areas.
+1. Re-run focused playtest checks for recently fixed areas.
    - Main-menu/dungeon music transitions.
    - Character Menu Attack and Defense stat display.
    - Enfeeble zero-value reporting.
    - Half Giant Warrior early-game balance.
    - Old Key locked-door prompt behavior.
-3. Keep the roadmap and playtest checklist aligned after each implementation pass.
+2. Keep the roadmap and playtest checklist aligned after each implementation pass.
    - Move resolved bug lines into the resolved archive instead of leaving them as active bugs.
    - Keep checklist items for newly wired SFX and music transitions.
 
@@ -212,6 +209,7 @@ Status: `Planned`
 ### Recent Bug Fixes
 
 - Dungeon music no longer keeps playing when exiting the dungeon or returning to the main menu.
+- Combat and menu input guards pump pygame events before reading physical key state, so the first fresh combat action key after turn start is accepted once no key is held.
 - Jump clears forced-action state after landing.
 - Active Jump resolves before Berserk can force a basic attack, preserving `Unstoppable` Jump behavior.
 - Duration-1 stun/sleep/incapacitation consumes the current combat turn before expiring.
@@ -229,7 +227,7 @@ Status: `Planned`
 ### Watch Items
 
 - Keep an eye on enemies with explicit `.png` form swaps so palette/form changes continue to invalidate the correct cached sprite.
-- Keep checking first-key behavior after guarded input transitions, especially combat-turn and menu-entry paths.
+- Keep checking guarded input after unusual transitions, especially paths that clear events before entering a selection loop.
 
 ## Working Principles
 

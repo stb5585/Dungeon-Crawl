@@ -63,6 +63,7 @@
   - Expected: If no keys are currently held, the next fresh key press is accepted even if no synthetic KEYUP event arrives first.
 - [ ] Enter combat or a character/shop selector after a previous key-driven transition.
   - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
+  - Expected: Combat action-grid navigation accepts the first fresh movement/confirm key after turn start once pygame key state has been pumped.
 - [ ] Move through main, town, load-game, shop-selection, race, class, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
 - [ ] Open the in-dungeon popup menu after a key-driven transition.

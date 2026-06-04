@@ -20,6 +20,7 @@ def release_guard_allows_input(require_key_release: bool, input_armed: bool) -> 
     if input_armed or not require_key_release:
         return True
     try:
+        pygame.event.pump()
         return not any(pygame.key.get_pressed())
     except pygame.error:
         return True
