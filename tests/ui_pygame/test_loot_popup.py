@@ -205,6 +205,7 @@ def test_empty_chest_can_wait_for_stale_input_release(monkeypatch):
     render_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clears.append(True))
     key_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, []))
     monkeypatch.setattr(popup, "_render_empty_chest", lambda chest_type: render_calls.append(chest_type))
     event_batches = iter([
@@ -307,6 +308,7 @@ def test_show_unlock_prompt_can_wait_for_stale_input_release(monkeypatch):
     render_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clears.append(True))
     key_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, []))
     monkeypatch.setattr(
         popup,

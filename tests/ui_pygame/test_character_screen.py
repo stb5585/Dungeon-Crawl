@@ -235,6 +235,7 @@ def test_empty_key_items_notice_uses_stale_input_guard(monkeypatch):
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.clear", lambda: clear_calls.append(True))
     pressed_states = iter([[1], [], [], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.character_screen.pygame.event.get", lambda: next(event_batches, []))
