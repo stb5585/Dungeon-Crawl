@@ -94,23 +94,25 @@
   - Expected: `Quit Game` is not listed.
 - [ ] Inspect the modern Character tab with several classes and long character names.
   - Expected: Name, class, and level render clearly.
+  - Expected: Name, class, and level are right-aligned beside the portrait.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
-  - Expected: The portrait placeholder frame is visible and does not overlap character details.
+  - Expected: The larger portrait placeholder frame is visible and does not overlap character details.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
   - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
+  - Expected: The bar is shorter than the full character panel width.
   - Expected: The bar fill reflects current progress toward the next level.
   - Expected: The bar does not cover or overlap the XP text.
   - Expected: Zero or missing XP data does not crash or overfill the bar.
 - [ ] Inspect the modern combat-stat block.
-  - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a compact stat block.
+  - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a larger, readable stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
 - [ ] Inspect the modern Equipment tab.
-  - Expected: Equipment is arranged as a paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
+  - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
-  - Expected: Equipped item names, richer descriptions, slot information, and grouped bonuses render without overflowing.
-  - Expected: The details section is descriptive enough to explain what each equipped item is doing.
+  - Expected: The Item Details section is not shown.
+  - Expected: Equipped item names render inside the paper-doll slots without overflowing.
   - Expected: Empty slots display a readable empty state.
 - [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
   - Expected: Equipment-derived buffs are reported in the Character or Equipment view.

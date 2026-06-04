@@ -12,11 +12,11 @@ Opt-in paths:
 ## Implemented
 
 - Generic tab model with initial `Character` and `Equipment` tabs.
-- Character overview with portrait placeholder, level details, and graphical level-progress bar. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
-- Core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight.
+- Character overview with larger portrait placeholder, right-aligned level details, and a shorter graphical level-progress bar. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
+- Larger core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight.
 - Equipment layout prepared for `Weapon`, `Armor`, `Helmet`, `OffHand`, `Ring`, and `Pendant`.
 - Helmet appears as a future UI slot only. Helmet mechanics are not implemented.
-- Equipment tab with a paper-doll slot layout, item names, richer item descriptions, and summarized bonuses.
+- Equipment tab with a spread-out paper-doll slot layout and item names.
 - The Character tab intentionally omits the equipment panel to avoid duplicating the Equipment tab.
 - Equipment-derived persistent buffs such as Vision are shown inside the Character/Equipment views instead of a separate effects screen.
 - The action menu uses `Change Equipment` for the equipment-management popup, keeps `Exit Menu` last, and omits `Quit Game`.
