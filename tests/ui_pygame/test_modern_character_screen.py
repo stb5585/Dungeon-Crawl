@@ -164,7 +164,8 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player.level.exp_to_gain = 50
 
     summary = dict(screen.build_character_summary(player))
-    assert summary["Race/Class"] == "Human Warrior"
+    assert summary["Race"] == "Human"
+    assert summary["Class"] == "Warrior"
     assert screen.portrait_filename(player) == "human_female.png"
 
     player.race = SimpleNamespace(name="Half Elf")
@@ -215,8 +216,10 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Core Attributes" in presenter.large_font.render_calls
     assert "Strength" in presenter.large_font.render_calls
-    assert "RACE/CLASS" in presenter.normal_font.render_calls
-    assert "Human Warrior" in presenter.large_font.render_calls
+    assert "RACE" in presenter.normal_font.render_calls
+    assert "CLASS" in presenter.normal_font.render_calls
+    assert "Human" in presenter.large_font.render_calls
+    assert "Warrior" in presenter.large_font.render_calls
     assert "HP" in rendered_text
     assert "Weaknesses" in presenter.large_font.render_calls
     assert "Resistances" in presenter.large_font.render_calls

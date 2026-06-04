@@ -395,6 +395,24 @@ class PygameGame:
                 
     def new_game(self):
         """Create a new character."""
+        # Loop for sex selection with confirmation
+        while True:
+            sex_screen = SexSelectionScreen(self.presenter)
+            sex = sex_screen.navigate(
+                flush_events=True,
+                require_key_release=True,
+            )
+            if sex is None:
+                return None  # ESC pressed, return to main menu
+
+            confirm_sex = ConfirmationPopup(
+                self.presenter,
+                f"You have selected {sex} for your character. Continue?",
+                show_buttons=True,
+            )
+            if confirm_sex.show(**self._popup_show_kwargs()):
+                break  # Yes selected, continue to race selection
+
         # Loop for race selection with confirmation
         while True:
             # Choose race using RaceSelectionScreen
@@ -417,24 +435,6 @@ class PygameGame:
             if confirm_race.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to class selection
             # No selected, loop back to race selection
-
-        # Loop for sex selection with confirmation
-        while True:
-            sex_screen = SexSelectionScreen(self.presenter)
-            sex = sex_screen.navigate(
-                flush_events=True,
-                require_key_release=True,
-            )
-            if sex is None:
-                return None  # ESC pressed, return to main menu
-
-            confirm_sex = ConfirmationPopup(
-                self.presenter,
-                f"You have selected {sex} for your character. Continue?",
-                show_buttons=True,
-            )
-            if confirm_sex.show(**self._popup_show_kwargs()):
-                break  # Yes selected, continue to class selection
         
         # Loop for class selection with confirmation
         while True:

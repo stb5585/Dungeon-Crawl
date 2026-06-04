@@ -312,6 +312,14 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     class FakeClass:
         name = "Warrior"
 
+    class FakeSexScreen:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, **kwargs):
+            route_kwargs.append(("sex", kwargs))
+            return "Female"
+
     class FakeRaceScreen:
         def __init__(self, _presenter):
             pass
@@ -327,14 +335,6 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
         def navigate(self, race_name, race, classes_dict, **kwargs):
             route_kwargs.append(("class", kwargs))
             return "Warrior"
-
-    class FakeSexScreen:
-        def __init__(self, _presenter):
-            pass
-
-        def navigate(self, **kwargs):
-            route_kwargs.append(("sex", kwargs))
-            return "Female"
 
     class FakePopup:
         def __init__(self, *_args, **_kwargs):
@@ -364,8 +364,8 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     assert player.name == "Ada"
     assert player.sex == "Female"
     assert route_kwargs == [
-        ("race", {"flush_events": True, "require_key_release": True}),
         ("sex", {"flush_events": True, "require_key_release": True}),
+        ("race", {"flush_events": True, "require_key_release": True}),
         ("class", {"flush_events": True, "require_key_release": True}),
     ]
 

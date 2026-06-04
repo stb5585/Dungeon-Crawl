@@ -49,6 +49,8 @@ class BasePopupMenu:
         self.selected_index = 0
         self.scroll_offset = 0
         self.line_height = 24
+        self.quick_scroll_delay = 6
+        self._quick_scroll_frame = 0
 
     def _truncate_text(self, text, max_width):
         """Truncate text with ellipsis to fit within max_width pixels."""
@@ -77,6 +79,105 @@ class BasePopupMenu:
         if self.selected_index >= self.scroll_offset + max_visible:
             self.scroll_offset = self.selected_index - max_visible + 1
         self.scroll_offset = max(0, min(self.scroll_offset, max_scroll))
+
+    def _is_selectable_index(self, index: int) -> bool:
+        if index < 0 or index >= len(self.items):
+            return False
+        item = self.items[index]
+        return not (isinstance(item, dict) and item.get("is_header"))
+
+    def _move_selection(self, delta: int) -> None:
+        if not self.items:
+            self._ensure_visible()
+            return
+        index = self.selected_index
+        for _ in range(len(self.items)):
+            index = (index + delta) % len(self.items)
+            if self._is_selectable_index(index):
+                self.selected_index = index
+                break
+        self._ensure_visible()
+
+    def _page_selection(self, delta_pages: int) -> None:
+        if not self.items:
+            self._ensure_visible()
+            return
+        max_visible = max(1, self.list_rect.height // self.line_height)
+        step = max_visible * (1 if delta_pages > 0 else -1)
+        self.selected_index = max(0, min(len(self.items) - 1, self.selected_index + step))
+        if not self._is_selectable_index(self.selected_index):
+            direction = 1 if step > 0 else -1
+            for _ in range(len(self.items)):
+                self.selected_index = max(0, min(len(self.items) - 1, self.selected_index + direction))
+                if self._is_selectable_index(self.selected_index):
+                    break
+        self._ensure_visible()
+
+    def _wrap_text(self, text, max_width):
+        """Wrap text to fit within max_width in pixels."""
+        words = str(text).split()
+        if not words:
+            return [""]
+        lines = []
+        current_line = []
+        for word in words:
+            current_line.append(word)
+            line = " ".join(current_line)
+            if self.normal_font.size(line)[0] > max_width:
+                current_line.pop()
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [word]
+        if current_line:
+            lines.append(" ".join(current_line))
+        return lines
+
+    def _handle_held_scroll(self):
+        try:
+            pressed = pygame.key.get_pressed()
+        except pygame.error:
+            return
+        self._quick_scroll_frame += 1
+        if self._quick_scroll_frame < self.quick_scroll_delay:
+            return
+        self._quick_scroll_frame = 0
+        try:
+            if pressed[pygame.K_UP]:
+                self._move_selection(-1)
+            elif pressed[pygame.K_DOWN]:
+                self._move_selection(1)
+        except (IndexError, TypeError):
+            return
+
+    def _render_wrapped_attribute(self, label: str, val, x: int, y: int, max_width: int) -> int:
+        value_text = str(val)
+        if label == "Value":
+            value_text = f"{value_text}G"
+        label_text = f"{label}:"
+        label_width = min(100, max_width // 3)
+        text_width = max_width - label_width - 8
+        lines = []
+        for raw_line in value_text.split("\n"):
+            lines.extend(self._wrap_text(raw_line, text_width if raw_line == value_text and "\n" not in value_text else max_width - 16))
+        if len(lines) > 1 or "\n" in value_text:
+            self.screen.blit(self.normal_font.render(label_text, True, self.WHITE), (x, y))
+            y += self.line_height
+            for wrapped_line in lines:
+                text = self.normal_font.render(wrapped_line, True, self.WHITE)
+                self.screen.blit(text, (x + 16, y))
+                y += self.line_height
+            return y
+
+        line = f"{label_text} {value_text}"
+        if self.normal_font.size(line)[0] <= max_width:
+            text = self.normal_font.render(line, True, self.WHITE)
+            self.screen.blit(text, (x, y))
+            return y + self.line_height
+
+        self.screen.blit(self.normal_font.render(label_text, True, self.WHITE), (x, y))
+        text = self.normal_font.render(lines[0] if lines else value_text, True, self.WHITE)
+        self.screen.blit(text, (x + label_width, y))
+        return y + self.line_height
 
     def build_items(self, player_char):
         """Override in subclass to populate self.items."""
@@ -184,10 +285,7 @@ class BasePopupMenu:
                 attrs.append((key.capitalize(), val))
 
         for label, val in attrs:
-            line = f"{label}: {val}"
-            text = self.normal_font.render(line, True, self.WHITE)
-            self.screen.blit(text, (x, y))
-            y += self.line_height
+            y = self._render_wrapped_attribute(label, val, x, y, self.details_rect.width - 32)
 
         # Custom details hook
         self.draw_details_extra(player_char, value, x, y)
@@ -286,46 +384,14 @@ class BasePopupMenu:
                                         background_surface = self.screen.copy()
                                         menu_surface_ref[0] = None
                         elif event.key == pygame.K_UP:
-                            if self.items:
-                                self.selected_index -= 1
-                                while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                    self.selected_index -= 1
-                                if self.selected_index < 0:
-                                    # Wrap to last selectable item
-                                    self.selected_index = len(self.items) - 1
-                                    while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                        self.selected_index -= 1
-                            self._ensure_visible()
+                            self._move_selection(-1)
                         elif event.key == pygame.K_DOWN:
-                            if self.items:
-                                self.selected_index += 1
-                                while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index % len(self.items)], dict) and self.items[self.selected_index % len(self.items)].get("is_header"):
-                                    self.selected_index += 1
-                                if self.selected_index >= len(self.items):
-                                    self.selected_index = 0
-                                    while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                        self.selected_index += 1
-                            self._ensure_visible()
+                            self._move_selection(1)
                         elif event.key == pygame.K_PAGEUP:
-                            if self.items:
-                                max_visible = max(1, self.list_rect.height // self.line_height)
-                                self.selected_index = max(0, self.selected_index - max_visible)
-                                while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                    self.selected_index -= 1
-                                if self.selected_index < 0:
-                                    self.selected_index = 0
-                            self._ensure_visible()
+                            self._page_selection(-1)
                         elif event.key == pygame.K_PAGEDOWN:
-                            if self.items:
-                                max_visible = max(1, self.list_rect.height // self.line_height)
-                                self.selected_index = min(len(self.items) - 1, self.selected_index + max_visible)
-                                while self.selected_index < len(self.items) and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                    self.selected_index += 1
-                                if self.selected_index >= len(self.items):
-                                    self.selected_index = len(self.items) - 1
-                                    while self.selected_index >= 0 and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
-                                        self.selected_index -= 1
-                            self._ensure_visible()
+                            self._page_selection(1)
+                self._handle_held_scroll()
                 clock.tick(30)
         finally:
             if hasattr(self.presenter, "set_background_provider"):
@@ -435,40 +501,7 @@ class InventoryPopupMenu(BasePopupMenu):
                 attrs.append((key.capitalize(), val))
 
         for label, val in attrs:
-            if label == "Value":
-                line = f"{label}: {val}G"
-            else:
-                line = f"{label}: {val}"
-            # Handle newlines in value
-            if isinstance(val, str) and "\n" in val:
-                self.screen.blit(self.normal_font.render(label + ":", True, self.WHITE), (x, y))
-                y += self.line_height
-                for desc_line in val.split("\n"):
-                    # Wrap long description lines
-                    wrapped = self._wrap_text(desc_line, self.details_rect.width - 32)
-                    for wrapped_line in wrapped:
-                        text = self.normal_font.render(wrapped_line, True, self.WHITE)
-                        self.screen.blit(text, (x + 16, y))
-                        y += self.line_height
-            else:
-                # Wrap long attribute values
-                if isinstance(val, str):
-                    wrapped = self._wrap_text(str(val), self.details_rect.width - 32 - 100)
-                    if len(wrapped) > 1:
-                        self.screen.blit(self.normal_font.render(label + ":", True, self.WHITE), (x, y))
-                        y += self.line_height
-                        for wrapped_line in wrapped:
-                            text = self.normal_font.render(wrapped_line, True, self.WHITE)
-                            self.screen.blit(text, (x + 16, y))
-                            y += self.line_height
-                    else:
-                        text = self.normal_font.render(line, True, self.WHITE)
-                        self.screen.blit(text, (x, y))
-                        y += self.line_height
-                else:
-                    text = self.normal_font.render(line, True, self.WHITE)
-                    self.screen.blit(text, (x, y))
-                    y += self.line_height
+            y = self._render_wrapped_attribute(label, val, x, y, self.details_rect.width - 32)
 
         # Custom details hook
         self.draw_details_extra(player_char, (category, obj, count), x, y)
@@ -782,22 +815,7 @@ class EquipmentPopupMenu(BasePopupMenu):
                 attrs.append((key.capitalize(), val))
 
         for label, val in attrs:
-            line = f"{label}: {val}"
-            # Handle newlines in value
-            if isinstance(val, str) and "\n" in val:
-                self.screen.blit(self.normal_font.render(label + ":", True, self.WHITE), (x, y))
-                y += self.line_height
-                for desc_line in val.split("\n"):
-                    # Wrap long description lines
-                    wrapped = self._wrap_text(desc_line, self.details_rect.width - 32)
-                    for wrapped_line in wrapped:
-                        text = self.normal_font.render(wrapped_line, True, self.WHITE)
-                        self.screen.blit(text, (x + 16, y))
-                        y += self.line_height
-            else:
-                text = self.normal_font.render(line, True, self.WHITE)
-                self.screen.blit(text, (x, y))
-                y += self.line_height
+            y = self._render_wrapped_attribute(label, val, x, y, self.details_rect.width - 32)
 
         # Custom details hook
         self.draw_details_extra(player_char, (slot, obj), x, y)

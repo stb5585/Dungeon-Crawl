@@ -193,6 +193,50 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     assert result[0] == "selected"
 
 
+def test_base_popup_quick_scrolls_when_arrow_key_is_held(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = DemoPopup(presenter, parent, title="Test")
+    popup.items = ["Alpha", "Beta", "Gamma", "Delta"]
+    popup.selected_index = 0
+    popup.quick_scroll_delay = 1
+
+    class PressedKeys:
+        def __getitem__(self, key):
+            return key == pygame.K_DOWN
+
+    pressed = PressedKeys()
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.key.get_pressed", lambda: pressed)
+
+    popup._handle_held_scroll()
+
+    assert popup.selected_index == 1
+
+
+def test_equipment_popup_wraps_long_plain_descriptions(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    player.equipment["Pendant"] = DummyItem(
+        "Wind Amulet",
+        typ="Accessory",
+        subtyp="Pendant",
+        description="A long wind-blessed amulet description that should move onto additional lines instead of running off the details panel.",
+    )
+    popup = popup_menus.EquipmentPopupMenu(presenter, parent)
+    popup.build_items(player)
+    popup.selected_index = 4
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    popup.draw_details(player)
+
+    assert "Description:" in presenter.normal_font.render_calls
+    assert not any(
+        call.startswith("Description: A long wind-blessed amulet description")
+        for call in presenter.normal_font.render_calls
+    )
+
+
 def test_base_popup_can_wait_for_key_release_before_accepting_input(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

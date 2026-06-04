@@ -12,7 +12,7 @@ SEX_OPTIONS = ("Male", "Female")
 
 
 class SexSelectionScreen:
-    """Small guarded selection screen for choosing character sex."""
+    """Sex selection screen matching the race/class creation layout."""
 
     def __init__(self, presenter):
         self.presenter = presenter
@@ -24,37 +24,73 @@ class SexSelectionScreen:
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
         self.current_selection = 0
+        self.calculate_window_rects()
 
-    def draw(self, options: tuple[str, ...] = SEX_OPTIONS) -> None:
-        self.screen.fill(self.colors.BLACK)
+    def calculate_window_rects(self):
+        header_height = self.height // 12
+        self.header_rect = pygame.Rect(0, 0, self.width, header_height)
 
-        panel_width = min(520, self.width - 80)
-        panel_height = min(360, self.height - 80)
-        panel = pygame.Rect(0, 0, panel_width, panel_height)
-        panel.center = (self.width // 2, self.height // 2)
-        pygame.draw.rect(self.screen, self.colors.DARK_GRAY, panel)
-        pygame.draw.rect(self.screen, self.colors.GOLD, panel, 3)
+        left_width = self.width // 2
+        left_height = self.height - header_height
+        self.details_rect = pygame.Rect(0, header_height, left_width, left_height)
 
-        title = self.title_font.render("Select Character Sex", True, self.colors.GOLD)
-        title_rect = title.get_rect(centerx=panel.centerx, top=panel.top + 28)
+        right_width = self.width // 2
+        right_height = self.height - header_height
+        self.list_rect = pygame.Rect(left_width, header_height, right_width, right_height)
+
+    def draw_header(self) -> None:
+        pygame.draw.rect(self.screen, self.colors.BLACK, self.header_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.header_rect, 2)
+
+        title = self.normal_font.render("Select the sex for your character", True, self.colors.GOLD)
+        title_rect = title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery)
         self.screen.blit(title, title_rect)
 
-        y = panel.top + 120
-        line_height = 58
+    def draw_details(self) -> None:
+        pygame.draw.rect(self.screen, self.colors.BLACK, self.details_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.details_rect, 2)
+
+        x = self.details_rect.left + 20
+        y = self.details_rect.top + 20
+        selected = SEX_OPTIONS[self.current_selection]
+        title = self.title_font.render(selected, True, self.colors.GOLD)
+        self.screen.blit(title, (x, y))
+
+        y += title.get_height() + 22
+        desc_header = self.normal_font.render("Description", True, self.colors.GOLD)
+        self.screen.blit(desc_header, (x, y))
+
+    def draw_list(self, options: tuple[str, ...] = SEX_OPTIONS) -> None:
+        pygame.draw.rect(self.screen, self.colors.BLACK, self.list_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.list_rect, 2)
+
+        x = self.list_rect.left + 20
+        line_height = 40
         for index, option in enumerate(options):
-            option_rect = pygame.Rect(panel.left + 50, y + index * line_height, panel.width - 100, line_height - 10)
+            y = self.list_rect.top + 20 + index * line_height
             if index == self.current_selection:
-                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, option_rect)
-                pygame.draw.rect(self.screen, self.colors.GOLD, option_rect, 2)
+                highlight_rect = pygame.Rect(
+                    self.list_rect.left + 5,
+                    y - 2,
+                    self.list_rect.width - 10,
+                    line_height - 4,
+                )
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
+                pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
                 color = self.colors.GOLD
             else:
                 color = self.colors.WHITE
             text = self.normal_font.render(option, True, color)
-            text_rect = text.get_rect(center=option_rect.center)
-            self.screen.blit(text, text_rect)
+            self.screen.blit(text, (x, y))
+
+    def draw(self, options: tuple[str, ...] = SEX_OPTIONS) -> None:
+        self.screen.fill(self.colors.BLACK)
+        self.draw_header()
+        self.draw_details()
+        self.draw_list(options)
 
         instructions = self.small_font.render("UP/DOWN: Navigate   ENTER: Select   ESC: Back", True, self.colors.GRAY)
-        instructions_rect = instructions.get_rect(centerx=panel.centerx, bottom=panel.bottom - 24)
+        instructions_rect = instructions.get_rect(centerx=self.list_rect.centerx, bottom=self.list_rect.bottom - 24)
         self.screen.blit(instructions, instructions_rect)
 
     def navigate(

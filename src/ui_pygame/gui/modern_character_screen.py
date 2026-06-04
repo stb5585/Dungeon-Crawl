@@ -193,7 +193,8 @@ class ModernCharacterScreen(CharacterScreen):
         level = getattr(getattr(player_char, "level", None), "level", 1)
         return [
             ("Name", str(getattr(player_char, "name", "Adventurer"))),
-            ("Race/Class", " ".join(part for part in (race, cls) if part) or "Unknown"),
+            ("Race", race or "Unknown"),
+            ("Class", cls or "Unknown"),
             ("Level", str(level)),
         ]
 
@@ -412,7 +413,14 @@ class ModernCharacterScreen(CharacterScreen):
         self._draw_divider(self.character_panel_rect, y - 10)
         self._draw_text("Core Attributes", self.large_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
         y += self.large_font.get_height() + 8
-        y = self._draw_key_values(attribute_rows, self.character_panel_rect, y, font=self.large_font, label_padding=36)
+        y = self._draw_key_values(
+            attribute_rows,
+            self.character_panel_rect,
+            y,
+            font=self.large_font,
+            label_padding=36,
+            right_align_values=True,
+        )
 
         buffs = self.collect_equipment_buffs(player_char)
         if buffs and y < self.character_panel_rect.bottom - 56:

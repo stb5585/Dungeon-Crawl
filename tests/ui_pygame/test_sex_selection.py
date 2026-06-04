@@ -74,8 +74,10 @@ def test_sex_selection_draws_options(monkeypatch):
 
     screen.draw()
 
-    assert "Select Character Sex" in presenter.title_font.render_calls
+    assert "Select the sex for your character" in presenter.normal_font.render_calls
+    assert "Description" in presenter.normal_font.render_calls
     assert {"Male", "Female"}.issubset(set(presenter.normal_font.render_calls))
+    assert "Male" in presenter.title_font.render_calls
     assert draw_calls
 
 

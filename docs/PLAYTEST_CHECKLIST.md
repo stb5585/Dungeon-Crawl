@@ -74,10 +74,13 @@
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
 - [ ] Open inventory, equipment, or quest popups after a key-driven transition.
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
+  - Expected: Holding Up or Down quick-scrolls long popup lists without skipping selectable rows.
+  - Expected: Long item descriptions wrap inside the details panel instead of running off-screen.
 
 ### Character Menu
-- [ ] Start a new character and choose race, sex, class, and name.
-  - Expected: Sex selection appears after race selection and before class selection.
+- [ ] Start a new character and choose sex, race, class, and name.
+  - Expected: Sex selection appears before race selection.
+  - Expected: Sex selection uses the same two-panel visual structure as race and class selection, with a blank description area for now.
   - Expected: Save/load preserves the selected sex.
   - Expected: Existing saves without sex data load as Male.
 - [ ] Launch pygame with `DUNGEON_CRAWL_MODERN_CHARACTER_MENU=1` and open the Character Menu from town.
@@ -97,9 +100,9 @@
   - Expected: `Exit Menu` is the final action option.
   - Expected: `Quit Game` is not listed.
 - [ ] Inspect the modern Character tab with several classes and long character names.
-  - Expected: Name, Race/Class, and level render clearly in the larger identity font.
-  - Expected: Race/Class includes both the character race and class.
-  - Expected: Name, Race/Class, and level are right-aligned beside the portrait.
+  - Expected: Name, Race, Class, and level render clearly in the larger identity font.
+  - Expected: Race and Class are shown on separate lines.
+  - Expected: Name, Race, Class, and level are right-aligned beside the portrait.
   - Expected: The level-progress bar appears under the Level value on the right side.
   - Expected: The level-progress bar is about half the width of the character-info column.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
@@ -111,6 +114,7 @@
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
   - Expected: Core Attributes are placed near the bottom of the Character panel.
   - Expected: Core Attribute labels and values have enough horizontal separation to scan cleanly.
+  - Expected: Core Attribute values are right-aligned without a large empty area after the values.
   - Expected: A divider separates the character identity area from Core Attributes.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
   - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
