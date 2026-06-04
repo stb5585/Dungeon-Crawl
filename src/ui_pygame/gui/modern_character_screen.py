@@ -49,6 +49,7 @@ DEFAULT_CHARACTER_TABS = (
 
 EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant")
 RESISTANCE_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
+RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
 
 
 class ModernCharacterScreen(CharacterScreen):
@@ -168,7 +169,7 @@ class ModernCharacterScreen(CharacterScreen):
         level = getattr(getattr(player_char, "level", None), "level", 1)
         return [
             ("Name", str(getattr(player_char, "name", "Adventurer"))),
-            ("Class", " ".join(part for part in (race, cls) if part) or "Unknown"),
+            ("Race/Class", " ".join(part for part in (race, cls) if part) or "Unknown"),
             ("Level", str(level)),
         ]
 
@@ -348,15 +349,17 @@ class ModernCharacterScreen(CharacterScreen):
         info_x = portrait.right + 16
         info_y = y
         info_width = self.character_panel_rect.right - info_x - 16
+        identity_label_font = self.normal_font
+        identity_value_font = self.large_font
         for label, value in self.build_character_summary(player_char):
             label_text = label.upper()
-            label_width = self.small_font.size(label_text)[0]
-            self._draw_text(label_text, self.small_font, self.colors.GRAY, info_x + max(0, info_width - label_width), info_y, info_width)
-            info_y += self.small_font.get_height()
-            value_text = self._fit_text(value, self.normal_font, info_width)
-            value_width = self.normal_font.size(value_text)[0]
-            self._draw_text(value_text, self.normal_font, self.colors.WHITE, info_x + max(0, info_width - value_width), info_y, info_width)
-            info_y += self.normal_font.get_height() + 6
+            label_width = identity_label_font.size(label_text)[0]
+            self._draw_text(label_text, identity_label_font, self.colors.GRAY, info_x + max(0, info_width - label_width), info_y, info_width)
+            info_y += identity_label_font.get_height()
+            value_text = self._fit_text(value, identity_value_font, info_width)
+            value_width = identity_value_font.size(value_text)[0]
+            self._draw_text(value_text, identity_value_font, self.colors.WHITE, info_x + max(0, info_width - value_width), info_y, info_width)
+            info_y += identity_value_font.get_height() + 8
 
         bar_width = max(120, info_width // 2)
         bar_rect = pygame.Rect(self.character_panel_rect.right - 16 - bar_width, info_y + 2, bar_width, 18)
@@ -391,17 +394,21 @@ class ModernCharacterScreen(CharacterScreen):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
         combat_rows = self.build_combat_stats(player_char)
         groups = self.group_resistances(player_char)
-        max_resistance_rows = max(len(groups["weaknesses"]), len(groups["resistances"]), 1)
-        resistance_font = self.small_font if max_resistance_rows > 6 else self.normal_font
-        resistance_row_gap = 3 if max_resistance_rows > 6 else 6
+        resistance_font = self.small_font
+        resistance_row_gap = 3
         resistance_row_height = resistance_font.get_height() + resistance_row_gap
-        resistance_height = self.large_font.get_height() + 6 + (max_resistance_rows * resistance_row_height)
-        resistance_top = max(
-            y + len(combat_rows) * (self.normal_font.get_height() + 3) + 12,
-            self.combat_panel_rect.bottom - resistance_height - 16,
-        )
-        stat_font = self.large_font if resistance_top - y >= len(combat_rows) * (self.large_font.get_height() + 4) else self.normal_font
-        stat_gap = 4 if stat_font is self.large_font else 3
+        resistance_height = self.large_font.get_height() + 6 + (RESISTANCE_SLOT_COUNT * resistance_row_height)
+        resistance_top = self.combat_panel_rect.bottom - resistance_height - 16
+        available_stat_height = resistance_top - y - 12
+        if available_stat_height >= len(combat_rows) * (self.large_font.get_height() + 4):
+            stat_font = self.large_font
+            stat_gap = 4
+        elif available_stat_height >= len(combat_rows) * (self.normal_font.get_height() + 3):
+            stat_font = self.normal_font
+            stat_gap = 3
+        else:
+            stat_font = self.small_font
+            stat_gap = 1
         y = self._draw_key_values(
             combat_rows,
             self.combat_panel_rect,

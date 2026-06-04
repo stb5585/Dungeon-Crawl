@@ -12,7 +12,7 @@ Opt-in paths:
 ## Implemented
 
 - Generic tab model with initial `Character` and `Equipment` tabs.
-- Character overview with larger portrait placeholder, right-aligned level details, and a half-width graphical level-progress bar tucked under Level. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
+- Character overview with larger portrait placeholder, larger right-aligned Name, Race/Class, and Level details, and a half-width graphical level-progress bar tucked under Level. XP earned and XP remaining are shown only in the bar label to avoid duplicate summary rows.
 - Larger core attributes and focused combat stats, including HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical, Block, Speed, and Weight. Core attribute labels have extra spacing before values, and combat values are right-aligned for easier scanning.
 - Dividers separate identity from Core Attributes and Combat Stats from Weaknesses/Resistances.
 - The Character tab uses a wider character panel with a widened combat panel so the portrait remains prominent while combat stats and resistance groups have enough room.
@@ -22,7 +22,7 @@ Opt-in paths:
 - The Character tab intentionally omits the equipment panel to avoid duplicating the Equipment tab.
 - Equipment-derived persistent buffs such as Vision are shown inside the Character/Equipment views instead of a separate effects screen.
 - The action menu uses `Change Equipment` for the equipment-management popup, keeps `Exit Menu` last, and omits `Quit Game`.
-- Resistance presentation grouped into side-by-side weaknesses and resistances with exact values as secondary text. The resistance area adapts for the full set of 10 possible resistance keys without truncating entries.
+- Resistance presentation grouped into side-by-side weaknesses and resistances with exact values as secondary text. The resistance area reserves a static full-capacity block for the 10 possible resistance keys without truncating entries.
 - Town and dungeon routing through the temporary feature flag while preserving the legacy default.
 
 ## Assumptions

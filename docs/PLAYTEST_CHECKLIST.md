@@ -93,8 +93,9 @@
   - Expected: `Exit Menu` is the final action option.
   - Expected: `Quit Game` is not listed.
 - [ ] Inspect the modern Character tab with several classes and long character names.
-  - Expected: Name, class, and level render clearly.
-  - Expected: Name, class, and level are right-aligned beside the portrait.
+  - Expected: Name, Race/Class, and level render clearly in the larger identity font.
+  - Expected: Race/Class includes both the character race and class.
+  - Expected: Name, Race/Class, and level are right-aligned beside the portrait.
   - Expected: The level-progress bar appears under the Level value on the right side.
   - Expected: The level-progress bar is about half the width of the character-info column.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
@@ -119,7 +120,7 @@
   - Expected: Combat stat values are right-aligned in the stat block.
   - Expected: A divider separates Combat Stats from Weaknesses and Resistances.
   - Expected: Weaknesses and Resistances headings and values use larger, readable text.
-  - Expected: Weaknesses and Resistances render side-by-side and avoid overflow with several entries.
+  - Expected: Weaknesses and Resistances render side-by-side in a static reserved block and avoid overflow with several entries.
   - Expected: All 10 possible resistance keys can appear in one group without being truncated.
 - [ ] Inspect the modern Equipment tab.
   - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.

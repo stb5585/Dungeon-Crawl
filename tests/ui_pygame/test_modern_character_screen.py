@@ -163,6 +163,9 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert screen.xp_label(player) == "250 XP / MAX level"
     player.level.exp_to_gain = 50
 
+    summary = dict(screen.build_character_summary(player))
+    assert summary["Race/Class"] == "Human Warrior"
+
     combat = dict(screen.build_combat_stats(player))
     assert combat["HP"] == "45/60"
     assert combat["Magic Defense"] == "7"
@@ -200,14 +203,17 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: flip_calls.append(True))
 
     screen.draw_all(player)
+    rendered_text = set(presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls)
     assert "Character" in presenter.large_font.render_calls
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Core Attributes" in presenter.large_font.render_calls
     assert "Strength" in presenter.large_font.render_calls
-    assert "HP" in presenter.large_font.render_calls
+    assert "RACE/CLASS" in presenter.normal_font.render_calls
+    assert "Human Warrior" in presenter.large_font.render_calls
+    assert "HP" in rendered_text
     assert "Weaknesses" in presenter.large_font.render_calls
     assert "Resistances" in presenter.large_font.render_calls
-    assert "Fire (-15%)" in presenter.normal_font.render_calls
+    assert "Fire (-15%)" in rendered_text
     assert "Equipment" not in presenter.large_font.render_calls
     assert "XP EARNED" not in presenter.small_font.render_calls
     assert "XP TO NEXT" not in presenter.small_font.render_calls
