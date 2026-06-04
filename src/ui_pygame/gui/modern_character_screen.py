@@ -146,14 +146,10 @@ class ModernCharacterScreen(CharacterScreen):
         race = self._attr_name(getattr(player_char, "race", None), "")
         cls = self._attr_name(getattr(player_char, "cls", None), "")
         level = getattr(getattr(player_char, "level", None), "level", 1)
-        exp = getattr(getattr(player_char, "level", None), "exp", 0)
-        to_next = getattr(getattr(player_char, "level", None), "exp_to_gain", 0)
         return [
             ("Name", str(getattr(player_char, "name", "Adventurer"))),
             ("Class", " ".join(part for part in (race, cls) if part) or "Unknown"),
             ("Level", str(level)),
-            ("XP Earned", str(exp)),
-            ("XP To Next", str(to_next)),
         ]
 
     def build_core_attributes(self, player_char) -> list[tuple[str, str]]:
@@ -391,24 +387,48 @@ class ModernCharacterScreen(CharacterScreen):
             y += self.small_font.get_height() + 4
         return y
 
+    def _draw_equipment_slot_box(self, slot: EquipmentSlotSummary, rect: pygame.Rect) -> None:
+        bg_color = self.colors.HIGHLIGHT_BG if slot.item_name != "(empty)" and slot.implemented else self.colors.DARK_GRAY
+        border_color = self.colors.GOLD if slot.implemented and slot.item_name != "(empty)" else self.colors.BORDER_COLOR
+        text_color = self.colors.WHITE if slot.implemented else self.colors.GRAY
+        pygame.draw.rect(self.screen, bg_color, rect)
+        pygame.draw.rect(self.screen, border_color, rect, 2)
+        self._draw_text(slot.slot, self.small_font, self.colors.GRAY, rect.left + 8, rect.top + 6, rect.width - 16)
+        self._draw_text(slot.item_name, self.small_font, text_color, rect.left + 8, rect.top + 26, rect.width - 16)
+
+    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect) -> None:
+        slot_by_name = {slot.slot: slot for slot in slots}
+        box_width = min(132, max(92, (rect.width - 36) // 3))
+        box_height = 58
+        center_x = rect.centerx
+        top_y = rect.top + self.normal_font.get_height() + 16
+        middle_y = top_y + box_height + 18
+        bottom_y = middle_y + box_height + 18
+
+        positions = {
+            "Helmet": pygame.Rect(center_x - box_width // 2, top_y, box_width, box_height),
+            "Weapon": pygame.Rect(rect.left, middle_y, box_width, box_height),
+            "Armor": pygame.Rect(center_x - box_width // 2, middle_y, box_width, box_height),
+            "OffHand": pygame.Rect(rect.right - box_width, middle_y, box_width, box_height),
+            "Ring": pygame.Rect(center_x - box_width - 8, bottom_y, box_width, box_height),
+            "Pendant": pygame.Rect(center_x + 8, bottom_y, box_width, box_height),
+        }
+        for slot_name in EQUIPMENT_SLOT_ORDER:
+            slot = slot_by_name.get(slot_name)
+            if slot is not None:
+                self._draw_equipment_slot_box(slot, positions[slot_name])
+
     def draw_equipment_tab(self, player_char):
         y = self._draw_panel(self.details_rect, "Equipment")
         left = pygame.Rect(self.details_rect.left + 16, y, self.details_rect.width // 2 - 24, self.details_rect.bottom - y - 16)
         right = pygame.Rect(left.right + 16, y, self.details_rect.right - left.right - 32, left.height)
-        self._draw_text("Equipped Items", self.normal_font, self.colors.GOLD, left.left, left.top, left.width)
-        item_y = left.top + self.normal_font.get_height() + 10
-        for slot in self.build_equipment_slots(player_char):
-            color = self.colors.GRAY if not slot.implemented else self.colors.WHITE
-            self._draw_text(slot.slot, self.small_font, self.colors.GRAY, left.left, item_y, left.width)
-            self._draw_text(slot.item_name, self.normal_font, color, left.left + 110, item_y - 2, left.width - 110)
-            if slot.bonus:
-                item_y += self.normal_font.get_height() + 2
-                self._draw_text(slot.bonus, self.small_font, self.colors.GRAY, left.left + 110, item_y, left.width - 110)
-            item_y += self.small_font.get_height() + 12
+        slots = self.build_equipment_slots(player_char)
+        self._draw_text("Equipment Layout", self.normal_font, self.colors.GOLD, left.left, left.top, left.width)
+        self._draw_equipment_paper_doll(slots, left)
 
         self._draw_text("Item Details", self.normal_font, self.colors.GOLD, right.left, right.top, right.width)
         detail_y = right.top + self.normal_font.get_height() + 10
-        for slot in self.build_equipment_slots(player_char):
+        for slot in slots:
             if detail_y > right.bottom - 70:
                 break
             color = self.colors.GRAY if not slot.implemented or slot.item_name == "(empty)" else self.colors.WHITE

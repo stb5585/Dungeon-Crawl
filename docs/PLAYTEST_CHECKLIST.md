@@ -93,7 +93,8 @@
   - Expected: `Exit Menu` is the final action option.
   - Expected: `Quit Game` is not listed.
 - [ ] Inspect the modern Character tab with several classes and long character names.
-  - Expected: Name, class, level, experience, and experience-to-next-level render clearly.
+  - Expected: Name, class, and level render clearly.
+  - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
   - Expected: The portrait placeholder frame is visible and does not overlap character details.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
@@ -106,7 +107,7 @@
   - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a compact stat block.
   - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
 - [ ] Inspect the modern Equipment tab.
-  - Expected: Weapon, Armor, Helmet, Offhand, Ring, and Pendant appear in that order.
+  - Expected: Equipment is arranged as a paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
   - Expected: Equipped item names, richer descriptions, slot information, and grouped bonuses render without overflowing.
   - Expected: The details section is descriptive enough to explain what each equipped item is doing.

@@ -193,15 +193,18 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Character" in presenter.large_font.render_calls
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Equipment" not in presenter.large_font.render_calls
+    assert "XP EARNED" not in presenter.small_font.render_calls
+    assert "XP TO NEXT" not in presenter.small_font.render_calls
     assert "Level: 250 earned / 50 to next" in presenter.small_font.render_calls
     assert flip_calls
 
     screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
     assert "Equipment" in presenter.large_font.render_calls
-    assert "Equipped Items" in presenter.normal_font.render_calls
+    assert "Equipment Layout" in presenter.normal_font.render_calls
     assert "Item Details" in presenter.normal_font.render_calls
     assert "Equipment Buffs" in presenter.normal_font.render_calls
+    assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.small_font.render_calls))
     assert "Weapon: Sword" in presenter.normal_font.render_calls
     assert "Reliable steel." in presenter.small_font.render_calls
     assert "Bonuses: Damage: 12, Weight: 4" in presenter.small_font.render_calls
