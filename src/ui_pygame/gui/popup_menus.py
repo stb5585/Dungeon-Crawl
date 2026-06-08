@@ -2,16 +2,32 @@
 Docstring for gui.popup_menus
 """
 
+from pathlib import Path
+
 import pygame
 
 from src.core import items
 from src.core import map_tiles
+from src.ui_pygame.assets.icon_manager import IconManager
+from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
     update_input_armed_from_event,
 )
+
+
+RELIC_SPRITE_DIR = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "relics"
+RELIC_SPRITES = {
+    "Triangulus": "triangulus.png",
+    "Quadrata": "quadrata.png",
+    "Hexagonum": "hexagonum.png",
+    "Luna": "luna.png",
+    "Polaris": "polaris.png",
+    "Infinitas": "infinitas.png",
+    "Golden Chalice": "golden_chalice.png",
+}
 
 
 class BasePopupMenu:
@@ -38,6 +54,9 @@ class BasePopupMenu:
         self.large_font = presenter.large_font
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
+        self.icon_manager = IconManager()
+        self.item_render_manager = get_item_render_manager()
+        self._relic_sprite_cache: dict[str, pygame.Surface] = {}
 
         # Layout
         self.popup_rect = pygame.Rect(self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4)
@@ -71,7 +90,7 @@ class BasePopupMenu:
             self.selected_index = 0
             self.scroll_offset = 0
             return
-        max_visible = max(1, self.list_rect.height // self.line_height)
+        max_visible = self.visible_row_count()
         max_scroll = max(0, len(self.items) - max_visible)
         self.selected_index = max(0, min(self.selected_index, len(self.items) - 1))
         if self.selected_index < self.scroll_offset:
@@ -102,7 +121,7 @@ class BasePopupMenu:
         if not self.items:
             self._ensure_visible()
             return
-        max_visible = max(1, self.list_rect.height // self.line_height)
+        max_visible = self.visible_row_count()
         step = max_visible * (1 if delta_pages > 0 else -1)
         self.selected_index = max(0, min(len(self.items) - 1, self.selected_index + step))
         if not self._is_selectable_index(self.selected_index):
@@ -132,6 +151,12 @@ class BasePopupMenu:
             lines.append(" ".join(current_line))
         return lines
 
+    def list_vertical_padding(self) -> int:
+        return 16
+
+    def visible_row_count(self) -> int:
+        return max(1, (self.list_rect.height - (self.list_vertical_padding() * 2)) // self.line_height)
+
     def _handle_held_scroll(self):
         try:
             pressed = pygame.key.get_pressed()
@@ -153,13 +178,16 @@ class BasePopupMenu:
         value_text = str(val)
         if label == "Value":
             value_text = f"{value_text}G"
-        label_text = f"{label}:"
+        label_text = f"{self.attribute_label(label)}:"
         label_width = min(100, max_width // 3)
         text_width = max_width - label_width - 8
+        if label == "Description":
+            value_text = " ".join(value_text.split())
         lines = []
         for raw_line in value_text.split("\n"):
-            lines.extend(self._wrap_text(raw_line, text_width if raw_line == value_text and "\n" not in value_text else max_width - 16))
-        if len(lines) > 1 or "\n" in value_text:
+            wrap_width = max_width - 16 if label == "Description" or "\n" in value_text else text_width
+            lines.extend(self._wrap_text(raw_line, wrap_width))
+        if label == "Description" or len(lines) > 1 or "\n" in value_text:
             self.screen.blit(self.normal_font.render(label_text, True, self.WHITE), (x, y))
             y += self.line_height
             for wrapped_line in lines:
@@ -179,6 +207,13 @@ class BasePopupMenu:
         self.screen.blit(text, (x + label_width, y))
         return y + self.line_height
 
+    @staticmethod
+    def attribute_label(label: str) -> str:
+        return {
+            "Subtyp": "Sub-type",
+            "Subtyp:": "Sub-type",
+        }.get(label, label)
+
     def build_items(self, player_char):
         """Override in subclass to populate self.items."""
         self.items = []
@@ -186,6 +221,132 @@ class BasePopupMenu:
     def item_display_text(self, item):
         """Override for how to show each row's text."""
         return str(item)
+
+    def _can_render_item_icon(self, value) -> bool:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return False
+        typ = str(getattr(value, "typ", "") or "")
+        return typ in IconManager.ITEM_TYPES
+
+    def icon_subject_for_item(self, item):
+        if isinstance(item, dict):
+            if item.get("is_header"):
+                return None
+            value = item.get("value")
+            return value if self._can_render_item_icon(value) else None
+        if isinstance(item, tuple) and len(item) >= 2:
+            return item[1] if self._can_render_item_icon(item[1]) else None
+        return item if self._can_render_item_icon(item) else None
+
+    def draw_large_item_render(self, item, rect: pygame.Rect) -> None:
+        if rect.width <= 0 or rect.height <= 0:
+            return
+        relic = self.relic_sprite_for_item(item)
+        if relic is not None:
+            self._draw_fitted_surface(relic, rect)
+            return
+        render = self.item_render_manager.get_scaled_render(item, rect.size)
+        self.screen.blit(render, rect)
+
+    def relic_sprite_for_item(self, item) -> pygame.Surface | None:
+        name = str(getattr(item, "name", item) or "")
+        filename = RELIC_SPRITES.get(name)
+        if not filename:
+            return None
+        cached = self._relic_sprite_cache.get(name)
+        if cached is not None:
+            return cached
+        path = RELIC_SPRITE_DIR / filename
+        if not path.exists():
+            return None
+        try:
+            surface = pygame.image.load(str(path))
+        except (pygame.error, OSError):
+            return None
+        try:
+            surface = surface.convert_alpha()
+        except pygame.error:
+            surface = surface.copy()
+        self._relic_sprite_cache[name] = surface
+        return surface
+
+    def _draw_fitted_surface(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        source_width, source_height = surface.get_size()
+        if source_width <= 0 or source_height <= 0:
+            return
+        scale = min(rect.width / source_width, rect.height / source_height)
+        target_size = (max(1, int(source_width * scale)), max(1, int(source_height * scale)))
+        fitted = pygame.transform.smoothscale(surface, target_size)
+        target_rect = fitted.get_rect(center=rect.center)
+        self.screen.blit(fitted, target_rect)
+
+    def detail_attribute_rows(
+        self,
+        item,
+        *,
+        exclude: set[str] | None = None,
+        hide_zero_value: bool = False,
+        hide_zero_weight: bool = False,
+    ) -> list[tuple[str, object]]:
+        exclude = exclude or set()
+        rows: list[tuple[str, object]] = []
+        for key in ("description", "slot", "subtyp", "value", "weight"):
+            if key in exclude:
+                continue
+            if not hasattr(item, key):
+                continue
+            value = getattr(item, key)
+            if key == "subtyp" and value in (None, "", "None"):
+                continue
+            if key == "value" and hide_zero_value and self._is_zero(value):
+                continue
+            if key == "weight" and hide_zero_weight and self._is_zero(value):
+                continue
+            rows.append((key.capitalize(), value))
+        return rows
+
+    @staticmethod
+    def _is_zero(value) -> bool:
+        try:
+            return float(value or 0) == 0
+        except (TypeError, ValueError):
+            return False
+
+    def draw_item_detail_layout(
+        self,
+        item,
+        *,
+        category: str = "",
+        y: int | None = None,
+        art_height: int | None = None,
+        exclude_attrs: set[str] | None = None,
+        hide_zero_value: bool = False,
+        hide_zero_weight: bool = False,
+    ) -> int:
+        x = self.details_rect.left + 16
+        y = self.details_rect.top + 12 if y is None else y
+        text_width = self.details_rect.width - 32
+        art_height = art_height or min(180, max(112, self.details_rect.height // 4))
+        art_width = min(160, max(96, self.details_rect.width // 3))
+        render_rect = pygame.Rect(0, 0, art_width, art_height)
+        render_rect.midtop = (self.details_rect.centerx, y)
+        self.draw_large_item_render(item, render_rect)
+        y = render_rect.bottom + 12
+
+        name = getattr(item, "name", str(item))
+        name_text = self.large_font.render(name, True, self.WHITE)
+        name_x = self.details_rect.centerx - name_text.get_width() // 2
+        self.screen.blit(name_text, (name_x, y))
+        y += name_text.get_height() + 8
+
+        for label, value in self.detail_attribute_rows(
+            item,
+            exclude=exclude_attrs,
+            hide_zero_value=hide_zero_value,
+            hide_zero_weight=hide_zero_weight,
+        ):
+            y = self._render_wrapped_attribute(label, value, x, y, text_width)
+        return y
 
     def handle_key_down(self, player_char, event) -> bool:
         """Subclass hook for custom key handling. Return True if handled."""
@@ -222,11 +383,12 @@ class BasePopupMenu:
 
     def draw_list(self):
         # Visible rows
-        max_visible = max(1, self.list_rect.height // self.line_height)
+        max_visible = self.visible_row_count()
         start = self.scroll_offset
         end = min(len(self.items), start + max_visible)
-        y = self.list_rect.top + 8
-        text_max_width = self.list_rect.width - 32
+        y = self.list_rect.top + self.list_vertical_padding()
+        icon_size = min(18, max(14, self.line_height - 6))
+        text_max_width = self.list_rect.width - 32 - icon_size - 8
 
         for idx in range(start, end):
             item = self.items[idx]
@@ -240,7 +402,15 @@ class BasePopupMenu:
                 text = self.normal_font.render(text_str, True, self.GOLD)
             else:
                 text = self.normal_font.render(text_str, True, self.WHITE)
-            self.screen.blit(text, (self.list_rect.left + 16, y))
+            text_x = self.list_rect.left + 16
+            icon_subject = self.icon_subject_for_item(item)
+            if icon_subject is not None and not is_header:
+                icon = self.icon_manager.get_icon(icon_subject)
+                icon_rect = pygame.Rect(text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size)
+                fitted_icon = pygame.transform.smoothscale(icon, icon_rect.size)
+                self.screen.blit(fitted_icon, icon_rect)
+                text_x = icon_rect.right + 8
+            self.screen.blit(text, (text_x, y))
             y += self.line_height
 
         # Scrollbar indicator (simple)
@@ -274,8 +444,17 @@ class BasePopupMenu:
         # Name
         name = getattr(value, "name", text_label if text_label else str(value))
         name_text = self.large_font.render(name, True, self.WHITE)
-        self.screen.blit(name_text, (x, y))
-        y += name_text.get_height() + 8
+        icon_subject = self.icon_subject_for_item(item)
+        if icon_subject is not None:
+            icon = self.icon_manager.get_icon(icon_subject)
+            icon_size = min(42, max(32, self.large_font.get_height() + 8))
+            icon_rect = pygame.Rect(x, y, icon_size, icon_size)
+            self.screen.blit(pygame.transform.smoothscale(icon, icon_rect.size), icon_rect)
+            self.screen.blit(name_text, (icon_rect.right + 10, y + max(0, (icon_size - name_text.get_height()) // 2)))
+            y += max(icon_size, name_text.get_height()) + 8
+        else:
+            self.screen.blit(name_text, (x, y))
+            y += name_text.get_height() + 8
 
         # Generic attributes if present
         attrs = []
@@ -484,28 +663,7 @@ class InventoryPopupMenu(BasePopupMenu):
         
         category, obj, count = self.items[self.selected_index]
         x = self.details_rect.left + 16
-        y = self.details_rect.top + 12
-
-        # Name
-        name = getattr(obj, "name", str(obj))
-        name_text = self.large_font.render(name, True, self.WHITE)
-        self.screen.blit(name_text, (x, y))
-        y += name_text.get_height() + 8
-
-        # Category first
-        text = self.normal_font.render(f"Category: {category}", True, self.WHITE)
-        self.screen.blit(text, (x, y))
-        y += self.line_height
-
-        # Generic attributes if present
-        attrs = []
-        for key in ("description", "slot", "subtyp", "value", "weight"):
-            if hasattr(obj, key):
-                val = getattr(obj, key)
-                attrs.append((key.capitalize(), val))
-
-        for label, val in attrs:
-            y = self._render_wrapped_attribute(label, val, x, y, self.details_rect.width - 32)
+        y = self.draw_item_detail_layout(obj, category=category)
 
         # Custom details hook
         self.draw_details_extra(player_char, (category, obj, count), x, y)
@@ -533,12 +691,7 @@ class InventoryPopupMenu(BasePopupMenu):
         return lines
 
     def draw_details_extra(self, player_char, item, x, y):
-        category, obj, count = item
-        # Show simple computed lines
-        for label, val in (("Category", category),):
-            text = self.normal_font.render(f"{label}: {val}", True, self.WHITE)
-            self.screen.blit(text, (x, y))
-            y += self.line_height
+        return None
 
     def on_select(self, player_char, item):
         # Show action submenu for selected inventory item
@@ -818,19 +971,7 @@ class EquipmentPopupMenu(BasePopupMenu):
         name = getattr(obj, "name")
         if not name:
             raise NotImplementedError("Equipment item missing name attribute")
-        name_text = self.large_font.render(name, True, self.WHITE)
-        self.screen.blit(name_text, (x, y))
-        y += name_text.get_height() + 8
-
-        # Generic attributes if present
-        attrs = []
-        for key in ("description", "slot", "subtyp", "value", "weight"):
-            if hasattr(obj, key):
-                val = getattr(obj, key)
-                attrs.append((key.capitalize(), val))
-
-        for label, val in attrs:
-            y = self._render_wrapped_attribute(label, val, x, y, self.details_rect.width - 32)
+        y = self.draw_item_detail_layout(obj, category=slot, exclude_attrs={"slot", "value"})
 
         # Custom details hook
         self.draw_details_extra(player_char, (slot, obj), x, y)
@@ -858,10 +999,7 @@ class EquipmentPopupMenu(BasePopupMenu):
         return lines
 
     def draw_details_extra(self, player_char, item, x, y):
-        slot, obj = item
-        text = self.normal_font.render(f"Slot: {slot}", True, self.WHITE)
-        self.screen.blit(text, (x, y))
-        y += self.line_height
+        _slot, obj = item
         if obj is None:
             self.screen.blit(self.normal_font.render("Empty slot", True, self.GRAY), (x, y))
 
@@ -1187,6 +1325,11 @@ class QuestPopupMenu(BasePopupMenu):
         else:
             target = "Unknown"
         
+        description = self._quest_description_text(bounty_data)
+        if description:
+            y = self._render_wrapped_attribute("Description", description, x, y, self.quest_description_width())
+            y += self.line_height // 2
+
         lines = [
             f"Target: {target}",
             f"Required: {bounty_data.get('num', 1)}",
@@ -1194,8 +1337,6 @@ class QuestPopupMenu(BasePopupMenu):
             "",
             f"Status: {'Complete' if completed else 'In Progress'}",
             "",
-            f"Reward: {bounty_data.get('gold', 0)} Gold",
-            f"Experience: {bounty_data.get('exp', 0)}",
         ]
         
         if bounty_data.get('reward'):
@@ -1205,6 +1346,22 @@ class QuestPopupMenu(BasePopupMenu):
             text = self.normal_font.render(line, True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
+        y = self._draw_reward_line(f"Reward: {bounty_data.get('gold', 0)} Gold", "Gold", x, y)
+        y += self.line_height
+        y = self._draw_reward_line(f"Experience: {bounty_data.get('exp', 0)}", None, x, y)
+        y += self.line_height
+
+    def _quest_description_text(self, quest_data) -> str:
+        if not isinstance(quest_data, dict):
+            return ""
+        for key in ("Description", "Help Text", "Start Text", "End Text", "description"):
+            text = quest_data.get(key)
+            if text:
+                return " ".join(str(text).split())
+        return ""
+
+    def quest_description_width(self) -> int:
+        return max(260, min(self.details_rect.width - 140, self.details_rect.width * 2 // 3))
     
     def _draw_quest_details(self, player_char, quest_data, x, y):
         """Draw regular quest details."""
@@ -1216,6 +1373,11 @@ class QuestPopupMenu(BasePopupMenu):
         text = self.normal_font.render(f"Type: {quest_type}", True, self.WHITE)
         self.screen.blit(text, (x, y))
         y += self.line_height
+
+        description = self._quest_description_text(quest_data)
+        if description:
+            y = self._render_wrapped_attribute("Description", description, x, y, self.quest_description_width())
+            y += self.line_height // 2
         
         # Quest objective
         if quest_type == 'Defeat':
@@ -1322,38 +1484,52 @@ class QuestPopupMenu(BasePopupMenu):
         
         exp = quest_data.get('Experience', 0)
         if exp:
-            text = self.normal_font.render(f"  {exp} Experience", True, self.WHITE)
-            self.screen.blit(text, (x, y))
+            y = self._draw_reward_line(f"{exp} Experience", None, x, y)
             y += self.line_height
         
         reward = quest_data.get('Reward')
         reward_num = quest_data.get('Reward Number', 0)
         if reward:
             if isinstance(reward, list) and len(reward) > 0 and reward[0] == 'Gold':
-                text = self.normal_font.render(f"  {reward_num} Gold", True, self.WHITE)
-                self.screen.blit(text, (x, y))
+                y = self._draw_reward_line(f"{reward_num} Gold", "Gold", x, y)
                 y += self.line_height
             elif isinstance(reward, list):
                 for r in reward:
                     # Handle item classes/functions
                     name = None
+                    item_obj = None
                     
                     # Skip strings that are keywords like 'Gold'
                     if isinstance(r, str):
-                        continue
+                        item_cls = getattr(items, r, None)
+                        if callable(item_cls):
+                            try:
+                                item_obj = item_cls()
+                                name = getattr(item_obj, 'name', r)
+                            except Exception:
+                                name = r
+                        else:
+                            name = r
                     
                     # Check if it's a class (type)
-                    if isinstance(r, type):
+                    elif isinstance(r, type):
                         # It's a class, use __name__
                         name = r.__name__
+                        try:
+                            item_obj = r()
+                            name = getattr(item_obj, 'name', name)
+                        except Exception:
+                            pass
                     elif hasattr(r, 'name'):
                         # It's an instance with a name attribute
                         name = r.name
+                        item_obj = r
                     elif callable(r):
                         # It's callable but not a class, try to instantiate
                         try:
                             instance = r()
                             name = getattr(instance, 'name', r.__name__ if hasattr(r, '__name__') else None)
+                            item_obj = instance
                         except Exception:
                             name = r.__name__ if hasattr(r, '__name__') else None
 
@@ -1361,9 +1537,20 @@ class QuestPopupMenu(BasePopupMenu):
                     if name is None:
                         name = "Unknown Item"
                     
-                    text = self.normal_font.render(f"  {name}", True, self.WHITE)
-                    self.screen.blit(text, (x, y))
+                    y = self._draw_reward_line(name, item_obj, x, y)
                     y += self.line_height
+
+    def _draw_reward_line(self, text: str, icon_subject, x: int, y: int) -> int:
+        icon_size = min(18, max(14, self.line_height - 6))
+        text_x = x + 16
+        if icon_subject is not None:
+            icon = self.icon_manager.get_icon(icon_subject)
+            icon_rect = pygame.Rect(text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size)
+            self.screen.blit(pygame.transform.smoothscale(icon, icon_rect.size), icon_rect)
+            text_x = icon_rect.right + 8
+        rendered = self.normal_font.render(str(text), True, self.WHITE)
+        self.screen.blit(rendered, (text_x, y))
+        return y
     
     def _wrap_text(self, text, max_width):
         """Wrap text to fit within max_width pixels."""
@@ -1440,6 +1627,10 @@ class SimpleListPopupMenu(BasePopupMenu):
         if is_header:
             header_text = self.large_font.render(text_label or "", True, self.GOLD)
             self.screen.blit(header_text, (x, y))
+            return
+
+        if self._can_render_item_icon(value):
+            self.draw_item_detail_layout(value, hide_zero_value=True, hide_zero_weight=True)
             return
 
         # Name

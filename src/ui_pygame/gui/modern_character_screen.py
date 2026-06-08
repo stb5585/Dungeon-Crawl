@@ -8,6 +8,9 @@ from typing import Any
 
 import pygame
 
+from src.ui_pygame.assets.item_render_manager import get_item_render_manager
+from src.ui_pygame.assets.portrait_manager import PortraitManager
+
 from .character_screen import CharacterScreen
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -28,6 +31,10 @@ class EquipmentSlotSummary:
     item_name: str
     description: str
     bonus: str
+    details: tuple[str, ...] = ()
+    detail_rows: tuple[tuple[str, str], ...] = ()
+    buffs: tuple[str, ...] = ()
+    icon_item: Any = None
     implemented: bool = True
 
 
@@ -60,6 +67,10 @@ class ModernCharacterScreen(CharacterScreen):
     def __init__(self, presenter, tabs: tuple[CharacterTab, ...] = DEFAULT_CHARACTER_TABS):
         self.tabs = tabs
         self.active_tab_index = 0
+        self.portrait_manager = PortraitManager()
+        self.item_render_manager = get_item_render_manager()
+        self.selected_equipment_slot_index = 0
+        self.equipment_selector_active = False
         super().__init__(presenter)
 
     def calculate_rects(self):
@@ -76,7 +87,8 @@ class ModernCharacterScreen(CharacterScreen):
         self.content_rect = pygame.Rect(margin, content_top, self.width - (margin * 2), content_height)
         self.actions_rect = pygame.Rect(margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height)
 
-        character_width = (self.content_rect.width - gap) // 2
+        available_panel_width = self.content_rect.width - gap
+        character_width = (available_panel_width * 3) // 5
         self.character_panel_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height)
         self.combat_panel_rect = pygame.Rect(self.character_panel_rect.right + gap, self.content_rect.top, self.content_rect.right - self.character_panel_rect.right - gap, self.content_rect.height)
         self.details_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, self.content_rect.width, self.content_rect.height)
@@ -96,11 +108,15 @@ class ModernCharacterScreen(CharacterScreen):
         for index, tab in enumerate(self.tabs):
             if tab.key == key:
                 self.active_tab_index = index
+                if key != "equipment":
+                    self.equipment_selector_active = False
                 return
         raise ValueError(f"Unknown character tab: {key}")
 
     def move_tab(self, delta: int) -> None:
         self.active_tab_index = (self.active_tab_index + delta) % len(self.tabs)
+        if self.active_tab.key != "equipment":
+            self.equipment_selector_active = False
 
     @staticmethod
     def _attr_name(value: Any, default: str = "Unknown") -> str:
@@ -110,8 +126,8 @@ class ModernCharacterScreen(CharacterScreen):
     def portrait_filename(player_char) -> str:
         race = ModernCharacterScreen._attr_name(getattr(player_char, "race", None), "Human")
         sex = str(getattr(player_char, "sex", "Male") or "Male")
-        race_key = "".join(ch for ch in race.lower() if ch.isalnum())
-        sex_key = "".join(ch for ch in sex.lower() if ch.isalnum()) or "male"
+        race_key = PortraitManager.normalize_key(race, "human")
+        sex_key = PortraitManager.normalize_key(sex, "male")
         if sex_key not in {"male", "female"}:
             sex_key = "male"
         return f"{race_key}_{sex_key}.png"
@@ -120,13 +136,44 @@ class ModernCharacterScreen(CharacterScreen):
         return PORTRAIT_DIR / self.portrait_filename(player_char)
 
     def load_portrait(self, player_char):
-        path = self.portrait_path(player_char)
-        if not path.exists():
-            return None
-        try:
-            return pygame.image.load(str(path)).convert_alpha()
-        except (pygame.error, OSError):
-            return None
+        race = getattr(player_char, "race", "Human")
+        gender = getattr(player_char, "gender", getattr(player_char, "sex", "Male"))
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        first_promotion = getattr(player_char, "first_promotion", None)
+        second_promotion = getattr(player_char, "second_promotion", None)
+        effects = getattr(player_char, "active_visual_effects", ())
+        return self.portrait_manager.get_portrait(
+            race=race,
+            gender=gender,
+            class_name=class_name,
+            first_promotion=first_promotion,
+            second_promotion=second_promotion,
+            effects=effects,
+        )
+
+    def _draw_fitted_surface(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        source_width, source_height = surface.get_size()
+        if source_width <= 0 or source_height <= 0:
+            return
+        scale = min(rect.width / source_width, rect.height / source_height)
+        target_size = (max(1, int(source_width * scale)), max(1, int(source_height * scale)))
+        fitted = pygame.transform.smoothscale(surface, target_size)
+        target_rect = fitted.get_rect(center=rect.center)
+        self.screen.blit(fitted, target_rect)
+
+    def portrait_frame_rect(self, y: int, surface: pygame.Surface | None = None) -> pygame.Rect:
+        source_width, source_height = (225, 400)
+        if surface is not None:
+            surface_width, surface_height = surface.get_size()
+            if surface_width > 0 and surface_height > 0:
+                source_width, source_height = surface_width, surface_height
+
+        max_width = min(source_width, max(150, self.character_panel_rect.width // 2 - 12))
+        max_height = min(source_height, max(220, self.character_panel_rect.height - (y - self.character_panel_rect.top) - 32))
+        scale = min(max_width / source_width, max_height / source_height, 1.0)
+        portrait_width = max(1, int(source_width * scale))
+        portrait_height = max(1, int(source_height * scale))
+        return pygame.Rect(self.character_panel_rect.left + 16, y, portrait_width, portrait_height)
 
     @staticmethod
     def _call_or_attr(player_char, name: str, default: int = 0) -> int:
@@ -167,25 +214,37 @@ class ModernCharacterScreen(CharacterScreen):
     @staticmethod
     def xp_progress(player_char) -> float:
         level = getattr(player_char, "level", None)
-        exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
         raw_to_next = getattr(level, "exp_to_gain", 0)
         if isinstance(raw_to_next, str) and raw_to_next.upper() == "MAX":
             return 1.0
         to_next = ModernCharacterScreen._non_negative_int(raw_to_next)
-        total = exp + to_next
+        total = ModernCharacterScreen.xp_required_for_current_level(player_char)
         if total <= 0:
             return 0.0
-        return max(0.0, min(1.0, exp / total))
+        current = max(0, total - to_next)
+        return max(0.0, min(1.0, current / total))
 
     @staticmethod
     def xp_label(player_char) -> str:
         level = getattr(player_char, "level", None)
-        exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
         raw_to_next = getattr(level, "exp_to_gain", 0)
         if isinstance(raw_to_next, str) and raw_to_next.upper() == "MAX":
+            exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
             return f"{exp} XP / MAX level"
         to_next = ModernCharacterScreen._non_negative_int(raw_to_next)
-        return f"{exp} XP / {to_next} next"
+        total = ModernCharacterScreen.xp_required_for_current_level(player_char)
+        current = max(0, total - to_next)
+        return f"{current}/{total} XP ({to_next} next)"
+
+    @staticmethod
+    def xp_required_for_current_level(player_char) -> int:
+        try:
+            return ModernCharacterScreen._non_negative_int(player_char.level_exp())
+        except (AttributeError, TypeError, ValueError):
+            level = getattr(player_char, "level", None)
+            exp = ModernCharacterScreen._non_negative_int(getattr(level, "exp", 0))
+            to_next = ModernCharacterScreen._non_negative_int(getattr(level, "exp_to_gain", 0))
+            return exp + to_next
 
     def build_character_summary(self, player_char) -> list[tuple[str, str]]:
         race = self._attr_name(getattr(player_char, "race", None), "")
@@ -197,6 +256,38 @@ class ModernCharacterScreen(CharacterScreen):
             ("Class", cls or "Unknown"),
             ("Level", str(level)),
         ]
+
+    def location_label(self, player_char) -> str:
+        location_z = getattr(player_char, "location_z", 0)
+        try:
+            location_z = int(location_z)
+        except (TypeError, ValueError):
+            location_z = 0
+        if location_z == 0:
+            return "Town"
+        return f"Dungeon Level {location_z}"
+
+    def build_portrait_details(self, player_char) -> list[tuple[str, str]]:
+        gold = self._non_negative_int(getattr(player_char, "gold", 0))
+        return [
+            ("Gold", f"{gold}G"),
+            ("Location", self.location_label(player_char)),
+        ]
+
+    def _draw_portrait_details(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int) -> int:
+        font = self.normal_font
+        line_gap = 6
+        label_width = max(62, rect.width // 3)
+        value_width = max(1, rect.width - label_width - 12)
+        for label, value in rows:
+            self._draw_text(label, font, self.colors.GRAY, rect.left + 4, y, label_width)
+            value_text = self._fit_text(value, font, value_width)
+            value_x = rect.right - 4 - font.size(value_text)[0]
+            self._draw_text(value_text, font, self.colors.WHITE, value_x, y, value_width)
+            y += font.get_height() + line_gap
+            if y > rect.bottom:
+                break
+        return y
 
     def build_core_attributes(self, player_char) -> list[tuple[str, str]]:
         stats = getattr(player_char, "stats", None)
@@ -242,22 +333,160 @@ class ModernCharacterScreen(CharacterScreen):
     def build_equipment_slots(self, player_char) -> list[EquipmentSlotSummary]:
         equipment = getattr(player_char, "equipment", {}) or {}
         slots: list[EquipmentSlotSummary] = []
+        weapon = equipment.get("Weapon") if isinstance(equipment, dict) else None
         for slot in EQUIPMENT_SLOT_ORDER:
             if slot == "Helmet" and slot not in equipment:
-                slots.append(EquipmentSlotSummary(slot, "(future slot)", "Helmet mechanics are not active yet.", "", False))
+                slots.append(EquipmentSlotSummary(slot, "(future slot)", "Helmet mechanics are not active yet.", "", implemented=False))
                 continue
             item = equipment.get(slot)
-            if item is None:
+            if slot == "OffHand" and self.should_show_two_handed_occupancy(player_char, weapon, item):
+                item = weapon
+                description = "Off-hand occupied by two-handed weapon."
+                detail_rows = self.equipment_slot_detail_rows("Weapon", item)
+                details = tuple(f"{label}: {value}" for label, value in detail_rows)
+                slots.append(
+                    EquipmentSlotSummary(
+                        slot,
+                        self._attr_name(item),
+                        description,
+                        ", ".join(details),
+                        details,
+                        detail_rows,
+                        (),
+                        item,
+                    )
+                )
+                continue
+            if self.is_empty_equipment(item):
                 slots.append(EquipmentSlotSummary(slot, "(empty)", "No item equipped.", ""))
                 continue
             description = str(getattr(item, "description", "") or getattr(item, "desc", "") or "")
-            bonus_parts = []
-            for attr in ("damage", "armor", "mod", "weight"):
-                value = getattr(item, attr, None)
-                if value not in (None, "", 0):
-                    bonus_parts.append(f"{attr.title()}: {value}")
-            slots.append(EquipmentSlotSummary(slot, self._attr_name(item), description, ", ".join(bonus_parts)))
+            detail_rows = self.equipment_slot_detail_rows(slot, item)
+            details = tuple(f"{label}: {value}" for label, value in detail_rows)
+            buffs = self.equipment_slot_buffs(item)
+            slots.append(EquipmentSlotSummary(slot, self._attr_name(item), description, ", ".join(details), details, detail_rows, buffs, item))
         return slots
+
+    def selectable_equipment_slots(self, player_char) -> list[str]:
+        return [slot.slot for slot in self.build_equipment_slots(player_char) if slot.implemented]
+
+    def selected_equipment_slot(self, player_char) -> str:
+        slots = self.selectable_equipment_slots(player_char)
+        if not slots:
+            return "Weapon"
+        self.selected_equipment_slot_index = max(0, min(self.selected_equipment_slot_index, len(slots) - 1))
+        return slots[self.selected_equipment_slot_index]
+
+    def set_selected_equipment_slot(self, player_char, slot_name: str) -> None:
+        slots = self.selectable_equipment_slots(player_char)
+        if slot_name in slots:
+            self.selected_equipment_slot_index = slots.index(slot_name)
+
+    def move_equipment_selector(self, player_char, direction: str) -> None:
+        current = self.selected_equipment_slot(player_char)
+        nav = {
+            "Helmet": {"down": "Armor", "left": "Weapon", "right": "OffHand"},
+            "Weapon": {"up": "Helmet", "right": "Armor", "down": "Ring"},
+            "Armor": {"up": "Helmet", "left": "Weapon", "right": "OffHand", "down": "Ring"},
+            "OffHand": {"up": "Helmet", "left": "Armor", "down": "Pendant"},
+            "Ring": {"up": "Weapon", "right": "Pendant"},
+            "Pendant": {"up": "OffHand", "left": "Ring"},
+        }
+        target = nav.get(current, {}).get(direction, current)
+        self.set_selected_equipment_slot(player_char, target)
+
+    @staticmethod
+    def is_empty_equipment(item: Any) -> bool:
+        if item is None:
+            return True
+        return str(getattr(item, "subtyp", "") or "") == "None"
+
+    def should_show_two_handed_occupancy(self, player_char, weapon: Any, offhand: Any) -> bool:
+        if self.is_empty_equipment(weapon) or not self.is_empty_equipment(offhand):
+            return False
+        try:
+            handed = int(getattr(weapon, "handed", 1) or 1)
+        except (TypeError, ValueError):
+            handed = 1
+        if handed != 2:
+            return False
+        if self.can_use_two_hander_without_blocking_offhand(player_char, weapon):
+            return False
+        return True
+
+    def can_use_two_hander_without_blocking_offhand(self, player_char, weapon: Any) -> bool:
+        cls = getattr(player_char, "cls", None)
+        cls_name = self._attr_name(cls, "")
+        if cls_name in {"Lancer", "Dragoon"} and str(getattr(weapon, "subtyp", "") or "") == "Polearm":
+            return True
+        try:
+            return bool(cls.equip_check(weapon, "OffHand"))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _display_number(value: Any) -> str:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        if numeric.is_integer():
+            return str(int(numeric))
+        return f"{numeric:.2f}".rstrip("0").rstrip(".")
+
+    @staticmethod
+    def _display_percent(value: Any) -> str:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        return f"{numeric * 100:.1f}%".replace(".0%", "%")
+
+    def equipment_slot_detail_rows(self, slot: str, item) -> tuple[tuple[str, str], ...]:
+        details: list[tuple[str, str]] = []
+        typ = str(getattr(item, "typ", "") or "")
+        subtyp = str(getattr(item, "subtyp", "") or "")
+        if subtyp and subtyp != "None" and slot in {"Weapon", "Armor", "OffHand", "Helmet"}:
+            details.append(("Type", subtyp))
+
+        if slot in {"Weapon", "OffHand"} and (typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")):
+            details.append(("Base Damage", self._display_number(getattr(item, "damage", 0))))
+            details.append(("Crit", self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0)))))
+        elif slot == "Armor" or typ == "Armor" or getattr(item, "armor", None) not in (None, 0, ""):
+            details.append(("Base Armor", self._display_number(getattr(item, "armor", 0))))
+        elif slot == "OffHand" or typ == "OffHand":
+            mod = getattr(item, "mod", None)
+            if subtyp == "Shield" and mod not in (None, "", 0):
+                details.append(("Block", self._display_percent(mod)))
+            elif mod not in (None, "", 0):
+                details.append(("Spell Mod", self._display_number(mod)))
+
+        element = getattr(item, "element", None)
+        if element:
+            details.append(("Element", str(element)))
+        return tuple(details)
+
+    def equipment_slot_details(self, slot: str, item) -> tuple[str, ...]:
+        return tuple(f"{label}: {value}" for label, value in self.equipment_slot_detail_rows(slot, item))
+
+    def equipment_slot_buffs(self, item) -> tuple[str, ...]:
+        buffs: list[str] = []
+        if self._attr_name(item) == "Svalinn":
+            buffs.append("+25% Fire Resistance")
+
+        subtyp = str(getattr(item, "subtyp", "") or "")
+        mod = str(getattr(item, "mod", "") or "")
+        if mod and mod not in {"0", "No Mod", "None"} and not (subtyp == "Shield" and self._is_number(mod)):
+            buffs.append(mod)
+        return tuple(buffs)
+
+    @staticmethod
+    def _is_number(value: Any) -> bool:
+        try:
+            float(value)
+        except (TypeError, ValueError):
+            return False
+        return True
 
     def group_resistances(self, player_char) -> dict[str, list[ResistanceSummary]]:
         resistance = getattr(player_char, "resistance", {}) or {}
@@ -373,17 +602,19 @@ class ModernCharacterScreen(CharacterScreen):
 
     def draw_character_panel(self, player_char):
         y = self._draw_panel(self.character_panel_rect, "Character")
-        portrait_size = min(220, max(150, self.character_panel_rect.width // 2 - 24))
-        portrait = pygame.Rect(self.character_panel_rect.left + 16, y, portrait_size, portrait_size)
+        portrait_surface = self.load_portrait(player_char)
+        portrait = self.portrait_frame_rect(y, portrait_surface)
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, portrait)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
-        portrait_surface = self.load_portrait(player_char)
         if portrait_surface is not None:
-            fitted = pygame.transform.smoothscale(portrait_surface, portrait.size)
-            self.screen.blit(fitted, portrait)
+            self._draw_fitted_surface(portrait_surface, portrait)
             pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
         else:
             self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
+
+        detail_y = portrait.bottom + 12
+        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - 16)
+        self._draw_portrait_details(self.build_portrait_details(player_char), detail_rect, detail_y)
 
         info_x = portrait.right + 16
         info_y = y
@@ -412,32 +643,32 @@ class ModernCharacterScreen(CharacterScreen):
         self._draw_text(xp_label, self.small_font, self.colors.GRAY, xp_label_x, bar_rect.bottom + 6, info_width)
 
         attribute_rows = self.build_core_attributes(player_char)
-        attribute_height = self.large_font.get_height() + 8
-        attribute_height += len(attribute_rows) * (self.large_font.get_height() + 8)
-        y = max(
-            max(portrait.bottom, bar_rect.bottom + self.small_font.get_height() + 6) + 20,
-            self.character_panel_rect.bottom - attribute_height - 16,
-        )
-        self._draw_divider(self.character_panel_rect, y - 10)
-        self._draw_text("Core Attributes", self.large_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
+        y = bar_rect.bottom + self.small_font.get_height() + 22
+        attribute_rect = pygame.Rect(info_x - 16, y, self.character_panel_rect.right - info_x + 16, self.character_panel_rect.bottom - y - 16)
+        attribute_font = self.large_font
+        attribute_gap = 8
+        available_attribute_height = self.character_panel_rect.bottom - y - self.large_font.get_height() - 16
+        large_attribute_height = len(attribute_rows) * (self.large_font.get_height() + attribute_gap)
+        normal_attribute_height = len(attribute_rows) * (self.normal_font.get_height() + 2)
+        if large_attribute_height > available_attribute_height:
+            attribute_font = self.normal_font
+            attribute_gap = 2
+        if normal_attribute_height > available_attribute_height:
+            attribute_font = self.small_font
+            attribute_gap = 2
+        self._draw_divider(attribute_rect, y - 10)
+        self._draw_text("Core Attributes", self.large_font, self.colors.GOLD, info_x, y, info_width)
         y += self.large_font.get_height() + 8
         y = self._draw_key_values(
             attribute_rows,
-            self.character_panel_rect,
+            attribute_rect,
             y,
-            font=self.large_font,
+            font=attribute_font,
             label_padding=36,
             right_align_values=True,
+            row_gap=attribute_gap,
+            bottom_limit=self.character_panel_rect.bottom - 16,
         )
-
-        buffs = self.collect_equipment_buffs(player_char)
-        if buffs and y < self.character_panel_rect.bottom - 56:
-            y += 8
-            self._draw_text("Equipment Buffs", self.normal_font, self.colors.GOLD, self.character_panel_rect.left + 16, y, self.character_panel_rect.width - 32)
-            y += self.normal_font.get_height() + 6
-            for buff in buffs[:3]:
-                self._draw_text(buff.name, self.small_font, self.colors.WHITE, self.character_panel_rect.left + 20, y, self.character_panel_rect.width - 40)
-                y += self.small_font.get_height() + 4
 
     def draw_combat_panel(self, player_char):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
@@ -522,22 +753,60 @@ class ModernCharacterScreen(CharacterScreen):
             y += row_height
         return y
 
-    def _draw_equipment_slot_box(self, slot: EquipmentSlotSummary, rect: pygame.Rect) -> None:
-        bg_color = self.colors.HIGHLIGHT_BG if slot.item_name != "(empty)" and slot.implemented else self.colors.DARK_GRAY
+    def _draw_equipment_slot_box(self, slot: EquipmentSlotSummary, rect: pygame.Rect, *, selected: bool = False) -> None:
+        bg_color = (18, 16, 15) if slot.item_name != "(empty)" and slot.implemented else self.colors.DARK_GRAY
         border_color = self.colors.GOLD if slot.implemented and slot.item_name != "(empty)" else self.colors.BORDER_COLOR
         text_color = self.colors.WHITE if slot.implemented else self.colors.GRAY
         pygame.draw.rect(self.screen, bg_color, rect)
         pygame.draw.rect(self.screen, border_color, rect, 2)
-        self._draw_text(slot.slot, self.normal_font, self.colors.GRAY, rect.left + 10, rect.top + 8, rect.width - 20)
-        self._draw_text(slot.item_name, self.normal_font, text_color, rect.left + 10, rect.top + 36, rect.width - 20)
+        if selected:
+            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect, 3)
+            pygame.draw.rect(self.screen, self.colors.GOLD, rect.inflate(6, 6), 2)
+        x = rect.left + 10
+        y = rect.top + 8
+        width = rect.width - 20
+        self._draw_text(slot.slot, self.normal_font, self.colors.GRAY, x, y, width)
+        y += self.normal_font.get_height() + 2
+        art_width = min(76, max(58, rect.width // 4))
+        art_height = max(72, rect.height - (y - rect.top) - 12)
+        art_rect = pygame.Rect(x, y, art_width, art_height)
+        if slot.icon_item is not None:
+            self._draw_item_art_backdrop(art_rect)
+            render = self.item_render_manager.get_scaled_render(slot.icon_item, art_rect.size)
+            self.screen.blit(render, art_rect)
 
-    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect) -> None:
+        text_x = art_rect.right + 8
+        text_width = max(40, rect.right - text_x - 10)
+        item_name = self._fit_text(slot.item_name, self.normal_font, text_width)
+        self._draw_text(item_name, self.normal_font, text_color, text_x, y, text_width)
+        y += self.normal_font.get_height() + 4
+        value_x = text_x + min(max(112, (text_width * 2) // 3), max(40, text_width - 40))
+        value_width = max(32, rect.right - value_x - 10)
+        label_width = max(32, value_x - text_x - 8)
+        for label, value in slot.detail_rows[:4]:
+            self._draw_text(f"{label}:", self.small_font, self.colors.WHITE, text_x, y, label_width)
+            value_text = self._fit_text(value, self.small_font, value_width)
+            rendered_width = self.small_font.size(value_text)[0]
+            value_draw_x = value_x + max(0, value_width - rendered_width)
+            self._draw_text(value_text, self.small_font, self.colors.WHITE, value_draw_x, y, value_width)
+            y += self.small_font.get_height()
+        for buff in slot.buffs[:2]:
+            self._draw_text(f"Buff: {buff}", self.small_font, self.colors.GOLD, text_x, y, text_width)
+            y += self.small_font.get_height()
+
+    def _draw_item_art_backdrop(self, rect: pygame.Rect) -> None:
+        backdrop = pygame.Surface(rect.size, pygame.SRCALPHA)
+        backdrop.fill((0, 0, 0, 150))
+        self.screen.blit(backdrop, rect)
+        pygame.draw.rect(self.screen, (124, 99, 62), rect, 1)
+
+    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect, selected_slot: str) -> None:
         slot_by_name = {slot.slot: slot for slot in slots}
-        box_width = min(210, max(150, (rect.width - 80) // 3))
-        box_height = min(92, max(74, rect.height // 5))
+        box_width = min(260, max(180, (rect.width - 56) // 3))
+        box_height = min(150, max(140, (rect.height - 28) // 3))
         center_x = rect.centerx
-        row_gap = max(26, (rect.height - (box_height * 3) - 80) // 2)
-        top_y = rect.top + self.large_font.get_height() + 26
+        row_gap = max(12, (rect.height - (box_height * 3) - 36) // 2)
+        top_y = rect.top + 8
         middle_y = top_y + box_height + row_gap
         bottom_y = middle_y + box_height + row_gap
 
@@ -552,20 +821,28 @@ class ModernCharacterScreen(CharacterScreen):
         for slot_name in EQUIPMENT_SLOT_ORDER:
             slot = slot_by_name.get(slot_name)
             if slot is not None:
-                self._draw_equipment_slot_box(slot, positions[slot_name])
+                self._draw_equipment_slot_box(slot, positions[slot_name], selected=slot_name == selected_slot and slot.implemented)
 
     def draw_equipment_tab(self, player_char):
         y = self._draw_panel(self.details_rect, "Equipment")
+        helper = (
+            "Arrows: Select gear  Enter: Change  E/Esc: Back"
+            if self.equipment_selector_active
+            else "E: Select gear"
+        )
+        helper_width = self.small_font.size(helper)[0]
+        self._draw_text(
+            helper,
+            self.small_font,
+            self.colors.GRAY,
+            self.details_rect.right - 16 - min(helper_width, self.details_rect.width - 32),
+            self.details_rect.top + 18,
+            self.details_rect.width - 32,
+        )
         layout_rect = pygame.Rect(self.details_rect.left + 28, y, self.details_rect.width - 56, self.details_rect.bottom - y - 20)
         slots = self.build_equipment_slots(player_char)
-        self._draw_equipment_paper_doll(slots, layout_rect)
-
-        buffs = self.collect_equipment_buffs(player_char)
-        if buffs:
-            buff_text = "  |  ".join(f"{buff.name}: {buff.source}" for buff in buffs)
-            y = layout_rect.bottom - self.small_font.get_height() - 8
-            self._draw_text("Equipment Buffs", self.normal_font, self.colors.GOLD, layout_rect.left, y - self.normal_font.get_height() - 6, layout_rect.width)
-            self._draw_text(buff_text, self.small_font, self.colors.WHITE, layout_rect.left, y, layout_rect.width)
+        selected_slot = self.selected_equipment_slot(player_char) if self.equipment_selector_active else ""
+        self._draw_equipment_paper_doll(slots, layout_rect, selected_slot)
 
     def draw_menu(self):
         y = self._draw_panel(self.actions_rect, "Actions")
@@ -594,9 +871,6 @@ class ModernCharacterScreen(CharacterScreen):
         if chosen == "Inventory":
             popup = InventoryPopupMenu(self.presenter, self)
             popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen == "Change Equipment":
-            popup = EquipmentPopupMenu(self.presenter, self)
-            _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Quests":
             from .popup_menus import QuestPopupMenu
             popup = QuestPopupMenu(self.presenter, self)
@@ -624,7 +898,17 @@ class ModernCharacterScreen(CharacterScreen):
         return None
 
     def _base_menu_options(self) -> list[str]:
-        return ["Inventory", "Change Equipment", "Quests", "Key Items", "Specials", "Exit Menu"]
+        return ["Inventory", "Quests", "Key Items", "Specials", "Exit Menu"]
+
+    def open_selected_equipment_change(self, player_char) -> None:
+        slot_name = self.selected_equipment_slot(player_char)
+        popup = EquipmentPopupMenu(self.presenter, self)
+        popup.build_items(player_char)
+        for index, entry in enumerate(popup.items):
+            if isinstance(entry, tuple) and entry[0] == slot_name:
+                popup.selected_index = index
+                popup.on_select(player_char, entry)
+                return
 
     def navigate(self, player_char, flush_events=True, require_key_release=True):
         menu_options = self._base_menu_options()
@@ -658,23 +942,42 @@ class ModernCharacterScreen(CharacterScreen):
                 if event.type != pygame.KEYDOWN:
                     continue
 
-                if event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE and self.equipment_selector_active:
+                    self.equipment_selector_active = False
+                elif event.key == pygame.K_ESCAPE:
                     return "Exit Menu"
-                if event.key in (pygame.K_TAB, pygame.K_RIGHT):
-                    self.move_tab(1)
+                elif event.key == pygame.K_e and self.active_tab.key == "equipment":
+                    self.equipment_selector_active = not self.equipment_selector_active
+                elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
+                    if self.active_tab.key == "equipment" and self.equipment_selector_active and event.key == pygame.K_RIGHT:
+                        self.move_equipment_selector(player_char, "right")
+                    else:
+                        self.move_tab(1)
                 elif event.key == pygame.K_LEFT:
-                    self.move_tab(-1)
+                    if self.active_tab.key == "equipment" and self.equipment_selector_active:
+                        self.move_equipment_selector(player_char, "left")
+                    else:
+                        self.move_tab(-1)
                 elif event.key == pygame.K_1:
                     self.select_tab("character")
                 elif event.key == pygame.K_2:
                     self.select_tab("equipment")
                 elif event.key == pygame.K_UP:
-                    self.current_selection = (self.current_selection - 1) % len(self.menu_options)
+                    if self.active_tab.key == "equipment" and self.equipment_selector_active:
+                        self.move_equipment_selector(player_char, "up")
+                    else:
+                        self.current_selection = (self.current_selection - 1) % len(self.menu_options)
                 elif event.key == pygame.K_DOWN:
-                    self.current_selection = (self.current_selection + 1) % len(self.menu_options)
+                    if self.active_tab.key == "equipment" and self.equipment_selector_active:
+                        self.move_equipment_selector(player_char, "down")
+                    else:
+                        self.current_selection = (self.current_selection + 1) % len(self.menu_options)
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
-                    if result:
-                        return result
+                    if self.active_tab.key == "equipment" and self.equipment_selector_active:
+                        self.open_selected_equipment_change(player_char)
+                    else:
+                        result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
+                        if result:
+                            return result
 
             self.presenter.clock.tick(30)

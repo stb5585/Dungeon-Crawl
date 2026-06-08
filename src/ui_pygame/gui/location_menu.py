@@ -116,19 +116,29 @@ class LocationMenuScreen(TownScreenBase):
             quantity_x = content_rect.right - 80  # Right-aligned quantity column
             
             for idx, item_name, quantity, is_selected in visible_items:
+                if is_selected:
+                    row_rect = pygame.Rect(
+                        item_x - 8,
+                        text_y - 4,
+                        content_rect.right - item_x - 20,
+                        line_height,
+                    )
+                    pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, row_rect)
+                    pygame.draw.rect(self.screen, self.colors.GOLD, row_rect, 1)
                 # Draw cursor for selected item
                 if is_selected:
                     cursor = font.render(">", True, self.colors.GOLD)
                     self.screen.blit(cursor, (cursor_x, text_y))
                 
                 # Draw item name
-                name_surface = font.render(item_name, True, self.colors.WHITE)
+                color = self.colors.GOLD if is_selected else self.colors.WHITE
+                name_surface = font.render(item_name, True, color)
                 self.screen.blit(name_surface, (item_x, text_y))
                 
                 # Draw quantity (right-aligned) if not zero
                 if quantity > 0:
                     qty_text = f"x{quantity}"
-                    qty_surface = font.render(qty_text, True, self.colors.WHITE)
+                    qty_surface = font.render(qty_text, True, color)
                     qty_rect = qty_surface.get_rect(right=quantity_x, top=text_y)
                     self.screen.blit(qty_surface, qty_rect)
                 

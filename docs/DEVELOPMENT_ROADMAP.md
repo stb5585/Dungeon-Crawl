@@ -20,6 +20,8 @@ This roadmap tracks the remaining work for Dungeon Crawl after the recent stabil
 - Shared battle-engine extraction is complete enough that UI layers are thinner, though UI-specific orchestration remains.
 - Data-driven ability migration is substantially complete with `179` YAML ability definitions.
 - Pygame dungeon, town, combat, popup, and menu flows are functional, with remaining polish work concentrated in UX consistency and visual presentation.
+- Visual character creation now includes the selected portrait and sex/race/class identity on the naming screen.
+- Large item-render artwork is integrated for selected-item presentation contexts while compact lists continue to use small icons.
 - Combat simulator, battle logger, save diagnostics, renderer diagnostics, audio diagnostics, and gameplay-stat summaries are implemented.
 - Sound/music runtime integration is active, but final content assets are still incomplete.
 
@@ -71,7 +73,9 @@ Status: `Done`
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, weapon efficiency display, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
-- The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout, dual-wield attack display, and styled inventory equip-failure notices.
+- The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
+- Character creation uses a visual naming screen with portrait preview plus selected sex, race, and class details.
+- Selected-item contexts now use the large item artwork atlas in inventory, equipment, shop, loot/reward, and modern Character Menu equipment views.
 
 ### Audio Runtime And Staged Content
 
@@ -111,9 +115,10 @@ Next active priority: `P1 - Pygame UX Polish`.
 Status: `Active`
 
 1. Complete modern Character Menu acceptance and iteration.
-   - Direction chosen: full redesign implemented in parallel, with the legacy menu still available and still default.
-   - Implemented: sex-first character creation, race/sex portrait assets, generic Character/Equipment tabs, 50/50 Character and Combat Stats panels, wider right-column level-progress bar, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, bottom-anchored Core Attributes, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with Helmet UI placeholder, popup quick-scroll and wrapped item descriptions, equipment-buff reporting, and town/dungeon opt-in routing.
-   - Remaining: manual visual review at several window sizes, equipment-comparison iteration, richer item-detail formatting, and explicit approval before replacing the legacy default.
+   - Status: `Done` for the current UX pass.
+   - Implemented: sex-first character creation, race/sex portrait assets, base portrait atlas loading with individual PNG fallback support, reusable portrait composition/caching for future overlays, native-ratio portrait frame sizing, generic Character/Equipment tabs, wider 60/40 Character and Combat Stats panels, wider right-column level-progress bar using current-level XP progress, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, Core Attributes positioned below the experience bar, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with Helmet UI placeholder, larger equipment blocks with optional icon boxes and right-aligned subtype/base weapon/armor/block/weight details, in-slot equipment-buff reporting, popup quick-scroll and wrapped item descriptions, and town/dungeon opt-in routing.
+   - Portrait implementation note: runtime prefers `base_portrait_atlas.png`/`.json`; the loader supports both the current `assets/portraits/` drop location and the suggested future `assets/portraits/base/` plus `fallback_individuals/` layout.
+   - Item artwork implementation note: selected-item views use large archetype artwork from `assets/item_renders/`; dense rows and compact slot summaries still use the small icon system.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
    - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.
 3. Continue popup/background consistency work only where playtesting shows visible issues.
@@ -122,6 +127,10 @@ Status: `Active`
 4. Revisit combat visual polish.
    - Current status/telegraph readability is strong enough for baseline play.
    - Lightweight hit/spell effects or particles are still planned, but should be added only where they improve clarity.
+5. Modify the character naming screen.
+   - Status: `Done`.
+   - Added a visual naming screen with selected portrait, sex, race, and class panels.
+   - Replaced the basic text-entry flow in pygame character creation with the guarded visual naming screen.
 
 ### P2 - Renderer And Exploration Presentation
 
@@ -166,6 +175,11 @@ Status: `Planned`
    - Add post-fight NPC dialogue changes.
    - Expand Realm of Cambion follow-up content.
    - Add missing special tiles such as Portal, Rotator, Teleporter, and Fake Path where still needed.
+   - Implement concept of Psychopomp, a creature or spirit that escorts the newly deceased to the afterlife and often resembles self
+      - if player dies outside of starter area, instead of being resurrected in town, require passage of trial to return
+      - possibly defeat scaled-up version of self; difficulty based on where character dies
+   - Greater immersive gameplay details
+      - Scientist(s) manning the Warp Point
 2. Racial passive follow-up.
    - Decide whether the original "7 sins / 7 virtues" ideas should become deeper passives or remain design flavor.
    - Avoid weakening the already-implemented always-on race identity pass.
@@ -174,11 +188,15 @@ Status: `Planned`
 4. Equipment and progression expansion.
    - Most originally listed item-system improvements are now done.
    - Future equipment work should focus on clearly scoped new mechanics, class kits, or content rewards.
+   - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.
 5. Deeper balance tuning.
    - Revisit stat-dump tradeoffs.
    - Re-run race-baseline comparisons once class kits are stable.
    - Revisit progression scaling outliers.
    - Use simulator-backed reports for PvE tuning.
+6. Item improvement and expansion.
+   - Item identification tied to intelligence; low intelligence characters will find more unidentified items, requiring either a scroll or shop to identify.
+   - Item usage for buffs or special attacks; using it too much can cause it to break/shatter.
 
 ### P5 - Audio Content Completion
 

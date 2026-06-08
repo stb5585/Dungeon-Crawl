@@ -3,6 +3,7 @@ Dungeon Navigation Manager
 Handles dungeon exploration logic, movement, and interactions.
 """
 
+import logging
 import os
 import random
 import sys
@@ -22,6 +23,9 @@ from .input_guards import (
     update_input_armed_from_event,
 )
 from .loot_popup import LootPopup
+
+
+logger = logging.getLogger(__name__)
 
 
 class DungeonManager:
@@ -440,6 +444,13 @@ class DungeonManager:
                 break
 
             clock.tick(60)
+
+    def _show_town_entry_loading_screen(self, message: str = "Returning to town...") -> None:
+        """Display the shared transition screen before control returns to town."""
+        try:
+            self._show_dungeon_loading_screen(message)
+        except Exception as exc:
+            logger.warning("Could not show town loading screen: %s", exc)
 
     def _mark_view_dirty(self):
         """Mark the 3D view and UI overlays to redraw next frame."""
@@ -1046,6 +1057,7 @@ class DungeonManager:
 
         if choice == 0:  # Yes
             self.add_message("Warping to town...")
+            self._show_town_entry_loading_screen()
 
             # Move player to town using proper method
             self.player_char.to_town()
@@ -1376,6 +1388,7 @@ class DungeonManager:
                 self.running = False
             elif not self.player_char.is_alive():
                 self.add_message("You were defeated... The world fades to black.")
+                self._show_town_entry_loading_screen()
                 try:
                     self.player_char.to_town()
                 except Exception:
@@ -1665,6 +1678,7 @@ class DungeonManager:
         # Check if tile effect teleported player to town (e.g., "Bring Him Home" quest)
         if self.player_char.in_town():
             self.add_message("You've been teleported back to town!")
+            self._show_town_entry_loading_screen()
             try:
                 from .confirmation_popup import ConfirmationPopup
                 popup = ConfirmationPopup(
@@ -1735,6 +1749,7 @@ class DungeonManager:
                     self._mark_view_dirty()
                 else:
                     self.add_message("You were defeated... You awaken safely back in town.")
+                    self._show_town_entry_loading_screen()
                     self.player_char.to_town()
                 self.player_char.state = 'normal'
                 # End dungeon exploration loop (return control to town menu)

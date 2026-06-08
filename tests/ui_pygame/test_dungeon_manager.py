@@ -605,10 +605,13 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
 
     player.warp_point = True
     warp_tile = SimpleNamespace(warped=True)
+    loading_calls = []
+    manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
     manager.running = True
     manager._handle_warp_point(warp_tile)
     assert player.location_z == 0
     assert manager.running is False
+    assert loading_calls == ["Returning to town..."]
 
     class FakeCodeEntryPopup:
         def __init__(self, *_args, **_kwargs):
@@ -716,6 +719,7 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
 def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     manager, presenter, player, game = _make_manager(monkeypatch)
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
+    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: manager.messages.append("town-loading")
     manager.renderer = SimpleNamespace(
         trigger_damage_flash=lambda: manager.messages.append("flash"),
         render_dungeon_view=lambda player_char, world_dict: manager.messages.append("render-view"),
@@ -788,7 +792,6 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     assert manager._popup_menu("Menu", ["A", "B"]) == 1
 
     events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
@@ -877,8 +880,11 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     player.is_alive = lambda: False
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
     player.to_town = lambda: manager.messages.append("to-town")
+    loading_calls = []
+    manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
     manager._interact_final_room(final_tile)
     assert "to-town" in manager.messages
+    assert loading_calls == ["Returning to town..."]
 
     presenter.render_menu = lambda prompt, options: 1
     old_y = player.location_y
@@ -1028,6 +1034,8 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     player.in_town = lambda: player.location_z <= 0
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = current_tile
     manager.running = True
+    loading_calls = []
+    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: loading_calls.append("town-loading")
 
     class FakeConfirmTown:
         def __init__(self, *_args, **_kwargs):
@@ -1043,6 +1051,7 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     manager._check_tile_effects()
     assert manager.running is False
     assert any("teleported back to town" in msg.lower() for msg in manager.messages)
+    assert loading_calls == ["town-loading"]
 
     player.location_z = 1
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = StairsUpTile()
@@ -1063,9 +1072,10 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     manager.character_screen = SimpleNamespace(navigate=lambda _player: "Quit Game")
     manager.game = SimpleNamespace(debug_mode=True, running=True, save_game=lambda: manager.messages.append("saved"))
     manager.running = True
-    manager._popup_menu = lambda title, options, **_kwargs: 1
+    manager._popup_menu = lambda title, options, **_kwargs: 3
     manager._show_menu()
-    assert manager.game.running is False and manager.running is False
+    assert manager.running is False
+    assert manager.player_char.quit is True
 
     manager.running = True
     manager.player_char.quit = False

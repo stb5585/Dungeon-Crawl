@@ -150,31 +150,25 @@ def test_show_loot_normalizes_items_and_uses_default_background(monkeypatch):
     assert empty_calls[0][0] == "Chest"
 
 
-def test_show_loot_can_wait_for_stale_input_release(monkeypatch):
+def test_show_loot_renders_until_acknowledged(monkeypatch):
     bundle = _make_popup(monkeypatch)
     popup = bundle.popup
     popup.max_animation_time = 0
-    clears = []
     render_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clears.append(True))
-    key_states = iter([[1], [1], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, []))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     monkeypatch.setattr(popup, "_render_loot_popup", lambda items, chest_type: render_calls.append(chest_type))
     event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN)],
-        [SimpleNamespace(type=pygame.KEYUP)],
         [SimpleNamespace(type=pygame.KEYDOWN)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.loot_popup.pygame.event.get", lambda: next(event_batches, []))
 
     popup.show_loot(
         [SimpleNamespace(name="Potion")],
-        flush_events=True,
-        require_key_release=True,
+        flush_events=False,
+        require_key_release=False,
     )
 
-    assert clears == [True]
-    assert render_calls == ["Chest", "Chest", "Chest"]
+    assert render_calls == ["Chest"]
 
 
 def test_show_empty_chest_and_background_helper(monkeypatch):
@@ -224,6 +218,11 @@ def test_empty_chest_can_wait_for_stale_input_release(monkeypatch):
 def test_render_loot_popup_item_empty_and_unlock_prompt_branches(monkeypatch):
     bundle = _make_popup(monkeypatch)
     popup = bundle.popup
+    render_calls = []
+    popup.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size))
+        or pygame.surface.Surface(size, pygame.SRCALPHA)
+    )
 
     item = SimpleNamespace(
         name="Mythic Sword",
@@ -246,6 +245,7 @@ def test_render_loot_popup_item_empty_and_unlock_prompt_branches(monkeypatch):
 
     y = popup._render_item(item, 10, 20, 300)
     assert y > 20
+    assert ("Mythic Sword", (82, 118)) in render_calls
     assert "Mythic Sword" in bundle.item_font.render_calls
     assert "Line one" in bundle.desc_font.render_calls
     assert "Line four" not in bundle.desc_font.render_calls

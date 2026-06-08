@@ -380,7 +380,7 @@ PowerUp = _skill_subtype("PowerUp", "Power Up",
 # Skills #
 # Offensive
 class ShieldSlam:
-    """Data-driven (shield_slam.yaml) – str+shield damage + stun."""
+    """Data-driven (shield_slam.yaml) - str+shield damage + stun."""
     def __new__(cls):
         return _load_yaml_ability("shield_slam.yaml", cls_name="ShieldSlam")
 
@@ -422,19 +422,19 @@ class TruePiercingStrike:
 
 
 class Jump:
-    """Data-driven (jump.yaml) – leap attack with full modification system."""
+    """Data-driven (jump.yaml) - leap attack with full modification system."""
     def __new__(cls):
         return _load_yaml_ability("jump.yaml", cls_name="Jump")
 
 
 class Doublecast:
-    """Data-driven (doublecast.yaml) – cast 2 spells in a single turn."""
+    """Data-driven (doublecast.yaml) - cast 2 spells in a single turn."""
     def __new__(cls):
         return _load_yaml_ability("doublecast.yaml", cls_name="Doublecast")
 
 
 class Triplecast:
-    """Data-driven (triplecast.yaml) – cast 3 spells in a single turn."""
+    """Data-driven (triplecast.yaml) - cast 3 spells in a single turn."""
     def __new__(cls):
         return _load_yaml_ability("triplecast.yaml", cls_name="Triplecast")
 
@@ -572,7 +572,7 @@ class SleepingPowder:
 
 
 class KidneyPunch:
-    """Data-driven (kidney_punch.yaml) – weapon hit + stun."""
+    """Data-driven (kidney_punch.yaml) - weapon hit + stun."""
     def __new__(cls):
         return _load_yaml_ability("kidney_punch.yaml", cls_name="KidneyPunch")
 
@@ -624,7 +624,7 @@ class MasterLockpick(Lockpick):
 
 
 class PoisonStrike:
-    """Data-driven (poison_strike.yaml) – weapon hit + poison."""
+    """Data-driven (poison_strike.yaml) - weapon hit + poison."""
     def __new__(cls):
         return _load_yaml_ability("poison_strike.yaml", cls_name="PoisonStrike")
 
@@ -924,7 +924,7 @@ class Inspect:
 
 
 class ExploitWeakness:
-    """Data-driven (exploit_weakness.yaml) – weakness detection + weapon."""
+    """Data-driven (exploit_weakness.yaml) - weakness detection + weapon."""
     def __new__(cls):
         return _load_yaml_ability("exploit_weakness.yaml", cls_name="ExploitWeakness")
 
@@ -959,7 +959,7 @@ class Cartography(Truth):
 
 # Martial Art Skills
 class LegSweep:
-    """Sweep the leg, trip the enemy – data-driven (Batch 4)."""
+    """Sweep the leg, trip the enemy - data-driven (Batch 4)."""
     def __new__(cls):
         return _load_yaml_ability("leg_sweep.yaml", cls_name="LegSweep")
 
@@ -995,7 +995,7 @@ class Evasion(MartialArts):
 
 # Luck
 class GoldToss:
-    """Data-driven (gold_toss.yaml) – gold-based unblockable damage."""
+    """Data-driven (gold_toss.yaml) - gold-based unblockable damage."""
     def __new__(cls):
         return _load_yaml_ability("gold_toss.yaml", cls_name="GoldToss")
 
@@ -1169,7 +1169,7 @@ class GreatGospel:
 
 
 class DimMak:
-    """Data-driven (dim_mak.yaml) – weapon + kill/stun + absorb."""
+    """Data-driven (dim_mak.yaml) - weapon + kill/stun + absorb."""
     def __new__(cls):
         return _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
 
@@ -1217,7 +1217,7 @@ class LunarFrenzy(PowerUp):
 
 
 class TetraDisaster:
-    """Data-driven (tetra_disaster.yaml) – cast all 4 elemental spells + Power Up."""
+    """Data-driven (tetra_disaster.yaml) - cast all 4 elemental spells + Power Up."""
     def __new__(cls):
         return _load_yaml_ability("tetra_disaster.yaml", cls_name="TetraDisaster")
 
@@ -1264,49 +1264,49 @@ class PackBond(PowerUp):
 
 # Enemy skills
 class Lick:
-    """Data-driven (lick.yaml) – weapon hit + random status."""
+    """Data-driven (lick.yaml) - weapon hit + random status."""
     def __new__(cls):
         return _load_yaml_ability("lick.yaml", cls_name="Lick")
 
 
 class AcidSpit:
-    """Data-driven (acid_spit.yaml) – magic damage + DOT."""
+    """Data-driven (acid_spit.yaml) - magic damage + DOT."""
     def __new__(cls):
         return _load_yaml_ability("acid_spit.yaml", cls_name="AcidSpit")
 
 
 class Web:
-    """Spider web that causes prone – data-driven (Batch 4)."""
+    """Spider web that causes prone - data-driven (Batch 4)."""
     def __new__(cls):
         return _load_yaml_ability("web.yaml", cls_name="Web")
 
 
 class Howl:
-    """Wolf howl that stuns – data-driven (Batch 4)."""
+    """Wolf howl that stuns - data-driven (Batch 4)."""
     def __new__(cls):
         return _load_yaml_ability("howl.yaml", cls_name="Howl")
 
 
 class Shapeshift:
-    """Data-driven (shapeshift.yaml) – enemy transforms into random creature."""
+    """Data-driven (shapeshift.yaml) - enemy transforms into random creature."""
     def __new__(cls):
         return _load_yaml_ability("shapeshift.yaml", cls_name="Shapeshift")
 
 
 class Trip:
-    """Trip the enemy prone – data-driven (Batch 4)."""
+    """Trip the enemy prone - data-driven (Batch 4)."""
     def __new__(cls):
         return _load_yaml_ability("trip.yaml", cls_name="Trip")
 
 
 class NightmareFuel:
-    """Data-driven (nightmare_fuel.yaml) – sleep-conditional damage."""
+    """Data-driven (nightmare_fuel.yaml) - sleep-conditional damage."""
     def __new__(cls):
         return _load_yaml_ability("nightmare_fuel.yaml", cls_name="NightmareFuel")
 
 
 class WidowsWail:
-    """Data-driven (widows_wail.yaml) – inverse-HP damage to both."""
+    """Data-driven (widows_wail.yaml) - inverse-HP damage to both."""
     def __new__(cls):
         return _load_yaml_ability("widows_wail.yaml", cls_name="WidowsWail")
 
@@ -1324,25 +1324,25 @@ class Stomp:
 
 
 class Slam:
-    """Knocks prone on a critical – data-driven (Batch 4)."""
+    """Knocks prone on a critical - data-driven (Batch 4)."""
     def __new__(cls):
         return _load_yaml_ability("slam.yaml", cls_name="Slam")
 
 
 class Screech:
-    """Data-driven (screech.yaml) – damage + permanent Silence."""
+    """Data-driven (screech.yaml) - damage + permanent Silence."""
     def __new__(cls):
         return _load_yaml_ability("screech.yaml", cls_name="Screech")
 
 
 class Detonate:
-    """Data-driven (detonate.yaml) – self-destruct massive damage."""
+    """Data-driven (detonate.yaml) - self-destruct massive damage."""
     def __new__(cls):
         return _load_yaml_ability("detonate.yaml", cls_name="Detonate")
 
 
 class Crush:
-    """Data-driven (crush.yaml) – grab + crush + throw."""
+    """Data-driven (crush.yaml) - grab + crush + throw."""
     def __new__(cls):
         return _load_yaml_ability("crush.yaml", cls_name="Crush")
 
@@ -1383,13 +1383,13 @@ class Surface:
 
 
 class GoblinPunch:
-    """Data-driven (goblin_punch.yaml) – multi-hit str-diff damage."""
+    """Data-driven (goblin_punch.yaml) - multi-hit str-diff damage."""
     def __new__(cls):
         return _load_yaml_ability("goblin_punch.yaml", cls_name="GoblinPunch")
 
 
 class BrainGorge:
-    """Data-driven (brain_gorge.yaml) – weapon hit + latch + intel drain."""
+    """Data-driven (brain_gorge.yaml) - weapon hit + latch + intel drain."""
     def __new__(cls):
         return _load_yaml_ability("brain_gorge.yaml", cls_name="BrainGorge")
 
@@ -1401,31 +1401,31 @@ class Counterspell:
 
 
 class ChooseFate:
-    """Data-driven (choose_fate.yaml) – Devil lets player pick his action."""
+    """Data-driven (choose_fate.yaml) - Devil lets player pick his action."""
     def __new__(cls):
         return _load_yaml_ability("choose_fate.yaml", cls_name="ChooseFate")
 
 
 class BreatheFire:
-    """Data-driven (breathe_fire.yaml) – stat-based elemental breath."""
+    """Data-driven (breathe_fire.yaml) - stat-based elemental breath."""
     def __new__(cls):
         return _load_yaml_ability("breathe_fire.yaml", cls_name="BreatheFire")
 
 
 class DragonBreathFire:
-    """Data-driven (dragon_breath_fire.yaml) – charging fire breath."""
+    """Data-driven (dragon_breath_fire.yaml) - charging fire breath."""
     def __new__(cls):
         return _load_yaml_ability("dragon_breath_fire.yaml", cls_name="DragonBreathFire")
 
 
 class DragonBreathWater:
-    """Data-driven (dragon_breath_water.yaml) – charging water breath."""
+    """Data-driven (dragon_breath_water.yaml) - charging water breath."""
     def __new__(cls):
         return _load_yaml_ability("dragon_breath_water.yaml", cls_name="DragonBreathWater")
 
 
 class DragonBreathWind:
-    """Data-driven (dragon_breath_wind.yaml) – charging wind breath."""
+    """Data-driven (dragon_breath_wind.yaml) - charging wind breath."""
     def __new__(cls):
         return _load_yaml_ability("dragon_breath_wind.yaml", cls_name="DragonBreathWind")
 
@@ -1434,67 +1434,67 @@ class DragonBreathWind:
 
 
 class TitanicSlam:
-    """Data-driven (titanic_slam.yaml) – Patagon ultimate."""
+    """Data-driven (titanic_slam.yaml) - Patagon ultimate."""
     def __new__(cls):
         return _load_yaml_ability("titanic_slam.yaml", cls_name="TitanicSlam")
 
 
 class Devour:
-    """Data-driven (devour.yaml) – Dilong ultimate."""
+    """Data-driven (devour.yaml) - Dilong ultimate."""
     def __new__(cls):
         return _load_yaml_ability("devour.yaml", cls_name="Devour")
 
 
 class AbsoluteZero:
-    """Data-driven (absolute_zero.yaml) – Agloolik ultimate."""
+    """Data-driven (absolute_zero.yaml) - Agloolik ultimate."""
     def __new__(cls):
         return _load_yaml_ability("absolute_zero.yaml", cls_name="AbsoluteZero")
 
 
 class Eruption:
-    """Data-driven (eruption.yaml) – Cacus ultimate."""
+    """Data-driven (eruption.yaml) - Cacus ultimate."""
     def __new__(cls):
         return _load_yaml_ability("eruption.yaml", cls_name="Eruption")
 
 
 class MaelstromVortex:
-    """Data-driven (maelstrom_vortex.yaml) – Fuath ultimate."""
+    """Data-driven (maelstrom_vortex.yaml) - Fuath ultimate."""
     def __new__(cls):
         return _load_yaml_ability("maelstrom_vortex.yaml", cls_name="MaelstromVortex")
 
 
 class Thunderstrike:
-    """Data-driven (thunderstrike.yaml) – Izulu ultimate."""
+    """Data-driven (thunderstrike.yaml) - Izulu ultimate."""
     def __new__(cls):
         return _load_yaml_ability("thunderstrike.yaml", cls_name="Thunderstrike")
 
 
 class WindShrapnel:
-    """Data-driven (wind_shrapnel.yaml) – Hala ultimate."""
+    """Data-driven (wind_shrapnel.yaml) - Hala ultimate."""
     def __new__(cls):
         return _load_yaml_ability("wind_shrapnel.yaml", cls_name="WindShrapnel")
 
 
 class DivineJudgment:
-    """Data-driven (divine_judgment.yaml) – Grigori ultimate."""
+    """Data-driven (divine_judgment.yaml) - Grigori ultimate."""
     def __new__(cls):
         return _load_yaml_ability("divine_judgment.yaml", cls_name="DivineJudgment")
 
 
 class Oblivion:
-    """Data-driven (oblivion.yaml) – Bardi ultimate."""
+    """Data-driven (oblivion.yaml) - Bardi ultimate."""
     def __new__(cls):
         return _load_yaml_ability("oblivion.yaml", cls_name="Oblivion")
 
 
 class GrandHeist:
-    """Data-driven (grand_heist.yaml) – Kobalos ultimate."""
+    """Data-driven (grand_heist.yaml) - Kobalos ultimate."""
     def __new__(cls):
         return _load_yaml_ability("grand_heist.yaml", cls_name="GrandHeist")
 
 
 class Cataclysm:
-    """Data-driven (cataclysm.yaml) – Zahhak ultimate."""
+    """Data-driven (cataclysm.yaml) - Zahhak ultimate."""
     def __new__(cls):
         return _load_yaml_ability("cataclysm.yaml", cls_name="Cataclysm")
 
@@ -2047,19 +2047,19 @@ class Disintegrate:
 
 # Holy spells
 class Smite:
-    """Data-driven (smite.yaml) – weapon strike + holy follow-up."""
+    """Data-driven (smite.yaml) - weapon strike + holy follow-up."""
     def __new__(cls):
         return _load_yaml_ability("smite.yaml", cls_name="Smite")
 
 
 class Smite2:
-    """Data-driven (smite_2.yaml) – upgraded Smite."""
+    """Data-driven (smite_2.yaml) - upgraded Smite."""
     def __new__(cls):
         return _load_yaml_ability("smite_2.yaml", cls_name="Smite2")
 
 
 class Smite3:
-    """Data-driven (smite_3.yaml) – upgraded Smite."""
+    """Data-driven (smite_3.yaml) - upgraded Smite."""
     def __new__(cls):
         return _load_yaml_ability("smite_3.yaml", cls_name="Smite3")
 
@@ -2083,13 +2083,13 @@ class Holy3:
 
 
 class TurnUndead:
-    """Data-driven (turn_undead.yaml) – undead-only kill or holy damage."""
+    """Data-driven (turn_undead.yaml) - undead-only kill or holy damage."""
     def __new__(cls):
         return _load_yaml_ability("turn_undead.yaml", cls_name="TurnUndead")
 
 
 class TurnUndead2:
-    """Data-driven (turn_undead_2.yaml) – upgraded Turn Undead."""
+    """Data-driven (turn_undead_2.yaml) - upgraded Turn Undead."""
     def __new__(cls):
         return _load_yaml_ability("turn_undead_2.yaml", cls_name="TurnUndead2")
 
@@ -2174,7 +2174,7 @@ class IceBlock:
 
 
 class Vulcanize:
-    """Data-driven (vulcanize.yaml) – self fire-damage + defense buff."""
+    """Data-driven (vulcanize.yaml) - self fire-damage + defense buff."""
     def __new__(cls):
         return _load_yaml_ability("vulcanize.yaml", cls_name="Vulcanize")
 
@@ -2186,13 +2186,13 @@ class WindSpeed:
 
 # Movement spells
 class Sanctuary:
-    """Data-driven (sanctuary.yaml) – return to town, full heal."""
+    """Data-driven (sanctuary.yaml) - return to town, full heal."""
     def __new__(cls):
         return _load_yaml_ability("sanctuary.yaml", cls_name="Sanctuary")
 
 
 class Teleport:
-    """Data-driven (teleport.yaml) – set/restore location."""
+    """Data-driven (teleport.yaml) - set/restore location."""
     def __new__(cls):
         return _load_yaml_ability("teleport.yaml", cls_name="Teleport")
 
@@ -2215,7 +2215,7 @@ class AstralShift:
 
 # Status spells
 class Hex:
-    """Data-driven (hex.yaml) – multi-status spell (Poison/Blind/Silence)."""
+    """Data-driven (hex.yaml) - multi-status spell (Poison/Blind/Silence)."""
     def __new__(cls):
         return _load_yaml_ability("hex.yaml", cls_name="Hex")
 

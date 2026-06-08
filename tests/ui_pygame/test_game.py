@@ -336,6 +336,14 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
             route_kwargs.append(("class", kwargs))
             return "Warrior"
 
+    class FakeNamingScreen:
+        def __init__(self, _presenter, sex, race_name, class_name):
+            route_kwargs.append(("naming_init", {"sex": sex, "race": race_name, "class": class_name}))
+
+        def navigate(self, **kwargs):
+            route_kwargs.append(("naming", kwargs))
+            return "Ada"
+
     class FakePopup:
         def __init__(self, *_args, **_kwargs):
             pass
@@ -357,6 +365,7 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     monkeypatch.setattr(pygame_game, "RaceSelectionScreen", FakeRaceScreen)
     monkeypatch.setattr(pygame_game, "SexSelectionScreen", FakeSexScreen)
     monkeypatch.setattr(pygame_game, "ClassSelectionScreen", FakeClassScreen)
+    monkeypatch.setattr(pygame_game, "CharacterNamingScreen", FakeNamingScreen)
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
 
     player = game.new_game()
@@ -367,6 +376,8 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
         ("sex", {"flush_events": True, "require_key_release": True}),
         ("race", {"flush_events": True, "require_key_release": True}),
         ("class", {"flush_events": True, "require_key_release": True}),
+        ("naming_init", {"sex": "Female", "race": "Human", "class": "Warrior"}),
+        ("naming", {"default": "Hero", "flush_events": True, "require_key_release": True}),
     ]
 
 
@@ -512,6 +523,27 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert game.player_char.world_dict[(3, 0, 5)].warped is True
     assert game.player_char.world_dict[(2, 0, 5)].near is True
     assert game.use_warp_point(background_draw_func=lambda: None) is None
+
+    render_menu_calls = []
+    game.presenter = SimpleNamespace(
+        render_menu=lambda prompt, options, **kwargs: render_menu_calls.append((prompt, tuple(options), kwargs)) or 0,
+        show_message=lambda message, title="": presenter_messages.append((title, message)),
+        cleanup=lambda: cleanup_calls.append(True),
+        set_background_provider=lambda provider: background_provider_calls.append(provider),
+    )
+    game.player_char = SimpleNamespace(
+        name="Hero",
+        world_dict={(3, 0, 5): SimpleNamespace(visited=False, warped=False)},
+        location_x=0,
+        location_y=0,
+        location_z=0,
+        facing="north",
+        quit=False,
+    )
+    assert game.use_warp_point(background_draw_func=lambda: None) == "dungeon"
+    assert render_menu_calls
+    assert render_menu_calls[0][1] == ("Yes", "No")
+    assert render_menu_calls[0][2]["split_layout"] is True
 
     monkeypatch.setattr(pygame_game.SaveManager, "save_player", staticmethod(lambda player, filename: save_results.pop(0)))
     monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: ["hero.save", "mage.save"]))

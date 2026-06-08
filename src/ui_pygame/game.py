@@ -32,6 +32,7 @@ from .gui.load_game import LoadGameScreen
 from .gui.race_selection import RaceSelectionScreen
 from .gui.class_selection import ClassSelectionScreen
 from .gui.sex_selection import SexSelectionScreen
+from .gui.character_naming import CharacterNamingScreen
 from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
 from .gui.town_menu import TownMenuScreen
 from .gui.shop_selection import ShopSelectionScreen
@@ -337,7 +338,7 @@ class PygameGame:
 
     def create_default_character(self, name="Hero"):
         """Create a default preview character for quick UI testing."""
-        return self._build_player_character(race_name="Human", class_name="Warrior", name=name)
+        return self._build_player_character(race_name="Human", class_name="Warrior", name=name, sex="Male")
         
     def main_menu(self):
         """Display main menu and handle selection."""
@@ -459,9 +460,14 @@ class PygameGame:
             # No selected, loop back to class selection
         
         # Get character name after sex, race, and class selection.
-        name = self.presenter.get_text_input("Enter your character name:")
-        if not name:
-            name = "Hero"  # Default name
+        name_screen = CharacterNamingScreen(self.presenter, sex, race_name, class_name)
+        name = name_screen.navigate(
+            default="Hero",
+            flush_events=True,
+            require_key_release=True,
+        )
+        if name is None:
+            return None
         
         # Create player character using the same logic as the original game
         player_char = self._build_player_character(race_name, class_name, name=name, sex=sex)
@@ -743,11 +749,19 @@ class PygameGame:
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
-        confirm = ConfirmationPopup(
-            self.presenter,
-            f"Hello, {self.player_char.name}.\n\nDo you want to warp down to level 5?",
-        )
-        if confirm.show(**self._popup_show_kwargs(background_draw_func)):
+        prompt = f"Hello, {self.player_char.name}.\n\nDo you want to warp down to level 5?"
+        if hasattr(self.presenter, "render_menu"):
+            confirmed = self.presenter.render_menu(
+                prompt,
+                ["Yes", "No"],
+                split_layout=True,
+                background_draw_func=background_draw_func,
+            ) == 0
+        else:
+            confirm = ConfirmationPopup(self.presenter, prompt)
+            confirmed = confirm.show(**self._popup_show_kwargs(background_draw_func))
+
+        if confirmed:
             # Mark the destination as visited
             if (3, 0, 5) in self.player_char.world_dict:
                 if not self.player_char.world_dict[(3, 0, 5)].visited:

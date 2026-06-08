@@ -1,5 +1,11 @@
 # Playtest Checklist
 
+## Found Issues
+- [x] The first key strike after turn starts is blocked, regardless of how long I wait
+- [x] Giant Warrior has little trouble leaving the beginner area even before level 10; instead of nerfing, increase negatives (i.e. lower resistances, higher chance of status effects, greater impact of low scores, etc.)
+- [x] If Enfeeble affects attack or defense by +0, it shows up as green (positive); it probably shouldn't even report the change if it is +0
+- [x] The Attack stat on the Character Menu does not match the Attack stat when equipping a weapon.
+
 ## Recently Changed
 
 ### P0 Verification
@@ -7,7 +13,7 @@
   - Expected: The focused pytest bundle passes without skipped or hanging input-loop tests.
 
 ### Balance
-- [ ] Start a Half Giant Warrior and compare early durability against magic/status-heavy enemies.
+- [x] Start a Half Giant Warrior and compare early durability against magic/status-heavy enemies.
   - Expected: Half Giant keeps strength/constitution advantages but has lower agility, lower magic defense, and sharper magical weaknesses.
 
 ### Dungeon Rendering
@@ -33,7 +39,7 @@
 - [ ] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
-- [ ] Cast Enfeeble against a target with extremely low attack/defense.
+- [x] Cast Enfeeble against a target with extremely low attack/defense.
   - Expected: Zero-value attack/defense changes are not reported and do not appear as green status icons.
   - Expected: Combat view and dungeon HUD both suppress active stat effects whose value is exactly zero.
 - [ ] Stack repeated status effects alongside several other combat states.
@@ -48,7 +54,7 @@
   - Expected: Stat-effect icon filtering diagnostics identify active zero-value effects that were suppressed before rendering.
 
 ### Main Menu
-- [ ] Choose Settings from the pygame main menu.
+- [x] Choose Settings from the pygame main menu.
   - Expected: A guarded modal message appears saying the settings menu is coming soon.
   - Expected: The key press used to choose Settings does not immediately dismiss the message.
 - [ ] Quit from a pygame session after visiting dungeon or popup-heavy screens.
@@ -79,7 +85,7 @@
   - Expected: Attempting to equip a non-equippable inventory item shows a styled popup over the inventory menu background.
 
 ### Character Menu
-- [ ] Start a new character and choose sex, race, class, and name.
+- [x] Start a new character and choose sex, race, class, and name.
   - Expected: Sex selection appears before race selection.
   - Expected: Sex selection uses the same two-panel visual structure as race and class selection, with a blank description area for now.
   - Expected: Save/load preserves the selected sex.
@@ -90,34 +96,36 @@
 - [x] Open the modern Character Menu from dungeon exploration.
   - Expected: The modern menu opens over the dungeon background and closes back to exploration.
   - Expected: The modern action menu does not include Quit Game.
-- [ ] Switch between the modern `Character` and `Equipment` tabs.
+- [x] Switch between the modern `Character` and `Equipment` tabs.
   - Expected: Tab switching works with keyboard input and keeps the action menu usable.
   - Expected: Future tabs can be added without changing the core tab renderer.
-- [ ] Inspect the modern action menu.
+- [x] Inspect the modern action menu.
   - Expected: `Change Equipment` opens the equipment-management popup.
   - Expected: `Exit Menu` is the final action option.
   - Expected: `Quit Game` is not listed.
-- [ ] Inspect the modern Character tab with several classes and long character names.
+- [x] Inspect the modern Character tab with several classes and long character names.
   - Expected: Name, Race, Class, and level render clearly in the larger identity font.
   - Expected: Race and Class are shown on separate lines.
   - Expected: Name, Race, Class, and level are right-aligned beside the portrait.
   - Expected: The level-progress bar appears under the Level value on the right side.
   - Expected: The level-progress bar is wide enough to use most of the character-info column without covering the label.
   - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
-  - Expected: The race/sex portrait renders when a matching portrait asset exists.
+  - Expected: The race/sex portrait renders from the base portrait atlas when a matching atlas entry exists.
   - Expected: The portrait placeholder remains available if an asset is missing.
-  - Expected: The Character and Combat Stats panels use a balanced 50/50 split.
-  - Expected: The Combat Stats panel remains wide enough for stat values and resistance columns.
+  - Expected: The portrait preserves its aspect ratio inside the frame.
+  - Expected: The portrait frame uses the native atlas portrait shape, 225x400 when space allows.
+  - Expected: The Character and Combat Stats panels use an approximate 60/40 split.
+  - Expected: The Combat Stats panel remains readable in the narrower right column.
   - Expected: Long names are clipped or fitted without spilling into nearby panels.
   - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
-  - Expected: Core Attributes are placed near the bottom of the Character panel.
+  - Expected: Core Attributes are placed underneath the level-progress bar in the character-info column.
   - Expected: Core Attribute labels and values have enough horizontal separation to scan cleanly.
   - Expected: Core Attribute values are right-aligned without a large empty area after the values.
   - Expected: A divider separates the character identity area from Core Attributes.
 - [ ] Inspect the modern level-progress bar before and after gaining experience.
-  - Expected: The label clearly distinguishes XP earned this level from XP remaining until the next level.
+  - Expected: The label shows current-level progress as `earned/required XP` plus XP remaining until the next level.
   - Expected: The bar is shorter than the full character panel width.
-  - Expected: The bar fill reflects current progress toward the next level.
+  - Expected: The bar fill reflects current progress toward the next level, not total lifetime experience.
   - Expected: The bar does not cover or overlap the XP text.
   - Expected: Zero or missing XP data does not crash or overfill the bar.
   - Expected: Max-level characters with `exp_to_gain` set to `MAX` show a full bar and do not crash.
@@ -132,15 +140,38 @@
   - Expected: All 10 possible resistance keys can appear in one group without being truncated.
 - [ ] Inspect the modern Equipment tab.
   - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
+  - Expected: Equipment slot blocks are large enough to show the item name plus key item stats.
+  - Expected: Each equipment slot includes an icon box using a matching `assets/icons` image when one exists.
+  - Expected: Equipment slots with no matching icon asset leave the icon box blank.
   - Expected: The redundant `Equipment Layout` heading is not shown.
   - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
   - Expected: The Item Details section is not shown.
   - Expected: Equipped item names render inside the paper-doll slots without overflowing.
+  - Expected: Weapons show subtype, base damage, crit chance, and weight.
+  - Expected: Armor shows subtype, base armor, and weight.
+  - Expected: Shields show subtype, block chance, and weight; shield block is not repeated as a buff.
+  - Expected: Item detail rows use `Label: value` formatting with values right-aligned.
+  - Expected: Zero-weight items do not show a weight row.
+  - Expected: Svalinn reports its Fire resistance as a buff in addition to its shield block chance.
+  - Expected: Rings and Pendants show weight and their buff, but do not show a separate raw `Mod` line.
   - Expected: Empty slots display a readable empty state.
 - [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
-  - Expected: Equipment-derived buffs are reported in the Character or Equipment view.
+  - Expected: Equipment-derived buffs are reported inside their equipment slot block.
+  - Expected: Equipment-derived buffs are not shown in the lower-left Character tab area or as a separate Equipment tab footer.
   - Expected: Combat-only debuffs and temporary effects are not shown in the Character Menu.
-  - Expected: Duplicate equipment-buff names are shown once.
+- [ ] Inspect base portrait atlas coverage.
+  - Expected: Human male and Human female portraits display.
+  - Expected: Elf male and Elf female portraits display.
+  - Expected: Half Elf male and Half Elf female portraits display.
+  - Expected: Half Giant male and Half Giant female portraits display.
+  - Expected: Gnome male and Gnome female portraits display.
+  - Expected: Dwarf male and Dwarf female portraits display.
+  - Expected: Half Orc male and Half Orc female portraits display.
+  - Expected: Unknown race falls back cleanly without crashing.
+  - Expected: Unknown gender falls back cleanly without crashing.
+  - Expected: Missing class, promotion, or effect overlays are skipped without crashing.
+  - Expected: Portrait frame aligns correctly in the modern Character tab.
+  - Expected: Legacy Character Menu still works without depending on the atlas manager.
 - [ ] Inspect modern resistance grouping on characters with weaknesses and resistances.
   - Expected: Negative values appear under Weaknesses.
   - Expected: Positive values appear under Resistances.
@@ -203,7 +234,7 @@
 - [ ] Try opening a locked dungeon door with at least one Old Key.
   - Expected: The door opens and consumes one Old Key.
   - Expected: The key-use prompt accepts the first fresh confirmation/cancel key after stale input clears.
-- [ ] Try opening a locked dungeon door with no Old Keys or lockpick option.
+- [x] Try opening a locked dungeon door with no Old Keys or lockpick option.
   - Expected: The door stays locked and shows the missing-key prompt.
 
 ### Save/Load
@@ -247,7 +278,7 @@
   - Expected: Malformed or legacy non-dictionary quest entries are ignored instead of crashing diagnostics.
 
 ### Statistics
-- [ ] Open the Statistics entry from the pygame town menu.
+- [x] Open the Statistics entry from the pygame town menu.
   - Expected: The popup includes steps, stairs, defeats, deaths, flees, encounters survived, and high-water combat stats.
   - Expected: Combat outcomes and total activity derive from the existing counters.
   - Expected: Exploration actions and combat survival rate derive from existing counters without requiring a new save format.
@@ -309,7 +340,7 @@
   - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
-- [ ] Finish a pygame combat encounter while debug mode is enabled.
+- [x] Finish a pygame combat encounter while debug mode is enabled.
   - Expected: A structured battle log JSON file is written under `debug_logs/battles/`.
   - Expected: Normal non-debug combat endings do not create automatic debug battle-log files.
   - Expected: Generated debug battle-log files are ignored by git and do not appear as untracked changes.
@@ -332,3 +363,41 @@
   - Expected: The unsubscribed callback is not called on later emissions.
 - [ ] Run focused action-queue tests after combat scheduling changes.
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
+
+### Item Icons
+- [ ] Open the modern Character Menu equipment tab with weapon, armor, offhand, ring, pendant, and helmet/future slot states.
+  - Expected: Implemented equipment slots display an archetype icon next to the item name.
+  - Expected: Empty or future slots do not crash and preserve the existing slot text.
+- [ ] Open Inventory with weapons, armor, accessories, potions, scrolls, quest items, and special/key items.
+  - Expected: Each visible inventory row displays an icon.
+  - Expected: Repeated tier items intentionally share the same archetype icon.
+- [ ] Inspect consumables in Inventory.
+  - Expected: Health, mana, status/antidote, generic potion, food, and scroll-style items use the consumable archetypes.
+- [ ] Inspect quest/key/special items.
+  - Expected: Quest items, keys, gems/specials, and crafting-material style items use utility archetypes.
+- [ ] Add or simulate an unknown item with no explicit mapping.
+  - Expected: The UI logs a warning, infers from item type/subtype when possible, and otherwise displays `generic_item`.
+- [ ] Navigate inventory actions after icons render.
+  - Expected: Equip, use, drop, cancel, sorting, and scrolling behavior still works.
+- [ ] Save and reload a character after icon rendering.
+  - Expected: Save data is unchanged; icons are derived from item names/types at render time.
+
+### Large Item Artwork
+- [ ] Open Inventory and highlight weapons, armor, accessories, consumables, quest items, and unknown/fallback items.
+  - Expected: The selected-item detail panel shows large artwork while compact inventory rows still use small icons.
+  - Expected: Long item names and wrapped descriptions do not overlap the artwork.
+- [ ] Open Equipment and move through weapon, armor, offhand, ring, and pendant slots.
+  - Expected: Equipped item detail views show large artwork where panel width allows it.
+  - Expected: The modern Character Menu Equipment tab uses large artwork in its slot cards rather than small icons.
+  - Expected: Empty equipment slots do not crash.
+- [ ] Open a shop buy/sell list and highlight equippable and non-equippable items.
+  - Expected: The left option panel shows the selected item artwork while buy/sell items are being browsed.
+  - Expected: The selected item description panel remains readable and text-focused.
+  - Expected: Price, owned count, and stat comparison panels continue to work.
+- [ ] Open a chest or reward popup that grants loot.
+  - Expected: Loot entries show large artwork beside the item name, description, and stats.
+  - Expected: Empty chest and unlock prompts are unchanged.
+- [ ] Simulate or create an item with no exact render mapping.
+  - Expected: The render manager falls back through icon mapping, category/slot, and then `generic_item` without blocking gameplay.
+- [ ] Save and reload after viewing item artwork.
+  - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.

@@ -4,6 +4,8 @@ Displays chest contents with visual flair.
 """
 import pygame
 
+from src.ui_pygame.assets.item_render_manager import get_item_render_manager
+
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 
 
@@ -36,6 +38,7 @@ class LootPopup:
         self.item_font = pygame.font.Font(None, 36)
         self.desc_font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 20)
+        self.item_render_manager = get_item_render_manager()
         
         # Animation
         self.animation_time = 0
@@ -209,9 +212,16 @@ class LootPopup:
             else:
                 rarity_color = self.rarity_colors['common']
         
+        art_rect = pygame.Rect(x + 30, y, 82, 118)
+        render = self.item_render_manager.get_scaled_render(item, art_rect.size)
+        self.screen.blit(render, art_rect)
+        text_left = art_rect.right + 16
+        text_width = panel_width - (text_left - x) - 30
+        text_center_x = text_left + max(0, text_width // 2)
+
         # Item name
         name_text = self.item_font.render(item.name, True, rarity_color)
-        name_rect = name_text.get_rect(centerx=x + panel_width // 2, top=y)
+        name_rect = name_text.get_rect(centerx=text_center_x, top=y)
         self.screen.blit(name_text, name_rect)
         y += 40
         
@@ -220,7 +230,7 @@ class LootPopup:
             desc_lines = item.description.split('\n')
             for line in desc_lines[:3]:  # Limit to 3 lines
                 desc_text = self.desc_font.render(line.strip(), True, self.text_color)
-                desc_rect = desc_text.get_rect(centerx=x + panel_width // 2, top=y)
+                desc_rect = desc_text.get_rect(centerx=text_center_x, top=y)
                 self.screen.blit(desc_text, desc_rect)
                 y += 25
         
@@ -240,11 +250,11 @@ class LootPopup:
             y += 5
             stats_text = " | ".join(stats)
             stats_render = self.small_font.render(stats_text, True, self.gold_color)
-            stats_rect = stats_render.get_rect(centerx=x + panel_width // 2, top=y)
+            stats_rect = stats_render.get_rect(centerx=text_center_x, top=y)
             self.screen.blit(stats_render, stats_rect)
             y += 25
         
-        return y
+        return max(y, art_rect.bottom)
     
     def _render_empty_chest(self, chest_type):
         """Render empty chest message."""

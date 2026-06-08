@@ -10,6 +10,8 @@ from textwrap import wrap
 
 import pygame
 
+from src.ui_pygame.assets.item_render_manager import get_item_render_manager
+
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .town_base import TownScreenBase
 
@@ -32,6 +34,7 @@ class ShopScreen(TownScreenBase):
         self.item_list = []  # List of tuples: (display_string, item_object, cost, owned_count)
         self.buy_or_sell = None
         self.scroll_offset = 0
+        self.item_render_manager = get_item_render_manager()
 
         # Caching for equip_diff to prevent recalculation on every blit
         self.cached_item_index = -1
@@ -115,6 +118,11 @@ class ShopScreen(TownScreenBase):
         """Draw the menu options (Buy, Sell, Quests, Leave)."""
         self.draw_semi_transparent_panel(self.options_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.options_rect, 2)
+
+        selected_item = self.selected_item_for_artwork()
+        if selected_item is not None:
+            self.draw_selected_item_art(self.options_rect, selected_item)
+            return
         
         # Calculate spacing for options
         num_options = len(self.options_list)
@@ -141,6 +149,34 @@ class ShopScreen(TownScreenBase):
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 2)
             
             self.screen.blit(text, (text_x, text_y))
+
+    def selected_item_for_artwork(self):
+        """Return the highlighted shop item when the shop is in item-list mode."""
+        if self.buy_or_sell not in {"Buy", "Sell"}:
+            return None
+        if not self.item_list or not (0 <= self.current_item < len(self.item_list)):
+            return None
+        display_str, item, _, _ = self.item_list[self.current_item]
+        if display_str in {"Go Back", "Next Page"}:
+            return None
+        return item
+
+    def draw_selected_item_art(self, rect: pygame.Rect, item) -> None:
+        panel_rect = rect.inflate(-4, -4)
+        panel = pygame.Surface(panel_rect.size, pygame.SRCALPHA)
+        panel.fill((0, 0, 0, 170))
+        self.screen.blit(panel, panel_rect)
+        padding = 14
+        render_rect = pygame.Rect(rect.left + padding, rect.top + padding, rect.width - (padding * 2), rect.height - (padding * 2))
+        self.draw_item_art_backdrop(render_rect)
+        render = self.item_render_manager.get_scaled_render(item, render_rect.size)
+        self.screen.blit(render, render_rect)
+
+    def draw_item_art_backdrop(self, rect: pygame.Rect) -> None:
+        backdrop = pygame.Surface(rect.size, pygame.SRCALPHA)
+        backdrop.fill((0, 0, 0, 135))
+        self.screen.blit(backdrop, rect)
+        pygame.draw.rect(self.screen, (124, 99, 62), rect, 1)
     
     def draw_item_desc(self):
         """Draw the description of the currently highlighted item."""
@@ -153,10 +189,14 @@ class ShopScreen(TownScreenBase):
             # Don't show description for "Go Back" or "Next Page"
             if display_str in ["Go Back", "Next Page"]:
                 return
+
+            text_left = self.desc_rect.left + 16
+            text_width = self.desc_rect.width - 32
             
             if item and hasattr(item, 'description') and item.description:
                 # Word wrap the description to fit
-                lines = wrap(item.description, 60, break_on_hyphens=False)
+                wrap_width = max(24, text_width // 8)
+                lines = wrap(item.description, wrap_width, break_on_hyphens=False)
                 
                 # Draw description lines centered vertically
                 line_height = self.normal_font.get_height() + 2
@@ -165,7 +205,7 @@ class ShopScreen(TownScreenBase):
                 
                 for i, line in enumerate(lines):
                     text = self.normal_font.render(line, True, self.colors.WHITE)
-                    text_x = self.desc_rect.centerx - text.get_width() // 2
+                    text_x = text_left + max(0, (text_width - text.get_width()) // 2)
                     text_y = start_y + i * line_height
                     self.screen.blit(text, (text_x, text_y))
     
@@ -244,7 +284,7 @@ class ShopScreen(TownScreenBase):
             color = self.colors.GOLD if i == self.current_item else self.colors.WHITE
             
             # Skip special items (like Next Page for pagination)
-            if display_str in ["Next Page"]:
+            if display_str in ["Next Page", "Go Back", "Back"]:
                 text = self.small_font.render(display_str, True, color)
                 self.screen.blit(text, (item_col_x, y))
                 continue
@@ -413,13 +453,19 @@ class ShopScreen(TownScreenBase):
             self._build_buy_list(itemdict)
         else:
             self._build_sell_list(itemdict)
-        
+
         # Reset or preserve cursor position
         if not preserve_cursor or not self.item_list:
             self.current_item = 0
             self.scroll_offset = 0
         else:
-            # Clamp to valid range in case list size changed
+            # Clamp to real item rows before appending the navigation row.
+            self.current_item = min(self.current_item, max(0, len(self.item_list) - 1))
+
+        if self.item_list and self.item_list[-1][0] not in {"Go Back", "Back"}:
+            self.item_list.append(("Go Back", None, 0, 0))
+
+        if self.item_list:
             self.current_item = min(self.current_item, max(0, len(self.item_list) - 1))
             self.scroll_offset = min(self.scroll_offset, self._max_scroll_offset())
             self._keep_current_item_visible()
@@ -549,6 +595,8 @@ class ShopScreen(TownScreenBase):
                         self._keep_current_item_visible()
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         display_str, item, cost, owned = self.item_list[self.current_item]
+                        if display_str in {"Go Back", "Back"}:
+                            return None
                         return (display_str, item, cost, owned)
             
             self.presenter.clock.tick(30)

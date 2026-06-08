@@ -92,7 +92,9 @@ def _make_player():
         race=SimpleNamespace(name="Human"),
         sex="Female",
         cls=SimpleNamespace(name="Warrior"),
-        level=SimpleNamespace(level=7, exp=250, exp_to_gain=50),
+        level=SimpleNamespace(level=7, exp=1250, exp_to_gain=50),
+        gold=321,
+        location_z=0,
         health=SimpleNamespace(current=45, max=60),
         mana=SimpleNamespace(current=12, max=20),
         stats=SimpleNamespace(strength=14, intel=11, wisdom=10, con=13, charisma=9, dex=8),
@@ -105,11 +107,11 @@ def _make_player():
             "Physical": 0.1,
         },
         equipment={
-            "Weapon": SimpleNamespace(name="Sword", damage=12, weight=4, description="Reliable steel."),
-            "Armor": SimpleNamespace(name="Mail", armor=8, weight=12),
+            "Weapon": SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4, description="Reliable steel."),
+            "Armor": SimpleNamespace(name="Mail", typ="Armor", subtyp="Medium", armor=8, weight=12),
             "OffHand": None,
-            "Ring": SimpleNamespace(name="Ruby Ring", mod="Block"),
-            "Pendant": SimpleNamespace(name="Pendant of Sight", mod="Vision"),
+            "Ring": SimpleNamespace(name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1),
+            "Pendant": SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2),
         },
         buffs=[SimpleNamespace(name="Might"), SimpleNamespace(name="Might")],
         stat_effects={"Attack": _effect(True, 3, 4), "Speed": _effect(False)},
@@ -123,6 +125,7 @@ def _make_player():
     )
     player.current_weight = lambda: 19
     player.max_weight = lambda: 140
+    player.level_exp = lambda: 300
     player.critical_chance = lambda _slot: 0.125
     player.check_mod = lambda mod: {
         "weapon": 18,
@@ -142,13 +145,14 @@ def test_modern_character_tabs_are_generic_and_switchable():
 
     assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
-    assert abs(screen.character_panel_rect.width - screen.combat_panel_rect.width) <= 1
+    assert abs((screen.character_panel_rect.width * 2) - (screen.combat_panel_rect.width * 3)) <= 3
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
 
     screen.move_tab(1)
     assert screen.active_tab.key == "character"
+    assert screen.equipment_selector_active is False
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -156,21 +160,25 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player = _make_player()
 
     assert screen.xp_progress(player) == 250 / 300
-    assert screen.xp_label(player) == "250 XP / 50 next"
+    assert screen.xp_label(player) == "250/300 XP (50 next)"
 
     player.level.exp_to_gain = "MAX"
     assert screen.xp_progress(player) == 1.0
-    assert screen.xp_label(player) == "250 XP / MAX level"
+    assert screen.xp_label(player) == "1250 XP / MAX level"
     player.level.exp_to_gain = 50
 
     summary = dict(screen.build_character_summary(player))
     assert summary["Race"] == "Human"
     assert summary["Class"] == "Warrior"
+    assert dict(screen.build_portrait_details(player)) == {"Gold": "321G", "Location": "Town"}
+    player.location_z = 3
+    assert screen.location_label(player) == "Dungeon Level 3"
+    player.location_z = 0
     assert screen.portrait_filename(player) == "human_female.png"
 
     player.race = SimpleNamespace(name="Half Elf")
     player.sex = "Male"
-    assert screen.portrait_filename(player) == "halfelf_male.png"
+    assert screen.portrait_filename(player) == "half_elf_male.png"
     player.race = SimpleNamespace(name="Human")
     player.sex = "Female"
 
@@ -191,6 +199,65 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     helmet = next(slot for slot in slots if slot.slot == "Helmet")
     assert helmet.implemented is False
     assert helmet.item_name == "(future slot)"
+    weapon = next(slot for slot in slots if slot.slot == "Weapon")
+    assert weapon.details == ("Type: Sword", "Base Damage: 12", "Crit: 15%")
+    armor = next(slot for slot in slots if slot.slot == "Armor")
+    assert armor.details == ("Type: Medium", "Base Armor: 8")
+    ring = next(slot for slot in slots if slot.slot == "Ring")
+    assert ring.details == ()
+    assert ring.buffs == ("Block",)
+    pendant = next(slot for slot in slots if slot.slot == "Pendant")
+    assert pendant.details == ()
+    assert pendant.buffs == ("Vision",)
+    assert pendant.icon_item is player.equipment["Pendant"]
+    assert weapon.icon_item is player.equipment["Weapon"]
+
+    player.equipment["Ring"] = SimpleNamespace(name="Weightless Ring", typ="Accessory", subtyp="Ring", mod="Dodge", weight=0)
+    weightless_ring = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Ring")
+    assert weightless_ring.details == ()
+    assert weightless_ring.buffs == ("Dodge",)
+    player.equipment["Ring"] = SimpleNamespace(name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1)
+
+    player.equipment["OffHand"] = SimpleNamespace(name="Aspis", typ="OffHand", subtyp="Shield", mod=0.1, weight=10)
+    shield = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    assert shield.details == ("Type: Shield", "Block: 10%")
+    assert shield.buffs == ()
+
+    player.equipment["OffHand"] = SimpleNamespace(name="Svalinn", typ="OffHand", subtyp="Shield", mod=0.35, weight=18)
+    svalinn = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    assert svalinn.details == ("Type: Shield", "Block: 35%")
+    assert svalinn.buffs == ("+25% Fire Resistance",)
+    player.equipment["OffHand"] = None
+
+    player.equipment["Weapon"] = SimpleNamespace(
+        name="Claymore",
+        typ="Weapon",
+        subtyp="Longsword",
+        handed=2,
+        damage=28,
+        crit_chance=0.15,
+        weight=12,
+    )
+    player.equipment["OffHand"] = SimpleNamespace(name="No OffHand", typ="OffHand", subtyp="None")
+    player.cls = SimpleNamespace(name="Warrior", equip_check=lambda _item, slot: slot != "OffHand")
+    two_handed_slots = screen.build_equipment_slots(player)
+    occupied_offhand = next(slot for slot in two_handed_slots if slot.slot == "OffHand")
+    assert occupied_offhand.item_name == "Claymore"
+    assert occupied_offhand.icon_item is player.equipment["Weapon"]
+    assert occupied_offhand.details == ("Type: Longsword", "Base Damage: 28", "Crit: 15%")
+
+    player.cls = SimpleNamespace(name="Berserker", equip_check=lambda _item, slot: slot == "OffHand")
+    berserker_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    assert berserker_offhand.item_name == "(empty)"
+
+    player.cls = SimpleNamespace(name="Lancer", equip_check=lambda _item, _slot: False)
+    player.equipment["Weapon"].subtyp = "Polearm"
+    lancer_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    assert lancer_offhand.item_name == "(empty)"
+
+    player.equipment["Weapon"] = SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4)
+    player.equipment["OffHand"] = None
+    player.cls = SimpleNamespace(name="Warrior", equip_check=lambda _item, _slot: True)
 
     grouped_resistances = screen.group_resistances(player)
     assert [entry.name for entry in grouped_resistances["weaknesses"]] == ["Fire", "Ice", "Water"]
@@ -201,6 +268,12 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
         ("Block", "Ring: Ruby Ring"),
         ("Vision", "Pendant: Pendant of Sight"),
     ]
+
+    assert screen.selected_equipment_slot(player) == "Weapon"
+    screen.move_equipment_selector(player, "right")
+    assert screen.selected_equipment_slot(player) == "Armor"
+    screen.move_equipment_selector(player, "right")
+    assert screen.selected_equipment_slot(player) == "OffHand"
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -215,13 +288,18 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: draw_line_calls.append((_args, _kwargs)))
     flip_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: flip_calls.append(True))
+    loaded_renders = []
+    screen.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda item, size: loaded_renders.append((getattr(item, "name", ""), size))
+        or pygame.Surface(size, pygame.SRCALPHA)
+    )
 
     screen.draw_all(player)
     rendered_text = set(presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls)
     assert "Character" in presenter.large_font.render_calls
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Core Attributes" in presenter.large_font.render_calls
-    assert "Strength" in presenter.large_font.render_calls
+    assert "Strength" in rendered_text
     assert "RACE" in presenter.normal_font.render_calls
     assert "CLASS" in presenter.normal_font.render_calls
     assert "Human" in presenter.large_font.render_calls
@@ -233,19 +311,69 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Equipment" not in presenter.large_font.render_calls
     assert "XP EARNED" not in presenter.small_font.render_calls
     assert "XP TO NEXT" not in presenter.small_font.render_calls
-    assert "250 XP / 50 next" in presenter.small_font.render_calls
+    assert "250/300 XP (50 next)" in presenter.small_font.render_calls
     assert len(draw_line_calls) >= 2
     assert flip_calls
 
     screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
     assert "Equipment" in presenter.large_font.render_calls
+    assert "E: Select gear" in presenter.small_font.render_calls
+    screen.equipment_selector_active = True
+    screen.draw_all(player, do_flip=False)
+    assert "Arrows: Select gear  Enter: Change  E/Esc: Back" in presenter.small_font.render_calls
     assert "Equipment Layout" not in presenter.large_font.render_calls
     assert "Item Details" not in presenter.normal_font.render_calls
-    assert "Equipment Buffs" in presenter.normal_font.render_calls
+    assert "Equipment Buffs" not in presenter.normal_font.render_calls
     assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.normal_font.render_calls))
     assert "Sword" in presenter.normal_font.render_calls
-    assert "Block: Ring: Ruby Ring  |  Vision: Pendant: Pendant of Sight" in presenter.small_font.render_calls
+    assert "Type:" in presenter.small_font.render_calls
+    assert "Sword" in presenter.small_font.render_calls
+    assert "Base Damage:" in presenter.small_font.render_calls
+    assert "12" in presenter.small_font.render_calls
+    assert "Crit:" in presenter.small_font.render_calls
+    assert any(name == "Sword" for name, _size in loaded_renders)
+    assert any(name == "Mail" for name, _size in loaded_renders)
+    assert "15%" in presenter.small_font.render_calls
+    assert "Medium" in presenter.small_font.render_calls
+    assert "Base Armor:" in presenter.small_font.render_calls
+    assert "8" in presenter.small_font.render_calls
+    assert "Weight:" not in presenter.small_font.render_calls
+    assert "Mod Block" not in presenter.small_font.render_calls
+    assert "Buff: Block" in presenter.small_font.render_calls
+    assert "Buff: Vision" in presenter.small_font.render_calls
+    assert any(name == "Ruby Ring" for name, _size in loaded_renders)
+    assert any(name == "Pendant of Sight" for name, _size in loaded_renders)
+
+
+def test_modern_character_menu_renders_with_and_without_portrait_assets(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+
+    screen.load_portrait = lambda _player: pygame.Surface((225, 400), pygame.SRCALPHA)
+    screen.draw_all(player)
+    assert presenter.screen.blit_calls
+    assert "Gold" in presenter.normal_font.render_calls
+    assert "321G" in presenter.normal_font.render_calls
+    assert "Location" in presenter.normal_font.render_calls
+    assert "Town" in presenter.normal_font.render_calls
+    gold_label_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "Gold")
+    gold_value_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "321G")
+    assert gold_value_x > gold_label_x
+
+    atlas_surface = pygame.Surface((225, 400), pygame.SRCALPHA)
+    frame = screen.portrait_frame_rect(screen.character_panel_rect.top + 52, atlas_surface)
+    assert frame.size == (225, 400)
+
+    presenter.small_font.render_calls.clear()
+    screen.load_portrait = lambda _player: None
+    screen.draw_all(player)
+    assert "Portrait" in presenter.small_font.render_calls
 
 
 def test_modern_character_resistance_columns_render_all_possible_entries(monkeypatch):
@@ -282,6 +410,59 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
     assert screen.active_tab.key == "equipment"
 
 
+def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.active_tab.key == "equipment"
+    assert screen.selected_equipment_slot(player) == "Armor"
+    assert screen.equipment_selector_active is False
+
+
+def test_modern_equipment_tab_enter_opens_selected_slot_change(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    screen.select_tab("equipment")
+    screen.set_selected_equipment_slot(player, "Ring")
+
+    opened = []
+
+    class FakeEquipmentPopup:
+        def __init__(self, _presenter, _parent):
+            self.items = []
+            self.selected_index = 0
+
+        def build_items(self, _player):
+            self.items = [("Weapon", object()), ("Ring", object())]
+
+        def on_select(self, _player, item):
+            opened.append(item[0])
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "EquipmentPopupMenu", FakeEquipmentPopup)
+
+    screen.open_selected_equipment_change(player)
+
+    assert opened == ["Ring"]
+
+
 def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
@@ -293,7 +474,8 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
-    assert screen.menu_options == ["Inventory", "Change Equipment", "Quests", "Key Items", "Specials", "Exit Menu"]
+    assert screen.menu_options == ["Inventory", "Quests", "Key Items", "Specials", "Exit Menu"]
+    assert "Change Equipment" not in screen.menu_options
     assert "Quit Game" not in screen.menu_options
 
 

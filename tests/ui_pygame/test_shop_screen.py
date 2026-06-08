@@ -174,7 +174,10 @@ def test_update_item_list_builds_buy_and_sell_lists_with_filters(monkeypatch):
 
     screen.update_item_list(itemdict, "Buy")
 
-    assert [(name, cost, owned) for name, _item, cost, owned in screen.item_list] == [("Knight Sword", 120, 2)]
+    assert [(name, cost, owned) for name, _item, cost, owned in screen.item_list] == [
+        ("Knight Sword", 120, 2),
+        ("Go Back", 0, 0),
+    ]
     assert screen.current_item == 0
     assert screen.scroll_offset == 0
 
@@ -182,7 +185,7 @@ def test_update_item_list_builds_buy_and_sell_lists_with_filters(monkeypatch):
     screen.current_item = 1
     screen.scroll_offset = 1
     screen.update_item_list({"Sell Sword": [sell_item, sell_item]}, "Sell")
-    assert screen.item_list == [("Sell Sword", sell_item, 12, 2)]
+    assert screen.item_list == [("Sell Sword", sell_item, 12, 2), ("Go Back", None, 0, 0)]
 
     screen.current_item = 5
     screen.scroll_offset = 3
@@ -223,7 +226,7 @@ def test_build_buy_list_secret_shop_filters_to_mid_rarity_band(monkeypatch):
 
     screen.update_item_list(itemdict, "Buy")
 
-    assert [(name, cost) for name, _item, cost, _owned in screen.item_list] == [("Secret Stock", 84)]
+    assert [(name, cost) for name, _item, cost, _owned in screen.item_list] == [("Secret Stock", 84), ("Go Back", 0)]
 
 
 def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
@@ -231,12 +234,19 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
     flip_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.display.flip", lambda: flip_calls.append(True))
+    render_calls = []
+    screen.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size))
+        or pygame.surface.Surface(size, pygame.SRCALPHA)
+    )
 
     screen.draw_shop_list()
     assert "No items available" in screen.normal_font.render_calls
 
     sword = DummyItem("Steel Sword", typ="Weapon", subtyp="Sword", description="A sword with a wrapped description.")
     screen.item_list = [("Steel Sword", sword, 100, 1)]
+    screen.buy_or_sell = "Buy"
+    screen.draw_options()
     screen.draw_item_desc()
     screen.draw_gold()
 
@@ -256,6 +266,7 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     screen.draw_all(do_flip=True)
 
     assert "wrapped description" in "".join(screen.normal_font.render_calls)
+    assert render_calls == [("Steel Sword", (185, 92))]
     assert "250G" in screen.normal_font.render_calls
     assert "3-21 / 25" in screen.small_font.render_calls
     assert called == ["background", "top", "options", "desc", "list", "mod", "gold", "background", "top", "options", "desc", "list", "mod", "gold"]
@@ -289,28 +300,22 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     screen = _make_shop(monkeypatch)
     monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
 
-    clear_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.clear", lambda: clear_calls.append(True))
-    pressed_states = iter([[1], [], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.clear", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     option_events = iter(
         [
-            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         ]
     )
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.get", lambda: next(option_events, []))
-    assert screen.navigate_options() == "Sell"
+    assert screen.navigate_options(flush_events=False, require_key_release=False) == "Sell"
 
     screen.item_list = [(f"Item {i}", DummyItem(f"Item {i}"), 10, 0) for i in range(25)]
     screen.current_item = 18
     screen.scroll_offset = 0
-    pressed_states = iter([[1], [], [], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     item_events = iter(
         [
-            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
             [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
@@ -322,7 +327,6 @@ def test_navigation_helpers_support_selection_wrapping_and_scroll(monkeypatch):
     assert choice[0] == "Item 20"
     assert screen.current_item == 20
     assert screen.scroll_offset == 2
-    assert clear_calls == [True, True]
 
     screen.item_list = []
     assert screen.navigate_items() is None
