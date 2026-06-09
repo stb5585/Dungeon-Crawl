@@ -11,6 +11,8 @@ import sys
 
 import pygame
 
+from src.ui_pygame.assets.enemy_render_manager import get_enemy_render_manager
+
 from .status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -138,6 +140,7 @@ class CombatView:
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
+        self.enemy_render_manager = get_enemy_render_manager()
 
     def _get_sprite_animator(self, enemy):
         """Get or create animator for this enemy instance."""
@@ -574,6 +577,7 @@ class CombatView:
         
         # Render enemy in center
         self._render_enemy(enemy, has_sight)
+        self._render_enemy_info_panel(enemy, has_sight, overlay=False)
 
         # Render current turn indicator
         self._render_turn_indicator(player_char, enemy, current_turn=current_turn)
@@ -710,6 +714,97 @@ class CombatView:
             hp_surf = small_font.render(hp_text, True, self.colors['text'])
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
+
+    def _render_enemy_info_panel(self, enemy, has_sight=True, overlay=True):
+        """Render large enemy artwork and target details without replacing gameplay sprites."""
+        panel_x = int(self.screen_width * 0.65) + 12 if overlay else self.combat_width + 12
+        panel_w = self.screen_width - panel_x - 12
+        if panel_w < 170:
+            return
+
+        panel_y = 80 if overlay else 86
+        panel_h = min(390, self.screen_height - panel_y - 170)
+        if panel_h < 210:
+            return
+
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_w, panel_h)
+        panel = pygame.Surface(panel_rect.size, pygame.SRCALPHA)
+        panel.fill((16, 16, 22, 232 if overlay else 255))
+        self.screen.blit(panel, panel_rect.topleft)
+        pygame.draw.rect(self.screen, (106, 82, 48), panel_rect, 2, border_radius=6)
+
+        pad = 12
+        title_font = pygame.font.Font(None, 26)
+        body_font = pygame.font.Font(None, 18)
+
+        name = self._truncate_text(title_font, getattr(enemy, "name", "Enemy"), panel_w - (pad * 2))
+        name_surf = title_font.render(name, True, self.colors["text"])
+        self.screen.blit(name_surf, (panel_rect.left + pad, panel_rect.top + pad))
+
+        art_top = panel_rect.top + pad + 30
+        art_h = max(110, min(210, panel_h - 150))
+        art_rect = pygame.Rect(panel_rect.left + pad, art_top, panel_w - (pad * 2), art_h)
+        try:
+            artwork = self.enemy_render_manager.get_scaled_render(enemy, art_rect.size)
+        except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
+            print(f"Failed to render enemy artwork for {getattr(enemy, 'name', enemy)}: {exc}")
+            artwork = self.enemy_render_manager.fallback_surface()
+            artwork = pygame.transform.smoothscale(artwork, art_rect.size)
+        self.screen.blit(artwork, art_rect.topleft)
+        pygame.draw.rect(self.screen, (58, 48, 38), art_rect, 1)
+
+        y = art_rect.bottom + 10
+        if has_sight and hasattr(enemy, "health"):
+            hp_text = f"HP {enemy.health.current} / {enemy.health.max}"
+            hp_surf = body_font.render(hp_text, True, self.colors["hp_bar"])
+            self.screen.blit(hp_surf, (panel_rect.left + pad, y))
+            y += 22
+
+        enemy_type = getattr(enemy, "enemy_typ", "")
+        if enemy_type:
+            type_surf = body_font.render(f"Type {enemy_type}", True, (205, 197, 176))
+            self.screen.blit(type_surf, (panel_rect.left + pad, y))
+            y += 22
+
+        if has_sight:
+            y = self._render_enemy_resistance_summary(enemy, panel_rect, y, body_font)
+
+        icons = self._collect_status_icons(enemy)
+        if icons and y + 20 < panel_rect.bottom:
+            self._render_status_icons(icons, panel_rect.left + pad, y + 4, max_width=panel_w - (pad * 2), max_rows=2)
+
+    def _render_enemy_resistance_summary(self, enemy, panel_rect, y, font):
+        resistance = getattr(enemy, "resistance", {}) or {}
+        if not resistance:
+            return y
+
+        weaknesses = []
+        strengths = []
+        for name, value in resistance.items():
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+            if numeric < 0:
+                weaknesses.append(name)
+            elif numeric > 0:
+                strengths.append(name)
+
+        max_width = panel_rect.width - 24
+        for label, entries, color in (
+            ("Weak", weaknesses, (230, 110, 100)),
+            ("Resist", strengths, (126, 205, 132)),
+        ):
+            if not entries or y + 18 >= panel_rect.bottom:
+                continue
+            text = f"{label} {', '.join(entries[:4])}"
+            if len(entries) > 4:
+                text += f" +{len(entries) - 4}"
+            text = self._truncate_text(font, text, max_width)
+            surf = font.render(text, True, color)
+            self.screen.blit(surf, (panel_rect.left + 12, y))
+            y += 20
+        return y
     
     def _render_player_status(self, player_char):
         """Render player HP/MP at bottom left."""
@@ -974,6 +1069,7 @@ class CombatView:
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
         self._render_turn_indicator(player_char, enemy, current_turn=current_turn, overlay=True)
         self._render_telegraph_banner(overlay=True)
+        self._render_enemy_info_panel(enemy, self._has_sight(player_char), overlay=True)
 
         # Render combat log at bottom-left
         self._render_combat_log_overlay()

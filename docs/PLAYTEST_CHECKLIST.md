@@ -415,3 +415,23 @@
   - Expected: The render manager falls back through icon mapping, category/slot, and then `generic_item` without blocking gameplay.
 - [ ] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
+
+### Enemy Render Artwork
+- [ ] Start combat against common mapped enemies.
+  - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy render artwork in the combat target panel.
+  - Expected: The existing center combat sprite still renders and animates independently from the target-panel artwork.
+- [ ] Start combat against an enemy mapped to the boss fallback.
+  - Expected: Boss fallback artwork appears when no specific boss archetype exists.
+  - Expected: Boss combat, victory, defeat, and flee flows still function.
+- [ ] Simulate or create an enemy with no exact mapping, category, or useful name hint.
+  - Expected: The render manager logs a warning once the missing mapping path is used and displays `generic_enemy`.
+  - Expected: Missing atlas files, missing frames, or out-of-bounds frames fall back without crashing combat.
+- [ ] Inspect the combat target panel while Sight is active and inactive.
+  - Expected: Enemy artwork and name remain visible.
+  - Expected: HP, weaknesses, resistances, and status icons appear only when combat visibility rules allow them.
+- [ ] Verify enemy render lookup does not affect saves or map sprites.
+  - Expected: Save/load data is unchanged.
+  - Expected: Dungeon map sprites, encounter positioning sprites, overworld tokens, and dungeon renderer enemy textures still use their existing sprite systems.
+- [ ] Review `docs/ENEMY_RENDER_MAPPING.md` after adding or renaming enemies.
+  - Expected: Every no-argument enemy class has an Enemy Name, Enemy Class, and Suggested Archetype row.
+  - Expected: `enemy_render_map.json` contains a display-name mapping for every discovered enemy name.

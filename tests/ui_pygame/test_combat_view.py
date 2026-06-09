@@ -283,6 +283,7 @@ def test_render_combat_does_not_default_to_player_turn(monkeypatch):
     monkeypatch.setattr(view, "update_animations", lambda: None)
     monkeypatch.setattr(view.screen, "fill", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(view, "_render_enemy", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_render_enemy_info_panel", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(view, "_render_turn_indicator", lambda *_args, **kwargs: recorded_turns.append(kwargs.get("current_turn")))
     monkeypatch.setattr(view, "_render_telegraph_banner", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(view, "_render_player_status", lambda *_args, **_kwargs: None)
@@ -552,6 +553,45 @@ def test_status_icon_label_fitting_handles_zero_width_pills():
     assert fit_status_icon_label(font, "BRG", 999) == "BRG"
 
 
+def test_enemy_info_panel_renders_large_enemy_artwork(monkeypatch):
+    view = _make_view()
+    calls = []
+    fonts = iter([RecordingFont(), RecordingFont()])
+    enemy = SimpleNamespace(
+        name="Goblin Raider",
+        enemy_typ="Humanoid",
+        health=SimpleNamespace(current=15, max=20),
+        resistance={"Fire": -0.25, "Poison": 0.5},
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    view.enemy_render_manager = SimpleNamespace(
+        get_scaled_render=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-art"),
+        fallback_surface=lambda: DummySurface((256, 320), text="fallback-art"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
+
+    assert calls and calls[0][0] == "Goblin Raider"
+    assert any(getattr(surface, "text", "") == "enemy-art" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+    assert "Goblin Raider" in rendered_text
+    assert "HP 15 / 20" in rendered_text
+    assert "Type Humanoid" in rendered_text
+    assert any(text.startswith("Weak Fire") for text in rendered_text)
+    assert any(text.startswith("Resist Poison") for text in rendered_text)
+
+
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
     view = _make_view()
     player = _make_character()
@@ -588,6 +628,7 @@ def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
     enemy.tunnel = False
     view._has_sight = lambda _player: True
     view._render_enemy = lambda _enemy, _has_sight=True: view.screen.blit(DummySurface((10, 10), text="enemy"), (0, 0))
+    view._render_enemy_info_panel = lambda *_args, **_kwargs: view.screen.blit(DummySurface((10, 10), text="enemy-info"), (0, 0))
     view._render_player_status = lambda _player: view.screen.blit(DummySurface((10, 10), text="player"), (0, 0))
     view._render_action_menu = lambda actions, selected: view.screen.blit(DummySurface((10, 10), text=f"menu:{selected}"), (0, 0))
     view._render_combat_log = lambda: view.screen.blit(DummySurface((10, 10), text="log"), (0, 0))

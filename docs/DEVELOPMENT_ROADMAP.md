@@ -133,6 +133,11 @@ Status: `Active`
    - Status: `Done`.
    - Added a visual naming screen with selected portrait, sex, race, and class panels.
    - Replaced the basic text-entry flow in pygame character creation with the guarded visual naming screen.
+6. Update enemy presentation away from current sprite-only design; use updated artwork for more immersive experience.
+   - Status: `Done` for the first broad-archetype render pass.
+   - Added `EnemyRenderManager`, `assets/enemy_renders/`, an enemy render mapping report, and combat target-panel integration.
+   - Existing map sprites and combat positioning sprites remain in place; enemy renders are presentation assets for combat panels, inspection-style views, bestiary work, and boss-intro follow-up.
+   - Current atlas is generated placeholder artwork with stable archetype keys; replace frames with final dark-fantasy artwork when available.
 
 ### P2 - Renderer And Exploration Presentation
 
@@ -189,6 +194,7 @@ Status: `Planned`
    - Decide whether persistent history, run summaries, or account-style stats are worth adding beyond the current grouped run popup.
 4. Equipment and progression expansion.
    - Helmet slot support and the initial Cloth/Light/Medium/Heavy helmet catalog are now done.
+      - Add quest/process for obtaining ultimate helmets.
    - Most originally listed item-system improvements are now done.
    - Future equipment work should focus on clearly scoped new mechanics, class kits, or content rewards.
    - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.
