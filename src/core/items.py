@@ -61,7 +61,7 @@ def stat_theme_for_item(item: object) -> str | None:
         return "intelligence"
     if "Wisdom" in name or "Magic Defense" in mod or "Status-" in mod:
         return "wisdom"
-    if "Constitution" in name or "Physical Defense" in mod or typ == "Armor":
+    if "Constitution" in name or "Physical Defense" in mod or typ in {"Armor", "Helmet"}:
         return "constitution"
     if "Charisma" in name or "Luck" in mod:
         return "charisma"
@@ -124,7 +124,14 @@ def random_item(z: int) -> Item:
 
 
 def remove_equipment(typ: str) -> Item:
-    typ_dict = {'Weapon': NoWeapon, 'OffHand': NoOffHand, 'Armor': NoArmor, 'Pendant': NoPendant, 'Ring': NoRing}
+    typ_dict = {
+        'Weapon': NoWeapon,
+        'OffHand': NoOffHand,
+        'Armor': NoArmor,
+        'Helmet': NoHelmet,
+        'Pendant': NoPendant,
+        'Ring': NoRing,
+    }
     return typ_dict[typ]()
 
 
@@ -146,6 +153,7 @@ class Item:
         self.mod = 0
         self.weight = 0
         self.restriction = []
+        self.restricted_against = []
         self.ultimate = False
 
     def __str__(self) -> str:
@@ -257,6 +265,15 @@ class Armor(Item):
                 f"Armor: {self.armor}\n"
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
+
+
+class Helmet(Armor):
+    """Head-slot armor that contributes to the normal Defense modifier."""
+
+    def __init__(self, name: str, description: str, value: int, rarity: float,
+                 armor: int, subtyp: str, unequip: bool) -> None:
+        super().__init__(name, description, value, rarity, armor, subtyp, unequip)
+        self.typ = 'Helmet'
 
     def special_effect(self, results: CombatResultGroup) -> None:
         return
@@ -2148,6 +2165,283 @@ class NoArmor(Armor):
                          subtyp='None', unequip=True)
 
 
+class NoHelmet(Helmet):
+
+    def __init__(self):
+        super().__init__(name="No Helmet", description="No helmet equipped.", value=0, rarity=0, armor=0,
+                         subtyp='None', unequip=True)
+
+
+class ClothCap(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Cloth Cap", description="A simple padded cap that offers modest protection without "
+                                                        "interfering with spellcasting.",
+                         value=45, rarity=0.95, armor=1, subtyp='Cloth', unequip=False)
+        self.weight = 1
+
+
+class Jaapi(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Jaapi", description="A quilted cloth head wrap that cushions blows while staying light "
+                                                  "enough for spellwork.",
+                         value=180, rarity=0.9, armor=2, subtyp='Cloth', unequip=False)
+        self.weight = 1
+
+
+class Turban(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Turban", description="Layered cloth wound into a protective wrap that softens glancing "
+                                                    "strikes.",
+                         value=550, rarity=0.8, armor=3, subtyp='Cloth', unequip=False)
+        self.weight = 1
+
+
+class WitchHat(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Witch Hat", description="A tall enchanted hat stiffened with hidden ribs and protective "
+                                                       "wards.",
+                         value=1600, rarity=0.65, armor=4, subtyp='Cloth', unequip=False)
+        self.weight = 1
+
+
+class EnchantedHood(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Enchanted Hood", description="A hood embroidered with protective thread that turns "
+                                                            "aside glancing blows.",
+                         value=3500, rarity=0.5, armor=5, subtyp='Cloth', unequip=False)
+        self.weight = 1
+
+
+class MitreHat(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Mitre Hat", description="A ceremonial mitre reinforced with sacred thread and geomantic "
+                                                       "sigils.",
+                         value=10000, rarity=0.4, armor=9, subtyp='Cloth', unequip=False)
+        self.weight = 1
+        self.restriction = ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+
+
+class Circlet(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Circlet", description="A thin metal circlet that focuses the wearer's will into a "
+                                                     "protective halo.",
+                         value=12000, rarity=0.4, armor=8, subtyp='Cloth', unequip=False)
+        self.weight = 2
+        self.restricted_against = ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+
+
+class CohuleenDruith(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Cohuleen Druith", description="A fey cap steeped in old river magic that shields the "
+                                                            "wearer from water spells.",
+                         value=40000, rarity=0.2, armor=10, subtyp='Cloth', unequip=False)
+        self.weight = 1
+        self.element = "Water"
+        self.resist_mod = 0.5
+
+
+class AriadnesDiadem(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Ariadne's Diadem", description="A legendary diadem whose threadlike filigree guides the "
+                                                             "wearer safely through impossible danger.",
+                         value=0, rarity=0, armor=12, subtyp='Cloth', unequip=False)
+        self.weight = 1
+        self.special = True
+
+
+class LeatherCap(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Leather Cap", description="A boiled leather cap that protects the head while keeping "
+                                                         "movement light.",
+                         value=80, rarity=0.95, armor=2, subtyp='Light', unequip=False)
+        self.weight = 2
+
+
+class PithHelmet(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Pith Helmet", description="A stiffened light helmet with a broad brim and padded crown.",
+                         value=700, rarity=0.85, armor=3, subtyp='Light', unequip=False)
+        self.weight = 3
+
+
+class WarMask(Helmet):
+
+    def __init__(self):
+        super().__init__(name="War Mask", description="A hardened leather mask shaped to intimidate and deflect cuts.",
+                         value=1800, rarity=0.75, armor=4, subtyp='Light', unequip=False)
+        self.weight = 2
+
+
+class ArmingCap(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Arming Cap", description="A reinforced cap worn under heavier helms or alone by light "
+                                                       "fighters.",
+                         value=8500, rarity=0.5, armor=5, subtyp='Light', unequip=False)
+        self.weight = 3
+
+
+class Katapu(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Katapu", description="A light protective headpiece built from layered plates and lacquered "
+                                                   "leather.",
+                         value=18000, rarity=0.4, armor=7, subtyp='Light', unequip=False)
+        self.weight = 2
+
+
+class Somen(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Sōmen", description="A full-face light helm that protects without sacrificing agility.",
+                         value=48000, rarity=0.2, armor=10, subtyp='Light', unequip=False)
+        self.weight = 4
+
+
+class DemonCowl(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Demon Cowl", description="A sinister cowl threaded with charms against instant death "
+                                                       "magic.",
+                         value=0, rarity=0, armor=16, subtyp='Light', unequip=False)
+        self.weight = 4
+        self.special = True
+        self.element = "Death"
+        self.resist_mod = 0.5
+
+
+class ScaleHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Scale Helm", description="A sturdy helmet of overlapping metal scales.",
+                         value=120, rarity=0.95, armor=3, subtyp='Medium', unequip=False)
+        self.weight = 4
+
+
+class ChainCoif(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Chain Coif", description="A hood of interlocking metal rings worn under or instead of "
+                                                        "a helmet.",
+                         value=900, rarity=0.85, armor=4, subtyp='Medium', unequip=False)
+        self.weight = 5
+
+
+class KulahKhud(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Kulah Khud", description="A domed medium helm with cheek guards and a mail aventail.",
+                         value=2400, rarity=0.75, armor=6, subtyp='Medium', unequip=False)
+        self.weight = 4
+
+
+class Cervelliere(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Cervelliere", description="A close-fitting steel skullcap that can be worn beneath other "
+                                                        "headgear.",
+                         value=10000, rarity=0.5, armor=8, subtyp='Medium', unequip=False)
+        self.weight = 8
+
+
+class VisoredSallet(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Visored Sallet", description="A fitted steel helmet with a narrow visor and strong "
+                                                            "neck guard.",
+                         value=22000, rarity=0.4, armor=10, subtyp='Medium', unequip=False)
+        self.weight = 6
+
+
+class Tolga(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Tolga", description="A heavy medium helm with reinforced bands and a high nasal guard.",
+                         value=55000, rarity=0.2, armor=13, subtyp='Medium', unequip=False)
+        self.weight = 11
+
+
+class Tarnhelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Tarnhelm", description="A mythic helm that bends sight around its wearer and grants "
+                                                     "invisibility.",
+                         value=0, rarity=0, armor=19, subtyp='Medium', unequip=False)
+        self.weight = 8
+        self.special = True
+
+
+class IronHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Iron Helm", description="A heavy iron helmet that favors protection over comfort.",
+                         value=160, rarity=0.95, armor=4, subtyp='Heavy', unequip=False)
+        self.weight = 6
+
+
+class KettleHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Kettle Helm", description="A brimmed iron helmet that sheds blows away from the face and "
+                                                        "neck.",
+                         value=1200, rarity=0.85, armor=6, subtyp='Heavy', unequip=False)
+        self.weight = 5
+
+
+class Barbute(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Barbute", description="A heavy helm with a T-shaped opening and strong cheek protection.",
+                         value=3200, rarity=0.75, armor=8, subtyp='Heavy', unequip=False)
+        self.weight = 7
+
+
+class GreatHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Great Helm", description="A full steel helm with narrow eye slits and thick plates.",
+                         value=13000, rarity=0.5, armor=10, subtyp='Heavy', unequip=False)
+        self.weight = 8
+
+
+class FullPlateHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Full Plate Helm", description="A masterwork plate helmet that completes a knight's "
+                                                             "heavy armor kit.",
+                         value=28000, rarity=0.4, armor=12, subtyp='Heavy', unequip=False)
+        self.weight = 9
+
+
+class CloseHelm(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Close Helm", description="A fully enclosing heavy helm with a fitted visor and reinforced "
+                                                       "gorget.",
+                         value=62000, rarity=0.2, armor=18, subtyp='Heavy', unequip=False)
+        self.weight = 14
+
+
+class Kabuto(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Kabuto", description="A legendary heavy helm with layered plates and a commanding crest.",
+                         value=0, rarity=0, armor=25, subtyp='Heavy', unequip=False)
+        self.weight = 16
+        self.special = True
+
+
 class Tunic(Armor):
 
     def __init__(self):
@@ -2380,11 +2674,11 @@ class Kusari(Armor):
         self.weight = 17
 
 
-class Aegis(Armor):
+class Klivanion(Armor):
 
     def __init__(self):
-        super().__init__(name="Aegis Breastplate", description="The breastplate of Zeus, emboldened with a bolt of "
-                                                               "lightning.",
+        super().__init__(name="Klivanion", description="A lamellar breastplate whose charged plates lash attackers with "
+                                                       "lightning and can stun them in place.",
                          value=0, rarity=0., armor=36, subtyp='Medium', unequip=False)
         self.weight = 18
         self.special = True
@@ -2404,14 +2698,14 @@ class Aegis(Armor):
         shock_damage = max(0, int(damage * 0.15 * (1 - resist)))
         if shock_damage > 0:
             result.actor.health.current -= shock_damage
-            result.extra["Aegis Shock Damage"] = shock_damage
+            result.extra["Klivanion Shock Damage"] = shock_damage
             result.effects_applied['Magic'].append(self.element)
-            result.message += f"{result.target.name}'s Aegis shocks {result.actor.name} for {shock_damage} lightning damage.\n"
+            result.message += f"{result.target.name}'s Klivanion shocks {result.actor.name} for {shock_damage} lightning damage.\n"
         if shock_damage > 0 and random.random() < 0.25:
             stun = result.actor.status_effects.get("Stun")
             if stun and not stun.active and result.actor.apply_stun(1, source=self.name, applier=result.target):
                 result.effects_applied['Status'].append('Stun')
-                result.message += f"{result.actor.name} is stunned by the Aegis.\n"
+                result.message += f"{result.actor.name} is stunned by the Klivanion.\n"
         return results
 
 
@@ -4698,6 +4992,12 @@ items_dict = {
         'Light': [PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli, MithrilCoat],
         'Medium': [HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Kusari],
         'Heavy': [RingMail, ChainMail, Splint, PlateMail, FullPlate, Maximilian]},
+    'Helmet': {
+        'Cloth': [ClothCap, Jaapi, Turban, WitchHat, EnchantedHood, MitreHat, Circlet,
+                  CohuleenDruith, AriadnesDiadem],
+        'Light': [LeatherCap, PithHelmet, WarMask, ArmingCap, Katapu, Somen, DemonCowl],
+        'Medium': [ScaleHelm, ChainCoif, KulahKhud, Cervelliere, VisoredSallet, Tolga, Tarnhelm],
+        'Heavy': [IronHelm, KettleHelm, Barbute, GreatHelm, FullPlateHelm, CloseHelm, Kabuto]},
     'Accessory': {
         'Ring': [IronRing, PowerRing, AccuracyRing, BarrierRing, SteelRing, MightRing, EvasionRing,
                  TitaniumRing, ForceRing],

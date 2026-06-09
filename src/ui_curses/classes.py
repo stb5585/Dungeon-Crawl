@@ -113,6 +113,7 @@ def promotion(game):
             promoted_player.combat.magic_def += new_class.magic_def_plus
             promoted_player.equipment["Weapon"] = new_class.equipment["Weapon"]
             promoted_player.equipment["Armor"] = new_class.equipment["Armor"]
+            promoted_player.equipment["Helmet"] = new_class.equipment["Helmet"]
             promoted_player.equipment["OffHand"] = new_class.equipment["OffHand"]
             # Apply ability transition rules for this promotion
             ability_change_msg = apply_promotion_ability_rules(promoted_player, new_class.name)

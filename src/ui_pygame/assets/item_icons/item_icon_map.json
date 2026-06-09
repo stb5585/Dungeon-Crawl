@@ -1,7 +1,6 @@
 {
   "Aard of Being": "consumable",
   "Accuracy Ring": "ring",
-  "Aegis Breastplate": "medium_armor",
   "Alligator Tail": "claw",
   "Animal Hide": "armor",
   "Antidote": "antidote",
@@ -148,6 +147,7 @@
   "Key": "key",
   "Khanjar": "dagger",
   "Khatvanga": "staff",
+  "Klivanion": "medium_armor",
   "Khopesh": "sword",
   "Kite Shield": "shield",
   "Kobold Dagger": "weapon",
@@ -187,6 +187,7 @@
   "Nightmare Hoof": "claw",
   "Ninjato": "sword",
   "No Armor": "armor",
+  "No Helmet": "helmet",
   "No OffHand": "offhand",
   "No Pendant": "accessory",
   "No Ring": "accessory",

@@ -141,12 +141,12 @@ class ChurchManager(TownScreenBase):
 
             try:
                 self.player_char.unequip(promo=True)
-                for slot in ["Weapon", "OffHand", "Armor"]:
+                for slot in ["Weapon", "OffHand", "Armor", "Helmet"]:
                     try:
                         self.player_char.equipment[slot] = remove_equipment(slot)
                     except Exception:
                         pass
-                core_slots = {"Weapon", "OffHand", "Armor"}
+                core_slots = {"Weapon", "OffHand", "Armor", "Helmet"}
                 for slot, item in self.player_char.cls.equipment.items():
                     if slot not in core_slots:
                         continue

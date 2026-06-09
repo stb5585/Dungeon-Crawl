@@ -1903,7 +1903,7 @@ class EquipPopupMenu(PopupMenu):
 
     def __init__(self, game, header_message, box_height):
         super().__init__(game, header_message, box_height=box_height)
-        self.options_list = ["Weapon", "OffHand", "Armor", "Ring", "Pendant", "Go Back"]
+        self.options_list = ["Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant", "Go Back"]
         self.equip_type = None
         self.page = 1
 
@@ -1943,7 +1943,7 @@ class EquipPopupMenu(PopupMenu):
 
     def update_options(self):
         if self.page == 1:
-            self.options_list = ["Weapon", "OffHand", "Armor", "Ring", "Pendant", "Go Back"]
+            self.options_list = ["Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant", "Go Back"]
         elif self.page == 2:
             self.equip_type = self.options_list[self.current_option]
             if self.equip_type == "Go Back":

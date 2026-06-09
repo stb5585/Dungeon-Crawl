@@ -44,6 +44,7 @@ class ItemRenderManager:
     CATEGORY_FALLBACKS = {
         "Weapon": "weapon",
         "Armor": "armor",
+        "Helmet": "helmet",
         "OffHand": "offhand",
         "Accessory": "accessory",
         "Potion": "consumable",

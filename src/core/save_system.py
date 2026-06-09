@@ -110,7 +110,7 @@ class ItemSerializer:
             try:
                 item_class = getattr(items, item_class_name)
                 # Don't try to instantiate abstract base classes
-                if item_class_name not in ['Item', 'Weapon', 'OffHand', 'Armor', 'Accessory']:
+                if item_class_name not in ['Item', 'Weapon', 'OffHand', 'Armor', 'Helmet', 'Accessory']:
                     return item_class()
             except Exception:
                 pass
@@ -819,6 +819,7 @@ class PlayerDataSerializer:
         # Restore equipment
         for slot, item_data in data['equipment'].items():
             player.equipment[slot] = ItemSerializer.deserialize(item_data)
+        player.equipment.setdefault("Helmet", items.NoHelmet())
         
         # Restore inventory
         for item_name, item_list in data['inventory'].items():

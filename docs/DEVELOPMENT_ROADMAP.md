@@ -73,7 +73,9 @@ Status: `Done`
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, weapon efficiency display, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
-- The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
+- The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout with Helmet support, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
+- Helmet equipment is now implemented across core equipment, save/load compatibility, curses and pygame shops, inventory/equipment popups, icon/artwork fallback, and Defense/resistance/invisibility modifiers. The current catalog includes Cloth, Light, Medium, and Heavy helmet progressions plus restricted and special-effect helmets.
+- The medium ultimate armor reward is now Klivanion; its retaliation effect, shop flows, item maps, and tests use the renamed item and effect text.
 - Character creation uses a visual naming screen with portrait preview plus selected sex, race, and class details.
 - Selected-item contexts now use the large item artwork atlas in inventory, equipment, shop, loot/reward, and modern Character Menu equipment views.
 
@@ -116,7 +118,7 @@ Status: `Active`
 
 1. Complete modern Character Menu acceptance and iteration.
    - Status: `Done` for the current UX pass.
-   - Implemented: sex-first character creation, race/sex portrait assets, base portrait atlas loading with individual PNG fallback support, reusable portrait composition/caching for future overlays, native-ratio portrait frame sizing, generic Character/Equipment tabs, wider 60/40 Character and Combat Stats panels, wider right-column level-progress bar using current-level XP progress, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, Core Attributes positioned below the experience bar, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with Helmet UI placeholder, larger equipment blocks with optional icon boxes and right-aligned subtype/base weapon/armor/block/weight details, in-slot equipment-buff reporting, popup quick-scroll and wrapped item descriptions, and town/dungeon opt-in routing.
+   - Implemented: sex-first character creation, race/sex portrait assets, base portrait atlas loading with individual PNG fallback support, reusable portrait composition/caching for future overlays, native-ratio portrait frame sizing, generic Character/Equipment tabs, wider 60/40 Character and Combat Stats panels, wider right-column level-progress bar using current-level XP progress, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, Core Attributes positioned below the experience bar, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with an active Helmet equipment slot, larger equipment blocks with optional icon boxes and right-aligned subtype/base weapon/armor/block/weight/resistance details, in-slot equipment-buff reporting, popup quick-scroll and wrapped item descriptions, and town/dungeon opt-in routing.
    - Portrait implementation note: runtime prefers `base_portrait_atlas.png`/`.json`; the loader supports both the current `assets/portraits/` drop location and the suggested future `assets/portraits/base/` plus `fallback_individuals/` layout.
    - Item artwork implementation note: selected-item views use large archetype artwork from `assets/item_renders/`; dense rows and compact slot summaries still use the small icon system.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
@@ -186,6 +188,7 @@ Status: `Planned`
 3. Gameplay statistics expansion.
    - Decide whether persistent history, run summaries, or account-style stats are worth adding beyond the current grouped run popup.
 4. Equipment and progression expansion.
+   - Helmet slot support and the initial Cloth/Light/Medium/Heavy helmet catalog are now done.
    - Most originally listed item-system improvements are now done.
    - Future equipment work should focus on clearly scoped new mechanics, class kits, or content rewards.
    - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.

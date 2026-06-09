@@ -323,7 +323,7 @@ class ShopScreen(TownScreenBase):
             return
         
         # Only show for equipment that can be equipped
-        if not hasattr(item, 'typ') or item.typ not in ["Weapon", "OffHand", "Armor", "Accessory"]:
+        if not hasattr(item, 'typ') or item.typ not in ["Weapon", "OffHand", "Armor", "Helmet", "Accessory"]:
             return
         
         # Draw title

@@ -52,7 +52,7 @@ class ShopManager(TownScreenBase):
                 break
             elif choice == "Buy":
                 # Update options to show buy categories
-                shop_screen.set_options(["Weapons", "Shields", "Armor", "Back"])
+                shop_screen.set_options(["Weapons", "Shields", "Armor", "Helmets", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Weapons":
@@ -61,6 +61,8 @@ class ShopManager(TownScreenBase):
                     self.buy_shields()
                 elif buy_choice == "Armor":
                     self.buy_armor()
+                elif buy_choice == "Helmets":
+                    self.buy_helmets()
                 # Always restore main options after buy submenu (including ESC/Back)
                 shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
                 shop_screen.shop_message = "Griswold's Blacksmith"
@@ -222,6 +224,28 @@ class ShopManager(TownScreenBase):
         
         armor_type = armor_choice
         self.buy_equipment(armor_dict[armor_type], armor_type, )
+
+    def buy_helmets(self):
+        """Buy helmets from blacksmith - choose helmet type first."""
+        shop_screen = ShopScreen(self.presenter, self.player_char, "Choose helmet type")
+        helmet_dict = items_module.items_dict["Helmet"]
+
+        helmet_types = []
+        for helmet_type, item_list in helmet_dict.items():
+            if self._has_available_items(item_list):
+                helmet_types.append(helmet_type)
+
+        if not helmet_types:
+            return
+
+        helmet_types.append("Back")
+        shop_screen.set_options(helmet_types)
+        helmet_choice = shop_screen.navigate_options()
+
+        if helmet_choice is None or helmet_choice in ("Back", "Leave"):
+            return
+
+        self.buy_equipment(helmet_dict[helmet_choice], f"{helmet_choice} Helmets")
     
     def buy_rings(self):
         """Buy rings from jeweler."""
@@ -397,7 +421,7 @@ class ShopManager(TownScreenBase):
         info_lines.append(f"Value: {item.value}g")
         
         # Equipment comparison for equipment items
-        if item.typ in ["Weapon", "OffHand", "Armor", "Accessory"]:
+        if item.typ in ["Weapon", "OffHand", "Armor", "Helmet", "Accessory"]:
             equip_slot = item.typ
             if item.typ == "Accessory":
                 equip_slot = item.subtyp
@@ -587,7 +611,7 @@ class ShopManager(TownScreenBase):
                 break
             elif choice == "Buy":
                 # Show buy submenu
-                shop_screen.set_options(["Weapons", "Shields & Tomes", "Armor", "Accessories", "Potions & Scrolls", "Back"])
+                shop_screen.set_options(["Weapons", "Shields & Tomes", "Armor", "Helmets", "Accessories", "Potions & Scrolls", "Back"])
                 buy_choice = shop_screen.navigate_options()
                 
                 if buy_choice == "Weapons":
@@ -596,6 +620,8 @@ class ShopManager(TownScreenBase):
                     self._buy_secret_offhand(shop_screen)
                 elif buy_choice == "Armor":
                     self._buy_secret_armor(shop_screen)
+                elif buy_choice == "Helmets":
+                    self._buy_secret_helmets(shop_screen)
                 elif buy_choice == "Accessories":
                     self._buy_secret_accessories(shop_screen)
                 elif buy_choice == "Potions & Scrolls":
@@ -670,6 +696,19 @@ class ShopManager(TownScreenBase):
         item_list = items_module.items_dict["Armor"][armor_type]
         
         self.buy_equipment(item_list, f"{armor_type} Armor", background_image="dungeon.png")
+
+    def _buy_secret_helmets(self, shop_screen):
+        """Buy helmets from secret shop."""
+        shop_screen.shop_message = "Choose helmet type"
+        shop_screen.set_options(["Cloth", "Light", "Medium", "Heavy", "Back"])
+
+        choice = shop_screen.navigate_options()
+
+        if choice is None or choice == "Back":
+            return
+
+        item_list = items_module.items_dict["Helmet"][choice]
+        self.buy_equipment(item_list, f"{choice} Helmets", background_image="dungeon.png")
     
     def _buy_secret_accessories(self, shop_screen):
         """Buy accessories from secret shop."""

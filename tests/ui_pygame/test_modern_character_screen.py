@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused coverage for the parallel modern character menu."""
+"""Focused coverage for the standard pygame character menu."""
 
 from __future__ import annotations
 
@@ -109,6 +109,7 @@ def _make_player():
         equipment={
             "Weapon": SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4, description="Reliable steel."),
             "Armor": SimpleNamespace(name="Mail", typ="Armor", subtyp="Medium", armor=8, weight=12),
+            "Helmet": SimpleNamespace(name="Iron Helm", typ="Helmet", subtyp="Heavy", armor=4, weight=6),
             "OffHand": None,
             "Ring": SimpleNamespace(name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1),
             "Pendant": SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2),
@@ -197,8 +198,9 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     slots = screen.build_equipment_slots(player)
     assert [slot.slot for slot in slots] == ["Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant"]
     helmet = next(slot for slot in slots if slot.slot == "Helmet")
-    assert helmet.implemented is False
-    assert helmet.item_name == "(future slot)"
+    assert helmet.implemented is True
+    assert helmet.item_name == "Iron Helm"
+    assert helmet.details == ("Type: Heavy", "Base Armor: 4")
     weapon = next(slot for slot in slots if slot.slot == "Weapon")
     assert weapon.details == ("Type: Sword", "Base Damage: 12", "Crit: 15%")
     armor = next(slot for slot in slots if slot.slot == "Armor")
@@ -334,6 +336,7 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Crit:" in presenter.small_font.render_calls
     assert any(name == "Sword" for name, _size in loaded_renders)
     assert any(name == "Mail" for name, _size in loaded_renders)
+    assert any(name == "Iron Helm" for name, _size in loaded_renders)
     assert "15%" in presenter.small_font.render_calls
     assert "Medium" in presenter.small_font.render_calls
     assert "Base Armor:" in presenter.small_font.render_calls
@@ -515,7 +518,7 @@ def test_dungeon_character_screen_router_lazy_loads_modern_default(monkeypatch):
     manager = DungeonManager.__new__(DungeonManager)
     manager.presenter = SimpleNamespace()
     manager.game = SimpleNamespace()
-    manager.modern_character_screen = None
+    manager.character_screen = None
     manager._dungeon_background = "dungeon-bg"
 
     first = manager._get_character_screen()

@@ -291,9 +291,9 @@ def test_ultimate_armor_special_effects_cover_magic_fire_lightning_and_recovery(
     attacker.health.current = 100
     monkeypatch.setattr(random, "random", lambda: 0.0)
     results = _armor_hit_result(attacker, defender, damage=40)
-    items.Aegis().special_effect(results)
+    items.Klivanion().special_effect(results)
     assert attacker.health.current == 94
-    assert results[-1].extra["Aegis Shock Damage"] == 6
+    assert results[-1].extra["Klivanion Shock Damage"] == 6
     assert attacker.status_effects["Stun"].active is True
     assert "Stun" in results[-1].effects_applied["Status"]
 

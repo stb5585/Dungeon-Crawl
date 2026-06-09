@@ -144,7 +144,7 @@
   - Expected: Each equipment slot includes an icon box using a matching `assets/icons` image when one exists.
   - Expected: Equipment slots with no matching icon asset leave the icon box blank.
   - Expected: The redundant `Equipment Layout` heading is not shown.
-  - Expected: Helmet is shown only as a future UI slot and does not change equipment mechanics or saves.
+  - Expected: Helmet is a real equipment slot, contributes to equipment-adjusted Defense when equipped, and persists through saves.
   - Expected: The Item Details section is not shown.
   - Expected: Equipped item names render inside the paper-doll slots without overflowing.
   - Expected: Weapons show subtype, base damage, crit chance, and weight.
@@ -153,6 +153,7 @@
   - Expected: Item detail rows use `Label: value` formatting with values right-aligned.
   - Expected: Zero-weight items do not show a weight row.
   - Expected: Svalinn reports its Fire resistance as a buff in addition to its shield block chance.
+  - Expected: Cohuleen Druith and Demon Cowl report their resistance buffs inside the Helmet slot block.
   - Expected: Rings and Pendants show weight and their buff, but do not show a separate raw `Mod` line.
   - Expected: Empty slots display a readable empty state.
 - [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
@@ -171,7 +172,7 @@
   - Expected: Unknown gender falls back cleanly without crashing.
   - Expected: Missing class, promotion, or effect overlays are skipped without crashing.
   - Expected: Portrait frame aligns correctly in the modern Character tab.
-  - Expected: Legacy Character Menu still works without depending on the atlas manager.
+  - Expected: Modern Character Menu falls back cleanly without depending on the atlas manager.
 - [ ] Inspect modern resistance grouping on characters with weaknesses and resistances.
   - Expected: Negative values appear under Weaknesses.
   - Expected: Positive values appear under Resistances.
@@ -189,6 +190,16 @@
 - [ ] Open the pygame Character Menu before and after equipping stronger armor.
   - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
+- [ ] Open the pygame Character Menu before and after equipping a helmet.
+  - Expected: The Defense stat includes the equipped helmet armor in addition to body armor.
+  - Expected: `No Helmet` displays with a helmet archetype icon and does not log a missing icon mapping warning.
+- [ ] Equip the special helmets and inspect their persistent effects.
+  - Expected: Cohuleen Druith increases Water resistance through combat resistance checks.
+  - Expected: Demon Cowl increases Death resistance through combat resistance checks.
+  - Expected: Tarnhelm grants invisibility while equipped and removes it when unequipped or replaced.
+- [ ] Try class-restricted cloth helmets with priest/diviner and non-priest/diviner classes.
+  - Expected: Mitre Hat can be equipped by Priest, Archbishop, Diviner, and Geomancer only.
+  - Expected: Circlet is blocked for Priest, Archbishop, Diviner, and Geomancer, but remains available to other cloth-helmet users.
 - [ ] Equip cloth armor such as Wizard's Robe and inspect Spell Modifier.
   - Expected: Cloth armor contributes a spell modifier bonus while non-cloth armor does not.
   - Expected: Future armor with explicit `spell_mod` uses that value instead of the derived cloth armor bonus.
@@ -206,8 +217,11 @@
 - [ ] Take hits while wearing each ultimate armor reward.
   - Expected: Robes of Merlin can restore mana after incoming weapon hits.
   - Expected: Dragon Hide can scorch attackers with fire retaliation damage.
-  - Expected: Aegis Breastplate can shock attackers and may stun them.
+  - Expected: Klivanion can shock attackers and may stun them.
   - Expected: Genji Armor can recover a portion of incoming damage after a hit.
+- [ ] Browse helmet categories in blacksmith and secret-shop buy flows.
+  - Expected: Cloth, Light, Medium, and Heavy helmet lists show the new helmet names, prices, rarity tiers, armor values, and weights.
+  - Expected: Zero-value legendary helmets do not appear as normal paid stock unless that shop flow intentionally includes ultimate-tier equipment.
 - [ ] Equip armor with elemental metadata and inspect matching resistance behavior.
   - Expected: Matching elemental armor contributes resistance through combat resistance checks.
   - Expected: Non-matching elements do not receive the armor resistance bonus.
@@ -365,9 +379,9 @@
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
 
 ### Item Icons
-- [ ] Open the modern Character Menu equipment tab with weapon, armor, offhand, ring, pendant, and helmet/future slot states.
-  - Expected: Implemented equipment slots display an archetype icon next to the item name.
-  - Expected: Empty or future slots do not crash and preserve the existing slot text.
+- [ ] Open the modern Character Menu equipment tab with weapon, armor, offhand, ring, pendant, and helmet states.
+  - Expected: Implemented equipment slots display an archetype icon next to the item name, including `No Helmet`.
+  - Expected: Empty equipment slots do not crash and preserve the existing slot text.
 - [ ] Open Inventory with weapons, armor, accessories, potions, scrolls, quest items, and special/key items.
   - Expected: Each visible inventory row displays an icon.
   - Expected: Repeated tier items intentionally share the same archetype icon.
@@ -386,7 +400,7 @@
 - [ ] Open Inventory and highlight weapons, armor, accessories, consumables, quest items, and unknown/fallback items.
   - Expected: The selected-item detail panel shows large artwork while compact inventory rows still use small icons.
   - Expected: Long item names and wrapped descriptions do not overlap the artwork.
-- [ ] Open Equipment and move through weapon, armor, offhand, ring, and pendant slots.
+- [ ] Open Equipment and move through weapon, armor, helmet, offhand, ring, and pendant slots.
   - Expected: Equipped item detail views show large artwork where panel width allows it.
   - Expected: The modern Character Menu Equipment tab uses large artwork in its slot cards rather than small icons.
   - Expected: Empty equipment slots do not crash.

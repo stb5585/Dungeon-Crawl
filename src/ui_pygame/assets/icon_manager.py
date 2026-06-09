@@ -28,7 +28,7 @@ class IconFrame:
 class IconManager:
     """Load reusable icon atlases and resolve item objects to archetype icons."""
 
-    ITEM_TYPES = {"Weapon", "Armor", "OffHand", "Accessory", "Potion", "Misc"}
+    ITEM_TYPES = {"Weapon", "Armor", "Helmet", "OffHand", "Accessory", "Potion", "Misc"}
     NON_ITEM_TYPES = {"Skill", "Spell", "Ability"}
 
     ATLAS_FILES = (
@@ -40,6 +40,7 @@ class IconManager:
     CATEGORY_FALLBACKS = {
         "Weapon": "weapon",
         "Armor": "armor",
+        "Helmet": "helmet",
         "OffHand": "offhand",
         "Accessory": "accessory",
         "Potion": "consumable",
@@ -211,6 +212,8 @@ class IconManager:
                 "Medium": "medium_armor",
                 "Heavy": "heavy_armor",
             }.get(subtyp, "armor")
+        if typ == "Helmet":
+            return "helmet"
         if typ == "OffHand":
             return {
                 "Shield": "shield",

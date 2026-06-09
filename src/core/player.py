@@ -882,6 +882,7 @@ class Player(Character):
         
         return (f"{'Weapon'}:    {self.equipment['Weapon'].name:<30}\n"
                 f"{'Armor'}:     {self.equipment['Armor'].name:<30}\n"
+                f"{'Helmet'}:    {self.equipment.get('Helmet', remove_equipment('Helmet')).name:<30}\n"
                 f"{'Ring'}:      {self.equipment['Ring'].name:<30}\n"
                 f"{'OffHand'}:   {offhand_str:<30}\n"
                 f"{'Pendant'}:   {self.equipment['Pendant'].name:<30}\n"
@@ -1360,7 +1361,7 @@ class Player(Character):
 
         Args:
             equip_slot: Equipment slot where item is to be equipped. Must be one of the following: "Weapon",
-                "OffHand", "Armor", "Ring", "Pendant"
+                "OffHand", "Armor", "Helmet", "Ring", "Pendant"
             item: Equipment object to be equipped
             check: A flag signifying whether this is an equipment check or an actual equipment change.
                 Default is False.
@@ -1373,7 +1374,7 @@ class Player(Character):
             >>> equip("Armor", LeatherArmor, check=True)
 
         """
-        equip_slots = {"Weapon", "OffHand", "Armor", "Ring", "Pendant"}
+        equip_slots = {"Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant"}
         if equip_slot not in equip_slots:
             raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")
 
@@ -1385,7 +1386,7 @@ class Player(Character):
             self.modify_inventory(self.equipment[equip_slot])
         if self.equipment[equip_slot].name == "Pendant of Vision" and (self.cls.name not in ["Inquisitor", "Seeker"]):
             self.sight = False
-        if self.equipment[equip_slot].name in ["Invisibility Amulet", "Tarnkappe"]:
+        if self.equipment[equip_slot].name in ["Invisibility Amulet", "Tarnkappe", "Tarnhelm"]:
             self.invisible = False
         if self.equipment[equip_slot].name == 'Levitation Necklace':
             self.flying = False
@@ -1419,7 +1420,7 @@ class Player(Character):
         self.equipment[equip_slot] = item
         if item.name == "Pendant of Vision":
             self.sight = True
-        if item.name in ["Invisibility Amulet", "Tarnkappe"]:
+        if item.name in ["Invisibility Amulet", "Tarnkappe", "Tarnhelm"]:
             self.invisible = True
         if item.name == 'Levitation Necklace':
             self.flying = True
@@ -1566,7 +1567,7 @@ class Player(Character):
         if typ:
             return remove_equipment(typ)  # imported from items
         if promo:
-            for item in ['Weapon', 'Armor', 'OffHand']:
+            for item in ['Weapon', 'Armor', 'Helmet', 'OffHand']:
                 if self.equipment[item].subtyp != 'None':
                     self.modify_inventory(self.equipment[item], 1)
         else:
@@ -2118,6 +2119,9 @@ class Player(Character):
                 return 0
         if mod == 'armor':
             armor_mod = self.equipment['Armor'].armor
+            helmet = self.equipment.get("Helmet")
+            if helmet is not None and getattr(helmet, "subtyp", "None") != "None":
+                armor_mod += getattr(helmet, "armor", 0)
             if self.cls.name == 'Knight Enchanter':
                 class_mod += int(armor_mod * max(0, min(5, self.mana.max / (self.mana.current + 1))))
             if self.cls.name in ['Warlock', 'Shadowcaster']:
@@ -2185,6 +2189,7 @@ class Player(Character):
             if self.equipment['OffHand'].name == "Svalinn" and typ == "Fire":
                 res_mod += 0.25
             res_mod += armor_resistance_modifier(self.equipment.get("Armor"), typ)
+            res_mod += armor_resistance_modifier(self.equipment.get("Helmet"), typ)
             if self.cls.name == "Archbishop" and self.class_effects["Power Up"].active:
                 res_mod += 0.25
             if self.cls.name == "Geomancer" and self.class_effects["Power Up"].active and \

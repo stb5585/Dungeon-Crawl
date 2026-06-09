@@ -33,7 +33,7 @@ RELIC_SPRITES = {
 class BasePopupMenu:
     def __init__(self, presenter, parent_screen, title="Menu"):
         self.presenter = presenter
-        self.parent_screen = parent_screen  # CharacterScreen instance for background draw
+        self.parent_screen = parent_screen  # Character menu/screen instance for background draw
         self.screen = presenter.screen
         self.width = presenter.width
         self.height = presenter.height
@@ -705,6 +705,7 @@ class InventoryPopupMenu(BasePopupMenu):
         typ_to_slot = {
             "Weapon": "Weapon",
             "Armor": "Armor",
+            "Helmet": "Helmet",
             "OffHand": "OffHand",
             "Ring": "Ring",
             "Pendant": "Pendant",
@@ -931,7 +932,7 @@ class EquipmentPopupMenu(BasePopupMenu):
         eq = getattr(player_char, "equipment", {})
         items = []
         # items: (slot, obj)
-        for slot in ("Weapon", "Armor", "OffHand", "Ring", "Pendant"):
+        for slot in ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant"):
             items.append((slot, eq.get(slot)))
         self.items = items
         self.selected_index = 0
@@ -1079,6 +1080,7 @@ class EquipmentPopupMenu(BasePopupMenu):
         slot_to_typ = {
             "Weapon": "Weapon",
             "Armor": "Armor",
+            "Helmet": "Helmet",
             "OffHand": "OffHand",
             "Ring": "Ring",
             "Pendant": "Pendant",
@@ -1154,6 +1156,7 @@ class EquipmentPopupMenu(BasePopupMenu):
         no_item_classes = {
             "Weapon": items.NoWeapon,
             "Armor": items.NoArmor,
+            "Helmet": items.NoHelmet,
             "OffHand": items.NoOffHand,
             "Ring": items.NoRing,
             "Pendant": items.NoPendant
@@ -2070,6 +2073,7 @@ class EquipmentSelectionPopup(BasePopupMenu):
                 no_item_classes = {
                     "Weapon": items.NoWeapon,
                     "Armor": items.NoArmor,
+                    "Helmet": items.NoHelmet,
                     "OffHand": items.NoOffHand,
                     "Ring": items.NoRing,
                     "Pendant": items.NoPendant

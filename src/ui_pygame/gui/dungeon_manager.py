@@ -53,7 +53,7 @@ class DungeonManager:
         self.combat_manager.dungeon_renderer = self.renderer
 
         # Initialize character screen lazily so dungeon backgrounds can be applied.
-        self.modern_character_screen = None
+        self.character_screen = None
 
         # Initialize loot popup
         self.loot_popup = LootPopup(presenter.screen, presenter)
@@ -115,12 +115,12 @@ class DungeonManager:
         return self.presenter.screen.copy()
 
     def _get_character_screen(self):
-        if self.modern_character_screen is None:
+        if self.character_screen is None:
             from .modern_character_screen import ModernCharacterScreen
-            self.modern_character_screen = ModernCharacterScreen(self.presenter)
+            self.character_screen = ModernCharacterScreen(self.presenter)
             if self._dungeon_background is not None:
-                self.modern_character_screen.background = self._dungeon_background
-        return self.modern_character_screen
+                self.character_screen.background = self._dungeon_background
+        return self.character_screen
 
     def add_message(self, message: str):
         """Add a message to the message log."""

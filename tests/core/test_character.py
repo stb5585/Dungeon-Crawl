@@ -858,6 +858,7 @@ class TestSaveSystemRoundTrips:
             level=12,
         )
         player.equipment["Weapon"] = items.Falchion()
+        player.equipment["Helmet"] = items.IronHelm()
         player.equipment["Ring"] = items.PowerRing()
         player.inventory = {
             "Antidote": [items.Antidote(), items.Antidote()],
@@ -874,11 +875,16 @@ class TestSaveSystemRoundTrips:
         restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
         assert restored.equipment["Weapon"].name == "Falchion"
+        assert restored.equipment["Helmet"].name == "Iron Helm"
         assert restored.equipment["Ring"].name == "Power Ring"
         assert len(restored.inventory["Antidote"]) == 2
         assert restored.inventory["Old Key"][0].name == "Old Key"
         assert len(restored.special_inventory["Ticket Piece"]) == 2
         assert restored.storage["Remedy"][0].name == "Remedy"
+
+        serialized["equipment"].pop("Helmet")
+        legacy_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+        assert legacy_restored.equipment["Helmet"].name == "No Helmet"
 
     def test_quest_serializer_round_trips_rewards_and_bounty_enemy_state(self):
         quest_dict = {

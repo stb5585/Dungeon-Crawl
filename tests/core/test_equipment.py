@@ -30,6 +30,7 @@ class TestEquipmentBasics:
         assert player.equipment is not None
         assert "Weapon" in player.equipment
         assert "Armor" in player.equipment
+        assert "Helmet" in player.equipment
         assert "OffHand" in player.equipment
         assert "Ring" in player.equipment
         assert "Pendant" in player.equipment
@@ -223,7 +224,7 @@ class TestEquipmentSlots:
         """Verify all 5 equipment slots are present."""
         player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
         
-        required_slots = ['Weapon', 'Armor', 'OffHand', 'Ring', 'Pendant']
+        required_slots = ['Weapon', 'Armor', 'Helmet', 'OffHand', 'Ring', 'Pendant']
         for slot in required_slots:
             assert slot in player.equipment, f"Missing equipment slot: {slot}"
     
@@ -236,6 +237,40 @@ class TestEquipmentSlots:
         assert hasattr(armor, 'subtyp')
         # Should be 'Light', 'Medium', 'Heavy', or 'None'
         assert armor.subtyp in ['Light', 'Medium', 'Heavy', 'None']
+
+    def test_helmet_slot_contains_helmet_and_adds_defense(self):
+        """Verify helmet slot contains helmet type and contributes to defense."""
+        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+
+        helmet = player.equipment['Helmet']
+        assert helmet is not None
+        assert hasattr(helmet, 'subtyp')
+        assert helmet.subtyp in ['Cloth', 'Light', 'Medium', 'Heavy', 'None']
+
+        base_defense = player.check_mod("armor")
+        player.equipment["Helmet"] = items.IronHelm()
+        assert player.check_mod("armor") == base_defense + items.IronHelm().armor
+
+        assert player.equip("Helmet", items.GreatHelm(), check=True) is True
+        assert player.equipment["Helmet"].name == "Great Helm"
+
+    def test_helmet_catalog_restrictions_and_special_modifiers(self):
+        """Verify special helmet restrictions and passive modifiers."""
+        priest = TestGameState.create_player(name="Priest", class_name="Priest", race_name="Human")
+        priest.cls.equip_check = priest.cls.equip_check
+        assert priest.equip("Helmet", items.MitreHat(), check=True) is True
+        assert priest.equip("Helmet", items.Circlet(), check=True) is False
+
+        wizard = TestGameState.create_player(name="Wizard", class_name="Wizard", race_name="Human")
+        assert wizard.equip("Helmet", items.MitreHat(), check=True) is False
+        assert wizard.equip("Helmet", items.Circlet(), check=True) is True
+
+        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        player.equipment["Helmet"] = items.CohuleenDruith()
+        assert player.check_mod("resist", typ="Water") == 0.5
+
+        player.equipment["Helmet"] = items.DemonCowl()
+        assert player.check_mod("resist", typ="Death") == 0.5
     
     def test_ring_slot_contains_ring(self):
         """Verify ring slot contains ring or empty."""

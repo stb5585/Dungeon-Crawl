@@ -340,7 +340,7 @@ dungeon-crawl/
 │       ├── game.py
 │       ├── gui/
 │       │   ├── barracks.py
-│       │   ├── character_screen.py
+│       │   ├── modern_character_screen.py
 │       │   ├── church.py
 │       │   ├── combat_manager.py
 │       │   ├── combat_view.py

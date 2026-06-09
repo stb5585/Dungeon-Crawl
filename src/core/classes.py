@@ -169,6 +169,9 @@ class Job:
         self.magic_def_plus = magic_def_plus
         self.equipment = equipment
         self.restrictions = restrictions
+        self.equipment.setdefault("Helmet", items.NoHelmet())
+        if "Helmet" not in self.restrictions:
+            self.restrictions["Helmet"] = list(self.restrictions.get("Armor", []))
         self.pro_level = pro_level
 
     def equip_check(self, item, equip_slot):
@@ -182,6 +185,8 @@ class Job:
                 return True
             return False
         if item.subtyp in self.restrictions[equip_slot]:
+            if self.name in getattr(item, "restricted_against", []):
+                return False
             if item.restriction:
                 if self.name not in item.restriction:
                     return False

@@ -72,7 +72,7 @@ class UltimateArmorShop:
         armor_classes = [
             items.MerlinRobe,    # Cloth
             items.DragonHide,    # Light
-            items.Aegis,         # Medium
+            items.Klivanion,     # Medium
             items.Genji          # Heavy
         ]
         

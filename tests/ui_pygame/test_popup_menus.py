@@ -129,11 +129,13 @@ def _make_parent():
 def _make_player():
     inventory = {
         "Weapons": [DummyItem("Bronze Sword"), DummyItem("Bronze Sword"), DummyItem("Apple", typ="Misc", subtyp="Health")],
+        "Helmets": [DummyItem("Iron Helm", typ="Helmet", subtyp="Heavy")],
         "Accessories": [DummyItem("Silver Ring", typ="Accessory", subtyp="Ring"), DummyItem("Sun Pendant", typ="Accessory", subtyp="Pendant")],
     }
     equipment = {
         "Weapon": DummyItem("Starter Blade"),
         "Armor": DummyItem("Traveler Coat", typ="Armor", subtyp="Light"),
+        "Helmet": DummyItem("No Helmet", typ="Helmet", subtyp="None", unequip=True),
         "OffHand": DummyItem("None", typ="OffHand", subtyp="Shield", unequip=True),
         "Ring": DummyItem("None", typ="Accessory", subtyp="Ring", unequip=True),
         "Pendant": DummyItem("None", typ="Accessory", subtyp="Pendant", unequip=True),
@@ -230,7 +232,7 @@ def test_equipment_popup_wraps_long_plain_descriptions(monkeypatch):
     )
     popup = popup_menus.EquipmentPopupMenu(presenter, parent)
     popup.build_items(player)
-    popup.selected_index = 4
+    popup.selected_index = 5
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None)
 
     popup.draw_details(player)
@@ -629,14 +631,23 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
 
     equippable = popup._get_equippable_items_for_slot(player, "Ring")
     assert any(item.name == "Silver Ring" for item in equippable)
+    helmet_options = popup._get_equippable_items_for_slot(player, "Helmet")
+    assert any(item.name == "Iron Helm" for item in helmet_options)
 
     new_ring = DummyItem("Ruby Ring", typ="Accessory", subtyp="Ring")
     player.inventory.setdefault("Ruby Ring", []).append(new_ring)
     popup._equip_from_inventory(player, "Ring", new_ring)
     assert player.equipment["Ring"].name == "Ruby Ring"
 
+    new_helmet = DummyItem("Leather Cap", typ="Helmet", subtyp="Light")
+    player.inventory.setdefault("Leather Cap", []).append(new_helmet)
+    popup._equip_from_inventory(player, "Helmet", new_helmet)
+    assert player.equipment["Helmet"].name == "Leather Cap"
+
     popup._unequip_item(player, "Ring", player.equipment["Ring"])
     assert player.equipment["Ring"].name == "No Ring"
+    popup._unequip_item(player, "Helmet", player.equipment["Helmet"])
+    assert player.equipment["Helmet"].name == "No Helmet"
 
     class FakeEquipPopup:
         def __init__(self, *_args, **_kwargs):

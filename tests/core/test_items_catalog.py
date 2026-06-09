@@ -14,6 +14,7 @@ _BASE_ITEM_CLASSES = {
     items.Item,
     items.Weapon,
     items.Armor,
+    items.Helmet,
     items.OffHand,
     items.Accessory,
     items.Potion,
@@ -81,8 +82,61 @@ def test_no_arg_item_catalog_instantiates_and_renders_cleanly():
                 assert "Sub-type: Special" in rendered
                 saw_summon_misc = True
 
-    assert {"Weapon", "Armor", "OffHand", "Accessory", "Potion", "Misc"} <= seen_types
+    assert {"Weapon", "Armor", "Helmet", "OffHand", "Accessory", "Potion", "Misc"} <= seen_types
     assert saw_summon_misc is True
+
+
+def test_helmet_catalog_matches_equipment_table():
+    helmet_names = {
+        subtyp: [helmet_cls().name for helmet_cls in helmet_classes]
+        for subtyp, helmet_classes in items.items_dict["Helmet"].items()
+    }
+
+    assert helmet_names["Cloth"] == [
+        "Cloth Cap",
+        "Jaapi",
+        "Turban",
+        "Witch Hat",
+        "Enchanted Hood",
+        "Mitre Hat",
+        "Circlet",
+        "Cohuleen Druith",
+        "Ariadne's Diadem",
+    ]
+    assert helmet_names["Light"] == [
+        "Leather Cap",
+        "Pith Helmet",
+        "War Mask",
+        "Arming Cap",
+        "Katapu",
+        "Sōmen",
+        "Demon Cowl",
+    ]
+    assert helmet_names["Medium"] == [
+        "Scale Helm",
+        "Chain Coif",
+        "Kulah Khud",
+        "Cervelliere",
+        "Visored Sallet",
+        "Tolga",
+        "Tarnhelm",
+    ]
+    assert helmet_names["Heavy"] == [
+        "Iron Helm",
+        "Kettle Helm",
+        "Barbute",
+        "Great Helm",
+        "Full Plate Helm",
+        "Close Helm",
+        "Kabuto",
+    ]
+
+    mitre = items.MitreHat()
+    circlet = items.Circlet()
+    assert mitre.restriction == ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+    assert circlet.restricted_against == ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+    assert items.CohuleenDruith().resist_mod == 0.5
+    assert items.DemonCowl().element == "Death"
 
 
 def test_base_item_classes_and_helper_utilities(monkeypatch):
@@ -94,6 +148,7 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     fist_weapon = items.Weapon("Fist Wrap", "Simple wraps.", 10, 0.5, 2, 0.1, 1, "Fist", False, True)
     sword_weapon = items.Weapon("Training Sword", "A blunt sword.", 10, 0.5, 3, 0.2, 1, "Sword", False, True)
     armor = items.Armor("Padded Coat", "Simple protection.", 10, 0.5, 2, "Cloth", False)
+    helmet = items.Helmet("Padded Cap", "Simple head protection.", 10, 0.5, 1, "Cloth", False)
     shield = items.OffHand("Practice Shield", "A round shield.", 10, 0.5, 0.25, "Shield", False)
     tome = items.OffHand("Study Tome", "A magical primer.", 10, 0.5, 3, "Book", False)
     accessory = items.Accessory("Charm Ring", "A simple charm.", 10, 0.5, "+1 Luck", "Ring", False)
@@ -106,8 +161,10 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert sword_weapon.disarm is True
     assert fist_weapon.special_effect(None) is None
     assert armor.special_effect(None) is None
+    assert helmet.typ == "Helmet"
     assert "Damage:" in str(fist_weapon)
     assert "Armor:" in str(armor)
+    assert "Armor:" in str(helmet)
     assert "Block:" in str(shield)
     assert "Spell Damage Mod:" in str(tome)
     assert "Mod:" in str(accessory)
@@ -131,11 +188,13 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert items.stat_theme_for_item(items.RubyLocket()) == "wisdom"
     assert items.stat_theme_for_item(items.Rapier()) == "strength"
     assert items.stat_theme_for_item(items.FireChain()) == "resistance"
+    assert items.stat_theme_for_item(items.IronHelm()) == "constitution"
     assert items.stat_themed_item_name(items.PowerRing()) == "Mighty Power Ring"
     assert items.stat_themed_item_name(items.Item("Pebble", "A pebble.", 0, 1.0, "Misc")) == "Pebble"
 
     assert isinstance(items.remove_equipment("Weapon"), items.NoWeapon)
     assert isinstance(items.remove_equipment("OffHand"), items.NoOffHand)
     assert isinstance(items.remove_equipment("Armor"), items.NoArmor)
+    assert isinstance(items.remove_equipment("Helmet"), items.NoHelmet)
     assert isinstance(items.remove_equipment("Ring"), items.NoRing)
     assert isinstance(items.remove_equipment("Pendant"), items.NoPendant)

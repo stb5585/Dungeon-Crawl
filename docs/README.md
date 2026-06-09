@@ -15,7 +15,7 @@
 - **[archive/](archive/)** - Archived documentation and past enhancement plans
 
 ## Related Documentation
-- **[../tests/README.md](../tests/README.md)** - Test suite documentation (47 passing tests, recent improvements)
+- **[../tests/README.md](../tests/README.md)** - Test suite documentation and validation guidance
 - **[../tools/](../tools/)** - Development utilities (dev_tools.py, modify_save.py)
 
 ## Project Structure
@@ -33,17 +33,15 @@ data/            - YAML-based ability definitions
 ## Recent Changes
 
 ### Phase 3 Status
-- Pygame GUI implementation in progress
-- Event system fully integrated with combat
-- Character sprite generation system operational
-- Test suite expanded to 47 tests with equipment validation
+- Pygame GUI implementation is active, with the modern Character Menu now used as the standard town and dungeon character screen.
+- Event system integration, combat presentation polish, character sprite generation, and item artwork/icon presentation are operational.
+- Equipment validation now covers weapon/offhand rules, armor, helmets, accessories, save/load compatibility, shop flows, and pygame/curses UI integration.
 
-### Latest Fixes (This Session)
-- ✅ Two-handed weapon equipment logic (Lancer/Dragoon exception validated)
-- ✅ Key Items menu display from special_inventory
-- ✅ GitHub Actions CI/CD (upload-artifact v3 → v4)
-- ✅ Test suite health (47 passing, 1 skipped, 0 failures)
-- ✅ Equipment system tests added (16 new tests)
+### Latest Fixes
+- ✅ Modern Character Menu promoted to the standard character screen.
+- ✅ Helmet equipment slot implemented across core gameplay, shops, saves, UI, icons, and item artwork.
+- ✅ Helmet catalog added for Cloth, Light, Medium, and Heavy armor types, including restricted and special-effect helmets.
+- ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
 
 ### Core Game Files
 ```

@@ -20,6 +20,7 @@ def _write_render_fixture(root: Path) -> None:
         "warhammer": {"x": 160, "y": 0, "w": 80, "h": 140},
         "weapon": {"x": 0, "y": 140, "w": 80, "h": 140},
         "armor": {"x": 80, "y": 140, "w": 80, "h": 140},
+        "helmet": {"x": 160, "y": 140, "w": 80, "h": 140},
         "generic_item": {"x": 160, "y": 140, "w": 80, "h": 140},
     }
     (root / "item_render_atlas.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -62,6 +63,7 @@ def test_item_render_manager_uses_icon_map_conversion_and_category_fallbacks(tmp
     assert manager.get_render_key_for_item(SimpleNamespace(name="War Hammer")) == "warhammer"
     assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Axe", typ="Weapon", subtyp="Unknown")) == "weapon"
     assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Plate", typ="Armor", subtyp="Unknown")) == "armor"
+    assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Helm", typ="Helmet", subtyp="Heavy")) == "helmet"
     assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Thing", typ="", subtyp="")) == "generic_item"
     assert "Mystery Thing" in manager.missing_mappings
 

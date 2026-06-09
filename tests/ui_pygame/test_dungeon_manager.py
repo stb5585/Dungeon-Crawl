@@ -1117,7 +1117,7 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
     notices = []
     presenter.show_message = lambda message: notices.append(message)
     char_choices = iter(["Inventory", "Exit Menu"])
-    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: notices.append("saved"))
     manager.running = True
 
@@ -1170,7 +1170,7 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
     presenter.show_message = lambda message: notices.append(message)
 
     char_choices = iter(["Inventory", "Exit Menu"])
-    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: None)
     manager.running = True
     manager._handle_keypress(pygame.K_c)
@@ -1179,7 +1179,7 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
     manager.running = True
     manager.game.running = True
     char_choices = iter(["Inventory", "Exit Menu"])
-    manager.modern_character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
+    manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
     manager._popup_menu = lambda title, options, **_kwargs: 1
     manager._show_menu()
     assert notices[-1] == "This menu is not yet implemented in the dungeon."

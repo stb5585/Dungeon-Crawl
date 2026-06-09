@@ -1,4 +1,4 @@
-"""Modern, parallel character menu implementation for the Pygame UI."""
+"""Standard character menu implementation for the Pygame UI."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import pygame
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 
-from .character_screen import CharacterScreen
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
+from .town_base import TownScreenBase
 
 
 @dataclass(frozen=True)
@@ -61,8 +61,8 @@ RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
 PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
 
 
-class ModernCharacterScreen(CharacterScreen):
-    """Premium RPG-style character menu kept separate from the legacy layout."""
+class ModernCharacterScreen(TownScreenBase):
+    """RPG-style character menu used by the standard pygame character flow."""
 
     def __init__(self, presenter, tabs: tuple[CharacterTab, ...] = DEFAULT_CHARACTER_TABS):
         self.tabs = tabs
@@ -71,7 +71,10 @@ class ModernCharacterScreen(CharacterScreen):
         self.item_render_manager = get_item_render_manager()
         self.selected_equipment_slot_index = 0
         self.equipment_selector_active = False
+        self.current_selection = 0
+        self.menu_options: list[str] = []
         super().__init__(presenter)
+        self.calculate_rects()
 
     def calculate_rects(self):
         """Calculate responsive panel rectangles for the modern layout."""
@@ -187,6 +190,80 @@ class ModernCharacterScreen(CharacterScreen):
             return int(value)
         except (TypeError, ValueError):
             return int(default)
+
+    def _get_jump_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Jump" in skills:
+            return skills["Jump"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Jump":
+                return skill
+        return None
+
+    def _has_jump_mods(self, player_char) -> bool:
+        jump_skill = self._get_jump_skill(player_char)
+        return bool(jump_skill and hasattr(jump_skill, "modifications"))
+
+    def _get_totem_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            return skills["Totem"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Totem":
+                return skill
+        return None
+
+    def _has_totem_aspects(self, player_char) -> bool:
+        totem_skill = self._get_totem_skill(player_char)
+        return bool(totem_skill and hasattr(totem_skill, "get_unlocked_aspects"))
+
+    def _get_key_items_list(self, player_char):
+        special_inv = getattr(player_char, "special_inventory", {})
+        if not special_inv:
+            return ["No key items"]
+
+        key_items = []
+        for item_name, item_list in special_inv.items():
+            if not item_list:
+                continue
+            item_obj = item_list[0]
+            quantity = len(item_list)
+            if quantity > 1:
+                key_items.append(
+                    {
+                        "text": f"{item_name} ({quantity})",
+                        "value": item_obj,
+                        "is_header": False,
+                    }
+                )
+            else:
+                key_items.append(item_obj)
+        return key_items if key_items else ["No key items"]
+
+    def _get_specials_list(self, player_char):
+        result = []
+
+        race = getattr(player_char, "race", None)
+        virtue = getattr(race, "virtue", None) if race else None
+        sin = getattr(race, "sin", None) if race else None
+        if virtue and getattr(virtue, "name", ""):
+            result.append("--- RACIAL TRAITS ---")
+            result.append(virtue)
+            if sin and getattr(sin, "name", ""):
+                result.append(sin)
+
+        spellbook = getattr(player_char, "spellbook", None)
+        if spellbook and isinstance(spellbook, dict):
+            spells = spellbook.get("Spells", {}) or {}
+            skills = spellbook.get("Skills", {}) or {}
+            if spells:
+                result.append("--- SPELLS ---")
+                result.extend(spells.values())
+            if skills:
+                result.append("--- SKILLS ---")
+                result.extend(skills.values())
+
+        return result if result else ["No special abilities"]
 
     @staticmethod
     def _check_mod(player_char, mod: str, default: int = 0) -> int:
@@ -335,10 +412,7 @@ class ModernCharacterScreen(CharacterScreen):
         slots: list[EquipmentSlotSummary] = []
         weapon = equipment.get("Weapon") if isinstance(equipment, dict) else None
         for slot in EQUIPMENT_SLOT_ORDER:
-            if slot == "Helmet" and slot not in equipment:
-                slots.append(EquipmentSlotSummary(slot, "(future slot)", "Helmet mechanics are not active yet.", "", implemented=False))
-                continue
-            item = equipment.get(slot)
+            item = equipment.get(slot) if isinstance(equipment, dict) else None
             if slot == "OffHand" and self.should_show_two_handed_occupancy(player_char, weapon, item):
                 item = weapon
                 description = "Off-hand occupied by two-handed weapon."
@@ -452,7 +526,7 @@ class ModernCharacterScreen(CharacterScreen):
         if slot in {"Weapon", "OffHand"} and (typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")):
             details.append(("Base Damage", self._display_number(getattr(item, "damage", 0))))
             details.append(("Crit", self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0)))))
-        elif slot == "Armor" or typ == "Armor" or getattr(item, "armor", None) not in (None, 0, ""):
+        elif slot in {"Armor", "Helmet"} or typ in {"Armor", "Helmet"} or getattr(item, "armor", None) not in (None, 0, ""):
             details.append(("Base Armor", self._display_number(getattr(item, "armor", 0))))
         elif slot == "OffHand" or typ == "OffHand":
             mod = getattr(item, "mod", None)
@@ -473,6 +547,16 @@ class ModernCharacterScreen(CharacterScreen):
         buffs: list[str] = []
         if self._attr_name(item) == "Svalinn":
             buffs.append("+25% Fire Resistance")
+
+        resist_mod = getattr(item, "resist_mod", None)
+        element = getattr(item, "element", None)
+        if resist_mod is not None and element:
+            try:
+                percent = int(float(resist_mod) * 100)
+            except (TypeError, ValueError):
+                percent = 0
+            if percent:
+                buffs.append(f"+{percent}% {element} Resistance")
 
         subtyp = str(getattr(item, "subtyp", "") or "")
         mod = str(getattr(item, "mod", "") or "")

@@ -662,7 +662,7 @@ def test_ultimate_armor_repo_crafts_selected_armor(monkeypatch):
     robe = SimpleNamespace(name="Merlin Robe", description="A robe of legends.")
     monkeypatch.setattr(curses_town.items, "MerlinRobe", lambda: robe)
     monkeypatch.setattr(curses_town.items, "DragonHide", lambda: SimpleNamespace(name="Dragon Hide", description="Hide"))
-    monkeypatch.setattr(curses_town.items, "Aegis", lambda: SimpleNamespace(name="Aegis", description="Shield"))
+    monkeypatch.setattr(curses_town.items, "Klivanion", lambda: SimpleNamespace(name="Klivanion", description="Armor"))
     monkeypatch.setattr(curses_town.items, "Genji", lambda: SimpleNamespace(name="Genji", description="Armor"))
     monkeypatch.setattr(curses_town.time, "sleep", lambda _secs: None)
 

@@ -87,6 +87,7 @@ def test_icon_manager_infers_more_specific_weapon_archetypes(tmp_path):
     assert manager.infer_icon_key(SimpleNamespace(name="Brass Knuckles", typ="Weapon", subtyp="Fist")) == "fist_weapon"
     assert manager.infer_icon_key(SimpleNamespace(name="Claymore", typ="Weapon", subtyp="Longsword")) == "longsword"
     assert manager.infer_icon_key(SimpleNamespace(name="Rapier", typ="Weapon", subtyp="Sword")) == "sword"
+    assert manager.infer_icon_key(SimpleNamespace(name="Iron Helm", typ="Helmet", subtyp="Heavy")) == "helmet"
 
 
 def test_icon_manager_uses_default_icon_root():
@@ -95,10 +96,13 @@ def test_icon_manager_uses_default_icon_root():
     assert manager.icon_root == icon_manager.ICON_ROOT
 
 
-def test_default_item_icon_map_resolves_gold_currency():
+def test_default_item_icon_map_resolves_gold_currency_and_empty_helmet(caplog):
     manager = IconManager()
 
     assert manager.icon_key_for_item("Gold") == "gold"
+    with caplog.at_level("WARNING"):
+        assert manager.icon_key_for_item(SimpleNamespace(name="No Helmet", typ="Helmet", subtyp="None")) == "helmet"
+    assert "Item icon mapping missing for No Helmet" not in caplog.text
 
 
 def test_icon_manager_slot_and_generic_fallbacks(tmp_path):

@@ -1594,6 +1594,7 @@ class Character:
                 return -0.25
             res_mod = self.resistance.get(typ, 0)
             res_mod += armor_resistance_modifier(self.equipment.get("Armor"), typ)
+            res_mod += armor_resistance_modifier(self.equipment.get("Helmet"), typ)
             if self.flying:
                 if typ == 'Earth':
                     res_mod = 1

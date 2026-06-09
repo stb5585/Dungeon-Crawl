@@ -92,9 +92,9 @@ def test_visit_shop_handles_quest_looted_leave_and_confirm(monkeypatch):
             self.name = "Dragon Hide"
             self.description = "Legendary light armor"
 
-    class Aegis:
+    class Klivanion:
         def __init__(self):
-            self.name = "Aegis"
+            self.name = "Klivanion"
             self.description = "Legendary medium armor"
 
     class Genji:
@@ -104,7 +104,7 @@ def test_visit_shop_handles_quest_looted_leave_and_confirm(monkeypatch):
 
     monkeypatch.setattr(ultimate_armor.items, "MerlinRobe", MerlinRobe)
     monkeypatch.setattr(ultimate_armor.items, "DragonHide", DragonHide)
-    monkeypatch.setattr(ultimate_armor.items, "Aegis", Aegis)
+    monkeypatch.setattr(ultimate_armor.items, "Klivanion", Klivanion)
     monkeypatch.setattr(ultimate_armor.items, "Genji", Genji)
 
     presenter.menu_results = [0, 0]
@@ -131,7 +131,7 @@ def test_visit_shop_handles_quest_looted_leave_and_confirm(monkeypatch):
     presenter.menu_results = [2, 1]
     shop.visit_shop(player, tile)
     assert any(title == "Medium Armor" for title, _message in presenter.messages)
-    assert not any(item.name == "Aegis" for item in player.inventory_added[1:])
+    assert not any(item.name == "Klivanion" for item in player.inventory_added[1:])
 
 
 def test_crafting_animation_renders_until_time_expires(monkeypatch):

@@ -555,7 +555,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.save_game()
     assert presenter_messages[-1][1] == "Save failed. Please try again."
 
-    class FakeCharacterScreen:
+    class FakeStandardCharacterScreen:
         def __init__(self, presenter_obj):
             self.presenter_obj = presenter_obj
 
@@ -563,7 +563,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
             return nav_results.pop(0)
 
     nav_results = ["Exit Menu"]
-    monkeypatch.setattr(pygame_game, "ModernCharacterScreen", FakeCharacterScreen)
+    monkeypatch.setattr(pygame_game, "ModernCharacterScreen", FakeStandardCharacterScreen)
     game.player_char = SimpleNamespace(quit=False)
     game.show_character_info()
     assert game.player_char.quit is False

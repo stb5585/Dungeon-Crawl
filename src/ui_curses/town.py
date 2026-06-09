@@ -677,7 +677,7 @@ def blacksmith(game):
         done = False
         while not done:
             if blacksmith_choice == 'Buy':
-                buy_options = ['Weapon', 'OffHand', 'Armor', 'Go Back']
+                buy_options = ['Weapon', 'OffHand', 'Armor', 'Helmet', 'Go Back']
                 menu.update_options(buy_options)
                 buy_choice = menu.navigate_options()
                 if buy_choice == "Go Back":
@@ -830,7 +830,7 @@ def secret_shop(game):
         done = False
         while not done:
             if secret_choice == "Buy":
-                buy_options = ["Weapon", "OffHand", "Armor", "Accessories", "Miscellaneous", "Go Back"]
+                buy_options = ["Weapon", "OffHand", "Armor", "Helmet", "Accessories", "Miscellaneous", "Go Back"]
                 menu.update_options(buy_options)
                 buy_choice = menu.navigate_options()
                 if buy_choice == "Go Back":
@@ -864,7 +864,7 @@ def ultimate_armor_repo(game):
         ultimate_message = f"Which type of armor do you choose?"
         ultimate_options = ['Cloth', 'Light', 'Medium', 'Heavy', "Leave"]
         no_message = "You need time to consider you choice, I respect that. Come back when you have made your choice."
-        armor_list = [items.MerlinRobe(), items.DragonHide(), items.Aegis(), items.Genji()]
+        armor_list = [items.MerlinRobe(), items.DragonHide(), items.Klivanion(), items.Genji()]
         popup = menus.SelectionPopupMenu(game, ultimate_message, ultimate_options, confirm=True)
         ultimate_idx = popup.navigate_popup()
         if ultimate_options[ultimate_idx] == "Leave":

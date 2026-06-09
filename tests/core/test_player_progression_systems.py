@@ -541,8 +541,8 @@ class TestPlayerProgressionAndMenus:
         calls = []
         player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: calls.append((item.name, subtract))
 
-        with pytest.raises(ValueError):
-            player.equip("Helmet", SimpleNamespace(subtyp="Armor"))
+        assert player.equip("Helmet", items.IronHelm(), check=True) is True
+        assert player.equipment["Helmet"].name == "Iron Helm"
 
         player.cls.equip_check = lambda item, slot: False
         assert player.equip("Weapon", SimpleNamespace(subtyp="Sword")) is False
@@ -580,6 +580,11 @@ class TestPlayerProgressionAndMenus:
         player.invisible = True
         player.equipment["Armor"] = items.Tarnkappe()
         player.equip("Armor", items.PlateMail())
+        assert player.invisible is False
+
+        player.equip("Helmet", items.Tarnhelm())
+        assert player.invisible is True
+        player.equip("Helmet", items.NoHelmet())
         assert player.invisible is False
 
         player.equip("Pendant", SimpleNamespace(name="Levitation Necklace", subtyp="Pendant", handed=0))
