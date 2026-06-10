@@ -12,6 +12,8 @@ import sys
 import pygame
 
 from src.ui_pygame.assets.enemy_render_manager import get_enemy_render_manager
+from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
+from src.ui_pygame.assets.player_token_manager import get_player_token_manager
 
 from .status_icons import (
     STATUS_ICON_COLORS,
@@ -141,6 +143,8 @@ class CombatView:
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
         self.enemy_render_manager = get_enemy_render_manager()
+        self.enemy_token_manager = get_enemy_token_manager()
+        self.player_token_manager = get_player_token_manager()
 
     def _get_sprite_animator(self, enemy):
         """Get or create animator for this enemy instance."""
@@ -1183,6 +1187,9 @@ class CombatView:
             return
 
         view_width = int(self.screen_width * 0.65) if overlay else self.combat_width
+        token_size = 46
+        text_left = token_size + 26
+        min_height = 64
         label = "Your Turn" if current_turn == "player" else "Enemy Turn"
         sublabel = getattr(player_char, "name", "Player") if current_turn == "player" else getattr(enemy, "name", "Enemy")
         color = self.colors["turn_player" if current_turn == "player" else "turn_enemy"]
@@ -1192,10 +1199,10 @@ class CombatView:
         label_surf = font.render(label, True, (255, 255, 255))
 
         max_width = max(120, view_width - 30)
-        width = min(max(label_surf.get_width() + 48, small_font.size(sublabel)[0] + 48, 180), max_width)
-        sublabel = self._truncate_text(small_font, sublabel, width - 48)
+        width = min(max(label_surf.get_width() + text_left + 14, small_font.size(sublabel)[0] + text_left + 14, 180), max_width)
+        sublabel = self._truncate_text(small_font, sublabel, width - text_left - 14)
         sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
-        rect = pygame.Rect(15, 170 if overlay else 12, width, 58)
+        rect = pygame.Rect(15, 170 if overlay else 12, width, min_height)
 
         if overlay:
             panel = pygame.Surface(rect.size)
@@ -1206,9 +1213,22 @@ class CombatView:
             pygame.draw.rect(self.screen, (18, 18, 24), rect)
 
         pygame.draw.rect(self.screen, color, rect, 3)
-        pygame.draw.circle(self.screen, color, (rect.left + 18, rect.centery), 6)
-        self.screen.blit(label_surf, (rect.left + 34, rect.top + 8))
-        self.screen.blit(sublabel_surf, (rect.left + 34, rect.top + 34))
+        if current_turn == "player":
+            try:
+                token = self.player_token_manager.get_scaled_token(player_char, (token_size, token_size))
+            except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
+                print(f"Failed to render player token for {getattr(player_char, 'name', player_char)}: {exc}")
+                token = None
+        else:
+            try:
+                token = self.enemy_token_manager.get_scaled_token(enemy, (token_size, token_size))
+            except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
+                print(f"Failed to render enemy token for {getattr(enemy, 'name', enemy)}: {exc}")
+                token = None
+        if token is not None:
+            self.screen.blit(token, (rect.left + 8, rect.centery - token_size // 2))
+        self.screen.blit(label_surf, (rect.left + text_left, rect.top + 8))
+        self.screen.blit(sublabel_surf, (rect.left + text_left, rect.top + 34))
 
     def _latest_telegraph_line(self) -> str | None:
         if self._active_telegraph_line:

@@ -21,7 +21,7 @@
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
 - [ ] Revisit a room after moving through side corridors and backtracking.
   - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
-- [ ] Enable renderer surface-slot debugging while checking a side corridor.
+- [x] Enable renderer surface-slot debugging while checking a side corridor.
   - Expected: Debug overlay information corresponds to the visible panel being inspected.
   - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
   - Expected: Manual and scene-driven override counts are distinguishable while debugging.
@@ -417,9 +417,17 @@
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
 ### Enemy Render Artwork
-- [ ] Start combat against common mapped enemies.
+- [x] Review the generated enemy render contact sheet.
+  - Expected: `src/ui_pygame/assets/enemy_renders/enemy_render_review_sheet.png` shows distinct dark-fantasy archetypes with consistent lighting and no placeholder cards.
+  - Expected: Goblin/Orc, Skeleton/Skeleton Warrior, Wolf/Dire Wolf, Slime/Ooze, Dragon/Wyrm, Demon/Greater Demon, boss, and generic fallback are visually distinguishable.
+- [x] Start combat against common mapped enemies.
   - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy render artwork in the combat target panel.
   - Expected: The existing center combat sprite still renders and animates independently from the target-panel artwork.
+- [x] Inspect the turn/initiative banner during player and enemy turns.
+  - Expected: Enemy turns show a compact circular enemy token derived from the render artwork.
+  - Expected: Player turns show a compact circular face token derived from the player portrait.
+- [x] Run enemy render atlas validation after changing enemy artwork.
+  - Expected: `./.venv/bin/python tools/validate_enemy_render_atlas.py` reports no atlas dimension, frame overlap, source PNG, or token crop issues.
 - [ ] Start combat against an enemy mapped to the boss fallback.
   - Expected: Boss fallback artwork appears when no specific boss archetype exists.
   - Expected: Boss combat, victory, defeat, and flee flows still function.
@@ -432,6 +440,8 @@
 - [ ] Verify enemy render lookup does not affect saves or map sprites.
   - Expected: Save/load data is unchanged.
   - Expected: Dungeon map sprites, encounter positioning sprites, overworld tokens, and dungeon renderer enemy textures still use their existing sprite systems.
+- [ ] Review `docs/ENEMY_VISUAL_SYSTEM.md` before adding new enemy presentation screens.
+  - Expected: Combat sprites, enemy tokens, and large enemy renders are used for their intended visual layers.
 - [ ] Review `docs/ENEMY_RENDER_MAPPING.md` after adding or renaming enemies.
   - Expected: Every no-argument enemy class has an Enemy Name, Enemy Class, and Suggested Archetype row.
   - Expected: `enemy_render_map.json` contains a display-name mapping for every discovered enemy name.

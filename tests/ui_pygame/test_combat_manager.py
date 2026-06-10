@@ -376,7 +376,8 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
-    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: None)
+    render_calls = []
+    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
     monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
 
     manager.engine = SimpleNamespace(
@@ -393,6 +394,7 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
 
     popup_messages.clear()
     manager.combat_view.reset_calls = 0
+    render_calls.clear()
     manager.engine = SimpleNamespace(
         flee=False,
         end_battle=lambda: SimpleNamespace(result="defeat", message="You lost", level_up=False),
@@ -402,6 +404,7 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert manager.combat_view.reset_calls == 1
     assert popup_kwargs[0].get("flush_events") is True
     assert popup_kwargs[0].get("require_key_release") is True
+    assert render_calls == []
 
     popup_messages.clear()
     manager.combat_view.reset_calls = 0

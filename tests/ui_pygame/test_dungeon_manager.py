@@ -769,7 +769,11 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     player.in_realm_of_cambion = lambda: False
     player.exit_funhouse = lambda: manager.messages.append("exit-funhouse")
     player.exit_realm_of_cambion = lambda: manager.messages.append("exit-cambion")
-    player.to_town = lambda: manager.messages.append("to-town")
+    provider_calls = []
+    presenter.set_background_provider = lambda provider: provider_calls.append(provider)
+    player.to_town = lambda: manager.messages.append(
+        "to-town-after-detach" if provider_calls and provider_calls[-1] is None else "to-town"
+    )
     player.location_z = 7
     enemy2 = SimpleNamespace(name="Ghost", health=SimpleNamespace(current=5), is_alive=lambda: True)
     enemy_tile2 = EnemyTile(enemy2)
@@ -779,6 +783,17 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     manager.running = True
     manager._check_tile_effects()
     assert "exit-funhouse" in manager.messages
+    assert manager.running is False
+
+    player.location_z = 1
+    player.world_dict[(player.location_x, player.location_y, player.location_z)] = EnemyTile(
+        SimpleNamespace(name="Wraith", health=SimpleNamespace(current=5), is_alive=lambda: True)
+    )
+    loading_count = manager.messages.count("town-loading")
+    manager.running = True
+    manager._check_tile_effects()
+    assert "to-town-after-detach" in manager.messages
+    assert manager.messages.count("town-loading") == loading_count
     assert manager.running is False
 
     popup_events = iter([
@@ -879,12 +894,16 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     manager.running = True
     player.is_alive = lambda: False
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
-    player.to_town = lambda: manager.messages.append("to-town")
+    final_provider_calls = []
+    presenter.set_background_provider = lambda provider: final_provider_calls.append(provider)
+    player.to_town = lambda: manager.messages.append(
+        "to-town-after-detach" if final_provider_calls and final_provider_calls[-1] is None else "to-town"
+    )
     loading_calls = []
     manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
     manager._interact_final_room(final_tile)
-    assert "to-town" in manager.messages
-    assert loading_calls == ["Returning to town..."]
+    assert "to-town-after-detach" in manager.messages
+    assert loading_calls == []
 
     presenter.render_menu = lambda prompt, options: 1
     old_y = player.location_y

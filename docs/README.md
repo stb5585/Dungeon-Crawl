@@ -43,7 +43,7 @@ data/            - YAML-based ability definitions
 - ✅ Helmet equipment slot implemented across core gameplay, shops, saves, UI, icons, and item artwork.
 - ✅ Helmet catalog added for Cloth, Light, Medium, and Heavy armor types, including restricted and special-effect helmets.
 - ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
-- ✅ Enemy render system added with broad archetype mapping, generated placeholder atlas art, combat target panel integration, and mapping documentation.
+- ✅ Enemy render system added with broad archetype mapping, dark-fantasy archetype artwork, compact derived enemy tokens, combat target panel integration, source PNG atlas rebuild/validation tooling, and mapping documentation.
 
 ### Core Game Files
 ```

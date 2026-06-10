@@ -462,6 +462,11 @@ class DungeonManager:
         if self.view_dirty or self.ui_dirty or self._cached_view is None:
             self._render()
 
+    def _detach_dungeon_background_provider(self) -> None:
+        """Prevent town UI from sampling dungeon backgrounds after dungeon exit."""
+        if hasattr(self.presenter, "set_background_provider"):
+            self.presenter.set_background_provider(None)
+
     def move_forward(self):
         """Move one tile forward if the path is clear."""
         dx, dy = DIRECTIONS[self.player_char.facing]["move"]
@@ -1388,7 +1393,7 @@ class DungeonManager:
                 self.running = False
             elif not self.player_char.is_alive():
                 self.add_message("You were defeated... The world fades to black.")
-                self._show_town_entry_loading_screen()
+                self._detach_dungeon_background_provider()
                 try:
                     self.player_char.to_town()
                 except Exception:
@@ -1725,6 +1730,7 @@ class DungeonManager:
             )
 
             if self.player_char.in_town():
+                self._detach_dungeon_background_provider()
                 self.player_char.state = 'normal'
                 self.running = False
                 return
@@ -1749,7 +1755,7 @@ class DungeonManager:
                     self._mark_view_dirty()
                 else:
                     self.add_message("You were defeated... You awaken safely back in town.")
-                    self._show_town_entry_loading_screen()
+                    self._detach_dungeon_background_provider()
                     self.player_char.to_town()
                 self.player_char.state = 'normal'
                 # End dungeon exploration loop (return control to town menu)

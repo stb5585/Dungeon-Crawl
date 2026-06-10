@@ -122,6 +122,7 @@ Status: `Active`
    - Portrait implementation note: runtime prefers `base_portrait_atlas.png`/`.json`; the loader supports both the current `assets/portraits/` drop location and the suggested future `assets/portraits/base/` plus `fallback_individuals/` layout.
    - Item artwork implementation note: selected-item views use large archetype artwork from `assets/item_renders/`; dense rows and compact slot summaries still use the small icon system.
 2. Decide whether shop tabs should replace the current shop mode-selection flow.
+   - Status: `Deferred`; decide on shop setup once game is further along.
    - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.
 3. Continue popup/background consistency work only where playtesting shows visible issues.
    - Most stale-input and background-provider paths are now guarded.
@@ -137,7 +138,10 @@ Status: `Active`
    - Status: `Done` for the first broad-archetype render pass.
    - Added `EnemyRenderManager`, `assets/enemy_renders/`, an enemy render mapping report, and combat target-panel integration.
    - Existing map sprites and combat positioning sprites remain in place; enemy renders are presentation assets for combat panels, inspection-style views, bestiary work, and boss-intro follow-up.
-   - Current atlas is generated placeholder artwork with stable archetype keys; replace frames with final dark-fantasy artwork when available.
+   - Replaced the development placeholder atlas with dark-fantasy archetype artwork, individual source PNGs, a generated atlas/manifest, and a review sheet.
+   - Added `EnemyTokenManager` as a compact middle layer derived from large renders for initiative/turn UI and future target-list or encounter-summary use.
+   - Rebuild the runtime atlas from source renders with `./.venv/bin/python tools/build_enemy_render_atlas.py`.
+   - Validate atlas geometry and token crops with `./.venv/bin/python tools/validate_enemy_render_atlas.py`.
 
 ### P2 - Renderer And Exploration Presentation
 
@@ -206,6 +210,10 @@ Status: `Planned`
 6. Item improvement and expansion.
    - Item identification tied to intelligence; low intelligence characters will find more unidentified items, requiring either a scroll or shop to identify.
    - Item usage for buffs or special attacks; using it too much can cause it to break/shatter.
+7. Bestiary implementation.
+   - Allow the player to view information about previously defeated enemies.
+   - Use enemy artwork with details gleaned from combat encounters; higher perception characters (including when wearing Pendant of Vision) will uncover more information.
+   - Add achievements and/or rewards for completion.
 
 ### P5 - Audio Content Completion
 
@@ -219,6 +227,13 @@ Status: `Planned`
 4. Add event-payload enrichment for future audio routing.
    - Weapon name or attack source on weapon-damage events.
    - Ability/item/source metadata where UI and audio layers need presentation-specific behavior.
+
+### P6 - Removal of UI Curses Game Edition
+
+Status: `Planned`
+
+1. Remove parallel `curses` UI implementation of the Dungeon Crawl game
+2. Confirm all dependencies and plugin code is removed.
 
 ## Deferred Or Decision-Gated Items
 

@@ -4,7 +4,7 @@ This report was generated from `src/core/enemies.py` by instantiating no-argumen
 
 Enemy renders are presentation assets only. Existing map sprites and combat positioning sprites remain separate systems.
 
-The initial atlas is a generated placeholder atlas for integration work. Replace frames in `src/ui_pygame/assets/enemy_renders/enemy_render_atlas.png` with final dark-fantasy artwork while keeping the JSON keys stable.
+The current atlas uses dark-fantasy broad-archetype artwork generated from individual source PNGs in `src/ui_pygame/assets/enemy_renders/`. Rebuild `enemy_render_atlas.png`, `enemy_render_atlas.json`, and `enemy_render_review_sheet.png` with `./.venv/bin/python tools/build_enemy_render_atlas.py` after replacing any source render, while keeping the archetype keys stable. Compact enemy tokens are generated from these same renders with `EnemyTokenManager` and crop overrides in `enemy_token_crop.json`; see `docs/ENEMY_VISUAL_SYSTEM.md` for layer usage.
 
 | Enemy Name | Enemy Class | Enemy Category | Suggested Archetype |
 | --- | --- | --- | --- |

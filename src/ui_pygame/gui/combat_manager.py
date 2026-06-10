@@ -1096,9 +1096,10 @@ class GUICombatManager:
     def _handle_combat_end(self, player_char, enemy, fled):
         """Handle end of combat using the engine for bookkeeping."""
 
-        def _show_end_popup(message_text: str) -> None:
-            self._refresh_combat_background(player_char, enemy)
-            background = self._combat_background if self._combat_background is not None else self._capture_background()
+        def _show_end_popup(message_text: str, *, background=None, refresh_background: bool = True) -> None:
+            if refresh_background:
+                self._refresh_combat_background(player_char, enemy)
+            background = background or self._combat_background or self._capture_background()
             draw_background = lambda: self.screen.blit(background, (0, 0))
             from .confirmation_popup import ConfirmationPopup
             popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)
@@ -1121,16 +1122,20 @@ class GUICombatManager:
         if fled:
             self.engine.flee = True
 
+        pre_outcome_background = self.screen.copy()
+
         # Let the engine handle all bookkeeping (exp, loot, quests, kill tracking, etc.)
         outcome = self.engine.end_battle()
         self._persist_debug_battle_log(outcome.result)
 
         if outcome.result == "defeat":
-            self._render_combat_frame(player_char, enemy, [], -1)
-            pygame.display.flip()
             self._pause_with_events(900)
 
-            _show_end_popup("You have been defeated!")
+            _show_end_popup(
+                "You have been defeated!",
+                background=pre_outcome_background,
+                refresh_background=False,
+            )
             self.combat_view.reset_combat_log()
             self._combat_background = None
             return False
