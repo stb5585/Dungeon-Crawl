@@ -567,7 +567,7 @@ def test_status_icon_label_fitting_handles_zero_width_pills():
     assert fit_status_icon_label(font, "BRG", 999) == "BRG"
 
 
-def test_enemy_info_panel_renders_large_enemy_artwork(monkeypatch):
+def test_enemy_info_panel_renders_combat_artwork(monkeypatch):
     view = _make_view()
     calls = []
     fonts = iter([RecordingFont(), RecordingFont()])
@@ -582,8 +582,8 @@ def test_enemy_info_panel_renders_large_enemy_artwork(monkeypatch):
         magic_effects={},
         class_effects={},
     )
-    view.enemy_render_manager = SimpleNamespace(
-        get_scaled_render=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-art"),
+    view.enemy_combat_art_manager = SimpleNamespace(
+        get_scaled_art=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-combat-art"),
         fallback_surface=lambda: DummySurface((256, 320), text="fallback-art"),
     )
 
@@ -593,7 +593,7 @@ def test_enemy_info_panel_renders_large_enemy_artwork(monkeypatch):
     view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
 
     assert calls and calls[0][0] == "Goblin Raider"
-    assert any(getattr(surface, "text", "") == "enemy-art" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
+    assert any(getattr(surface, "text", "") == "enemy-combat-art" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
     rendered_text = [
         getattr(surface, "text", "")
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
@@ -650,6 +650,71 @@ def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
     assert any(getattr(surface, "text", "") == "menu:1" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
 
 
+def test_center_combat_enemy_uses_combat_sprite_manager_not_combat_artwork(monkeypatch):
+    view = _make_view()
+    enemy = SimpleNamespace(
+        name="Goblin",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+    )
+    view.enemy_combat_art_manager = SimpleNamespace(
+        get_scaled_art=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("center renderer should not use portrait artwork"))
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "goblin",
+        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="combat-sprite"),
+    )
+    view._get_enemy_sprite = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy sprite should be fallback only"))
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+
+    view._render_enemy(enemy, has_sight=True)
+
+    assert any(
+        getattr(surface, "text", "") == "combat-sprite"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+
+def test_render_enemy_in_dungeon_uses_combat_sprite_manager_not_combat_artwork(monkeypatch):
+    view = _make_view()
+    player = _make_character()
+    enemy = SimpleNamespace(
+        name="Giant Rat",
+        picture="giantrat.txt",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    view.enemy_combat_art_manager = SimpleNamespace(
+        get_scaled_art=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("dungeon renderer should not use portrait artwork"))
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "giant_rat",
+        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="dungeon-combat-sprite"),
+    )
+    view._get_enemy_sprite = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy sprite should be fallback only"))
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+
+    view.render_enemy_in_dungeon(player, enemy)
+
+    assert any(
+        getattr(surface, "text", "") == "dungeon-combat-sprite"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+
 def test_render_enemy_in_dungeon_draws_name_based_sprite_for_legacy_picture(monkeypatch):
     view = _make_view()
     player = _make_character()
@@ -667,6 +732,9 @@ def test_render_enemy_in_dungeon_draws_name_based_sprite_for_legacy_picture(monk
     )
     loaded = []
     scaled = []
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_scaled_sprite=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("missing combat sprite"))
+    )
 
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.os.path.exists", lambda path: str(path).endswith("giant_rat.png"))
     monkeypatch.setattr(
@@ -687,5 +755,36 @@ def test_render_enemy_in_dungeon_draws_name_based_sprite_for_legacy_picture(monk
     assert scaled and scaled[0][1] == (320, 320)
     assert any(
         getattr(surface, "text", "") == "scaled-enemy"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+
+def test_unapproved_generic_combat_sprite_key_falls_back_to_legacy_sprite(monkeypatch):
+    view = _make_view()
+    enemy = SimpleNamespace(
+        name="Alligator",
+        picture="alligator.txt",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "generic_enemy",
+        get_scaled_sprite_by_key=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("generic placeholder should not render")),
+    )
+    view._get_enemy_sprite = lambda *_args, **_kwargs: DummySurface((32, 32), text="legacy-source")
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.transform.scale",
+        lambda surface, size: DummySurface(size, text="legacy-scaled"),
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+
+    view._render_enemy(enemy, has_sight=True)
+
+    assert any(
+        getattr(surface, "text", "") == "legacy-scaled"
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
     )

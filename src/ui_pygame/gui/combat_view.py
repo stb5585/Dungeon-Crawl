@@ -11,7 +11,8 @@ import sys
 
 import pygame
 
-from src.ui_pygame.assets.enemy_render_manager import get_enemy_render_manager
+from src.ui_pygame.assets.enemy_combat_art_manager import get_enemy_combat_art_manager
+from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
 
@@ -142,7 +143,8 @@ class CombatView:
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
-        self.enemy_render_manager = get_enemy_render_manager()
+        self.enemy_combat_art_manager = get_enemy_combat_art_manager()
+        self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
 
@@ -566,6 +568,22 @@ class CombatView:
         """
         # Return sprite as-is - it's already colored from generation
         return sprite
+
+    def _enemy_sprite_surface(self, enemy, size: tuple[int, int], has_sight: bool = True):
+        """Return the enemy battlefield sprite scaled to a fixed combat box."""
+        if has_sight or getattr(enemy, "name", "") != "Invisible Stalker":
+            try:
+                sprite_key = self.enemy_combat_sprite_manager.get_sprite_key_for_enemy(enemy)
+                if sprite_key != "generic_enemy":
+                    return self.enemy_combat_sprite_manager.get_scaled_sprite_by_key(sprite_key, size)
+            except Exception as exc:  # pragma: no cover - defensive fallback for asset loading failures
+                print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
+
+        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
+        if sprite is None:
+            return None
+        colorized_sprite = self._colorize_sprite(sprite, enemy)
+        return pygame.transform.scale(colorized_sprite, size)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None):
         """Render the complete combat view."""
@@ -634,16 +652,11 @@ class CombatView:
         # Get animator for this enemy
         animator = self._get_sprite_animator(enemy)
         
-        # Try to load enemy sprite
-        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
-        
-        if sprite:
-            # Scale sprite up to 256x256 for better visibility
-            scaled_sprite = pygame.transform.scale(sprite, (256, 256))
-            
-            # Apply animations
-            display_sprite = scaled_sprite
-            
+        sprite_size = (256, 256)
+        display_sprite = self._enemy_sprite_surface(enemy, sprite_size, has_sight=has_sight)
+        enemy_size = sprite_size[1] // 2
+
+        if display_sprite is not None:
             # Apply damage flash tint
             if animator.damage_flash > 0:
                 display_sprite = animator.apply_tint(display_sprite, (255, 100, 100), animator.damage_flash)
@@ -652,8 +665,11 @@ class CombatView:
             if animator.animation_type == 'death':
                 # Scale from 1.0 to 0.3 as death progresses
                 scale = 1.0 - (animator.death_progress * 0.7)
-                death_size = int(256 * scale)
-                display_sprite = pygame.transform.scale(display_sprite, (death_size, death_size))
+                death_size = (
+                    max(1, int(display_sprite.get_width() * scale)),
+                    max(1, int(display_sprite.get_height() * scale)),
+                )
+                display_sprite = pygame.transform.scale(display_sprite, death_size)
                 
                 # Fade out by modulating per-pixel alpha (preserves sprite shape)
                 fade_alpha = int(255 * (1.0 - animator.death_progress))
@@ -668,7 +684,6 @@ class CombatView:
             
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self.screen.blit(display_sprite, sprite_rect)
-            enemy_size = 128  # Use half the scaled size for positioning other elements
         else:
             # Fallback to simple representation
             enemy_size = 120
@@ -720,7 +735,7 @@ class CombatView:
             self.screen.blit(hp_surf, hp_rect)
 
     def _render_enemy_info_panel(self, enemy, has_sight=True, overlay=True):
-        """Render large enemy artwork and target details without replacing gameplay sprites."""
+        """Render combat artwork and target details without replacing gameplay sprites."""
         panel_x = int(self.screen_width * 0.65) + 12 if overlay else self.combat_width + 12
         panel_w = self.screen_width - panel_x - 12
         if panel_w < 170:
@@ -749,10 +764,10 @@ class CombatView:
         art_h = max(110, min(210, panel_h - 150))
         art_rect = pygame.Rect(panel_rect.left + pad, art_top, panel_w - (pad * 2), art_h)
         try:
-            artwork = self.enemy_render_manager.get_scaled_render(enemy, art_rect.size)
+            artwork = self.enemy_combat_art_manager.get_scaled_art(enemy, art_rect.size)
         except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
-            print(f"Failed to render enemy artwork for {getattr(enemy, 'name', enemy)}: {exc}")
-            artwork = self.enemy_render_manager.fallback_surface()
+            print(f"Failed to render enemy combat artwork for {getattr(enemy, 'name', enemy)}: {exc}")
+            artwork = self.enemy_combat_art_manager.fallback_surface()
             artwork = pygame.transform.smoothscale(artwork, art_rect.size)
         self.screen.blit(artwork, art_rect.topleft)
         pygame.draw.rect(self.screen, (58, 48, 38), art_rect, 1)
@@ -969,19 +984,11 @@ class CombatView:
         # Check if player has sight
         has_sight = self._has_sight(player_char)
         
-        # Try to load enemy sprite
-        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
-        
-        if sprite:
-            # Colorize the sprite based on enemy type
-            colorized_sprite = self._colorize_sprite(sprite, enemy)
-            
-            # Scale sprite to appear as foreground object (larger)
-            scaled_sprite = pygame.transform.scale(colorized_sprite, (320, 320))
-            
-            # Apply animations
-            display_sprite = scaled_sprite
-            
+        sprite_size = (320, 320)
+        display_sprite = self._enemy_sprite_surface(enemy, sprite_size, has_sight=has_sight)
+        enemy_size = sprite_size[1] // 2
+
+        if display_sprite is not None:
             # Apply damage flash tint
             if animator.damage_flash > 0:
                 display_sprite = animator.apply_tint(display_sprite, (255, 100, 100), animator.damage_flash)
@@ -989,8 +996,11 @@ class CombatView:
             # Apply death animation
             if animator.animation_type == 'death':
                 scale = 1.0 - (animator.death_progress * 0.7)
-                death_size = int(320 * scale)
-                display_sprite = pygame.transform.scale(display_sprite, (death_size, death_size))
+                death_size = (
+                    max(1, int(display_sprite.get_width() * scale)),
+                    max(1, int(display_sprite.get_height() * scale)),
+                )
+                display_sprite = pygame.transform.scale(display_sprite, death_size)
                 
                 # Fade out by modulating per-pixel alpha (preserves sprite shape)
                 fade_alpha = int(255 * (1.0 - animator.death_progress))
@@ -1005,7 +1015,6 @@ class CombatView:
             
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self.screen.blit(display_sprite, sprite_rect)
-            enemy_size = 160  # Use half the scaled size for positioning other elements
         else:
             # Fallback to simple representation
             enemy_size = 150

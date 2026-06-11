@@ -6,18 +6,20 @@ Enemy renders are presentation assets only. Existing map sprites and combat posi
 
 The current atlas uses dark-fantasy broad-archetype artwork generated from individual source PNGs in `src/ui_pygame/assets/enemy_renders/`. Rebuild `enemy_render_atlas.png`, `enemy_render_atlas.json`, and `enemy_render_review_sheet.png` with `./.venv/bin/python tools/build_enemy_render_atlas.py` after replacing any source render, while keeping the archetype keys stable. Compact enemy tokens are generated from these same renders with `EnemyTokenManager` and crop overrides in `enemy_token_crop.json`; see `docs/ENEMY_VISUAL_SYSTEM.md` for layer usage.
 
+Combat sprites are intentionally separate from this broad render mapping. The center combat renderer uses exact transparent full-body sprites from `src/ui_pygame/assets/enemy_combat_sprites/` and `enemy_combat_sprite_map.json`; do not reuse this broad render table as the combat-sprite source of truth.
+
 | Enemy Name | Enemy Class | Enemy Category | Suggested Archetype |
 | --- | --- | --- | --- |
 | Aboleth | Aboleth | Slime | `ooze` |
-| Alligator | Alligator | Animal | `bear` |
+| Alligator | Alligator | Animal | `alligator` |
 | Ankheg | Ankheg | Monster | `insect` |
 | Antlion | Antlion | Animal | `insect` |
 | Archvile | Archvile | Fiend | `greater_demon` |
 | Bandit | Bandit | Humanoid | `bandit` |
 | Bandit | Bandit2 | Humanoid | `bandit` |
 | Barghest | Barghest | Fiend | `greater_demon` |
-| Basilisk | Basilisk | Monster | `dragon` |
-| Battle Toad | BattleToad | Animal | `boar` |
+| Basilisk | Basilisk | Monster | `wyrm` |
+| Battle Toad | BattleToad | Animal | `battle_toad` |
 | Behemoth | Behemoth | Aberration | `boss` |
 | Beholder | Beholder | Aberration | `boss` |
 | Black Slime | BlackSlime | Slime | `ooze` |
@@ -38,13 +40,13 @@ The current atlas uses dark-fantasy broad-archetype artwork generated from indiv
 | Direwolf | Direwolf | Animal | `dire_wolf` |
 | Direwolf | Direwolf2 | Animal | `dire_wolf` |
 | Disciple | Disciple | Humanoid | `cultist` |
-| Displacer Beast | DisplacerBeast | Fey | `wolf` |
+| Displacer Beast | DisplacerBeast | Fey | `displacer_beast` |
 | Domingo | Domingo | Aberration | `boss` |
 | Dragonkin | Dragonkin | Dragon | `dragon` |
 | Drow Assassin | DrowAssassin | Humanoid | `bandit` |
 | Earth Myrmidon | EarthMyrmidon | Elemental | `earth_elemental` |
 | Electric Bat | ElectricBat | Animal | `bat` |
-| Evil Crusader | EvilCrusader | Humanoid | `skeleton_warrior` |
+| Evil Crusader | EvilCrusader | Humanoid | `evil_crusader` |
 | Fire Myrmidon | FireMyrmidon | Elemental | `fire_elemental` |
 | Fuath | Fuath | Monster | `water_elemental` |
 | Gargoyle | Gargoyle | Elemental | `gargoyle` |
@@ -83,8 +85,8 @@ The current atlas uses dark-fantasy broad-archetype artwork generated from indiv
 | Nightmare | Nightmare | Fiend | `greater_demon` |
 | Ogre | Ogre | Monster | `orc` |
 | Orc | Orc | Humanoid | `orc` |
-| Panther | Panther | Animal | `wolf` |
-| Panther | Panther2 | Animal | `wolf` |
+| Panther | Panther | Animal | `panther` |
+| Panther | Panther2 | Animal | `panther` |
 | Pit Viper | PitViper | Animal | `wyrm` |
 | Pseudodragon | Pseudodragon | Dragon | `dragon` |
 | Puppet | Puppet | Humanoid | `bandit` |

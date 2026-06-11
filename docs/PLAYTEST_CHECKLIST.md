@@ -53,6 +53,20 @@
   - Expected: Visible/hidden label lists identify exactly which status pills were shown or compacted.
   - Expected: Stat-effect icon filtering diagnostics identify active zero-value effects that were suppressed before rendering.
 
+### Enemy Combat Sprites
+- [x] Verify all concrete enemy display names have an exact transparent combat-sprite mapping.
+  - Expected: `EnemyCombatSpriteManager` resolves concrete enemies through `enemy_combat_sprite_map.json` instead of broad portrait/render archetypes.
+  - Expected: Only the development `Test` enemy and base `Myrmidon` template are intentionally unmapped.
+- [ ] Enter combat against early enemies such as Giant Rat, Skeleton, Goblin, and Slime.
+  - Expected: The center combat enemy is a transparent full-body sprite, not a rectangular portrait or token.
+  - Expected: Existing HP bars, menus, targeting, turn order, and combat mechanics are unchanged.
+- [ ] Enter combat against mid-game enemies such as Gnoll, Satyr, Vampire, Troll, and Dragonkin.
+  - Expected: Enemy weapons/body shapes match their current enemy definitions closely enough for combat readability.
+  - Expected: Sprites preserve aspect ratio and do not cover the enemy HP bar or action menu.
+- [ ] Enter combat against late-game or boss enemies such as Beholder, Hydra, Red Dragon, Cerberus, and The Devil.
+  - Expected: Large enemies remain centered and readable at combat scale.
+  - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
+
 ### Main Menu
 - [x] Choose Settings from the pygame main menu.
   - Expected: A guarded modal message appears saying the settings menu is coming soon.
@@ -422,7 +436,7 @@
   - Expected: Goblin/Orc, Skeleton/Skeleton Warrior, Wolf/Dire Wolf, Slime/Ooze, Dragon/Wyrm, Demon/Greater Demon, boss, and generic fallback are visually distinguishable.
 - [x] Start combat against common mapped enemies.
   - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy render artwork in the combat target panel.
-  - Expected: The existing center combat sprite still renders and animates independently from the target-panel artwork.
+  - Expected: The center combat enemy uses transparent sprite-style enemy artwork, not portrait-style render artwork.
 - [x] Inspect the turn/initiative banner during player and enemy turns.
   - Expected: Enemy turns show a compact circular enemy token derived from the render artwork.
   - Expected: Player turns show a compact circular face token derived from the player portrait.
@@ -445,3 +459,26 @@
 - [ ] Review `docs/ENEMY_RENDER_MAPPING.md` after adding or renaming enemies.
   - Expected: Every no-argument enemy class has an Enemy Name, Enemy Class, and Suggested Archetype row.
   - Expected: `enemy_render_map.json` contains a display-name mapping for every discovered enemy name.
+
+### Enemy Combat Artwork
+- [ ] Review the generated enemy combat artwork sheet.
+  - Expected: `src/ui_pygame/assets/enemy_combat_art/enemy_combat_art_review_sheet.png` shows render, token, and combat artwork side-by-side for every archetype.
+  - Expected: Combat artwork remains full-body and readable beside the compact token crop.
+- [ ] Start combat against Goblin, Skeleton, Wolf, Dragon, and Demon archetypes.
+  - Expected: The target panel uses `EnemyCombatArtManager` artwork from `enemy_combat_art/`.
+  - Expected: The center enemy body uses transparent `EnemyCombatSpriteManager` artwork from `enemy_combat_sprites/`.
+- [ ] Start combat against an enemy mapped to a boss fallback and an unknown generic fallback.
+  - Expected: Boss fallback combat artwork appears for boss enemies without specific art.
+  - Expected: `generic_enemy` combat artwork appears for unknown non-boss enemies.
+- [ ] Save and reload after viewing combat artwork.
+  - Expected: Save/load data is unchanged because combat artwork is resolved from runtime enemy names/archetypes.
+
+### Enemy Combat Sprites
+- [ ] Review the generated enemy combat sprite sheet.
+  - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows every sprite on a neutral dungeon background.
+  - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
+- [ ] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.
+  - Expected: Center combat uses `EnemyCombatSpriteManager` sprites from `enemy_combat_sprites/`.
+  - Expected: Enemy portraits, enemy render artwork, and enemy tokens do not appear as the center enemy body.
+- [ ] Trigger damage and defeat animations.
+  - Expected: Damage flash and death fade/scale still apply to the transparent sprite surface.

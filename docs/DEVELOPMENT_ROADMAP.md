@@ -140,8 +140,15 @@ Status: `Active`
    - Existing map sprites and combat positioning sprites remain in place; enemy renders are presentation assets for combat panels, inspection-style views, bestiary work, and boss-intro follow-up.
    - Replaced the development placeholder atlas with dark-fantasy archetype artwork, individual source PNGs, a generated atlas/manifest, and a review sheet.
    - Added `EnemyTokenManager` as a compact middle layer derived from large renders for initiative/turn UI and future target-list or encounter-summary use.
+   - Added `EnemyCombatArtManager` and `assets/enemy_combat_art/` as a dedicated combat presentation layer.
+   - Added `EnemyCombatSpriteManager` and `assets/enemy_combat_sprites/` as transparent full-body battlefield enemy sprites for the center combat renderer, with legacy 32x32 sprites retained only as fallback assets.
+   - Production enemy combat sprites now cover every concrete enemy display name in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template.
+   - Combat sprite review sheets can be rebuilt from approved transparent PNGs with `./.venv/bin/python tools/build_enemy_combat_sprites.py`.
    - Rebuild the runtime atlas from source renders with `./.venv/bin/python tools/build_enemy_render_atlas.py`.
    - Validate atlas geometry and token crops with `./.venv/bin/python tools/validate_enemy_render_atlas.py`.
+   - Bugfix: combat/gameplay has slowed down with the new artist renderings of enemies.
+7. Update dungeon renderings to match new aesthetic.
+   - Generate new floor, ceiling, and wall tiles
 
 ### P2 - Renderer And Exploration Presentation
 
@@ -214,6 +221,9 @@ Status: `Planned`
    - Allow the player to view information about previously defeated enemies.
    - Use enemy artwork with details gleaned from combat encounters; higher perception characters (including when wearing Pendant of Vision) will uncover more information.
    - Add achievements and/or rewards for completion.
+8. Combat Improvements
+   - Add multi-enemy combat support; may require rebalancing
+   - Create combat stack based on speed; greater speed diff can result in multiple turns in a row
 
 ### P5 - Audio Content Completion
 
