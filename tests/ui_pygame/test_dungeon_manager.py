@@ -351,7 +351,8 @@ def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_te
 
     player.location_z = 7
     player.funhouse_return = (1, 2, 0, "east")
-    player.world_dict[(11, 0, 4)] = dungeon_manager.map_tiles.FunhouseTeleporter(11, 0, 4)
+    teleporter = dungeon_manager.map_tiles.FunhouseTeleporter(11, 0, 4)
+    player.world_dict[(11, 0, 4)] = teleporter
     exits = []
     player.exit_funhouse = lambda: exits.append("exit")
     manager._handle_defeated_jester_boss(boss_tile)
@@ -359,6 +360,7 @@ def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_te
     assert (player.location_x, player.location_y, player.location_z) == (11, 0, 4)
     assert player.facing == "south"
     assert player.funhouse_return is None
+    assert teleporter.active is False
     assert boss_tile.enemy is None
     assert "The funhouse dissolves behind you." in manager.messages
 

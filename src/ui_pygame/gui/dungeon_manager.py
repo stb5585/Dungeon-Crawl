@@ -409,6 +409,7 @@ class DungeonManager:
 
     def _return_player_to_funhouse_teleporter(self) -> None:
         """Place the player back on the level 4 funhouse teleporter."""
+        map_tiles.deactivate_funhouse_teleporters(self.player_char)
         for (x, y, z), tile in getattr(self.player_char, "world_dict", {}).items():
             if z == 4 and type(tile).__name__ == "FunhouseTeleporter":
                 self.player_char.location_x = x

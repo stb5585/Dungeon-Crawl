@@ -223,7 +223,7 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
     assert buy_calls == ["weapons"]
     assert FakeShopScreen.instances[0].set_calls[:2] == [
         ["Buy", "Sell", "Quests", "Leave"],
-        ["Weapons", "Shields", "Armor", "Back"],
+        ["Weapons", "Shields", "Armor", "Helmets", "Back"],
     ]
     assert FakeShopScreen.instances[0].shop_message == "Griswold's Blacksmith"
     assert any("Come back whenever you'd like." in message for message, _buttons in FakePopup.messages)
@@ -256,12 +256,13 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     monkeypatch.setattr(manager, "buy_equipment", lambda item_list, category_name, background_image="town.png": item_calls.append((item_list, category_name, background_image)))
     monkeypatch.setattr(manager, "_buy_with_shop_screen", lambda itemdict, category_name, background_image="town.png": item_calls.append((itemdict, category_name, background_image)))
 
-    FakeShopScreen.option_sequences = [["1-Handed", "Sword"], ["Light"]]
+    FakeShopScreen.option_sequences = [["1-Handed"]]
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr(manager, "_has_available_items", lambda _item_list: True)
 
     manager.buy_weapons()
     manager.buy_armor()
+    manager.buy_helmets()
     manager.buy_shields()
     manager.buy_rings()
     manager.buy_pendants()
@@ -269,16 +270,20 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     manager.buy_misc()
     manager.buy_potions(background_image="dungeon.png")
 
-    assert item_calls[0][1] == "Sword"
-    assert item_calls[1][1] == "Light"
-    assert item_calls[2][1] == "Shield"
-    assert item_calls[3][1] == "Ring"
-    assert item_calls[4][1] == "Pendant"
-    assert item_calls[5][1] == "Scroll"
-    assert item_calls[5][2] == "dungeon.png"
-    assert item_calls[6][1] == "Misc"
-    assert item_calls[7][1] == "Potions"
-    assert item_calls[7][2] == "dungeon.png"
+    assert item_calls[0][1] == "1-Handed Weapons"
+    assert set(item_calls[0][0]) >= {"Fist", "Dagger", "Sword"}
+    assert item_calls[1][1] == "Armor"
+    assert set(item_calls[1][0]) >= {"Cloth", "Light", "Medium", "Heavy"}
+    assert item_calls[2][1] == "Helmets"
+    assert set(item_calls[2][0]) >= {"Cloth", "Light", "Medium", "Heavy"}
+    assert item_calls[3][1] == "Shield"
+    assert item_calls[4][1] == "Ring"
+    assert item_calls[5][1] == "Pendant"
+    assert item_calls[6][1] == "Scroll"
+    assert item_calls[6][2] == "dungeon.png"
+    assert item_calls[7][1] == "Misc"
+    assert item_calls[8][1] == "Potions"
+    assert item_calls[8][2] == "dungeon.png"
 
 
 def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):
@@ -286,14 +291,14 @@ def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr(manager, "buy_equipment", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not buy")))
 
-    FakeShopScreen.option_sequences = [[None], ["Back"], []]
+    FakeShopScreen.option_sequences = [[None]]
     manager.buy_weapons()
 
     FakeShopScreen.option_sequences = [[]]
     monkeypatch.setattr(manager, "_has_available_items", lambda _item_list: False)
     manager.buy_armor()
 
-    assert FakeShopScreen.instances[-1].set_calls == []
+    assert FakeShopScreen.instances[-1].set_calls == [["1-Handed", "2-Handed", "Back"]]
 
 
 def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purchase(monkeypatch):
@@ -338,7 +343,6 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     assert "Subtype: Sword" in info
     assert "Theme Name: Mighty New Sword" in info
     assert "Damage: 12" in info
-    assert "Efficiency: 4.00 dmg/wt" in info
     assert "Value: 75g" in info
     assert "=== Currently Equipped ===" in info
     assert "(Better)" in info
@@ -347,6 +351,12 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     manager.player_char.equipment = {"Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring")}
     ring_info = manager._format_item_info(DummyItem(name="Silver Band", typ="Accessory", subtyp="Ring", value=40))
     assert "(No Ring currently equipped)" in ring_info
+
+    electric_info = manager._format_item_info(DummyItem(name="Storm Fist", typ="Weapon", subtyp="Fist", value=40, damage=10))
+    assert "Element: Electric" not in electric_info
+    elemental_item = DummyItem(name="Storm Fist", typ="Weapon", subtyp="Fist", value=40, damage=10)
+    elemental_item.element = "Electric"
+    assert "Element: Electric" in manager._format_item_info(elemental_item)
 
     class AvailableItem:
         def __call__(self):
@@ -441,22 +451,31 @@ def test_secret_shop_submenus_and_misc_helpers(monkeypatch):
     manager = _manager(monkeypatch, level=20)
     delegated = []
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
-    monkeypatch.setattr(manager, "buy_equipment", lambda item_list, category_name, background_image="town.png": delegated.append((category_name, background_image, item_list)))
-    monkeypatch.setattr(manager, "buy_potions", lambda background_image="town.png": delegated.append(("Potions", background_image, None)))
-    monkeypatch.setattr(manager, "buy_scrolls", lambda background_image="town.png": delegated.append(("Scrolls", background_image, None)))
+    monkeypatch.setattr(manager, "_has_available_items", lambda _item_list: True)
+    monkeypatch.setattr(manager, "_buy_with_shop_screen", lambda itemdict, category_name, background_image="town.png": delegated.append((category_name, background_image, itemdict)))
 
-    FakeShopScreen.option_sequences = [["2-Handed", "Battle Axe"], ["Tomes"], ["Heavy"], ["Pendants"], ["Stat Potions"]]
+    FakeShopScreen.option_sequences = [["2-Handed"]]
     manager._buy_secret_weapons(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
     manager._buy_secret_offhand(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
     manager._buy_secret_armor(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
+    manager._buy_secret_helmets(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
     manager._buy_secret_accessories(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
     manager._buy_secret_consumables(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
     manager._buy_secret_stat_potions()
     manager._buy_secret_keys()
 
-    assert ("2-Handed Battle Axe", "dungeon.png", shops.items_module.items_dict["Weapon"]["2-Handed"]["Battle Axe"]) in delegated
-    assert ("Tome", "dungeon.png", shops.items_module.items_dict["OffHand"]["Tome"]) in delegated
-    assert ("Heavy Armor", "dungeon.png", shops.items_module.items_dict["Armor"]["Heavy"]) in delegated
-    assert ("Pendant", "dungeon.png", shops.items_module.items_dict["Accessory"]["Pendant"]) in delegated
-    assert ("Stat Potions", "dungeon.png", shops.items_module.items_dict["Potion"]["Stat"]) in delegated
-    assert ("Keys", "dungeon.png", shops.items_module.items_dict["Misc"]["Key"]) in delegated
+    assert ("2-Handed Weapons", "dungeon.png", manager._available_item_groups(shops.items_module.items_dict["Weapon"]["2-Handed"])) in delegated
+    assert ("Off-Hand", "dungeon.png", {
+        "Shields": shops.items_module.items_dict["OffHand"]["Shield"],
+        "Tomes": shops.items_module.items_dict["OffHand"]["Tome"],
+        "Rods": shops.items_module.items_dict["OffHand"]["Rod"],
+    }) in delegated
+    assert ("Armor", "dungeon.png", shops.items_module.items_dict["Armor"]) in delegated
+    assert ("Helmets", "dungeon.png", shops.items_module.items_dict["Helmet"]) in delegated
+    assert ("Accessories", "dungeon.png", {
+        "Rings": shops.items_module.items_dict["Accessory"]["Ring"],
+        "Pendants": shops.items_module.items_dict["Accessory"]["Pendant"],
+    }) in delegated
+    assert any(category == "Consumables" and background == "dungeon.png" for category, background, _itemdict in delegated)
+    assert ("Stat Potions", "dungeon.png", {"Stat Potions": shops.items_module.items_dict["Potion"]["Stat"]}) in delegated
+    assert ("Keys", "dungeon.png", {"Keys": shops.items_module.items_dict["Misc"]["Key"]}) in delegated

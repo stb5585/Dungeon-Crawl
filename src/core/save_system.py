@@ -184,6 +184,7 @@ class TileStateSerializer:
             "read",
             "blocked",
             "warped",
+            "active",
             "defeated",
             "enemy_state",
             "drink",
@@ -222,6 +223,9 @@ class TileStateSerializer:
                 'blocked': getattr(tile, 'blocked', None),
                 'warped': getattr(tile, 'warped', False),
             }
+
+            if hasattr(tile, 'active'):
+                state['active'] = tile.active
             
             # For tiles with enemies and defeated flag
             if hasattr(tile, 'defeated'):
@@ -271,6 +275,8 @@ class TileStateSerializer:
                 tile.blocked = state['blocked']
             if 'warped' in state:
                 tile.warped = state['warped']
+            if 'active' in state and hasattr(tile, 'active'):
+                tile.active = state['active']
             
             # Restore defeated flag
             if 'defeated' in state and hasattr(tile, 'defeated'):
@@ -901,6 +907,12 @@ class PlayerDataSerializer:
                             if enemy_name and enemy_name in killed_names:
                                 tile.defeated = True
                                 tile.enemy = None
+
+                from . import map_tiles
+                if map_tiles.jester_defeated(player):
+                    for tile in player.world_dict.values():
+                        if type(tile).__name__ == "FunhouseTeleporter" and hasattr(tile, "active"):
+                            tile.active = False
         
         return player
 

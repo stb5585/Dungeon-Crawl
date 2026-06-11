@@ -71,7 +71,7 @@ Status: `Done`
 - Shared popup background fallback behavior is hardened for empty/live-screen/broken providers.
 - Combat UI now has status-icon priority, overflow, urgent coloring, label fitting, counted duplicate labels, Maelstrom stack visibility, Blind Rage labeling, telegraph-colored log lines, a dedicated telegraph banner, and long-name fitting.
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
-- Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, weapon efficiency display, stat-themed names, and elemental metadata display.
+- Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
 - The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout with Helmet support, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
 - Helmet equipment is now implemented across core equipment, save/load compatibility, curses and pygame shops, inventory/equipment popups, icon/artwork fallback, and Defense/resistance/invisibility modifiers. The current catalog includes Cloth, Light, Medium, and Heavy helmet progressions plus restricted and special-effect helmets.
@@ -121,20 +121,20 @@ Status: `Active`
    - Implemented: sex-first character creation, race/sex portrait assets, base portrait atlas loading with individual PNG fallback support, reusable portrait composition/caching for future overlays, native-ratio portrait frame sizing, generic Character/Equipment tabs, wider 60/40 Character and Combat Stats panels, wider right-column level-progress bar using current-level XP progress, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, Core Attributes positioned below the experience bar, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with an active Helmet equipment slot, larger equipment blocks with optional icon boxes and right-aligned subtype/base weapon/armor/block/weight/resistance details, in-slot equipment-buff reporting, popup quick-scroll and wrapped item descriptions, and town/dungeon opt-in routing.
    - Portrait implementation note: runtime prefers `base_portrait_atlas.png`/`.json`; the loader supports both the current `assets/portraits/` drop location and the suggested future `assets/portraits/base/` plus `fallback_individuals/` layout.
    - Item artwork implementation note: selected-item views use large archetype artwork from `assets/item_renders/`; dense rows and compact slot summaries still use the small icon system.
-2. Decide whether shop tabs should replace the current shop mode-selection flow.
-   - Status: `Deferred`; decide on shop setup once game is further along.
-   - The current shop flow has improved paging and comparison support, but true tabs remain unimplemented.
-3. Continue popup/background consistency work only where playtesting shows visible issues.
-   - Most stale-input and background-provider paths are now guarded.
-   - Remaining work should be bug-driven rather than broad speculative rewrites.
-4. Revisit combat visual polish.
+2. Replace current shop mode-selection flow with shop tabs.
+   - Status: `Done`.
+   - Type selection remains in place for shop categories, while item sub-types are now browsed with tabs in the buy list.
+   - Implemented for town shops and secret-shop grouped categories, with left/right tab navigation and filtered empty tabs.
+3. Revisit combat visual polish.
    - Current status/telegraph readability is strong enough for baseline play.
    - Lightweight hit/spell effects or particles are still planned, but should be added only where they improve clarity.
-5. Modify the character naming screen.
+   - Current "Choose Action" menu can overflow if more than 6 options are available.
+   - Combat view UI is fairly rudimentary, could use an update to match game aesthetics.
+4. Modify the character naming screen.
    - Status: `Done`.
    - Added a visual naming screen with selected portrait, sex, race, and class panels.
    - Replaced the basic text-entry flow in pygame character creation with the guarded visual naming screen.
-6. Update enemy presentation around approved transparent sprites.
+5. Update enemy presentation around approved transparent sprites.
    - Status: `Done`.
    - Retired the broad-archetype `enemy_renders/` atlas and `enemy_combat_art/` presentation layer to `old_assets/retired_enemy_art/`.
    - `EnemyCombatSpriteManager` now owns enemy display-name lookup, boss/category fallbacks, combat target-panel presentation, and dungeon boss navigation figures.
@@ -143,9 +143,11 @@ Status: `Active`
    - Production enemy combat sprites now cover every concrete enemy display name in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template.
    - Added `enemy_combat_sprite_scale.json` so large creatures can use per-enemy combat scale multipliers without changing every shared-canvas sprite.
    - Combat sprite review sheets can be rebuilt from approved transparent PNGs with `./.venv/bin/python tools/build_enemy_combat_sprites.py`.
-   - Bugfix: combat/gameplay has slowed down with the new artist renderings of enemies.
-7. Update dungeon renderings to match new aesthetic.
+6. Update dungeon renderings to match new aesthetic.
    - Generate new floor, ceiling, and wall tiles
+7. Expand realistic item artworks to include images for all items.
+   - build on renderings in `src/ui_pygame/assets/item_renders/item_render_atlas.png` to produce images for each item
+   - either create independent images or create atlases for each item type or sub-type
 
 ### P2 - Renderer And Exploration Presentation
 

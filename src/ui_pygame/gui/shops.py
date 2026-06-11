@@ -155,7 +155,7 @@ class ShopManager(TownScreenBase):
                 qm.check_and_offer('Jeweler')
     
     def buy_weapons(self):
-        """Buy weapons - choose 1H or 2H first."""
+        """Buy weapons - choose handedness first, then browse subtype tabs."""
         # Use ShopScreen for weapon type selection
         shop_screen = ShopScreen(self.presenter, self.player_char, "Choose weapon type")
         shop_screen.set_options(["1-Handed", "2-Handed", "Back"])
@@ -166,30 +166,11 @@ class ShopManager(TownScreenBase):
             return
         
         handed = handed_choice
-        weapon_dict = items_module.items_dict["Weapon"][handed]
-        
-        # Choose weapon subtype using ShopScreen, filtering out unavailable categories
-        subtypes = []
-        for subtype, item_list in weapon_dict.items():
-            if self._has_available_items(item_list):
-                subtypes.append(subtype)
-        
-        # If no items are available, return to main menu
-        if not subtypes:
+        weapon_tabs = self._available_item_groups(items_module.items_dict["Weapon"][handed])
+        if not weapon_tabs:
             return
-        
-        subtypes.append("Back")
-        
-        shop_screen.shop_message = f"Choose {handed.lower()} weapon type"
-        shop_screen.set_options(subtypes)
-        subtype_choice = shop_screen.navigate_options()
-        
-        # Treat ESC ("Leave") the same as Back for submenus
-        if subtype_choice is None or subtype_choice in ("Back", "Leave"):
-            return
-        
-        subtype = subtype_choice
-        self.buy_equipment(weapon_dict[subtype], subtype, )
+
+        self._buy_with_shop_screen(weapon_tabs, f"{handed} Weapons")
     
     def buy_shields(self):
         """Buy shields from blacksmith."""
@@ -197,55 +178,20 @@ class ShopManager(TownScreenBase):
         self.buy_equipment(shield_list, "Shield", )
     
     def buy_armor(self):
-        """Buy armor from blacksmith - choose armor type first."""
-        # Use ShopScreen for armor type selection
-        shop_screen = ShopScreen(self.presenter, self.player_char, "Choose armor type")
-        
-        armor_dict = items_module.items_dict["Armor"]
-        
-        # Filter armor types by availability
-        armor_types = []
-        for armor_type, item_list in armor_dict.items():
-            if self._has_available_items(item_list):
-                armor_types.append(armor_type)
-        
-        # If no armor types available, return
-        if not armor_types:
+        """Buy armor from blacksmith with armor-type tabs."""
+        armor_tabs = self._available_item_groups(items_module.items_dict["Armor"])
+        if not armor_tabs:
             return
-        
-        armor_types.append("Back")
-        
-        shop_screen.set_options(armor_types)
-        armor_choice = shop_screen.navigate_options()
-        
-        # Treat ESC ("Leave") the same as Back for submenus
-        if armor_choice is None or armor_choice in ("Back", "Leave"):
-            return
-        
-        armor_type = armor_choice
-        self.buy_equipment(armor_dict[armor_type], armor_type, )
+
+        self._buy_with_shop_screen(armor_tabs, "Armor")
 
     def buy_helmets(self):
-        """Buy helmets from blacksmith - choose helmet type first."""
-        shop_screen = ShopScreen(self.presenter, self.player_char, "Choose helmet type")
-        helmet_dict = items_module.items_dict["Helmet"]
-
-        helmet_types = []
-        for helmet_type, item_list in helmet_dict.items():
-            if self._has_available_items(item_list):
-                helmet_types.append(helmet_type)
-
-        if not helmet_types:
+        """Buy helmets from blacksmith with helmet-type tabs."""
+        helmet_tabs = self._available_item_groups(items_module.items_dict["Helmet"])
+        if not helmet_tabs:
             return
 
-        helmet_types.append("Back")
-        shop_screen.set_options(helmet_types)
-        helmet_choice = shop_screen.navigate_options()
-
-        if helmet_choice is None or helmet_choice in ("Back", "Leave"):
-            return
-
-        self.buy_equipment(helmet_dict[helmet_choice], f"{helmet_choice} Helmets")
+        self._buy_with_shop_screen(helmet_tabs, "Helmets")
     
     def buy_rings(self):
         """Buy rings from jeweler."""
@@ -269,29 +215,33 @@ class ShopManager(TownScreenBase):
             misc_dict.pop("Scroll")
         if not misc_dict:
             return
-        self._buy_with_shop_screen(misc_dict, "Misc", )
+        self._buy_with_shop_screen(self._available_item_groups(misc_dict), "Misc", )
     
     def buy_potions(self, background_image="town.png"):
         """Buy potions from alchemist with level-based availability."""
+        potion_dict = {"Restorative": self._potion_item_classes()}
+        self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
+
+    def _potion_item_classes(self):
+        """Return level-appropriate restorative potion classes."""
         # Get potion items from items_dict
-        potion_dict = {"Misc": []}
+        potion_classes = []
         player_level = self.player_char.player_level()
         
         # Basic potions
-        potion_dict["Misc"].append(items_module.HealthPotion)
-        potion_dict["Misc"].append(items_module.ManaPotion)
+        potion_classes.append(items_module.HealthPotion)
+        potion_classes.append(items_module.ManaPotion)
         
         # Better potions at higher levels
         if player_level >= 10:
-            potion_dict["Misc"].append(items_module.GreatHealthPotion)
-            potion_dict["Misc"].append(items_module.GreatManaPotion)
+            potion_classes.append(items_module.GreatHealthPotion)
+            potion_classes.append(items_module.GreatManaPotion)
         
         if player_level >= 30:
-            potion_dict["Misc"].append(items_module.SuperHealthPotion)
-            potion_dict["Misc"].append(items_module.SuperManaPotion)
-        
-        # Use the new shop screen
-        self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
+            potion_classes.append(items_module.SuperHealthPotion)
+            potion_classes.append(items_module.SuperManaPotion)
+
+        return potion_classes
     
     def buy_equipment(self, item_list, category_name, background_image="town.png"):
         """Generic equipment buying interface using ShopScreen."""
@@ -304,6 +254,9 @@ class ShopManager(TownScreenBase):
     def _buy_with_shop_screen(self, itemdict, category_name, background_image="town.png"):
         """Use the new ShopScreen interface for buying items."""
         from .confirmation_popup import QuantityPopup
+
+        if not itemdict:
+            return
         
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}", background_image=background_image, options_list=[])
         shop_screen.update_item_list(itemdict, "Buy")
@@ -373,6 +326,14 @@ class ShopManager(TownScreenBase):
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
+
+    def _available_item_groups(self, itemdict):
+        """Return item groups that have at least one item available to this player."""
+        return {
+            subtype: item_list
+            for subtype, item_list in itemdict.items()
+            if self._has_available_items(item_list)
+        }
     
     def _format_item_info(self, item):
         """Format item information with description and stat comparison."""
@@ -385,14 +346,12 @@ class ShopManager(TownScreenBase):
             info_lines.append(f"Theme Name: {themed_name}")
         if hasattr(item, 'subtyp'):
             info_lines.append(f"Subtype: {item.subtyp}")
+        info_lines.extend(items_module.item_metadata_lines(item))
         
         # Item stats
         info_lines.append("")
         if hasattr(item, 'damage') and item.damage > 0:
             info_lines.append(f"Damage: {item.damage}")
-            efficiency = items_module.weapon_efficiency(item)
-            if efficiency > 0:
-                info_lines.append(f"Efficiency: {efficiency:.2f} dmg/wt")
         if hasattr(item, 'armor') and item.armor > 0:
             info_lines.append(f"Armor: {item.armor}")
         if hasattr(item, 'magic') and item.magic != 0:
@@ -647,103 +606,52 @@ class ShopManager(TownScreenBase):
             return
         
         handed = handed_choice
-        weapon_dict = items_module.items_dict["Weapon"][handed]
-        
-        # Choose weapon subtype
-        subtypes = list(weapon_dict.keys())
-        subtypes.append("Back")
-        
-        shop_screen.shop_message = f"Choose {handed} weapon type"
-        shop_screen.set_options(subtypes)
-        subtype_choice = shop_screen.navigate_options()
-        
-        if subtype_choice is None or subtype_choice == "Back":
+        weapon_tabs = self._available_item_groups(items_module.items_dict["Weapon"][handed])
+        if not weapon_tabs:
             return
-        
-        subtype = subtype_choice
-        item_list = weapon_dict[subtype]
-        
-        self.buy_equipment(item_list, f"{handed} {subtype}", background_image="dungeon.png")
+
+        self._buy_with_shop_screen(weapon_tabs, f"{handed} Weapons", background_image="dungeon.png")
     
     def _buy_secret_offhand(self, shop_screen):
         """Buy shields, tomes, and rods from secret shop."""
-        shop_screen.shop_message = "Choose off-hand type"
-        shop_screen.set_options(["Shields", "Tomes", "Rods", "Back"])
-        
-        choice = shop_screen.navigate_options()
-        
-        if choice is None or choice == "Back":
-
-            return
-        
-        offhand_types = {"Shields": "Shield", "Tomes": "Tome", "Rods": "Rod"}
-        offhand_type = offhand_types[choice]
-        item_list = items_module.items_dict["OffHand"][offhand_type]
-        
-        self.buy_equipment(item_list, offhand_type, background_image="dungeon.png")
+        offhand_tabs = {
+            "Shields": items_module.items_dict["OffHand"]["Shield"],
+            "Tomes": items_module.items_dict["OffHand"]["Tome"],
+            "Rods": items_module.items_dict["OffHand"]["Rod"],
+        }
+        self._buy_with_shop_screen(self._available_item_groups(offhand_tabs), "Off-Hand", background_image="dungeon.png")
     
     def _buy_secret_armor(self, shop_screen):
         """Buy armor from secret shop."""
-        shop_screen.shop_message = "Choose armor type"
-        shop_screen.set_options(["Cloth", "Light", "Medium", "Heavy", "Back"])
-        
-        choice = shop_screen.navigate_options()
-        
-        if choice is None or choice == "Back":
-            return
-        
-        armor_type = choice
-        item_list = items_module.items_dict["Armor"][armor_type]
-        
-        self.buy_equipment(item_list, f"{armor_type} Armor", background_image="dungeon.png")
+        armor_tabs = self._available_item_groups(items_module.items_dict["Armor"])
+        self._buy_with_shop_screen(armor_tabs, "Armor", background_image="dungeon.png")
 
     def _buy_secret_helmets(self, shop_screen):
         """Buy helmets from secret shop."""
-        shop_screen.shop_message = "Choose helmet type"
-        shop_screen.set_options(["Cloth", "Light", "Medium", "Heavy", "Back"])
-
-        choice = shop_screen.navigate_options()
-
-        if choice is None or choice == "Back":
-            return
-
-        item_list = items_module.items_dict["Helmet"][choice]
-        self.buy_equipment(item_list, f"{choice} Helmets", background_image="dungeon.png")
+        helmet_tabs = self._available_item_groups(items_module.items_dict["Helmet"])
+        self._buy_with_shop_screen(helmet_tabs, "Helmets", background_image="dungeon.png")
     
     def _buy_secret_accessories(self, shop_screen):
         """Buy accessories from secret shop."""
-        shop_screen.shop_message = "Choose accessory type"
-        shop_screen.set_options(["Rings", "Pendants", "Back"])
-        
-        choice = shop_screen.navigate_options()
-        
-        if choice is None or choice == "Back":
-            return
-        
-        acc_types = {"Rings": "Ring", "Pendants": "Pendant"}
-        acc_type = acc_types[choice]
-        item_list = items_module.items_dict["Accessory"][acc_type]
-        
-        self.buy_equipment(item_list, acc_type, background_image="dungeon.png")
+        accessory_tabs = {
+            "Rings": items_module.items_dict["Accessory"]["Ring"],
+            "Pendants": items_module.items_dict["Accessory"]["Pendant"],
+        }
+        self._buy_with_shop_screen(self._available_item_groups(accessory_tabs), "Accessories", background_image="dungeon.png")
     
     def _buy_secret_consumables(self, shop_screen):
         """Buy potions and scrolls from secret shop."""
-        shop_screen.shop_message = "Choose consumable type"
-        shop_screen.set_options(["Potions", "Stat Potions", "Scrolls", "Keys", "Back"])
-        
-        choice = shop_screen.navigate_options()
-        
-        if choice is None or choice == "Back":
-            return
-        
-        if choice == "Potions":
-            self.buy_potions(background_image="dungeon.png")
-        elif choice == "Stat Potions":
-            self._buy_secret_stat_potions()
-        elif choice == "Keys":
-            self._buy_secret_keys()
-        else:  # Scrolls
-            self.buy_scrolls(background_image="dungeon.png")
+        consumable_tabs = {
+            "Potions": self._potion_item_classes(),
+            "Stat Potions": items_module.items_dict["Potion"].get("Stat", []),
+            "Scrolls": items_module.items_dict["Misc"].get("Scroll", []),
+            "Keys": items_module.items_dict.get("Misc", {}).get("Key", []),
+        }
+        self._buy_with_shop_screen(
+            self._available_item_groups(consumable_tabs),
+            "Consumables",
+            background_image="dungeon.png",
+        )
 
     def _buy_secret_stat_potions(self):
         """Buy stat potions from secret shop."""

@@ -10,6 +10,7 @@ from textwrap import wrap
 
 import pygame
 
+from src.core import items as items_module
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -34,6 +35,9 @@ class ShopScreen(TownScreenBase):
         self.item_list = []  # List of tuples: (display_string, item_object, cost, owned_count)
         self.buy_or_sell = None
         self.scroll_offset = 0
+        self.tab_labels: list[str] = []
+        self.active_tab_index = 0
+        self._itemdict_source = {}
         self.item_render_manager = get_item_render_manager()
 
         # Caching for equip_diff to prevent recalculation on every blit
@@ -197,6 +201,8 @@ class ShopScreen(TownScreenBase):
                 # Word wrap the description to fit
                 wrap_width = max(24, text_width // 8)
                 lines = wrap(item.description, wrap_width, break_on_hyphens=False)
+                for metadata_line in items_module.item_metadata_lines(item):
+                    lines.extend(wrap(metadata_line, wrap_width, break_on_hyphens=False))
                 
                 # Draw description lines centered vertically
                 line_height = self.normal_font.get_height() + 2
@@ -215,6 +221,7 @@ class ShopScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.list_rect, 2)
         
         if not self.item_list:
+            self.draw_item_tabs()
             # Display message when no items available
             no_items_text = self.normal_font.render("No items available", True, self.colors.GRAY)
             text_rect = no_items_text.get_rect(
@@ -231,8 +238,10 @@ class ShopScreen(TownScreenBase):
         cost_col_x = self.list_rect.right - 180  # Fixed position for Cost
         owned_col_x = self.list_rect.right - 60  # Fixed position for Owned
         
+        self.draw_item_tabs()
+
         # Draw header row at fixed positions
-        header_y = self.list_rect.top + 10
+        header_y = self.list_rect.top + (38 if self.tab_labels else 10)
         
         type_header = self.small_font.render("Type", True, self.colors.GOLD)
         self.screen.blit(type_header, (type_col_x, header_y))
@@ -267,7 +276,7 @@ class ShopScreen(TownScreenBase):
         for i in range(visible_start, visible_end):
             display_str, item, cost, owned = self.item_list[i]
             
-            y = self.list_rect.top + 35 + (i - visible_start) * line_height
+            y = header_y + 25 + (i - visible_start) * line_height
             
             # Highlight selected item
             if i == self.current_item:
@@ -307,6 +316,43 @@ class ShopScreen(TownScreenBase):
                 # Owned column
                 owned_text = self.normal_font.render(f"x {owned}", True, color)
                 self.screen.blit(owned_text, (owned_col_x, y))
+
+    def draw_item_tabs(self) -> None:
+        """Draw subtype tabs for grouped buy lists."""
+        if not self.tab_labels:
+            return
+
+        tab_y = self.list_rect.top + 6
+        tab_height = 26
+        available_width = self.list_rect.width - 20
+        tab_width = max(1, available_width // len(self.tab_labels))
+        for idx, label in enumerate(self.tab_labels):
+            tab_rect = pygame.Rect(
+                self.list_rect.left + 10 + (idx * tab_width),
+                tab_y,
+                max(1, min(tab_width - 4, self.list_rect.right - 10 - (self.list_rect.left + 10 + (idx * tab_width)))),
+                tab_height,
+            )
+            active = idx == self.active_tab_index
+            fill_color = self.colors.HIGHLIGHT_BG if active else (0, 0, 0, 80)
+            pygame.draw.rect(self.screen, fill_color, tab_rect)
+            pygame.draw.rect(self.screen, self.colors.GOLD if active else self.colors.BORDER_COLOR, tab_rect, 1)
+
+            text_color = self.colors.GOLD if active else self.colors.WHITE
+            display_label = self._fit_tab_label(label, max(8, tab_rect.width - 8))
+            text = self.small_font.render(display_label, True, text_color)
+            text_x = tab_rect.centerx - text.get_width() // 2
+            text_y = tab_rect.centery - text.get_height() // 2
+            self.screen.blit(text, (text_x, text_y))
+
+    def _fit_tab_label(self, label: str, max_width: int) -> str:
+        """Return a tab label that fits the available pixel width."""
+        if self.small_font.size(label)[0] <= max_width:
+            return label
+        clipped = label
+        while len(clipped) > 1 and self.small_font.size(f"{clipped}.")[0] > max_width:
+            clipped = clipped[:-1]
+        return f"{clipped}." if clipped else "."
     
     def draw_mod(self):
         """Draw equipment modification comparison."""
@@ -445,16 +491,46 @@ class ShopScreen(TownScreenBase):
         """
         # Save cursor position if we're staying in the same mode
         preserve_cursor = (self.buy_or_sell == buy_or_sell)
+        previous_tab = self.tab_labels[self.active_tab_index] if self.tab_labels else None
         
         self.buy_or_sell = buy_or_sell
+        self._itemdict_source = itemdict
         self.item_list = []
+        self.tab_labels = []
         
         if buy_or_sell == "Buy":
-            self._build_buy_list(itemdict)
+            self._build_buy_tabs(itemdict, previous_tab)
         else:
             self._build_sell_list(itemdict)
 
-        # Reset or preserve cursor position
+        self._finalize_item_list(preserve_cursor)
+
+    def _build_buy_tabs(self, itemdict, previous_tab: str | None) -> None:
+        """Build the active buy list and tab labels from a grouped item dictionary."""
+        if len(itemdict) <= 1:
+            self.active_tab_index = 0
+            self._build_buy_list(itemdict)
+            return
+
+        rows_by_tab = {
+            label: self._build_buy_rows(item_classes)
+            for label, item_classes in itemdict.items()
+        }
+        self.tab_labels = [label for label, rows in rows_by_tab.items() if rows]
+
+        if not self.tab_labels:
+            self.active_tab_index = 0
+            return
+
+        if previous_tab in self.tab_labels:
+            self.active_tab_index = self.tab_labels.index(previous_tab)
+        else:
+            self.active_tab_index = min(self.active_tab_index, len(self.tab_labels) - 1)
+
+        self.item_list.extend(rows_by_tab[self.tab_labels[self.active_tab_index]])
+
+    def _finalize_item_list(self, preserve_cursor: bool) -> None:
+        """Clamp item-list cursor state and append the shared back row."""
         if not preserve_cursor or not self.item_list:
             self.current_item = 0
             self.scroll_offset = 0
@@ -469,44 +545,51 @@ class ShopScreen(TownScreenBase):
             self.current_item = min(self.current_item, max(0, len(self.item_list) - 1))
             self.scroll_offset = min(self.scroll_offset, self._max_scroll_offset())
             self._keep_current_item_visible()
+        self.cached_item_index = -1
     
     def _build_buy_list(self, itemdict):
         """Build item list for buying."""
         for _, item_classes in itemdict.items():
-            for item_class in item_classes:
-                item = item_class()
-                
-                # Check class restrictions
-                if hasattr(item, 'restriction') and item.restriction:
-                    if self.player_char.cls.name not in item.restriction:
-                        continue
-                
-                # Old Key should only be sold in the Secret Shop
-                if self.player_char.in_town() and item.name == "Old Key":
-                    continue
+            self.item_list.extend(self._build_buy_rows(item_classes))
 
-                # Check rarity for town shops
-                if self.player_char.in_town():
-                    min_rarity = max(0.4, (1.0 - (0.02 * self.player_char.player_level())))
-                    if item.rarity < min_rarity:
-                        continue
-                elif self.background_image == "dungeon.png":
-                    # Secret shop: strictly mid-rare items
-                    in_secret_rarity_band = 0.2 <= item.rarity <= 0.5
-                    if not in_secret_rarity_band:
-                        continue
-                
-                # Calculate adjusted cost based on charisma (race-aware).
-                adj_scale = self.player_char.shop_price_scale()
-                adj_cost = max(1, int(item.value * adj_scale))
-                
-                # Count owned items
-                owned = 0
-                if item.name in self.player_char.inventory:
-                    owned = len(self.player_char.inventory[item.name])
-                
-                # Store item data (no formatting needed - we render at fixed positions)
-                self.item_list.append((item.name, item, adj_cost, owned))
+    def _build_buy_rows(self, item_classes):
+        """Return visible buy rows for one item class list."""
+        rows = []
+        for item_class in item_classes:
+            item = item_class()
+            
+            # Check class restrictions
+            if hasattr(item, 'restriction') and item.restriction:
+                if self.player_char.cls.name not in item.restriction:
+                    continue
+            
+            # Old Key should only be sold in the Secret Shop
+            if self.player_char.in_town() and item.name == "Old Key":
+                continue
+
+            # Check rarity for town shops
+            if self.player_char.in_town():
+                min_rarity = max(0.4, (1.0 - (0.02 * self.player_char.player_level())))
+                if item.rarity < min_rarity:
+                    continue
+            elif self.background_image == "dungeon.png":
+                # Secret shop: strictly mid-rare items
+                in_secret_rarity_band = 0.2 <= item.rarity <= 0.5
+                if not in_secret_rarity_band:
+                    continue
+            
+            # Calculate adjusted cost based on charisma (race-aware).
+            adj_scale = self.player_char.shop_price_scale()
+            adj_cost = max(1, int(item.value * adj_scale))
+            
+            # Count owned items
+            owned = 0
+            if item.name in self.player_char.inventory:
+                owned = len(self.player_char.inventory[item.name])
+            
+            # Store item data (no formatting needed - we render at fixed positions)
+            rows.append((item.name, item, adj_cost, owned))
+        return rows
         
     def _build_sell_list(self, itemdict):
         """Build item list for selling."""
@@ -553,7 +636,7 @@ class ShopScreen(TownScreenBase):
     def navigate_items(self, flush_events=True, require_key_release=True):
         """Navigate the item list and return selected item."""
         # Handle empty item list
-        if not self.item_list:
+        if not self.item_list and not self.tab_labels:
             return None
         
         # Calculate max visible items (must match draw_shop_list)
@@ -593,10 +676,25 @@ class ShopScreen(TownScreenBase):
                     elif event.key == pygame.K_END:
                         self.current_item = len(self.item_list) - 1
                         self._keep_current_item_visible()
+                    elif event.key in (pygame.K_LEFT, pygame.K_RIGHT) and self.tab_labels:
+                        self.switch_item_tab(-1 if event.key == pygame.K_LEFT else 1)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        if not self.item_list:
+                            continue
                         display_str, item, cost, owned = self.item_list[self.current_item]
                         if display_str in {"Go Back", "Back"}:
                             return None
                         return (display_str, item, cost, owned)
             
             self.presenter.clock.tick(30)
+
+    def switch_item_tab(self, direction: int) -> None:
+        """Switch between buy-list subtype tabs."""
+        if not self.tab_labels:
+            return
+        self.active_tab_index = (self.active_tab_index + direction) % len(self.tab_labels)
+        active_label = self.tab_labels[self.active_tab_index]
+        self.item_list = list(self._build_buy_rows(self._itemdict_source[active_label]))
+        self.current_item = 0
+        self.scroll_offset = 0
+        self._finalize_item_list(preserve_cursor=False)

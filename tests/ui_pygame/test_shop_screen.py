@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import items
 from src.ui_pygame.gui import shop_screen
 
 
@@ -229,6 +230,33 @@ def test_build_buy_list_secret_shop_filters_to_mid_rarity_band(monkeypatch):
     assert [(name, cost) for name, _item, cost, _owned in screen.item_list] == [("Secret Stock", 84), ("Go Back", 0)]
 
 
+def test_buy_list_uses_subtype_tabs_and_preserves_active_tab(monkeypatch):
+    screen = _make_shop(monkeypatch, in_town=True, level=20)
+    itemdict = {
+        "Swords": [_item_factory("Training Sword", typ="Weapon", subtyp="Sword", rarity=0.9)],
+        "Axes": [_item_factory("Hand Axe", typ="Weapon", subtyp="Axe", rarity=0.9)],
+        "Unavailable": [_item_factory("Hidden Blade", typ="Weapon", subtyp="Dagger", rarity=0.1)],
+    }
+
+    screen.update_item_list(itemdict, "Buy")
+
+    assert screen.tab_labels == ["Swords", "Axes"]
+    assert screen.active_tab_index == 0
+    assert screen.item_list[0][0] == "Training Sword"
+
+    screen.switch_item_tab(1)
+
+    assert screen.active_tab_index == 1
+    assert screen.item_list[0][0] == "Hand Axe"
+
+    screen.current_item = 1
+    screen.update_item_list(itemdict, "Buy")
+
+    assert screen.tab_labels == ["Swords", "Axes"]
+    assert screen.active_tab_index == 1
+    assert screen.item_list[0][0] == "Hand Axe"
+
+
 def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     screen = _make_shop(monkeypatch)
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
@@ -271,6 +299,23 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     assert "3-21 / 25" in screen.small_font.render_calls
     assert called == ["background", "top", "options", "desc", "list", "mod", "gold", "background", "top", "options", "desc", "list", "mod", "gold"]
     assert flip_calls == [True]
+
+
+def test_draw_item_desc_includes_element_and_resistance_metadata(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    indras_fist = items.IndrasFist()
+    screen.item_list = [("Indra's Fist", indras_fist, 100, 0)]
+    screen.current_item = 0
+    screen.draw_item_desc()
+    assert "Element: Electric" in screen.normal_font.render_calls
+
+    screen.normal_font.render_calls.clear()
+    svalinn = items.Svalinn()
+    screen.item_list = [("Svalinn", svalinn, 100, 0)]
+    screen.draw_item_desc()
+    assert "Resistance: Fire +25%" in screen.normal_font.render_calls
 
 
 def test_draw_mod_uses_cache_and_handles_cant_equip_and_errors(monkeypatch):
@@ -355,6 +400,32 @@ def test_item_navigation_supports_page_home_and_end_keys(monkeypatch):
     assert choice[0] == "Item 0"
     assert screen.current_item == 0
     assert screen.scroll_offset == 0
+
+
+def test_item_navigation_switches_buy_tabs_with_left_right(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    monkeypatch.setattr(screen, "draw_all", lambda do_flip=True: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    screen.update_item_list(
+        {
+            "Swords": [_item_factory("Training Sword", typ="Weapon", subtyp="Sword")],
+            "Axes": [_item_factory("Hand Axe", typ="Weapon", subtyp="Axe")],
+        },
+        "Buy",
+    )
+
+    item_events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.event.get", lambda: next(item_events, []))
+
+    choice = screen.navigate_items(flush_events=True, require_key_release=True)
+
+    assert choice[0] == "Hand Axe"
+    assert screen.active_tab_index == 1
 
 
 def test_navigation_helpers_can_opt_out_of_stale_input_guard(monkeypatch):

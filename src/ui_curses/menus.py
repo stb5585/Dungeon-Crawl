@@ -10,6 +10,7 @@ import curses
 from src.core.save_system import SaveManager
 from src.core.character import scaled_decay_function
 from src.core import map_tiles
+from src.core import items as items_module
 
 
 # functions
@@ -974,13 +975,11 @@ class ShopMenu:
                 for i, line in enumerate(lines):
                     self.item_desc_win.addstr(self.height // 8 + i - (len(lines) // 2),
                                             (self.width // 3) - (len(line) // 2), line)
-                element = getattr(item, "element", None)
-                if element:
-                    element_line = f"Element: {element}"
+                for idx, metadata_line in enumerate(items_module.item_metadata_lines(item)):
                     self.item_desc_win.addstr(
-                        self.height // 8 + len(lines) + 1 - (len(lines) // 2),
-                        (self.width // 3) - (len(element_line) // 2),
-                        element_line,
+                        self.height // 8 + len(lines) + idx + 1 - (len(lines) // 2),
+                        (self.width // 3) - (len(metadata_line) // 2),
+                        metadata_line,
                     )
         self.item_desc_win.box()
 

@@ -139,6 +139,44 @@ def test_helmet_catalog_matches_equipment_table():
     assert items.DemonCowl().element == "Death"
 
 
+def test_item_metadata_lines_include_elements_and_resistance_mods():
+    assert "Element: Electric" in items.item_metadata_lines(items.IndrasFist())
+    assert "Resistance: Fire +25%" in items.item_metadata_lines(items.Svalinn())
+    assert "Resistance: Fire +50%" in items.item_metadata_lines(items.FireChain())
+    assert "Immunity: Electric" in items.item_metadata_lines(items.ElectricAmulet())
+
+
+def test_resistance_item_descriptions_leave_numeric_effects_to_metadata_lines():
+    resistance_items = [
+        items.CohuleenDruith(),
+        items.DemonCowl(),
+        items.Svalinn(),
+        items.FireChain(),
+        items.IceChain(),
+        items.ElectricChain(),
+        items.WaterChain(),
+        items.EarthChain(),
+        items.WindChain(),
+        items.ElementalChain(),
+        items.FireAmulet(),
+        items.IceAmulet(),
+        items.ElectricAmulet(),
+        items.WaterAmulet(),
+        items.EarthAmulet(),
+        items.WindAmulet(),
+        items.ElementalAmulet(),
+    ]
+
+    for item in resistance_items:
+        description = item.description.lower()
+        assert "resistance" not in description
+        assert "immunity" not in description
+        assert "immune" not in description
+        assert " by 50%" not in description
+        assert " by 100%" not in description
+        assert " by 25%" not in description
+
+
 def test_base_item_classes_and_helper_utilities(monkeypatch):
     base_item = items.Item("Summon Sigil", "A helper token.", 5, 0.25, "Summon - Test")
     assert base_item.use(None) == ""

@@ -932,6 +932,7 @@ class TestSaveSystemRoundTrips:
                 self.read = False
                 self.blocked = None
                 self.warped = False
+                self.active = True
                 self.enemy = enemy
                 self.defeated = defeated
                 self.drink = False
@@ -950,6 +951,7 @@ class TestSaveSystemRoundTrips:
         world[(1, 2, 3)].read = True
         world[(1, 2, 3)].blocked = "north"
         world[(1, 2, 3)].warped = True
+        world[(1, 2, 3)].active = False
         world[(1, 2, 3)].drink = True
         world[(1, 2, 3)].nimue = True
         world[(1, 2, 3)].nimue_met_before = True
@@ -969,6 +971,7 @@ class TestSaveSystemRoundTrips:
         assert restored.read is True
         assert restored.blocked == "north"
         assert restored.warped is True
+        assert restored.active is False
         assert restored.drink is True
         assert restored.nimue is True
         assert restored.nimue_met_before is True

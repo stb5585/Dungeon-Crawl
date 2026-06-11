@@ -591,6 +591,25 @@ class TestSpecialTiles:
         assert player.facing == "north"
         assert "Funhouse Entry" in game.events
 
+        teleporter.active = False
+        player.location_x, player.location_y, player.location_z = (2, 2, 4)
+        player.facing = "west"
+        player.funhouse_return = None
+        game.events.clear()
+        teleporter.modify_player(game)
+        assert (player.location_x, player.location_y, player.location_z) == (2, 2, 4)
+        assert player.facing == "west"
+        assert player.funhouse_return is None
+        assert game.events == []
+
+        teleporter.active = True
+        player.kill_dict = {"Boss": {"Jester": 1}}
+        player.location_x, player.location_y, player.location_z = (2, 2, 4)
+        teleporter.modify_player(game)
+        assert (player.location_x, player.location_y, player.location_z) == (2, 2, 4)
+        assert teleporter.active is False
+        assert game.events == []
+
         mimic = map_tiles.FunhouseMimicChest(3, 3, 7)
         monkeypatch.setattr("src.core.map_tiles.items.random_item", lambda level: SimpleNamespace(name=f"Loot-{level}"))
         mimic.loot = None
@@ -678,3 +697,23 @@ class TestSpecialTiles:
         player.location_y = 9
         teleporter.modify_player(game)
         assert (player.location_x, player.location_y, player.location_z) == (9, 9, 7)
+
+    def test_jester_boss_defeat_deactivates_funhouse_teleporter(self):
+        player = _make_player()
+        teleporter = map_tiles.FunhouseTeleporter(2, 2, 4)
+        boss = map_tiles.JesterBossRoom(0, -1, 7)
+        boss.enemy = None
+        player.world_dict = {
+            (2, 2, 4): teleporter,
+            (0, -1, 7): boss,
+        }
+        player.location_x, player.location_y, player.location_z = (0, -1, 7)
+        player.funhouse_return = (2, 2, 4, "south")
+        game = _make_game(player)
+
+        boss.special_text(game)
+
+        assert teleporter.active is False
+        assert (player.location_x, player.location_y, player.location_z) == (2, 2, 4)
+        assert player.facing == "south"
+        assert "Jester Defeated" in game.events

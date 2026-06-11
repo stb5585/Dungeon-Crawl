@@ -286,6 +286,24 @@ def jester_force_field_blocks(tile, player_char, facing: str) -> bool:
     return jester_token_count(player_char) < JESTER_TOKENS_REQUIRED
 
 
+def deactivate_funhouse_teleporters(player_char) -> None:
+    """Turn off all funhouse entry teleporters after the Jester is defeated."""
+    for tile in getattr(player_char, "world_dict", {}).values():
+        if type(tile).__name__ == "FunhouseTeleporter" and hasattr(tile, "active"):
+            tile.active = False
+
+
+def jester_defeated(player_char) -> bool:
+    """Return True when player/world state says the Jester has been cleared."""
+    for name_counts in getattr(player_char, "kill_dict", {}).values():
+        if name_counts.get("Jester", 0):
+            return True
+    return any(
+        type(tile).__name__ == "JesterBossRoom" and getattr(tile, "defeated", False)
+        for tile in getattr(player_char, "world_dict", {}).values()
+    )
+
+
 def update_chalice_location(game):
     """Hide or reveal the Golden Chalice altar based on quest progression."""
     player_char = game.player_char
@@ -1248,6 +1266,7 @@ class JesterBossRoom(BossRoom):
         """Handle victory condition and exit the funhouse."""
         if not self.enemy and game.player_char.location_z == 7:
             # Jester defeated - exit the funhouse
+            deactivate_funhouse_teleporters(game.player_char)
             game.player_char.exit_funhouse()
             if hasattr(game, 'special_event'):
                 game.special_event("Jester Defeated")
@@ -2049,10 +2068,20 @@ class WarpPoint(MapTile):
 
 
 class FunhouseTeleporter(SpecialTile):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.active = True
 
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
+
+        if jester_defeated(game.player_char):
+            self.active = False
+            return
+
+        if not self.active:
+            return
 
         # Already in the funhouse; no further teleporting needed.
         if game.player_char.location_z == 7:

@@ -139,6 +139,36 @@ def test_player_data_deserialize_marks_killed_boss_tiles_defeated_without_world_
     assert restored.world_dict[(2, 2, 0)].defeated is False
 
 
+def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(monkeypatch):
+    player = TestGameState.create_player(name="JesterSlayer", class_name="Warrior", race_name="Human", level=12)
+    player.kill_dict = {"Boss": {"Jester": 1}}
+    serialized = PlayerDataSerializer.serialize(player)
+    serialized["world_state"] = {
+        "(11, 0, 4)": {
+            "visited": True,
+            "near": True,
+            "active": True,
+        }
+    }
+
+    class FunhouseTeleporter:
+        def __init__(self):
+            self.visited = False
+            self.near = False
+            self.active = True
+
+    def fake_load_tiles(self):
+        self.world_dict = {(11, 0, 4): FunhouseTeleporter()}
+
+    monkeypatch.setattr("src.core.player.Player.load_tiles", fake_load_tiles)
+
+    restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=False)
+
+    teleporter = restored.world_dict[(11, 0, 4)]
+    assert teleporter.visited is True
+    assert teleporter.active is False
+
+
 def test_player_data_deserialize_migrates_jester_tokens_to_special_inventory():
     player = TestGameState.create_player(name="TokenTester", class_name="Warrior", race_name="Human", level=12)
     player.inventory = {"Jester Token": [items.JesterToken() for _ in range(2)]}
@@ -391,6 +421,7 @@ def test_save_manager_file_round_trip_restores_mutable_tile_state(monkeypatch, t
             read=True,
             blocked="north",
             warped=True,
+            active=False,
         ),
         boss_pos: SimpleNamespace(
             visited=True,
@@ -413,6 +444,7 @@ def test_save_manager_file_round_trip_restores_mutable_tile_state(monkeypatch, t
                 read=False,
                 blocked=None,
                 warped=False,
+                active=True,
             ),
             boss_pos: SimpleNamespace(
                 visited=False,
@@ -439,6 +471,7 @@ def test_save_manager_file_round_trip_restores_mutable_tile_state(monkeypatch, t
     assert restored_door.read is True
     assert restored_door.blocked == "north"
     assert restored_door.warped is True
+    assert restored_door.active is False
     assert restored_boss.defeated is True
     assert restored_boss.enemy is None
 

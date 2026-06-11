@@ -32,18 +32,6 @@ _STAT_THEME_PREFIXES = {
 }
 
 
-def weapon_efficiency(weapon: object) -> float:
-    """Return weapon damage per weight point for comparison displays."""
-    try:
-        damage = max(0.0, float(getattr(weapon, "damage", 0)))
-        weight = float(getattr(weapon, "weight", 0))
-    except (TypeError, ValueError):
-        return 0.0
-    if weight <= 0:
-        return damage
-    return damage / weight
-
-
 def stat_theme_for_item(item: object) -> str | None:
     """Infer the primary stat theme for an item without mutating it."""
     explicit_theme = getattr(item, "stat_theme", None)
@@ -82,6 +70,36 @@ def stat_themed_item_name(item: object) -> str:
     if not prefix or name.startswith(f"{prefix} "):
         return name
     return f"{prefix} {name}"
+
+
+def item_metadata_lines(item: object) -> list[str]:
+    """Return concise presentation metadata for item descriptions."""
+    lines: list[str] = []
+
+    element = getattr(item, "element", None)
+    if element:
+        lines.append(f"Element: {element}")
+
+    name = str(getattr(item, "name", "") or "")
+    if name == "Svalinn":
+        lines.append("Resistance: Fire +25%")
+
+    resist_mod = getattr(item, "resist_mod", None)
+    if resist_mod is not None and element:
+        try:
+            percent = int(float(resist_mod) * 100)
+        except (TypeError, ValueError):
+            percent = 0
+        if percent:
+            lines.append(f"Resistance: {element} +{percent}%")
+
+    mod = str(getattr(item, "mod", "") or "")
+    if mod.startswith("Resist-"):
+        lines.append(f"Resistance: {mod.removeprefix('Resist-')} +50%")
+    elif mod.startswith("Immune-"):
+        lines.append(f"Immunity: {mod.removeprefix('Immune-')}")
+
+    return lines
 
 
 def _build_rarity_table() -> dict[str, list]:
@@ -221,11 +239,6 @@ class Weapon(Item):
     def crit_chance(self, value: float) -> None:
         self.crit = value
 
-    @property
-    def efficiency(self) -> float:
-        """Damage per weapon-weight point for comparison displays."""
-        return weapon_efficiency(self)
-
     def __str__(self) -> str:
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
@@ -234,7 +247,6 @@ class Weapon(Item):
                 f"{self.handed}-handed\n"
                 f"Damage: {self.damage}\n"
                 f"Critical Chance: {int(self.crit_chance * 100)}%\n"
-                f"Efficiency: {self.efficiency:.2f} dmg/wt\n"
                 f"Weight: {self.weight}\n"
                 f"{35*'='}")
 
@@ -588,7 +600,7 @@ class Jian(Weapon):
 
     def __init__(self):
         super().__init__(name="Jian", description="A jian is a double-edged straight sword with a guard that protects "
-                                                  "the result.actor from opposing blades,",
+                                                  "the wielder from opposing blades,",
                          value=2000, rarity=0.85, damage=14, crit=0.1, handed=1, subtyp='Sword', unequip=False,
                          off=True)
         self.weight = 6
@@ -2240,8 +2252,8 @@ class Circlet(Helmet):
 class CohuleenDruith(Helmet):
 
     def __init__(self):
-        super().__init__(name="Cohuleen Druith", description="A fey cap steeped in old river magic that shields the "
-                                                            "wearer from water spells.",
+        super().__init__(name="Cohuleen Druith", description="A fey cap steeped in old river magic and woven with "
+                                                            "reeds from a hidden ford.",
                          value=40000, rarity=0.2, armor=10, subtyp='Cloth', unequip=False)
         self.weight = 1
         self.element = "Water"
@@ -2312,8 +2324,8 @@ class Somen(Helmet):
 class DemonCowl(Helmet):
 
     def __init__(self):
-        super().__init__(name="Demon Cowl", description="A sinister cowl threaded with charms against instant death "
-                                                       "magic.",
+        super().__init__(name="Demon Cowl", description="A sinister cowl threaded with funereal charms and ash-dark "
+                                                       "silk.",
                          value=0, rarity=0, armor=16, subtyp='Light', unequip=False)
         self.weight = 4
         self.special = True
@@ -2999,8 +3011,7 @@ class Svalinn(OffHand):
     def __init__(self):
         super().__init__(name="Svalinn", description="The svalinn is a mythical shield that symbolizes protection "
                                                      "and strength, often depicted as an essential element in the "
-                                                     "cosmic balance. Equipping this shield increase ones resistance "
-                                                     "to fire by 25%.",
+                                                     "cosmic balance.",
                          value=75000, rarity=0.2, mod=0.35, subtyp='Shield', unequip=False)
         self.weight = 18
 
@@ -3075,7 +3086,7 @@ class ElementalPrimer(OffHand):
 
     def __init__(self):
         super().__init__(name="Elemental Primer", description="A multi-colored tome that shifts between elemental "
-                                                              "motifs depending on the result.actor's surroundings.",
+                                                              "motifs depending on its surroundings.",
                          value=10000, rarity=0.75, mod=30, subtyp='Tome', unequip=False)
         self.weight = 2
 
@@ -3505,8 +3516,8 @@ class CalmingPendant(Accessory):
 class ElementChain(Accessory):
 
     def __init__(self):
-        super().__init__(name="Element Chain", description="Base class for the various element chains. The chain "
-                                                           "provides an additional 50% resistance to the element(s).",
+        super().__init__(name="Element Chain", description="Base class for the various element chains, each forged "
+                                                           "around a focused elemental core.",
                          value=8000, rarity=0.6, mod="None", subtyp="Pendant", unequip=False)
         self.weight = 0.2
 
@@ -3516,7 +3527,7 @@ class FireChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Fire Chain"
-        self.description = ("This necklace increases the resistance for the wearer to fire by 50%.")
+        self.description = ("A necklace set with a warm ember-stone that glows brighter near open flame.")
         self.mod = "Resist-Fire"
 
 
@@ -3525,7 +3536,7 @@ class IceChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Ice Chain"
-        self.description = ("This necklace increases the resistance for the wearer to ice by 50%.")
+        self.description = ("A necklace of pale crystal links that stay cold even in midsummer heat.")
         self.mod = "Resist-Ice"
 
 class ElectricChain(ElementChain):
@@ -3533,7 +3544,7 @@ class ElectricChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Electric Chain"
-        self.description = ("This necklace increases the resistance for the wearer to electric by 50%.")
+        self.description = ("A necklace strung with storm glass that hums softly before lightning strikes.")
         self.mod = "Resist-Electric"
 
 class WaterChain(ElementChain):
@@ -3541,7 +3552,7 @@ class WaterChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Water Chain"
-        self.description = ("This necklace increases the resistance for the wearer to water by 50%.")
+        self.description = ("A necklace of blue-green links that beads with dew in dry air.")
         self.mod = "Resist-Water"
 
 class EarthChain(ElementChain):
@@ -3549,7 +3560,7 @@ class EarthChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Earth Chain"
-        self.description = ("This necklace increases the resistance for the wearer to earth by 50%.")
+        self.description = ("A necklace carved from polished stone, heavy with the patience of deep caverns.")
         self.mod = "Resist-Earth"
 
 class WindChain(ElementChain):
@@ -3557,7 +3568,7 @@ class WindChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Wind Chain"
-        self.description = ("This necklace increases the resistance for the wearer to wind by 50%.")
+        self.description = ("A necklace of feather-light silver links that stir when no breeze is present.")
         self.mod = "Resist-Wind"
 
 
@@ -3566,8 +3577,8 @@ class ElementalChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Elemental Chain"
-        self.description = ("Fashioned from the cores of elementals, this necklace increases the resistance for the "
-                            "wearer to the 6 main elemental types, fire, ice, electric, water, earth, and wind by 50%.")
+        self.description = ("Fashioned from the cores of elementals, this necklace shifts color as nearby magic "
+                            "changes shape.")
         self.value = 15000
         self.rarity = 0.4
         self.mod = "Resist-Elemental"
@@ -3631,7 +3642,8 @@ class LevitationPendant(Accessory):
 class ElementAmulet(Accessory):
 
     def __init__(self):
-        super().__init__(name="Element Amulet", description="Base class for the various element amulets.",
+        super().__init__(name="Element Amulet", description="Base class for the various element amulets, each shaped "
+                                                           "around a concentrated warding jewel.",
                          value=40000, rarity=0.2, mod="None", subtyp="Pendant", unequip=False)
         self.weight = 0.2
 
@@ -3641,7 +3653,7 @@ class FireAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Fire Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to fire by 100%.")
+        self.description = ("An amulet with a ruby heart that burns like a banked coal.")
         self.mod = "Immune-Fire"
 
 
@@ -3650,7 +3662,7 @@ class IceAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Ice Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to ice by 100%.")
+        self.description = ("An amulet with a frost-white gem that leaves a chill on the skin.")
         self.mod = "Immune-Ice"
 
 class ElectricAmulet(ElementAmulet):
@@ -3658,7 +3670,7 @@ class ElectricAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Electric Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to electric by 100%.")
+        self.description = ("An amulet with a storm-bright gem that clicks with tiny sparks.")
         self.mod = "Immune-Electric"
 
 class WaterAmulet(ElementAmulet):
@@ -3666,7 +3678,7 @@ class WaterAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Water Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to water by 100%.")
+        self.description = ("An amulet with a deep blue gem that seems to ripple beneath its surface.")
         self.mod = "Immune-Water"
 
 class EarthAmulet(ElementAmulet):
@@ -3674,7 +3686,7 @@ class EarthAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Earth Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to earth by 100%.")
+        self.description = ("An amulet with a dense green gem veined like ancient bedrock.")
         self.mod = "Immune-Earth"
 
 class WindAmulet(ElementAmulet):
@@ -3682,7 +3694,7 @@ class WindAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Wind Amulet"
-        self.description = ("This amulet increases the immunity for the wearer to wind by 100%.")
+        self.description = ("An amulet with a clear gem that feels almost weightless in the hand.")
         self.mod = "Immune-Wind"
 
 
@@ -3691,9 +3703,8 @@ class ElementalAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Elemental Amulet"
-        self.description = ("Legend claims the jewel of this amulet is actually the heart of a god. This amulet "
-                            "increases the immunity for the wearer to the 6 main elemental types, fire, ice, "
-                            "electric, water, earth, and wind by 100%.")
+        self.description = ("Legend claims the jewel of this amulet is actually the heart of a god, still turning "
+                            "with every color of creation.")
         self.value = 100000
         self.rarity = 0.05
         self.mod = "Immune-Elemental"

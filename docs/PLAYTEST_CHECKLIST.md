@@ -1,32 +1,14 @@
 # Playtest Checklist
 
 ## Found Issues
-- [x] The first key strike after turn starts is blocked, regardless of how long I wait
-- [x] Giant Warrior has little trouble leaving the beginner area even before level 10; instead of nerfing, increase negatives (i.e. lower resistances, higher chance of status effects, greater impact of low scores, etc.)
-- [x] If Enfeeble affects attack or defense by +0, it shows up as green (positive); it probably shouldn't even report the change if it is +0
-- [x] The Attack stat on the Character Menu does not match the Attack stat when equipping a weapon.
 
 ## Recently Changed
-
-### P0 Verification
-- [x] Run the focused P0 regression bundle for first-key input, music transitions, character stats, Enfeeble zero-value filtering, Half Giant balance, Old Key rewards, locked-door prompts, and audio routing.
-  - Expected: The focused pytest bundle passes without skipped or hanging input-loop tests.
-
-### Balance
-- [x] Start a Half Giant Warrior and compare early durability against magic/status-heavy enemies.
-  - Expected: Half Giant keeps strength/constitution advantages but has lower agility, lower magic defense, and sharper magical weaknesses.
 
 ### Dungeon Rendering
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
 - [ ] Revisit a room after moving through side corridors and backtracking.
   - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
-- [x] Enable renderer surface-slot debugging while checking a side corridor.
-  - Expected: Debug overlay information corresponds to the visible panel being inspected.
-  - Expected: Slot diagnostics identify both default and overridden textures for the panel under inspection.
-  - Expected: Manual and scene-driven override counts are distinguishable while debugging.
-  - Expected: Per-slot state identifies whether the texture came from defaults, scene overrides, or manual overrides.
-  - Expected: Per-panel summaries count default, scene override, and manual override slot sources for quick side-corridor checks.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
   - Expected: Projected-surface cache diagnostics report bounded cache size, remaining capacity, and full/not-full state.
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
@@ -39,9 +21,6 @@
 - [ ] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
-- [x] Cast Enfeeble against a target with extremely low attack/defense.
-  - Expected: Zero-value attack/defense changes are not reported and do not appear as green status icons.
-  - Expected: Combat view and dungeon HUD both suppress active stat effects whose value is exactly zero.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Resize the game window or view a crowded combat overlay.
@@ -54,10 +33,7 @@
   - Expected: Stat-effect icon filtering diagnostics identify active zero-value effects that were suppressed before rendering.
 
 ### Enemy Combat Sprites
-- [x] Verify all concrete enemy display names have an exact transparent combat-sprite mapping.
-  - Expected: `EnemyCombatSpriteManager` resolves concrete enemies through `enemy_combat_sprite_map.json` instead of broad portrait/render archetypes.
-  - Expected: Only the development `Test` enemy and base `Myrmidon` template are intentionally unmapped.
-- [ ] Enter combat against early enemies such as Giant Rat, Skeleton, Goblin, and Slime.
+- [x] Enter combat against early enemies such as Giant Rat, Skeleton, Goblin, and Slime.
   - Expected: The center combat enemy is a transparent full-body sprite, not a rectangular portrait or token.
   - Expected: Existing HP bars, menus, targeting, turn order, and combat mechanics are unchanged.
 - [ ] Enter combat against mid-game enemies such as Gnoll, Satyr, Vampire, Troll, and Dragonkin.
@@ -68,9 +44,6 @@
   - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
 
 ### Main Menu
-- [x] Choose Settings from the pygame main menu.
-  - Expected: A guarded modal message appears saying the settings menu is coming soon.
-  - Expected: The key press used to choose Settings does not immediately dismiss the message.
 - [ ] Quit from a pygame session after visiting dungeon or popup-heavy screens.
   - Expected: The game exits cleanly without leaving stale popup backgrounds or hanging the window.
 - [ ] Open several popups after moving between town, dungeon, and combat views.
@@ -99,99 +72,6 @@
   - Expected: Attempting to equip a non-equippable inventory item shows a styled popup over the inventory menu background.
 
 ### Character Menu
-- [x] Start a new character and choose sex, race, class, and name.
-  - Expected: Sex selection appears before race selection.
-  - Expected: Sex selection uses the same two-panel visual structure as race and class selection, with a blank description area for now.
-  - Expected: Save/load preserves the selected sex.
-  - Expected: Existing saves without sex data load as Male.
-- [x] Launch pygame without a modern-menu flag and open the Character Menu from town.
-  - Expected: The modern Character Menu opens by default.
-  - Expected: Closing the menu returns cleanly to the previous town flow.
-- [x] Open the modern Character Menu from dungeon exploration.
-  - Expected: The modern menu opens over the dungeon background and closes back to exploration.
-  - Expected: The modern action menu does not include Quit Game.
-- [x] Switch between the modern `Character` and `Equipment` tabs.
-  - Expected: Tab switching works with keyboard input and keeps the action menu usable.
-  - Expected: Future tabs can be added without changing the core tab renderer.
-- [x] Inspect the modern action menu.
-  - Expected: `Change Equipment` opens the equipment-management popup.
-  - Expected: `Exit Menu` is the final action option.
-  - Expected: `Quit Game` is not listed.
-- [x] Inspect the modern Character tab with several classes and long character names.
-  - Expected: Name, Race, Class, and level render clearly in the larger identity font.
-  - Expected: Race and Class are shown on separate lines.
-  - Expected: Name, Race, Class, and level are right-aligned beside the portrait.
-  - Expected: The level-progress bar appears under the Level value on the right side.
-  - Expected: The level-progress bar is wide enough to use most of the character-info column without covering the label.
-  - Expected: Redundant `XP EARNED` and `XP TO NEXT` summary rows are not shown above the level-progress bar.
-  - Expected: The race/sex portrait renders from the base portrait atlas when a matching atlas entry exists.
-  - Expected: The portrait placeholder remains available if an asset is missing.
-  - Expected: The portrait preserves its aspect ratio inside the frame.
-  - Expected: The portrait frame uses the native atlas portrait shape, 225x400 when space allows.
-  - Expected: The Character and Combat Stats panels use an approximate 60/40 split.
-  - Expected: The Combat Stats panel remains readable in the narrower right column.
-  - Expected: Long names are clipped or fitted without spilling into nearby panels.
-  - Expected: The Character tab shows character and combat information only, without a redundant equipment panel.
-  - Expected: Core Attributes are placed underneath the level-progress bar in the character-info column.
-  - Expected: Core Attribute labels and values have enough horizontal separation to scan cleanly.
-  - Expected: Core Attribute values are right-aligned without a large empty area after the values.
-  - Expected: A divider separates the character identity area from Core Attributes.
-- [ ] Inspect the modern level-progress bar before and after gaining experience.
-  - Expected: The label shows current-level progress as `earned/required XP` plus XP remaining until the next level.
-  - Expected: The bar is shorter than the full character panel width.
-  - Expected: The bar fill reflects current progress toward the next level, not total lifetime experience.
-  - Expected: The bar does not cover or overlap the XP text.
-  - Expected: Zero or missing XP data does not crash or overfill the bar.
-  - Expected: Max-level characters with `exp_to_gain` set to `MAX` show a full bar and do not crash.
-- [ ] Inspect the modern combat-stat block.
-  - Expected: HP, MP, Attack, Defense, Magic Attack, Magic Defense, Critical Chance, Block Chance, Speed, and Weight/Encumbrance render in a larger, readable stat block.
-  - Expected: Attack and Defense continue to use equipment-adjusted modifier paths.
-  - Expected: Dual-wielding characters show Attack as main/offhand values, such as `12/8`.
-  - Expected: Combat stat values are right-aligned in the stat block.
-  - Expected: A divider separates Combat Stats from Weaknesses and Resistances.
-  - Expected: Weaknesses and Resistances headings and values use larger, readable text.
-  - Expected: Weaknesses and Resistances render side-by-side in a static reserved block and avoid overflow with several entries.
-  - Expected: All 10 possible resistance keys can appear in one group without being truncated.
-- [ ] Inspect the modern Equipment tab.
-  - Expected: Equipment is arranged as a spread-out paper-doll layout with Helmet above, Weapon/Armor/Offhand across the middle, and Ring/Pendant below.
-  - Expected: Equipment slot blocks are large enough to show the item name plus key item stats.
-  - Expected: Each equipment slot includes an icon box using a matching `assets/icons` image when one exists.
-  - Expected: Equipment slots with no matching icon asset leave the icon box blank.
-  - Expected: The redundant `Equipment Layout` heading is not shown.
-  - Expected: Helmet is a real equipment slot, contributes to equipment-adjusted Defense when equipped, and persists through saves.
-  - Expected: The Item Details section is not shown.
-  - Expected: Equipped item names render inside the paper-doll slots without overflowing.
-  - Expected: Weapons show subtype, base damage, crit chance, and weight.
-  - Expected: Armor shows subtype, base armor, and weight.
-  - Expected: Shields show subtype, block chance, and weight; shield block is not repeated as a buff.
-  - Expected: Item detail rows use `Label: value` formatting with values right-aligned.
-  - Expected: Zero-weight items do not show a weight row.
-  - Expected: Svalinn reports its Fire resistance as a buff in addition to its shield block chance.
-  - Expected: Cohuleen Druith and Demon Cowl report their resistance buffs inside the Helmet slot block.
-  - Expected: Rings and Pendants show weight and their buff, but do not show a separate raw `Mod` line.
-  - Expected: Empty slots display a readable empty state.
-- [ ] Inspect equipment-specific persistent buffs such as Vision in the modern Character Menu.
-  - Expected: Equipment-derived buffs are reported inside their equipment slot block.
-  - Expected: Equipment-derived buffs are not shown in the lower-left Character tab area or as a separate Equipment tab footer.
-  - Expected: Combat-only debuffs and temporary effects are not shown in the Character Menu.
-- [ ] Inspect base portrait atlas coverage.
-  - Expected: Human male and Human female portraits display.
-  - Expected: Elf male and Elf female portraits display.
-  - Expected: Half Elf male and Half Elf female portraits display.
-  - Expected: Half Giant male and Half Giant female portraits display.
-  - Expected: Gnome male and Gnome female portraits display.
-  - Expected: Dwarf male and Dwarf female portraits display.
-  - Expected: Half Orc male and Half Orc female portraits display.
-  - Expected: Unknown race falls back cleanly without crashing.
-  - Expected: Unknown gender falls back cleanly without crashing.
-  - Expected: Missing class, promotion, or effect overlays are skipped without crashing.
-  - Expected: Portrait frame aligns correctly in the modern Character tab.
-  - Expected: Modern Character Menu falls back cleanly without depending on the atlas manager.
-- [ ] Inspect modern resistance grouping on characters with weaknesses and resistances.
-  - Expected: Negative values appear under Weaknesses.
-  - Expected: Positive values appear under Resistances.
-  - Expected: Exact values are visible as secondary information.
-  - Expected: Neutral resistance values do not clutter the view.
 - [ ] Resize the pygame window or test smaller supported resolutions with the modern menu enabled.
   - Expected: Panels remain aligned, text stays readable, and no UI elements overlap incoherently.
   - Expected: Equipment and effect text clips cleanly instead of spilling into neighboring panels.
@@ -204,9 +84,6 @@
 - [ ] Open the pygame Character Menu before and after equipping stronger armor.
   - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
-- [ ] Open the pygame Character Menu before and after equipping a helmet.
-  - Expected: The Defense stat includes the equipped helmet armor in addition to body armor.
-  - Expected: `No Helmet` displays with a helmet archetype icon and does not log a missing icon mapping warning.
 - [ ] Equip the special helmets and inspect their persistent effects.
   - Expected: Cohuleen Druith increases Water resistance through combat resistance checks.
   - Expected: Demon Cowl increases Death resistance through combat resistance checks.
@@ -219,23 +96,34 @@
   - Expected: Future armor with explicit `spell_mod` uses that value instead of the derived cloth armor bonus.
 
 ### Shops
-- [ ] Navigate a pygame shop with more than one page of buy or sell items.
+- [x] Buy from blacksmith categories that now use item-list tabs.
+  - Expected: Top-level category selection remains in place for Weapons, Shields, Armor, and Helmets.
+  - Expected: Weapon handedness selection remains in place, then weapon subtypes are browsed as tabs inside the buy list.
+  - Expected: Armor and Helmet subtypes are browsed as tabs inside the buy list instead of opening another subtype menu.
+- [x] Switch pygame shop buy-list tabs with Left and Right.
+  - Expected: The active tab changes without leaving the buy list or resetting the top-level shop flow.
+  - Expected: The highlighted row resets to a valid visible item on the newly selected tab.
+  - Expected: Confirming a purchase refreshes owned counts while preserving the active tab.
+- [x] Browse a shop category where some subtypes have no available stock for the current player level or shop rarity rules.
+  - Expected: Empty unavailable subtypes are omitted from the tab strip.
+  - Expected: Categories with no available stock return cleanly without opening an empty purchase flow.
+- [x] Buy from secret-shop grouped categories.
+  - Expected: Weapons keep handedness selection, then show subtype tabs for the selected handedness.
+  - Expected: Shields/Tomes/Rods, Armor, Helmets, Accessories, and Consumables use tabs for their subgroups.
+  - Expected: Secret-shop rarity filtering still applies to each tab.
+- [x] Navigate a pygame shop with more than one page of buy or sell items.
   - Expected: PageUp/PageDown move by a visible page while keeping the highlighted item on screen.
   - Expected: Home/End jump to the first and last item without corrupting scroll position.
   - Expected: Long shop lists show the visible item range, and changing buy/sell lists keeps the selected item on a valid visible page.
-- [ ] Inspect an elemental weapon or armor item in the curses shop screen.
+- [x] Inspect elemental and resistance-bearing equipment in shop description panels.
   - Expected: The item description includes an `Element: ...` line for any item type with elemental metadata.
-- [ ] Inspect a weapon in the pygame shop item-info flow.
-  - Expected: Weapon info includes a display-only efficiency value derived from damage per weight point.
-  - Expected: Efficiency display does not change combat damage, critical chance, or equip eligibility.
+  - Expected: Fist weapons such as Indra's Fist show their elemental metadata in the secret-shop description panel.
+  - Expected: Resistance-bearing shields and accessories show explicit `Resistance: ...` or `Immunity: ...` lines.
 - [ ] Take hits while wearing each ultimate armor reward.
   - Expected: Robes of Merlin can restore mana after incoming weapon hits.
   - Expected: Dragon Hide can scorch attackers with fire retaliation damage.
   - Expected: Klivanion can shock attackers and may stun them.
   - Expected: Genji Armor can recover a portion of incoming damage after a hit.
-- [ ] Browse helmet categories in blacksmith and secret-shop buy flows.
-  - Expected: Cloth, Light, Medium, and Heavy helmet lists show the new helmet names, prices, rarity tiers, armor values, and weights.
-  - Expected: Zero-value legendary helmets do not appear as normal paid stock unless that shop flow intentionally includes ultimate-tier equipment.
 - [ ] Equip armor with elemental metadata and inspect matching resistance behavior.
   - Expected: Matching elemental armor contributes resistance through combat resistance checks.
   - Expected: Non-matching elements do not receive the armor resistance bonus.
@@ -257,13 +145,6 @@
   - Expected: The quest-manager turn-in path records the quest as turned in after granting the keys.
 
 ## Regression Areas
-
-### Locked Doors
-- [ ] Try opening a locked dungeon door with at least one Old Key.
-  - Expected: The door opens and consumes one Old Key.
-  - Expected: The key-use prompt accepts the first fresh confirmation/cancel key after stale input clears.
-- [x] Try opening a locked dungeon door with no Old Keys or lockpick option.
-  - Expected: The door stays locked and shows the missing-key prompt.
 
 ### Save/Load
 - [ ] Save after receiving Old Keys, quit, and reload.
@@ -304,16 +185,6 @@
 - [ ] Inspect quest status summary diagnostics after accepting, completing, and turning in quests.
   - Expected: Main/Side/Bounty category counts distinguish total, completed, turned-in, ready-to-turn-in, and active quests.
   - Expected: Malformed or legacy non-dictionary quest entries are ignored instead of crashing diagnostics.
-
-### Statistics
-- [x] Open the Statistics entry from the pygame town menu.
-  - Expected: The popup includes steps, stairs, defeats, deaths, flees, encounters survived, and high-water combat stats.
-  - Expected: Combat outcomes and total activity derive from the existing counters.
-  - Expected: Exploration actions and combat survival rate derive from existing counters without requiring a new save format.
-  - Expected: Missing or old save data displays as zeroes instead of crashing.
-  - Expected: Encounters survived is never negative, even after old or manually edited save data.
-  - Expected: Negative legacy/manual counters are displayed as zeroes before derived totals are calculated.
-  - Expected: Current-run counters are grouped under Exploration, Combat, and Records headings.
 
 ### Developer Tooling
 - [ ] Generate or inspect a `CombatResult` / `CombatResultGroup` diagnostic payload after combat.
@@ -368,10 +239,6 @@
   - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
-- [x] Finish a pygame combat encounter while debug mode is enabled.
-  - Expected: A structured battle log JSON file is written under `debug_logs/battles/`.
-  - Expected: Normal non-debug combat endings do not create automatic debug battle-log files.
-  - Expected: Generated debug battle-log files are ignored by git and do not appear as untracked changes.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.
   - Expected: The payload includes battle metadata, event-type counts, flag counts, actor/target counts, and aggregate summary counts without raw event rows.
   - Expected: Damage-row counts distinguish all numeric damage events from positive-damage events.
@@ -431,14 +298,6 @@
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
 ### Enemy Sprite Artwork
-- [x] Review the generated enemy combat sprite contact sheet.
-  - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows distinct transparent sprites with consistent readability and no placeholder cards.
-  - Expected: Common enemies, bosses, and generic fallback are visually distinguishable.
-- [x] Start combat against common mapped enemies.
-  - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy combat sprites in the combat target panel and center combat view.
-- [x] Inspect the turn/initiative banner during player and enemy turns.
-  - Expected: Enemy turns show a compact circular enemy token derived from the combat sprite.
-  - Expected: Player turns show a compact circular face token derived from the player portrait.
 - [ ] Start combat against an enemy mapped to the boss fallback.
   - Expected: Boss fallback sprite appears when no specific boss sprite exists.
   - Expected: Boss combat, victory, defeat, and flee flows still function.

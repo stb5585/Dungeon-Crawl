@@ -87,27 +87,6 @@ class TestEquipmentBasics:
 
         assert aliased_chance > legacy_chance
 
-    def test_weapon_efficiency_stat_uses_damage_per_weight(self):
-        """Weapon efficiency is display-only damage per weight point."""
-        weapon = items.Weapon(
-            name="Test Blade",
-            description="A test weapon.",
-            value=1,
-            rarity=1.0,
-            damage=12,
-            crit=0.05,
-            handed=1,
-            subtyp="Sword",
-            unequip=False,
-            off=True,
-        )
-        weapon.weight = 3
-
-        assert weapon.efficiency == 4.0
-        assert items.weapon_efficiency(SimpleNamespace(damage=10, weight=0)) == 10.0
-        assert "Efficiency: 4.00 dmg/wt" in str(weapon)
-
-
 class TestTwoHandedWeaponLogic:
     """Test two-handed weapon equipping and offhand conflicts."""
     

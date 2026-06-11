@@ -41,7 +41,7 @@ def random_enemy(level: str) -> Enemy:
       level = max(monsters, key=int)
 
     random_monster = random.choice(monsters[level])
-    random_monster = Test()
+    # random_monster = Test()
 
     return random_monster
 

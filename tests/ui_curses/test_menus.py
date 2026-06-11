@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 from types import SimpleNamespace
 
+from src.core import items
 from src.ui_curses import menus as curses_menus
 
 
@@ -628,6 +629,17 @@ def test_shop_menu_item_description_shows_element_for_any_item_type(monkeypatch)
 
     assert any(
         call[0] == "addstr" and len(call[1]) >= 3 and call[1][2] == "Element: Fire"
+        for call in menu.item_desc_win.calls
+    )
+
+    menu.item_desc_win.calls.clear()
+    menu.itemdict = {"Pendant": [items.FireChain]}
+    menu.config_item_str()
+    menu.current_item = 0
+    menu.draw_item_desc()
+
+    assert any(
+        call[0] == "addstr" and len(call[1]) >= 3 and call[1][2] == "Resistance: Fire +50%"
         for call in menu.item_desc_win.calls
     )
 
