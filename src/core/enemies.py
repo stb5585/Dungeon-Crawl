@@ -41,7 +41,7 @@ def random_enemy(level: str) -> Enemy:
       level = max(monsters, key=int)
 
     random_monster = random.choice(monsters[level])
-    # random_monster = Test()
+    random_monster = Test()
 
     return random_monster
 
@@ -896,12 +896,11 @@ class Test(Misc):
                          exp=5000)
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
-        self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt()},
-                          "Skills": {'Doublecast': abilities.Doublecast()}}
+        self.spellbook = {"Spells": {},
+                          "Skills": {'Slot Machine': abilities.SlotMachine()}}
         self.action_stack = [
-            {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
-            {"ability": "Doublecast", "priority": ActionPriority.NORMAL}
+            {"ability": "Attack", "priority": ActionPriority.SKIP},
+            {"ability": "Slot Machine", "priority": ActionPriority.HIGH}
         ]
         self.level.pro_level = 99  # test for enemies running away
 
@@ -3161,6 +3160,7 @@ class Jester(Humanoid):
                          attack=50, defense=34, magic=42, magic_def=32,
                          exp=22000)
         self.gold = 25000
+        self._gold_toss_pool = 25000
         self.equipment = {'Weapon': items.Kukri(), 'Armor': items.StuddedCuirboulli(), 'OffHand': items.Kukri(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.inventory['Item'] = [items.random_item(6)]
@@ -3169,9 +3169,10 @@ class Jester(Humanoid):
         self.level.pro_level = 5
         self.sight = True
         self._jester_form = ""
-        self._apply_jester_form("crimson")
+        self._jester_form_cooldowns: dict[str, int] = {}
+        self._apply_jester_form("crimson", track_cooldown=False)
 
-    def _apply_jester_form(self, form_key: str) -> None:
+    def _apply_jester_form(self, form_key: str, *, track_cooldown: bool = True) -> None:
         form = self.FORM_DEFS[form_key]
         self._jester_form = form_key
         self.stats = Stats(**form["stats"])
@@ -3180,6 +3181,16 @@ class Jester(Humanoid):
         self.spellbook = _build_spellbook(spells=form["spells"], skills=form["skills"])
         self.action_stack = [dict(entry) for entry in form["action_stack"]]
         self.picture = form["picture"]
+        if track_cooldown:
+            self._refresh_jester_form_cooldowns(form_key)
+
+    def _refresh_jester_form_cooldowns(self, active_form: str) -> None:
+        self._jester_form_cooldowns = {
+            form: turns - 1
+            for form, turns in self._jester_form_cooldowns.items()
+            if form != active_form and turns > 1
+        }
+        self._jester_form_cooldowns[active_form] = 2
 
     def _choose_jester_form(self, target: Character) -> str:
         hp_pct = (target.health.current / max(1, target.health.max)) if getattr(target, "health", None) else 1.0
@@ -3206,15 +3217,26 @@ class Jester(Humanoid):
             except Exception:
                 magic_pressure = 0
 
+        candidates = []
         if hp_pct <= 0.35:
-            return "violet"
+            candidates.append("violet")
         if target_has_buffs:
-            return "azure"
-        if mana_pct >= 0.50 and magic_pressure >= physical_pressure:
-            return "amber"
-        if physical_pressure > magic_pressure * 1.10:
-            return "verdant"
-        return "crimson"
+            candidates.append("azure")
+        if mana_pct >= 0.50 and magic_pressure >= physical_pressure * 0.80:
+            candidates.append("amber")
+        if physical_pressure > magic_pressure * 0.80:
+            candidates.append("verdant")
+        candidates.append("crimson")
+
+        seen = set()
+        candidates = [form for form in candidates if not (form in seen or seen.add(form))]
+        for form in candidates:
+            if form != self._jester_form and self._jester_form_cooldowns.get(form, 0) <= 0:
+                return form
+        for form in candidates:
+            if form != self._jester_form:
+                return form
+        return self._jester_form
 
     def special_effects(self, target: Character) -> str:
         if not self.is_alive():
@@ -3223,11 +3245,9 @@ class Jester(Humanoid):
         if next_form == self._jester_form:
             return ""
         self._apply_jester_form(next_form)
-        form = self.FORM_DEFS[next_form]
         return (
-            "Jester: The act changes with the audience! HAHA!\n"
-            f"{form['announcement']}\n"
-            f"The Jester becomes the {form['title']}.\n"
+            "The Jester changes form.\n"
+            "The act changes with the audience."
         )
 
 

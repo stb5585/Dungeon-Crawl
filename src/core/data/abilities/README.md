@@ -269,7 +269,7 @@ movement_type: sanctuary
 
 Charging abilities take multiple turns to execute:
 
-1. **Turn 1–N**: Ability charges — player is committed, telegraph shown
+1. **Turn 1-N**: Ability charges — player is committed, telegraph shown
 2. **Turn N+1**: Ability fires with full effect
 
 During charging:

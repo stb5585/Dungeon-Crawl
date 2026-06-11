@@ -13,11 +13,14 @@ Combat sprite loading uses:
 1. `EnemyCombatSpriteManager` for transparent PNG loading from `enemy_combat_sprites/`.
 2. Exact enemy display-name mappings in `enemy_combat_sprite_map.json`.
 3. Boss and generic fallback sprites when a specific combat-sprite file is missing.
-4. Legacy `sprites/enemies/` PNGs only as a runtime fallback if the new combat-sprite path fails.
 
 Combat sprites must be transparent, full-body creature images with no frame, no label, no rectangular background, and no UI decoration.
 
+The retired `assets/sprites/enemies/` PNG set is not a runtime fallback. Missing or failed enemy combat sprites should fall back through `EnemyCombatSpriteManager` to `generic_enemy`, not to legacy generated sprites.
+
 Current combat-sprite coverage is complete for concrete enemy display names in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template. Upgraded variants that share a display name use the same sprite mapping.
+
+Enemies that intentionally change `picture` to a PNG during combat can use form-specific combat sprites. `EnemyCombatSpriteManager` prefers a matching explicit `picture` stem before the display-name map. The Jester uses this for `jester.png`, `jester1.png`, `jester2.png`, `jester3.png`, and `jester4.png`, giving the player a color clue when his combat strategy changes forms.
 
 ### Combat Sprite Scale
 
@@ -35,6 +38,10 @@ Scale lookup uses this order:
 The live dungeon-backed combat foreground uses a 320px base sprite box before applying the scale multiplier. The classic centered combat renderer uses the current combat pane size for boss-scale enemies and 256px for ordinary enemies before applying the same multiplier. Scale values are clamped between `0.25` and `2.5`.
 
 Only use the scale map for intentional presentation differences. Do not resize source PNG canvases just to make a particular enemy appear larger or smaller in combat.
+
+Dungeon navigation scale is tuned separately through `enemy_combat_sprites/enemy_dungeon_sprite_scale.json`. Use this when an enemy should keep normal combat size but appear smaller or larger as a dungeon-navigation figure. For example, the Jester uses a smaller dungeon scale because he is a human-sized boss rather than a huge monster.
+
+Jester form changes should remain visually legible. When his combat `picture` changes between `jester.png` and `jester1.png` through `jester4.png`, combat briefly alternates between old and new sprites with a small horizontal shudder before settling on the new form.
 
 ## Layer 2: Enemy Token
 
@@ -57,7 +64,7 @@ Enemy inspection panels and boss navigation figures use the same transparent com
 
 This keeps the visible enemy identity consistent between dungeon navigation, combat, target panels, and compact tokens.
 
-The retired `enemy_renders/` atlas and `enemy_combat_art/` artwork set have been moved to `old_assets/retired_enemy_art/`.
+The retired `enemy_renders/` atlas and `enemy_combat_art/` artwork set have been moved to `old_assets/retired_enemy_art/`. The retired generated enemy sprite PNGs have been moved to `old_assets/retired_enemy_sprites/`.
 
 ## Asset Validation
 

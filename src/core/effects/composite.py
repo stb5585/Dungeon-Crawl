@@ -796,19 +796,47 @@ class FullDispelEffect(Effect):
     (Regen, Reflect by default) **and** all ``stat_effects``.
     """
 
+    DEFAULT_MAGIC_EFFECTS = [
+        "Astral Shift",
+        "Duplicates",
+        "Ice Block",
+        "Mana Shield",
+        "Reflect",
+        "Regen",
+        "Resist Fire",
+        "Resist Ice",
+        "Resist Electric",
+        "Resist Water",
+        "Resist Earth",
+        "Resist Wind",
+        "Totem",
+    ]
+
     def __init__(
         self,
         magic_effects: list[str] | None = None,
     ):
-        self.magic_effects_to_clear = magic_effects or ["Regen", "Reflect"]
+        self.magic_effects_to_clear = magic_effects or list(self.DEFAULT_MAGIC_EFFECTS)
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
+        dispelled = []
         for name in self.magic_effects_to_clear:
-            if target.magic_effects[name].active:
-                target.magic_effects[name].active = False
+            effect = target.magic_effects.get(name)
+            if effect and effect.active:
+                effect.active = False
+                effect.duration = 0
+                if hasattr(effect, "extra"):
+                    effect.extra = 0
+                dispelled.append(name)
         for name in ["Attack", "Defense", "Magic", "Magic Defense", "Speed"]:
-            if target.stat_effects[name].active:
-                target.stat_effects[name].active = False
+            effect = target.stat_effects.get(name)
+            if effect and effect.active:
+                effect.active = False
+                effect.duration = 0
+                if hasattr(effect, "extra"):
+                    effect.extra = 0
+                dispelled.append(name)
+        result.effects_applied["Dispelled"] = dispelled
 
 
 class ManaDrainOnHitEffect(Effect):
@@ -1202,9 +1230,9 @@ class SetFlagEffect(Effect):
     (``tunnel = False``).  When the owning skill has ``self_target: true``,
     the *target* passed to :meth:`apply` is the actor themselves.
 
-    ``flag``     – attribute name to set on the target (e.g. ``"tunnel"``)
-    ``value``    – boolean value to assign (default ``True``)
-    ``message``  – optional template; may contain ``{actor}`` and ``{target}``
+    ``flag``     - attribute name to set on the target (e.g. ``"tunnel"``)
+    ``value``    - boolean value to assign (default ``True``)
+    ``message``  - optional template; may contain ``{actor}`` and ``{target}``
     """
 
     def __init__(
@@ -1226,7 +1254,7 @@ class SetFlagEffect(Effect):
 
 
 # ======================================================================
-# PowerUpActivateEffect – activates class_effects["Power Up"]
+# PowerUpActivateEffect - activates class_effects["Power Up"]
 # ======================================================================
 
 class PowerUpActivateEffect:
@@ -1239,10 +1267,10 @@ class PowerUpActivateEffect:
     combat code:
 
     ``extra_mode``:
-      - ``None`` – no extra value
-      - ``"random_health"`` – random int between ``lo_frac * health.max``
+      - ``None`` - no extra value
+      - ``"random_health"`` - random int between ``lo_frac * health.max``
         and ``hi_frac * health.max``
-      - ``"sacrifice_health"`` – sacrifice ``sacrifice_pct`` of current
+      - ``"sacrifice_health"`` - sacrifice ``sacrifice_pct`` of current
         health; ``extra = max(lost // divisor, minimum)``
     """
 
@@ -1294,7 +1322,7 @@ class PowerUpActivateEffect:
 
 
 # ======================================================================
-# AbilityChainEffect – invoke another ability by name
+# AbilityChainEffect - invoke another ability by name
 # ======================================================================
 
 class AbilityChainEffect:
@@ -1304,7 +1332,7 @@ class AbilityChainEffect:
     ``src.core.abilities`` module, constructed, and invoked with
     ``special=True`` (to skip its own mana cost).
 
-    ``use_method`` – ``"cast"`` for spells, ``"use"`` for skills,
+    ``use_method`` - ``"cast"`` for spells, ``"use"`` for skills,
     ``"auto"`` to pick based on whether the ability has a ``school``
     attribute (→ cast) or not (→ use).
     """
@@ -1342,7 +1370,7 @@ class AbilityChainEffect:
 
 
 # ======================================================================
-# DrainEffect – drain health or mana from target to actor
+# DrainEffect - drain health or mana from target to actor
 # ======================================================================
 
 class DrainEffect:
@@ -1446,7 +1474,7 @@ class DrainEffect:
 
 
 # ======================================================================
-# MagicEffectToggleEffect – toggle a magic effect on/off
+# MagicEffectToggleEffect - toggle a magic effect on/off
 # ======================================================================
 
 class MagicEffectToggleEffect:
@@ -1497,7 +1525,7 @@ class MagicEffectToggleEffect:
 
 
 # ======================================================================
-# ScreechEffect – stat-contest damage + conditional permanent silence
+# ScreechEffect - stat-contest damage + conditional permanent silence
 # ======================================================================
 
 class ScreechEffect:
@@ -1569,7 +1597,7 @@ class ScreechEffect:
 
 
 # ======================================================================
-# AcidSpitEffect – magic damage with armor curve + DOT chance
+# AcidSpitEffect - magic damage with armor curve + DOT chance
 # ======================================================================
 
 class AcidSpitEffect:
@@ -1663,7 +1691,7 @@ class AcidSpitEffect:
 
 
 # ======================================================================
-# BreathDamageEffect – stat-based elemental breath damage
+# BreathDamageEffect - stat-based elemental breath damage
 # ======================================================================
 
 class BreathDamageEffect:
@@ -1729,7 +1757,7 @@ class BreathDamageEffect:
 
 
 # ======================================================================
-# NightmareFuelEffect – sleep-conditional intel-based damage
+# NightmareFuelEffect - sleep-conditional intel-based damage
 # ======================================================================
 
 class NightmareFuelEffect:
@@ -1791,7 +1819,7 @@ class NightmareFuelEffect:
 
 
 # ======================================================================
-# WidowsWailEffect – inverse-HP damage to both actor and target
+# WidowsWailEffect - inverse-HP damage to both actor and target
 # ======================================================================
 
 class WidowsWailEffect:
@@ -1849,7 +1877,7 @@ class WidowsWailEffect:
 
 
 # ======================================================================
-# GoblinPunchEffect – multi-hit strength-difference damage
+# GoblinPunchEffect - multi-hit strength-difference damage
 # ======================================================================
 
 class GoblinPunchEffect:
@@ -1902,7 +1930,7 @@ class GoblinPunchEffect:
 
 
 # ======================================================================
-# HexEffect – three independent status applications
+# HexEffect - three independent status applications
 # ======================================================================
 
 class HexEffect:
@@ -2027,7 +2055,7 @@ class HexEffect:
 
 
 # ======================================================================
-# VulcanizeEffect – self fire damage + defense buff
+# VulcanizeEffect - self fire damage + defense buff
 # ======================================================================
 
 class VulcanizeEffect:
@@ -2094,7 +2122,7 @@ class VulcanizeEffect:
 
 
 # ======================================================================
-# HolyFollowupEffect – holy spell damage follow-up after weapon hit
+# HolyFollowupEffect - holy spell damage follow-up after weapon hit
 # ======================================================================
 
 class HolyFollowupEffect:
@@ -2217,7 +2245,7 @@ class HolyFollowupEffect:
 
 
 # ======================================================================
-# TurnUndeadEffect – undead-only kill chance or holy damage
+# TurnUndeadEffect - undead-only kill chance or holy damage
 # ======================================================================
 
 class TurnUndeadEffect:
@@ -2599,13 +2627,19 @@ class GoldTossEffect(Effect):
         import random as _rng
         messages = result.extra.setdefault("messages", [])
 
-        if actor.gold == 0:
+        gold_pool_name = "_gold_toss_pool"
+        uses_private_pool = hasattr(actor, gold_pool_name)
+        available_gold = int(getattr(actor, gold_pool_name, actor.gold))
+        if available_gold <= 0:
             messages.append("Nothing happens.\n")
             return
 
-        max_thrown = min(target.health.current, actor.gold)
+        max_thrown = min(target.health.current, available_gold)
         gold_thrown = _rng.randint(1, max_thrown)
-        actor.gold -= gold_thrown
+        if uses_private_pool:
+            setattr(actor, gold_pool_name, available_gold - gold_thrown)
+        else:
+            actor.gold -= gold_thrown
         messages.append(f"{actor.name} throws {gold_thrown} gold at {target.name}.\n")
 
         if any([target.magic_effects["Ice Block"].active,
@@ -3512,23 +3546,11 @@ class ElementalStrikeEffect(Effect):
             f"The enemy is struck by the elemental force of "
             f"{spell.subtyp}.\n"
         )
-        cast_result = spell.cast(
-            actor, target=target, special=True, cover=cover
-        )
-        if isinstance(cast_result, str):
-            messages.append(cast_result)
-        else:
-            messages.append(str(cast_result))
+        spell.cast(actor, target=target, special=True, cover=cover)
 
         crit = result.extra.get("last_crit", 1)
         if crit > 1 and target is not None and target.is_alive():
-            cast_result = spell.cast(
-                actor, target=target, special=True, cover=cover
-            )
-            if isinstance(cast_result, str):
-                messages.append(cast_result)
-            else:
-                messages.append(str(cast_result))
+            spell.cast(actor, target=target, special=True, cover=cover)
 
 
 class BlackjackEffect(Effect):
@@ -3568,7 +3590,7 @@ class BlackjackEffect(Effect):
 
 
 # ======================================================================
-# Batch 13 Effects – Doublecast / ChooseFate / Shapeshift / TetraDisaster
+# Batch 13 Effects - Doublecast / ChooseFate / Shapeshift / TetraDisaster
 # ======================================================================
 
 
@@ -3795,7 +3817,7 @@ class TetraDisasterEffect(Effect):
 
 
 # ======================================================================
-# Batch 14 Effects – ConsumeItem / DestroyMetal / SlotMachine / Totem
+# Batch 14 Effects - ConsumeItem / DestroyMetal / SlotMachine / Totem
 # ======================================================================
 
 
@@ -3810,7 +3832,7 @@ class ConsumeItemEffect(Effect):
       else → random status (Berserk/Blind/Doom/Silence/Sleep/Stun).
     If the target has no items, steal gold and heal the user instead.
 
-    Parameters (YAML):  (none – behaviour is fully self-contained)
+    Parameters (YAML):  (none - behaviour is fully self-contained)
     """
 
     def __init__(self, **_kw):
@@ -4004,16 +4026,15 @@ class DestroyMetalEffect(Effect):
 
 
 class SlotMachineEffect(Effect):
-    """Slot Machine: spin 3 digits and resolve outcomes.
+    """Slot Machine: deal 3 cards and resolve poker-style outcomes.
 
     The UI may pass a ``slot_machine_callback`` and/or ``textbox_callback``
     via ``use_kwargs``.
 
-    Outcomes: Death (666/999), Trips (full heal), Straight (product damage),
-    Palindrome (cast high-level spell by middle digit), Pairs (random effect),
-    Evens (gold), Odds (random item), Chance (weapon damage), Nothing.
+    Modern outcomes: Straight Flush, Three of a Kind, Straight, Flush, Pair,
+    Chance. Legacy 3-digit spins are still accepted for older callers/tests.
 
-    Parameters (YAML):  (none – behaviour is self-contained)
+    Parameters (YAML):  (none - behaviour is self-contained)
     """
 
     HANDS = {
@@ -4027,9 +4048,233 @@ class SlotMachineEffect(Effect):
             for a in range(10) for b in range(10) if a != b
         ],
     }
+    CARD_RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
+    CARD_SUITS = ("S", "H", "D", "C")
+    CARD_VALUES = {
+        "A": 14,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 9,
+        "10": 10,
+        "J": 11,
+        "Q": 12,
+        "K": 13,
+    }
 
     def __init__(self, **_kw):
         super().__init__()
+
+    @classmethod
+    def deal_card_spin(cls, rng) -> str:
+        """Return a comma-separated 3-card hand from a 52-card deck."""
+        deck = [f"{rank}{suit}" for suit in cls.CARD_SUITS for rank in cls.CARD_RANKS]
+        return ",".join(rng.sample(deck, 3))
+
+    @classmethod
+    def parse_card_spin(cls, spin: object) -> list[tuple[str, str]] | None:
+        """Parse a card spin such as ``AS,10H,QD``."""
+        if not isinstance(spin, str) or "," not in spin:
+            return None
+        cards: list[tuple[str, str]] = []
+        for raw_card in spin.split(","):
+            card = raw_card.strip().upper()
+            if len(card) < 2:
+                return None
+            rank = card[:-1]
+            suit = card[-1]
+            if rank not in cls.CARD_VALUES or suit not in cls.CARD_SUITS:
+                return None
+            cards.append((rank, suit))
+        if len(cards) != 3 or len(set(cards)) != 3:
+            return None
+        return cards
+
+    @classmethod
+    def card_hand_label(cls, cards: list[tuple[str, str]]) -> str:
+        """Return the visible poker outcome label for a 3-card Slot Machine hand."""
+        ranks = [rank for rank, _suit in cards]
+        suits = [suit for _rank, suit in cards]
+        values = sorted(cls.CARD_VALUES[rank] for rank in ranks)
+        low_ace_values = sorted(1 if rank == "A" else cls.CARD_VALUES[rank] for rank in ranks)
+        flush = len(set(suits)) == 1
+        straight = (
+            values[1] == values[0] + 1 and values[2] == values[1] + 1
+        ) or low_ace_values == [1, 2, 3]
+        if flush and straight:
+            return "Straight Flush"
+        if len(set(ranks)) == 1:
+            return "3 of a Kind"
+        if straight:
+            return "Straight"
+        if flush:
+            return "Flush"
+        if len(set(ranks)) == 2:
+            return "Pair"
+        return "Chance"
+
+    @classmethod
+    def _card_hand_score(cls, cards: list[tuple[str, str]]) -> int:
+        return sum(cls.CARD_VALUES[rank] for rank, _suit in cards)
+
+    @staticmethod
+    def _restore_health_and_mana(target: Character, messages: list[str]) -> None:
+        target.health.current = target.health.max
+        target.mana.current = target.mana.max
+        messages.append(
+            f"{target.name} has been revitalized! "
+            f"Health and mana are restored.\n"
+        )
+        from src.core import abilities as _abilities
+        cleanse_result = _abilities.Cleanse().cast(target, special=True)
+        messages.append(
+            str(cleanse_result) if not isinstance(cleanse_result, str)
+            else cleanse_result
+        )
+
+    @staticmethod
+    def _apply_random_pair_effect(target: Character, duration: int, amount: int, rng, messages: list[str]) -> None:
+        effects = [
+            "Berserk", "Blind", "Doom", "Poison", "Silence",
+            "Sleep", "Stun", "Bleed", "Disarm", "Prone",
+            "Attack", "Defense", "Magic", "Magic Defense", "Speed",
+            "DOT", "Reflect", "Regen",
+        ]
+        effect = rng.choice(effects)
+        status_effects = [
+            "Berserk", "Blind", "Doom", "Poison", "Silence",
+            "Sleep", "Stun",
+        ]
+        if any([
+            effect in target.status_immunity,
+            f"Status-{effect}" in target.equipment["Pendant"].mod,
+            "Status-All" in target.equipment["Pendant"].mod
+            and effect in status_effects,
+        ]):
+            messages.append(
+                f"{target.name} is immune to {effect.lower()}.\n"
+            )
+            return
+        if any([target.magic_effects["Ice Block"].active,
+                getattr(target, "tunnel", False)]):
+            messages.append("It has no effect.\n")
+            return
+
+        messages.append(
+            f"{effect} has been randomly selected to affect "
+            f"{target.name}.\n"
+        )
+        effect_dict = target.effect_handler(effect)
+        effect_dict[effect].active = True
+        if effect in ["Blind", "Disarm", "Silence"]:
+            effect_dict[effect].duration = -1
+        else:
+            effect_dict[effect].duration = max(
+                duration, effect_dict[effect].duration
+            )
+        if effect in ["Poison", "Bleed", "DOT"]:
+            amount *= int(target.health.max * 0.01)
+            effect_dict[effect].extra = amount
+        if effect in target.stat_effects:
+            combat_effect = (
+                "magic_def" if effect == "Magic Defense"
+                else effect.lower()
+            )
+            amount *= target.combat.__dict__[combat_effect] // 10
+            messages.append(
+                f"{target.name}'s {effect.lower()} is "
+                f"temporarily increased by {amount}.\n"
+            )
+            effect_dict[effect].extra = amount
+
+    def _apply_card_spin(
+        self,
+        spin: str,
+        cards: list[tuple[str, str]],
+        actor: Character,
+        target: Character,
+        user_chance: int,
+        target_chance: int,
+        rng,
+        messages: list[str],
+    ) -> None:
+        label = self.card_hand_label(cards)
+        score = self._card_hand_score(cards)
+        messages.append(f"{label}!\n")
+        messages.append(f"Cards: {spin}\n")
+
+        if target_chance > user_chance + 1 and label in {"Straight Flush", "Straight"}:
+            target = actor
+
+        if label == "Straight Flush":
+            if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
+                messages.append("It has no effect.\n")
+                return
+            damage = score * 4
+            mana_drain = min(target.mana.current, max(1, score // 2))
+            target.health.current -= damage
+            target.mana.current -= mana_drain
+            actor.mana.current = min(actor.mana.max, actor.mana.current + mana_drain)
+            messages.append(
+                f"{target.name} takes {damage} damage and loses {mana_drain} mana.\n"
+            )
+            return
+
+        if label == "3 of a Kind":
+            if any([target.magic_effects["Ice Block"].active,
+                    rng.randint(0, max(1, user_chance))]):
+                target = actor
+            self._restore_health_and_mana(target, messages)
+            return
+
+        if label == "Straight":
+            if target.magic_effects["Ice Block"].active:
+                messages.append("It has no effect.\n")
+            else:
+                damage = score * 2
+                target.health.current -= damage
+                messages.append(f"{target.name} takes {damage} damage.\n")
+            return
+
+        if label == "Flush":
+            if any([target.magic_effects["Ice Block"].active,
+                    getattr(target, "tunnel", False),
+                    target_chance > user_chance + 1]):
+                target = actor
+            gold_drain = min(getattr(target, "gold", 0), score * 25)
+            mana_drain = min(target.mana.current, max(1, score // 3))
+            target.gold -= gold_drain
+            actor.gold += gold_drain
+            target.mana.current -= mana_drain
+            actor.mana.current = min(actor.mana.max, actor.mana.current + mana_drain)
+            messages.append(
+                f"{target.name} is flushed for {gold_drain} gold and {mana_drain} mana.\n"
+            )
+            return
+
+        if label == "Pair":
+            paired_rank = max(
+                {rank for rank, _suit in cards},
+                key=lambda rank: [card_rank for card_rank, _suit in cards].count(rank),
+            )
+            amount = max(1, self.CARD_VALUES[paired_rank] // 2)
+            duration = max(1, min(10, amount))
+            if not rng.randint(0, 1):
+                target = actor
+            self._apply_random_pair_effect(target, duration, amount ** 2, rng, messages)
+            return
+
+        messages.append("Chance!\n")
+        mod = max(1, score // 3) / 10
+        messages.append(
+            f"{actor.name} gains {int(mod * 100)}% to attack.\n"
+        )
+        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=1 + mod)
+        messages.append(wd_str)
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
@@ -4052,8 +4297,22 @@ class SlotMachineEffect(Effect):
             if slot_machine_callback is not None:
                 spin = slot_machine_callback(actor, target)
             else:
-                spin = (f"{_rng.randint(0,9)}{_rng.randint(0,9)}"
-                        f"{_rng.randint(0,9)}")
+                spin = self.deal_card_spin(_rng)
+
+            card_hand = self.parse_card_spin(spin)
+            if card_hand is not None:
+                self._apply_card_spin(
+                    spin,
+                    card_hand,
+                    actor,
+                    target,
+                    user_chance,
+                    target_chance,
+                    _rng,
+                    messages,
+                )
+                success = True
+                continue
 
             if spin in hands["Death"]:
                 messages.append("The mark of the beast!\n")

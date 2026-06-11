@@ -327,6 +327,42 @@ def test_resolve_enemy_messages_and_random_cry(monkeypatch):
     assert any("sobs echo" in message for message in manager.messages)
 
 
+def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_teleporter(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    shown = []
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    manager._dungeon_dialog_background = lambda: None
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_special_events",
+        lambda: {
+            "Jester": {"Text": ["The fool bows with a knife behind his back."]},
+            "Jester Defeated": {"Text": ["The mirrors crack and the playhouse returns."]},
+        },
+    )
+    enemy = SimpleNamespace(name="Jester", picture="jester.png")
+    boss_tile = dungeon_manager.map_tiles.JesterBossRoom(0, -1, 7)
+
+    manager._show_boss_intro_dialogue(boss_tile, enemy)
+    assert shown[-1][1]["title"] == "Jester"
+    assert shown[-1][1]["split_layout"] is True
+    assert shown[-1][1]["image_path"].endswith("jester.png")
+    assert boss_tile.read is True
+
+    player.location_z = 7
+    player.funhouse_return = (1, 2, 0, "east")
+    player.world_dict[(11, 0, 4)] = dungeon_manager.map_tiles.FunhouseTeleporter(11, 0, 4)
+    exits = []
+    player.exit_funhouse = lambda: exits.append("exit")
+    manager._handle_defeated_jester_boss(boss_tile)
+    assert exits == []
+    assert (player.location_x, player.location_y, player.location_z) == (11, 0, 4)
+    assert player.facing == "south"
+    assert player.funhouse_return is None
+    assert boss_tile.enemy is None
+    assert "The funhouse dissolves behind you." in manager.messages
+
+
 def test_background_loading_loading_screen_and_popup_background(monkeypatch, capsys):
     manager, presenter, _player, _game = _make_manager(monkeypatch)
 
@@ -435,7 +471,7 @@ def test_move_forward_branches_and_turning(monkeypatch):
     assert dialogues[-1] == (
         dungeon_manager.map_tiles.JESTER_FORCE_FIELD_EVENT,
         "Jester",
-        manager._npc_image_path("jester.png"),
+        manager._enemy_combat_sprite_image_path("jester.png"),
     )
 
     player.special_inventory["Jester Token"] = [SimpleNamespace(name="Jester Token") for _ in range(4)]

@@ -25,7 +25,7 @@ BORDER = (74, 74, 82, 255)
 
 
 def mapped_sprite_keys(sprite_root: Path) -> list[str]:
-    """Return mapped sprite keys, with fallback assets appended for review."""
+    """Return reviewable current sprite keys."""
     map_path = sprite_root / "enemy_combat_sprite_map.json"
     keys: set[str] = set()
     if map_path.exists():
@@ -35,6 +35,9 @@ def mapped_sprite_keys(sprite_root: Path) -> list[str]:
     for fallback_key in ("boss", "generic_enemy"):
         if (sprite_root / f"{fallback_key}.png").exists():
             keys.add(fallback_key)
+
+    for path in sprite_root.glob("jester[0-9].png"):
+        keys.add(path.stem)
 
     return sorted(keys)
 

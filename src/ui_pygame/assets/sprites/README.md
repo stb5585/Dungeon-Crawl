@@ -1,10 +1,14 @@
-# Enemy Sprites
+# Retired Generated Enemy Sprites
 
-Enemy sprites live in the `enemies/` subdirectory and are generated from ASCII art with full color support.
+The old generated enemy sprite PNGs have been retired from runtime use and moved to `old_assets/retired_enemy_sprites/`.
+
+Current enemy presentation uses transparent full-body combat sprites in `src/ui_pygame/assets/enemy_combat_sprites/`, loaded through `EnemyCombatSpriteManager`.
+
+Do not add new runtime enemy assets under `src/ui_pygame/assets/sprites/enemies/`. Missing enemy visuals should be fixed by adding or mapping a combat sprite, or by tuning `enemy_combat_sprite_map.json`, `enemy_combat_sprite_scale.json`, and token crop data.
 
 ## Generation
 
-Sprites are generated from the ASCII art files in `../../ascii_files/` using the colored converter script:
+The legacy converter can still be used for historical/reference output, but it does not feed combat rendering:
 
 ```bash
 python3 src/ui_pygame/assets/ascii_to_sprite_colored.py
@@ -69,14 +73,7 @@ Palettes are defined in `ascii_to_sprite_colored.py` for types:
 
 ## Usage in Game
 
-Sprites are automatically loaded during combat rendering in `src/ui_pygame/gui/combat_view.py`. The `_get_enemy_sprite()` method loads the PNG based on the enemy's `picture` attribute.
-
-```python
-# Sprites are loaded automatically
-# No manual colorization needed - sprites are pre-colored
-sprite = self._get_enemy_sprite(enemy)  # Already colored!
-self.screen.blit(sprite, position)
-```
+Generated enemy sprites are no longer loaded during combat rendering. `CombatView`, dungeon boss navigation, target panels, and enemy tokens all use `EnemyCombatSpriteManager` and `enemy_combat_sprites/`.
 
 ## Customization
 

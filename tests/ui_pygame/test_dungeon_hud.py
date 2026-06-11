@@ -127,7 +127,13 @@ def _make_player():
         status_effects={"Poison": _effect(), "Steal Success": _effect()},
         physical_effects={"Prone": _effect()},
         stat_effects={"Attack": _effect(extra=1), "Defense": _effect(extra=-1)},
-        magic_effects={"Regen": _effect(), "Jump": _effect(), "Duplicates": _effect()},
+        magic_effects={
+            "Regen": _effect(),
+            "Jump": _effect(),
+            "Duplicates": _effect(),
+            "Totem": _effect(),
+            "Astral Shift": _effect(),
+        },
         class_effects={"Blessing": _effect()},
         world_dict={},
     )
@@ -149,6 +155,8 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("ATK", True) in icons
     assert ("DEF", False) in icons
     assert ("REG", True) in icons
+    assert ("TOT", True) in icons
+    assert ("AST", True) in icons
     assert ("BLE", True) in icons
     assert ("MW2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))

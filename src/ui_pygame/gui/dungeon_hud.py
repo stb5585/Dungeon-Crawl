@@ -134,6 +134,7 @@ class DungeonHUD:
         }
         positive_status = set()
         positive_magic = {
+            "Astral Shift",
             "Duplicates",
             "Ice Block",
             "Mana Shield",
@@ -145,6 +146,7 @@ class DungeonHUD:
             "Resist Water",
             "Resist Earth",
             "Resist Wind",
+            "Totem",
         }
 
         for name, effect in character.status_effects.items():

@@ -35,6 +35,27 @@ _DISPLAY_TO_ENGINE = {
     "Items": "Use Item",
 }
 
+SLOT_SYMBOL_ATLAS = Path(__file__).resolve().parents[1] / "assets" / "ui" / "slot_machine_symbols.png"
+SLOT_CARD_RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
+SLOT_CARD_SUITS = ("S", "H", "D", "C")
+SLOT_CARD_DECK = [f"{rank}{suit}" for suit in SLOT_CARD_SUITS for rank in SLOT_CARD_RANKS]
+SLOT_CARD_ORDER = {card: index for index, card in enumerate(SLOT_CARD_DECK)}
+SLOT_CARD_VALUES = {
+    "A": 14,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "10": 10,
+    "J": 11,
+    "Q": 12,
+    "K": 13,
+}
+
 
 def _battle_log_slug(value: object) -> str:
     """Return a filesystem-friendly token for debug battle-log filenames."""
@@ -61,6 +82,7 @@ class GUICombatManager:
         self.player_world_dict = None
         self._combat_background = None
         self.available_actions = []
+        self._slot_symbol_cache = None
     
     def _capture_background(self):
         if hasattr(self.presenter, "get_background_surface"):
@@ -71,6 +93,109 @@ class GUICombatManager:
             except Exception:
                 pass
         return self.screen.copy()
+
+    def _debug_mode_enabled(self) -> bool:
+        """Return whether debug-only combat tools should be exposed."""
+        return bool(
+            getattr(self.game, "debug_mode", False)
+            or getattr(self.presenter, "debug_mode", False)
+        )
+
+    def _slot_symbol_surfaces(self) -> list[pygame.Surface]:
+        """Load and slice the slot-machine symbol atlas."""
+        if self._slot_symbol_cache is not None:
+            return self._slot_symbol_cache
+
+        symbols: list[pygame.Surface] = []
+        try:
+            atlas = pygame.image.load(str(SLOT_SYMBOL_ATLAS))
+            atlas_w, atlas_h = atlas.get_size()
+            full_deck_grid = (
+                atlas_w % 13 == 0
+                and atlas_h % 4 == 0
+                and atlas_w // 13 == atlas_h // 4
+            )
+            columns = 13 if full_deck_grid else 5
+            rows = 4 if full_deck_grid else 2
+            cell_w = atlas_w // columns
+            cell_h = atlas_h // rows
+            for index in range(columns * rows):
+                col = index % columns
+                row = index // columns
+                rect = pygame.Rect(col * cell_w, row * cell_h, cell_w, cell_h)
+                symbol = atlas.subsurface(rect).copy()
+                bounds = symbol.get_bounding_rect(min_alpha=1)
+                if bounds.width and bounds.height and bounds.size != symbol.get_size():
+                    cropped = symbol.subsurface(bounds).copy()
+                    padding = 6
+                    padded = pygame.Surface(
+                        (cropped.get_width() + padding * 2, cropped.get_height() + padding * 2),
+                        pygame.SRCALPHA,
+                    )
+                    padded.blit(cropped, (padding, padding))
+                    symbol = padded
+                symbols.append(symbol)
+        except Exception:
+            symbols = []
+        self._slot_symbol_cache = symbols
+        return symbols
+
+    @staticmethod
+    def _slot_machine_result_label(spin: str) -> str:
+        """Return the visible Slot Machine hand name for a spin."""
+        cards = GUICombatManager._parse_slot_cards(spin)
+        if cards:
+            ranks = [rank for rank, _suit in cards]
+            suits = [suit for _rank, suit in cards]
+            values = sorted(SLOT_CARD_VALUES[rank] for rank in ranks)
+            low_ace_values = sorted(1 if rank == "A" else SLOT_CARD_VALUES[rank] for rank in ranks)
+            flush = len(set(suits)) == 1
+            straight = (
+                values[1] == values[0] + 1 and values[2] == values[1] + 1
+            ) or low_ace_values == [1, 2, 3]
+            if flush and straight:
+                return "Straight Flush"
+            if len(set(ranks)) == 1:
+                return "3 of a Kind"
+            if straight:
+                return "Straight"
+            if flush:
+                return "Flush"
+            if len(set(ranks)) == 2:
+                return "Pair"
+            return "Chance"
+
+        if spin in {"666", "999"}:
+            return "Death"
+        if spin in {"000", "111", "222", "333", "444", "555", "777", "888"}:
+            return "3 of a Kind"
+        if "".join(sorted(spin)) in {"012", "123", "234", "345", "456", "567", "678", "789"}:
+            return "Straight"
+        if len(spin) == 3 and spin[0] == spin[2] and spin[0] != spin[1]:
+            return "Palindrome"
+        if len(set(spin)) == 2:
+            return "Pairs"
+        if all(int(digit) % 2 == 0 for digit in spin):
+            return "Evens"
+        if all(int(digit) % 2 == 1 for digit in spin):
+            return "Odds"
+        return "Chance"
+
+    @staticmethod
+    def _parse_slot_cards(spin: str) -> list[tuple[str, str]] | None:
+        if not isinstance(spin, str) or "," not in spin:
+            return None
+        cards: list[tuple[str, str]] = []
+        for raw_card in spin.split(","):
+            card = raw_card.strip().upper()
+            rank = card[:-1]
+            suit = card[-1:] if card else ""
+            if rank not in SLOT_CARD_VALUES or suit not in SLOT_CARD_SUITS:
+                return None
+            cards.append((rank, suit))
+        if len(cards) != 3 or len(set(cards)) != 3:
+            return None
+        return cards
 
     def _handle_combat_log_scroll_event(self, event) -> bool:
         """Handle combat-log scrolling input. Returns True when handled."""
@@ -95,10 +220,7 @@ class GUICombatManager:
 
     def _persist_debug_battle_log(self, result: str) -> Path | None:
         """Persist the current battle log when debug logging is enabled."""
-        if not (
-            getattr(self.game, "debug_mode", False)
-            or getattr(self.presenter, "debug_mode", False)
-        ):
+        if not self._debug_mode_enabled():
             return None
 
         metadata = getattr(self.logger, "metadata", {}) or {}
@@ -136,65 +258,146 @@ class GUICombatManager:
         return f"{trimmed.rstrip()}{ellipsis}"
 
     def _show_slot_machine_reveal(self, user: Character, target: Character) -> str:
-        """Animate a Slot Machine spin popup and reveal digits left-to-right."""
-        digits = [str(random.randint(0, 9)) for _ in range(3)]
+        """Animate a Slot Machine spin popup and reveal cards left-to-right."""
+        cards = random.sample(SLOT_CARD_DECK, 3)
+        spin = ",".join(cards)
+        result_label = self._slot_machine_result_label(spin)
+        symbols = self._slot_symbol_surfaces()
         clock = pygame.time.Clock()
 
-        def draw_overlay(revealed_count: int) -> None:
+        def draw_symbol(symbol_index: int, reel_rect: pygame.Rect, alpha: int = 255, y_offset: int = 0) -> None:
+            if symbols:
+                symbol = symbols[symbol_index]
+                inset = reel_rect.inflate(-24, -20)
+                scale = min(inset.width / symbol.get_width(), inset.height / symbol.get_height())
+                scaled_size = (
+                    max(1, int(symbol.get_width() * scale)),
+                    max(1, int(symbol.get_height() * scale)),
+                )
+                symbol_surface = pygame.transform.smoothscale(symbol, scaled_size)
+                symbol_surface.set_alpha(alpha)
+                symbol_rect = symbol_surface.get_rect(center=(reel_rect.centerx, reel_rect.centery + y_offset))
+                self.screen.blit(symbol_surface, symbol_rect)
+                return
+
+            fallback_font = pygame.font.Font(None, 62)
+            fallback_text = SLOT_CARD_DECK[symbol_index] if 0 <= symbol_index < len(SLOT_CARD_DECK) else "?"
+            fallback = fallback_font.render(fallback_text, True, (120, 20, 30))
+            if hasattr(fallback, "set_alpha"):
+                fallback.set_alpha(alpha)
+            self.screen.blit(fallback, fallback.get_rect(center=(reel_rect.centerx, reel_rect.centery + y_offset)))
+
+        def draw_overlay(revealed_count: int, final: bool = False) -> None:
             self._render_combat_frame(user, target, [], -1)
 
             overlay = pygame.Surface((self.combat_view.combat_width, self.combat_view.combat_height), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 165))
+            overlay.fill((0, 0, 0, 185))
             self.screen.blit(overlay, (0, 0))
 
-            popup_width = min(420, self.combat_view.combat_width - 40)
-            popup_height = 170
+            popup_width = min(560, self.combat_view.combat_width - 40)
+            popup_height = min(390, self.combat_view.combat_height - 40)
             popup_x = (self.combat_view.combat_width - popup_width) // 2
             popup_y = (self.combat_view.combat_height - popup_height) // 2
             popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
 
-            pygame.draw.rect(self.screen, (26, 26, 34), popup_rect)
-            pygame.draw.rect(self.screen, (200, 200, 220), popup_rect, 2)
+            pygame.draw.rect(self.screen, (42, 9, 16), popup_rect, border_radius=8)
+            pygame.draw.rect(self.screen, (144, 24, 34), popup_rect.inflate(-14, -14), border_radius=6)
+            pygame.draw.rect(self.screen, (236, 188, 72), popup_rect, 5, border_radius=8)
+            pygame.draw.rect(self.screen, (72, 14, 24), popup_rect.inflate(-34, -32), border_radius=5)
 
-            title_font = pygame.font.Font(None, 42)
-            value_font = pygame.font.Font(None, 64)
-            subtitle_font = pygame.font.Font(None, 26)
+            top_rect = pygame.Rect(popup_rect.left + 42, popup_rect.top + 22, popup_rect.width - 84, 64)
+            pygame.draw.rect(
+                self.screen,
+                (122, 20, 34),
+                top_rect,
+                border_radius=6,
+            )
+            pygame.draw.rect(self.screen, (244, 202, 88), top_rect, 3, border_radius=6)
 
-            title_text = title_font.render("Slot Machine", True, (235, 215, 80))
-            title_rect = title_text.get_rect(center=(popup_rect.centerx, popup_rect.top + 34))
+            for index in range(11):
+                bulb_x = popup_rect.left + 28 + index * ((popup_rect.width - 56) // 10)
+                bulb_color = (255, 228, 126) if (pygame.time.get_ticks() // 240 + index) % 2 == 0 else (178, 92, 46)
+                pygame.draw.rect(self.screen, bulb_color, pygame.Rect(bulb_x - 5, popup_rect.top + 8, 10, 10), border_radius=5)
+
+            title_font = pygame.font.Font(None, 46)
+            subtitle_font = pygame.font.Font(None, 25)
+
+            title_text = title_font.render("Slots", True, (255, 225, 106))
+            title_rect = title_text.get_rect(center=(popup_rect.centerx, top_rect.centery - 2))
             self.screen.blit(title_text, title_rect)
 
-            slots = [digits[i] if i < revealed_count else "?" for i in range(3)]
-            slot_text = value_font.render("  ".join(slots), True, (255, 255, 255))
-            slot_rect = slot_text.get_rect(center=(popup_rect.centerx, popup_rect.centery + 8))
-            self.screen.blit(slot_text, slot_rect)
+            reel_area = pygame.Rect(popup_rect.left + 58, popup_rect.top + 104, popup_rect.width - 136, 158)
+            pygame.draw.rect(self.screen, (25, 18, 22), reel_area.inflate(24, 20), border_radius=7)
+            pygame.draw.rect(self.screen, (232, 192, 92), reel_area.inflate(24, 20), 3, border_radius=7)
+            reel_gap = 14
+            reel_width = (reel_area.width - reel_gap * 2) // 3
+            for i in range(3):
+                reel_rect = pygame.Rect(
+                    reel_area.left + i * (reel_width + reel_gap),
+                    reel_area.top,
+                    reel_width,
+                    reel_area.height,
+                )
+                pygame.draw.rect(self.screen, (232, 222, 190), reel_rect, border_radius=5)
+                pygame.draw.rect(self.screen, (255, 250, 224), reel_rect.inflate(-8, -8), border_radius=4)
+                pygame.draw.rect(self.screen, (40, 24, 30), reel_rect, 3, border_radius=5)
 
-            subtitle = subtitle_font.render("Reels spinning...", True, (170, 170, 190))
-            subtitle_rect = subtitle.get_rect(center=(popup_rect.centerx, popup_rect.bottom - 26))
+                symbol_index = SLOT_CARD_ORDER[cards[i]]
+                if i >= revealed_count:
+                    spin_index = (pygame.time.get_ticks() // 145 + i * 11) % len(SLOT_CARD_DECK)
+                    draw_symbol((spin_index - 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=-44)
+                    draw_symbol(spin_index, reel_rect, alpha=210)
+                    draw_symbol((spin_index + 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=44)
+                else:
+                    draw_symbol(symbol_index, reel_rect)
+
+            payout_rect = pygame.Rect(popup_rect.left + 120, popup_rect.bottom - 82, popup_rect.width - 240, 26)
+            pygame.draw.rect(self.screen, (30, 22, 26), payout_rect, border_radius=4)
+            pygame.draw.rect(self.screen, (178, 150, 84), payout_rect, 2, border_radius=4)
+            payout_text = result_label if final else "..."
+            payout = subtitle_font.render(payout_text, True, (245, 225, 150) if final else (120, 112, 116))
+            self.screen.blit(payout, payout.get_rect(center=payout_rect.center))
+
+            handle_x = popup_rect.right - 34
+            pygame.draw.rect(self.screen, (86, 68, 54), (handle_x, popup_rect.top + 116, 10, 110), border_radius=4)
+            pygame.draw.rect(self.screen, (218, 45, 54), (handle_x - 12, popup_rect.top + 98, 34, 34), border_radius=16)
+
+            subtitle_text = "Press any key or click to continue" if final else "Reels spinning..."
+            subtitle_color = (245, 225, 150) if final else (194, 182, 176)
+            subtitle = subtitle_font.render(subtitle_text, True, subtitle_color)
+            subtitle_rect = subtitle.get_rect(center=(popup_rect.centerx, popup_rect.bottom - 34))
             self.screen.blit(subtitle, subtitle_rect)
 
             pygame.display.flip()
 
         for reveal_idx in range(1, 4):
-            frames = 10
+            frames = 18 + reveal_idx * 8
             for _ in range(frames):
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit(0)
                 draw_overlay(reveal_idx)
-                clock.tick(30)
+                clock.tick(18)
 
-        final_frames = 12
-        for _ in range(final_frames):
+        input_armed = prepare_guarded_input(flush_events=False, require_key_release=True)
+        waiting = True
+        while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
-            draw_overlay(3)
-            clock.tick(30)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.JOYBUTTONDOWN) and input_armed:
+                    waiting = False
+                    break
+            if waiting:
+                if release_guard_allows_input(True, input_armed):
+                    input_armed = True
+                draw_overlay(3, final=True)
+                clock.tick(18)
 
-        return "".join(digits)
+        return spin
         
     def start_combat(self, player_char: Player, enemy: Character, tile: MapTile) -> bool:
         """
@@ -356,6 +559,9 @@ class GUICombatManager:
             idx = 2 if "Defend" in deduped else 1
             deduped.insert(idx, "Pickup Weapon")
 
+        if self._debug_mode_enabled() and "Auto Kill" not in deduped:
+            deduped.append("Auto Kill")
+
         return deduped
 
     def _post_turn_processing(self, player_char: Player, enemy: Character) -> None:
@@ -363,13 +569,56 @@ class GUICombatManager:
         visual_before = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
         post = self.engine.post_turn()
         visual_after = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
-        if visual_after != visual_before:
-            self.combat_view.reload_enemy_sprite(enemy)
         for msg in post.messages:
             if msg:
                 for line in msg.strip().split('\n'):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
+        if visual_after != visual_before:
+            self._play_enemy_visual_transition(player_char, enemy, visual_before, visual_after)
+
+    def _play_enemy_visual_transition(
+        self,
+        player_char: Player,
+        enemy: Character,
+        visual_before: tuple[object, object],
+        visual_after: tuple[object, object],
+    ) -> None:
+        """Briefly alternate old/new enemy visuals when a form changes."""
+        before_picture = visual_before[1]
+        after_picture = visual_after[1]
+        if not before_picture or not after_picture or before_picture == after_picture:
+            self.combat_view.reload_enemy_sprite(enemy)
+            return
+
+        original_offset = getattr(self.combat_view, "enemy_visual_offset", (0, 0))
+        frames = [
+            (before_picture, -8),
+            (after_picture, 8),
+            (before_picture, -6),
+            (after_picture, 6),
+            (before_picture, -3),
+            (after_picture, 0),
+        ]
+        clock = pygame.time.Clock()
+        try:
+            for picture, offset_x in frames:
+                enemy.picture = picture
+                self.combat_view.reload_enemy_sprite(enemy)
+                self.combat_view.enemy_visual_offset = (offset_x, 0)
+                for _ in range(5):
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit(0)
+                        self._handle_combat_log_scroll_event(event)
+                    self._render_combat_frame(player_char, enemy, [], -1)
+                    pygame.display.flip()
+                    clock.tick(60)
+        finally:
+            enemy.picture = after_picture
+            self.combat_view.enemy_visual_offset = original_offset
+            self.combat_view.reload_enemy_sprite(enemy)
     
     def _player_turn(self, player_char, enemy):
         """
@@ -577,6 +826,16 @@ class GUICombatManager:
     
     def _execute_action(self, action, player_char, enemy):
         """Execute a player action by delegating to the engine."""
+        if action == "Auto Kill":
+            if not self._debug_mode_enabled():
+                self.combat_view.add_combat_message("Auto Kill is only available in debug mode.")
+                return None
+            enemy.health.current = 0
+            self.combat_view.add_combat_message(f"Debug: {enemy.name} defeated.")
+            self.combat_view.enemy_take_damage(enemy)
+            self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+            return "action_taken"
+
         # Map display name back to engine name
         engine_action = _DISPLAY_TO_ENGINE.get(action, action)
 
@@ -1141,6 +1400,7 @@ class GUICombatManager:
             return False
 
         elif outcome.result == "victory":
+            dungeon_handles_victory = type(getattr(self, "current_tile", None)).__name__ == "JesterBossRoom"
             # Build end messages from outcome
             end_messages = [f"Victory! {enemy.name} defeated!"]
             # Parse the outcome message for display lines
@@ -1151,7 +1411,7 @@ class GUICombatManager:
             if outcome.level_up:
                 end_messages.append("\nLEVEL UP!")
 
-            # Render final combat state and let death animation complete
+            # Render final combat state and let death animation complete.
             clock = pygame.time.Clock()
             for _ in range(70):
                 self._render_combat_frame(player_char, enemy, [], -1)
@@ -1163,8 +1423,9 @@ class GUICombatManager:
                         sys.exit(0)
                     self._handle_combat_log_scroll_event(event)
 
-            self._pause_with_events(900)
-            _show_end_popup("\n".join(end_messages))
+            if not dungeon_handles_victory:
+                self._pause_with_events(900)
+                _show_end_popup("\n".join(end_messages))
 
             if outcome.level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)

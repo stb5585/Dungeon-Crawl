@@ -5,7 +5,6 @@ Integrates with BattleManager or EnhancedBattleManager for combat logic.
 from __future__ import annotations
 
 import math
-import os
 from pathlib import Path
 import sys
 
@@ -138,13 +137,9 @@ class CombatView:
         # Status icon colors
         self.status_colors = STATUS_ICON_COLORS
         
-        # Sprite cache
-        self.sprite_cache = {}
-        self.sprite_dir = ASSETS_BASE_DIR / 'sprites'
-        self.enemy_sprite_dir = self.sprite_dir / 'enemies'
-        
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
+        self.enemy_visual_offset = (0, 0)
         self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
@@ -327,6 +322,7 @@ class CombatView:
         }
         positive_status = {"Defend", "Steal Success"}
         positive_magic = {
+            "Astral Shift",
             "Duplicates",
             "Ice Block",
             "Mana Shield",
@@ -349,7 +345,7 @@ class CombatView:
                 icons.append((self._effect_label(name), name in positive_status))
         for name, effect in character.physical_effects.items():
             if effect.active and name not in skip_effects:
-                icons.append((self._effect_label(name), False))
+                icons.append((self._effect_label(name), name in positive_status))
         for name, effect in character.stat_effects.items():
             if name not in skip_effects:
                 icon = stat_effect_status_icon(self._effect_label(name), effect)
@@ -357,7 +353,7 @@ class CombatView:
                     icons.append(icon)
         for name, effect in character.magic_effects.items():
             if effect.active and name not in skip_effects:
-                icons.append((self._effect_label(name), name in positive_magic))
+                icons.append((self._effect_label(name), name in positive_magic or name in positive_status))
         for name, effect in character.class_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
@@ -369,6 +365,9 @@ class CombatView:
                 icons.append((f"MW{maelstrom_hits}", True))
         except (AttributeError, TypeError, ValueError):
             pass
+
+        if ("DEF", True) in icons:
+            icons = [icon for icon in icons if icon != ("DEF", False)]
 
         return prioritize_status_icons(combine_duplicate_status_icons(icons))
 
@@ -439,95 +438,9 @@ class CombatView:
             text_surf = font.render(fitted_label, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=rect.center)
             self.screen.blit(text_surf, text_rect)
-    
-    def reload_enemy_sprite(self, enemy):
-        """Force reload of enemy sprite (e.g., after shapeshifting)."""
-        for sprite_name in self._enemy_sprite_base_names(enemy):
-            self.sprite_cache.pop(self._enemy_sprite_cache_key(sprite_name), None)
-            self.sprite_cache.pop(self._enemy_sprite_cache_key(f"{sprite_name}_hidden"), None)
 
-    def _enemy_sprite_base_name(self, enemy: object) -> str:
-        names = self._enemy_sprite_base_names(enemy)
-        return names[0] if names else ""
-
-    @staticmethod
-    def _normalize_sprite_name(value: object) -> str:
-        return value.lower().replace(" ", "_") if isinstance(value, str) else ""
-
-    @classmethod
-    def _unique_sprite_names(cls, *names: object) -> list[str]:
-        unique = []
-        seen = set()
-        for name in names:
-            normalized = cls._normalize_sprite_name(name)
-            if normalized and normalized not in seen:
-                unique.append(normalized)
-                seen.add(normalized)
-        return unique
-
-    def _enemy_sprite_base_names(self, enemy: object) -> list[str]:
-        name_base = self._normalize_sprite_name(getattr(enemy, "name", ""))
-        picture = getattr(enemy, "picture", "")
-        picture_base = ""
-        picture_ext = ""
-        if isinstance(picture, str) and picture:
-            picture_path = os.path.basename(picture)
-            picture_base, picture_ext = os.path.splitext(picture_path)
-
-        # Explicit PNG pictures are alternate combat forms. Legacy .txt pictures
-        # are ASCII-art filenames and often do not match the generated PNG names.
-        if picture_ext.lower() == ".png":
-            return self._unique_sprite_names(picture_base, name_base)
-        return self._unique_sprite_names(name_base, picture_base)
-
-    @staticmethod
-    def _enemy_sprite_cache_key(sprite_name: str) -> str:
-        return sprite_name
-
-    def _get_enemy_sprite(self, enemy, has_sight=False):
-        """
-        Load enemy sprite from file based on enemy type.
-        
-        Args:
-            enemy: Enemy character object
-            has_sight: indicates if the player character can view certain types of enemies (e.g. Invisible Stalker)
-        
-        Returns:
-            pygame.Surface or None if sprite not found
-        """
-        sprite_names = self._enemy_sprite_base_names(enemy)
-
-        if not sprite_names:
-            return None
-
-        sprite_filenames = []
-        for sprite_name in sprite_names:
-            if not has_sight and getattr(enemy, "name", "") == "Invisible Stalker":
-                sprite_filenames.append(f"{sprite_name}_hidden.png")
-            else:
-                sprite_filenames.append(f"{sprite_name}.png")
-
-        for sprite_filename in self._unique_sprite_names(*sprite_filenames):
-            cache_key = self._enemy_sprite_cache_key(os.path.splitext(sprite_filename)[0])
-            if cache_key in self.sprite_cache:
-                return self.sprite_cache[cache_key]
-
-            sprite_path = self.enemy_sprite_dir / sprite_filename
-            if not os.path.exists(sprite_path):
-                sprite_path = self.sprite_dir / sprite_filename
-
-            if not os.path.exists(sprite_path):
-                continue
-
-            try:
-                sprite = pygame.image.load(str(sprite_path))
-                # Always use convert_alpha to preserve transparency
-                sprite = sprite.convert_alpha()
-                self.sprite_cache[cache_key] = sprite
-                return sprite
-            except pygame.error as e:
-                print(f"Failed to load sprite {sprite_path}: {e}")
-
+    def reload_enemy_sprite(self, enemy) -> None:
+        """Compatibility hook for enemies that change visual form during combat."""
         return None
     
     def _has_sight(self, player_char):
@@ -559,7 +472,7 @@ class CombatView:
         are generated with full color palettes that preserve detail and outlines.
         This method now skips blanket colorization which was destroying detail.
         
-        Sprites generated from ASCII art now include:
+        Combat sprites now include:
         - Base color for the enemy type
         - Shadow colors for depth
         - Highlight colors for detail
@@ -575,16 +488,10 @@ class CombatView:
         if has_sight or getattr(enemy, "name", "") != "Invisible Stalker":
             try:
                 sprite_key = self.enemy_combat_sprite_manager.get_sprite_key_for_enemy(enemy)
-                if sprite_key != "generic_enemy":
-                    return self.enemy_combat_sprite_manager.get_scaled_sprite_by_key(sprite_key, size)
+                return self.enemy_combat_sprite_manager.get_scaled_sprite_by_key(sprite_key, size)
             except Exception as exc:  # pragma: no cover - defensive fallback for asset loading failures
                 print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
-
-        sprite = self._get_enemy_sprite(enemy, has_sight=has_sight)
-        if sprite is None:
-            return None
-        colorized_sprite = self._colorize_sprite(sprite, enemy)
-        return pygame.transform.scale(colorized_sprite, size)
+        return None
 
     def _is_boss_enemy(self, enemy) -> bool:
         """Return whether an enemy should use boss-scale combat presentation."""
@@ -620,6 +527,32 @@ class CombatView:
         """Return the foreground combat sprite size for the dungeon-backed combat view."""
         edge = max(1, int(320 * self._enemy_combat_sprite_scale(enemy)))
         return (edge, edge)
+
+    def _active_duplicate_count(self, enemy) -> int:
+        """Return visible Mirror Image duplicate count for an enemy."""
+        try:
+            effect = enemy.magic_effects.get("Duplicates")
+            if not effect or not effect.active:
+                return 0
+            return max(0, min(4, int(effect.duration)))
+        except (AttributeError, TypeError, ValueError):
+            return 0
+
+    def _draw_mirror_images(self, sprite, center: tuple[int, int], duplicate_count: int) -> None:
+        """Draw overlapping translucent duplicates behind the real sprite."""
+        if duplicate_count <= 0:
+            return
+
+        offsets = [(-18, -6), (18, 6), (-10, 12), (10, -12)]
+        shimmer = (pygame.time.get_ticks() // 120) % 2
+        for index in range(duplicate_count):
+            offset_x, offset_y = offsets[index % len(offsets)]
+            if shimmer and index % 2 == 0:
+                offset_x = -offset_x
+            ghost = sprite.copy()
+            ghost.set_alpha(max(55, 118 - index * 14))
+            ghost_rect = ghost.get_rect(center=(center[0] + offset_x, center[1] + offset_y))
+            self.screen.blit(ghost, ghost_rect)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None):
         """Render the complete combat view."""
@@ -652,9 +585,10 @@ class CombatView:
     
     def _render_enemy(self, enemy, has_sight=True):
         """Render the enemy sprite/representation with animations."""
-        center_x = self.combat_width // 2
+        visual_offset_x, visual_offset_y = self.enemy_visual_offset
+        center_x = self.combat_width // 2 + visual_offset_x
         boss_enemy = self._is_boss_enemy(enemy)
-        center_y = int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3
+        center_y = (int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
         is_tunneled = getattr(enemy, "tunnel", False)
@@ -718,7 +652,14 @@ class CombatView:
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
             bob_x = center_x if is_flying else center_x + animator.sway_offset
-            
+
+            if animator.animation_type != 'death':
+                self._draw_mirror_images(
+                    display_sprite,
+                    (int(bob_x), int(bob_y)),
+                    self._active_duplicate_count(enemy),
+                )
+
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self.screen.blit(display_sprite, sprite_rect)
         else:
@@ -1007,11 +948,12 @@ class CombatView:
         
         # Enemy appears in the center-front of the dungeon view (foreground layer)
         # Position at bottom-center of the dungeon view area (left 65% of screen)
+        visual_offset_x, visual_offset_y = self.enemy_visual_offset
         view_width = int(self.screen_width * 0.65)
-        center_x = view_width // 2
+        center_x = view_width // 2 + visual_offset_x
         
         # Position enemy at bottom third (standing on the floor ahead)
-        center_y = int(self.screen_height * 0.65)
+        center_y = int(self.screen_height * 0.65) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
         
@@ -1049,7 +991,14 @@ class CombatView:
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
             bob_x = center_x if is_flying else center_x + animator.sway_offset
-            
+
+            if animator.animation_type != 'death':
+                self._draw_mirror_images(
+                    display_sprite,
+                    (int(bob_x), int(bob_y)),
+                    self._active_duplicate_count(enemy),
+                )
+
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self.screen.blit(display_sprite, sprite_rect)
         else:

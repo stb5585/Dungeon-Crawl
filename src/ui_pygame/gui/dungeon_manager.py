@@ -357,6 +357,69 @@ class DungeonManager:
         """Return the repo-relative path for an NPC portrait asset."""
         return os.path.join("src", "ui_pygame", "assets", "sprites", "npcs", filename)
 
+    def _enemy_combat_sprite_image_path(self, filename: str) -> str:
+        """Return the repo-relative path for an enemy combat sprite asset."""
+        return os.path.join("src", "ui_pygame", "assets", "enemy_combat_sprites", filename)
+
+    def _enemy_dialogue_image_path(self, enemy) -> str:
+        """Return the best available combat sprite path for boss dialogue."""
+        picture = getattr(enemy, "picture", "")
+        if isinstance(picture, str) and picture.lower().endswith(".png"):
+            return self._enemy_combat_sprite_image_path(os.path.basename(picture))
+        name = str(getattr(enemy, "name", "boss")).lower().replace(" ", "_")
+        return self._enemy_combat_sprite_image_path(f"{name}.png")
+
+    def _show_boss_intro_dialogue(self, boss_tile, enemy) -> None:
+        """Show boss introduction text in the split NPC-style dialogue window."""
+        try:
+            lines = get_special_events().get(enemy.name, {}).get("Text", [])
+            message = " ".join(line.strip() for line in lines if line is not None).strip()
+        except Exception:
+            message = ""
+        if not message:
+            try:
+                message = boss_tile.intro_text(self.game)
+            except Exception:
+                message = f"{enemy.name} stands before you."
+        if message:
+            self._show_dungeon_dialogue(
+                message,
+                title=getattr(enemy, "name", "Boss"),
+                image_path=self._enemy_dialogue_image_path(enemy),
+            )
+            if hasattr(boss_tile, "read"):
+                boss_tile.read = True
+
+    def _handle_defeated_jester_boss(self, boss_tile) -> None:
+        """Resolve the funhouse immediately after the Jester is defeated."""
+        if type(boss_tile).__name__ != "JesterBossRoom" or self.player_char.location_z != 7:
+            return
+        boss_tile.defeated = True
+        boss_tile.enemy = None
+        self._show_special_event_dialogue(
+            "Jester Defeated",
+            title="Jester Defeated",
+            image_path=self._enemy_combat_sprite_image_path("jester.png"),
+        )
+        self._return_player_to_funhouse_teleporter()
+        self._cached_view = None
+        self._cached_frame = None
+        self._mark_view_dirty()
+        self.add_message("The funhouse dissolves behind you.")
+
+    def _return_player_to_funhouse_teleporter(self) -> None:
+        """Place the player back on the level 4 funhouse teleporter."""
+        for (x, y, z), tile in getattr(self.player_char, "world_dict", {}).items():
+            if z == 4 and type(tile).__name__ == "FunhouseTeleporter":
+                self.player_char.location_x = x
+                self.player_char.location_y = y
+                self.player_char.location_z = z
+                self.player_char.facing = "south"
+                self.player_char.funhouse_return = None
+                return
+        if hasattr(self.player_char, "exit_funhouse"):
+            self.player_char.exit_funhouse()
+
     def _load_dungeon_background(self):
         """Load and scale the dungeon background once."""
         if self._dungeon_background_loaded:
@@ -514,7 +577,7 @@ class DungeonManager:
             self._show_special_event_dialogue(
                 map_tiles.JESTER_FORCE_FIELD_EVENT,
                 title="Jester",
-                image_path=self._npc_image_path("jester.png"),
+                image_path=self._enemy_combat_sprite_image_path("jester.png"),
             )
             self.add_message("A crackling force field prevents you from moving forward!")
             return False
@@ -1642,8 +1705,13 @@ class DungeonManager:
         elif 'AntiMagicSwitch' in tile_type:
             self._interact_anti_magic_switch(current_tile)
 
+        current_enemy = self._resolve_tile_enemy(current_tile)
+        is_boss_encounter = current_enemy is not None and ('Boss' in tile_type or 'Lair' in tile_type)
+        if is_boss_encounter and not getattr(current_tile, "read", False):
+            self._show_boss_intro_dialogue(current_tile, current_enemy)
+
         # Display special event text BEFORE tile effects and combat
-        if hasattr(current_tile, 'special_text'):
+        if hasattr(current_tile, 'special_text') and not is_boss_encounter:
             try:
                 special = current_tile.special_text(self.game)
                 if special:
@@ -1739,6 +1807,7 @@ class DungeonManager:
                 # Enemy defeated - clear from tile
                 current_tile.enemy = None
                 self.add_message("You emerge victorious!")
+                self._handle_defeated_jester_boss(current_tile)
                 if 'MerzhinBossRoom' in type(current_tile).__name__:
                     self.add_message("Merzhin falls and the Realm of Cambion collapses around you.")
                     self.player_char.exit_realm_of_cambion()

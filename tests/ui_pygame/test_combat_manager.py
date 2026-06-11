@@ -38,6 +38,12 @@ class RecordingScreen:
     def get_size(self):
         return self._size
 
+    def get_width(self):
+        return self._size[0]
+
+    def get_height(self):
+        return self._size[1]
+
 
 class RecordingFont:
     def __init__(self):
@@ -240,6 +246,17 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     )
     assert manager._build_display_actions() == ["Attack", "Defend", "Pickup Weapon", "Spells", "Skills", "Items"]
 
+    manager.game.debug_mode = True
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Defend",
+        "Pickup Weapon",
+        "Spells",
+        "Skills",
+        "Items",
+        "Auto Kill",
+    ]
+
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):
     manager = _make_manager(monkeypatch)
@@ -255,9 +272,18 @@ def test_post_turn_and_special_effect_helpers(monkeypatch):
         enemy.picture = "jester2.png"
         return SimpleNamespace(messages=["Palette shift!"])
 
-    manager.engine = SimpleNamespace(post_turn=post_turn)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    manager.dungeon_renderer = SimpleNamespace(render_dungeon_view=lambda *_args, **_kwargs: None)
+    manager.player_world_dict = {}
+    manager.engine = SimpleNamespace(post_turn=post_turn, is_player_turn=lambda: True)
+    manager.hud = DummyHud()
+
     manager._post_turn_processing(_make_player(), enemy)
-    assert manager.combat_view.reload_calls == [enemy]
+    assert enemy.picture == "jester2.png"
+    assert len(manager.combat_view.reload_calls) >= 6
+    assert any(call[0] == "enemy" for call in manager.combat_view.render_calls)
     assert manager.combat_view.messages == ["Palette shift!"]
 
 
@@ -267,19 +293,97 @@ def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):
     enemy = _make_enemy()
 
     frame_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.random.randint", lambda _a, _b: 7)
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    event_calls = []
+
+    def slot_events():
+        event_calls.append("poll")
+        if len(event_calls) == 103:
+            return [pygame.event.Event(pygame.KEYUP, key=pygame.K_SPACE)]
+        if len(event_calls) == 104:
+            return [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE)]
+        return []
+
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.random.sample",
+        lambda _deck, _count: ["AS", "2S", "3S"],
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", slot_events)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.Surface", lambda size, *_args, **_kwargs: RecordingScreen(size))
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: frame_calls.append((args, kwargs)))
+    monkeypatch.setattr(manager, "_slot_symbol_surfaces", lambda: [])
 
     result = manager._show_slot_machine_reveal(player, enemy)
 
-    assert result == "777"
+    assert result == "AS,2S,3S"
     assert frame_calls
+    assert any(
+        getattr(surface, "text", "") == "Press any key or click to continue"
+        for surface, _position in manager.screen.blit_calls
+    )
+    assert any(
+        getattr(surface, "text", "") == "Straight Flush"
+        for surface, _position in manager.screen.blit_calls
+    )
+    assert len(event_calls) == 104
+
+
+def test_slot_machine_result_labels_match_core_hands():
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AS,2S,3S") == "Straight Flush"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AS,9S,KS") == "Flush"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AH,2S,3D") == "Straight"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AH,AD,AC") == "3 of a Kind"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AH,AD,9C") == "Pair"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("AH,7D,9C") == "Chance"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("666") == "Death"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("777") == "3 of a Kind"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("345") == "Straight"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("121") == "Palindrome"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("112") == "Pairs"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("246") == "Evens"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("135") == "Odds"
+    assert combat_manager.GUICombatManager._slot_machine_result_label("148") == "Chance"
+
+
+def test_slot_machine_symbol_atlas_slices_ten_reel_images(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    atlas = pygame.Surface((500, 200), pygame.SRCALPHA)
+    atlas.fill((0, 0, 0, 0))
+    pygame.draw.rect(atlas, (255, 0, 0, 255), pygame.Rect(12, 14, 30, 40))
+    loads = []
+
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.image.load",
+        lambda path: loads.append(path) or atlas,
+    )
+
+    symbols = manager._slot_symbol_surfaces()
+
+    assert len(symbols) == 10
+    assert symbols[0].get_size() == (42, 52)
+    assert all(symbol.get_size() == (100, 100) for symbol in symbols[1:])
+    assert loads == [str(combat_manager.SLOT_SYMBOL_ATLAS)]
+    assert manager._slot_symbol_surfaces() is symbols
+
+
+def test_slot_machine_symbol_atlas_slices_full_deck(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    atlas = pygame.Surface((1300, 400), pygame.SRCALPHA)
+    atlas.fill((0, 0, 0, 0))
+    pygame.draw.rect(atlas, (255, 0, 0, 255), pygame.Rect(12, 14, 30, 40))
+
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.image.load",
+        lambda _path: atlas,
+    )
+
+    symbols = manager._slot_symbol_surfaces()
+
+    assert len(symbols) == 52
+    assert symbols[0].get_size() == (42, 52)
 
 
 def test_waitress_transition_and_preservation_helpers(monkeypatch):
@@ -357,6 +461,24 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     assert manager.combat_view.reload_calls[-1] == enemy
 
 
+def test_debug_auto_kill_action_requires_debug_mode(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+
+    manager.game.debug_mode = False
+    assert manager._execute_action("Auto Kill", player, enemy) is None
+    assert enemy.health.current == 20
+    assert manager.combat_view.messages[-1] == "Auto Kill is only available in debug mode."
+
+    manager.game.debug_mode = True
+    assert manager._execute_action("Auto Kill", player, enemy) == "action_taken"
+    assert enemy.health.current == 0
+    assert manager.combat_view.messages[-1] == "Debug: Goblin defeated."
+    assert manager.combat_view.enemy_damage_calls == [enemy]
+    assert manager.combat_view.flash_calls[-1][0] is False
+
+
 def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
@@ -415,6 +537,38 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert manager._handle_combat_end(player, enemy, fled=True) is False
     assert manager.engine.flee is True
     assert popup_messages[0] == "You fled from combat!"
+
+
+def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Jester", hp=(0, 20))
+
+    class JesterBossRoom:
+        pass
+
+    class FakePopup:
+        def __init__(self, *_args, **_kwargs):
+            raise AssertionError("Jester victory should skip the generic victory popup")
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    render_calls = []
+    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
+    monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
+
+    manager.current_tile = JesterBossRoom()
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: SimpleNamespace(result="victory", message="Gold +5", level_up=False),
+    )
+
+    assert manager._handle_combat_end(player, enemy, fled=False) is True
+    assert len(render_calls) == 70
+    assert manager.combat_view.reset_calls == 1
+    assert manager._combat_background is None
 
 
 def test_debug_battle_log_persistence_is_opt_in_and_sanitized(monkeypatch):

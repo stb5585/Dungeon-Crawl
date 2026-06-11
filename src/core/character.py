@@ -840,7 +840,7 @@ class Character:
         Handle dodge/parry outcome.
 
         Returns:
-            (message, aborted) – *aborted* is True when the attacker died
+            (message, aborted) - *aborted* is True when the attacker died
             from a parry counter-attack and the caller should return early.
         """
         msg = ""

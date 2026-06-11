@@ -36,25 +36,41 @@ def test_jester_switches_forms_based_on_player_profile():
 
     target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 80 if mod == "magic" else 20
     text = jester.special_effects(target)
-    assert "Yellow Heckler" in text
+    assert text == "The Jester changes form.\nThe act changes with the audience."
     assert jester._jester_form == "amber"
     assert jester.picture == "jester1.png"
 
     target.magic_effects["Reflect"].active = True
     text = jester.special_effects(target)
-    assert "Blue Mirrorlord" in text
+    assert text == "The Jester changes form.\nThe act changes with the audience."
     assert jester._jester_form == "azure"
     assert jester.picture == "jester4.png"
 
     target.magic_effects["Reflect"].active = False
     target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 90 if mod == "weapon" else 20
     text = jester.special_effects(target)
-    assert "Green Cutpurse" in text
+    assert text == "The Jester changes form.\nThe act changes with the audience."
     assert jester._jester_form == "verdant"
     assert jester.picture == "jester3.png"
 
     target.health.current = max(1, int(target.health.max * 0.20))
     text = jester.special_effects(target)
-    assert "Purple Hexer" in text
+    assert text == "The Jester changes form.\nThe act changes with the audience."
     assert jester._jester_form == "violet"
     assert jester.picture == "jester2.png"
+
+
+def test_jester_form_cooldowns_prevent_blue_green_lock():
+    jester = enemies.Jester()
+    target = _make_target()
+    target.magic_effects["Reflect"].active = True
+    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 80
+
+    forms = []
+    for _ in range(4):
+        jester.special_effects(target)
+        forms.append(jester._jester_form)
+
+    assert "azure" in forms
+    assert "amber" in forms
+    assert "verdant" in forms

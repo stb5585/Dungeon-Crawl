@@ -178,7 +178,7 @@ class DataDrivenSpell(Spell):
                 damage = int(damage * 1.25)
 
             if damage < 0:
-                # Absorption – target heals
+                # Absorption - target heals
                 target.health.current -= damage
                 msg += (
                     f"{target.name} absorbs {self.subtyp} and is healed "
@@ -266,7 +266,7 @@ class DataDrivenSpell(Spell):
         return result
 
     # ------------------------------------------------------------------
-    # Effect execution – replaces the per-subtype special_effect()
+    # Effect execution - replaces the per-subtype special_effect()
     # ------------------------------------------------------------------
     def _apply_effects(
         self,
@@ -490,7 +490,7 @@ class DataDrivenSkill(Skill):
 
 
 # ======================================================================
-# DataDrivenStatusSkill – replaces status-applying Skill subclasses
+# DataDrivenStatusSkill - replaces status-applying Skill subclasses
 # ======================================================================
 
 class DataDrivenStatusSkill(Skill):
@@ -744,7 +744,7 @@ class DataDrivenStatusSkill(Skill):
 
 
 # ======================================================================
-# DataDrivenHealSpell – replaces HealSpell subclasses
+# DataDrivenHealSpell - replaces HealSpell subclasses
 # ======================================================================
 
 class DataDrivenHealSpell(_get_heal_spell_class()):
@@ -858,7 +858,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
 
 
 # ======================================================================
-# DataDrivenSupportSpell – replaces SupportSpell / IllusionSpell subs
+# DataDrivenSupportSpell - replaces SupportSpell / IllusionSpell subs
 # ======================================================================
 
 class DataDrivenSupportSpell(_get_support_spell_class()):
@@ -981,7 +981,7 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
 
 
 # ======================================================================
-# DataDrivenStatusSpell – replaces StatusSpell subclasses
+# DataDrivenStatusSpell - replaces StatusSpell subclasses
 # ======================================================================
 
 class DataDrivenStatusSpell(_get_status_spell_class()):
@@ -1261,7 +1261,7 @@ class DataDrivenCustomSpell(Spell):
 
 
 # ======================================================================
-# DataDrivenChargingSkill – multi-turn charging state machine
+# DataDrivenChargingSkill - multi-turn charging state machine
 # ======================================================================
 
 class DataDrivenChargingSkill(Skill):
@@ -1335,7 +1335,7 @@ class DataDrivenChargingSkill(Skill):
         return f"{user.name}'s {self.name} was interrupted!\n"
 
     # ------------------------------------------------------------------
-    # Execute phase – delegates to composed effects
+    # Execute phase - delegates to composed effects
     # ------------------------------------------------------------------
     def _execute(self, user: Character, target: Character, cover: bool = False) -> str:
         result = self._reset_result(actor=user, target=target)
@@ -1402,7 +1402,7 @@ class DataDrivenChargingSkill(Skill):
 
 
 # ======================================================================
-# DataDrivenMagicMissileSpell – multi-missile spell pipeline
+# DataDrivenMagicMissileSpell - multi-missile spell pipeline
 # ======================================================================
 
 class DataDrivenMagicMissileSpell(Spell):
@@ -1613,7 +1613,7 @@ class DataDrivenMagicMissileSpell(Spell):
 
 
 # ======================================================================
-# DataDrivenJumpSkill – Jump with full modification system
+# DataDrivenJumpSkill - Jump with full modification system
 # ======================================================================
 
 class DataDrivenJumpSkill(Skill):
@@ -1977,7 +1977,7 @@ class DataDrivenJumpSkill(Skill):
         return f"{user.name}'s Jump cannot be stopped!\n"
 
     # ==================================================================
-    # Execute phase – delegates to composed effects
+    # Execute phase - delegates to composed effects
     # ==================================================================
 
     def _execute(
@@ -2076,7 +2076,7 @@ class DataDrivenJumpSkill(Skill):
 
 
 # ======================================================================
-# DataDrivenMovementSpell – out-of-combat movement abilities
+# DataDrivenMovementSpell - out-of-combat movement abilities
 # ======================================================================
 
 def _get_movement_spell_class():
@@ -2116,7 +2116,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
         self._notes = notes
 
     # ------------------------------------------------------------------
-    # cast_out – the primary entry point for movement spells
+    # cast_out - the primary entry point for movement spells
     # ------------------------------------------------------------------
     def cast_out(self, user=None, selection_callback=None, game=None):
         """

@@ -110,6 +110,45 @@ def test_enemy_combat_sprite_manager_loads_combat_scale_map(tmp_path):
     assert manager.get_combat_scale_for_enemy("Goblin") == 1.0
 
 
+def test_enemy_combat_sprite_manager_loads_dungeon_scale_map(tmp_path):
+    sprite_root = tmp_path / "enemy_combat_sprites"
+    sprite_root.mkdir()
+    _write_sprite(sprite_root / "jester.png", (220, 30, 20, 255))
+    _write_sprite(sprite_root / "boss.png", (20, 220, 30, 255))
+    _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255))
+    (sprite_root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Jester": "jester"}),
+        encoding="utf-8",
+    )
+    (sprite_root / "enemy_dungeon_sprite_scale.json").write_text(
+        json.dumps({"Jester": 0.65, "boss": 1.25}),
+        encoding="utf-8",
+    )
+
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
+
+    assert manager.get_dungeon_scale_for_enemy("Jester") == 0.65
+    assert manager.get_dungeon_scale_for_enemy(SimpleNamespace(name="Unknown Boss", boss=True)) == 1.25
+    assert manager.get_dungeon_scale_for_enemy("Goblin") == 1.0
+
+
+def test_enemy_combat_sprite_manager_prefers_explicit_png_picture_key(tmp_path):
+    sprite_root = tmp_path / "enemy_combat_sprites"
+    sprite_root.mkdir()
+    _write_sprite(sprite_root / "jester.png", (220, 30, 20, 255))
+    _write_sprite(sprite_root / "jester2.png", (120, 30, 220, 255))
+    _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255))
+    (sprite_root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Jester": "jester"}),
+        encoding="utf-8",
+    )
+
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
+
+    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester2.png")) == "jester2"
+    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester.txt")) == "jester"
+
+
 def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_path):
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()
@@ -191,6 +230,15 @@ def test_default_enemy_combat_sprite_map_covers_concrete_enemy_names():
     missing = sorted(name for name in enemy_names if name not in manager.sprite_map and name not in ignored)
 
     assert missing == []
+
+
+def test_default_jester_form_combat_sprites_exist_and_resolve():
+    manager = EnemyCombatSpriteManager()
+
+    for picture in ("jester.png", "jester1.png", "jester2.png", "jester3.png", "jester4.png"):
+        key = Path(picture).stem
+        assert key in manager.available_keys
+        assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture=picture)) == key
 
 
 def _concrete_enemy_names() -> set[str]:

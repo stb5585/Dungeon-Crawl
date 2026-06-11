@@ -2237,6 +2237,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
         SecretShop(),
         WarpPoint(),
         BossRoom(enemy=DummyEnemy("Minotaur")),
+        BossRoom(enemy=DummyEnemy("Jester")),
     )
 
     for tile in tiles:
@@ -2254,7 +2255,8 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("unobtainium", 72) in special_calls
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
-    assert ("Minotaur", 320) in enemy_calls
+    assert ("Minotaur", 160) in enemy_calls
+    assert ("Jester", 104) in enemy_calls
 
     pygame.quit()
 

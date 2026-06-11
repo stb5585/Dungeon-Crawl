@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from src.core import map_tiles
+from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
 from .assets import TextureLibrary
 from .geometry import Quad, build_depth_rect, build_next_depth_rect, build_zone_geometry
@@ -1631,6 +1632,7 @@ class SceneRenderer:
             return
 
         size_ratio = {0: 2.0, 1: 1.0, 2: 0.8, 3: 0.65}.get(depth, 0.65)
+        size_ratio *= get_enemy_combat_sprite_manager().get_dungeon_scale_for_enemy(enemy)
         if lateral_view:
             size_ratio *= 0.9
         sprite_size = max(8, int(min(rect.width, rect.height) * size_ratio))

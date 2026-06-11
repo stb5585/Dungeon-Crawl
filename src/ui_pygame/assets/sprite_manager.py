@@ -2,7 +2,7 @@
 Sprite Manager - Loads and manages sprite assets for Dungeon Crawl.
 
 This module provides a centralized sprite management system with caching,
-enemy-to-sprite mapping, and easy sprite retrieval.
+player sprite loading, effect/icon loading, and easy sprite retrieval.
 """
 from __future__ import annotations
 
@@ -11,70 +11,10 @@ from typing import TYPE_CHECKING
 
 import pygame
 
+from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+
 if TYPE_CHECKING:
     from src.core.character import Character
-
-# Enemy name to sprite mapping
-ENEMY_SPRITE_MAP = {
-    # Goblins and small humanoids
-    'Goblin': 'goblin',
-    'Hobgoblin': 'goblin',
-    'Kobold': 'goblin',
-    'Gnoll': 'goblin',
-    'Imp': 'goblin',
-    
-    # Orcs and larger humanoids
-    'Orc': 'orc',
-    'Ogre': 'orc',
-    'Minotaur': 'orc',
-    'Troll': 'orc',
-    
-    # Undead
-    'Skeleton': 'skeleton',
-    'Zombie': 'zombie',
-    'Ghoul': 'zombie',
-    'Wraith': 'skeleton',
-    'Lich': 'skeleton',
-    'Vampire': 'zombie',
-    'Wight': 'skeleton',
-    
-    # Beasts
-    'Wolf': 'wolf',
-    'Dire Wolf': 'wolf',
-    'Bear': 'wolf',
-    'Dire Bear': 'wolf',
-    'Panther': 'wolf',
-    'Werewolf': 'wolf',
-    
-    # Spiders and insects
-    'Spider': 'spider',
-    'Giant Spider': 'spider',
-    'Scorpion': 'spider',
-    'Giant Scorpion': 'spider',
-    'Centipede': 'spider',
-    'Hornet': 'spider',
-    
-    # Slimes
-    'Slime': 'slime',
-    'Ooze': 'slime',
-    'Jelly': 'slime',
-    
-    # Dragons
-    'Dragon': 'dragon',
-    'Red Dragon': 'dragon',
-    'Wyvern': 'dragon',
-    'Wyrm': 'dragon',
-    'Pseudodragon': 'dragon',
-    
-    # Demons and fiends
-    'Demon': 'demon',
-    'Devil': 'demon',
-    'Archvile': 'demon',
-    'Quasit': 'demon',
-    
-    # Default for unknown enemies
-    'default': 'goblin',
-}
 
 # Player class to sprite mapping
 PLAYER_SPRITE_MAP = {
@@ -155,31 +95,9 @@ class SpriteManager:
             # Player character - use class name
             class_name = character.cls.name if hasattr(character.cls, 'name') else 'default'
             sprite_name = PLAYER_SPRITE_MAP.get(class_name, PLAYER_SPRITE_MAP['default'])
-        else:
-            # Enemy - use name
-            enemy_name = character.name
-            
-            # Try exact match first
-            sprite_name = ENEMY_SPRITE_MAP.get(enemy_name)
-            
-            # If no exact match, try partial matches
-            if sprite_name is None:
-                for key in ENEMY_SPRITE_MAP.keys():
-                    if key in enemy_name or enemy_name in key:
-                        sprite_name = ENEMY_SPRITE_MAP[key]
-                        break
-            
-            # Fall back to default
-            if sprite_name is None:
-                sprite_name = ENEMY_SPRITE_MAP['default']
-
-        if is_player:
             return self.load_sprite(sprite_name, "sprites")
 
-        enemy_sprite = self.load_sprite(sprite_name, "sprites/enemies")
-        if enemy_sprite is not None:
-            return enemy_sprite
-        return self.load_sprite(sprite_name, "sprites")
+        return get_enemy_combat_sprite_manager().get_scaled_sprite(character, (128, 128))
         
     def get_effect_sprite(self, effect_name: str) -> pygame.Surface | None:
         """Get spell/effect sprite."""
@@ -265,13 +183,6 @@ class SpriteManager:
         for sprite_name in set(PLAYER_SPRITE_MAP.values()):
             self.load_sprite(sprite_name, "sprites")
             
-        # Load common enemy sprites
-        common_enemies = ['goblin', 'orc', 'skeleton', 'zombie', 'spider', 'wolf', 'slime']
-        for sprite_name in common_enemies:
-            enemy_sprite = self.load_sprite(sprite_name, "sprites/enemies")
-            if enemy_sprite is None:
-                self.load_sprite(sprite_name, "sprites")
-            
         # Load all effects
         effects = ['fireball', 'ice_shard', 'lightning', 'heal', 'poison', 'magic']
         for effect_name in effects:
@@ -319,7 +230,7 @@ if __name__ == "__main__":
     warrior = manager.load_sprite("player_warrior", "sprites")
     print(f"✓ Loaded player_warrior: {warrior.get_size() if warrior else 'FAILED'}")
     
-    goblin = manager.load_sprite("goblin", "sprites/enemies")
+    goblin = manager.get_character_sprite(type("Enemy", (), {"name": "Goblin"})())
     print(f"✓ Loaded goblin: {goblin.get_size() if goblin else 'FAILED'}")
     
     fireball = manager.load_sprite("fireball", "effects")

@@ -920,7 +920,7 @@ class TestBatch1CombatIntegration:
 
 
 # ======================================================================
-# Batch 2 – Healing / Support / Status spell migration tests
+# Batch 2 - Healing / Support / Status spell migration tests
 # ======================================================================
 
 class TestBatch2NewEffects:
@@ -1423,6 +1423,8 @@ class TestBatch2CombatIntegration:
         target = self._make_char()
         target.stats.wisdom = 1
         target.magic_effects["Regen"].active = True
+        target.magic_effects["Totem"].active = True
+        target.magic_effects["Astral Shift"].active = True
         target.stat_effects["Attack"].active = True
         target.stat_effects["Attack"].extra = 10
         spell = abilities.Dispel()
@@ -1431,8 +1433,12 @@ class TestBatch2CombatIntegration:
             msg = spell.cast(caster, target)
             if not target.magic_effects["Regen"].active:
                 dispelled = True
+                assert not target.magic_effects["Totem"].active
+                assert not target.magic_effects["Astral Shift"].active
                 break
             target.magic_effects["Regen"].active = True
+            target.magic_effects["Totem"].active = True
+            target.magic_effects["Astral Shift"].active = True
             target.stat_effects["Attack"].active = True
         assert dispelled, "Dispel should have cleared Regen"
 
@@ -2481,7 +2487,7 @@ class TestBatch4SaveSystem:
 
 
 # ===========================================================================
-# Batch 5 – MortalStrike, MortalStrike2, Doom, Tunnel, Surface
+# Batch 5 - MortalStrike, MortalStrike2, Doom, Tunnel, Surface
 # ===========================================================================
 
 class TestBatch5NewEffects:
@@ -3437,7 +3443,7 @@ def run_tests():
 
 
 # ======================================================================
-# Batch 7 – PowerUp, Chain, Drain, Toggle abilities
+# Batch 7 - PowerUp, Chain, Drain, Toggle abilities
 # ======================================================================
 
 class TestBatch7YAMLLoading:
@@ -3877,7 +3883,7 @@ if __name__ == '__main__':
 
 
 # =====================================================================
-# Batch 12 – Steal, Mug, Counterspell, ElementalStrike, Blackjack
+# Batch 12 - Steal, Mug, Counterspell, ElementalStrike, Blackjack
 # =====================================================================
 
 class TestBatch12YAMLLoading:
@@ -3901,7 +3907,7 @@ class TestBatch12YAMLLoading:
 
 
 class TestBatch12Steal:
-    """Steal – speed+luck contest to steal gold or item."""
+    """Steal - speed+luck contest to steal gold or item."""
 
     @staticmethod
     def _make_combatants():
@@ -3962,7 +3968,7 @@ class TestBatch12Steal:
 
 
 class TestBatch12Mug:
-    """Mug – weapon damage + steal on hit."""
+    """Mug - weapon damage + steal on hit."""
 
     @staticmethod
     def _make_combatants():
@@ -4019,7 +4025,7 @@ class TestBatch12Mug:
 
 
 class TestBatch12Counterspell:
-    """Counterspell – passive, picks random spell and casts it."""
+    """Counterspell - passive, picks random spell and casts it."""
 
     @staticmethod
     def _make_combatants():
@@ -4072,7 +4078,7 @@ class TestBatch12Counterspell:
 
 
 class TestBatch12ElementalStrike:
-    """ElementalStrike – weapon damage + random elemental spell."""
+    """ElementalStrike - weapon damage + random elemental spell."""
 
     @staticmethod
     def _make_combatants():
@@ -4129,9 +4135,17 @@ class TestBatch12ElementalStrike:
                 break
         assert element_seen, "ElementalStrike should mention elemental force on hit"
 
+    def test_elemental_strike_does_not_embed_nested_spell_damage_log(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        result = abilities.ElementalStrike().use(user, target)
+        msg = str(result)
+        assert "elemental force" in msg.lower()
+        assert "damages Target" not in msg
+
 
 class TestBatch12Blackjack:
-    """Blackjack – random outcome card game."""
+    """Blackjack - random outcome card game."""
 
     @staticmethod
     def _make_combatants():
@@ -4201,7 +4215,7 @@ class TestBatch12SaveSystem:
 
 
 # =====================================================================
-# Batch 13 – Doublecast, Triplecast, ChooseFate, Shapeshift, TetraDisaster
+# Batch 13 - Doublecast, Triplecast, ChooseFate, Shapeshift, TetraDisaster
 # =====================================================================
 
 
@@ -4226,7 +4240,7 @@ class TestBatch13YAMLLoading:
 
 
 class TestBatch13Doublecast:
-    """Doublecast – cast 2 spells in a single turn."""
+    """Doublecast - cast 2 spells in a single turn."""
 
     @staticmethod
     def _make_combatants():
@@ -4298,7 +4312,7 @@ class TestBatch13Doublecast:
 
 
 class TestBatch13Triplecast:
-    """Triplecast – cast 3 spells in a single turn."""
+    """Triplecast - cast 3 spells in a single turn."""
 
     @staticmethod
     def _make_combatants():
@@ -4339,7 +4353,7 @@ class TestBatch13Triplecast:
 
 
 class TestBatch13ChooseFate:
-    """ChooseFate – Devil lets player pick action."""
+    """ChooseFate - Devil lets player pick action."""
 
     @staticmethod
     def _make_combatants():
@@ -4411,7 +4425,7 @@ class TestBatch13ChooseFate:
 
 
 class TestBatch13Shapeshift:
-    """Shapeshift – transform into random creature."""
+    """Shapeshift - transform into random creature."""
 
     @staticmethod
     def _make_combatants():
@@ -4470,7 +4484,7 @@ class TestBatch13Shapeshift:
 
 
 class TestBatch13TetraDisaster:
-    """TetraDisaster – cast all 4 elements + Power Up."""
+    """TetraDisaster - cast all 4 elements + Power Up."""
 
     @staticmethod
     def _make_combatants():
@@ -4553,7 +4567,7 @@ class TestBatch13SaveSystem:
 
 
 # =====================================================================
-# Batch 11 – Reveal, Transform/2/3/4, Stomp, ThrowRock
+# Batch 11 - Reveal, Transform/2/3/4, Stomp, ThrowRock
 # =====================================================================
 
 class TestBatch11YAMLLoading:
@@ -4579,7 +4593,7 @@ class TestBatch11YAMLLoading:
 
 
 class TestBatch11Reveal:
-    """Reveal – passive; sets sight, adds 25% shadow resist, unequips Pendant of Vision."""
+    """Reveal - passive; sets sight, adds 25% shadow resist, unequips Pendant of Vision."""
 
     @staticmethod
     def _make_user():
@@ -4620,7 +4634,7 @@ class TestBatch11Reveal:
 
 
 class TestBatch11Transform:
-    """Transform/2/3/4 – sets user.transform_type to the correct creature."""
+    """Transform/2/3/4 - sets user.transform_type to the correct creature."""
 
     @staticmethod
     def _make_user():
@@ -4669,7 +4683,7 @@ class TestBatch11Transform:
 
 
 class TestBatch11Stomp:
-    """Stomp – STR-based damage with stun chance."""
+    """Stomp - STR-based damage with stun chance."""
 
     @staticmethod
     def _make_combatants():
@@ -4739,7 +4753,7 @@ class TestBatch11Stomp:
 
 
 class TestBatch11ThrowRock:
-    """ThrowRock – random rock size, STR-based damage with prone chance."""
+    """ThrowRock - random rock size, STR-based damage with prone chance."""
 
     @staticmethod
     def _make_combatants():
@@ -4828,7 +4842,7 @@ class TestBatch11SaveSystem:
 
 
 # =====================================================================
-# Batch 10 – Maelstrom, Disintegrate, Inspect, PurityBody, Resurrection, ResistAll
+# Batch 10 - Maelstrom, Disintegrate, Inspect, PurityBody, Resurrection, ResistAll
 # =====================================================================
 
 class TestBatch10YAMLLoading:
@@ -4854,7 +4868,7 @@ class TestBatch10YAMLLoading:
 
 
 class TestBatch10Maelstrom:
-    """Maelstrom – HP cap with intel vs wisdom save."""
+    """Maelstrom - HP cap with intel vs wisdom save."""
 
     @staticmethod
     def _make_combatants():
@@ -4921,7 +4935,7 @@ class TestBatch10Maelstrom:
 
 
 class TestBatch10Disintegrate:
-    """Disintegrate – instant kill + % HP damage."""
+    """Disintegrate - instant kill + % HP damage."""
 
     @staticmethod
     def _make_combatants():
@@ -4992,7 +5006,7 @@ class TestBatch10Disintegrate:
 
 
 class TestBatch10Inspect:
-    """Inspect – reveals target info."""
+    """Inspect - reveals target info."""
 
     @staticmethod
     def _make_combatants():
@@ -5030,7 +5044,7 @@ class TestBatch10Inspect:
 
 
 class TestBatch10PurityBody:
-    """PurityBody – passive poison resist + immunity."""
+    """PurityBody - passive poison resist + immunity."""
 
     @staticmethod
     def _make_user():
@@ -5070,7 +5084,7 @@ class TestBatch10PurityBody:
 
 
 class TestBatch10PurityBody2:
-    """PurityBody2 – passive 100% poison resist + stone immunity."""
+    """PurityBody2 - passive 100% poison resist + stone immunity."""
 
     @staticmethod
     def _make_user():
@@ -5103,7 +5117,7 @@ class TestBatch10PurityBody2:
 
 
 class TestBatch10Resurrection:
-    """Resurrection – mana-to-HP (self) or revive (other)."""
+    """Resurrection - mana-to-HP (self) or revive (other)."""
 
     @staticmethod
     def _make_combatants():
@@ -5159,7 +5173,7 @@ class TestBatch10Resurrection:
 
 
 class TestBatch10ResistAll:
-    """ResistAll – message-only support spell (no-op)."""
+    """ResistAll - message-only support spell (no-op)."""
 
     @staticmethod
     def _make_combatants():
@@ -5208,7 +5222,7 @@ class TestBatch10SaveSystem:
 
 
 # =====================================================================
-# Batch 9 – Equipment skills, remaining enemy skills, GoldToss, DimMak
+# Batch 9 - Equipment skills, remaining enemy skills, GoldToss, DimMak
 # =====================================================================
 
 class TestBatch9YAMLLoading:
@@ -5237,7 +5251,7 @@ class TestBatch9YAMLLoading:
 
 
 class TestBatch9ShieldSlam:
-    """ShieldSlam – str + shield-weight damage with stun chance."""
+    """ShieldSlam - str + shield-weight damage with stun chance."""
 
     @staticmethod
     def _make_combatants(has_shield=True):
@@ -5326,7 +5340,7 @@ class TestBatch9ShieldSlam:
 
 
 class TestBatch9KidneyPunch:
-    """KidneyPunch – offhand weapon check + weapon hit + stun."""
+    """KidneyPunch - offhand weapon check + weapon hit + stun."""
 
     @staticmethod
     def _make_combatants(has_offhand=True):
@@ -5376,7 +5390,7 @@ class TestBatch9KidneyPunch:
 
 
 class TestBatch9PoisonStrike:
-    """PoisonStrike – weapon hit + poison (10% target max HP)."""
+    """PoisonStrike - weapon hit + poison (10% target max HP)."""
 
     @staticmethod
     def _make_combatants():
@@ -5424,7 +5438,7 @@ class TestBatch9PoisonStrike:
 
 
 class TestBatch9DimMak:
-    """DimMak – weapon + kill/stun/absorb."""
+    """DimMak - weapon + kill/stun/absorb."""
 
     @staticmethod
     def _make_combatants():
@@ -5481,7 +5495,7 @@ class TestBatch9DimMak:
 
 
 class TestBatch9ExploitWeakness:
-    """ExploitWeakness – detect weakness, boost weapon mod or random status."""
+    """ExploitWeakness - detect weakness, boost weapon mod or random status."""
 
     @staticmethod
     def _make_combatants(fire_weak=True):
@@ -5538,7 +5552,7 @@ class TestBatch9ExploitWeakness:
 
 
 class TestBatch9GoldToss:
-    """GoldToss – gold-based unblockable damage."""
+    """GoldToss - gold-based unblockable damage."""
 
     @staticmethod
     def _make_combatants():
@@ -5572,6 +5586,15 @@ class TestBatch9GoldToss:
         abilities.GoldToss().use(user, target)
         assert user.gold < gold_before
 
+    def test_gold_toss_can_use_private_enemy_pool_without_spending_reward_gold(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        user.gold = 25000
+        user._gold_toss_pool = 500
+        abilities.GoldToss().use(user, target)
+        assert user.gold == 25000
+        assert user._gold_toss_pool < 500
+
     def test_gold_toss_can_deal_damage(self):
         from src.core import abilities
         damaged = False
@@ -5597,7 +5620,7 @@ class TestBatch9GoldToss:
 
 
 class TestBatch9Lick:
-    """Lick – weapon hit + random status effect."""
+    """Lick - weapon hit + random status effect."""
 
     @staticmethod
     def _make_combatants():
@@ -5639,7 +5662,7 @@ class TestBatch9Lick:
 
 
 class TestBatch9BrainGorge:
-    """BrainGorge – weapon hit + latch + extra damage + intel drain."""
+    """BrainGorge - weapon hit + latch + extra damage + intel drain."""
 
     @staticmethod
     def _make_combatants():
@@ -5691,7 +5714,7 @@ class TestBatch9BrainGorge:
 
 
 class TestBatch9Detonate:
-    """Detonate – self-destruct massive damage."""
+    """Detonate - self-destruct massive damage."""
 
     @staticmethod
     def _make_combatants():
@@ -5736,7 +5759,7 @@ class TestBatch9Detonate:
 
 
 class TestBatch9Crush:
-    """Crush – grab + crush + throw for physical damage."""
+    """Crush - grab + crush + throw for physical damage."""
 
     @staticmethod
     def _make_combatants():
@@ -5813,7 +5836,7 @@ class TestBatch9SaveSystem:
 
 
 # =====================================================================
-# Batch 8 – Enemy skills, Hex, Vulcanize, Smite family, Turn Undead
+# Batch 8 - Enemy skills, Hex, Vulcanize, Smite family, Turn Undead
 # =====================================================================
 
 class TestBatch8YAMLLoading:
@@ -5845,7 +5868,7 @@ class TestBatch8YAMLLoading:
 
 
 class TestBatch8Screech:
-    """Screech – stat-contest damage + permanent silence."""
+    """Screech - stat-contest damage + permanent silence."""
 
     @staticmethod
     def _make_combatants():
@@ -5905,7 +5928,7 @@ class TestBatch8Screech:
 
 
 class TestBatch8AcidSpit:
-    """AcidSpit – intel-based magic damage + DOT."""
+    """AcidSpit - intel-based magic damage + DOT."""
 
     @staticmethod
     def _make_combatants():
@@ -5964,7 +5987,7 @@ class TestBatch8AcidSpit:
 
 
 class TestBatch8BreatheFire:
-    """BreatheFire – stat-based elemental breath weapon."""
+    """BreatheFire - stat-based elemental breath weapon."""
 
     @staticmethod
     def _make_combatants():
@@ -6005,7 +6028,7 @@ class TestBatch8BreatheFire:
 
 
 class TestBatch8NightmareFuel:
-    """NightmareFuel – sleep-conditional damage."""
+    """NightmareFuel - sleep-conditional damage."""
 
     @staticmethod
     def _make_combatants():
@@ -6062,7 +6085,7 @@ class TestBatch8NightmareFuel:
 
 
 class TestBatch8WidowsWail:
-    """WidowsWail – inverse-HP damage to both actor and target."""
+    """WidowsWail - inverse-HP damage to both actor and target."""
 
     @staticmethod
     def _make_combatants():
@@ -6128,7 +6151,7 @@ class TestBatch8WidowsWail:
 
 
 class TestBatch8GoblinPunch:
-    """GoblinPunch – multi-hit str-diff damage."""
+    """GoblinPunch - multi-hit str-diff damage."""
 
     @staticmethod
     def _make_combatants():
@@ -6191,7 +6214,7 @@ class TestBatch8GoblinPunch:
 
 
 class TestBatch8Hex:
-    """Hex – triple-status spell (Poison/Blind/Silence)."""
+    """Hex - triple-status spell (Poison/Blind/Silence)."""
 
     @staticmethod
     def _make_combatants():
@@ -6267,7 +6290,7 @@ class TestBatch8Hex:
 
 
 class TestBatch8Vulcanize:
-    """Vulcanize – self fire-damage + defense buff."""
+    """Vulcanize - self fire-damage + defense buff."""
 
     @staticmethod
     def _make_combatants():
@@ -6319,7 +6342,7 @@ class TestBatch8Vulcanize:
 
 
 class TestBatch8SmiteFamily:
-    """Smite / Smite2 / Smite3 – weapon strike + holy follow-up."""
+    """Smite / Smite2 / Smite3 - weapon strike + holy follow-up."""
 
     @staticmethod
     def _make_combatants():
@@ -6379,7 +6402,7 @@ class TestBatch8SmiteFamily:
 
 
 class TestBatch8TurnUndeadFamily:
-    """TurnUndead / TurnUndead2 – undead-only kill or holy damage."""
+    """TurnUndead / TurnUndead2 - undead-only kill or holy damage."""
 
     @staticmethod
     def _make_combatants(undead=True):
@@ -6475,7 +6498,7 @@ class TestBatch8SaveSystem:
 
 
 # =====================================================================
-# Batch 14 – ConsumeItem, DestroyMetal, SlotMachine, Totem
+# Batch 14 - ConsumeItem, DestroyMetal, SlotMachine, Totem
 # =====================================================================
 
 
@@ -6499,7 +6522,7 @@ class TestBatch14YAMLLoading:
 
 
 class TestBatch14ConsumeItem:
-    """ConsumeItem – steal and consume an item from the target."""
+    """ConsumeItem - steal and consume an item from the target."""
 
     @staticmethod
     def _make_combatants(target_has_items=True):
@@ -6581,7 +6604,7 @@ class TestBatch14ConsumeItem:
 
 
 class TestBatch14DestroyMetal:
-    """DestroyMetal – destroy metal items from target's inventory/equipment."""
+    """DestroyMetal - destroy metal items from target's inventory/equipment."""
 
     @staticmethod
     def _make_combatants():
@@ -6627,7 +6650,7 @@ class TestBatch14DestroyMetal:
 
 
 class TestBatch14SlotMachine:
-    """SlotMachine – spin 3 digits with many possible outcomes."""
+    """SlotMachine - spin 3 digits with many possible outcomes."""
 
     @staticmethod
     def _make_combatants():
@@ -6715,6 +6738,47 @@ class TestBatch14SlotMachine:
         msg = result if isinstance(result, str) else str(result)
         assert "odds" in msg.lower() or "gains" in msg.lower()
 
+    def test_slot_machine_straight_flush_card_hand(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        health_before = target.health.current
+        mana_before = target.mana.current
+        result = abilities.SlotMachine().use(
+            user, target,
+            slot_machine_callback=lambda u, t: "AS,2S,3S",
+        )
+        msg = result if isinstance(result, str) else str(result)
+        assert "straight flush" in msg.lower()
+        assert target.health.current < health_before
+        assert target.mana.current < mana_before
+
+    def test_slot_machine_flush_card_hand_drains_gold_and_mana(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        user_gold_before = user.gold
+        target_gold_before = target.gold
+        target_mana_before = target.mana.current
+        result = abilities.SlotMachine().use(
+            user, target,
+            slot_machine_callback=lambda u, t: "AS,9S,KS",
+        )
+        msg = result if isinstance(result, str) else str(result)
+        assert "flush" in msg.lower()
+        assert user.gold > user_gold_before
+        assert target.gold < target_gold_before
+        assert target.mana.current < target_mana_before
+
+    def test_slot_machine_pair_card_hand_applies_pair_effect(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        result = abilities.SlotMachine().use(
+            user, target,
+            slot_machine_callback=lambda u, t: "AS,AD,9C",
+        )
+        msg = result if isinstance(result, str) else str(result)
+        assert "pair" in msg.lower()
+        assert "randomly selected" in msg.lower() or "immune" in msg.lower() or "no effect" in msg.lower()
+
     def test_slot_machine_random_produces_output(self):
         """Random spins should always produce some output."""
         from src.core import abilities
@@ -6726,7 +6790,7 @@ class TestBatch14SlotMachine:
 
 
 class TestBatch14Totem:
-    """Totem – activate a totem with a chosen sacred aspect."""
+    """Totem - activate a totem with a chosen sacred aspect."""
 
     @staticmethod
     def _make_combatants(wisdom=20):
@@ -6817,7 +6881,7 @@ class TestBatch14SaveSystem:
 
 
 # =====================================================================
-# Batch 15 – Charge, CrushingBlow, ArcaneBlast, MagicMissile/2/3
+# Batch 15 - Charge, CrushingBlow, ArcaneBlast, MagicMissile/2/3
 # =====================================================================
 
 
@@ -6843,7 +6907,7 @@ class TestBatch15YAMLLoading:
 
 
 class TestBatch15Charge:
-    """Charge – charging skill with stun-before-damage."""
+    """Charge - charging skill with stun-before-damage."""
 
     @staticmethod
     def _make_combatants():
@@ -6926,7 +6990,7 @@ class TestBatch15Charge:
 
 
 class TestBatch15CrushingBlow:
-    """CrushingBlow – charging skill with massive damage + stun."""
+    """CrushingBlow - charging skill with massive damage + stun."""
 
     @staticmethod
     def _make_combatants():
@@ -7003,7 +7067,7 @@ class TestBatch15CrushingBlow:
 
 
 class TestBatch15ArcaneBlast:
-    """ArcaneBlast – mana-to-damage charging skill."""
+    """ArcaneBlast - mana-to-damage charging skill."""
 
     @staticmethod
     def _make_combatants():
@@ -7083,7 +7147,7 @@ class TestBatch15ArcaneBlast:
 
 
 class TestBatch15MagicMissile:
-    """MagicMissile family – multi-missile spell."""
+    """MagicMissile family - multi-missile spell."""
 
     @staticmethod
     def _make_combatants():
@@ -7186,7 +7250,7 @@ class TestBatch15SaveSystem:
             assert restored.name == ability.name
 
 # ======================================================================
-# BATCH 16 – Jump (DataDrivenJumpSkill)
+# BATCH 16 - Jump (DataDrivenJumpSkill)
 # ======================================================================
 
 
@@ -7512,7 +7576,7 @@ class TestBatch16SaveSystem:
 
 
 # ======================================================================
-# BATCH 17 – Sanctuary & Teleport (DataDrivenMovementSpell)
+# BATCH 17 - Sanctuary & Teleport (DataDrivenMovementSpell)
 # ======================================================================
 
 
@@ -7898,7 +7962,7 @@ class TestBatch18SaveSystem:
 
 
 # ===========================================================================
-# Batch 19 – Dragon Breath (Fire / Water / Wind) as ChargingSkill
+# Batch 19 - Dragon Breath (Fire / Water / Wind) as ChargingSkill
 # ===========================================================================
 
 

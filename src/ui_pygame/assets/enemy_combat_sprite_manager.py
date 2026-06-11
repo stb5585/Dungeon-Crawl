@@ -103,10 +103,14 @@ class EnemyCombatSpriteManager:
         sprite_root: Path | None = None,
         sprite_map_path: Path | None = None,
         scale_map_path: Path | None = None,
+        dungeon_scale_map_path: Path | None = None,
     ) -> None:
         self.sprite_root = Path(sprite_root or ENEMY_COMBAT_SPRITE_ROOT)
         self.sprite_map_path = Path(sprite_map_path or self.sprite_root / "enemy_combat_sprite_map.json")
         self.scale_map_path = Path(scale_map_path or self.sprite_root / "enemy_combat_sprite_scale.json")
+        self.dungeon_scale_map_path = Path(
+            dungeon_scale_map_path or self.sprite_root / "enemy_dungeon_sprite_scale.json"
+        )
         self.available_keys: set[str] = {
             path.stem
             for path in self.sprite_root.glob("*.png")
@@ -114,11 +118,13 @@ class EnemyCombatSpriteManager:
         }
         self.sprite_map: dict[str, str] = {}
         self.combat_scale_map: dict[str, float] = {}
+        self.dungeon_scale_map: dict[str, float] = {}
         self._sprite_cache: dict[str, pygame.Surface] = {}
         self._scaled_cache: dict[tuple[str, tuple[int, int]], pygame.Surface] = {}
         self._fallback_surface: pygame.Surface | None = None
         self.load_map()
         self.load_scale_map()
+        self.load_dungeon_scale_map()
 
     def load_map(self) -> None:
         if not self.sprite_map_path.exists():
@@ -152,18 +158,53 @@ class EnemyCombatSpriteManager:
             scales[str(name)] = self._valid_combat_scale(scale)
         self.combat_scale_map = scales
 
+    def load_dungeon_scale_map(self) -> None:
+        self.dungeon_scale_map = self._load_scale_map_file(
+            self.dungeon_scale_map_path,
+            "enemy dungeon sprite scale map",
+        )
+
+    def _load_scale_map_file(self, path: Path, label: str) -> dict[str, float]:
+        if not path.exists():
+            return {}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Could not load %s %s: %s", label, path, exc)
+            return {}
+        if not isinstance(data, dict):
+            logger.warning("%s must be an object: %s", label, path)
+            return {}
+
+        scales: dict[str, float] = {}
+        for name, value in data.items():
+            try:
+                scale = float(value)
+            except (TypeError, ValueError):
+                logger.warning("Ignoring invalid %s for %s: %r", label, name, value)
+                continue
+            scales[str(name)] = self._valid_combat_scale(scale)
+        return scales
+
     def get_combat_scale_for_enemy(self, enemy: Any) -> float:
         """Return an optional per-enemy combat sprite scale multiplier."""
+        return self._scale_for_enemy(enemy, self.combat_scale_map)
+
+    def get_dungeon_scale_for_enemy(self, enemy: Any) -> float:
+        """Return an optional per-enemy dungeon/navigation sprite scale multiplier."""
+        return self._scale_for_enemy(enemy, self.dungeon_scale_map)
+
+    def _scale_for_enemy(self, enemy: Any, scale_map: dict[str, float]) -> float:
         name = self.enemy_name(enemy)
-        if name in self.combat_scale_map:
-            return self.combat_scale_map[name]
+        if name in scale_map:
+            return scale_map[name]
 
         sprite_key = self.get_sprite_key_for_enemy(enemy)
-        if sprite_key in self.combat_scale_map:
-            return self.combat_scale_map[sprite_key]
+        if sprite_key in scale_map:
+            return scale_map[sprite_key]
 
-        if self._is_boss(enemy) and "boss" in self.combat_scale_map:
-            return self.combat_scale_map["boss"]
+        if self._is_boss(enemy) and "boss" in scale_map:
+            return scale_map["boss"]
         return 1.0
 
     def get_sprite(self, enemy: Any) -> pygame.Surface:
@@ -223,6 +264,10 @@ class EnemyCombatSpriteManager:
 
     def get_sprite_key_for_enemy(self, enemy: Any) -> str:
         name = self.enemy_name(enemy)
+        picture_key = self._picture_key(enemy)
+        if picture_key and picture_key in self.available_keys:
+            return picture_key
+
         if name in self.sprite_map:
             return self._valid_key(self.sprite_map[name], prefer_boss=self._is_boss(enemy))
 
@@ -294,6 +339,15 @@ class EnemyCombatSpriteManager:
             if value:
                 return str(value)
         return ""
+
+    @classmethod
+    def _picture_key(cls, enemy: Any) -> str:
+        if isinstance(enemy, str):
+            return ""
+        picture = getattr(enemy, "picture", "")
+        if not isinstance(picture, str) or not picture.lower().endswith(".png"):
+            return ""
+        return cls.normalize_key(Path(picture).stem)
 
     def _is_boss(self, enemy: Any) -> bool:
         name = self.enemy_name(enemy)
