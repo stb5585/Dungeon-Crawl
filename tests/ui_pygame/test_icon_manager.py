@@ -105,6 +105,16 @@ def test_default_item_icon_map_resolves_gold_currency_and_empty_helmet(caplog):
     assert "Item icon mapping missing for No Helmet" not in caplog.text
 
 
+def test_default_item_icon_map_resolves_leather_cap_without_warning(caplog):
+    manager = IconManager()
+    item = SimpleNamespace(name="Leather Cap", typ="Helmet", subtyp="Light")
+
+    with caplog.at_level("WARNING"):
+        assert manager.icon_key_for_item(item) == "helmet"
+
+    assert "Item icon mapping missing for Leather Cap" not in caplog.text
+
+
 def test_icon_manager_slot_and_generic_fallbacks(tmp_path):
     _write_icon_fixture(tmp_path)
     manager = IconManager(icon_root=tmp_path)

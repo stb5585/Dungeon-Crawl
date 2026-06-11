@@ -134,18 +134,15 @@ Status: `Active`
    - Status: `Done`.
    - Added a visual naming screen with selected portrait, sex, race, and class panels.
    - Replaced the basic text-entry flow in pygame character creation with the guarded visual naming screen.
-6. Update enemy presentation away from current sprite-only design; use updated artwork for more immersive experience.
-   - Status: `Done` for the first broad-archetype render pass.
-   - Added `EnemyRenderManager`, `assets/enemy_renders/`, an enemy render mapping report, and combat target-panel integration.
-   - Existing map sprites and combat positioning sprites remain in place; enemy renders are presentation assets for combat panels, inspection-style views, bestiary work, and boss-intro follow-up.
-   - Replaced the development placeholder atlas with dark-fantasy archetype artwork, individual source PNGs, a generated atlas/manifest, and a review sheet.
-   - Added `EnemyTokenManager` as a compact middle layer derived from large renders for initiative/turn UI and future target-list or encounter-summary use.
-   - Added `EnemyCombatArtManager` and `assets/enemy_combat_art/` as a dedicated combat presentation layer.
+6. Update enemy presentation around approved transparent sprites.
+   - Status: `Done`.
+   - Retired the broad-archetype `enemy_renders/` atlas and `enemy_combat_art/` presentation layer to `old_assets/retired_enemy_art/`.
+   - `EnemyCombatSpriteManager` now owns enemy display-name lookup, boss/category fallbacks, combat target-panel presentation, and dungeon boss navigation figures.
+   - Added `EnemyTokenManager` as a compact middle layer derived from combat sprites for initiative/turn UI and future target-list or encounter-summary use.
    - Added `EnemyCombatSpriteManager` and `assets/enemy_combat_sprites/` as transparent full-body battlefield enemy sprites for the center combat renderer, with legacy 32x32 sprites retained only as fallback assets.
    - Production enemy combat sprites now cover every concrete enemy display name in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template.
+   - Added `enemy_combat_sprite_scale.json` so large creatures can use per-enemy combat scale multipliers without changing every shared-canvas sprite.
    - Combat sprite review sheets can be rebuilt from approved transparent PNGs with `./.venv/bin/python tools/build_enemy_combat_sprites.py`.
-   - Rebuild the runtime atlas from source renders with `./.venv/bin/python tools/build_enemy_render_atlas.py`.
-   - Validate atlas geometry and token crops with `./.venv/bin/python tools/validate_enemy_render_atlas.py`.
    - Bugfix: combat/gameplay has slowed down with the new artist renderings of enemies.
 7. Update dungeon renderings to match new aesthetic.
    - Generate new floor, ceiling, and wall tiles

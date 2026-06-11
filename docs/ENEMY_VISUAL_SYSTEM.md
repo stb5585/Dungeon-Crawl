@@ -1,6 +1,6 @@
 # Enemy Visual System
 
-Enemy visuals are split into four presentation layers. Each layer solves a different readability problem and should remain separate.
+Enemy visuals are split into three presentation layers. Each layer solves a different readability problem and should remain separate.
 
 ## Layer 1: Combat Sprite
 
@@ -19,57 +19,47 @@ Combat sprites must be transparent, full-body creature images with no frame, no 
 
 Current combat-sprite coverage is complete for concrete enemy display names in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template. Upgraded variants that share a display name use the same sprite mapping.
 
+### Combat Sprite Scale
+
+Combat sprite scale is data-driven through `enemy_combat_sprites/enemy_combat_sprite_scale.json`.
+
+The scale map is used when a sprite needs a different battlefield footprint than the default sprite canvas implies. This is especially useful for large enemies that share the same source image dimensions as small enemies.
+
+Scale lookup uses this order:
+
+1. Exact enemy display name, such as `Minotaur`.
+2. Combat sprite key, such as `red_dragon`.
+3. The `boss` fallback entry for enemies classified as bosses.
+4. Default scale `1.0`.
+
+The live dungeon-backed combat foreground uses a 320px base sprite box before applying the scale multiplier. The classic centered combat renderer uses the current combat pane size for boss-scale enemies and 256px for ordinary enemies before applying the same multiplier. Scale values are clamped between `0.25` and `2.5`.
+
+Only use the scale map for intentional presentation differences. Do not resize source PNG canvases just to make a particular enemy appear larger or smaller in combat.
+
 ## Layer 2: Enemy Token
 
-Enemy tokens are compact circular portraits generated automatically from the broad-archetype enemy renders. They are used for compact combat UI such as turn/initiative banners, future target lists, future encounter summaries, and other status-heavy layouts.
+Enemy tokens are compact circular portraits generated automatically from combat sprites. They are used for compact combat UI such as turn/initiative banners, future target lists, future encounter summaries, and other status-heavy layouts.
 
 Player turn banners use the same compact-token presentation, but derive the face token from the player's portrait via `PlayerTokenManager`.
 
 Token generation uses:
 
-1. `EnemyRenderManager` render-key lookup.
-2. `enemy_token_crop.json` crop override when available.
+1. `EnemyCombatSpriteManager` sprite-key lookup.
+2. `enemy_combat_sprites/enemy_token_crop.json` crop override when available.
 3. A default centered head-and-shoulders crop when no override exists.
 4. Circular framing and token-size caching in `EnemyTokenManager`.
 
 Token crops should be tuned for 64x64 and 96x96 readability.
 
-## Layer 3: Enemy Combat Artwork
+## Layer 3: Enemy Inspection And Boss Navigation
 
-Enemy combat artwork is full-body encounter presentation art. It is used for combat display panels, selected target display, combat action display, boss-introduction-style panels, and inspection panels.
+Enemy inspection panels and boss navigation figures use the same transparent combat sprites as the battlefield view.
 
-Combat artwork answers "what is standing in front of me right now?" It should preserve weapons, armor, body shape, and silhouette readability at combat-panel scale.
+This keeps the visible enemy identity consistent between dungeon navigation, combat, target panels, and compact tokens.
 
-Combat artwork uses:
-
-1. `EnemyCombatArtManager` for individual PNG loading from `enemy_combat_art/`.
-2. `EnemyRenderManager` render-key lookup so name, boss, category, and fallback behavior stays consistent.
-3. Boss and generic fallback artwork when a specific combat-art file is missing.
-4. Per-key and per-size caching for combat panels.
-
-Combat artwork should not replace the visible center combat enemy body. Use `enemy_combat_sprites/` for that.
-
-## Layer 4: Enemy Render
-
-Large enemy renders remain presentation artwork. They are used for selected target panels, inspection screens, bestiary screens, boss introductions, and encounter artwork.
-
-Large renders should not be used as battlefield sprites or compact initiative art. Prefer combat artwork for active combat panels and use large renders as source/review artwork for portrait-like or bestiary contexts.
+The retired `enemy_renders/` atlas and `enemy_combat_art/` artwork set have been moved to `old_assets/retired_enemy_art/`.
 
 ## Asset Validation
-
-Run this after changing enemy render source images, the runtime atlas, or token crops:
-
-```bash
-./.venv/bin/python tools/validate_enemy_render_atlas.py
-```
-
-The validator checks atlas dimensions, manifest coverage, frame bounds, frame overlap, source PNG coverage, and token crop bounds. The current atlas passes these automated integrity checks.
-
-Run this after changing combat artwork or token crops to rebuild the visual comparison sheet:
-
-```bash
-./.venv/bin/python tools/build_enemy_combat_art_review_sheet.py
-```
 
 Run this after changing combat sprites to rebuild the review sheet from approved transparent PNGs:
 
@@ -79,9 +69,9 @@ Run this after changing combat sprites to rebuild the review sheet from approved
 
 This tool does not generate replacement artwork. Production combat sprites are approved transparent PNG assets stored individually under `src/ui_pygame/assets/enemy_combat_sprites/`.
 
-## Future Render Generation Requirements
+## Future Sprite Generation Requirements
 
-Future enemy artwork prompts must preserve archetype distinctions at token size, not only at full render size.
+Future enemy sprite prompts must preserve enemy distinctions at token size, not only at full combat-panel size.
 
 - Goblin: green skin, large ears, yellow eyes, hunched raider silhouette.
 - Kobold: reptilian, scaled skin, narrow snout, smaller tunnel-creature profile.

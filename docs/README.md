@@ -9,7 +9,7 @@
 - **[NEW_SYSTEMS.md](NEW_SYSTEMS.md)** - User guide for new systems (action queue, effects, events, etc.)
 - **[EVENT_EMISSIONS.md](EVENT_EMISSIONS.md)** - Event system implementation details and usage
 - **[PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md)** - Character promotion ability transition rules with extensibility examples
-- **[ENEMY_RENDER_MAPPING.md](ENEMY_RENDER_MAPPING.md)** - Enemy render archetype assignments and mapping decisions
+- **[ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md)** - Current enemy sprite, token, and boss navigation visual layers
 
 ## Development Notes
 - **[notes.txt](notes.txt)** - Personal TODO list, design questions, and feature ideas (not tracked in git)
@@ -35,7 +35,7 @@ data/            - YAML-based ability definitions
 
 ### Phase 3 Status
 - Pygame GUI implementation is active, with the modern Character Menu now used as the standard town and dungeon character screen.
-- Event system integration, combat presentation polish, character sprite generation, enemy render artwork, and item artwork/icon presentation are operational.
+- Event system integration, combat presentation polish, character sprite generation, transparent enemy combat sprites/tokens, and item artwork/icon presentation are operational.
 - Equipment validation now covers weapon/offhand rules, armor, helmets, accessories, save/load compatibility, shop flows, and pygame/curses UI integration.
 
 ### Latest Fixes
@@ -43,7 +43,7 @@ data/            - YAML-based ability definitions
 - ✅ Helmet equipment slot implemented across core gameplay, shops, saves, UI, icons, and item artwork.
 - ✅ Helmet catalog added for Cloth, Light, Medium, and Heavy armor types, including restricted and special-effect helmets.
 - ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
-- ✅ Enemy render system added with broad archetype mapping, dark-fantasy archetype artwork, compact derived enemy tokens, combat target panel integration, source PNG atlas rebuild/validation tooling, and mapping documentation.
+- ✅ Enemy visual system now uses transparent combat sprites for battlefield, target-panel, boss navigation, and token-derived enemy presentation, with per-enemy combat scale mapping for large creatures.
 
 ### Core Game Files
 ```

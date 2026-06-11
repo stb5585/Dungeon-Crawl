@@ -1630,8 +1630,7 @@ class SceneRenderer:
         if hasattr(enemy, "is_alive") and not enemy.is_alive():
             return
 
-        apparent_depth = min(depth + 1, 3)
-        size_ratio = {1: 0.8, 2: 0.5, 3: 0.3}.get(apparent_depth, 0.3)
+        size_ratio = {0: 2.0, 1: 1.0, 2: 0.8, 3: 0.65}.get(depth, 0.65)
         if lateral_view:
             size_ratio *= 0.9
         sprite_size = max(8, int(min(rect.width, rect.height) * size_ratio))

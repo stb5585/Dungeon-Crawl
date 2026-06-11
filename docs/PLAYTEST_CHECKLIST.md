@@ -64,7 +64,7 @@
   - Expected: Enemy weapons/body shapes match their current enemy definitions closely enough for combat readability.
   - Expected: Sprites preserve aspect ratio and do not cover the enemy HP bar or action menu.
 - [ ] Enter combat against late-game or boss enemies such as Beholder, Hydra, Red Dragon, Cerberus, and The Devil.
-  - Expected: Large enemies remain centered and readable at combat scale.
+  - Expected: Large enemies use `enemy_combat_sprite_scale.json` for intentional size differences while remaining centered and readable.
   - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
 
 ### Main Menu
@@ -430,48 +430,28 @@
 - [ ] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
-### Enemy Render Artwork
-- [x] Review the generated enemy render contact sheet.
-  - Expected: `src/ui_pygame/assets/enemy_renders/enemy_render_review_sheet.png` shows distinct dark-fantasy archetypes with consistent lighting and no placeholder cards.
-  - Expected: Goblin/Orc, Skeleton/Skeleton Warrior, Wolf/Dire Wolf, Slime/Ooze, Dragon/Wyrm, Demon/Greater Demon, boss, and generic fallback are visually distinguishable.
+### Enemy Sprite Artwork
+- [x] Review the generated enemy combat sprite contact sheet.
+  - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows distinct transparent sprites with consistent readability and no placeholder cards.
+  - Expected: Common enemies, bosses, and generic fallback are visually distinguishable.
 - [x] Start combat against common mapped enemies.
-  - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy render artwork in the combat target panel.
-  - Expected: The center combat enemy uses transparent sprite-style enemy artwork, not portrait-style render artwork.
+  - Expected: Goblin, Skeleton, Direwolf, Green Slime, Imp or Archvile, and Red Dragon resolve to non-generic enemy combat sprites in the combat target panel and center combat view.
 - [x] Inspect the turn/initiative banner during player and enemy turns.
-  - Expected: Enemy turns show a compact circular enemy token derived from the render artwork.
+  - Expected: Enemy turns show a compact circular enemy token derived from the combat sprite.
   - Expected: Player turns show a compact circular face token derived from the player portrait.
-- [x] Run enemy render atlas validation after changing enemy artwork.
-  - Expected: `./.venv/bin/python tools/validate_enemy_render_atlas.py` reports no atlas dimension, frame overlap, source PNG, or token crop issues.
 - [ ] Start combat against an enemy mapped to the boss fallback.
-  - Expected: Boss fallback artwork appears when no specific boss archetype exists.
+  - Expected: Boss fallback sprite appears when no specific boss sprite exists.
   - Expected: Boss combat, victory, defeat, and flee flows still function.
 - [ ] Simulate or create an enemy with no exact mapping, category, or useful name hint.
-  - Expected: The render manager logs a warning once the missing mapping path is used and displays `generic_enemy`.
-  - Expected: Missing atlas files, missing frames, or out-of-bounds frames fall back without crashing combat.
+  - Expected: `generic_enemy` displays without crashing combat.
 - [ ] Inspect the combat target panel while Sight is active and inactive.
-  - Expected: Enemy artwork and name remain visible.
+  - Expected: Enemy sprite and name remain visible.
   - Expected: HP, weaknesses, resistances, and status icons appear only when combat visibility rules allow them.
-- [ ] Verify enemy render lookup does not affect saves or map sprites.
+- [ ] Verify enemy sprite lookup does not affect saves.
   - Expected: Save/load data is unchanged.
-  - Expected: Dungeon map sprites, encounter positioning sprites, overworld tokens, and dungeon renderer enemy textures still use their existing sprite systems.
+  - Expected: Combat panels, enemy tokens, and dungeon boss navigation figures use `enemy_combat_sprites/`.
 - [ ] Review `docs/ENEMY_VISUAL_SYSTEM.md` before adding new enemy presentation screens.
-  - Expected: Combat sprites, enemy tokens, and large enemy renders are used for their intended visual layers.
-- [ ] Review `docs/ENEMY_RENDER_MAPPING.md` after adding or renaming enemies.
-  - Expected: Every no-argument enemy class has an Enemy Name, Enemy Class, and Suggested Archetype row.
-  - Expected: `enemy_render_map.json` contains a display-name mapping for every discovered enemy name.
-
-### Enemy Combat Artwork
-- [ ] Review the generated enemy combat artwork sheet.
-  - Expected: `src/ui_pygame/assets/enemy_combat_art/enemy_combat_art_review_sheet.png` shows render, token, and combat artwork side-by-side for every archetype.
-  - Expected: Combat artwork remains full-body and readable beside the compact token crop.
-- [ ] Start combat against Goblin, Skeleton, Wolf, Dragon, and Demon archetypes.
-  - Expected: The target panel uses `EnemyCombatArtManager` artwork from `enemy_combat_art/`.
-  - Expected: The center enemy body uses transparent `EnemyCombatSpriteManager` artwork from `enemy_combat_sprites/`.
-- [ ] Start combat against an enemy mapped to a boss fallback and an unknown generic fallback.
-  - Expected: Boss fallback combat artwork appears for boss enemies without specific art.
-  - Expected: `generic_enemy` combat artwork appears for unknown non-boss enemies.
-- [ ] Save and reload after viewing combat artwork.
-  - Expected: Save/load data is unchanged because combat artwork is resolved from runtime enemy names/archetypes.
+  - Expected: Combat sprites and enemy tokens are used for their intended visual layers.
 
 ### Enemy Combat Sprites
 - [ ] Review the generated enemy combat sprite sheet.

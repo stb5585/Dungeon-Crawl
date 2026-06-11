@@ -9,11 +9,6 @@ from typing import Any
 
 import pygame
 
-from src.ui_pygame.assets.enemy_render_manager import (
-    EnemyRenderManager,
-    get_enemy_render_manager,
-)
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,26 +19,106 @@ _SHARED_ENEMY_COMBAT_SPRITE_MANAGER: EnemyCombatSpriteManager | None = None
 class EnemyCombatSpriteManager:
     """Resolve enemies to transparent full-body combat sprites."""
 
+    CATEGORY_FALLBACKS = {
+        "Animal": "wolf",
+        "Slime": "slime",
+        "Humanoid": "bandit",
+        "Fey": "wraith",
+        "Fiend": "demon",
+        "Undead": "zombie",
+        "Elemental": "earth_elemental",
+        "Dragon": "dragon",
+        "Monster": "boss",
+        "Aberration": "boss",
+        "Construct": "dark_knight",
+        "Misc": "generic_enemy",
+    }
+
+    BOSS_NAMES = {
+        "Barghest",
+        "Beholder",
+        "Behemoth",
+        "Cerberus",
+        "Chimera",
+        "Circe",
+        "Cockatrice",
+        "Domingo",
+        "Fuath",
+        "Golem",
+        "Incubus",
+        "Jester",
+        "Merzhin",
+        "Minotaur",
+        "Nightmare",
+        "Red Dragon",
+        "The Devil",
+        "Wendigo",
+    }
+
+    NAME_HINTS = (
+        ("goblin", "goblin"),
+        ("kobold", "kobold"),
+        ("skeleton warrior", "skeleton_warrior"),
+        ("skeleton", "skeleton"),
+        ("zombie", "zombie"),
+        ("lich", "lich"),
+        ("wraith", "wraith"),
+        ("ghost", "ghost"),
+        ("dire wolf", "dire_wolf"),
+        ("direwolf", "dire_wolf"),
+        ("wolf", "wolf"),
+        ("bear", "bear"),
+        ("boar", "boar"),
+        ("rat", "giant_rat"),
+        ("giant spider", "giant_spider"),
+        ("spider", "spider"),
+        ("scorpion", "scorpion"),
+        ("slime", "slime"),
+        ("ooze", "ooze"),
+        ("bat", "bat"),
+        ("harpy", "harpy"),
+        ("gargoyle", "gargoyle"),
+        ("fire", "fire_elemental"),
+        ("water", "water_elemental"),
+        ("earth", "earth_elemental"),
+        ("wind", "air_elemental"),
+        ("storm", "air_elemental"),
+        ("shadow", "shadow_elemental"),
+        ("demon", "demon"),
+        ("devil", "devil"),
+        ("dragon", "dragon"),
+        ("wyrm", "wyrm"),
+        ("wyvern", "wyvern"),
+        ("orc", "orc"),
+        ("bandit", "bandit"),
+        ("cultist", "cultist"),
+        ("disciple", "disciple"),
+        ("dark knight", "dark_knight"),
+    )
+
     def __init__(
         self,
-        render_manager: EnemyRenderManager | None = None,
+        render_manager: object | None = None,
         *,
         sprite_root: Path | None = None,
         sprite_map_path: Path | None = None,
+        scale_map_path: Path | None = None,
     ) -> None:
-        self.render_manager = render_manager or get_enemy_render_manager()
         self.sprite_root = Path(sprite_root or ENEMY_COMBAT_SPRITE_ROOT)
         self.sprite_map_path = Path(sprite_map_path or self.sprite_root / "enemy_combat_sprite_map.json")
+        self.scale_map_path = Path(scale_map_path or self.sprite_root / "enemy_combat_sprite_scale.json")
         self.available_keys: set[str] = {
             path.stem
             for path in self.sprite_root.glob("*.png")
             if path.is_file() and not path.stem.endswith("_review_sheet")
         }
         self.sprite_map: dict[str, str] = {}
+        self.combat_scale_map: dict[str, float] = {}
         self._sprite_cache: dict[str, pygame.Surface] = {}
         self._scaled_cache: dict[tuple[str, tuple[int, int]], pygame.Surface] = {}
         self._fallback_surface: pygame.Surface | None = None
         self.load_map()
+        self.load_scale_map()
 
     def load_map(self) -> None:
         if not self.sprite_map_path.exists():
@@ -54,6 +129,42 @@ class EnemyCombatSpriteManager:
             logger.warning("Could not load enemy combat sprite map %s: %s", self.sprite_map_path, exc)
             return
         self.sprite_map = {str(name): str(key) for name, key in data.items()}
+
+    def load_scale_map(self) -> None:
+        if not self.scale_map_path.exists():
+            return
+        try:
+            data = json.loads(self.scale_map_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Could not load enemy combat sprite scale map %s: %s", self.scale_map_path, exc)
+            return
+        if not isinstance(data, dict):
+            logger.warning("Enemy combat sprite scale map must be an object: %s", self.scale_map_path)
+            return
+
+        scales: dict[str, float] = {}
+        for name, value in data.items():
+            try:
+                scale = float(value)
+            except (TypeError, ValueError):
+                logger.warning("Ignoring invalid enemy combat sprite scale for %s: %r", name, value)
+                continue
+            scales[str(name)] = self._valid_combat_scale(scale)
+        self.combat_scale_map = scales
+
+    def get_combat_scale_for_enemy(self, enemy: Any) -> float:
+        """Return an optional per-enemy combat sprite scale multiplier."""
+        name = self.enemy_name(enemy)
+        if name in self.combat_scale_map:
+            return self.combat_scale_map[name]
+
+        sprite_key = self.get_sprite_key_for_enemy(enemy)
+        if sprite_key in self.combat_scale_map:
+            return self.combat_scale_map[sprite_key]
+
+        if self._is_boss(enemy) and "boss" in self.combat_scale_map:
+            return self.combat_scale_map["boss"]
+        return 1.0
 
     def get_sprite(self, enemy: Any) -> pygame.Surface:
         return self.get_sprite_by_key(self.get_sprite_key_for_enemy(enemy))
@@ -111,30 +222,37 @@ class EnemyCombatSpriteManager:
         return surface
 
     def get_sprite_key_for_enemy(self, enemy: Any) -> str:
-        name = self.render_manager.enemy_name(enemy)
+        name = self.enemy_name(enemy)
         if name in self.sprite_map:
-            return self._valid_key(self.sprite_map[name], prefer_boss=self.render_manager._is_boss(enemy))
+            return self._valid_key(self.sprite_map[name], prefer_boss=self._is_boss(enemy))
 
         if self.sprite_map:
-            normalized_name = self.render_manager.normalize_key(name)
+            normalized_name = self.normalize_key(name)
             if normalized_name in self.available_keys:
                 return normalized_name
 
             class_name = enemy.__name__ if isinstance(enemy, type) else type(enemy).__name__
-            class_key = self.render_manager.normalize_key(class_name)
+            class_key = self.normalize_key(class_name)
             if class_key in self.available_keys:
                 return class_key
 
-            archetype = self.render_manager._attribute_key(enemy, "combat_sprite_archetype", "render_archetype", "archetype")
+            archetype = self._attribute_key(enemy, "combat_sprite_archetype", "render_archetype", "archetype")
             if archetype:
-                return self._valid_key(archetype, prefer_boss=self.render_manager._is_boss(enemy))
+                return self._valid_key(archetype, prefer_boss=self._is_boss(enemy))
 
-            if self.render_manager._is_boss(enemy):
+            hinted = self._hint_key(name) or self._hint_key(class_name)
+            if hinted:
+                return self._valid_key(hinted, prefer_boss=self._is_boss(enemy))
+
+            category = self._attribute_key(enemy, "enemy_typ", "category", "typ")
+            if category in self.CATEGORY_FALLBACKS:
+                return self._valid_key(self.CATEGORY_FALLBACKS[category], prefer_boss=self._is_boss(enemy))
+
+            if self._is_boss(enemy):
                 return self._valid_key("boss")
             return self._valid_key("generic_enemy")
 
-        render_key = self.render_manager.get_render_key_for_enemy(enemy)
-        return self._valid_key(render_key, prefer_boss=self.render_manager._is_boss(enemy))
+        return self._valid_key("boss" if self._is_boss(enemy) else "generic_enemy")
 
     def _valid_key(self, key: str, *, prefer_boss: bool = False) -> str:
         if key in self.available_keys:
@@ -144,6 +262,44 @@ class EnemyCombatSpriteManager:
         if "generic_enemy" in self.available_keys:
             return "generic_enemy"
         return str(key or "generic_enemy")
+
+    @staticmethod
+    def _valid_combat_scale(scale: float) -> float:
+        return max(0.25, min(2.5, scale))
+
+    @staticmethod
+    def enemy_name(enemy: Any) -> str:
+        if isinstance(enemy, str):
+            return enemy
+        return str(getattr(enemy, "name", enemy) or "")
+
+    @staticmethod
+    def normalize_key(value: Any) -> str:
+        text = str(value or "").strip().lower()
+        return "_".join("".join(ch if ch.isalnum() else " " for ch in text).split())
+
+    def _hint_key(self, value: str) -> str | None:
+        normalized = value.replace("_", " ").lower()
+        for needle, key in self.NAME_HINTS:
+            if needle in normalized:
+                return key
+        return None
+
+    @staticmethod
+    def _attribute_key(enemy: Any, *names: str) -> str:
+        if isinstance(enemy, str):
+            return ""
+        for name in names:
+            value = getattr(enemy, name, "")
+            if value:
+                return str(value)
+        return ""
+
+    def _is_boss(self, enemy: Any) -> bool:
+        name = self.enemy_name(enemy)
+        if bool(getattr(enemy, "boss", False) or getattr(enemy, "is_boss", False)):
+            return True
+        return name in self.BOSS_NAMES
 
     def fallback_surface(self) -> pygame.Surface:
         if self._fallback_surface is not None:

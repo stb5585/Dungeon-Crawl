@@ -395,13 +395,31 @@ def test_play_music_missing_or_erroring_files_are_safe(tmp_path, fake_mixer):
     assets_dir = _make_assets_dir(tmp_path)
     manager = sound_module.SoundManager(assets_dir=str(assets_dir))
 
+    music.busy = True
     manager.play_music("missing")
-    assert manager.current_music is None
+    assert music.fadeouts == [500]
+    assert manager.current_music == "missing"
 
     (assets_dir / "music" / "broken.ogg").write_bytes(b"ogg")
     music.raise_on_load = True
     manager.play_music("broken")
-    assert manager.current_music is None
+    assert manager.current_music == "missing"
+
+
+def test_missing_town_music_stops_stale_dungeon_track(tmp_path, fake_mixer):
+    _state, music = fake_mixer
+    assets_dir = _make_assets_dir(tmp_path)
+    (assets_dir / "music" / "eerie_dungeon_background.wav").write_bytes(b"wav")
+    manager = sound_module.SoundManager(assets_dir=str(assets_dir))
+
+    manager.play_location_music("dungeon", fade_ms=400)
+    assert manager.current_music == "dungeon"
+    assert music.busy is True
+
+    manager.play_location_music("town", fade_ms=400)
+
+    assert manager.current_music == "town"
+    assert music.fadeouts == [200]
 
 
 def test_stop_pause_resume_and_volume_controls(tmp_path, fake_mixer):

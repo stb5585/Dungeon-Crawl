@@ -1,4 +1,4 @@
-"""Compact enemy token generation derived from large enemy render artwork."""
+"""Compact enemy token generation derived from combat sprites."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from typing import Any
 
 import pygame
 
-from src.ui_pygame.assets.enemy_render_manager import (
-    ENEMY_RENDER_ROOT,
-    EnemyRenderManager,
-    get_enemy_render_manager,
+from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+    ENEMY_COMBAT_SPRITE_ROOT,
+    EnemyCombatSpriteManager,
+    get_enemy_combat_sprite_manager,
 )
 
 
@@ -26,23 +26,23 @@ _SHARED_ENEMY_TOKEN_MANAGER: EnemyTokenManager | None = None
 
 @dataclass(frozen=True)
 class EnemyTokenCrop:
-    """Head-and-shoulders crop rectangle for one render archetype."""
+    """Head-and-shoulders crop rectangle for one sprite archetype."""
 
     rect: pygame.Rect
 
 
 class EnemyTokenManager:
-    """Build and cache compact enemy tokens from the large render atlas."""
+    """Build and cache compact enemy tokens from combat sprites."""
 
     def __init__(
         self,
-        render_manager: EnemyRenderManager | None = None,
+        sprite_manager: EnemyCombatSpriteManager | None = None,
         *,
         crop_path: Path | None = None,
         token_size: tuple[int, int] = DEFAULT_TOKEN_SIZE,
     ) -> None:
-        self.render_manager = render_manager or get_enemy_render_manager()
-        self.crop_path = Path(crop_path or ENEMY_RENDER_ROOT / "enemy_token_crop.json")
+        self.sprite_manager = sprite_manager or get_enemy_combat_sprite_manager()
+        self.crop_path = Path(crop_path or ENEMY_COMBAT_SPRITE_ROOT / "enemy_token_crop.json")
         self.token_size = (max(1, int(token_size[0])), max(1, int(token_size[1])))
         self.crop_overrides: dict[str, EnemyTokenCrop] = {}
         self._token_cache: dict[str, pygame.Surface] = {}
@@ -52,7 +52,6 @@ class EnemyTokenManager:
 
     def load_crop_overrides(self) -> None:
         if not self.crop_path.exists():
-            logger.warning("Enemy token crop JSON missing: %s", self.crop_path)
             return
         try:
             data = json.loads(self.crop_path.read_text(encoding="utf-8"))
@@ -74,13 +73,13 @@ class EnemyTokenManager:
             self.crop_overrides[str(key)] = EnemyTokenCrop(rect=rect)
 
     def get_token(self, enemy: Any) -> pygame.Surface:
-        return self.get_token_by_key(self.render_manager.get_render_key_for_enemy(enemy))
+        return self.get_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy))
 
     def get_token_by_name(self, enemy_name: str) -> pygame.Surface:
-        return self.get_token_by_key(self.render_manager.get_render_key_for_enemy(enemy_name))
+        return self.get_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy_name))
 
-    def get_token_by_key(self, render_key: str) -> pygame.Surface:
-        key = self.render_manager._valid_key(render_key)
+    def get_token_by_key(self, sprite_key: str) -> pygame.Surface:
+        key = self.sprite_manager._valid_key(sprite_key)
         cached = self._framed_cache.get(key)
         if cached is not None:
             return cached
@@ -91,13 +90,13 @@ class EnemyTokenManager:
         return framed
 
     def get_scaled_token(self, enemy: Any, target_size: tuple[int, int]) -> pygame.Surface:
-        return self.get_scaled_token_by_key(self.render_manager.get_render_key_for_enemy(enemy), target_size)
+        return self.get_scaled_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy), target_size)
 
     def get_scaled_token_by_name(self, enemy_name: str, target_size: tuple[int, int]) -> pygame.Surface:
-        return self.get_scaled_token_by_key(self.render_manager.get_render_key_for_enemy(enemy_name), target_size)
+        return self.get_scaled_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy_name), target_size)
 
-    def get_scaled_token_by_key(self, render_key: str, target_size: tuple[int, int]) -> pygame.Surface:
-        key = self.render_manager._valid_key(render_key)
+    def get_scaled_token_by_key(self, sprite_key: str, target_size: tuple[int, int]) -> pygame.Surface:
+        key = self.sprite_manager._valid_key(sprite_key)
         target = (max(1, int(target_size[0])), max(1, int(target_size[1])))
         cache_key = (key, target)
         cached = self._scaled_cache.get(cache_key)
@@ -114,13 +113,13 @@ class EnemyTokenManager:
         if cached is not None:
             return cached
 
-        render = self.render_manager.get_render_by_key(key)
-        crop = self._crop_rect_for_key(key, render.get_size())
+        sprite = self.sprite_manager.get_sprite_by_key(key)
+        crop = self._crop_rect_for_key(key, sprite.get_size())
         try:
-            cropped = render.subsurface(crop).copy()
+            cropped = sprite.subsurface(crop).copy()
         except ValueError:
             logger.warning("Enemy token crop out of bounds for %s: %s", key, crop)
-            cropped = render.subsurface(self._default_crop_rect(render.get_size())).copy()
+            cropped = sprite.subsurface(self._default_crop_rect(sprite.get_size())).copy()
         token = pygame.transform.smoothscale(cropped, self.token_size)
         self._token_cache[key] = token
         return token

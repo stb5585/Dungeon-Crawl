@@ -11,8 +11,10 @@ import sys
 
 import pygame
 
-from src.ui_pygame.assets.enemy_combat_art_manager import get_enemy_combat_art_manager
-from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+    EnemyCombatSpriteManager,
+    get_enemy_combat_sprite_manager,
+)
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
 
@@ -143,7 +145,6 @@ class CombatView:
         
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
-        self.enemy_combat_art_manager = get_enemy_combat_art_manager()
         self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
@@ -584,6 +585,41 @@ class CombatView:
             return None
         colorized_sprite = self._colorize_sprite(sprite, enemy)
         return pygame.transform.scale(colorized_sprite, size)
+
+    def _is_boss_enemy(self, enemy) -> bool:
+        """Return whether an enemy should use boss-scale combat presentation."""
+        is_boss = getattr(self.enemy_combat_sprite_manager, "_is_boss", None)
+        if callable(is_boss):
+            return bool(is_boss(enemy))
+        name = str(getattr(enemy, "name", enemy) or "")
+        return bool(
+            getattr(enemy, "boss", False)
+            or getattr(enemy, "is_boss", False)
+            or name in EnemyCombatSpriteManager.BOSS_NAMES
+        )
+
+    def _enemy_combat_sprite_size(self, enemy) -> tuple[int, int]:
+        """Return the combat sprite box size after optional per-enemy scaling."""
+        if self._is_boss_enemy(enemy):
+            base_edge = max(256, int(min(self.combat_width, self.combat_height)))
+        else:
+            base_edge = 256
+        edge = max(1, int(base_edge * self._enemy_combat_sprite_scale(enemy)))
+        return (edge, edge)
+
+    def _enemy_combat_sprite_scale(self, enemy) -> float:
+        get_scale = getattr(self.enemy_combat_sprite_manager, "get_combat_scale_for_enemy", None)
+        if not callable(get_scale):
+            return 1.0
+        try:
+            return max(0.25, min(2.5, float(get_scale(enemy))))
+        except (TypeError, ValueError):
+            return 1.0
+
+    def _enemy_dungeon_combat_sprite_size(self, enemy) -> tuple[int, int]:
+        """Return the foreground combat sprite size for the dungeon-backed combat view."""
+        edge = max(1, int(320 * self._enemy_combat_sprite_scale(enemy)))
+        return (edge, edge)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None):
         """Render the complete combat view."""
@@ -617,7 +653,8 @@ class CombatView:
     def _render_enemy(self, enemy, has_sight=True):
         """Render the enemy sprite/representation with animations."""
         center_x = self.combat_width // 2
-        center_y = self.combat_height // 3
+        boss_enemy = self._is_boss_enemy(enemy)
+        center_y = int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3
 
         is_flying = getattr(enemy, "flying", False)
         is_tunneled = getattr(enemy, "tunnel", False)
@@ -652,7 +689,7 @@ class CombatView:
         # Get animator for this enemy
         animator = self._get_sprite_animator(enemy)
         
-        sprite_size = (256, 256)
+        sprite_size = self._enemy_combat_sprite_size(enemy)
         display_sprite = self._enemy_sprite_surface(enemy, sprite_size, has_sight=has_sight)
         enemy_size = sprite_size[1] // 2
 
@@ -764,10 +801,10 @@ class CombatView:
         art_h = max(110, min(210, panel_h - 150))
         art_rect = pygame.Rect(panel_rect.left + pad, art_top, panel_w - (pad * 2), art_h)
         try:
-            artwork = self.enemy_combat_art_manager.get_scaled_art(enemy, art_rect.size)
+            artwork = self.enemy_combat_sprite_manager.get_scaled_sprite(enemy, art_rect.size)
         except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
-            print(f"Failed to render enemy combat artwork for {getattr(enemy, 'name', enemy)}: {exc}")
-            artwork = self.enemy_combat_art_manager.fallback_surface()
+            print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
+            artwork = self.enemy_combat_sprite_manager.fallback_surface()
             artwork = pygame.transform.smoothscale(artwork, art_rect.size)
         self.screen.blit(artwork, art_rect.topleft)
         pygame.draw.rect(self.screen, (58, 48, 38), art_rect, 1)
@@ -984,7 +1021,7 @@ class CombatView:
         # Check if player has sight
         has_sight = self._has_sight(player_char)
         
-        sprite_size = (320, 320)
+        sprite_size = self._enemy_dungeon_combat_sprite_size(enemy)
         display_sprite = self._enemy_sprite_surface(enemy, sprite_size, has_sight=has_sight)
         enemy_size = sprite_size[1] // 2
 

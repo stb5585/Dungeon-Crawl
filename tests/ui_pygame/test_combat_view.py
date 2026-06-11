@@ -567,7 +567,7 @@ def test_status_icon_label_fitting_handles_zero_width_pills():
     assert fit_status_icon_label(font, "BRG", 999) == "BRG"
 
 
-def test_enemy_info_panel_renders_combat_artwork(monkeypatch):
+def test_enemy_info_panel_renders_combat_sprite(monkeypatch):
     view = _make_view()
     calls = []
     fonts = iter([RecordingFont(), RecordingFont()])
@@ -582,9 +582,9 @@ def test_enemy_info_panel_renders_combat_artwork(monkeypatch):
         magic_effects={},
         class_effects={},
     )
-    view.enemy_combat_art_manager = SimpleNamespace(
-        get_scaled_art=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-combat-art"),
-        fallback_surface=lambda: DummySurface((256, 320), text="fallback-art"),
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_scaled_sprite=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-combat-sprite"),
+        fallback_surface=lambda: DummySurface((256, 320), text="fallback-sprite"),
     )
 
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
@@ -593,7 +593,7 @@ def test_enemy_info_panel_renders_combat_artwork(monkeypatch):
     view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
 
     assert calls and calls[0][0] == "Goblin Raider"
-    assert any(getattr(surface, "text", "") == "enemy-combat-art" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
+    assert any(getattr(surface, "text", "") == "enemy-combat-sprite" for surface, _pos, _args, _kwargs in view.screen.blit_calls)
     rendered_text = [
         getattr(surface, "text", "")
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
@@ -652,18 +652,16 @@ def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):
 
 def test_center_combat_enemy_uses_combat_sprite_manager_not_combat_artwork(monkeypatch):
     view = _make_view()
+    calls = []
     enemy = SimpleNamespace(
         name="Goblin",
         health=SimpleNamespace(current=8, max=12),
         flying=False,
         tunnel=False,
     )
-    view.enemy_combat_art_manager = SimpleNamespace(
-        get_scaled_art=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("center renderer should not use portrait artwork"))
-    )
     view.enemy_combat_sprite_manager = SimpleNamespace(
         get_sprite_key_for_enemy=lambda _enemy: "goblin",
-        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="combat-sprite"),
+        get_scaled_sprite_by_key=lambda key, size: calls.append((key, size)) or DummySurface(size, text="combat-sprite"),
     )
     view._get_enemy_sprite = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy sprite should be fallback only"))
 
@@ -673,15 +671,67 @@ def test_center_combat_enemy_uses_combat_sprite_manager_not_combat_artwork(monke
 
     view._render_enemy(enemy, has_sight=True)
 
+    assert calls == [("goblin", (256, 256))]
     assert any(
         getattr(surface, "text", "") == "combat-sprite"
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
     )
 
 
+def test_center_combat_boss_uses_mapped_scale_sprite_box(monkeypatch):
+    view = _make_view()
+    calls = []
+    enemy = SimpleNamespace(
+        name="Minotaur",
+        health=SimpleNamespace(current=80, max=120),
+        flying=False,
+        tunnel=False,
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "minotaur",
+        get_combat_scale_for_enemy=lambda _enemy: 1.4,
+        get_scaled_sprite_by_key=lambda key, size: calls.append((key, size)) or DummySurface(size, text="boss-combat-sprite"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_enemy(enemy, has_sight=True)
+
+    assert calls == [("minotaur", (840, 840))]
+    assert any(
+        getattr(surface, "text", "") == "boss-combat-sprite"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+
+def test_center_combat_non_boss_can_use_mapped_scale_sprite_box(monkeypatch):
+    view = _make_view()
+    calls = []
+    enemy = SimpleNamespace(
+        name="Ogre",
+        health=SimpleNamespace(current=60, max=80),
+        flying=False,
+        tunnel=False,
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "ogre",
+        get_combat_scale_for_enemy=lambda _enemy: 1.2,
+        get_scaled_sprite_by_key=lambda key, size: calls.append((key, size)) or DummySurface(size, text="scaled-ogre"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_enemy(enemy, has_sight=True)
+
+    assert calls == [("ogre", (307, 307))]
+
+
 def test_render_enemy_in_dungeon_uses_combat_sprite_manager_not_combat_artwork(monkeypatch):
     view = _make_view()
     player = _make_character()
+    calls = []
     enemy = SimpleNamespace(
         name="Giant Rat",
         picture="giantrat.txt",
@@ -694,12 +744,10 @@ def test_render_enemy_in_dungeon_uses_combat_sprite_manager_not_combat_artwork(m
         magic_effects={},
         class_effects={},
     )
-    view.enemy_combat_art_manager = SimpleNamespace(
-        get_scaled_art=lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("dungeon renderer should not use portrait artwork"))
-    )
     view.enemy_combat_sprite_manager = SimpleNamespace(
         get_sprite_key_for_enemy=lambda _enemy: "giant_rat",
-        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="dungeon-combat-sprite"),
+        get_combat_scale_for_enemy=lambda _enemy: 1.25,
+        get_scaled_sprite_by_key=lambda key, size: calls.append((key, size)) or DummySurface(size, text="dungeon-combat-sprite"),
     )
     view._get_enemy_sprite = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy sprite should be fallback only"))
 
@@ -709,6 +757,7 @@ def test_render_enemy_in_dungeon_uses_combat_sprite_manager_not_combat_artwork(m
 
     view.render_enemy_in_dungeon(player, enemy)
 
+    assert calls == [("giant_rat", (400, 400))]
     assert any(
         getattr(surface, "text", "") == "dungeon-combat-sprite"
         for surface, _pos, _args, _kwargs in view.screen.blit_calls

@@ -449,6 +449,9 @@ class SoundManager:
         music_path = self.resolve_music_path(music_name)
         if music_path is None:
             logger.debug(f"Music file not found: {music_name}")
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.fadeout(fade_ms // 2)
+            self.current_music = music_name
             return
         
         try:

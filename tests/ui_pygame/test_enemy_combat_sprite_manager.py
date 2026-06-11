@@ -12,7 +12,6 @@ import pygame
 import pytest
 
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
-from src.ui_pygame.assets.enemy_render_manager import EnemyRenderManager
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -25,23 +24,6 @@ def _init_pygame():
     yield
 
 
-def _write_render_fixture(root: Path) -> None:
-    root.mkdir(exist_ok=True)
-    manifest = {
-        "goblin": {"x": 0, "y": 0, "w": 16, "h": 16},
-        "boss": {"x": 16, "y": 0, "w": 16, "h": 16},
-        "dragon": {"x": 32, "y": 0, "w": 16, "h": 16},
-        "generic_enemy": {"x": 48, "y": 0, "w": 16, "h": 16},
-    }
-    (root / "enemy_render_atlas.json").write_text(json.dumps(manifest), encoding="utf-8")
-    (root / "enemy_render_map.json").write_text(
-        json.dumps({"Goblin Raider": "goblin", "Named Boss": "boss"}),
-        encoding="utf-8",
-    )
-    surface = pygame.Surface((64, 16), pygame.SRCALPHA)
-    pygame.image.save(surface, root / "enemy_render_atlas.png")
-
-
 def _write_sprite(path: Path, color: tuple[int, int, int, int], size: tuple[int, int] = (32, 48)) -> None:
     surface = pygame.Surface(size, pygame.SRCALPHA)
     pygame.draw.rect(surface, color, pygame.Rect(4, 2, size[0] - 8, size[1] - 4))
@@ -49,15 +31,17 @@ def _write_sprite(path: Path, color: tuple[int, int, int, int], size: tuple[int,
 
 
 def test_enemy_combat_sprite_manager_loads_mapping_and_exact_sprite(tmp_path):
-    _write_render_fixture(tmp_path)
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()
     _write_sprite(sprite_root / "goblin.png", (220, 30, 20, 255))
     _write_sprite(sprite_root / "boss.png", (20, 220, 30, 255))
     _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255))
+    (sprite_root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Goblin Raider": "goblin", "Named Boss": "boss"}),
+        encoding="utf-8",
+    )
 
-    render_manager = EnemyRenderManager(render_root=tmp_path)
-    manager = EnemyCombatSpriteManager(render_manager, sprite_root=sprite_root)
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider")) == "goblin"
     assert manager.get_sprite_by_name("Goblin Raider").get_at((5, 5)) == pygame.Color(220, 30, 20, 255)
@@ -65,14 +49,16 @@ def test_enemy_combat_sprite_manager_loads_mapping_and_exact_sprite(tmp_path):
 
 
 def test_enemy_combat_sprite_manager_scaled_cache_fallbacks_and_aspect_ratio(tmp_path):
-    _write_render_fixture(tmp_path)
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()
     _write_sprite(sprite_root / "boss.png", (20, 220, 30, 255), size=(20, 40))
     _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255), size=(20, 40))
+    (sprite_root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Goblin Raider": "goblin", "Named Boss": "boss"}),
+        encoding="utf-8",
+    )
 
-    render_manager = EnemyRenderManager(render_root=tmp_path)
-    manager = EnemyCombatSpriteManager(render_manager, sprite_root=sprite_root)
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider")) == "generic_enemy"
     assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider", boss=True)) == "boss"
@@ -88,8 +74,43 @@ def test_enemy_combat_sprite_manager_scaled_cache_fallbacks_and_aspect_ratio(tmp
     assert manager.get_scaled_sprite_by_name("Named Boss", (40, 40)) is not scaled
 
 
+def test_enemy_combat_sprite_manager_loads_combat_scale_map(tmp_path):
+    sprite_root = tmp_path / "enemy_combat_sprites"
+    sprite_root.mkdir()
+    _write_sprite(sprite_root / "boss.png", (20, 220, 30, 255))
+    _write_sprite(sprite_root / "minotaur.png", (220, 30, 20, 255))
+    _write_sprite(sprite_root / "red_dragon.png", (220, 120, 20, 255))
+    _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255))
+    (sprite_root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Minotaur": "minotaur", "Scaled By Key": "red_dragon"}),
+        encoding="utf-8",
+    )
+    (sprite_root / "enemy_combat_sprite_scale.json").write_text(
+        json.dumps(
+            {
+                "boss": 1.1,
+                "Minotaur": 1.4,
+                "red_dragon": 1.25,
+                "Too Small": 0.1,
+                "Too Large": 3.0,
+                "Invalid": "large",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
+
+    assert manager.get_combat_scale_for_enemy("Minotaur") == 1.4
+    assert manager.get_combat_scale_for_enemy("Scaled By Key") == 1.25
+    assert manager.get_combat_scale_for_enemy(SimpleNamespace(name="Named Boss", boss=True)) == 1.1
+    assert manager.combat_scale_map["Too Small"] == 0.25
+    assert manager.combat_scale_map["Too Large"] == 2.5
+    assert "Invalid" not in manager.combat_scale_map
+    assert manager.get_combat_scale_for_enemy("Goblin") == 1.0
+
+
 def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_path):
-    _write_render_fixture(tmp_path)
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()
     _write_sprite(sprite_root / "battle_toad.png", (220, 30, 20, 255))
@@ -100,13 +121,8 @@ def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_pa
         json.dumps({"Battle Toad": "battle_toad", "Direbear": "bear", "Evil Crusader": "evil_crusader"}),
         encoding="utf-8",
     )
-    (tmp_path / "enemy_render_map.json").write_text(
-        json.dumps({"Alligator": "bear", "Battle Toad": "boar", "Evil Crusader": "skeleton_warrior"}),
-        encoding="utf-8",
-    )
 
-    render_manager = EnemyRenderManager(render_root=tmp_path)
-    manager = EnemyCombatSpriteManager(render_manager, sprite_root=sprite_root)
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     assert manager.get_sprite_key_for_enemy("Battle Toad") == "battle_toad"
     assert manager.get_sprite_key_for_enemy("Direbear") == "bear"
@@ -115,12 +131,10 @@ def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_pa
 
 
 def test_enemy_combat_sprite_manager_missing_sprite_uses_runtime_fallback(tmp_path):
-    _write_render_fixture(tmp_path)
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()
 
-    render_manager = EnemyRenderManager(render_root=tmp_path)
-    manager = EnemyCombatSpriteManager(render_manager, sprite_root=sprite_root)
+    manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     fallback = manager.get_sprite_by_key("goblin")
 
@@ -131,7 +145,16 @@ def test_enemy_combat_sprite_manager_missing_sprite_uses_runtime_fallback(tmp_pa
 
 def test_default_enemy_combat_sprite_assets_cover_render_archetypes():
     manager = EnemyCombatSpriteManager()
-    expected_keys = set(manager.render_manager.frames)
+    expected_keys = {
+        "boss",
+        "generic_enemy",
+        "goblin",
+        "skeleton",
+        "dragon",
+        "demon",
+        "wolf",
+        "slime",
+    }
 
     assert expected_keys
     assert expected_keys <= manager.available_keys

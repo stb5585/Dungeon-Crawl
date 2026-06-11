@@ -306,10 +306,10 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert wall.get_size() == (128, 128)
     assert special is not None
     assert max(special.get_size()) == 24
-    assert enemy is None
+    assert enemy is not None
     assert fallbacks["texture:wall"].endswith("walls/brick.png")
     assert fallbacks["special:stairs_down"].endswith("special_tiles/stairs_down.png")
-    assert fallbacks["enemy:Missing Enemy"].endswith("sprites/enemies/missing_enemy.png")
+    assert fallbacks["enemy:Missing Enemy"].endswith("enemy_combat_sprites/generic_enemy.png")
     assert textures.get_asset_fallback_counts() == {
         "texture": len(TEXTURE_PATHS),
         "special": 1,
@@ -2254,7 +2254,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("unobtainium", 72) in special_calls
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
-    assert ("Minotaur", 80) in enemy_calls
+    assert ("Minotaur", 320) in enemy_calls
 
     pygame.quit()
 

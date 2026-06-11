@@ -312,17 +312,17 @@ class TextureLibrary:
 
         base = self._enemy_base_textures.get(cache_name)
         if cache_name not in self._enemy_base_textures:
-            sprite_name = cache_name.lower().replace(" ", "_")
-            rel_path = f"sprites/enemies/{sprite_name}.png"
-            full_path = self._resolve_asset_path(rel_path)
-            if os.path.exists(full_path):
-                try:
-                    base = self._load_image_surface(full_path)
-                except pygame.error:
-                    self._record_asset_fallback("enemy", cache_name, full_path)
-                    base = None
-            else:
-                self._record_asset_fallback("enemy", cache_name, full_path)
+            try:
+                from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+
+                sprite_manager = get_enemy_combat_sprite_manager()
+                sprite_key = sprite_manager.get_sprite_key_for_enemy(cache_name)
+                if sprite_key == "generic_enemy" and cache_name != "Generic Enemy":
+                    self._record_asset_fallback("enemy", cache_name, "enemy_combat_sprites/generic_enemy.png")
+                base = sprite_manager.get_sprite_by_key(sprite_key).copy()
+            except (pygame.error, OSError, ValueError) as exc:
+                self._record_asset_fallback("enemy", cache_name, f"enemy_combat_sprites: {exc}")
+                base = None
             self._enemy_base_textures[cache_name] = base
 
         if base is None:
@@ -334,7 +334,7 @@ class TextureLibrary:
         cache_key = (cache_name, size)
         scaled = self._enemy_scaled_cache.get(cache_key)
         if scaled is None:
-            scaled = pygame.transform.smoothscale(base, (size, size))
+            scaled = self._scale_surface_to_fit(base, size)
             self._enemy_scaled_cache[cache_key] = scaled
         return scaled
 

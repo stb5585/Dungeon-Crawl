@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import items
 from src.ui_pygame.assets.item_render_manager import ItemRenderManager
 
 
@@ -139,3 +140,19 @@ def test_item_render_manager_contrast_lift_preserves_alpha():
 
     assert enhanced.get_at((0, 0)).r > source.get_at((0, 0)).r
     assert enhanced.get_at((1, 0)).a == 0
+
+
+def test_default_item_render_map_covers_instantiable_catalog_items():
+    manager = ItemRenderManager()
+    item_names = set()
+    for value in vars(items).values():
+        if not isinstance(value, type) or not issubclass(value, items.Item) or value is items.Item:
+            continue
+        try:
+            item_names.add(value().name)
+        except Exception:
+            continue
+
+    missing = sorted(item_names - set(manager.render_map))
+
+    assert missing == []
