@@ -60,6 +60,18 @@ class TestCharacterHelpers:
         assert half_elf.healing_received_multiplier() == pytest.approx(0.70 * HALF_ELF_HEALING_RECEIVED_MULTIPLIER)
         assert human.healing_received_multiplier() == pytest.approx(1.0)
 
+    def test_bleed_tick_uses_bleeding_message(self, monkeypatch):
+        player = TestGameState.create_player(name="Kain", class_name="Warrior", race_name="Human")
+        player.physical_effects["Bleed"].active = True
+        player.physical_effects["Bleed"].duration = 2
+        player.physical_effects["Bleed"].extra = 8
+        monkeypatch.setattr("src.core.character.random.randint", lambda *_args: 0)
+
+        text = player.effects()
+
+        assert "Kain bleeds for" in text
+        assert "The magic damages" not in text
+
     def test_shop_helpers_apply_gnome_charisma_bonus(self):
         human = TestGameState.create_player(class_name="Warrior", race_name="Human")
         gnome = TestGameState.create_player(class_name="Warrior", race_name="Gnome")
@@ -251,6 +263,19 @@ class TestCharacterHelpers:
         assert player.magic_effects["Regen"].active is False
         assert emitted
 
+        jump = SimpleNamespace(
+            charging=True,
+            charge_turns=2,
+            charge_target=object(),
+            cancel_charge=lambda _user: setattr(jump, "charging", False),
+        )
+        player.spellbook["Skills"]["Jump"] = jump
+        player.class_effects["Jump"].active = True
+        player.effects(end=True)
+
+        assert jump.charging is False
+        assert player.class_effects["Jump"].active is False
+
     def test_effects_cover_doom_ice_block_and_dot_cleanup(self, monkeypatch):
         player = TestGameState.create_player(class_name="Knight Enchanter", race_name="Human")
         player.health.current = 20
@@ -269,6 +294,15 @@ class TestCharacterHelpers:
         player.magic_effects["DOT"].extra = 0
         player.effects()
         assert player.magic_effects["DOT"].active is False
+
+        player.magic_effects["DOT"].active = True
+        player.magic_effects["DOT"].duration = 1
+        player.magic_effects["DOT"].extra = 5
+        player.magic_effects["DOT"].source = "Burn"
+        monkeypatch.setattr("src.core.character.random.randint", lambda *_args: 0)
+        burn_text = player.effects()
+        assert "burns for" in burn_text
+        assert "flames around" in burn_text
 
         player.status_effects["Doom"].active = True
         player.status_effects["Doom"].duration = 1

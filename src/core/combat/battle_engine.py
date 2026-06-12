@@ -154,6 +154,8 @@ class BattleEngine:
         Returns:
             (first_actor, second_actor) — the initiative order.
         """
+        self._clear_stale_charging_actions(self.player)
+        self._clear_stale_charging_actions(self.enemy)
         self.attacker, self.defender = determine_initiative(self.player, self.enemy)
 
         self._event_bus.emit(create_combat_event(
@@ -178,6 +180,22 @@ class BattleEngine:
         return self.player.is_alive() and self.enemy.is_alive() and not self.flee
 
     # ── Turn phases ──────────────────────────────────────────────────
+
+    @staticmethod
+    def _clear_stale_charging_actions(character: Character) -> None:
+        """Clear charge state that should never persist across battles."""
+        if hasattr(character, "class_effects") and "Jump" in character.class_effects:
+            character.class_effects["Jump"].active = False
+
+        for skill_group in getattr(character, "spellbook", {}).values():
+            for skill in getattr(skill_group, "values", lambda: [])():
+                if not getattr(skill, "charging", False):
+                    continue
+                skill.charging = False
+                if hasattr(skill, "charge_turns"):
+                    skill.charge_turns = 0
+                if hasattr(skill, "charge_target"):
+                    skill.charge_target = None
 
     def pre_turn(self) -> PreTurnResult:
         """
@@ -212,8 +230,14 @@ class BattleEngine:
             return result
 
         if not active_at_turn_start:
+            interrupted = self._cancel_interrupted_charging_action()
+            if interrupted:
+                result.effects_text = f"{result.effects_text or ''}{interrupted}"
             result.can_act = False
-            result.inactive_reason = inactive_reason_at_turn_start
+            result.inactive_reason = self._inactive_reason_after_effects(
+                inactive_reason_at_turn_start,
+                result.effects_text,
+            )
             return result
 
         # Check if the attacker can act this turn
@@ -223,6 +247,47 @@ class BattleEngine:
             result.inactive_reason = text
 
         return result
+
+    @staticmethod
+    def _inactive_reason_after_effects(reason: str, effects_text: str) -> str:
+        """Suppress stale incapacity text when the logged status tick already explains recovery."""
+        recovery_terms = (
+            "is no longer stunned",
+            "is no longer asleep",
+            "is no longer prone",
+        )
+        effects_lower = (effects_text or "").lower()
+        if any(term in effects_lower for term in recovery_terms):
+            return ""
+        return reason
+
+    def _cancel_interrupted_charging_action(self) -> str:
+        """Cancel active charge-up actions when the actor is incapacitated before acting."""
+        if not self.attacker or not self.attacker.incapacitated():
+            return ""
+
+        if self.attacker.class_effects["Jump"].active:
+            skills = self.attacker.spellbook.get("Skills", {})
+            jump_choice = next((name for name in skills if "Jump" in name), None)
+            jump_skill = skills.get(jump_choice) if jump_choice else None
+            unstoppable = bool(getattr(jump_skill, "modifications", {}).get("Unstoppable", False))
+            if unstoppable:
+                return ""
+            try:
+                cancel_msg = jump_skill.cancel_charge(self.attacker) if jump_skill else ""
+            except AttributeError:
+                cancel_msg = ""
+            self.attacker.class_effects["Jump"].active = False
+            return cancel_msg or f"{self.attacker.name}'s Jump was cancelled.\n"
+
+        for _skill_name, skill in self.attacker.spellbook.get("Skills", {}).items():
+            if getattr(skill, "charging", False):
+                try:
+                    return skill.cancel_charge(self.attacker)
+                except AttributeError:
+                    skill.charging = False
+                    return f"{self.attacker.name}'s {getattr(skill, 'name', 'charge')} was interrupted!\n"
+        return ""
 
     def get_forced_action(self) -> ForcedAction | None:
         """
@@ -254,22 +319,20 @@ class BattleEngine:
                 self.attacker.class_effects["Jump"].active = False
                 return ForcedAction(action="Use Skill", choice=jump_choice)
 
-        # Berserk forces a basic attack unless a higher-priority forced action
-        # such as an active Jump has already claimed the turn.
-        if self.attacker.status_effects["Berserk"].active:
-            return ForcedAction(action="Attack")
+        # Ongoing charging ability (e.g. Charge, Crushing Blow, Dragon Breath).
+        for skill_name, skill in self.attacker.spellbook.get('Skills', {}).items():
+            if getattr(skill, 'charging', False):
+                return ForcedAction(action="Use Skill", choice=skill_name)
 
-        # Ongoing charging ability (e.g. Charge, Crushing Blow)
-        if self.charging_ability and self.attacker == self.player:
+        if self.charging_ability:
             charge_owner, ability_name, _skill_obj = self.charging_ability
             if charge_owner == self.attacker:
                 return ForcedAction(action="Use Skill", choice=ability_name)
 
-        # Enemy with a charging skill in progress
-        if self.attacker != self.player:
-            for skill_name, skill in self.attacker.spellbook.get('Skills', {}).items():
-                if getattr(skill, 'charging', False):
-                    return ForcedAction(action="Use Skill", choice=skill_name)
+        # Berserk forces a basic attack unless a higher-priority forced action
+        # such as an active Jump or charge-up has already claimed the turn.
+        if self.attacker.status_effects["Berserk"].active:
+            return ForcedAction(action="Attack")
 
         return None
 
@@ -548,7 +611,7 @@ class BattleEngine:
             actor=self.attacker,
             target=self.defender,
         ))
-        return self.attacker.enter_defensive_stance(duration=2, source="Defend")
+        return self.attacker.enter_defensive_stance(duration=1, source="Defend")
 
     def _execute_spell(self, choice: str | None) -> str:
         """Cast a spell. Handles silence check."""
@@ -634,8 +697,10 @@ class BattleEngine:
 
         elif "Jump" in skill.name:
             charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
-            if charge_time > 0 and not already_charging:
+            continuing_charge = already_charging and int(getattr(skill, "charge_turns", 0) or 0) > 1
+            if charge_time > 0 and (not already_charging or continuing_charge):
                 self.attacker.class_effects["Jump"].active = True
+                message = ""
             message += skill.use(self.attacker, target=self.defender)
             self.attacker.class_effects["Jump"].active = bool(getattr(skill, "charging", False))
 

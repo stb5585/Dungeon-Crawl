@@ -1945,8 +1945,12 @@ class ElementalBlade(NaturalWeapon):
             if not result.target.magic_effects["DOT"].active:
                 result.target.magic_effects["DOT"].active = True
                 result.effects_applied['Magic'].append('Burn')
-            result.target.magic_effects["DOT"] = StatusEffect(True, 3, 
-                                                        max(int(damage // 2), result.target.magic_effects["DOT"].extra))
+            result.target.magic_effects["DOT"] = StatusEffect(
+                True,
+                3,
+                max(int(damage // 2), result.target.magic_effects["DOT"].extra),
+                "Burn",
+            )
         return results
 
 

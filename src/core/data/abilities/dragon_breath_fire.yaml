@@ -9,7 +9,7 @@ telegraph_message: "inhaling deeply, flames flickering in its throat"
 
 effects:
   - type: breath_damage
-    multiplier: 1.5
+    multiplier: 2.1
     element: Fire
     announce_message: "{actor} unleashes a torrent of fire!\n"
 

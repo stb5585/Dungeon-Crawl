@@ -18,6 +18,9 @@
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
 
 ### Combat Status Icons
+- [x] Use Defend in pygame combat.
+  - Expected: The `DEF` status icon is green/positive.
+  - Expected: `DEF` falls off after one turn unless Defend is selected again.
 - [ ] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
@@ -31,6 +34,65 @@
   - Expected: Positive, negative, and neutral visible/hidden counts match the rendered icon mix.
   - Expected: Visible/hidden label lists identify exactly which status pills were shown or compacted.
   - Expected: Stat-effect icon filtering diagnostics identify active zero-value effects that were suppressed before rendering.
+
+### Combat Visual Polish
+- [x] Land a normal weapon hit against an enemy in pygame combat.
+  - Expected: The enemy sprite briefly flashes and shows a subdued warm slash/spark impact over the current enemy artwork.
+  - Expected: The effect fades quickly and does not cover the enemy HP bar, action menu, or combat log.
+- [x] Cast elemental attack spells such as fire, ice, or lightning against an enemy.
+  - Expected: Confirmed spell damage produces a soft elemental glow/ray effect using the matching element color family.
+  - Expected: The effect appears over the existing dungeon-backed combat scene without replacing enemy sprites or portraits.
+  - Expected: The spell selector is no longer covering the enemy when the spell effect plays.
+  - Expected: Spell selection uses a bottom combat command panel rather than a centered full-screen combat modal.
+- [x] Open spell, skill, item, and totem selections during combat.
+  - Expected: Each selection panel stays in the bottom command area and leaves the enemy sprite, HP bar, telegraph banner, and target details visible.
+  - Expected: Long lists scroll within the compact panel and keep the selected row visible.
+- [x] Use a damaging combat skill against an enemy.
+  - Expected: Confirmed skill damage produces a compact ring/burst effect distinct from normal weapon slashes and spell glows.
+- [x] Take damage from an enemy attack or spell.
+  - Expected: The player-side damage flash remains readable while the short impact effect appears near the player/status area.
+  - Expected: Combat log scrolling and quit handling remain responsive during the flash.
+- [x] Miss, get resisted, or use a non-damaging action in combat.
+  - Expected: No hit/spell particle effect plays when HP does not change.
+  - Expected: Existing combat messages, telegraph banners, and status icons still update normally.
+- [x] Trigger long combat log messages, including telegraphs and multi-clause spell/skill results.
+  - Expected: Long messages wrap within the combat log panel instead of running off-screen.
+  - Expected: Wrapped continuation lines keep the same message color and indent slightly under the source line.
+  - Expected: PgUp/PgDn and mouse-wheel scrolling move through wrapped visible lines predictably.
+- [x] Review mixed combat log outcomes such as damage, healing/regeneration, resisted effects, and telegraphs.
+  - Expected: Telegraphs remain gold, damage/bleed lines use a restrained red, healing/regeneration lines use green, and misses/resists use muted gray.
+- [x] Review combat log readability during a fight with mixed outcomes.
+  - Expected: Each source message has a subtle left-edge category tick, and wrapped continuation lines use a muted continuation tick.
+- [x] Trigger an enemy telegraph such as Jump, Charge, or Dragon Breath.
+  - Expected: The incoming-action banner appears as a compact warning strip near the enemy combat area and does not cover the action panel or combat log.
+  - Expected: A charging enemy continues or resolves the charged ability on its next turns instead of taking unrelated attacks.
+- [x] Use Jump, then become stunned before Jump resolves.
+  - Expected: Non-Unstoppable Jump is cancelled by stun instead of waiting to resolve after stun ends.
+- [x] Use Jump without Quick Dive.
+  - Expected: The initial charge turn logs only the charging telegraph, not a separate `uses Jump` line.
+- [x] Use player Jump or another player telegraph in combat.
+  - Expected: Player telegraphs stay in the log/status row and do not appear as the enemy-area `Incoming` banner.
+- [x] Let stun, sleep, or prone expire at the start of an actor turn.
+  - Expected: The log shows the recovery message without also printing stale incapacitation text.
+- [x] Get stunned by an enemy effect in pygame combat.
+  - Expected: The combat log prints a clear stun message if the underlying effect did not already include one.
+- [x] Land or receive damage in pygame combat.
+  - Expected: The damage result is visible in the combat log before the hit flash/impact animation begins.
+  - Expected: Spell damage follows the same result-before-impact timing as melee damage.
+  - Expected: Confirmed damage shows compact floating damage text near the target and the enemy briefly recoils on enemy-side hits.
+- [x] Receive healing or regeneration during pygame combat.
+  - Expected: Confirmed HP recovery shows compact floating healing text near the healed combatant without playing a hit flash.
+- [x] Drop the player to low health in pygame combat.
+  - Expected: A restrained red danger vignette appears around the combat area at low HP without covering the action menu, combat log, or enemy sprite.
+- [x] Take bleed damage at start of turn.
+  - Expected: Physical bleed damage is described as the character bleeding, not as generic magic damage.
+- [x] Navigate the bottom action panel in combat.
+  - Expected: The panel uses the darker stone/parchment treatment with a clearer selected-action border while preserving compact grid behavior.
+- [x] Enter combat with more than six available actions, such as debug actions plus item/spell/skill options.
+  - Expected: The action menu compacts into the bottom command panel without overflowing below the screen.
+  - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
+- [x] Inspect enemy details with Vision, Reveal, Seeker, or Inquisitor sight during a boss fight.
+  - Expected: Boss fights suppress enemy detail visibility even when ordinary encounters would reveal HP, type, or resistance details.
 
 ### Enemy Combat Sprites
 - [x] Enter combat against early enemies such as Giant Rat, Skeleton, Goblin, and Slime.
@@ -88,6 +150,9 @@
   - Expected: Cohuleen Druith increases Water resistance through combat resistance checks.
   - Expected: Demon Cowl increases Death resistance through combat resistance checks.
   - Expected: Tarnhelm grants invisibility while equipped and removes it when unequipped or replaced.
+- [x] Equip a second Indra's Fist on a Soulcatcher through the pygame equipment popup.
+  - Expected: The OffHand item list includes eligible fist weapons from inventory.
+  - Expected: Equipping the second Indra's Fist keeps the main-hand weapon equipped and sets the offhand to Indra's Fist.
 - [ ] Try class-restricted cloth helmets with priest/diviner and non-priest/diviner classes.
   - Expected: Mitre Hat can be equipped by Priest, Archbishop, Diviner, and Geomancer only.
   - Expected: Circlet is blocked for Priest, Archbishop, Diviner, and Geomancer, but remains available to other cloth-helmet users.

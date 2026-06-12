@@ -1796,6 +1796,7 @@ class FireSpell(Attack):
             target.magic_effects["DOT"].extra = max(
                 dmg, target.magic_effects["DOT"].extra
             )
+            target.magic_effects["DOT"].source = "Burn"
             caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source=self.name)
         return special_str
 
@@ -2296,17 +2297,49 @@ skill_dict = {
         "25": TrueStrike,
         "28": BattleCry,
     },
-    "Weapon Master": {"1": MortalStrike, "6": DoubleStrike, "21": TruePiercingStrike},
-    "Berserker": {"5": MortalStrike2, "20": TripleStrike},
-    "Paladin": {"6": ShieldBlock, "13": Goad, "18": DoubleStrike},
-    "Crusader": {"5": MortalStrike, "22": TripleStrike, "30": TruePiercingStrike},
-    "Lancer": {"1": Jump},
-    "Dragoon": {"5": TruePiercingStrike, "10": ShieldBlock},
-    "Sentinel": {"1": ShieldBlock, "3": Goad},
+    "Weapon Master": {
+        "1": MortalStrike,
+        "6": DoubleStrike,
+        "21": TruePiercingStrike,
+        },
+    "Berserker": {
+        "5": MortalStrike2,
+        "20": TripleStrike,
+        },
+    "Paladin": {
+        "6": ShieldBlock,
+        "13": Goad,
+        "18": DoubleStrike,
+        },
+    "Crusader": {
+        "5": MortalStrike,
+        "22": TripleStrike,
+        "30": TruePiercingStrike,
+        },
+    "Lancer": {
+        "1": Jump,
+        },
+    "Dragoon": {
+        "5": TruePiercingStrike,
+        "10": ShieldBlock,
+        },
+    "Sentinel": {
+        "1": ShieldBlock,
+        "3": Goad,
+        },
     "Stalwart Defender": {},
-    "Mage": {"25": ManaShield},
-    "Sorcerer": {"10": Doublecast, "18": MirrorImage},
-    "Wizard": {"5": ManaShield2, "15": Triplecast, "30": MirrorImage2},
+    "Mage": {
+        "25": ManaShield,
+        },
+    "Sorcerer": {
+        "10": Doublecast,
+        "18": MirrorImage,
+        },
+    "Wizard": {
+        "5": ManaShield2,
+        "15": Triplecast,
+        "30": MirrorImage2,
+        },
     "Warlock": {
         "1": Familiar,
         "5": HealthDrain,
@@ -2314,7 +2347,11 @@ skill_dict = {
         "15": ManaDrain,
         "20": Familiar2,
     },
-    "Shadowcaster": {"4": ManaTap, "10": HealthManaDrain, "20": Familiar3},
+    "Shadowcaster": {
+        "4": ManaTap,
+        "10": HealthManaDrain,
+        "20": Familiar3,
+        },
     "Spellblade": {
         "1": EnhanceBlade,
         "6": ManaSlice,
@@ -2331,8 +2368,12 @@ skill_dict = {
         "20": DispelSlash,
         "30": TruePiercingStrike,
     },
-    "Summoner": {"1": Summon},
-    "Grand Summoner": {"1": Summon2},
+    "Summoner": {
+        "1": Summon
+    },
+    "Grand Summoner": {
+        "1": Summon2
+    },
     "Footpad": {
         "2": Quickstep,
         "3": Disarm,
@@ -2346,7 +2387,12 @@ skill_dict = {
         "22": EvasiveGuard,
         "25": Parry,
     },
-    "Thief": {"5": Lockpick, "12": GoldToss, "15": Mug, "20": PoisonStrike},
+    "Thief": {
+        "5": Lockpick,
+        "12": GoldToss,
+        "15": Mug,
+        "20": PoisonStrike,
+    },
     "Rogue": {
         "5": SneakAttack,
         "10": SlotMachine,
@@ -2362,13 +2408,30 @@ skill_dict = {
         "15": ShieldBlock,
         "22": TrueStrike,
     },
-    "Seeker": {"1": Cartography, "16": TripleStrike, "25": TruePiercingStrike},
-    "Assassin": {"8": PoisonStrike, "15": Lockpick, "18": TripleStrike},
-    "Ninja": {"8": Mug, "25": FlurryBlades},
-    "Spell Stealer": {"18": ImbueWeapon},
+    "Seeker": {
+        "1": Cartography,
+        "16": TripleStrike,
+        "25": TruePiercingStrike,
+        },
+    "Assassin": {
+        "8": PoisonStrike,
+        "15": Lockpick,
+        "18": TripleStrike,
+        },
+    "Ninja": {
+        "8": Mug,
+        "25": FlurryBlades,
+        },
+    "Spell Stealer": {
+        "18": ImbueWeapon,
+        },
     "Arcane Trickster": {},
     "Healer": {},
-    "Cleric": {"6": ShieldSlam, "12": ShieldBlock, "27": TrueStrike},
+    "Cleric": {
+        "6": ShieldSlam,
+        "12": ShieldBlock,
+        "27": TrueStrike,
+        },
     "Templar": {
         "1": Parry,
         "4": PiercingStrike,
@@ -2377,8 +2440,13 @@ skill_dict = {
         "22": DoubleStrike,
         "30": TruePiercingStrike,
     },
-    "Priest": {"10": ManaShield},
-    "Archbishop": {"5": Doublecast, "15": ManaShield2},
+    "Priest": {
+        "10": ManaShield,
+        },
+    "Archbishop": {
+        "5": Doublecast,
+        "15": ManaShield2,
+        },
     "Monk": {
         "1": ChiHeal,
         "3": DoubleStrike,
@@ -2387,14 +2455,33 @@ skill_dict = {
         "10": PurityBody,
         "25": Parry,
     },
-    "Master Monk": {"1": Evasion, "10": TripleStrike, "15": PurityBody2},
+    "Master Monk": {
+        "1": Evasion,
+        "10": TripleStrike,
+        "15": PurityBody2,
+        },
     "Bard": {},
     "Troubadour": {},
     "Pathfinder": {},
-    "Druid": {"2": Transform, "10": Transform2, "15": MortalStrike},
-    "Lycan": {"1": Transform3, "11": Charge, "15": BattleCry, "25": MortalStrike2},
-    "Diviner": {"1": LearnSpell, "18": Doublecast},
-    "Geomancer": {"1": LearnSpell2, "25": Triplecast},
+    "Druid": {
+        "2": Transform,
+        "10": Transform2,
+        "15": MortalStrike,
+        },
+    "Lycan": {
+        "1": Transform3,
+        "11": Charge,
+        "15": BattleCry,
+        "25": MortalStrike2,
+        },
+    "Diviner": {
+        "1": LearnSpell,
+        "18": Doublecast,
+        },
+    "Geomancer": {
+        "1": LearnSpell2,
+        "25": Triplecast,
+        },
     "Shaman": {
         "1": Totem,
         "4": ElementalStrike,
@@ -2417,37 +2504,42 @@ spell_dict = {
     "Warrior": {},
     "Weapon Master": {},
     "Berserker": {},
-    "Paladin": {"1": Heal, "4": Smite, "24": DivineProtection},
-    "Crusader": {"3": Smite2, "8": Heal2, "16": Cleanse, "18": Smite3, "20": Dispel},
+    "Paladin": {
+        "1": Heal,
+        "4": Smite,
+        "24": DivineProtection,
+        },
+    "Crusader": {
+        "3": Smite2,
+        "8": Heal2,
+        "16": Cleanse,
+        "18": Smite3,
+        "20": Dispel,
+        },
     "Lancer": {},
     "Dragoon": {},
     "Sentinel": {},
     "Stalwart Defender": {},
     "Mage": {
         "1": Firebolt,
+        "4": Tremor,
         "5": MagicMissile,
         "8": IceLance,
         "13": Shock,
+        "15": WaterJet,
         "16": Enfeeble,
+        "19": Gust,
     },
     "Sorcerer": {
-        "2": Icicle,
         "6": Reflect,
-        "8": Lightning,
         "10": Sleep,
-        "15": Fireball,
         "16": Dispel,
-        "18": MagicMissile2,
         "20": WeakenMind,
         "30": IceBlock,
     },
     "Wizard": {
-        "4": Firestorm,
         "7": Boost,
-        "10": IceBlizzard,
-        "15": Electrocution,
         "20": Teleport,
-        "25": MagicMissile3,
     },
     "Warlock": {
         "1": ShadowBolt,
@@ -2457,21 +2549,49 @@ spell_dict = {
         "15": Doom,
         "19": Dispel,
     },
-    "Shadowcaster": {"8": ShadowBolt3, "18": Desoul},
-    "Spellblade": {"20": Reflect},
+    "Shadowcaster": {
+        "8": ShadowBolt3,
+        "18": Desoul,
+        },
+    "Spellblade": {
+        "20": Reflect,
+        },
     "Knight Enchanter": {},
     "Summoner": {},
     "Grand Summoner": {},
     "Footpad": {},
     "Thief": {},
     "Rogue": {},
-    "Inquisitor": {"3": Dispel, "8": Silence, "12": Enfeeble, "15": Reflect},
-    "Seeker": {"1": Teleport, "4": ResistAll, "10": Sanctuary, "16": WeakenMind},
+    "Inquisitor": {
+        "3": Dispel,
+        "8": Silence,
+        "12": Enfeeble,
+        "15": Reflect,
+        },
+    "Seeker": {
+        "1": Teleport,
+        "4": ResistAll,
+        "10": Sanctuary,
+        "16": WeakenMind,
+        },
     "Assassin": {},
-    "Ninja": {"20": Desoul},
-    "Spell Stealer": {"8": WindSpeed, "27": Silence},
-    "Arcane Trickster": {"4": WeakenMind},
-    "Healer": {"1": Heal, "3": Holy, "8": Regen, "10": TurnUndead, "26": Heal2},
+    "Ninja": {
+        "20": Desoul,
+        },
+    "Spell Stealer": {
+        "8": WindSpeed,
+        "27": Silence,
+        },
+    "Arcane Trickster": {
+        "4": WeakenMind,
+        },
+    "Healer": {
+        "1": Heal,
+        "3": Holy,
+        "8": Regen,
+        "10": TurnUndead,
+        "26": Heal2,
+        },
     "Cleric": {
         "1": Smite,
         "5": Bless,
@@ -2480,7 +2600,11 @@ spell_dict = {
         "16": Smite2,
         "19": TurnUndead2,
     },
-    "Templar": {"6": Regen2, "10": Smite3, "18": Dispel},
+    "Templar": {
+        "6": Regen2,
+        "10": Smite3,
+        "18": Dispel,
+        },
     "Priest": {
         "1": Regen2,
         "3": Holy2,
@@ -2497,19 +2621,46 @@ spell_dict = {
         "7": Regen3,
         "20": Resurrection,
     },
-    "Monk": {"15": Shell},
-    "Master Monk": {"2": Reflect, "12": Dispel},
+    "Monk": {
+        "15": Shell,
+        },
+    "Master Monk": {
+        "2": Reflect,
+        "12": Dispel,
+        },
     "Bard": {},
     "Troubadour": {},
-    "Pathfinder": {"1": Tremor, "7": WaterJet, "14": Gust, "19": Scorch},
-    "Druid": {"5": Regen},
-    "Lycan": {"8": Dispel},
-    "Diviner": {"3": Enfeeble, "14": Dispel, "23": Berserk},
-    "Geomancer": {"1": Vulcanize, "10": WeakenMind, "15": Boost},
-    "Shaman": {"2": Hex,
-               "9": Hydration,
-               "16": AstralShift},
-    "Soulcatcher": {"6": Dispel, "12": Desoul},
+    "Pathfinder": {
+        "1": Tremor,
+        "7": WaterJet,
+        "14": Gust,
+        "19": Scorch,
+        },
+    "Druid": {
+        "5": Regen,
+        },
+    "Lycan": {
+        "8": Dispel,
+        },
+    "Diviner": {
+        "3": Enfeeble,
+        "14": Dispel,
+        "23": Berserk,
+        },
+    "Geomancer": {
+        "1": Vulcanize,
+        "10": WeakenMind,
+        "15": Boost,
+        },
+    "Shaman": {
+        "2": Hex,
+        "9": Hydration,
+        "16": AstralShift,
+        },
+    "Soulcatcher": {
+        "6": Dispel,
+        "12": Desoul,
+        },
     "Ranger": {},
     "Beast Master": {},
 }

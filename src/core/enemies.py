@@ -169,6 +169,9 @@ class Enemy(Character):
 
     def options(self, target: Character, action_list: list[str], tile: object) -> tuple[str, str | None]:
         self.last_action_stack_entry = None
+        for skill_name, skill in self.spellbook.get("Skills", {}).items():
+            if getattr(skill, "charging", False):
+                return "Use Skill", skill_name
         if self.status_effects["Berserk"].active:
             return "Attack", None
         if self.turtle or self.magic_effects["Ice Block"].active:
@@ -263,6 +266,7 @@ class Enemy(Character):
             priority_if = action_entry.get("priority_if")
             if priority_if:
                 priority = self._resolve_priority_condition(priority_if, priority, target, tile)
+            priority = self._resolve_ai_priority(priority, action_entry)
             if priority == ActionPriority.SKIP:
                 continue
             
@@ -283,6 +287,7 @@ class Enemy(Character):
                 usable = True
             elif ability_name == "Attack":
                 action_type = "Attack"
+                ability_name = None
                 usable = not self.tunnel
             elif ability_name in self.spellbook.get("Spells", {}):
                 if self.abilities_suppressed():
@@ -659,6 +664,23 @@ class Enemy(Character):
             return condition.get("else", fallback_priority)
 
         return fallback_priority
+
+    def _resolve_ai_priority(self, priority: ActionPriority, action_entry: dict) -> ActionPriority:
+        """Resolve AI-only priority modes into selectable priority weights."""
+        if priority != ActionPriority.LOW_HP_ONLY:
+            return priority
+
+        threshold = action_entry.get("hp_threshold", action_entry.get("self_hp_pct_lt", 0.5))
+        try:
+            threshold_value = float(threshold)
+        except (TypeError, ValueError):
+            threshold_value = 0.5
+        if threshold_value > 1.0:
+            threshold_value /= 100.0
+
+        if self.health.max and (self.health.current / self.health.max) < threshold_value:
+            return action_entry.get("low_hp_priority", ActionPriority.HIGH)
+        return action_entry.get("else", ActionPriority.SKIP)
 
     def _should_skip_reapply_debuff(self, ability_name: str, target: Character | None) -> bool:
         if target is None:
@@ -4024,14 +4046,14 @@ class RedDragon(Dragon):
     """
 
     def __init__(self):
-        super().__init__(name='Red Dragon', health=2000, mana=500, strength=50, intel=38, wisdom=45, con=55,
-                         charisma=40, dex=35, attack=135, defense=138, magic=115, magic_def=161,
+        super().__init__(name='Red Dragon', health=1900, mana=500, strength=48, intel=34, wisdom=42, con=52,
+                         charisma=38, dex=32, attack=118, defense=124, magic=96, magic_def=148,
                          exp=80000)
         self.equipment = {'Weapon': items.DragonTail2(), 'Armor': items.DragonScale(), 'OffHand': items.DragonClaw2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = 50000
         self.inventory['Item'] = [items.random_item(7)]
-        self.spellbook = {"Spells": {'Heal': abilities.Regen2(),
+        self.spellbook = {"Spells": {'Regen': abilities.Regen2(),
                                      'Volcano': abilities.Volcano(),
                                      'Ultima': abilities.Ultima()},
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
@@ -4039,11 +4061,11 @@ class RedDragon(Dragon):
                                      'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Volcano", "priority": ActionPriority.NORMAL},
-            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
-            {"ability": "Heal", "priority": ActionPriority.NORMAL},
-            {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
-            {"ability": "Doublecast", "priority": ActionPriority.HIGH},
+            {"ability": "Volcano", "priority": ActionPriority.LOW},
+            {"ability": "Ultima", "priority": ActionPriority.LOW},
+            {"ability": "Regen", "priority": ActionPriority.LOW_HP_ONLY, "hp_threshold": 0.45},
+            {"ability": "Mortal Strike", "priority": ActionPriority.LOW},
+            {"ability": "Doublecast", "priority": ActionPriority.NORMAL},
             {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
              "telegraph": "inhaling deeply, roaring flames building in its maw"},
         ]

@@ -1103,6 +1103,12 @@ class EquipmentPopupMenu(BasePopupMenu):
                 if item_typ == target_typ:
                     equippable.append(inv_item)
                     seen_item_names.add(item_name)
+                # One-handed weapons that pass class restrictions can be equipped offhand.
+                elif slot == "OffHand" and item_typ == "Weapon":
+                    equip_check = getattr(getattr(player_char, "cls", None), "equip_check", None)
+                    if callable(equip_check) and equip_check(inv_item, "OffHand"):
+                        equippable.append(inv_item)
+                        seen_item_names.add(item_name)
                 # Handle accessories (Ring/Pendant)
                 elif item_typ == "Accessory":
                     subtyp = getattr(inv_item, "subtyp", None)

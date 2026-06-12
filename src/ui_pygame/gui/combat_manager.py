@@ -257,6 +257,65 @@ class GUICombatManager:
             trimmed = trimmed[:-1]
         return f"{trimmed.rstrip()}{ellipsis}"
 
+    @staticmethod
+    def _combat_effect_kind(action: str, choice: str | None = None) -> str:
+        if action in {"Spells", "Cast Spell"}:
+            return "spell"
+        if action in {"Skills", "Use Skill"}:
+            return "skill"
+        if choice and any(term in str(choice).lower() for term in ("spell", "bolt", "blast", "storm", "fire", "ice")):
+            return "spell"
+        return "weapon"
+
+    @staticmethod
+    def _combat_effect_element(choice: object = None, message: str = "") -> str | None:
+        text = f"{choice or ''} {message or ''}".lower()
+        element_terms = {
+            "Fire": ("fire", "flame", "burn", "ember"),
+            "Ice": ("ice", "frost", "freeze", "frozen"),
+            "Electric": ("electric", "lightning", "storm", "thunder", "shock"),
+            "Water": ("water", "wave", "flood"),
+            "Earth": ("earth", "stone", "rock"),
+            "Wind": ("wind", "air", "gale"),
+            "Poison": ("poison", "venom", "toxin"),
+            "Holy": ("holy", "light", "radiant"),
+            "Dark": ("dark", "shadow", "void"),
+            "Death": ("death", "doom", "fatal"),
+        }
+        for element, terms in element_terms.items():
+            if any(term in text for term in terms):
+                return element
+        return None
+
+    def _show_combat_damage_effect(
+        self,
+        target: str,
+        action: str,
+        choice: str | None,
+        message: str,
+        amount: int | None = None,
+    ) -> None:
+        kind = self._combat_effect_kind(action, choice)
+        element = self._combat_effect_element(choice, message)
+        self.combat_view.trigger_impact_effect(
+            target,
+            kind,
+            element,
+        )
+        if amount:
+            color = self.combat_view.colors.get("log_damage", (235, 120, 105))
+            self.combat_view.trigger_floating_text(target, f"-{amount}", color)
+        self.combat_view.show_damage_flash(
+            target == "player",
+            event_handler=self._handle_combat_log_scroll_event,
+        )
+
+    def _show_combat_heal_text(self, target: str, amount: int) -> None:
+        if amount <= 0:
+            return
+        color = self.combat_view.colors.get("log_heal", (120, 210, 135))
+        self.combat_view.trigger_floating_text(target, f"+{amount}", color)
+
     def _show_slot_machine_reveal(self, user: Character, target: Character) -> str:
         """Animate a Slot Machine spin popup and reveal cards left-to-right."""
         cards = random.sample(SLOT_CARD_DECK, 3)
@@ -577,6 +636,16 @@ class GUICombatManager:
         if visual_after != visual_before:
             self._play_enemy_visual_transition(player_char, enemy, visual_before, visual_after)
 
+    def _flush_result_frame(self, player_char, enemy) -> None:
+        """Draw result log text before any impact animation or turn transition starts."""
+        self._render_combat_frame(player_char, enemy, [], -1)
+        pygame.display.flip()
+        try:
+            pygame.event.pump()
+        except pygame.error:
+            pass
+        pygame.time.Clock().tick(60)
+
     def _play_enemy_visual_transition(
         self,
         player_char: Player,
@@ -633,6 +702,7 @@ class GUICombatManager:
             for line in pre.effects_text.strip().split('\n'):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
+            self._flush_result_frame(player_char, enemy)
 
         # If the player died from effects (poison, DOT, bleed), end turn immediately
         if pre.died_from_effects:
@@ -640,6 +710,7 @@ class GUICombatManager:
 
         if not pre.can_act:
             self.combat_view.add_combat_message(pre.inactive_reason.strip())
+            self._flush_result_frame(player_char, enemy)
             return True  # Turn skipped
 
         # Check for forced actions (berserk, charging, jump)
@@ -649,6 +720,7 @@ class GUICombatManager:
                 for line in forced.cancel_message.strip().split('\n'):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
+                self._flush_result_frame(player_char, enemy)
                 return True
 
             if forced.action == "Attack":
@@ -662,11 +734,14 @@ class GUICombatManager:
                 if line.strip():
                     self.combat_view.add_combat_message(line)
 
+            self._flush_result_frame(player_char, enemy)
+
             # Damage flash for attack/skill hits
             damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
             if damage_to_enemy > 0:
                 self.combat_view.enemy_take_damage(enemy)
-                self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+                self._show_combat_damage_effect("enemy", forced.action, forced.choice, result.message, damage_to_enemy)
+                self._flush_result_frame(player_char, enemy)
 
             self._preserve_waitress_for_transition(enemy)
 
@@ -830,10 +905,12 @@ class GUICombatManager:
             if not self._debug_mode_enabled():
                 self.combat_view.add_combat_message("Auto Kill is only available in debug mode.")
                 return None
+            enemy_hp_before = enemy.health.current
             enemy.health.current = 0
+            damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
             self.combat_view.add_combat_message(f"Debug: {enemy.name} defeated.")
             self.combat_view.enemy_take_damage(enemy)
-            self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+            self._show_combat_damage_effect("enemy", "Attack", None, "", damage_to_enemy)
             return "action_taken"
 
         # Map display name back to engine name
@@ -877,6 +954,10 @@ class GUICombatManager:
                 self.combat_view.add_combat_message("Not disarmed!")
                 return None
 
+        if choice is not None:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            pygame.display.flip()
+
         # Record HP before execution for damage flash
         enemy_hp_before = enemy.health.current
         player_hp_before = player_char.health.current
@@ -896,16 +977,28 @@ class GUICombatManager:
             if line.strip():
                 self.combat_view.add_combat_message(line)
 
+        self._flush_result_frame(player_char, enemy)
+
         # Show damage flash for enemy damage
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
+        showed_damage_effect = False
         if damage_to_enemy > 0:
             self.combat_view.enemy_take_damage(enemy)
-            self.combat_view.show_damage_flash(False, event_handler=self._handle_combat_log_scroll_event)
+            self._show_combat_damage_effect("enemy", action, choice, result.message, damage_to_enemy)
+            showed_damage_effect = True
+        else:
+            self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         # Show damage flash for player damage (from reflected/self-damage skills)
         damage_to_player = max(0, player_hp_before - player_char.health.current)
         if damage_to_player > 0:
-            self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
+            self._show_combat_damage_effect("player", action, choice, result.message, damage_to_player)
+            showed_damage_effect = True
+        else:
+            self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+
+        if showed_damage_effect:
+            self._flush_result_frame(player_char, enemy)
 
         # Check if enemy shapeshifted (name changed)
         if enemy.name != enemy_name_before:
@@ -1012,7 +1105,7 @@ class GUICombatManager:
                         return items[selected][1]  # Return the item object
                     
                     # Update scroll to keep selection visible
-                    max_visible = 12  # items per screen
+                    max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
@@ -1068,7 +1161,7 @@ class GUICombatManager:
                         return spells[selected]  # Return spell name
                     
                     # Update scroll to keep selection visible
-                    max_visible = 12  # items per screen
+                    max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
@@ -1124,86 +1217,83 @@ class GUICombatManager:
                         return skills[selected]  # Return skill name
                     
                     # Update scroll to keep selection visible
-                    max_visible = 12  # items per screen
+                    max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
     
     def _render_selection_menu(self, title, options, selected, scroll_offset=0):
-        """Render a selection menu overlay on combat screen with scrolling support."""
-        # Create semi-transparent overlay
-        overlay = pygame.Surface((self.combat_view.combat_width, self.combat_view.combat_height))
-        overlay.set_alpha(200)
-        overlay.fill((20, 20, 30))
-        self.screen.blit(overlay, (0, 0))
-        
-        # Menu dimensions
-        menu_width = 400
-        max_visible = 12
-        menu_height = min(500, 100 + max_visible * 30)
-        menu_x = (self.combat_view.combat_width - menu_width) // 2
-        menu_y = (self.combat_view.combat_height - menu_height) // 2
-        
-        # Menu background
-        pygame.draw.rect(self.screen, (40, 40, 50), 
-                        pygame.Rect(menu_x, menu_y, menu_width, menu_height))
-        pygame.draw.rect(self.screen, (100, 100, 120), 
-                        pygame.Rect(menu_x, menu_y, menu_width, menu_height), 2)
-        
-        # Title
-        font_large = pygame.font.Font(None, 32)
-        title_surf = font_large.render(title, True, (255, 255, 255))
-        title_rect = title_surf.get_rect(center=(menu_x + menu_width // 2, menu_y + 30))
-        self.screen.blit(title_surf, title_rect)
-        
-        # Options - only render visible ones
-        font_medium = pygame.font.Font(None, 24)
-        option_y = menu_y + 70
-        
-        # Clamp scroll_offset
+        """Render an in-combat selection panel without covering the enemy view."""
+        view_width = int(self.screen.get_width() * 0.65)
+        panel_width = max(420, view_width)
+        panel_height = 176
+        panel_x = 0
+        panel_y = self.screen.get_height() - panel_height
+        max_visible = 3
+
         max_scroll = max(0, len(options) - max_visible)
         scroll_offset = max(0, min(scroll_offset, max_scroll))
-        
         start_idx = scroll_offset
         end_idx = min(len(options), scroll_offset + max_visible)
-        
+
+        panel = pygame.Surface((panel_width, panel_height))
+        panel.set_alpha(228)
+        panel.fill((20, 20, 25))
+        self.screen.blit(panel, (panel_x, panel_y))
+        pygame.draw.rect(
+            self.screen,
+            (124, 99, 62),
+            pygame.Rect(panel_x, panel_y, panel_width, panel_height),
+            3,
+        )
+
+        font_large = pygame.font.Font(None, 30)
+        font_medium = pygame.font.Font(None, 24)
+        font_small = pygame.font.Font(None, 18)
+        title_surf = font_large.render(title, True, (232, 218, 186))
+        self.screen.blit(title_surf, (panel_x + 20, panel_y + 12))
+
+        option_y = panel_y + 50
+        option_rect_width = panel_width - 58
+
         for i in range(start_idx, end_idx):
             option = options[i]
-            # Highlight selected option
             if i == selected:
-                highlight_rect = pygame.Rect(menu_x + 10, option_y - 3, menu_width - 30, 30)
-                pygame.draw.rect(self.screen, (80, 80, 100), highlight_rect)
-            
+                highlight_rect = pygame.Rect(panel_x + 18, option_y - 4, option_rect_width, 30)
+                pygame.draw.rect(self.screen, (72, 64, 48), highlight_rect)
+                pygame.draw.rect(self.screen, (188, 150, 86), highlight_rect, 1)
+
             prefix = f"{i+1}. "
-            max_text_width = menu_width - 58
             option = self._fit_text_to_width(
                 font_medium,
                 option,
-                max_text_width - font_medium.size(prefix)[0],
+                option_rect_width - 18 - font_medium.size(prefix)[0],
             )
 
-            option_surf = font_medium.render(f"{prefix}{option}", True, (255, 255, 255))
-            self.screen.blit(option_surf, (menu_x + 20, option_y))
-            option_y += 30
-        
-        # Scrollbar (if needed)
+            color = (255, 255, 255) if i == selected else (220, 220, 220)
+            option_surf = font_medium.render(f"{prefix}{option}", True, color)
+            self.screen.blit(option_surf, (panel_x + 28, option_y))
+            option_y += 34
+
         if len(options) > max_visible:
-            scrollbar_height = int((menu_height - 120) * max_visible / len(options))
+            track_rect = pygame.Rect(panel_x + panel_width - 22, panel_y + 50, 6, 102)
+            pygame.draw.rect(self.screen, (58, 58, 66), track_rect)
+            scrollbar_height = int(track_rect.height * max_visible / len(options))
             scrollbar_height = max(20, scrollbar_height)
-            scrollbar_y = menu_y + 70 + int((menu_height - 120 - scrollbar_height) * scroll_offset / max_scroll)
-            pygame.draw.rect(self.screen, (150, 150, 180), 
-                           pygame.Rect(menu_x + menu_width - 16, scrollbar_y, 6, scrollbar_height))
-        
-        # Instructions
-        font_small = pygame.font.Font(None, 18)
+            scrollbar_y = track_rect.y + int((track_rect.height - scrollbar_height) * scroll_offset / max_scroll)
+            pygame.draw.rect(
+                self.screen,
+                (170, 138, 82),
+                pygame.Rect(track_rect.x, scrollbar_y, track_rect.width, scrollbar_height),
+            )
+
         if len(options) > max_visible:
             instructions = "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel"
         else:
             instructions = "Up/Down or W/S: Navigate | Enter/Space: Select | Esc: Cancel"
-        instr_surf = font_small.render(instructions, True, (180, 180, 180))
-        instr_rect = instr_surf.get_rect(center=(menu_x + menu_width // 2, menu_y + menu_height - 20))
-        self.screen.blit(instr_surf, instr_rect)
+        instr_surf = font_small.render(instructions, True, (176, 176, 176))
+        self.screen.blit(instr_surf, (panel_x + 20, panel_y + panel_height - 24))
     
     def _enemy_turn(self, player_char, enemy):
         """Handle enemy's turn (automated), delegating logic to the engine."""
@@ -1213,6 +1303,7 @@ class GUICombatManager:
             for line in pre.effects_text.strip().split('\n'):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
+            self._flush_result_frame(player_char, enemy)
 
         # If the enemy died from its own effects (poison, DOT, bleed), end turn
         if pre.died_from_effects:
@@ -1220,6 +1311,7 @@ class GUICombatManager:
 
         if not pre.can_act:
             self.combat_view.add_combat_message(pre.inactive_reason.strip())
+            self._flush_result_frame(player_char, enemy)
             return None  # Skip turn
         
         # Render current state and pause before enemy acts (with animation updates)
@@ -1230,8 +1322,7 @@ class GUICombatManager:
                     pygame.quit()
                     sys.exit(0)
                 self._handle_combat_log_scroll_event(event)
-            self._render_combat_frame(player_char, enemy, [], -1)
-            pygame.display.flip()
+            self._flush_result_frame(player_char, enemy)
             enemy_clock.tick(60)
 
         # Check for forced actions (charging skills, jump)
@@ -1241,15 +1332,21 @@ class GUICombatManager:
                 for line in forced.cancel_message.strip().split('\n'):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
+                self._flush_result_frame(player_char, enemy)
                 return None
 
             enemy_name_before = enemy.name
+            enemy_hp_before = enemy.health.current
             player_hp_before = player_char.health.current
+            player_stun_before = bool(player_char.status_effects["Stun"].active)
 
             result = self.engine.execute_action(forced.action, choice=forced.choice)
             for line in result.message.strip().split('\n'):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
+            self._add_new_player_stun_message(player_char, player_stun_before, result.message)
+
+            self._flush_result_frame(player_char, enemy)
 
             # Check if enemy shapeshifted
             if enemy.name != enemy_name_before:
@@ -1257,7 +1354,11 @@ class GUICombatManager:
 
             damage_to_player = max(0, player_hp_before - player_char.health.current)
             if damage_to_player > 0:
-                self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
+                self._show_combat_damage_effect("player", forced.action, forced.choice, result.message, damage_to_player)
+                self._flush_result_frame(player_char, enemy)
+            else:
+                self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+            self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
             if result.fled:
                 return "flee"
@@ -1272,7 +1373,9 @@ class GUICombatManager:
 
         # Record state before execution
         player_hp_before = player_char.health.current
+        player_stun_before = bool(player_char.status_effects["Stun"].active)
         enemy_name_before = enemy.name
+        enemy_hp_before = enemy.health.current
 
         # Delegate to engine (handles Smoke Screen flee, Slot Machine, Doublecast, Jump, etc.)
         slot_cb = None
@@ -1287,6 +1390,9 @@ class GUICombatManager:
         for line in result.message.strip().split('\n'):
             if line.strip():
                 self.combat_view.add_combat_message(line)
+        self._add_new_player_stun_message(player_char, player_stun_before, result.message)
+
+        self._flush_result_frame(player_char, enemy)
 
         # Check if enemy shapeshifted (name changed)
         if enemy.name != enemy_name_before:
@@ -1295,7 +1401,11 @@ class GUICombatManager:
         # Show damage flash if player took damage
         damage_to_player = max(0, player_hp_before - player_char.health.current)
         if damage_to_player > 0:
-            self.combat_view.show_damage_flash(True, event_handler=self._handle_combat_log_scroll_event)
+            self._show_combat_damage_effect("player", action, choice, result.message, damage_to_player)
+            self._flush_result_frame(player_char, enemy)
+        else:
+            self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+        self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         if result.fled:
             return "flee"
@@ -1313,6 +1423,13 @@ class GUICombatManager:
             result_clock.tick(60)
 
         return None
+
+    def _add_new_player_stun_message(self, player_char, was_stunned: bool, result_message: str) -> None:
+        """Ensure newly-applied player stun is visible even when an effect omits text."""
+        stun = getattr(player_char, "status_effects", {}).get("Stun")
+        is_stunned = bool(getattr(stun, "active", False))
+        if is_stunned and not was_stunned and "stun" not in (result_message or "").lower():
+            self.combat_view.add_combat_message(f"{player_char.name} is stunned and cannot act.")
     
     def _render_combat_frame(self, player_char, enemy, actions, selected_action):
         """Render a single frame of combat."""
@@ -1335,12 +1452,16 @@ class GUICombatManager:
         current_turn = None
         if self.engine is not None and getattr(self.engine, "attacker", None) is not None:
             current_turn = "player" if self.engine.is_player_turn() else "enemy"
+        show_enemy_details = None
+        if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
+            show_enemy_details = self.engine.show_enemy_details()
         self.combat_view.render_combat_overlay(
             player_char,
             enemy,
             actions,
             selected_action,
             current_turn=current_turn,
+            show_enemy_details=show_enemy_details,
         )
         
         # Render HUD (right 1/3) with combat mode indicator

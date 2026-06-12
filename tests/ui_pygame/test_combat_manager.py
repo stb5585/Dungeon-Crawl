@@ -70,10 +70,12 @@ class DummyCombatView:
         self.messages = []
         self.enemy_damage_calls = []
         self.flash_calls = []
+        self.impact_calls = []
         self.reload_calls = []
         self.enemy_deaths = []
         self.reset_calls = 0
         self.render_calls = []
+        self.colors = {"log_damage": (235, 120, 105), "log_heal": (120, 210, 135)}
 
     def scroll_log(self, amount):
         self.scrolled.append(amount)
@@ -97,6 +99,12 @@ class DummyCombatView:
 
     def show_damage_flash(self, player_side, event_handler=None):
         self.flash_calls.append((player_side, event_handler))
+
+    def trigger_impact_effect(self, target, kind="weapon", element=None, critical=False):
+        self.impact_calls.append((target, kind, element, critical))
+
+    def trigger_floating_text(self, target, text, color=None):
+        self.impact_calls.append(("float", target, text, color))
 
     def reload_enemy_sprite(self, enemy):
         self.reload_calls.append(enemy)
@@ -207,7 +215,7 @@ def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
         render_dungeon_view=lambda *args, **kwargs: dungeon_calls.append((args, kwargs))
     )
     manager.player_world_dict = {"tile": object()}
-    manager.engine = SimpleNamespace(is_player_turn=lambda: False)
+    manager.engine = SimpleNamespace(is_player_turn=lambda: False, show_enemy_details=lambda: False)
 
     manager._render_combat_frame(player, enemy, ["Attack"], 0)
 
@@ -215,6 +223,7 @@ def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
     assert [call[0] for call in manager.combat_view.render_calls] == ["enemy", "overlay"]
     assert manager.combat_view.render_calls[0][1] == (player, enemy)
     assert manager.combat_view.render_calls[1][2]["current_turn"] is None
+    assert manager.combat_view.render_calls[1][2]["show_enemy_details"] is False
     assert manager.hud.calls
 
 
@@ -256,6 +265,27 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
         "Items",
         "Auto Kill",
     ]
+
+
+def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
+    manager = _make_manager(monkeypatch)
+
+    assert manager._combat_effect_kind("Attack") == "weapon"
+    assert manager._combat_effect_kind("Spells") == "spell"
+    assert manager._combat_effect_kind("Use Skill") == "skill"
+    assert manager._combat_effect_element("Lightning Bolt", "Goblin takes damage") == "Electric"
+    assert manager._combat_effect_element(None, "The target burns in holy fire") == "Fire"
+
+    manager._show_combat_damage_effect("enemy", "Spells", "Lightning Bolt", "Goblin takes 12 electric damage.", 12)
+    manager._show_combat_damage_effect("player", "Attack", None, "Hero takes 4 damage.", 4)
+
+    assert manager.combat_view.impact_calls == [
+        ("enemy", "spell", "Electric", False),
+        ("float", "enemy", "-12", (235, 120, 105)),
+        ("player", "weapon", None, False),
+        ("float", "player", "-4", (235, 120, 105)),
+    ]
+    assert [call[0] for call in manager.combat_view.flash_calls] == [False, True]
 
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):
@@ -442,8 +472,12 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     player.spellbook["Skills"]["Slot Machine"] = SimpleNamespace(name="Slot Machine")
     manager._select_skill = lambda _player, _enemy: "Slot Machine"
     manager._show_slot_machine_reveal = lambda _player, _enemy: "777"
+    frame_calls = []
+    manager._render_combat_frame = lambda *args, **kwargs: frame_calls.append((args, kwargs))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     def execute_action(action, choice=None, slot_machine_callback=None):
+        assert frame_calls
         assert action == "Use Skill"
         assert choice == "Slot Machine"
         assert slot_machine_callback and slot_machine_callback(player, enemy) == "777"
@@ -459,6 +493,31 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     assert manager.combat_view.enemy_damage_calls == [enemy]
     assert manager.combat_view.flash_calls[-1][0] is False
     assert manager.combat_view.reload_calls[-1] == enemy
+    assert frame_calls[-1][0] == (player, enemy, [], -1)
+
+
+def test_execute_spell_flushes_result_log_before_damage_effect(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy(hp=(20, 20))
+    order = []
+
+    manager._select_spell = lambda _player, _enemy: "Firebolt"
+    manager._flush_result_frame = lambda _player, _enemy: order.append("flush")
+    manager._show_combat_damage_effect = lambda *_args, **_kwargs: order.append("effect")
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+
+    def execute_action(action, choice=None, slot_machine_callback=None):
+        assert action == "Cast Spell"
+        assert choice == "Firebolt"
+        enemy.health.current = 7
+        return SimpleNamespace(message="Hero damages Goblin for 13 hit points.", fled=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_action)
+
+    assert manager._execute_action("Spells", player, enemy) == "action_taken"
+    assert order == ["flush", "effect", "flush"]
+    assert manager.combat_view.messages[-1] == "Hero damages Goblin for 13 hit points."
 
 
 def test_debug_auto_kill_action_requires_debug_mode(monkeypatch):
@@ -738,7 +797,7 @@ def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch)
     assert "Choose Action" in large_font.render_calls
     fitted_option = next(text for text in medium_font.render_calls if text.startswith("13. Option 12"))
     assert fitted_option.endswith("...")
-    assert medium_font.size(fitted_option)[0] <= 342
+    assert medium_font.size(fitted_option)[0] <= 462
     assert "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel" in small_font.render_calls
     assert draw_calls
 
@@ -835,6 +894,8 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     enemy = _make_enemy()
 
     manager._render_combat_frame = lambda *args, **kwargs: None
+    flushed_messages = []
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     manager.engine = SimpleNamespace(
@@ -842,12 +903,14 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     )
     assert manager._player_turn(player, enemy) is True
     assert manager.combat_view.messages[-1] == "Poison ticks"
+    assert flushed_messages[-1] == ("Poison ticks",)
 
     manager.engine = SimpleNamespace(
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=False, inactive_reason="Asleep"),
     )
     assert manager._player_turn(player, enemy) is True
     assert manager.combat_view.messages[-1] == "Asleep"
+    assert flushed_messages[-1][-1] == "Asleep"
 
     forced = SimpleNamespace(action="Cancelled", cancel_message="Jump failed", choice=None)
     manager.engine = SimpleNamespace(
@@ -905,6 +968,8 @@ def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch
     enemy = _make_enemy()
 
     manager._render_combat_frame = lambda *args, **kwargs: None
+    flushed_messages = []
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     actions = []
@@ -942,21 +1007,26 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     enemy = _make_enemy()
 
     manager._render_combat_frame = lambda *args, **kwargs: None
+    flushed_messages = []
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    player.status_effects = {"Stun": SimpleNamespace(active=False)}
 
     manager.engine = SimpleNamespace(
         pre_turn=lambda: SimpleNamespace(effects_text="Bleeding", died_from_effects=True, can_act=True, inactive_reason=""),
     )
     assert manager._enemy_turn(player, enemy) is None
     assert manager.combat_view.messages[-1] == "Bleeding"
+    assert flushed_messages[-1] == ("Bleeding",)
 
     manager.engine = SimpleNamespace(
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=False, inactive_reason="Stunned"),
     )
     assert manager._enemy_turn(player, enemy) is None
     assert manager.combat_view.messages[-1] == "Stunned"
+    assert flushed_messages[-1][-1] == "Stunned"
 
     manager.engine = SimpleNamespace(
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
@@ -982,6 +1052,7 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
 
     def execute_action(action, choice=None, slot_machine_callback=None):
         player.health.current = 18
+        player.status_effects["Stun"].active = True
         enemy.name = "Mage Form"
         return SimpleNamespace(message="Dark blast", fled=False)
 
@@ -992,6 +1063,7 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
         execute_action=execute_action,
     )
     assert manager._enemy_turn(player, enemy) is None
-    assert manager.combat_view.messages[-1] == "Dark blast"
+    assert "Dark blast" in manager.combat_view.messages
+    assert manager.combat_view.messages[-1] == "Hero is stunned and cannot act."
     assert manager.combat_view.reload_calls[-1] == enemy
     assert manager.combat_view.flash_calls[-1][0] is True

@@ -176,6 +176,7 @@ class StatusEffect:
     active: bool = False
     duration: int = 0
     extra: int = 0
+    source: str = ""
 
 
 class Character:
@@ -420,8 +421,12 @@ class Character:
                   - (True, "") if character can act
                   - (False, reason) if character cannot act
         """
-        if self.incapacitated():
-            return False, f"{self.name} is incapacitated."
+        if self.status_effects["Sleep"].active:
+            return False, f"{self.name} is asleep and cannot act."
+        if self.physical_effects["Prone"].active:
+            return False, f"{self.name} is prone and cannot act."
+        if self.status_effects["Stun"].active:
+            return False, f"{self.name} is stunned and cannot act."
         if self.magic_effects["Ice Block"].active:
             return False, f"{self.name} is encased in ice and does nothing.\n"
         return True, ""
@@ -1323,6 +1328,22 @@ class Character:
                         effect_dict[effect].active = False
                         effect_dict[effect].duration = 0
                         effect_dict[effect].extra = 0
+                        effect_dict[effect].source = ""
+                for skill_group in getattr(self, "spellbook", {}).values():
+                    for skill in getattr(skill_group, "values", lambda: [])():
+                        if getattr(skill, "charging", False):
+                            cancel_charge = getattr(skill, "cancel_charge", None)
+                            if callable(cancel_charge):
+                                try:
+                                    cancel_charge(self)
+                                    continue
+                                except Exception:
+                                    pass
+                            skill.charging = False
+                            if hasattr(skill, "charge_turns"):
+                                skill.charge_turns = 0
+                            if hasattr(skill, "charge_target"):
+                                skill.charge_target = None
             else:
                 effect_dict = self.effect_handler(effect=effect)
                 if effect_dict[effect].active:
@@ -1330,6 +1351,7 @@ class Character:
                 effect_dict[effect].active = False
                 effect_dict[effect].duration = 0
                 effect_dict[effect].extra = 0
+                effect_dict[effect].source = ""
 
         if end:
             default(end_combat=True)
@@ -1382,6 +1404,8 @@ class Character:
             if self.magic_effects["DOT"].active:
                 self.magic_effects["DOT"].duration -= 1
                 dot_damage = int(self.magic_effects["DOT"].extra or 0)
+                dot_source = self.magic_effects["DOT"].source
+                is_burn = dot_source.lower() in {"burn", "fire", "volcano", "fireball", "firestorm", "hellfire"}
                 if dot_damage <= 0:
                     # Defensive guard: DOT should always have positive damage,
                     # but some effect paths may leave .extra unset/zero.
@@ -1390,19 +1414,34 @@ class Character:
                 else:
                     if not random.randint(0, self.check_mod("magic def") // dot_damage):
                         self.health.current -= dot_damage
-                        status_text += f"The magic damages {self.name} for {dot_damage} health points.\n"
-                        self._emit_status_tick_event(self, "DOT", dot_damage, "damage", source="DOT")
+                        if is_burn:
+                            status_text += f"{self.name} burns for {dot_damage} health points.\n"
+                        else:
+                            status_text += f"The magic damages {self.name} for {dot_damage} health points.\n"
+                        self._emit_status_tick_event(
+                            self,
+                            "DOT",
+                            dot_damage,
+                            "damage",
+                            source="Burn" if is_burn else "DOT",
+                        )
                     else:
-                        status_text += f"{self.name} resisted the magic.\n"
+                        if is_burn:
+                            status_text += f"{self.name} resisted the flames.\n"
+                        else:
+                            status_text += f"{self.name} resisted the magic.\n"
                     if not self.magic_effects["DOT"].duration:
                         default(effect="DOT")
-                        status_text += f"The magic affecting {self.name} has worn off.\n"
+                        if is_burn:
+                            status_text += f"The flames around {self.name} burn out.\n"
+                        else:
+                            status_text += f"The magic affecting {self.name} has worn off.\n"
             if self.physical_effects["Bleed"].active:
                 self.physical_effects["Bleed"].duration -= 1
                 bleed_damage = max(1, int(self.physical_effects["Bleed"].extra * 0.75))
                 if not random.randint(0, self.stats.con // 10):
                     self.health.current -= bleed_damage
-                    status_text += f"The bleed damages {self.name} for {bleed_damage} health points.\n"
+                    status_text += f"{self.name} bleeds for {bleed_damage} health points.\n"
                     self._emit_status_tick_event(self, "Bleed", bleed_damage, "damage", source="Bleed")
                 else:
                     status_text += f"{self.name} resisted the bleed.\n"

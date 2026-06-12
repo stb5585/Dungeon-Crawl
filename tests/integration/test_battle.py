@@ -454,7 +454,7 @@ class TestBattleEngineBasics:
 
         result = engine.execute_action("Defend")
 
-        assert result.message == "Defend:2"
+        assert result.message == "Defend:1"
 
     def test_execute_spell_handles_suppressed_invalid_and_successful_casts(self):
         engine, player, enemy, _tile = self._make_engine()

@@ -127,9 +127,17 @@ Status: `Active`
    - Implemented for town shops and secret-shop grouped categories, with left/right tab navigation and filtered empty tabs.
 3. Revisit combat visual polish.
    - Current status/telegraph readability is strong enough for baseline play.
-   - Lightweight hit/spell effects or particles are still planned, but should be added only where they improve clarity.
-   - Current "Choose Action" menu can overflow if more than 6 options are available.
-   - Combat view UI is fairly rudimentary, could use an update to match game aesthetics.
+   - Status: `Done`.
+   - Lightweight hit/spell/skill effects are implemented as transient procedural overlays on confirmed damage events, using muted impact strokes, rings, sparks, and elemental glows that sit over the current enemy renderings without changing combat mechanics.
+   - Confirmed damage also produces compact floating damage text at the target, confirmed healing produces compact floating healing text, and enemy hits add a brief recoil nudge so successful impacts read immediately without changing combat timing.
+   - Low player HP now adds a restrained combat-area danger vignette so near-death state is visible while preserving the dungeon-backed combat scene.
+   - Spell, skill, item, and totem selection now use an in-combat bottom command panel instead of a full combat-area modal, and confirmed selections redraw the battlefield before damage effects play.
+   - The combat action menu now compacts up to three rows of actions and truncates long labels so debug/expanded action sets do not overflow the bottom command panel.
+   - Combat log rendering now pages over wrapped visible lines so long messages stay inside the log panel, keep source-message colors across wrapped continuations, and use subtle category ticks for faster scanning.
+   - Enemy telegraphs now render as a compact `Incoming` warning strip near the combat target area.
+   - The bottom action panel has an initial darker stone/parchment treatment with clearer selected-action framing.
+   - Defend status presentation now treats `DEF` as a positive icon and the base Defend action expires after one turn unless selected again.
+   - Vision and reveal-based enemy details are now suppressed in boss fights, preserving boss mystery while keeping ordinary encounter inspection intact.
 4. Modify the character naming screen.
    - Status: `Done`.
    - Added a visual naming screen with selected portrait, sex, race, and class panels.
@@ -223,6 +231,95 @@ Status: `Planned`
 8. Combat Improvements
    - Add multi-enemy combat support; may require rebalancing
    - Create combat stack based on speed; greater speed diff can result in multiple turns in a row
+9. Unique class mechanics
+   - Warrior
+      - Weapon Master/Grandmaster of Arms/Berserker
+         - Implement second promotion class Grandmaster of Arms
+         - Weapon Master/Grandmaster of Arms: Weapon Discipline
+            - gain proficiency with a weapon type as it's used
+            - each weapon type levels from 0-100 and has 10 levels
+            - experience is gained by attacking; critical hits double experience
+            - can no longer be leveled once promoted to Berserker; player must either max out weapon of choice or select Grandmaster of Arms promotion
+         - Grandmaster of Arms: Weapon Specialty
+            - weapon types that gain max level now trigger certain abilities/buffs
+               - Fist: Hundred Hand Slap -
+               - Dagger:
+               - Sword:
+               - Club:
+               - Longsword:
+               - Battle Axe:
+               - Hammer:
+         - Berserker: Battle Scars
+            - surviving combat with less than 10% health gives chance of permanent scar
+            - scars provide permanent stat bonuses (e.g. +1 to stat, +5 health or mana, +1% crit chance, +1% life steal, etc.)
+      - Paladin/Crusader
+         - Oathbringer: choose an path to follow
+            - Redemption: the path of the pacifist
+               - gain Redeem ability; success affected by charisma and inversely related to enemy HP percentage (bosses are immune and won't trigger Mark of Perdition)
+               - successful redeem trigger Redemption aura
+                  - lowers encounter rate but increases experience and gold and chance to redeem enemies
+                  - persists until an enemy is killed instead of Redeem
+               - killing a non-boss enemy has a chance to trigger Mark of Perdition based on charisma (lower charisma = higher chance)
+                  - increases encounter rate and lowers experience and gold
+                  - persists until next successful Redeem
+            - Conquest: the path of the warmonger
+               - killing enemies that you currently have a bounty on triggers Conquest aura
+                  - increases initiative and offensive combat stats (attack, crit, hit)
+                  - lasts 5 minutes and stacks up to 3 times
+               - running away from any enemy drops Conquest aura and triggers Mark of the Craven
+                  - decreases initiative and offensive combat stats (attack, crit, hit)
+                  - persists until killing a bounty target
+            - Retribution: the path of the punitive
+               - successful counterattacks (Parry) trigger Retribution aura
+                  - increases dodge chance and critical damage
+                  - lasts 5 minutes (killing blow doubles duration)
+               - unequipping, breaking, or being disarmed triggers Mark of Mercy
+                  - if HP drops below 10%, enemy can mercy-kill player
+                  - persists until weapon is equipped or picked up
+            - Protection: the path of the defender
+               - blocking an attack can trigger Protection aura
+                  - increases block amount and regens health every turn active
+                  - lasts 2 turns but can stack up to 5 times, resetting the duration each time
+               - if a shield is not equipped (unequipped or broken), player will be affected by Mark of Vulnerability
+                  - increases melee damage taken and lowers healing from any source
+                  - persists until a shield is equipped
+      - Lancer/Dragoon
+      - Sentinel/Stalwart Defender
+	- Mage
+      - Sorcerer/Wizard
+         - Elemental Affinity Wheel - casting spells of a particular element increases affinity with that element but at the detriment of the inverse element (fire/ice, electric/water, earth/wind)
+            - once affinity reaches a certain level, unlocks 2nd level spell of that element
+            - for level 3 spells, must be Wizard class with even higher affinity; if affinity level reached before becoming Wizard, spell will be learned on promotion
+            - represented visually with a hex radar chart
+            - affinity grows/shrinks based on intelligence level
+               - 15 intel is baseline; equal gain and loss
+               - every point above or below changes the affinity gained/lost by 5%
+      - Warlock/Shadowcaster
+      - Spellblade/Knight Enchanter
+      - Summoner/Grand Summoner
+	- Footpad
+      - Thief/Rogue
+      - Inquisitor/Seeker
+      - Assassin/Ninja
+      - Spell Stealer/Arcane Trickster
+	- Healer
+      - Cleric/Templar
+      - Priest/Archbishop
+      - Monk/Master Monk
+      - Bard/Troubadour
+	- Pathfinder
+      - Druid/Lycan
+      - Diviner/Geomancer
+         - Runic Alterations: defeating enemies with elemental spells gives chance to drop runes
+            - runes match the spell used when gained
+            - combine rune(s) and gear to increase power
+               - modifying weapons add elemental damage and/or attack stats
+               - modifying armor/helmets adds elemental resistance and/or defensive stats
+               - modifying accessories adds buffs and/or spell damage/defense
+               - modifying spells increases damage and/or hit chance and/or crit chance
+            - runes can be replaced but they are lost
+      - Shaman/Soulcatcher
+      - Ranger/Beast Master
 
 ### P5 - Audio Content Completion
 

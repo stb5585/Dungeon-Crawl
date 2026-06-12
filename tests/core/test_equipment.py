@@ -195,6 +195,17 @@ class TestOffHandEquipment:
         assert result is True
         assert player.equipment['OffHand'].name == 'Buckler'
 
+    def test_soulcatcher_can_equip_indras_fist_offhand(self):
+        """Soulcatcher can dual-wield fist weapons such as Indra's Fist."""
+        player = TestGameState.create_player(name="TestPlayer", class_name="Soulcatcher", race_name="Human")
+
+        player.equipment["Weapon"] = items.IndrasFist()
+        result = player.equip("OffHand", items.IndrasFist(), check=True)
+
+        assert result is True
+        assert player.equipment["Weapon"].name == "Indra's Fist"
+        assert player.equipment["OffHand"].name == "Indra's Fist"
+
 
 class TestEquipmentSlots:
     """Test all equipment slots."""

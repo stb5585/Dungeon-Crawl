@@ -197,6 +197,8 @@ class Job:
 class Warrior(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
+                       |                 |
+                       |                -> Grandmaster of Arms
                        |
                        -> Paladin       -> Crusader
                        |
@@ -292,6 +294,53 @@ class WeaponMaster(Job):
                 "Armor": ["Light", "Medium"],
             },
             pro_level=2,
+        )
+
+
+class GrandmasterArms(Job):
+    """
+    Promotion: Warrior -> Weapon Master -> GrandMaster of Arms
+    Pros: Can dual wield some one handed weapons; higher dexterity gain
+    Cons: Cannot use shields or heavy armor
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Grandmaster of Arms",
+            description="Grandmasters of Arms are the pinnacle of weapon expertise, "
+            "mastering the art of dual-wielding and wielding powerful "
+            "blades with unmatched skill.",
+            str_plus=2,
+            int_plus=0,
+            wis_plus=0,
+            con_plus=2,
+            cha_plus=0,
+            dex_plus=3,
+            att_plus=5,
+            def_plus=3,
+            magic_plus=0,
+            magic_def_plus=2,
+            equipment={
+                "Weapon": items.Shamshir(),
+                "OffHand": items.Pernach(),
+                "Armor": items.Breastplate(),
+                "Pendant": items.NoPendant(),
+                "Ring": items.NoRing(),
+            },
+            restrictions={
+                "Weapon": [
+                    "Fist",
+                    "Dagger",
+                    "Sword",
+                    "Club",
+                    "Longsword",
+                    "Battle Axe",
+                    "Hammer",
+                ],
+                "OffHand": ["Fist", "Dagger", "Sword", "Club"],
+                "Armor": ["Light", "Medium"],
+            },
+            pro_level=3,
         )
 
 
@@ -2009,7 +2058,7 @@ class Soulcatcher(Job):
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Club", "Staff"],
-                "OffHand": ["Fist", "Shields"],
+                "OffHand": ["Fist", "Shield"],
                 "Armor": ["Light", "Medium"],
             },
             pro_level=3,

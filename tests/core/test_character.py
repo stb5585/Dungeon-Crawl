@@ -205,7 +205,7 @@ class TestEnhancedCombatRequirements:
         active, msg = char.check_active()
 
         assert active is False
-        assert "incapacitated" in msg.lower()
+        assert "stunned" in msg.lower()
 
     def test_check_active_reports_ice_block(self):
         char = TestGameState.create_player(name="Frozen", class_name="Warrior", race_name="Human")

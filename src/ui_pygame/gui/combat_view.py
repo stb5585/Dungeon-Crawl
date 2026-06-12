@@ -4,6 +4,7 @@ Integrates with BattleManager or EnhancedBattleManager for combat logic.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 import math
 from pathlib import Path
 import sys
@@ -28,6 +29,39 @@ from .status_icons import (
 )
 
 ASSETS_BASE_DIR = Path(__file__).resolve().parents[1] / "assets"
+
+
+@dataclass
+class CombatImpactEffect:
+    """Brief procedural combat polish drawn over the current battlefield."""
+
+    target: str
+    kind: str
+    color: tuple[int, int, int]
+    start_ms: int
+    duration_ms: int = 420
+    critical: bool = False
+
+
+@dataclass
+class FloatingCombatText:
+    """Small transient combat result text anchored near a target."""
+
+    target: str
+    text: str
+    color: tuple[int, int, int]
+    start_ms: int
+    duration_ms: int = 760
+
+
+@dataclass(frozen=True)
+class CombatLogLine:
+    """A render-ready combat log fragment with source-message styling."""
+
+    text: str
+    color: tuple[int, int, int]
+    marker_color: tuple[int, int, int]
+    continuation: bool = False
 
 
 class SpriteAnimator:
@@ -120,10 +154,15 @@ class CombatView:
             'text': (255, 255, 255),
             'action_bg': (40, 40, 45),
             'action_selected': (80, 80, 90),
+            'action_border': (118, 116, 126),
+            'panel_accent': (166, 132, 74),
             'message_bg': (30, 30, 35),
             'turn_player': (70, 130, 210),
             'turn_enemy': (180, 80, 70),
             'telegraph': (255, 205, 110),
+            'log_damage': (235, 120, 105),
+            'log_heal': (120, 210, 135),
+            'log_muted': (175, 175, 180),
         }
         
         # Combat log
@@ -140,6 +179,21 @@ class CombatView:
         # Sprite animators (per enemy instance)
         self.sprite_animators = {}  # Key by enemy id()
         self.enemy_visual_offset = (0, 0)
+        self._active_impact_effects: list[CombatImpactEffect] = []
+        self._active_float_texts: list[FloatingCombatText] = []
+        self._enemy_recoil_until_ms = 0
+        self._last_enemy_target_rect = pygame.Rect(
+            self.combat_width // 2 - 120,
+            self.combat_height // 3 - 120,
+            240,
+            240,
+        )
+        self._last_player_target_rect = pygame.Rect(
+            28,
+            self.screen_height - 270,
+            220,
+            110,
+        )
         self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
@@ -155,11 +209,51 @@ class CombatView:
         """Update all active sprite animations."""
         for animator in self.sprite_animators.values():
             animator.update()
+        self._prune_impact_effects()
+        self._prune_float_texts()
     
     def enemy_take_damage(self, enemy):
         """Trigger damage flash when enemy takes damage."""
         animator = self._get_sprite_animator(enemy)
         animator.trigger_damage()
+        self._enemy_recoil_until_ms = max(self._enemy_recoil_until_ms, pygame.time.get_ticks() + 220)
+
+    def trigger_impact_effect(
+        self,
+        target: str,
+        kind: str = "weapon",
+        element: str | None = None,
+        critical: bool = False,
+    ) -> None:
+        """Start a short hit/spell effect at the last known target location."""
+        self._active_impact_effects.append(
+            CombatImpactEffect(
+                target=target,
+                kind=kind,
+                color=self._impact_color(kind, element),
+                start_ms=pygame.time.get_ticks(),
+                duration_ms=520 if critical else 420,
+                critical=critical,
+            )
+        )
+
+    def trigger_floating_text(
+        self,
+        target: str,
+        text: str,
+        color: tuple[int, int, int] | None = None,
+    ) -> None:
+        """Start a brief floating combat result label."""
+        if not text:
+            return
+        self._active_float_texts.append(
+            FloatingCombatText(
+                target=target,
+                text=str(text),
+                color=color or self.colors["text"],
+                start_ms=pygame.time.get_ticks(),
+            )
+        )
     
     def enemy_dies(self, enemy):
         """Trigger death animation when enemy dies."""
@@ -180,7 +274,7 @@ class CombatView:
             if self._is_telegraph_message(line):
                 self._active_telegraph_line = line
                 self._suppress_logged_telegraph_banner = False
-            self.combat_log.extend(self._wrap_log_line(line))
+            self.combat_log.append(line)
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
         if was_at_bottom:
@@ -189,7 +283,8 @@ class CombatView:
             self.log_scroll_offset = min(self.log_scroll_offset, self._max_log_scroll())
 
     def _max_log_scroll(self):
-        return max(0, len(self.combat_log) - self.log_lines_per_page)
+        display_lines = self._wrapped_combat_log_lines(self.combat_width - 30)
+        return max(0, len(display_lines) - self.log_lines_per_page)
 
     def scroll_log(self, delta: int):
         """Scroll combat log by delta lines (negative=older, positive=newer)."""
@@ -201,6 +296,162 @@ class CombatView:
         self.log_scroll_offset = 0
         self._active_telegraph_line = None
         self._suppress_logged_telegraph_banner = False
+
+    def _prune_impact_effects(self) -> None:
+        if not self._active_impact_effects:
+            return
+        now = pygame.time.get_ticks()
+        self._active_impact_effects = [
+            effect
+            for effect in self._active_impact_effects
+            if now - effect.start_ms < effect.duration_ms
+        ]
+
+    def _prune_float_texts(self) -> None:
+        if not self._active_float_texts:
+            return
+        now = pygame.time.get_ticks()
+        self._active_float_texts = [
+            text
+            for text in self._active_float_texts
+            if now - text.start_ms < text.duration_ms
+        ]
+
+    def _enemy_recoil_offset(self) -> int:
+        remaining = max(0, self._enemy_recoil_until_ms - pygame.time.get_ticks())
+        if remaining <= 0:
+            return 0
+        phase = remaining / 220
+        return int(math.sin(phase * math.pi * 5) * 8 * phase)
+
+    @staticmethod
+    def _impact_color(kind: str, element: str | None = None) -> tuple[int, int, int]:
+        element_colors = {
+            "Fire": (226, 92, 42),
+            "Ice": (150, 206, 230),
+            "Electric": (236, 210, 88),
+            "Water": (82, 150, 192),
+            "Earth": (150, 112, 70),
+            "Wind": (178, 205, 182),
+            "Poison": (118, 168, 86),
+            "Holy": (232, 218, 162),
+            "Dark": (142, 104, 174),
+            "Death": (156, 144, 128),
+        }
+        if element in element_colors:
+            return element_colors[element]
+        if kind == "spell":
+            return (178, 142, 222)
+        if kind == "skill":
+            return (210, 148, 82)
+        return (218, 185, 128)
+
+    def _target_rect_for_effect(self, target: str) -> pygame.Rect:
+        if target == "player":
+            return self._last_player_target_rect.copy()
+        return self._last_enemy_target_rect.copy()
+
+    def _render_active_impact_effects(self) -> None:
+        if not self._active_impact_effects:
+            return
+        now = pygame.time.get_ticks()
+        for effect in list(self._active_impact_effects):
+            progress = (now - effect.start_ms) / max(1, effect.duration_ms)
+            if progress >= 1:
+                continue
+            rect = self._target_rect_for_effect(effect.target)
+            if effect.kind == "spell":
+                self._draw_spell_impact(rect, effect, progress)
+            elif effect.kind == "skill":
+                self._draw_skill_impact(rect, effect, progress)
+            else:
+                self._draw_weapon_impact(rect, effect, progress)
+        self._prune_impact_effects()
+
+    def _render_floating_texts(self) -> None:
+        if not self._active_float_texts:
+            return
+        now = pygame.time.get_ticks()
+        font = pygame.font.Font(None, 28)
+        for text in list(self._active_float_texts):
+            progress = (now - text.start_ms) / max(1, text.duration_ms)
+            if progress >= 1:
+                continue
+            alpha = int(230 * (1.0 - progress))
+            if alpha <= 0:
+                continue
+            rect = self._target_rect_for_effect(text.target)
+            surf = font.render(text.text, True, text.color)
+            surf.set_alpha(alpha)
+            shadow = font.render(text.text, True, (0, 0, 0))
+            shadow.set_alpha(max(0, alpha - 50))
+            y_offset = int(34 * progress)
+            text_rect = surf.get_rect(center=(rect.centerx, rect.top - 18 - y_offset))
+            shadow_rect = shadow.get_rect(center=(text_rect.centerx + 2, text_rect.centery + 2))
+            self.screen.blit(shadow, shadow_rect)
+            self.screen.blit(surf, text_rect)
+        self._prune_float_texts()
+
+    def _draw_weapon_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        alpha = int(190 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(80, 80).size, pygame.SRCALPHA)
+        color = (*effect.color, alpha)
+        width = 5 if effect.critical else 3
+        slash_shift = int(progress * 42)
+        pygame.draw.line(
+            overlay,
+            color,
+            (overlay.get_width() // 2 - 54 + slash_shift, overlay.get_height() // 2 - 36),
+            (overlay.get_width() // 2 + 54 + slash_shift, overlay.get_height() // 2 + 24),
+            width,
+        )
+        pygame.draw.line(
+            overlay,
+            (*effect.color, max(40, alpha // 2)),
+            (overlay.get_width() // 2 - 36, overlay.get_height() // 2 + 28),
+            (overlay.get_width() // 2 + 38, overlay.get_height() // 2 - 28),
+            2,
+        )
+        for index in range(5):
+            spark_alpha = max(0, alpha - index * 18)
+            spark_x = overlay.get_width() // 2 + index * 14 - 30
+            spark_y = overlay.get_height() // 2 - int(progress * 36) + ((index % 2) * 14)
+            pygame.draw.circle(overlay, (*effect.color, spark_alpha), (spark_x, spark_y), max(2, 5 - index // 2))
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
+
+    def _draw_skill_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        alpha = int(150 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(100, 70).size, pygame.SRCALPHA)
+        center = (overlay.get_width() // 2, overlay.get_height() // 2)
+        radius = int(22 + progress * 48)
+        pygame.draw.circle(overlay, (*effect.color, max(25, alpha // 2)), center, radius, 2)
+        for angle in (0, math.pi / 3, math.pi * 2 / 3):
+            dx = int(math.cos(angle) * (radius + 12))
+            dy = int(math.sin(angle) * (radius // 2))
+            pygame.draw.line(overlay, (*effect.color, alpha), (center[0] - dx, center[1] - dy), (center[0] + dx, center[1] + dy), 2)
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
+
+    def _draw_spell_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        alpha = int(170 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(120, 120).size, pygame.SRCALPHA)
+        center = (overlay.get_width() // 2, overlay.get_height() // 2)
+        glow_radius = int(28 + progress * 62)
+        pygame.draw.circle(overlay, (*effect.color, max(24, alpha // 3)), center, glow_radius)
+        pygame.draw.circle(overlay, (*effect.color, alpha), center, max(8, glow_radius // 3), 2)
+        for index in range(8):
+            angle = (math.pi * 2 * index / 8) + progress * 1.4
+            inner = glow_radius // 3
+            outer = glow_radius
+            start = (center[0] + int(math.cos(angle) * inner), center[1] + int(math.sin(angle) * inner))
+            end = (center[0] + int(math.cos(angle) * outer), center[1] + int(math.sin(angle) * outer))
+            pygame.draw.line(overlay, (*effect.color, max(35, alpha // 2)), start, end, 2)
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
     def _filter_status_message(self, message):
         """Remove status-effect log lines to keep the log focused on actions."""
@@ -230,13 +481,18 @@ class CombatView:
                 kept_lines.append(line.strip())
         return kept_lines
 
-    def _wrap_log_line(self, line: str, max_width: int | None = None) -> list[str]:
+    def _wrap_log_line(
+        self,
+        line: str,
+        max_width: int | None = None,
+        font: pygame.font.Font | None = None,
+    ) -> list[str]:
         """Wrap a combat log line to the combat pane width."""
         if not line:
             return []
 
         max_width = max(160, max_width if max_width is not None else self.combat_width - 30)
-        font = pygame.font.Font(None, 20)
+        measure_font = font or pygame.font.Font(None, 20)
         wrapped: list[str] = []
         for paragraph in line.split("\n"):
             stripped = paragraph.strip()
@@ -246,7 +502,7 @@ class CombatView:
             current = ""
             for word in stripped.split():
                 candidate = f"{current} {word}".strip() if current else word
-                if font.size(candidate)[0] <= max_width:
+                if measure_font.size(candidate)[0] <= max_width:
                     current = candidate
                     continue
 
@@ -254,14 +510,14 @@ class CombatView:
                     wrapped.append(current)
                     current = ""
 
-                if font.size(word)[0] <= max_width:
+                if measure_font.size(word)[0] <= max_width:
                     current = word
                     continue
 
                 chunk = ""
                 for char in word:
                     chunk_candidate = f"{chunk}{char}"
-                    if chunk and font.size(chunk_candidate)[0] > max_width:
+                    if chunk and measure_font.size(chunk_candidate)[0] > max_width:
                         wrapped.append(chunk)
                         chunk = char
                     else:
@@ -271,6 +527,91 @@ class CombatView:
             if current:
                 wrapped.append(current)
         return wrapped
+
+    def _wrapped_combat_log_lines(
+        self,
+        max_width: int,
+        font: pygame.font.Font | None = None,
+    ) -> list[str]:
+        """Return combat log history flattened into render-ready wrapped lines."""
+        return [
+            line.text
+            for line in self._wrapped_combat_log_entries(max_width=max_width, font=font)
+        ]
+
+    def _wrapped_combat_log_entries(
+        self,
+        max_width: int,
+        font: pygame.font.Font | None = None,
+        overlay: bool = False,
+    ) -> list[CombatLogLine]:
+        """Return combat log history flattened with source-message styling intact."""
+        entries: list[CombatLogLine] = []
+        wrap_width = max(160, max_width - 12)
+        for message in self.combat_log:
+            color = self._combat_log_color(message, overlay=overlay)
+            marker_color = self._combat_log_marker_color(message, overlay=overlay)
+            wrapped_lines = self._wrap_log_line(message, max_width=wrap_width, font=font)
+            for index, wrapped_line in enumerate(wrapped_lines):
+                entries.append(
+                    CombatLogLine(
+                        text=wrapped_line,
+                        color=color,
+                        marker_color=marker_color,
+                        continuation=index > 0,
+                    )
+                )
+        return entries
+
+    def _draw_panel_surface(
+        self,
+        rect: pygame.Rect,
+        *,
+        fill: tuple[int, int, int],
+        border: tuple[int, int, int],
+        accent: tuple[int, int, int] | None = None,
+        alpha: int | None = None,
+        border_width: int = 2,
+    ) -> None:
+        if alpha is None:
+            pygame.draw.rect(self.screen, fill, rect)
+        else:
+            panel = pygame.Surface(rect.size)
+            panel.set_alpha(alpha)
+            panel.fill(fill)
+            self.screen.blit(panel, rect.topleft)
+        pygame.draw.rect(self.screen, border, rect, border_width)
+        if accent is not None and rect.height >= 10:
+            try:
+                pygame.draw.line(self.screen, accent, (rect.left + 2, rect.top + 2), (rect.right - 3, rect.top + 2), 1)
+                pygame.draw.line(self.screen, (18, 18, 22), (rect.left + 2, rect.bottom - 3), (rect.right - 3, rect.bottom - 3), 1)
+            except TypeError:
+                return
+
+    def _render_player_danger_vignette(self, player_char) -> None:
+        health = getattr(player_char, "health", None)
+        current = getattr(health, "current", 0)
+        maximum = max(1, getattr(health, "max", 1))
+        ratio = current / maximum
+        if ratio > 0.25:
+            return
+
+        intensity = min(1.0, (0.25 - ratio) / 0.25)
+        alpha = int(34 + intensity * 54)
+        overlay = pygame.Surface((self.combat_width, self.screen_height), pygame.SRCALPHA)
+        edge_color = (150, 30, 24, alpha)
+        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, 0, self.combat_width, 6))
+        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, self.screen_height - 156, self.combat_width, 6))
+        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, 0, 8, self.screen_height))
+        pygame.draw.rect(overlay, edge_color, pygame.Rect(self.combat_width - 8, 0, 8, self.screen_height))
+        if intensity > 0.5:
+            pulse_alpha = int((intensity - 0.5) * 70)
+            pygame.draw.rect(
+                overlay,
+                (100, 20, 20, pulse_alpha),
+                pygame.Rect(0, self.screen_height - 312, self.combat_width, 156),
+            )
+        self.screen.blit(overlay, (0, 0))
 
     def _effect_label(self, effect_name):
         labels = {
@@ -340,6 +681,10 @@ class CombatView:
             icons.append(("ATK", True))
             icons.append(("DEF", True))
 
+        dot_effect = character.magic_effects.get("DOT")
+        if dot_effect and dot_effect.active and getattr(dot_effect, "source", "").lower() == "burn":
+            icons.append(("BRN", False))
+
         for name, effect in character.status_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), name in positive_status))
@@ -391,9 +736,27 @@ class CombatView:
         return any(term in lower for term in telegraph_terms)
 
     def _combat_log_color(self, line: str, overlay: bool = False):
+        lower = line.lower()
         if self._is_telegraph_message(line):
             return self.colors["telegraph"]
+        if any(
+            term in lower
+            for term in ("health regenerated", "health has regenerated", "regenerates", "restores", "recovers", "heals")
+        ):
+            return self.colors["log_heal"]
+        if any(term in lower for term in (" damage", "damages ", "bleeding", "poison", "takes ", "loses ")):
+            return self.colors["log_damage"]
+        if any(term in lower for term in ("miss", "resist", "immune", "fails")):
+            return self.colors["log_muted"]
         return (240, 240, 240) if overlay else self.colors["text"]
+
+    def _combat_log_marker_color(self, line: str, overlay: bool = False) -> tuple[int, int, int]:
+        if self._is_telegraph_message(line):
+            return self.colors["telegraph"]
+        color = self._combat_log_color(line, overlay=overlay)
+        if color == self.colors["text"] or color == (240, 240, 240):
+            return (120, 120, 128)
+        return color
 
     @staticmethod
     def _truncate_text(font: pygame.font.Font, text: str, max_width: int) -> str:
@@ -554,7 +917,7 @@ class CombatView:
             ghost_rect = ghost.get_rect(center=(center[0] + offset_x, center[1] + offset_y))
             self.screen.blit(ghost, ghost_rect)
     
-    def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None):
+    def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
         """Render the complete combat view."""
         # Update animations
         self.update_animations()
@@ -564,7 +927,7 @@ class CombatView:
         self.screen.fill(self.colors['background'], combat_rect)
         
         # Check if player has sight
-        has_sight = self._has_sight(player_char)
+        has_sight = self._has_sight(player_char) if show_enemy_details is None else bool(show_enemy_details)
         
         # Render enemy in center
         self._render_enemy(enemy, has_sight)
@@ -572,7 +935,7 @@ class CombatView:
 
         # Render current turn indicator
         self._render_turn_indicator(player_char, enemy, current_turn=current_turn)
-        self._render_telegraph_banner(overlay=False)
+        self._render_telegraph_banner(enemy=enemy, overlay=False)
 
         # Render player status at bottom left
         self._render_player_status(player_char)
@@ -586,7 +949,7 @@ class CombatView:
     def _render_enemy(self, enemy, has_sight=True):
         """Render the enemy sprite/representation with animations."""
         visual_offset_x, visual_offset_y = self.enemy_visual_offset
-        center_x = self.combat_width // 2 + visual_offset_x
+        center_x = self.combat_width // 2 + visual_offset_x + self._enemy_recoil_offset()
         boss_enemy = self._is_boss_enemy(enemy)
         center_y = (int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3) + visual_offset_y
 
@@ -661,6 +1024,7 @@ class CombatView:
                 )
 
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
+            self._last_enemy_target_rect = sprite_rect.copy()
             self.screen.blit(display_sprite, sprite_rect)
         else:
             # Fallback to simple representation
@@ -669,6 +1033,12 @@ class CombatView:
             fallback_y = center_y + animator.bob_offset if is_flying else center_y
             pygame.draw.circle(self.screen, self.colors['enemy'], 
                              (int(fallback_x), int(fallback_y)), enemy_size)
+            self._last_enemy_target_rect = pygame.Rect(
+                int(fallback_x - enemy_size),
+                int(fallback_y - enemy_size),
+                enemy_size * 2,
+                enemy_size * 2,
+            )
             
             # Add eyes
             eye_offset = enemy_size // 3
@@ -711,6 +1081,9 @@ class CombatView:
             hp_surf = small_font.render(hp_text, True, self.colors['text'])
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
+
+        self._render_active_impact_effects()
+        self._render_floating_texts()
 
     def _render_enemy_info_panel(self, enemy, has_sight=True, overlay=True):
         """Render combat artwork and target details without replacing gameplay sprites."""
@@ -845,53 +1218,111 @@ class CombatView:
                 penalty_surf = small_font.render(line, True, (255, 100, 100))  # Light red
                 self.screen.blit(penalty_surf, (x + 5, y))
                 y += 18
+
+    @staticmethod
+    def _action_grid_layout(width: int, menu_height: int, action_count: int) -> tuple[int, int, int, int, int]:
+        actions_per_row = 3
+        row_count = max(1, math.ceil(max(1, action_count) / actions_per_row))
+        start_y_offset = 46
+        bottom_padding = 14
+        available_height = max(24, menu_height - start_y_offset - bottom_padding)
+        row_height = max(22, min(34, available_height // row_count))
+        cell_width = max(92, (width - 54) // actions_per_row)
+        return actions_per_row, row_count, start_y_offset, row_height, cell_width
+
+    def _render_action_grid(
+        self,
+        actions,
+        selected_action,
+        *,
+        rect: pygame.Rect,
+        action_font: pygame.font.Font,
+        text_color,
+        highlight_color,
+        border_color=None,
+        translucent_highlight: bool = False,
+    ) -> None:
+        actions_per_row, _row_count, start_y_offset, row_height, cell_width = self._action_grid_layout(
+            rect.width,
+            rect.height,
+            len(actions),
+        )
+        cell_padding = 10
+
+        for i, action in enumerate(actions):
+            row = i // actions_per_row
+            col = i % actions_per_row
+            x = rect.left + 28 + col * cell_width
+            y = rect.top + start_y_offset + row * row_height
+            highlight_rect = pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3))
+
+            if i == selected_action:
+                if translucent_highlight:
+                    highlight_overlay = pygame.Surface(highlight_rect.size)
+                    highlight_overlay.set_alpha(150)
+                    highlight_overlay.fill(highlight_color)
+                    self.screen.blit(highlight_overlay, highlight_rect.topleft)
+                else:
+                    pygame.draw.rect(self.screen, highlight_color, highlight_rect)
+                selected_border = border_color or self.colors["panel_accent"]
+                pygame.draw.rect(self.screen, selected_border, highlight_rect, 2)
+                try:
+                    pygame.draw.line(
+                        self.screen,
+                        (235, 215, 165),
+                        (highlight_rect.left + 2, highlight_rect.top + 2),
+                        (highlight_rect.right - 3, highlight_rect.top + 2),
+                        1,
+                    )
+                except TypeError:
+                    pass
+
+            fitted_action = self._truncate_text(action_font, str(action), max(20, highlight_rect.width - cell_padding))
+            action_surf = action_font.render(fitted_action, True, text_color)
+            self.screen.blit(action_surf, (x, y))
     
     def _render_action_menu(self, actions, selected_action):
         """Render the action selection menu."""
         menu_height = 150
         menu_y = self.combat_height - menu_height
         
-        # Background
         menu_rect = pygame.Rect(0, menu_y, self.combat_width, menu_height)
-        pygame.draw.rect(self.screen, self.colors['action_bg'], menu_rect)
-        pygame.draw.line(self.screen, self.colors['text'], 
-                        (0, menu_y), (self.combat_width, menu_y), 2)
+        self._draw_panel_surface(
+            menu_rect,
+            fill=(24, 24, 30),
+            border=self.colors["action_border"],
+            accent=self.colors["panel_accent"],
+            border_width=2,
+        )
         
         # Title
         font = pygame.font.Font(None, 28)
-        title_surf = font.render("Choose Action:", True, self.colors['text'])
-        self.screen.blit(title_surf, (20, menu_y + 10))
+        title_surf = font.render("Choose Action:", True, (232, 224, 205))
+        self.screen.blit(title_surf, (24, menu_y + 10))
         
-        # Actions in a grid (3 per row)
         action_font = pygame.font.Font(None, 24)
-        start_y = menu_y + 45
-        actions_per_row = 3
-        action_spacing = 180
-        
-        for i, action in enumerate(actions):
-            row = i // actions_per_row
-            col = i % actions_per_row
-            
-            x = 30 + col * action_spacing
-            y = start_y + row * 35
-            
-            # Highlight selected action
-            if i == selected_action:
-                highlight_rect = pygame.Rect(x - 5, y - 3, action_spacing - 20, 30)
-                pygame.draw.rect(self.screen, self.colors['action_selected'], highlight_rect)
-            
-            # Action text (no numbers)
-            action_surf = action_font.render(action, True, self.colors['text'])
-            self.screen.blit(action_surf, (x, y))
+        self._render_action_grid(
+            actions,
+            selected_action,
+            rect=menu_rect,
+            action_font=action_font,
+            text_color=self.colors['text'],
+            highlight_color=self.colors['action_selected'],
+        )
     
     def _render_combat_log(self):
         """Render recent combat messages."""
         log_height = 120
         log_y = self.combat_height - 270  # Above action menu
         
-        # Background
         log_rect = pygame.Rect(0, log_y, self.combat_width, log_height)
-        pygame.draw.rect(self.screen, self.colors['message_bg'], log_rect)
+        self._draw_panel_surface(
+            log_rect,
+            fill=self.colors["message_bg"],
+            border=(76, 76, 84),
+            accent=(105, 90, 58),
+            border_width=1,
+        )
         
         # Messages
         font = pygame.font.Font(None, 20)
@@ -900,44 +1331,42 @@ class CombatView:
         max_lines = self.log_lines_per_page
         lines_rendered = 0
 
-        start = self.log_scroll_offset
-        end = start + max_lines
-        for message in self.combat_log[start:end]:
+        display_lines = self._wrapped_combat_log_entries(self.combat_width - 30, font=font)
+        max_scroll = max(0, len(display_lines) - max_lines)
+        self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
+
+        for line in display_lines[self.log_scroll_offset:self.log_scroll_offset + max_lines]:
             if lines_rendered >= max_lines:
                 break
-
-            for line in self._wrap_log_line(message, max_width=self.combat_width - 30):
-                if lines_rendered >= max_lines:
-                    break
-                    
-                msg_surf = font.render(line, True, self._combat_log_color(line))
-                self.screen.blit(msg_surf, (15, y))
-                y += line_height
-                lines_rendered += 1
+            marker_color = (90, 90, 98) if line.continuation else line.marker_color
+            pygame.draw.rect(self.screen, marker_color, pygame.Rect(11, y + 5, 4, 12))
+            msg_surf = font.render(line.text, True, line.color)
+            self.screen.blit(msg_surf, (31 if line.continuation else 20, y))
+            y += line_height
+            lines_rendered += 1
     
     def show_damage_flash(self, is_player_hit, event_handler=None):
         """Flash the screen to indicate damage."""
-        flash_surface = pygame.Surface((self.combat_width, self.combat_height))
-        flash_surface.set_alpha(100)
-        
-        if is_player_hit:
-            flash_surface.fill((200, 0, 0))  # Red for player hit
-        else:
-            flash_surface.fill((255, 255, 0))  # Yellow for enemy hit
-        
-        self.screen.blit(flash_surface, (0, 0))
-        pygame.display.flip()
+        base_surface = self.screen.copy()
+        flash_color = (160, 28, 20) if is_player_hit else (176, 128, 62)
 
         # Brief pause while still pumping events to keep the window responsive.
         flash_clock = pygame.time.Clock()
         elapsed = 0
-        while elapsed < 150:
+        duration_ms = 180
+        while elapsed < duration_ms:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
                 if event_handler is not None:
                     event_handler(event)
+            self.screen.blit(base_surface, (0, 0))
+            flash_surface = pygame.Surface((self.combat_width, self.combat_height), pygame.SRCALPHA)
+            flash_surface.fill((*flash_color, int(82 * (1.0 - elapsed / duration_ms))))
+            self.screen.blit(flash_surface, (0, 0))
+            self._render_active_impact_effects()
+            pygame.display.flip()
             flash_clock.tick(60)
             elapsed += flash_clock.get_time()
 
@@ -950,7 +1379,7 @@ class CombatView:
         # Position at bottom-center of the dungeon view area (left 65% of screen)
         visual_offset_x, visual_offset_y = self.enemy_visual_offset
         view_width = int(self.screen_width * 0.65)
-        center_x = view_width // 2 + visual_offset_x
+        center_x = view_width // 2 + visual_offset_x + self._enemy_recoil_offset()
         
         # Position enemy at bottom third (standing on the floor ahead)
         center_y = int(self.screen_height * 0.65) + visual_offset_y
@@ -1000,6 +1429,7 @@ class CombatView:
                 )
 
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
+            self._last_enemy_target_rect = sprite_rect.copy()
             self.screen.blit(display_sprite, sprite_rect)
         else:
             # Fallback to simple representation
@@ -1008,6 +1438,12 @@ class CombatView:
             fallback_y = center_y + animator.bob_offset if is_flying else center_y
             pygame.draw.circle(self.screen, self.colors['enemy'], 
                              (int(fallback_x), int(fallback_y)), enemy_size)
+            self._last_enemy_target_rect = pygame.Rect(
+                int(fallback_x - enemy_size),
+                int(fallback_y - enemy_size),
+                enemy_size * 2,
+                enemy_size * 2,
+            )
             
             # Add eyes
             eye_offset = enemy_size // 3
@@ -1064,11 +1500,22 @@ class CombatView:
             if icons:
                 self._render_status_icons(icons, bar_x, bar_y + bar_height + 8, max_width=bar_width)
 
-    def render_combat_overlay(self, player_char, enemy, actions, selected_action, current_turn=None):
+        self._render_active_impact_effects()
+        self._render_floating_texts()
+
+    def render_combat_overlay(self, player_char, enemy, actions, selected_action, current_turn=None, show_enemy_details=None):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
+        self._last_player_target_rect = pygame.Rect(
+            26,
+            self.screen_height - 312,
+            max(180, int(self.screen_width * 0.24)),
+            130,
+        )
+        self._render_player_danger_vignette(player_char)
         self._render_turn_indicator(player_char, enemy, current_turn=current_turn, overlay=True)
-        self._render_telegraph_banner(overlay=True)
-        self._render_enemy_info_panel(enemy, self._has_sight(player_char), overlay=True)
+        self._render_telegraph_banner(enemy=enemy, overlay=True)
+        has_sight = self._has_sight(player_char) if show_enemy_details is None else bool(show_enemy_details)
+        self._render_enemy_info_panel(enemy, has_sight, overlay=True)
 
         # Render combat log at bottom-left
         self._render_combat_log_overlay()
@@ -1083,15 +1530,15 @@ class CombatView:
         log_height = 150
         log_y = 10  # Top of screen
         
-        # Semi-transparent background
-        overlay = pygame.Surface((view_width, log_height))
-        overlay.set_alpha(200)
-        overlay.fill((15, 15, 20))
-        self.screen.blit(overlay, (0, log_y))
-        
-        # Border
-        pygame.draw.rect(self.screen, (80, 80, 90),
-                        pygame.Rect(0, log_y, view_width, log_height), 2)
+        log_rect = pygame.Rect(0, log_y, view_width, log_height)
+        self._draw_panel_surface(
+            log_rect,
+            fill=(15, 15, 20),
+            border=(80, 80, 90),
+            accent=(105, 90, 58),
+            alpha=200,
+            border_width=2,
+        )
         
         # Messages
         font = pygame.font.Font(None, 22)
@@ -1100,24 +1547,21 @@ class CombatView:
         max_lines = self.log_lines_per_page
         lines_rendered = 0
         
-        max_scroll = self._max_log_scroll()
+        display_lines = self._wrapped_combat_log_entries(view_width - 30, font=font, overlay=True)
+        max_scroll = max(0, len(display_lines) - max_lines)
         self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
-        messages_to_show = self.combat_log[self.log_scroll_offset:self.log_scroll_offset + max_lines]
-        
-        for message in messages_to_show:
+
+        for line in display_lines[self.log_scroll_offset:self.log_scroll_offset + max_lines]:
             if lines_rendered >= max_lines:
                 break
+            marker_color = (90, 90, 98) if line.continuation else line.marker_color
+            pygame.draw.rect(self.screen, marker_color, pygame.Rect(11, y + 5, 4, 12))
+            msg_surf = font.render(line.text, True, line.color)
+            self.screen.blit(msg_surf, (31 if line.continuation else 20, y))
+            y += line_height
+            lines_rendered += 1
 
-            for line in self._wrap_log_line(message, max_width=view_width - 30):
-                if lines_rendered >= max_lines:
-                    break
-                    
-                msg_surf = font.render(line, True, self._combat_log_color(line, overlay=True))
-                self.screen.blit(msg_surf, (15, y))
-                y += line_height
-                lines_rendered += 1
-
-        if len(self.combat_log) > max_lines:
+        if len(display_lines) > max_lines:
             indicator_font = pygame.font.Font(None, 18)
             if self.log_scroll_offset > 0:
                 up_surf = indicator_font.render("^", True, (210, 210, 210))
@@ -1135,46 +1579,32 @@ class CombatView:
         menu_height = 150
         menu_y = self.screen_height - menu_height
         
-        # Semi-transparent background
-        overlay = pygame.Surface((view_width, menu_height))
-        overlay.set_alpha(220)
-        overlay.fill((20, 20, 25))
-        self.screen.blit(overlay, (0, menu_y))
-        
-        # Border
-        pygame.draw.rect(self.screen, (100, 100, 110),
-                        pygame.Rect(0, menu_y, view_width, menu_height), 3)
+        menu_rect = pygame.Rect(0, menu_y, view_width, menu_height)
+        self._draw_panel_surface(
+            menu_rect,
+            fill=(20, 20, 25),
+            border=self.colors["action_border"],
+            accent=self.colors["panel_accent"],
+            alpha=220,
+            border_width=3,
+        )
         
         # Title
         font = pygame.font.Font(None, 30)
-        title_surf = font.render("Choose Action:", True, (220, 220, 220))
-        self.screen.blit(title_surf, (20, menu_y + 10))
+        title_surf = font.render("Choose Action:", True, (232, 224, 205))
+        self.screen.blit(title_surf, (24, menu_y + 10))
         
-        # Actions in a grid (3 per row)
         action_font = pygame.font.Font(None, 26)
-        start_y = menu_y + 50
-        actions_per_row = 3
-        action_spacing = int(view_width / 3.5)
-        
-        for i, action in enumerate(actions):
-            row = i // actions_per_row
-            col = i % actions_per_row
-            
-            x = 30 + col * action_spacing
-            y = start_y + row * 40
-            
-            # Highlight selected action
-            if i == selected_action:
-                highlight_rect = pygame.Rect(x - 5, y - 5, action_spacing - 30, 35)
-                highlight_overlay = pygame.Surface((highlight_rect.width, highlight_rect.height))
-                highlight_overlay.set_alpha(180)
-                highlight_overlay.fill((100, 100, 120))
-                self.screen.blit(highlight_overlay, (highlight_rect.x, highlight_rect.y))
-                pygame.draw.rect(self.screen, (150, 150, 170), highlight_rect, 2)
-            
-            # Action text
-            action_surf = action_font.render(action, True, (240, 240, 240))
-            self.screen.blit(action_surf, (x, y))
+        self._render_action_grid(
+            actions,
+            selected_action,
+            rect=pygame.Rect(0, menu_y, view_width, menu_height),
+            action_font=action_font,
+            text_color=(240, 240, 240),
+            highlight_color=(100, 100, 120),
+            border_color=(150, 150, 170),
+            translucent_highlight=True,
+        )
 
     def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False):
         """Render a compact banner showing whose turn is active."""
@@ -1225,44 +1655,56 @@ class CombatView:
         self.screen.blit(label_surf, (rect.left + text_left, rect.top + 8))
         self.screen.blit(sublabel_surf, (rect.left + text_left, rect.top + 34))
 
-    def _latest_telegraph_line(self) -> str | None:
+    def _latest_telegraph_line(self, actor=None) -> str | None:
         if self._active_telegraph_line:
-            return self._active_telegraph_line
+            if actor is None or self._message_starts_with_actor(self._active_telegraph_line, actor):
+                return self._active_telegraph_line
         if self._suppress_logged_telegraph_banner:
             return None
         for message in reversed(self.combat_log):
             for line in reversed([segment.strip() for segment in message.split("\n") if segment.strip()]):
-                if self._is_telegraph_message(line):
+                if self._is_telegraph_message(line) and (
+                    actor is None or self._message_starts_with_actor(line, actor)
+                ):
                     return line
         return None
 
-    def _render_telegraph_banner(self, overlay: bool = False) -> None:
-        line = self._latest_telegraph_line()
+    @staticmethod
+    def _message_starts_with_actor(message: str, actor) -> bool:
+        actor_name = getattr(actor, "name", "")
+        return bool(actor_name and message.startswith(f"{actor_name} "))
+
+    def _render_telegraph_banner(self, enemy=None, overlay: bool = False) -> None:
+        line = self._latest_telegraph_line(actor=enemy)
         if not line:
             return
 
-        available_width = self.screen_width - self.combat_width - 24 if overlay else self.combat_width - 30
+        available_width = self.combat_width - 56
         if available_width <= 0:
             return
 
-        title_font = pygame.font.Font(None, 22)
-        body_font = pygame.font.Font(None, 18)
-        title_text = "Telegraph"
-        title_surf = title_font.render(title_text, True, (255, 255, 255))
-        body_surf = body_font.render(self._truncate_text(body_font, line, max(120, available_width - 48)), True, self.colors["telegraph"])
+        title_font = pygame.font.Font(None, 20)
+        body_font = pygame.font.Font(None, 19)
+        title_text = "Incoming"
+        title_surf = title_font.render(title_text, True, (246, 238, 216))
+        body_text = self._truncate_text(body_font, line, max(120, available_width - 128))
+        body_surf = body_font.render(body_text, True, self.colors["telegraph"])
 
-        width = min(max(title_surf.get_width(), body_surf.get_width()) + 52, available_width)
-        height = 54
-        x = self.combat_width + 12 if overlay else self.combat_width - width - 12
-        y = 12
+        width = min(max(title_surf.get_width() + body_surf.get_width() + 102, 340), available_width)
+        height = 46
+        x = max(20, (self.combat_width - width) // 2)
+        y = 205 if overlay else 74
         rect = pygame.Rect(x, y, width, height)
 
-        panel = pygame.Surface(rect.size)
-        panel.set_alpha(220)
-        panel.fill((22, 18, 12))
-        self.screen.blit(panel, rect.topleft)
-
-        pygame.draw.rect(self.screen, self.colors["telegraph"], rect, 2)
-        pygame.draw.circle(self.screen, self.colors["telegraph"], (rect.left + 16, rect.centery), 6)
-        self.screen.blit(title_surf, (rect.left + 30, rect.top + 6))
-        self.screen.blit(body_surf, (rect.left + 30, rect.top + 28))
+        self._draw_panel_surface(
+            rect,
+            fill=(26, 20, 14),
+            border=self.colors["telegraph"],
+            accent=(176, 96, 58),
+            alpha=225,
+            border_width=2,
+        )
+        pygame.draw.rect(self.screen, (132, 58, 42), pygame.Rect(rect.left + 10, rect.top + 9, 7, rect.height - 18))
+        pygame.draw.circle(self.screen, self.colors["telegraph"], (rect.left + 30, rect.centery), 5)
+        self.screen.blit(title_surf, (rect.left + 44, rect.top + 6))
+        self.screen.blit(body_surf, (rect.left + 44, rect.top + 24))

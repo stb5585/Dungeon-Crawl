@@ -28,6 +28,7 @@ class ActionPriority(Enum):
     NORMAL = 2         # Standard attacks and abilities
     LOW = 3            # Slow/charging abilities
     DELAYED = 4        # Actions that occur later (e.g., after X turns)
+    LOW_HP_ONLY = 50    # AI-only: selectable only when the actor is below an HP threshold
     SKIP = 99          # AI-only: do not select/schedule this action
 
 

@@ -692,6 +692,27 @@ def test_equipment_popup_uses_player_equip_logic_for_two_handed_weapons(monkeypa
     assert player.equipment["OffHand"].name == "None"
 
 
+def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    popup = popup_menus.EquipmentPopupMenu(presenter, parent)
+
+    fist = DummyItem("Indra's Fist", typ="Weapon", subtyp="Fist")
+    sword = DummyItem("Offhand Sword", typ="Weapon", subtyp="Sword")
+    shield = DummyItem("Buckler", typ="OffHand", subtyp="Shield")
+    player.inventory.setdefault("Weapons", []).extend([fist, sword])
+    player.inventory.setdefault("Shields", []).append(shield)
+    player.cls = SimpleNamespace(equip_check=lambda item, slot: slot == "OffHand" and item.subtyp in {"Fist", "Shield"})
+
+    equippable = popup._get_equippable_items_for_slot(player, "OffHand")
+
+    assert any(item.name == "Indra's Fist" for item in equippable)
+    assert any(item.name == "Buckler" for item in equippable)
+    assert all(item.name != "Offhand Sword" for item in equippable)
+
+
 def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

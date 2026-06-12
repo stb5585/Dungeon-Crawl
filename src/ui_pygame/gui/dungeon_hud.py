@@ -149,6 +149,10 @@ class DungeonHUD:
             "Totem",
         }
 
+        dot_effect = character.magic_effects.get("DOT")
+        if dot_effect and dot_effect.active and getattr(dot_effect, "source", "").lower() == "burn":
+            icons.append(("BRN", False))
+
         for name, effect in character.status_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), name in positive_status))

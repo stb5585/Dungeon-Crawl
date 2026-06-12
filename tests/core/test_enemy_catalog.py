@@ -86,6 +86,46 @@ def test_enemy_options_short_circuit_for_berserk_turtle_and_ice_block():
     assert ice_block_enemy.options(target, [], None) == ("Nothing", None)
 
 
+def test_enemy_options_continue_charging_skill_before_selecting_new_action():
+    target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=10)
+    dragon = enemies.RedDragon()
+    dragon.spellbook["Skills"]["Dragon Breath (Fire)"].charging = True
+
+    assert dragon.options(target, [], None) == ("Use Skill", "Dragon Breath (Fire)")
+
+
+def test_red_dragon_breath_is_centerpiece_not_constant_spell_pressure():
+    dragon = enemies.RedDragon()
+    breath = dragon.spellbook["Skills"]["Dragon Breath (Fire)"]
+    ability_priorities = {entry["ability"]: entry["priority"] for entry in dragon.action_stack}
+
+    assert breath.get_charge_time() == 2
+    assert breath._effects[0].multiplier > 2.0
+    assert dragon.combat.attack < 135
+    assert dragon.combat.magic < 115
+    assert ability_priorities["Volcano"] == enemies.ActionPriority.LOW
+    assert ability_priorities["Ultima"] == enemies.ActionPriority.LOW
+    assert ability_priorities["Regen"] == enemies.ActionPriority.LOW_HP_ONLY
+    assert ability_priorities["Doublecast"] == enemies.ActionPriority.NORMAL
+
+
+def test_low_hp_only_priority_skips_until_threshold(monkeypatch):
+    target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
+    healer = _make_enemy(name="Test Healer")
+    healer.spellbook["Spells"]["Regen"] = abilities.Regen()
+    healer.action_stack = [
+        {"ability": "Attack", "priority": enemies.ActionPriority.NORMAL},
+        {"ability": "Regen", "priority": enemies.ActionPriority.LOW_HP_ONLY, "hp_threshold": 0.5},
+    ]
+    monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[-1])
+
+    healer.health.current = healer.health.max
+    assert healer.options(target, [], None) == ("Attack", None)
+
+    healer.health.current = 4
+    assert healer.options(target, [], None) == ("Cast Spell", "Regen")
+
+
 def test_enemy_options_cover_pickup_surface_and_flee_legacy_paths(monkeypatch):
     low_level_target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
     weapon = items.Weapon("Test Sword", "", 0, 0.0, 1, 1, "1-Handed", "Sword", False, True)

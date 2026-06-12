@@ -185,6 +185,12 @@ class DynamicDotEffect(Effect):
         target.magic_effects[self.dot_type].extra = max(
             dmg, target.magic_effects[self.dot_type].extra
         )
+        if self.dot_type == "DOT":
+            target.magic_effects[self.dot_type].source = (
+                "Burn" if result.action in {"Fireball", "Firestorm", "Hellfire", "Volcano"} else result.action
+            )
+        else:
+            target.magic_effects[self.dot_type].source = self.dot_type
         result.effects_applied["Magic"].append(f"DOT ({self.dot_type})")
 
         try:
@@ -464,6 +470,7 @@ class DamageOverTimeEffect(Effect):
             target.magic_effects["DOT"].active = True
             target.magic_effects["DOT"].duration = self.duration
             target.magic_effects["DOT"].extra = self.damage_per_tick
+            target.magic_effects["DOT"].source = self.dot_type
             result.effects_applied['Magic'].append(f'DOT ({self.dot_type})')
             result.extra['dot_type'] = self.dot_type
 
@@ -1669,6 +1676,7 @@ class AcidSpitEffect:
                     target.magic_effects["DOT"].extra = max(
                         damage, target.magic_effects["DOT"].extra
                     )
+                    target.magic_effects["DOT"].source = "Acid"
                     try:
                         actor._emit_status_event(
                             target, "DOT", applied=True,
@@ -5301,6 +5309,7 @@ class EruptionEffect(Effect):
             target.magic_effects["DOT"].extra = max(
                 1, actor.stats.intel // 4,
             )
+            target.magic_effects["DOT"].source = "Burn"
             messages.append(
                 f"{target.name} is set ablaze!\n"
             )

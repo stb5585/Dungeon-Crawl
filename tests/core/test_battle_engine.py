@@ -39,6 +39,35 @@ class FakeJumpSkill:
         self.charging = False
         return f"Jump hits {target.name}.\n"
 
+    def cancel_charge(self, _user):
+        self.charging = False
+        return "Jump was cancelled.\n"
+
+
+class FakeChargingJumpSkill(FakeJumpSkill):
+    def __init__(self):
+        super().__init__()
+        self.charging = False
+
+    def use(self, _user, target=None):
+        self.use_calls += 1
+        self.charging = True
+        return "TestHero is coiling their legs, preparing to leap into the air!\n"
+
+
+class FakeContinuingJumpSkill(FakeJumpSkill):
+    def __init__(self):
+        super().__init__()
+        self.charge_turns = 2
+
+    def get_charge_time(self):
+        return 2
+
+    def use(self, _user, target=None):
+        self.use_calls += 1
+        self.charge_turns -= 1
+        return "TestHero continues to gather power... (1 turn remaining)\n"
+
 
 def test_pre_turn_duration_one_stun_still_skips_current_turn():
     engine, player = _make_engine_with_player_attacking()
@@ -48,7 +77,7 @@ def test_pre_turn_duration_one_stun_still_skips_current_turn():
     result = engine.pre_turn()
 
     assert result.can_act is False
-    assert "incapacitated" in result.inactive_reason
+    assert result.inactive_reason == ""
     assert "no longer stunned" in result.effects_text
     assert player.status_effects["Stun"].active is False
 
@@ -61,7 +90,7 @@ def test_pre_turn_duration_one_sleep_still_skips_current_turn():
     result = engine.pre_turn()
 
     assert result.can_act is False
-    assert "incapacitated" in result.inactive_reason
+    assert result.inactive_reason == ""
     assert "no longer asleep" in result.effects_text
     assert player.status_effects["Sleep"].active is False
 
@@ -75,9 +104,87 @@ def test_pre_turn_prone_recovery_still_skips_current_turn(monkeypatch):
     result = engine.pre_turn()
 
     assert result.can_act is False
-    assert "incapacitated" in result.inactive_reason
+    assert result.inactive_reason == ""
     assert "no longer prone" in result.effects_text
     assert player.physical_effects["Prone"].active is False
+
+
+def test_pre_turn_stun_cancels_pending_jump():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+    player.class_effects["Jump"].active = True
+    player.status_effects["Stun"].active = True
+    player.status_effects["Stun"].duration = 2
+
+    result = engine.pre_turn()
+
+    assert result.can_act is False
+    assert "Jump" in result.effects_text
+    assert jump.charging is False
+    assert player.class_effects["Jump"].active is False
+    assert "stunned" in result.inactive_reason
+
+
+def test_start_battle_clears_stale_saved_jump_charge():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeContinuingJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+    player.class_effects["Jump"].active = True
+
+    engine.start_battle()
+
+    assert jump.charging is False
+    assert jump.charge_turns == 0
+    assert player.class_effects["Jump"].active is False
+
+
+def test_boss_battle_blocks_enemy_detail_vision():
+    engine, player = _make_engine_with_player_attacking()
+    player.cls.name = "Seeker"
+    engine.boss = True
+
+    assert engine.player_has_sight() is True
+    assert engine.show_enemy_details() is False
+
+
+def test_initial_jump_charge_omits_generic_uses_line():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeChargingJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+
+    result = engine.execute_action("Use Skill", "Jump")
+
+    assert "uses Jump" not in result.message
+    assert "coiling their legs" in result.message
+    assert jump.charging is True
+
+
+def test_continuing_jump_charge_omits_generic_uses_line():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeContinuingJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+    player.class_effects["Jump"].active = True
+
+    result = engine.execute_action("Use Skill", "Jump")
+
+    assert "uses Jump" not in result.message
+    assert "continues to gather power" in result.message
+    assert jump.charging is True
+
+
+def test_charging_skill_forced_action_takes_priority_over_berserk():
+    engine, player = _make_engine_with_player_attacking()
+    charge = FakeJumpSkill()
+    charge.name = "Dragon Breath (Fire)"
+    player.spellbook["Skills"] = {"Dragon Breath (Fire)": charge}
+    player.status_effects["Berserk"].active = True
+
+    forced = engine.get_forced_action()
+
+    assert forced is not None
+    assert forced.action == "Use Skill"
+    assert forced.choice == "Dragon Breath (Fire)"
 
 
 def test_resolved_jump_clears_forced_action_and_returns_control():

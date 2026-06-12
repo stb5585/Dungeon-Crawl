@@ -17,11 +17,12 @@ URGENT_NEGATIVE_STATUS_LABELS = {
     "SIL": 2,
     "PRN": 3,
     "BLD": 4,
-    "BRG": 5,
-    "DSA": 6,
-    "DOM": 7,
-    "PSN": 8,
-    "RND": 9,
+    "BRN": 5,
+    "BRG": 6,
+    "DSA": 7,
+    "DOM": 8,
+    "PSN": 9,
+    "RND": 10,
 }
 
 IMPORTANT_POSITIVE_STATUS_LABELS = {
@@ -218,6 +219,8 @@ def fit_status_icon_label(font, label: str, max_width: int) -> str:
 def status_icon_color(is_positive: bool | None, label: str = "") -> tuple[int, int, int]:
     if is_positive is None:
         return STATUS_ICON_COLORS["overflow"]
+    if _priority_label(label) == "DEF":
+        return STATUS_ICON_COLORS["positive"]
     if is_urgent_status_icon(label, is_positive):
         return STATUS_ICON_COLORS["urgent_negative"]
     return STATUS_ICON_COLORS["positive" if is_positive else "negative"]
