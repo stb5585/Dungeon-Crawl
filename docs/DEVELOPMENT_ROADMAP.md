@@ -22,6 +22,7 @@ This roadmap tracks the remaining work for Dungeon Crawl after the recent stabil
 - Pygame dungeon, town, combat, popup, and menu flows are functional, with remaining polish work concentrated in UX consistency and visual presentation.
 - Visual character creation now includes the selected portrait and sex/race/class identity on the naming screen.
 - Large item-render artwork is integrated for selected-item presentation contexts while compact lists continue to use small icons.
+- Tier 1 unique item artwork now has approved transparent individual PNGs under `src/ui_pygame/assets/item_art/`, with review sheets retained for visual QA.
 - Combat simulator, battle logger, save diagnostics, renderer diagnostics, audio diagnostics, and gameplay-stat summaries are implemented.
 - Sound/music runtime integration is active, but final content assets are still incomplete.
 
@@ -151,11 +152,13 @@ Status: `Active`
    - Production enemy combat sprites now cover every concrete enemy display name in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template.
    - Added `enemy_combat_sprite_scale.json` so large creatures can use per-enemy combat scale multipliers without changing every shared-canvas sprite.
    - Combat sprite review sheets can be rebuilt from approved transparent PNGs with `./.venv/bin/python tools/build_enemy_combat_sprites.py`.
-6. Update dungeon renderings to match new aesthetic.
+6. Expand realistic item artworks to include images for all items.
+   - Status: `Done` for the Tier 1 unique-art first pass.
+   - Approved individual transparent PNGs now cover legendary weapons, unique tomes/rods/scrolls, unique shields and armor, named helmets, quest/story items, and named accessories.
+   - Artwork is stored under `src/ui_pygame/assets/item_art/` with batch review sheets and a full Tier 1 alpha review sheet.
+   - Next item-art work should move to Tier 2 family art and selected-item integration for the new individual files.
+7. Update dungeon renderings to match new aesthetic.
    - Generate new floor, ceiling, and wall tiles
-7. Expand realistic item artworks to include images for all items.
-   - build on renderings in `src/ui_pygame/assets/item_renders/item_render_atlas.png` to produce images for each item
-   - either create independent images or create atlases for each item type or sub-type
 
 ### P2 - Renderer And Exploration Presentation
 
