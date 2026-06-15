@@ -591,10 +591,10 @@ class PygameGame:
         self._play_location_music("town")
         # Build options list first so it can be reused for popups
         options = [
-            "Visit Barracks",
-            "Visit Shop",
-            "Visit Inn",
-            "Visit Church",
+            "Barracks",
+            "Shop",
+            "Inn",
+            "Church",
             "Enter Dungeon",
         ]
 
@@ -648,16 +648,16 @@ class PygameGame:
                 continue
             choice_label = options[choice_idx]
 
-            if choice_label == "Visit Barracks":
+            if choice_label == "Barracks":
                 self.visit_barracks()
 
-            elif choice_label == "Visit Shop":
+            elif choice_label == "Shop":
                 self.visit_shop()
 
-            elif choice_label == "Visit Inn":
+            elif choice_label == "Inn":
                 self.visit_inn()
                 
-            elif choice_label == "Visit Church":
+            elif choice_label == "Church":
                 self.visit_church()
 
             elif choice_label == "Enter Dungeon":

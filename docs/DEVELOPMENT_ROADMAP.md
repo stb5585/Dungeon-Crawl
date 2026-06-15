@@ -192,6 +192,8 @@ Status: `Active`
    - Existing defeated-boss, spring, chest, door, and side-special coverage is useful; extend it only for concrete new props or regressions.
 4. Keep asset fallback diagnostics visible during renderer changes.
    - Use existing grouped fallback and panel-slot diagnostics before adding new debug helpers.
+5. Gameplay element refinement.
+   - The load bar when loading a game is jumpy instead of a smooth progression.
 
 ### P3 - Core Refactoring And Test Confidence
 
@@ -226,6 +228,13 @@ Status: `Planned`
       - possibly defeat scaled-up version of self; difficulty based on where character dies
    - Greater immersive gameplay details
       - Scientist(s) manning the Warp Point
+      - Artistic renderings for NPCs
+         - Sergeant in Barracks
+         - Patrons in Inn
+         - Shop purveyors
+         - Guards at Old Warehouse
+         - Priest at Church
+         - Little boy lost in dungeon (Bring Him Home quest)
 2. Racial passive follow-up.
    - Decide whether the original "7 sins / 7 virtues" ideas should become deeper passives or remain design flavor.
    - Avoid weakening the already-implemented always-on race identity pass.
@@ -237,6 +246,8 @@ Status: `Planned`
    - Most originally listed item-system improvements are now done.
    - Future equipment work should focus on clearly scoped new mechanics, class kits, or content rewards.
    - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.
+   - Add way to inspect currently equipped items.
+   - Equipment details when equipping should include whether the weapon is a one-handed or two-handed weapon.
 5. Deeper balance tuning.
    - Revisit stat-dump tradeoffs.
    - Re-run race-baseline comparisons once class kits are stable.
@@ -252,6 +263,13 @@ Status: `Planned`
 8. Combat Improvements
    - Add multi-enemy combat support; may require rebalancing
    - Create combat stack based on speed; greater speed diff can result in multiple turns in a row
+   - Combat logging improvements
+      - Add logging for item special effects (e.g. when an attack disarms an enemy)
+      - Change the player log color to match the icon colors (player blue, enemy red)
+   - Add visual representation of abilities
+      - Mana Shield creates a blue force field glow around the user
+      - Mirror Image duplicates the user
+      - Smoke Screen should obscure the user and then have them disappear while it fades
 9. Unique class mechanics
    - Warrior
       - Weapon Master/Grandmaster of Arms/Berserker
@@ -341,7 +359,7 @@ Status: `Planned`
 	- Pathfinder
       - Druid/Lycan
       - Diviner/Astromancer
-         - Geomancer has been renamed to Astromancer; need to adjust game to reflect this change
+         - Geomancer has been renamed to Astromancer in runtime class, item, race, ability, and test references.
             - change TetraDisaster to GrandDesign
          - Astromancer: Runic Alterations - defeating enemies with elemental spells gives chance to drop runes
             - runes match the spell used when gained
@@ -381,6 +399,12 @@ Status: `Planned`
 - Persistent statistics history is deferred until current-run stats feel insufficient in play.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
 - Laser/bird staged SFX routing is deferred until event payloads or creature-specific hooks are clear enough to avoid brittle name guesses.
+
+## Found Bugfixes
+
+- Log messages are still not being fully flushed to the logger before proceeding to the next turn or end of combat.
+- DOT status from Slot Machine does not apply a debuff to the statuses.
+- Lick should not be able to apply Hangover status.
 
 ## Resolved Archive
 

@@ -437,7 +437,7 @@ class GUICombatManager:
                         pygame.quit()
                         sys.exit(0)
                 draw_overlay(reveal_idx)
-                clock.tick(18)
+                clock.tick(90)
 
         input_armed = prepare_guarded_input(flush_events=False, require_key_release=True)
         waiting = True
