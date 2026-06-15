@@ -9,7 +9,7 @@ Prefer adding new renderer assets to that manifest instead of hard-coding new pa
 - Complete projected ceiling textures live under `src/ui_pygame/assets/dungeon_tiles/ceilings/`.
 - Wall textures live under `src/ui_pygame/assets/dungeon_tiles/walls/`.
 - Transparent floor and wall decorations live under `src/ui_pygame/assets/dungeon_tiles/special_tiles/`.
-- Approved organic source atlases live under `src/ui_pygame/assets/dungeon_tiles/source/ai/`.
+- Optional organic source atlases can be placed under `src/ui_pygame/assets/dungeon_tiles/source/ai/` when the approved root/fungus variants need to be regenerated from atlas sources.
 
 The organic root/fungus production assets are `256x256` RGBA PNGs. They are intentionally smaller than the older projected-plane assets; the texture library scales them for projected dungeon surfaces.
 
@@ -62,7 +62,7 @@ Rebuild dungeon render assets with:
 ./.venv/bin/python tools/build_dungeon_render_assets.py
 ```
 
-When `source/ai/roots_fungus_floor_atlas.png` and `source/ai/roots_fungus_overlay_chromakey_atlas.png` are present, the builder regenerates the approved organic `256x256` variants and aliases them to the existing in-game keys.
+When `source/ai/roots_fungus_floor_atlas.png` and `source/ai/roots_fungus_overlay_chromakey_atlas.png` are present, the builder regenerates the approved organic `256x256` variants and aliases them to the existing in-game keys. When those source atlases are absent, the builder preserves the checked-in production root/fungus PNGs instead of overwriting them with procedural fallback art.
 
 Rebuild the Tiled tileset after adding or changing authoring icons:
 

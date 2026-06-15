@@ -1483,6 +1483,18 @@ def write_organic_atlas_assets() -> None:
                 sprite.save(DUNGEON_ROOT / SPECIAL_TEXTURES[alias_key])
 
 
+def _save_generated_organic_texture(key: str, image: Image.Image) -> None:
+    path = DUNGEON_ROOT / TEXTURES[key]
+    if ORGANIC_FLOOR_ATLAS.exists() or not path.exists():
+        image.save(path)
+
+
+def _save_generated_organic_special(key: str, image: Image.Image) -> None:
+    path = DUNGEON_ROOT / SPECIAL_TEXTURES[key]
+    if ORGANIC_OVERLAY_ATLAS.exists() or not path.exists():
+        image.save(path)
+
+
 def write_textures() -> None:
     _masonry_wall_texture(100).save(DUNGEON_ROOT / TEXTURES["wall"])
     _tint_texture(_masonry_wall_texture(101), (44, 58, 78), 0.10).save(DUNGEON_ROOT / TEXTURES["wall_upper"])
@@ -1495,8 +1507,8 @@ def write_textures() -> None:
 
     floor_texture(200, (112, 96, 76)).save(DUNGEON_ROOT / TEXTURES["floor"])
     floor_texture(201, (96, 90, 82)).save(DUNGEON_ROOT / TEXTURES["floor_debris"])
-    draw_roots(floor_texture(202, (88, 86, 68)), 202, painterly=True).save(DUNGEON_ROOT / TEXTURES["floor_roots"])
-    _add_fungus_overlay(floor_texture(203, (70, 86, 64)), 203).save(DUNGEON_ROOT / TEXTURES["floor_fungus"])
+    _save_generated_organic_texture("floor_roots", draw_roots(floor_texture(202, (88, 86, 68)), 202, painterly=True))
+    _save_generated_organic_texture("floor_fungus", _add_fungus_overlay(floor_texture(203, (70, 86, 64)), 203))
     draw_glow_spots(floor_texture(204, (58, 78, 88)), 204, (70, 180, 226)).save(DUNGEON_ROOT / TEXTURES["floor_crystal"])
     firepath().save(DUNGEON_ROOT / TEXTURES["floor_fire"])
     spring().save(DUNGEON_ROOT / TEXTURES["floor_spring"])
@@ -1504,7 +1516,7 @@ def write_textures() -> None:
     pit("floor").save(DUNGEON_ROOT / TEXTURES["floor_pit"])
 
     ceiling_texture(300, (76, 76, 84)).save(DUNGEON_ROOT / TEXTURES["ceiling"])
-    _add_fungus_overlay(ceiling_texture(301, (64, 72, 66)), 301).save(DUNGEON_ROOT / TEXTURES["ceiling_fungus"])
+    _save_generated_organic_texture("ceiling_fungus", _add_fungus_overlay(ceiling_texture(301, (64, 72, 66)), 301))
     ceiling_texture(302, (56, 66, 76), (72, 176, 226)).save(DUNGEON_ROOT / TEXTURES["ceiling_crystal"])
     funhouse_ceiling().save(DUNGEON_ROOT / TEXTURES["ceiling_funhouse"])
     pit("ceiling").save(DUNGEON_ROOT / TEXTURES["ceiling_pit"])
@@ -1512,8 +1524,8 @@ def write_textures() -> None:
 
 def write_specials() -> None:
     prop_rubble().save(DUNGEON_ROOT / SPECIAL_TEXTURES["rubble"])
-    prop_roots().save(DUNGEON_ROOT / SPECIAL_TEXTURES["root_growth"])
-    prop_fungus().save(DUNGEON_ROOT / SPECIAL_TEXTURES["fungus_patch"])
+    _save_generated_organic_special("root_growth", prop_roots())
+    _save_generated_organic_special("fungus_patch", prop_fungus())
     prop_crystals().save(DUNGEON_ROOT / SPECIAL_TEXTURES["crystal_cluster"])
     prop_bones().save(DUNGEON_ROOT / SPECIAL_TEXTURES["bone_pile"])
     prop_gear().save(DUNGEON_ROOT / SPECIAL_TEXTURES["broken_gear"])
