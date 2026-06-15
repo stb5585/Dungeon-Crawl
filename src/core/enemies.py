@@ -41,7 +41,7 @@ def random_enemy(level: str) -> Enemy:
       level = max(monsters, key=int)
 
     random_monster = random.choice(monsters[level])
-    # random_monster = Test()
+    random_monster = Test()
 
     return random_monster
 
@@ -2104,7 +2104,7 @@ class Disciple(Humanoid):
 
 class BlackSlime(Slime):
     """
-    Stupefy - Enemy Skill learnable by Diviner/Geomancer
+    Stupefy - Enemy Skill learnable by Diviner/Astromancer
     """
 
     def __init__(self):
