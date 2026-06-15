@@ -2220,7 +2220,7 @@ class Player(Character):
             res_mod += armor_resistance_modifier(self.equipment.get("Helmet"), typ)
             if self.cls.name == "Archbishop" and self.class_effects["Power Up"].active:
                 res_mod += 0.25
-            if self.cls.name == "Geomancer" and self.class_effects["Power Up"].active and \
+            if self.cls.name == "Astromancer" and self.class_effects["Power Up"].active and \
                     typ in ["Fire", "Water", "Wind", "Earth"]:
                 res_mod += 0.5
             return res_mod
@@ -2271,7 +2271,7 @@ class Player(Character):
             Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
                 damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
                 will be unable to transform back until after the battle
-            Geomancer - Tetra-Disaster: unleash a powerful attack consisting of all 4 elements; this will also increase resistance
+            Astromancer - Tetra-Disaster: unleash a powerful attack consisting of all 4 elements; this will also increase resistance
                 of caster to the 4 elements by 50%
             Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
                 that enemy type
@@ -2294,7 +2294,7 @@ class Player(Character):
                     "Master Monk": abilities.DimMak,
                     "Troubadour": abilities.SongInspiration,
                     "Lycan": abilities.LunarFrenzy,
-                    "Geomancer": abilities.TetraDisaster,
+                    "Astromancer": abilities.TetraDisaster,
                     "Soulcatcher": abilities.SoulHarvest,
                     "Beast Master": abilities.PackBond
             }

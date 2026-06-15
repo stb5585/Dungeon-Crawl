@@ -3790,7 +3790,7 @@ class TetraDisasterEffect(Effect):
 
     Iterates the user's Spells section for spells whose ``subtyp`` matches
     one of the configured elements, casts each with ``special=True``
-    (no mana cost), then activates the Geomancer's Power Up for elemental
+    (no mana cost), then activates the Astromancer's Power Up for elemental
     resistance.
 
     Parameters (YAML):

@@ -10,9 +10,9 @@ from . import abilities, items
 # ================================================================================
 # When characters promote, some classes trade abilities to reflect their new identity.
 # This dict defines those transitions in a clear, maintainable way.
-# 
+#
 # Keys: Target class name (the class being promoted TO)
-# 
+#
 # Values: Dictionary with the following structure:
 #   - clear_spells (bool): If True, wipes all spells and keeps only what's in keep_spells.
 #                         If False, keeps all current spells but can remove specific ones.
@@ -77,20 +77,20 @@ PROMOTION_ABILITY_RULES = {
 
 def apply_promotion_ability_rules(promoted_player, new_class_name):
     """Apply ability transition rules for a promotion.
-    
+
     Args:
         promoted_player: Character object being promoted
         new_class_name: Name of the new class
-    
+
     Returns:
         str: Message describing ability changes, or empty string if none
     """
     rules = PROMOTION_ABILITY_RULES.get(new_class_name, {})
     message = ""
-    
+
     if not rules:
         return message
-    
+
     # Handle spell transitions
     if rules.get("clear_spells"):
         promoted_player.spellbook["Spells"] = {}
@@ -112,19 +112,19 @@ def apply_promotion_ability_rules(promoted_player, new_class_name):
             promoted_player.spellbook["Spells"] = new_spells
             if rules.get("description"):
                 message += rules["description"] + "\n"
-        
+
         # Remove specific spells
         remove_spells = rules.get("remove_spells", [])
         for spell_name in remove_spells:
             if spell_name in promoted_player.spellbook["Spells"]:
                 del promoted_player.spellbook["Spells"][spell_name]
-    
+
     # Handle skill transitions
     remove_skills = rules.get("remove_skills", [])
     for skill_name in remove_skills:
         if skill_name in promoted_player.spellbook["Skills"]:
             del promoted_player.spellbook["Skills"][skill_name]
-    
+
     return message
 
 
@@ -172,6 +172,8 @@ class Job:
         self.equipment.setdefault("Helmet", items.NoHelmet())
         if "Helmet" not in self.restrictions:
             self.restrictions["Helmet"] = list(self.restrictions.get("Armor", []))
+        self.equipment.setdefault("Ring", items.NoRing())
+        self.equipment.setdefault("Pendant", items.NoPendant())
         self.pro_level = pro_level
 
     def equip_check(self, item, equip_slot):
@@ -197,7 +199,7 @@ class Job:
 class Warrior(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
-                       |                 |
+                       |                |
                        |                -> Grandmaster of Arms
                        |
                        -> Paladin       -> Crusader
@@ -229,8 +231,6 @@ class Warrior(Job):
                 "Weapon": items.Rapier(),
                 "OffHand": items.Aspis(),
                 "Armor": items.HideArmor(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": [
@@ -251,8 +251,11 @@ class Warrior(Job):
 class WeaponMaster(Job):
     """
     Promotion: Warrior -> Weapon Master -> Berserker
+                                        |
+                                        -> Grandmaster of Arms
     Pros: Can dual wield some one handed weapons; higher dexterity gain
     Cons: Cannot use shields or heavy armor; lower constitution gain
+    Special Mechanic: Weapon Discipline - gain proficiency with a weapon type as it's used  TODO
     """
 
     def __init__(self):
@@ -277,8 +280,6 @@ class WeaponMaster(Job):
                 "Weapon": items.DoubleAxe(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.ScaleMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": [
@@ -288,6 +289,7 @@ class WeaponMaster(Job):
                     "Club",
                     "Longsword",
                     "Battle Axe",
+                    "Polearm",
                     "Hammer",
                 ],
                 "OffHand": ["Fist", "Dagger", "Sword", "Club"],
@@ -297,11 +299,13 @@ class WeaponMaster(Job):
         )
 
 
-class GrandmasterArms(Job):
+class GrandmasterOfArms(Job):
     """
     Promotion: Warrior -> Weapon Master -> GrandMaster of Arms
-    Pros: Can dual wield some one handed weapons; higher dexterity gain
-    Cons: Cannot use shields or heavy armor
+    Additional Pros: Higher dexterity and constitution gain
+    Additional Cons: Lower strength gain
+    Special Mechanic: Weapon Specialty - weapon types that gain max level now trigger certain
+        abilities/buffs  TODO
     """
 
     def __init__(self):
@@ -324,8 +328,6 @@ class GrandmasterArms(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.Pernach(),
                 "Armor": items.Breastplate(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": [
@@ -335,6 +337,7 @@ class GrandmasterArms(Job):
                     "Club",
                     "Longsword",
                     "Battle Axe",
+                    "Polearm",
                     "Hammer",
                 ],
                 "OffHand": ["Fist", "Dagger", "Sword", "Club"],
@@ -349,6 +352,8 @@ class Berserker(Job):
     Promotion: Warrior -> Weapon Master -> Berserker
     Additional Pros: Can dual wield 2-handed weapons; additional charisma gain
     Additional Cons: Can only equip light armor
+    Special Mechanic: Battle Scars - surviving combat with less than 10% health gives
+        chance of permanent scar  TODO
     """
 
     def __init__(self):
@@ -373,12 +378,10 @@ class Berserker(Job):
                 "Weapon": items.Parashu(),
                 "OffHand": items.Changdao(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
-                "Weapon": ["Longsword", "Battle Axe", "Hammer"],
-                "OffHand": ["Longsword", "Battle Axe", "Hammer"],
+                "Weapon": ["Longsword", "Battle Axe", "Polearm", "Hammer"],
+                "OffHand": ["Longsword", "Battle Axe", "Polearm", "Hammer"],
                 "Armor": ["Light"],
             },
             pro_level=3,
@@ -389,7 +392,10 @@ class Paladin(Job):
     """
     Promotion: Warrior -> Paladin -> Crusader
     Pros: Can cast healing spells; additional wisdom and charisma gain
-    Cons: Cannot equip 2-handed weapons except hammers and cannot equip light armor; no dex and lower strength gain
+    Cons: Cannot equip 2-handed weapons except hammers and cannot equip light armor; no dex
+        and lower strength gain
+    Special Mechanic: Oathbringer - choose a path of devotion that grants unique abilities
+        and buffs  TODO
     """
 
     def __init__(self):
@@ -413,8 +419,6 @@ class Paladin(Job):
                 "Weapon": items.WarHammer(),
                 "OffHand": items.Glagwa(),
                 "Armor": items.Splint(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Sword", "Club", "Longsword", "Hammer"],
@@ -452,8 +456,6 @@ class Crusader(Job):
                 "Weapon": items.Pernach(),
                 "OffHand": items.KiteShield(),
                 "Armor": items.PlateMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Sword", "Club", "Longsword", "Hammer"],
@@ -493,8 +495,6 @@ class Lancer(Job):
                 "Weapon": items.Halberd(),
                 "OffHand": items.Glagwa(),
                 "Armor": items.Splint(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Sword", "Polearm"],
@@ -535,8 +535,6 @@ class Dragoon(Job):
                 "Weapon": items.Naginata(),
                 "OffHand": items.KiteShield(),
                 "Armor": items.PlateMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Sword", "Polearm"],
@@ -550,8 +548,9 @@ class Dragoon(Job):
 class Sentinel(Job):
     """
     Promotion: Warrior -> Sentinel -> Stalwart Defender
-    Pros: increased constitution gain
+    Pros: Increased constitution gain
     Cons: Can only wear heavy armor and cannot equip 2-handed weapons
+    Special Mechanic:  TODO
     """
 
     def __init__(self):
@@ -578,8 +577,6 @@ class Sentinel(Job):
                 "Weapon": items.Talwar(),
                 "OffHand": items.Glagwa(),
                 "Armor": items.Splint(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Sword", "Club"],
@@ -593,8 +590,9 @@ class Sentinel(Job):
 class StalwartDefender(Job):
     """
     Promotion: Warrior -> Sentinel -> Stalwart Defender
-    Additional Pros: additional constitution gain
+    Additional Pros: Additional constitution gain
     Additional Cons: None
+    Special Mechanic:  TODO
     """
 
     def __init__(self):
@@ -620,8 +618,6 @@ class StalwartDefender(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.KiteShield(),
                 "Armor": items.PlateMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Sword", "Club"],
@@ -637,6 +633,8 @@ class Mage(Job):
     Promotion: Mage -> Sorcerer    -> Wizard
                     |
                     -> Warlock     -> Shadowcaster
+                    |              |
+                    |              -> Demonologist
                     |
                     -> Spellblade  -> Knight Enchanter
                     |
@@ -664,8 +662,6 @@ class Mage(Job):
                 "Weapon": items.Quarterstaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.Tunic(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -681,6 +677,7 @@ class Sorcerer(Job):
     Promotion: Mage -> Sorcerer -> Wizard
     Pros: Earlier access to spells and access to higher level spells
     Cons: None
+    Special Mechanic: Elemental Affinity Wheel TODO
     """
 
     def __init__(self):
@@ -705,8 +702,6 @@ class Sorcerer(Job):
                 "Weapon": items.SerpentStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.GoldCloak(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -745,8 +740,6 @@ class Wizard(Job):
                 "Weapon": items.RuneStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.CloakEnchantment(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -760,9 +753,11 @@ class Wizard(Job):
 class Warlock(Job):
     """
     Promotion: Mage -> Warlock -> Shadowcaster
+                               |
+                               -> Demonologist
     Pros: Higher charisma and constitution gain; access to additional skills; gains access to shadow spells and familiar
     Cons: Lower intelligence gain and limited access to higher level spells; lose access to learned arcane Mage spells
-    Special Mechanic: gains familiar that sometimes acts in or out of combat
+    Special Mechanic: Gains familiar that sometimes acts in or out of combat
     """
 
     def __init__(self):
@@ -786,8 +781,6 @@ class Warlock(Job):
                 "Weapon": items.Kris(),
                 "OffHand": items.ElementalPrimer(),
                 "Armor": items.GoldCloak(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -825,8 +818,41 @@ class Shadowcaster(Job):
                 "Weapon": items.Rondel(),
                 "OffHand": items.DragonRouge(),
                 "Armor": items.CloakEnchantment(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
+            },
+            restrictions={
+                "Weapon": ["Dagger", "Staff"],
+                "OffHand": ["Tome"],
+                "Armor": ["Cloth"],
+            },
+            pro_level=3,
+        )
+
+
+class Demonologist(Job):  # TODO
+    """
+    Promotion: Mage -> Warlock -> Demonologist
+    Additional Pros:
+    Additional Cons:
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Demonologist",
+            description="",
+            str_plus=0,
+            int_plus=2,
+            wis_plus=2,
+            con_plus=1,
+            cha_plus=2,
+            dex_plus=0,
+            att_plus=1,
+            def_plus=1,
+            magic_plus=5,
+            magic_def_plus=3,
+            equipment={
+                "Weapon": items.Rondel(),
+                "OffHand": items.DragonRouge(),
+                "Armor": items.CloakEnchantment(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -867,8 +893,6 @@ class Spellblade(Job):
                 "Weapon": items.Talwar(),
                 "OffHand": items.ElementalPrimer(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword"],
@@ -906,8 +930,6 @@ class KnightEnchanter(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.DragonRouge(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword"],
@@ -951,8 +973,6 @@ class Summoner(Job):
                 "Weapon": items.SerpentStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.GoldCloak(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -995,8 +1015,6 @@ class GrandSummoner(Job):
                 "Weapon": items.RuneStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.CloakEnchantment(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -1040,8 +1058,6 @@ class Footpad(Job):
                 "Weapon": items.Dirk(),
                 "OffHand": items.Dirk(),
                 "Armor": items.PaddedArmor(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Sword", "Club"],
@@ -1081,8 +1097,6 @@ class Thief(Job):
                 "Weapon": items.Talwar(),
                 "OffHand": items.Kris(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Sword", "Club"],
@@ -1122,8 +1136,6 @@ class Rogue(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.Rondel(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Sword", "Club"],
@@ -1167,8 +1179,6 @@ class Inquisitor(Job):
                 "Weapon": items.Talwar(),
                 "OffHand": items.Glagwa(),
                 "Armor": items.ScaleMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Club"],
@@ -1209,8 +1219,6 @@ class Seeker(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.KiteShield(),
                 "Armor": items.Breastplate(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Club"],
@@ -1251,8 +1259,6 @@ class Assassin(Job):
                 "Weapon": items.Kris(),
                 "OffHand": items.Kris(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger"],
@@ -1293,8 +1299,6 @@ class Ninja(Job):
                 "Weapon": items.Tanto(),
                 "OffHand": items.Rondel(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Ninja Blade"],
@@ -1338,8 +1342,6 @@ class SpellStealer(Job):
                 "Weapon": items.Kris(),
                 "OffHand": items.ElementalPrimer(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword"],
@@ -1382,8 +1384,6 @@ class ArcaneTrickster(Job):
                 "Weapon": items.Rondel(),
                 "OffHand": items.DragonRouge(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword"],
@@ -1426,8 +1426,6 @@ class Healer(Job):
                 "Weapon": items.Quarterstaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.PaddedArmor(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Club", "Staff"],
@@ -1468,8 +1466,6 @@ class Cleric(Job):
                 "Weapon": items.WarHammer(),
                 "OffHand": items.Glagwa(),
                 "Armor": items.ScaleMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Club", "Staff"],
@@ -1509,8 +1505,6 @@ class Templar(Job):
                 "Weapon": items.Pernach(),
                 "OffHand": items.KiteShield(),
                 "Armor": items.PlateMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Club", "Hammer"],
@@ -1550,8 +1544,6 @@ class Priest(Job):
                 "Weapon": items.SerpentStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.GoldCloak(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Club", "Staff"],
@@ -1588,8 +1580,6 @@ class Archbishop(Job):
                 "Weapon": items.HolyStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.CloakEnchantment(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Club", "Staff"],
@@ -1627,8 +1617,6 @@ class Monk(Job):
                 "Weapon": items.Cestus(),
                 "OffHand": items.Cestus(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Staff"],
@@ -1666,8 +1654,6 @@ class MasterMonk(Job):
                 "Weapon": items.BattleGauntlet(),
                 "OffHand": items.BattleGauntlet(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Staff"],
@@ -1710,8 +1696,6 @@ class Bard(Job):
                 "Weapon": items.Kris(),
                 "OffHand": items.Lute(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Staff"],
@@ -1755,8 +1739,6 @@ class Troubadour(Job):
                 "Weapon": items.Rondel(),
                 "OffHand": items.Lyre(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Staff"],
@@ -1770,8 +1752,10 @@ class Troubadour(Job):
 class Pathfinder(Job):
     """
     Promotion: Pathfinder -> Druid   -> Lycan
+                          |          |
+                          |          -> Archdruid
                           |
-                          -> Diviner -> Geomancer
+                          -> Diviner -> Astromancer
                           |
                           -> Shaman  -> Soulcatcher
                           |
@@ -1800,8 +1784,6 @@ class Pathfinder(Job):
                 "Weapon": items.Dirk(),
                 "OffHand": items.Buckler(),
                 "Armor": items.HideArmor(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Club", "Polearm", "Hammer", "Staff"],
@@ -1829,11 +1811,11 @@ class Druid(Job):
             " lose the ability to wear medium armor and shields but gain "
             "natural weapons and armor when transformed.",
             str_plus=1,
-            int_plus=0,
+            int_plus=1,
             wis_plus=1,
             con_plus=1,
             cha_plus=1,
-            dex_plus=2,
+            dex_plus=1,
             att_plus=2,
             def_plus=2,
             magic_plus=2,
@@ -1842,8 +1824,6 @@ class Druid(Job):
                 "Weapon": items.SerpentStaff(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.Cuirboulli(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Club", "Polearm", "Hammer", "Staff"],
@@ -1858,7 +1838,7 @@ class Lycan(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
     Additional Pros: Can learn to transform into Red Dragon; increased constitution gain
-    Additional Cons: None
+    Additional Cons: Lower intel gain
     Special Mechanic: Can shapeshift into alternative forms
     """
 
@@ -1879,11 +1859,9 @@ class Lycan(Job):
             magic_plus=2,
             magic_def_plus=3,
             equipment={
-                "Weapon": items.SpikeMaul(),
+                "Weapon": items.EarthHammer(),
                 "OffHand": items.NoOffHand(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Club", "Polearm", "Hammer", "Staff"],
@@ -1894,11 +1872,51 @@ class Lycan(Job):
         )
 
 
+class Archdruid(Job):
+    """
+    Promotion: Pathfinder -> Druid -> Archdruid
+    Additional Pros: Much higher intel and wisdom gain
+    Additional Cons: Lower strength and charisma gain; lose access to all weapons except staves and daggers;
+        lose access to all armor except cloth
+    Special Mechanic: Gains access to powerful nature magic; gain attunement with nature
+        affinities Venom, Storm, Stone, and Growth
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Archdruid",
+            description="The Archdruid is the ultimate embodiment of nature's power, a "
+                        "legendary figure who has mastered the ways of the natural world.",
+            str_plus=0,
+            int_plus=3,
+            wis_plus=2,
+            con_plus=1,
+            cha_plus=0,
+            dex_plus=1,
+            att_plus=1,
+            def_plus=2,
+            magic_plus=4,
+            magic_def_plus=3,
+            equipment={
+                "Weapon": items.RuneStaff(),
+                "OffHand": items.NoOffHand(),
+                "Armor": items.CloakEnchantment(),
+            },
+            restrictions={
+                "Weapon": ["Dagger", "Staff"],
+                "OffHand": ["Tome"],
+                "Armor": ["Cloth"],
+            },
+            pro_level=3,
+        )
+
+
 class Diviner(Job):
     """
-    Promotion: Pathfinder -> Diviner -> Geomancer
-    Pros: can learn rank 1 enemy specials when cast against; increased intel and wisdom gain
+    Promotion: Pathfinder -> Diviner -> Astromancer
+    Pros: Increased intel and wisdom gain; gain access to time magic
     Cons: loses access to shields and some weapon choices; lower dex gain
+    Special Mechanic: similar to a Blue Mage, gains spells from enemy use
     """
 
     def __init__(self):
@@ -1923,8 +1941,6 @@ class Diviner(Job):
                 "Weapon": items.Kris(),
                 "OffHand": items.ElementalPrimer(),
                 "Armor": items.GoldCloak(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -1935,22 +1951,24 @@ class Diviner(Job):
         )
 
 
-class Geomancer(Job):
+class Astromancer(Job):
     """
-    Promotion: Pathfinder -> Diviner -> Geomancer
+    Promotion: Pathfinder -> Diviner -> Astromancer
     Additional Pros: can learn rank 2 enemy specials when cast against; increased intel gain
     Additional Cons: None
-    Special Mechanic: similar to a Blue Mage, gains spells from enemy use
+    Special Mechanic: Runic Alterations - defeating enemies with elemental spells gives chance
+        to drop runes
     """
 
     def __init__(self):
         super().__init__(
-            name="Geomancer",
-            description="Classified as one of the 7 forbidden arts, geomancers have "
-            "mastered natural phenomena, granting them access to some of the"
-            " most devastating elemental spells. Their adeptness with "
-            "magical effects allow geomancers to manipulate special tiles to"
-            " their advantage.",
+            name="Astromancer",
+            description="Classified among the forbidden arts, astromancers study the celestial "
+            "forces that govern magic, destiny, and the hidden threads of fate. Through careful "
+            "observation they can learn spells cast by friend and foe alike, gradually unraveling"
+            " the mysteries of the arcane. Those who master the stars gain the power to bend "
+            "probability itself, turning fortune against their enemies and ensuring destiny "
+            "unfolds according to their design.",
             str_plus=0,
             int_plus=3,
             wis_plus=2,
@@ -1965,8 +1983,6 @@ class Geomancer(Job):
                 "Weapon": items.Rondel(),
                 "OffHand": items.DragonRouge(),
                 "Armor": items.CloakEnchantment(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
@@ -1980,7 +1996,8 @@ class Geomancer(Job):
 class Shaman(Job):
     """
     Promotion: Pathfinder -> Shaman -> Soulcatcher
-    Pros: Can dual wield fist weapons; can imbue weapons with elemental fury; increased strength and dex gain
+    Pros: Can dual wield fist weapons; can imbue weapons with elemental fury; increased
+        strength and dex gain
     Cons: Loses access to cloth armor, tomes, and some weapons; lower intel gain
     """
 
@@ -2007,8 +2024,6 @@ class Shaman(Job):
                 "Weapon": items.Cestus(),
                 "OffHand": items.Cestus(),
                 "Armor": items.ScaleMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Club", "Staff"],
@@ -2053,8 +2068,6 @@ class Soulcatcher(Job):
                 "Weapon": items.BattleGauntlet(),
                 "OffHand": items.BattleGauntlet(),
                 "Armor": items.Breastplate(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Club", "Staff"],
@@ -2068,9 +2081,11 @@ class Soulcatcher(Job):
 class Ranger(Job):
     """
     Promotion: Pathfinder -> Ranger -> Beast Master
-    Pros: Increased strength and dex gain; gain dual wielding with daggers; can use swords and 2-handed axes
+    Pros: Increased strength and dex gain; gain dual wielding with daggers; can use swords
+        and 2-handed axes
     Cons: Lose access to attack spells, some weapons and armor, shields, and tomes
-    Special Mechanic: can tame a beast to aid in and out of combat; companion strength affected by charisma
+    Special Mechanic: can tame a beast to aid in and out of combat; companion strength
+        affected by charisma
     """
 
     def __init__(self):
@@ -2097,8 +2112,6 @@ class Ranger(Job):
                 "Weapon": items.Talwar(),
                 "OffHand": items.Kris(),
                 "Armor": items.ScaleMail(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Longsword", "Battle Axe", "Polearm"],
@@ -2140,8 +2153,6 @@ class BeastMaster(Job):
                 "Weapon": items.Shamshir(),
                 "OffHand": items.Rondel(),
                 "Armor": items.StuddedLeather(),
-                "Pendant": items.NoPendant(),
-                "Ring": items.NoRing(),
             },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Longsword", "Battle Axe", "Polearm"],
@@ -2159,10 +2170,19 @@ classes_dict = {
         "pro": {
             "Weapon Master": {
                 "class": WeaponMaster,
-                "pro": {"Berserker": {"class": Berserker}},
+                "pro": {
+                    "Berserker": {"class": Berserker},
+                    "Grandmaster of Arms": {"class": GrandmasterOfArms},
+                },
             },
-            "Paladin": {"class": Paladin, "pro": {"Crusader": {"class": Crusader}}},
-            "Lancer": {"class": Lancer, "pro": {"Dragoon": {"class": Dragoon}}},
+            "Paladin": {
+                "class": Paladin,
+                "pro": {"Crusader": {"class": Crusader}}
+                },
+            "Lancer": {
+                "class": Lancer,
+                "pro": {"Dragoon": {"class": Dragoon}}
+                },
             "Sentinel": {
                 "class": Sentinel,
                 "pro": {"Stalwart Defender": {"class": StalwartDefender}},
@@ -2172,10 +2192,16 @@ classes_dict = {
     "Mage": {
         "class": Mage,
         "pro": {
-            "Sorcerer": {"class": Sorcerer, "pro": {"Wizard": {"class": Wizard}}},
+            "Sorcerer": {
+                "class": Sorcerer,
+                "pro": {"Wizard": {"class": Wizard}}
+            },
             "Warlock": {
                 "class": Warlock,
-                "pro": {"Shadowcaster": {"class": Shadowcaster}},
+                "pro": {
+                    "Shadowcaster": {"class": Shadowcaster},
+                    "Demonologist": {"class": Demonologist},
+                    },
             },
             "Spellblade": {
                 "class": Spellblade,
@@ -2190,9 +2216,18 @@ classes_dict = {
     "Footpad": {
         "class": Footpad,
         "pro": {
-            "Thief": {"class": Thief, "pro": {"Rogue": {"class": Rogue}}},
-            "Inquisitor": {"class": Inquisitor, "pro": {"Seeker": {"class": Seeker}}},
-            "Assassin": {"class": Assassin, "pro": {"Ninja": {"class": Ninja}}},
+            "Thief": {
+                "class": Thief,
+                "pro": {"Rogue": {"class": Rogue}}
+                },
+            "Inquisitor": {
+                "class": Inquisitor,
+                "pro": {"Seeker": {"class": Seeker}}
+                },
+            "Assassin": {
+                "class": Assassin,
+                "pro": {"Ninja": {"class": Ninja}}
+                },
             "Spell Stealer": {
                 "class": SpellStealer,
                 "pro": {"Arcane Trickster": {"class": ArcaneTrickster}},
@@ -2202,21 +2237,45 @@ classes_dict = {
     "Healer": {
         "class": Healer,
         "pro": {
-            "Cleric": {"class": Cleric, "pro": {"Templar": {"class": Templar}}},
-            "Monk": {"class": Monk, "pro": {"Master Monk": {"class": MasterMonk}}},
-            "Priest": {"class": Priest, "pro": {"Archbishop": {"class": Archbishop}}},
-            "Bard": {"class": Bard, "pro": {"Troubadour": {"class": Troubadour}}},
+            "Cleric": {
+                "class": Cleric,
+                "pro": {"Templar": {"class": Templar}}
+            },
+            "Monk": {
+                "class": Monk,
+                "pro": {"Master Monk": {"class": MasterMonk}}
+            },
+            "Priest": {
+                "class": Priest,
+                "pro": {"Archbishop": {"class": Archbishop}}
+            },
+            "Bard": {
+                "class": Bard,
+                "pro": {"Troubadour": {"class": Troubadour}}
+            },
         },
     },
     "Pathfinder": {
         "class": Pathfinder,
         "pro": {
-            "Druid": {"class": Druid, "pro": {"Lycan": {"class": Lycan}}},
-            "Diviner": {"class": Diviner, "pro": {"Geomancer": {"class": Geomancer}}},
-            "Shaman": {"class": Shaman, "pro": {"Soulcatcher": {"class": Soulcatcher}}},
+            "Druid": {
+                "class": Druid,
+                "pro": {
+                    "Lycan": {"class": Lycan},
+                    "Archdruid": {"class": Archdruid},
+                },
+            "Diviner": {
+                "class": Diviner,
+                "pro": {"Astromancer": {"class": Astromancer}}
+                },
+            "Shaman": {
+                "class": Shaman,
+                "pro": {"Soulcatcher": {"class": Soulcatcher}}
+                },
             "Ranger": {
                 "class": Ranger,
                 "pro": {"Beast Master": {"class": BeastMaster}},
+                },
             },
         },
     },

@@ -2465,8 +2465,8 @@ skill_dict = {
     "Pathfinder": {},
     "Druid": {
         "2": Transform,
-        "10": Transform2,
-        "15": MortalStrike,
+        "15": Transform2,
+        "17": MortalStrike,
         },
     "Lycan": {
         "1": Transform3,
@@ -2478,7 +2478,7 @@ skill_dict = {
         "1": LearnSpell,
         "18": Doublecast,
         },
-    "Geomancer": {
+    "Astromancer": {
         "1": LearnSpell2,
         "25": Triplecast,
         },
@@ -2647,7 +2647,7 @@ spell_dict = {
         "14": Dispel,
         "23": Berserk,
         },
-    "Geomancer": {
+    "Astromancer": {
         "1": Vulcanize,
         "10": WeakenMind,
         "15": Boost,

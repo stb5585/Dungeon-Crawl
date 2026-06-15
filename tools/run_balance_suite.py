@@ -483,7 +483,7 @@ def _apply_meta_progression_loadouts(player, target_level: int) -> None:
             "Master Monk": abilities.DimMak,
             "Troubadour": abilities.SongInspiration,
             "Lycan": abilities.LunarFrenzy,
-            "Geomancer": abilities.TetraDisaster,
+            "Astromancer": abilities.TetraDisaster,
             "Soulcatcher": abilities.SoulHarvest,
             "Beast Master": abilities.PackBond,
         }

@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import items
+from src.core.character import armor_resistance_modifier
 
 
 _BASE_ITEM_CLASSES = {
@@ -126,15 +127,15 @@ def test_helmet_catalog_matches_equipment_table():
         "Kettle Helm",
         "Barbute",
         "Great Helm",
-        "Full Plate Helm",
+        "Plate Helm",
         "Close Helm",
         "Kabuto",
     ]
 
     mitre = items.MitreHat()
     circlet = items.Circlet()
-    assert mitre.restriction == ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
-    assert circlet.restricted_against == ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+    assert mitre.restriction == ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
+    assert circlet.restricted_against == ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
     assert items.CohuleenDruith().resist_mod == 0.5
     assert items.DemonCowl().element == "Death"
 
@@ -142,8 +143,17 @@ def test_helmet_catalog_matches_equipment_table():
 def test_item_metadata_lines_include_elements_and_resistance_mods():
     assert "Element: Electric" in items.item_metadata_lines(items.IndrasFist())
     assert "Resistance: Fire +25%" in items.item_metadata_lines(items.Svalinn())
+    assert "Resistance: Fire +25%, Water +25%" in items.item_metadata_lines(items.Palangina())
     assert "Resistance: Fire +50%" in items.item_metadata_lines(items.FireChain())
     assert "Immunity: Electric" in items.item_metadata_lines(items.ElectricAmulet())
+
+
+def test_palangina_grants_fire_and_water_resistance_only():
+    palangina = items.Palangina()
+
+    assert armor_resistance_modifier(palangina, "Fire") == 0.25
+    assert armor_resistance_modifier(palangina, "Water") == 0.25
+    assert armor_resistance_modifier(palangina, "Ice") == 0.0
 
 
 def test_resistance_item_descriptions_leave_numeric_effects_to_metadata_lines():
@@ -158,6 +168,7 @@ def test_resistance_item_descriptions_leave_numeric_effects_to_metadata_lines():
         items.EarthChain(),
         items.WindChain(),
         items.ElementalChain(),
+        items.Palangina(),
         items.FireAmulet(),
         items.IceAmulet(),
         items.ElectricAmulet(),

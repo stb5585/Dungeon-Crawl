@@ -83,6 +83,8 @@ def item_metadata_lines(item: object) -> list[str]:
     name = str(getattr(item, "name", "") or "")
     if name == "Svalinn":
         lines.append("Resistance: Fire +25%")
+    if name == "Palangina":
+        lines.append("Resistance: Fire +25%, Water +25%")
 
     resist_mod = getattr(item, "resist_mod", None)
     if resist_mod is not None and element:
@@ -1223,7 +1225,7 @@ class DragonStaff(Weapon):
                          value=0, rarity=0, damage=70, crit=0.3, handed=2, subtyp='Staff', unequip=False,
                          off=False)
         self.weight = 9
-        self.restriction = ['Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Geomancer', 'Soulcatcher']
+        self.restriction = ['Wizard', 'Necromancer', 'Master Monk', 'Lycan', 'Astromancer', 'Soulcatcher']
         self.ultimate = True
 
     def special_effect(self, results: CombatResultGroup) -> None:
@@ -2240,7 +2242,7 @@ class MitreHat(Helmet):
                                                        "sigils.",
                          value=10000, rarity=0.4, armor=9, subtyp='Cloth', unequip=False)
         self.weight = 1
-        self.restriction = ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+        self.restriction = ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
 
 
 class Circlet(Helmet):
@@ -2250,7 +2252,7 @@ class Circlet(Helmet):
                                                      "protective halo.",
                          value=12000, rarity=0.4, armor=8, subtyp='Cloth', unequip=False)
         self.weight = 2
-        self.restricted_against = ['Priest', 'Archbishop', 'Diviner', 'Geomancer']
+        self.restricted_against = ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
 
 
 class CohuleenDruith(Helmet):
@@ -2431,11 +2433,11 @@ class GreatHelm(Helmet):
         self.weight = 8
 
 
-class FullPlateHelm(Helmet):
+class PlateHelm(Helmet):
 
     def __init__(self):
-        super().__init__(name="Full Plate Helm", description="A masterwork plate helmet that completes a knight's "
-                                                             "heavy armor kit.",
+        super().__init__(name="Plate Helm", description="A masterwork plate helmet that completes a knight's "
+                                                        "heavy armor kit.",
                          value=28000, rarity=0.4, armor=12, subtyp='Heavy', unequip=False)
         self.weight = 9
 
@@ -2763,16 +2765,14 @@ class PlateMail(Armor):
         self.weight = 25
 
 
-class FullPlate(Armor):
+class Palangina(Armor):
 
     def __init__(self):
-        super().__init__(name="Full Plate", description="Armor consisting of shaped, interlocking metal plates to "
-                                                        "cover the entire body. Full plate includes gauntlets, "
-                                                        "heavy leather boots, a visored helmet, and thick layers of "
-                                                        "padding underneath the armor. Buckles and straps distribute "
-                                                        "the weight over the body.",
+        super().__init__(name="Palangina",
+                         description="A Persian lamellar cuirass worked with fire-red and water-blue inlays.",
                          value=55000, rarity=0.4, armor=30, subtyp='Heavy', unequip=False)
         self.weight = 30
+        self.resistances = {"Fire": 0.25, "Water": 0.25}
 
 
 class Maximilian(Armor):
@@ -3237,14 +3237,73 @@ class Lute(OffHand):
 
     def __init__(self):
         super().__init__(name="Lute", description="",
-                         value=5000, rarity=0.75, mod=10, subtyp="Musical Instrument", unequip=False)
+                         value=5000, rarity=0.75, mod=20, subtyp="Musical Instrument", unequip=False)
+
+
+class Mbira(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Mbira", description="",
+                         value=8000, rarity=0.6, mod=25, subtyp="Musical Instrument", unequip=False)
 
 
 class Lyre(OffHand):
 
     def __init__(self):
         super().__init__(name="Lyre", description="",
-                         value=16000, rarity=0.5, mod=15, subtyp="Musical Instrument", unequip=False)
+                         value=16000, rarity=0.5, mod=30, subtyp="Musical Instrument", unequip=False)
+
+class Tambourine(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Tambourine", description="",
+                         value=55000, rarity=0.4, mod=50, subtyp="Musical Instrument", unequip=False)
+
+
+class Accordina(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Accordina", description="",
+                         value=70000, rarity=0.3, mod=75, subtyp="Musical Instrument", unequip=False)
+
+
+class Didgeridoo(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Didgeridoo", description="",
+                         value=90000, rarity=0.2, mod=100, subtyp="Musical Instrument", unequip=False)
+
+
+class Sitar(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Sitar", description="",
+                         value=125000, rarity=0.1, mod=130, subtyp="Musical Instrument", unequip=False)
+
+
+class Bagpipes(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Bagpipes", description="",
+                         value=200000, rarity=0.05, mod=150, subtyp="Musical Instrument", unequip=False)
+
+
+class Shamisen(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Shamisen", description="",
+                         value=300000, rarity=0.01, mod=200, subtyp="Musical Instrument", unequip=False)
+
+
+class GrandPiano(OffHand):
+    """
+    TODO: remove this once implemented
+    Not a lootable/equipable item; must be found and played in Cambion Realm to make Ultimate Score
+    """
+
+    def __init__(self):
+        super().__init__(name="GrandPiano", description="",
+                         value=0, rarity=0, mod=0, subtyp="Musical Instrument", unequip=False)
 
 
 # Rings
@@ -3365,7 +3424,7 @@ class ClassRing(Accessory):
             "Archbishop": "A ring that grants a random chance to heal 25% of health when below 50% health when worn by an Archbishop.",
             "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",
             "Lycan": "A ring that grants an attack bonus immediately after transforming when worn by a Lycan.",
-            "Geomancer": "A ring that boosts the terrain effect of spells when worn by a Geomancer.",
+            "Astromancer": "A ring that boosts the terrain effect of spells when worn by a Astromancer.",
             "Soulcatcher": "A ring that unlocks the Soul Aspect of the Totem ability when worn by a Soulcatcher, granting +20% Weapon damage and +20% Critical damage.",
             "Beast Master": "A ring that increases defense for you and your companion when covering the other when worn by a Beast Master.",
         }
@@ -3450,7 +3509,7 @@ class ClassRing(Accessory):
             # Gain attack bonus immediately after transforming
             player_char.equipment["Ring"].mod = "Transform Boost"
         
-        elif cls_name == "Geomancer":
+        elif cls_name == "Astromancer":
             # Boost terrain effect of spells
             player_char.equipment["Ring"].mod = "Terrain Master"
         
@@ -5006,13 +5065,13 @@ items_dict = {
         'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe, Tarnkappe],
         'Light': [PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli, MithrilCoat],
         'Medium': [HideArmor, ChainShirt, ScaleMail, Breastplate, HalfPlate, Kusari],
-        'Heavy': [RingMail, ChainMail, Splint, PlateMail, FullPlate, Maximilian]},
+        'Heavy': [RingMail, ChainMail, Splint, PlateMail, Palangina, Maximilian]},
     'Helmet': {
         'Cloth': [ClothCap, Jaapi, Turban, WitchHat, EnchantedHood, MitreHat, Circlet,
                   CohuleenDruith, AriadnesDiadem],
         'Light': [LeatherCap, PithHelmet, WarMask, ArmingCap, Katapu, Somen, DemonCowl],
         'Medium': [ScaleHelm, ChainCoif, KulahKhud, Cervelliere, VisoredSallet, Tolga, Tarnhelm],
-        'Heavy': [IronHelm, KettleHelm, Barbute, GreatHelm, FullPlateHelm, CloseHelm, Kabuto]},
+        'Heavy': [IronHelm, KettleHelm, Barbute, GreatHelm, PlateHelm, CloseHelm, Kabuto]},
     'Accessory': {
         'Ring': [IronRing, PowerRing, AccuracyRing, BarrierRing, SteelRing, MightRing, EvasionRing,
                  TitaniumRing, ForceRing],

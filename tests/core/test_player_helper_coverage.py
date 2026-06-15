@@ -275,7 +275,7 @@ class TestPlayerHelperCoverage:
         assert warlock.check_mod("armor") == 19
 
     def test_check_mod_resist_applies_flying_equipment_familiar_and_class_bonuses(self, monkeypatch):
-        geomancer = TestGameState.create_player(class_name="Geomancer", race_name="Human")
+        geomancer = TestGameState.create_player(class_name="Astromancer", race_name="Human")
         geomancer.power_up = True
         geomancer.class_effects["Power Up"].active = True
         geomancer.resistance["Fire"] = 0.1

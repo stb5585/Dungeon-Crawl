@@ -92,6 +92,12 @@ def armor_resistance_modifier(armor: object, typ: str | None) -> float:
     """Return elemental resistance granted by armor metadata."""
     if typ is None:
         return 0.0
+    explicit_resistances = getattr(armor, "resistances", None)
+    if isinstance(explicit_resistances, dict):
+        try:
+            return float(explicit_resistances.get(typ, 0.0))
+        except (TypeError, ValueError):
+            return 0.0
     explicit_mod = getattr(armor, "resist_mod", None)
     if explicit_mod is not None and getattr(armor, "element", None) in [typ, "Elemental"]:
         try:

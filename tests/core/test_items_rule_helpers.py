@@ -39,7 +39,7 @@ def _player_with_ring(class_name):
         ("Archbishop", "Divine Intervention", "heal 25%"),
         ("Troubadour", "Amplified Song", "songs"),
         ("Lycan", "Transform Boost", "after transforming"),
-        ("Geomancer", "Terrain Master", "terrain effect"),
+        ("Astromancer", "Terrain Master", "terrain effect"),
         ("Soulcatcher", "Soul Aspect Unlock", "Soul Aspect"),
         ("Beast Master", "Pack Bond", "companion"),
     ],

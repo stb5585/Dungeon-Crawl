@@ -4491,7 +4491,7 @@ class TestBatch13TetraDisaster:
         from tests.test_framework import TestGameState
         from src.core import abilities
         user = TestGameState.create_player(
-            name="Geomancer", class_name="Wizard", race_name="Human",
+            name="Astromancer", class_name="Wizard", race_name="Human",
             level=30, health=(300, 300), mana=(300, 300),
             stats={"strength": 10, "intel": 30, "wisdom": 20,
                    "con": 12, "charisma": 10, "dex": 10},
