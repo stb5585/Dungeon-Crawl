@@ -9,6 +9,29 @@ from pathlib import Path
 from PIL import Image
 
 
+APPENDED_TILE_STEMS = (
+    "funhouse_teleporter",
+    "funhouse_path",
+    "funhouse_mimic_chest",
+    "mirror_wall",
+    "golden_chalice",
+    "incubus_lair",
+    "merzhin_room",
+    "trap_room",
+    "anti_magic_switch",
+    "circe_room",
+    "funhouse_empty_path",
+    "bone_pile_tile",
+    "broken_gear_tile",
+    "crystal_cluster_tile",
+    "fungus_patch_tile",
+    "jester_blocker",
+    "root_growth_tile",
+    "rubble_tile",
+    "funhouse_boundary_wall",
+)
+APPENDED_TILE_STEM_SET = set(APPENDED_TILE_STEMS)
+
 # Mapping from image filename (without .png) to MapTile class name
 TILE_MAPPING = {
     "wall": "Wall",
@@ -21,14 +44,22 @@ TILE_MAPPING = {
     "cave_path_1": "CavePath1",
     "cave_path_2": "CavePath2",
     "empty_cave_path": "EmptyCavePath",
+    "rubble_tile": "RubbleTile",
+    "root_growth_tile": "RootGrowthTile",
+    "fungus_patch_tile": "FungusPatchTile",
+    "crystal_cluster_tile": "CrystalClusterTile",
+    "bone_pile_tile": "BonePileTile",
+    "broken_gear_tile": "BrokenGearTile",
     "boss_path": "BossPath",
     "fire_path": "FirePath",
     "fire_path_special": "FirePathSpecial",
     "sandworm_lair": "SandwormLair",
     "underground_spring": "UndergroundSpring",
+    "anti_magic_switch": "AntiMagicSwitch",
     "boulder": "Boulder",
     "portal": "Portal",
     "rotator": "Rotator",
+    "trap_room": "Trap",
     "unlocked_chest": "UnlockedChestRoom",
     "unlocked_chest_2": "UnlockedChestRoom2",
     "locked_chest": "LockedChestRoom",
@@ -44,8 +75,19 @@ TILE_MAPPING = {
     "secret_shop": "SecretShop",
     "ultimate_armor_room": "UltimateArmorShop",
     "warp_point": "WarpPoint",
+    "funhouse_empty_path": "FunhouseEmptyPath",
+    "funhouse_path": "FunhousePath",
+    "funhouse_mimic_chest": "FunhouseMimicChest",
+    "funhouse_teleporter": "FunhouseTeleporter",
+    "golden_chalice": "GoldenChaliceRoom",
+    "jester_blocker": "FunhouseEmptyPath",
+    "mirror_wall": "FunhouseWall",
+    "funhouse_boundary_wall": "FunhouseBoundaryWall",
     "minotaur_room": "MinotaurBossRoom",
     "barghest_room": "BarghestBossRoom",
+    "circe_room": "CirceBossRoom",
+    "incubus_lair": "IncubusLair",
+    "merzhin_room": "MerzhinBossRoom",
     "pseudodragon_room": "PseudodragonBossRoom",
     "nightmare_room": "NightmareBossRoom",
     "cockatrice_room": "CockatriceBossRoom",
@@ -68,7 +110,12 @@ def generate_tileset():
         raise FileNotFoundError(f"Tileset directory not found: {tileset_dir}")
     
     # Scan for PNG images
-    images = sorted(tileset_dir.glob("*.png"))
+    all_images = sorted(tileset_dir.glob("*.png"))
+    image_by_stem = {image.stem: image for image in all_images}
+    images = [
+        *[image for image in all_images if image.stem not in APPENDED_TILE_STEM_SET],
+        *[image_by_stem[stem] for stem in APPENDED_TILE_STEMS if stem in image_by_stem],
+    ]
     if not images:
         raise FileNotFoundError(f"No PNG images found in {tileset_dir}")
     

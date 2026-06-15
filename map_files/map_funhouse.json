@@ -30,7 +30,7 @@
         {
          "name":"default_tile",
          "type":"string",
-         "value":"FunhouseWall"
+         "value":"FunhouseBoundaryWall"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

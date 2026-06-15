@@ -13,6 +13,29 @@ import json
 from pathlib import Path
 
 
+APPENDED_TILE_STEMS = (
+    "funhouse_teleporter",
+    "funhouse_path",
+    "funhouse_mimic_chest",
+    "mirror_wall",
+    "golden_chalice",
+    "incubus_lair",
+    "merzhin_room",
+    "trap_room",
+    "anti_magic_switch",
+    "circe_room",
+    "funhouse_empty_path",
+    "bone_pile_tile",
+    "broken_gear_tile",
+    "crystal_cluster_tile",
+    "fungus_patch_tile",
+    "jester_blocker",
+    "root_growth_tile",
+    "rubble_tile",
+    "funhouse_boundary_wall",
+)
+APPENDED_TILE_STEM_SET = set(APPENDED_TILE_STEMS)
+
 # Mapping from tile class name to image filename (without .png)
 # This must match the order used in generate_tiled_tileset.py
 TILE_NAME_TO_IMAGE = {
@@ -26,14 +49,22 @@ TILE_NAME_TO_IMAGE = {
     "CavePath1": "cave_path_1",
     "CavePath2": "cave_path_2",
     "EmptyCavePath": "empty_cave_path",
+    "RubbleTile": "rubble_tile",
+    "RootGrowthTile": "root_growth_tile",
+    "FungusPatchTile": "fungus_patch_tile",
+    "CrystalClusterTile": "crystal_cluster_tile",
+    "BonePileTile": "bone_pile_tile",
+    "BrokenGearTile": "broken_gear_tile",
     "BossPath": "boss_path",
     "FirePath": "fire_path",
     "FirePathSpecial": "fire_path_special",
     "SandwormLair": "sandworm_lair",
     "UndergroundSpring": "underground_spring",
+    "AntiMagicSwitch": "anti_magic_switch",
     "Boulder": "boulder",
     "Portal": "portal",
     "Rotator": "rotator",
+    "Trap": "trap_room",
     "UnlockedChestRoom": "unlocked_chest",
     "UnlockedChestRoom2": "unlocked_chest_2",
     "LockedChestRoom": "locked_chest",
@@ -49,8 +80,18 @@ TILE_NAME_TO_IMAGE = {
     "SecretShop": "secret_shop",
     "UltimateArmorShop": "ultimate_armor_room",
     "WarpPoint": "warp_point",
+    "FunhouseEmptyPath": "funhouse_empty_path",
+    "FunhousePath": "funhouse_path",
+    "FunhouseWall": "mirror_wall",
+    "FunhouseBoundaryWall": "funhouse_boundary_wall",
+    "FunhouseMimicChest": "funhouse_mimic_chest",
+    "FunhouseTeleporter": "funhouse_teleporter",
+    "GoldenChaliceRoom": "golden_chalice",
     "MinotaurBossRoom": "minotaur_room",
     "BarghestBossRoom": "barghest_room",
+    "CirceBossRoom": "circe_room",
+    "IncubusLair": "incubus_lair",
+    "MerzhinBossRoom": "merzhin_room",
     "PseudodragonBossRoom": "pseudodragon_room",
     "NightmareBossRoom": "nightmare_room",
     "CockatriceBossRoom": "cockatrice_room",
@@ -69,7 +110,12 @@ def _build_gid_map_from_tileset() -> dict[str, int]:
     """Build a map from tile class name to GID in dungeon_tiles.tsx."""
     # Read the external tileset to determine GID order
     tileset_dir = Path("map_files/tileset")
-    image_files = sorted(tileset_dir.glob("*.png"))
+    all_images = sorted(tileset_dir.glob("*.png"))
+    image_by_stem = {image.stem: image for image in all_images}
+    image_files = [
+        *[image for image in all_images if image.stem not in APPENDED_TILE_STEM_SET],
+        *[image_by_stem[stem] for stem in APPENDED_TILE_STEMS if stem in image_by_stem],
+    ]
     
     gid_map = {}
     for gid_idx, img_path in enumerate(image_files):

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="58" columns="0">
+<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" tilewidth="32" tileheight="32" tilecount="65" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="BarghestBossRoom">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/barghest_room.png"/>
@@ -171,5 +171,29 @@
   </tile>
   <tile id="56" type="FunhouseEmptyPath">
     <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/funhouse_empty_path.png"/>
+  </tile>
+  <tile id="57" type="BonePileTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/bone_pile_tile.png"/>
+  </tile>
+  <tile id="58" type="BrokenGearTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/broken_gear_tile.png"/>
+  </tile>
+  <tile id="59" type="CrystalClusterTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/crystal_cluster_tile.png"/>
+  </tile>
+  <tile id="60" type="FungusPatchTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/fungus_patch_tile.png"/>
+  </tile>
+  <tile id="61" type="FunhouseEmptyPath">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/jester_blocker.png"/>
+  </tile>
+  <tile id="62" type="RootGrowthTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/root_growth_tile.png"/>
+  </tile>
+  <tile id="63" type="RubbleTile">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/rubble_tile.png"/>
+  </tile>
+  <tile id="64" type="FunhouseBoundaryWall">
+    <image width="32" height="32" source="/home/tom/Projects/Dungeon-Crawl/map_files/tileset/funhouse_boundary_wall.png"/>
   </tile>
 </tileset>

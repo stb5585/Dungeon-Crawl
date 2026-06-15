@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from dataclasses import dataclass
 
 import pygame
@@ -75,6 +76,38 @@ class UndergroundSpring:
 
 
 class FirePath:
+    enter = True
+
+
+class FunhousePath:
+    enter = True
+
+
+class FunhouseWall:
+    enter = False
+
+
+class FunhouseBoundaryWall:
+    enter = False
+
+
+class MirrorWall:
+    enter = False
+
+
+class RubbleTile:
+    enter = True
+
+
+class RootGrowthTile:
+    enter = True
+
+
+class FungusPatchTile:
+    enter = True
+
+
+class CrystalClusterTile:
     enter = True
 
 
@@ -274,6 +307,91 @@ def test_texture_library_resolves_repo_assets_when_cwd_changes(tmp_path, monkeyp
     assert textures.get_texture("wall").get_width() > 0
     assert textures.get_special_texture("stairs_down") is not None
     assert textures.get_enemy_texture("Minotaur", size=32) is not None
+
+    pygame.quit()
+
+
+def test_texture_library_loads_dungeon_texture_manifest():
+    pygame.init()
+    textures = TextureLibrary()
+
+    assert "floor_crystal" in textures.texture_paths
+    assert "crystal_cluster" in textures.special_texture_paths
+    assert textures.get_texture("floor_crystal").get_size() == (512, 512)
+    assert textures.get_texture("door_open").get_at((256, 330)).a == 0
+    assert textures.get_texture("door_open").get_at((256, 490)).a == 0
+    assert max(textures.get_special_texture("crystal_cluster", size=64).get_size()) == 64
+
+    pygame.quit()
+
+
+def test_texture_library_records_manifest_asset_fallbacks(tmp_path):
+    pygame.init()
+    tileset = tmp_path / "tiles"
+    tileset.mkdir()
+    (tileset / "dungeon_texture_manifest.json").write_text(
+        json.dumps(
+            {
+                "textures": {"floor_test": "floors/missing_test.png"},
+                "special_textures": {"prop_test": "special_tiles/missing_prop.png"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    textures = TextureLibrary(tileset_base=tileset)
+    assert textures.get_texture("floor_test").get_size() == (128, 128)
+    assert textures.get_special_texture("prop_test", size=24) is not None
+
+    fallbacks = textures.get_asset_fallbacks()
+    assert fallbacks["texture:floor_test"].endswith("floors/missing_test.png")
+    assert fallbacks["special:prop_test"].endswith("special_tiles/missing_prop.png")
+
+    pygame.quit()
+
+
+def test_texture_library_routes_decorative_tile_keys():
+    pygame.init()
+    textures = TextureLibrary()
+
+    assert textures.get_floor_key(RootGrowthTile()) == "floor_roots"
+    assert textures.get_floor_key(FungusPatchTile()) == "floor_fungus"
+    assert textures.get_floor_key(CrystalClusterTile()) == "floor_crystal"
+    assert textures.get_floor_key(RubbleTile()) == "floor_debris"
+    assert textures.get_floor_key(FunhousePath()) == "floor_funhouse"
+    assert textures.get_wall_key(FunhouseWall()) == "wall_funhouse"
+    assert textures.get_wall_key(FunhouseBoundaryWall()) == "wall_funhouse_boundary"
+    assert textures.get_wall_key(MirrorWall()) == "wall_funhouse"
+    assert textures.get_ceiling_key(FunhousePath()) == "ceiling_funhouse"
+    assert textures.get_ceiling_key(FungusPatchTile()) == "ceiling_fungus"
+    assert textures.get_ceiling_key(CrystalClusterTile()) == "ceiling_crystal"
+    assert SceneRenderer._get_decorative_floor_sprite_key("RubbleTile") == "rubble"
+    assert SceneRenderer._get_decorative_floor_sprite_key("RootGrowthTile") == "root_growth"
+
+    pygame.quit()
+
+
+def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
+    class WallWithPosition:
+        x = 3
+        y = 5
+        z = 2
+
+    tile = WallWithPosition()
+
+    assert SceneRenderer._get_wall_overlay_key(tile, depth=1) == SceneRenderer._get_wall_overlay_key(tile, depth=3)
+
+
+def test_wall_overlays_are_opt_in(monkeypatch):
+    pygame.init()
+    screen = pygame.Surface((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+
+    monkeypatch.delenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS", raising=False)
+    assert SceneRenderer(presenter, TextureLibrary()).enable_wall_overlays is False
+
+    monkeypatch.setenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS", "1")
+    assert SceneRenderer(presenter, TextureLibrary()).enable_wall_overlays is True
 
     pygame.quit()
 
@@ -1120,6 +1238,44 @@ def test_scene_renderer_renders_side_special_tiles_in_opening():
     pygame.quit()
 
 
+def test_scene_renderer_renders_decorative_props_in_side_opening():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): CrystalClusterTile(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    rendered_tiles = []
+    original_render_special_tile = scene_renderer._render_special_tile
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        rendered_tiles.append((type(tile).__name__ if tile else None, depth, side, lateral_view))
+        return original_render_special_tile(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+
+    scene_renderer.render(player, world)
+
+    assert ("CrystalClusterTile", 2, "left", True) in rendered_tiles
+
+    pygame.quit()
+
+
 def test_scene_renderer_advances_side_floor_sprite_depth_when_next_zone_is_visible():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -1339,6 +1495,99 @@ def test_scene_renderer_keeps_both_depth2_side_doors_when_center_wall_is_deeper(
 
     assert ("d2:left_blocker_slot0", "door_closed") in calls
     assert ("d2:right_blocker_slot0", "door_closed") in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_renders_funhouse_wall_with_funhouse_wall_texture():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): FunhousePath(),
+        (1, 0, 1): FunhouseWall(),
+        (0, -1, 1): FunhousePath(),
+        (0, 1, 1): FunhousePath(),
+        (1, -1, 1): FunhousePath(),
+        (1, 1, 1): FunhousePath(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall", "wall_funhouse") in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_renders_automatic_funhouse_boundary_wall_with_funhouse_texture():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): FunhousePath(),
+        (1, 0, 1): FunhousePath(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:left_wall", "wall_funhouse_boundary") in calls
+    assert ("d1:right_wall", "wall_funhouse_boundary") in calls
+    assert ("d2:left_wall", "wall_funhouse_boundary") in calls
+    assert ("d2:right_wall", "wall_funhouse_boundary") in calls
+    assert ("d3:left_wall", "wall_funhouse_boundary") in calls
+    assert ("d3:right_wall", "wall_funhouse_boundary") in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_renders_funhouse_boundary_endcaps_without_stone_fallback():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): FunhousePath(),
+        (1, 0, 1): FunhousePath(),
+        (0, 1, 1): FunhousePath(),
+    }
+
+    calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:right_blocker", "wall_funhouse_boundary") in calls
+    assert ("d1:right_back_wall_endcap", "wall_funhouse_boundary") in calls
+    assert ("d1:right_back_wall_endcap", "wall") not in calls
 
     pygame.quit()
 
@@ -1591,6 +1840,55 @@ def test_scene_renderer_builds_skewed_lateral_floor_sprite_quads():
     assert right_quad.points[0][1] == right_quad.points[1][1]
     assert right_quad.points[1][0] < rect.right
     assert right_quad.points[3][0] == rect.left
+
+
+def test_scene_renderer_scales_ladder_down_as_pit_floor_sprite():
+    assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(2, "ladder_down")
+    assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(1, "chest")
+
+
+def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): LadderDown(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    rendered = []
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        if isinstance(tile, LadderDown):
+            rendered.append((rect.copy(), depth, side, lateral_view))
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+    scene_renderer.render(player, world)
+
+    view_w, view_h = scene_renderer._get_viewport_size()
+    depth2_zone = build_zone_geometry(
+        build_depth_rect(view_w, view_h, 2),
+        build_next_depth_rect(build_depth_rect(view_w, view_h, 2)),
+        depth=2,
+    )
+    expected_bounds = scene_renderer._get_center_floor_slot_quad(depth2_zone, 2, "x0").bounding_rect()
+
+    assert rendered
+    rect, depth, side, lateral_view = rendered[0]
+    assert depth == 2
+    assert side is None
+    assert lateral_view is False
+    assert abs(rect.y - round(expected_bounds.y)) <= 1
+    assert abs(rect.bottom - round(expected_bounds.y + expected_bounds.h)) <= 1
+
+    pygame.quit()
 
 
 def test_project_texture_to_quad_preserves_transparent_sprite_background():

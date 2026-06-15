@@ -316,6 +316,10 @@ class TestBasicTiles:
         wall.modify_player(game)
         assert player.facing == "south"
 
+        boundary = map_tiles.FunhouseBoundaryWall(0, 0, 0)
+        assert boundary.enter is False
+        assert boundary.available_actions(player) == []
+
         fire_path = map_tiles.FirePath(0, 0, 0)
         player.health.max = 100
         player.health.current = 100

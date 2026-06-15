@@ -25,6 +25,19 @@ class VisibleScene:
     depths: tuple[VisibleDepth, ...]
 
 
+@dataclass(frozen=True)
+class FunhouseBoundaryWall:
+    x: int
+    y: int
+    z: int
+    enter: bool = False
+
+
+def _is_funhouse_theme_tile(tile) -> bool:
+    tile_type = type(tile).__name__ if tile is not None else ""
+    return "Funhouse" in tile_type or tile_type in ("JesterBossRoom", "MirrorWall")
+
+
 def is_wall(tile) -> bool:
     """Return whether a tile should be rendered as a blocking wall."""
     if tile is None:
@@ -69,11 +82,18 @@ def extract_visible_scene(player_char, world_dict, max_depth: int = 3) -> Visibl
     y = player_char.location_y
     z = player_char.location_z
     facing = player_char.facing
+    use_funhouse_boundaries = _is_funhouse_theme_tile(world_dict.get((x, y, z)))
 
     dx, dy = DIRECTIONS[facing]["move"]
     (left_dx, left_dy), (right_dx, right_dy) = _perpendicular_offsets(facing)
 
     depths: list[VisibleDepth] = []
+
+    def read_tile(tile_x: int, tile_y: int):
+        tile = world_dict.get((tile_x, tile_y, z))
+        if tile is None and use_funhouse_boundaries:
+            return FunhouseBoundaryWall(tile_x, tile_y, z)
+        return tile
 
     for depth in range(1, max_depth + 1):
         source_x = x + dx * (depth - 1)
@@ -81,16 +101,16 @@ def extract_visible_scene(player_char, world_dict, max_depth: int = 3) -> Visibl
         center_x = x + dx * depth
         center_y = y + dy * depth
 
-        source_tile = world_dict.get((source_x, source_y, z))
-        center = world_dict.get((center_x, center_y, z))
-        left = world_dict.get((source_x + left_dx, source_y + left_dy, z))
-        right = world_dict.get((source_x + right_dx, source_y + right_dy, z))
-        left_branch = world_dict.get((source_x + (left_dx * 2), source_y + (left_dy * 2), z))
-        right_branch = world_dict.get((source_x + (right_dx * 2), source_y + (right_dy * 2), z))
-        left_forward = world_dict.get((center_x + left_dx, center_y + left_dy, z))
-        right_forward = world_dict.get((center_x + right_dx, center_y + right_dy, z))
-        left_forward_outer = world_dict.get((center_x + (left_dx * 2), center_y + (left_dy * 2), z))
-        right_forward_outer = world_dict.get((center_x + (right_dx * 2), center_y + (right_dy * 2), z))
+        source_tile = read_tile(source_x, source_y)
+        center = read_tile(center_x, center_y)
+        left = read_tile(source_x + left_dx, source_y + left_dy)
+        right = read_tile(source_x + right_dx, source_y + right_dy)
+        left_branch = read_tile(source_x + (left_dx * 2), source_y + (left_dy * 2))
+        right_branch = read_tile(source_x + (right_dx * 2), source_y + (right_dy * 2))
+        left_forward = read_tile(center_x + left_dx, center_y + left_dy)
+        right_forward = read_tile(center_x + right_dx, center_y + right_dy)
+        left_forward_outer = read_tile(center_x + (left_dx * 2), center_y + (left_dy * 2))
+        right_forward_outer = read_tile(center_x + (right_dx * 2), center_y + (right_dy * 2))
 
         depths.append(
             VisibleDepth(

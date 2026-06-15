@@ -5,6 +5,18 @@
 ## Recently Changed
 
 ### Dungeon Rendering
+- [ ] Enter upper, middle, and deep dungeon levels.
+  - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.
+- [ ] Move near decorative rubble, roots, fungus, crystal clusters, bone piles, and broken gear in a test map or authored fixture.
+  - Expected: Decorative props render as floor-bound hooks and remain traversable unless future gameplay explicitly changes them.
+- [ ] Inspect root and fungus floor variants in a dungeon test map.
+  - Expected: Roots and fungus look embedded into the floor texture, with no flat sticker edges, chroma artifacts, or obvious rectangular backgrounds.
+- [ ] Inspect transparent root/fungus overlay sprites on ordinary dungeon floor tiles.
+  - Expected: Overlay sprites have transparent backgrounds, muted colors, and soft contact shadows without visible green/chroma fringes.
+- [ ] Face ordinary walls across multiple floors.
+  - Expected: Torch/sconce overlays appear occasionally, with cleaner lit fixtures high in the dungeon and more broken/unlit fixtures deeper down.
+- [ ] Enter and walk along funhouse boundaries.
+  - Expected: Exterior funhouse boundaries use the funhouse boundary wall material at side depths and remain impassable.
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
 - [ ] Revisit a room after moving through side corridors and backtracking.
@@ -14,6 +26,8 @@
 - [ ] Run asset fallback diagnostics with a missing or renamed test asset.
   - Expected: Fallback counts identify the affected asset category without changing dungeon rendering.
   - Expected: Fallback key lists identify the affected texture, special-tile, or enemy asset names by category.
+- [ ] Run renderer diagnostics with all shipped dungeon assets present.
+  - Expected: Texture, special-tile, and manifest fallback counts remain zero for shipped dungeon-render assets.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
 

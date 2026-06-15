@@ -186,12 +186,44 @@ def _parse_tiled_properties(props):
     return {prop.get("name"): prop.get("value") for prop in props}
 
 
+def _tiled_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
 def _extract_tile_type(tile_data):
     tile_type = tile_data.get("type") or tile_data.get("class")
     if tile_type:
         return tile_type
     props = _parse_tiled_properties(tile_data.get("properties"))
     return props.get("tile") or props.get("type") or props.get("class")
+
+
+def _select_tiled_gameplay_layer(layers):
+    visible_tile_layers = [
+        layer
+        for layer in layers
+        if layer.get("type") == "tilelayer" and layer.get("visible", True)
+    ]
+    if not visible_tile_layers:
+        return None
+
+    for layer in visible_tile_layers:
+        props = _parse_tiled_properties(layer.get("properties"))
+        if layer.get("name") == "Tiles" or _tiled_bool(props.get("gameplay"), False):
+            return layer
+
+    for layer in visible_tile_layers:
+        props = _parse_tiled_properties(layer.get("properties"))
+        if not _tiled_bool(props.get("decorative"), False):
+            return layer
+
+    return visible_tile_layers[0]
 
 
 def _load_tiled_tileset(tileset_entry, map_dir):
@@ -244,15 +276,13 @@ def _load_tiled_map(map_file, z, map_tiles):
                 continue
             gid_to_type[first_gid + tile["id"]] = tile_type
 
-    tile_layer = next(
-        (layer for layer in map_data.get("layers", []) if layer.get("type") == "tilelayer"),
-        None,
-    )
+    tile_layer = _select_tiled_gameplay_layer(map_data.get("layers", []))
     if not tile_layer:
         raise ValueError(f"No tile layer found in {map_file}")
 
     width = map_data.get("width", 0)
     height = map_data.get("height", 0)
+    infinite = _tiled_bool(map_data.get("infinite"), False)
     world_dict = {}
 
     def add_tile(x, y, gid):
@@ -281,9 +311,7 @@ def _load_tiled_map(map_file, z, map_tiles):
                 for x in range(chunk_width):
                     map_x = chunk["x"] + x
                     map_y = chunk["y"] + y
-                    if map_x < 0 or map_y < 0:
-                        continue
-                    if width and height and (map_x >= width or map_y >= height):
+                    if not infinite and width and height and (map_x >= width or map_y >= height):
                         continue
                     add_tile(map_x, map_y, chunk_data[row_offset + x])
 

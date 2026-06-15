@@ -111,11 +111,11 @@ Completed in the June 2026 P0 pass:
    - Audio diagnostics and location/combat music routing.
 3. Updated roadmap and playtest checklist entries for the completed P0 pass.
 
-Next active priority: `P1 - Pygame UX Polish`.
+Next active priority: `P2 - Renderer And Exploration Presentation`.
 
 ### P1 - Pygame UX Polish
 
-Status: `Active`
+Status: `Done`
 
 1. Complete modern Character Menu acceptance and iteration.
    - Status: `Done` for the current UX pass.
@@ -158,7 +158,25 @@ Status: `Active`
    - Natural/enemy-only equipment, empty equipment slots, summon-only natural objects, and compact row icons remain intentionally outside the large item-art set.
    - The retired generic item render atlas has been removed; selected-item views resolve exact item artwork from `src/ui_pygame/assets/item_art/`.
 7. Update dungeon renderings to match new aesthetic.
+   - Status: `Done`.
+   - Implemented: manifest-driven dungeon texture loading, painterly replacement wall/floor/ceiling/door textures, approved 256x256 roots/fungus tile art, decorative render hooks for rubble/roots/fungus/crystals/bones/broken gear, deterministic torch/sconce wall overlays, richer Tiled JSON gameplay-layer selection, chunked/infinite map support, funhouse boundary-wall rendering, and stable appended authoring tiles for future flexible maps.
+   - Art usage note: new dungeon tile art is documented in `docs/DUNGEON_TILE_ART.md`; maps should use the decorative tile classes for gameplay/world placement and the manifest keys for renderer-only texture variants.
+   - Gameplay note: decorative tiles are currently traversable visual/message hooks only; harvesting, debris destruction, crystal mana interactions, poison/fungus effects, and salvage remain future gameplay work.
    - Generate new floor, ceiling, and wall tiles
+      - dungeon becomes more weathered as you go deeper
+      - upper levels have torches/sconces but they may be broken/unlit further down
+   - Expand tileset to add dynamic gameplay
+      - crumbling rocks, dead ends (stalagmite/stalactites)
+         - gameplay elements can be added to remove debris/destroy obstructions to reveal paths
+      - roots, fungus, lichen
+         - can be farmed/gathered for use
+         - can affect abilites or enemy strength
+         - can poison or cause other status effects
+      - crystal formations
+         - can be gathered or used to regen mana or power class mechanics
+         - can effect spells or become projectiles in combat
+      - bones, sinew, fur
+      - broken equipment, random items (usable and unusable)
 
 ### P2 - Renderer And Exploration Presentation
 

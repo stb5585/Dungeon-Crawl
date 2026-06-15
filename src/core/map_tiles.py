@@ -613,6 +613,42 @@ class EmptyCavePath(CavePath):
         pass
 
 
+class DecorativeCavePath(EmptyCavePath):
+    """Traversable visual hook for future dungeon interaction systems."""
+
+    description = ""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        if self.description:
+            intro_str += f"{self.description}\n"
+        return intro_str
+
+
+class RubbleTile(DecorativeCavePath):
+    description = "Loose rubble and crumbling stone choke the edges of this passage."
+
+
+class RootGrowthTile(DecorativeCavePath):
+    description = "Pale roots and clinging lichen thread through the old stone."
+
+
+class FungusPatchTile(DecorativeCavePath):
+    description = "A damp patch of fungus gives off a faint bitter smell."
+
+
+class CrystalClusterTile(DecorativeCavePath):
+    description = "A cluster of crystals catches the dungeon gloom with a quiet inner shine."
+
+
+class BonePileTile(DecorativeCavePath):
+    description = "Bones, sinew, and scraps of fur have gathered in the dust."
+
+
+class BrokenGearTile(DecorativeCavePath):
+    description = "Broken equipment lies scattered here, too ruined to use for now."
+
+
 class CavePath0(CavePath):
 
     def modify_player(self, game, textbox=None, popup_class=None):
@@ -760,6 +796,12 @@ class FunhouseWall(FakeWall):
 
     def available_actions(self, player_char):
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+
+class FunhouseBoundaryWall(Wall):
+    """An impassable exterior wall for funhouse map boundaries."""
+
+    pass
 
 
 class BossPath(CavePath):

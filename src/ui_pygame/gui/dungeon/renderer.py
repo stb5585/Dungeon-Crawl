@@ -36,6 +36,7 @@ class SceneRenderer:
         self.debug_scene = os.getenv("DUNGEON_RENDERER_DEBUG_SCENE") == "1"
         self.debug_commands = os.getenv("DUNGEON_RENDERER_DEBUG_COMMANDS") == "1"
         self.debug_surface_slots = os.getenv("DUNGEON_RENDERER_DEBUG_SURFACE_SLOTS") == "1"
+        self.enable_wall_overlays = os.getenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS") == "1"
         self._last_debug_snapshot: str | None = None
 
     @property
@@ -77,6 +78,8 @@ class SceneRenderer:
             screen.blit(projected.surface, projected.topleft)
 
         self._render_special_tiles(scene, zones)
+        if self.enable_wall_overlays:
+            self._render_wall_overlays(scene, zones)
 
         if self.debug_geometry:
             self._render_debug_overlay(zones, scene)
@@ -308,7 +311,7 @@ class SceneRenderer:
                         depth=depth,
                         order=2,
                         panel_id=f"d{depth}:back_wall",
-                        texture_key="wall",
+                        texture_key=self.textures.get_wall_key(visible_depth.center),
                         quad=Quad.from_rect(zone.back_wall_rect),
                         darkness=darkness,
                     )
@@ -589,8 +592,8 @@ class SceneRenderer:
 
         return commands
 
-    @staticmethod
     def _build_center_wall_endcap_commands(
+        self,
         depth: int,
         zone,
         left_tile,
@@ -603,7 +606,7 @@ class SceneRenderer:
     ) -> list[RenderCommand]:
         commands: list[RenderCommand] = []
         commands.extend(
-            SceneRenderer._build_side_back_wall_endcaps(
+            self._build_side_back_wall_endcaps(
                 depth=depth,
                 side="left",
                 side_tile=left_tile,
@@ -611,10 +614,13 @@ class SceneRenderer:
                 outer_tile=left_outer_tile,
                 blocker_rect=zone.left_side_blocker_rect,
                 darkness=darkness,
+                texture_key=self.textures.get_wall_key(
+                    left_outer_tile if is_wall(left_outer_tile) else left_forward_tile
+                ),
             )
         )
         commands.extend(
-            SceneRenderer._build_side_back_wall_endcaps(
+            self._build_side_back_wall_endcaps(
                 depth=depth,
                 side="right",
                 side_tile=right_tile,
@@ -622,6 +628,9 @@ class SceneRenderer:
                 outer_tile=right_outer_tile,
                 blocker_rect=zone.right_side_blocker_rect,
                 darkness=darkness,
+                texture_key=self.textures.get_wall_key(
+                    right_outer_tile if is_wall(right_outer_tile) else right_forward_tile
+                ),
             )
         )
 
@@ -636,6 +645,7 @@ class SceneRenderer:
         outer_tile,
         blocker_rect,
         darkness: float,
+        texture_key: str = "wall",
     ) -> list[RenderCommand]:
         if is_wall(side_tile) or not is_wall(forward_tile):
             return []
@@ -671,7 +681,7 @@ class SceneRenderer:
                     depth=depth,
                     order=2,
                     panel_id=f"d{depth}:{side}_back_wall_endcap{panel_suffix}",
-                    texture_key="wall",
+                    texture_key=texture_key,
                     quad=Quad.from_rect(rect),
                     darkness=darkness,
                 )
@@ -786,7 +796,7 @@ class SceneRenderer:
                     depth=depth,
                     order=3,
                     panel_id=f"d{depth}:{side}_wall",
-                    texture_key="wall",
+                    texture_key=self.textures.get_wall_key(side_tile),
                     quad=wall_quad,
                     darkness=darkness,
                 )
@@ -811,7 +821,7 @@ class SceneRenderer:
                     depth=depth,
                     order=2,
                     panel_id=f"d{depth}:{side}_blocker",
-                    texture_key="wall",
+                    texture_key=self.textures.get_wall_key(side_forward_tile),
                     quad=blocker_quad,
                     darkness=darkness,
                 )
@@ -826,10 +836,13 @@ class SceneRenderer:
                         outer_tile=outer_wall_tile,
                         blocker_rect=blocker_quad.bounding_rect(),
                         darkness=darkness,
+                        texture_key=self.textures.get_wall_key(
+                            outer_wall_tile if is_wall(outer_wall_tile) else side_forward_tile
+                        ),
                     )
                 )
         elif is_wall(outer_wall_tile) and continuation_quad is not None:
-            outer_texture_key = "wall"
+            outer_texture_key = self.textures.get_wall_key(outer_wall_tile)
             if self._is_door_tile(outer_wall_tile):
                 outer_texture_key = "door_open" if getattr(outer_wall_tile, "open", False) else "door_closed"
             commands.extend(
@@ -848,7 +861,7 @@ class SceneRenderer:
                         depth=depth,
                         order=3,
                         panel_id=f"d{depth}:{side}_corridor_outer_bridge",
-                        texture_key="wall",
+                        texture_key=self.textures.get_wall_key(outer_wall_tile),
                         quad=bridge_quad,
                         darkness=darkness,
                     )
@@ -1180,13 +1193,32 @@ class SceneRenderer:
             if visible_depth.depth == max_visible_depth and not is_wall(visible_depth.center):
                 continue
             rect = pygame.Rect(zones[visible_depth.depth].back_wall_rect.to_int_tuple())
+            render_depth = visible_depth.depth
+            if visible_depth.center is not None and "LadderDown" in type(visible_depth.center).__name__:
+                floor_depth = visible_depth.depth + 1
+                floor_zone = zones.get(floor_depth)
+                if floor_zone is None:
+                    continue
+                floor_quad = self._get_center_floor_slot_quad(
+                    zone=floor_zone,
+                    depth=floor_depth,
+                    slot_suffix="x0",
+                )
+                floor_bounds = floor_quad.bounding_rect()
+                rect = pygame.Rect(
+                    round(floor_bounds.x),
+                    round(floor_bounds.y),
+                    max(1, round(floor_bounds.w)),
+                    max(1, round(floor_bounds.h)),
+                )
+                render_depth = floor_depth
             if visible_depth.center is not None and "WarpPoint" in type(visible_depth.center).__name__:
                 continue
             self._render_special_tile(
                 visible_depth.center,
                 rect,
                 darkness=self._get_layer_darkness(visible_depth.depth),
-                depth=visible_depth.depth,
+                depth=render_depth,
             )
 
         self._render_center_floor_special_tiles(scene, zones)
@@ -1390,6 +1422,19 @@ class SceneRenderer:
         if depth <= 0 and "WarpPoint" not in tile_type:
             return
 
+        decorative_sprite_key = self._get_decorative_floor_sprite_key(tile_type)
+        if decorative_sprite_key is not None:
+            self._render_floor_sprite(
+                decorative_sprite_key,
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="decorative_prop",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
         if "Chest" in tile_type:
             if getattr(tile, "opened", False) or getattr(tile, "open", False):
                 sprite_key = "chest_open"
@@ -1429,7 +1474,15 @@ class SceneRenderer:
             return
 
         if "LadderDown" in tile_type:
-            self._render_special_sprite("ladder_down", rect, darkness=darkness, side=side, lateral_view=lateral_view)
+            self._render_floor_sprite(
+                "ladder_down",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="ladder_down",
+                side=side,
+                lateral_view=lateral_view,
+            )
             return
 
         if "Portal" in tile_type:
@@ -1579,6 +1632,11 @@ class SceneRenderer:
 
         if kind == "ladder_up":
             sprite_rect.y = rect.y + (rect.height - sprite_rect.height) // 2
+        elif kind == "ladder_down" and not lateral_view:
+            sprite_rect.midbottom = (
+                rect.centerx,
+                round(rect.y + (rect.height * 0.55)),
+            )
 
         if lateral_view and side is not None:
             if kind == "chest":
@@ -1671,6 +1729,12 @@ class SceneRenderer:
                 "GoldenChaliceRoom",
                 "UnobtainiumRoom",
                 "BossRoom",
+                "RubbleTile",
+                "RootGrowthTile",
+                "FungusPatchTile",
+                "CrystalClusterTile",
+                "BonePileTile",
+                "BrokenGearTile",
             )
         )
 
@@ -1791,6 +1855,8 @@ class SceneRenderer:
     def _get_floor_sprite_ratio(depth: int, kind: str) -> float:
         if kind == "ladder_up":
             return {1: 0.8, 2: 0.6, 3: 0.4}.get(depth, 0.4)
+        if kind == "ladder_down":
+            return {1: 0.8, 2: 0.6, 3: 0.4}.get(depth, 0.4)
         if kind == "chest":
             return {1: 0.55, 2: 0.45, 3: 0.35}.get(depth, 0.35)
         if kind == "boulder":
@@ -1805,7 +1871,108 @@ class SceneRenderer:
             return {1: 0.45, 2: 0.38, 3: 0.32}.get(depth, 0.32)
         if kind == "warp_point":
             return {1: 1.08, 2: 0.88, 3: 0.68}.get(depth, 0.68)
+        if kind == "decorative_prop":
+            return {1: 0.62, 2: 0.50, 3: 0.38}.get(depth, 0.38)
         return {1: 1.0, 2: 0.8, 3: 0.6}.get(depth, 0.6)
+
+    @staticmethod
+    def _get_decorative_floor_sprite_key(tile_type: str) -> str | None:
+        return {
+            "RubbleTile": "rubble",
+            "RootGrowthTile": "root_growth",
+            "FungusPatchTile": "fungus_patch",
+            "CrystalClusterTile": "crystal_cluster",
+            "BonePileTile": "bone_pile",
+            "BrokenGearTile": "broken_gear",
+        }.get(tile_type)
+
+    def _render_wall_overlays(self, scene, zones) -> None:
+        for visible_depth in scene.depths:
+            depth = visible_depth.depth
+            zone = zones[depth]
+            darkness = self._get_layer_darkness(depth)
+
+            if is_wall(visible_depth.center) and not self._is_door_tile(visible_depth.center):
+                self._render_wall_overlay_for_tile(
+                    visible_depth.center,
+                    pygame.Rect(zone.back_wall_rect.to_int_tuple()),
+                    darkness=darkness,
+                    depth=depth,
+                )
+
+            if is_wall(visible_depth.left) and not self._is_door_tile(visible_depth.left):
+                self._render_wall_overlay_for_tile(
+                    visible_depth.left,
+                    zone.left_wall.bounding_rect(),
+                    darkness=darkness,
+                    depth=depth,
+                    side="left",
+                )
+
+            if is_wall(visible_depth.right) and not self._is_door_tile(visible_depth.right):
+                self._render_wall_overlay_for_tile(
+                    visible_depth.right,
+                    zone.right_wall.bounding_rect(),
+                    darkness=darkness,
+                    depth=depth,
+                    side="right",
+                )
+
+    def _render_wall_overlay_for_tile(
+        self,
+        tile,
+        rect,
+        darkness: float,
+        depth: int,
+        side: str | None = None,
+    ) -> None:
+        texture_key = self._get_wall_overlay_key(tile, depth)
+        if texture_key is None:
+            return
+
+        if not isinstance(rect, pygame.Rect):
+            rect = pygame.Rect(
+                round(rect.x),
+                round(rect.y),
+                max(1, round(rect.w)),
+                max(1, round(rect.h)),
+            )
+
+        max_size = max(10, round(min(rect.width, rect.height) * (0.30 if side else 0.22)))
+        sprite = self.textures.get_special_texture(texture_key, max_size)
+        if sprite is None:
+            return
+
+        sprite_rect = sprite.get_rect()
+        if side == "left":
+            sprite_rect.midtop = (round(rect.x + rect.width * 0.64), round(rect.y + rect.height * 0.24))
+        elif side == "right":
+            sprite_rect.midtop = (round(rect.x + rect.width * 0.36), round(rect.y + rect.height * 0.24))
+        else:
+            sprite_rect.midtop = (rect.centerx, round(rect.y + rect.height * 0.22))
+
+        shaded = self._apply_darkness_to_surface(sprite, darkness)
+        self.screen.blit(shaded, sprite_rect.topleft)
+
+    @staticmethod
+    def _get_wall_overlay_key(tile, depth: int) -> str | None:
+        if tile is None:
+            return None
+        z = getattr(tile, "z", 1)
+        seed = (getattr(tile, "x", 0) * 31) + (getattr(tile, "y", 0) * 17) + (z * 13)
+        if z <= 1:
+            return "torch_lit" if seed % 3 == 0 else None
+        if z <= 3:
+            if seed % 5 == 0:
+                return "torch_lit"
+            if seed % 4 == 0:
+                return "sconce_broken"
+            return None
+        if seed % 4 == 0:
+            return "sconce_unlit"
+        if seed % 5 == 0:
+            return "sconce_broken"
+        return None
 
     @staticmethod
     def _is_door_tile(tile) -> bool:

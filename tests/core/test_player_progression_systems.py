@@ -225,6 +225,73 @@ class TestPlayerTopLevelHelpers:
         with pytest.raises(ValueError):
             _load_tiled_map(str(missing_layer), 1, fake_tiles)
 
+    def test_tiled_map_loader_uses_gameplay_layer_and_supports_flexible_chunks(self, tmp_path):
+        fake_tiles = SimpleNamespace(
+            Wall=_tile_factory("Wall"),
+            Floor=_tile_factory("Floor"),
+            CrystalClusterTile=_tile_factory("CrystalClusterTile"),
+        )
+
+        flexible_path = tmp_path / "flexible.json"
+        flexible_path.write_text(
+            json.dumps(
+                {
+                    "width": 0,
+                    "height": 0,
+                    "infinite": True,
+                    "properties": [{"name": "default_tile", "value": "Wall"}],
+                    "tilesets": [
+                        {
+                            "firstgid": 1,
+                            "tiles": [
+                                {"id": 0, "type": "Floor"},
+                                {"id": 1, "type": "CrystalClusterTile"},
+                            ],
+                        }
+                    ],
+                    "layers": [
+                        {
+                            "name": "Decor",
+                            "type": "tilelayer",
+                            "visible": True,
+                            "properties": [{"name": "decorative", "value": True}],
+                            "chunks": [{"x": -1, "y": -1, "width": 1, "height": 1, "data": [2]}],
+                        },
+                        {
+                            "name": "Tiles",
+                            "type": "tilelayer",
+                            "visible": True,
+                            "chunks": [{"x": -2, "y": -1, "width": 2, "height": 1, "data": [1, 0]}],
+                        },
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        flexible_world = _load_tiled_map(str(flexible_path), 5, fake_tiles)
+
+        assert flexible_world[(-2, -1, 5)].kind == "Floor"
+        assert flexible_world[(-1, -1, 5)].kind == "Wall"
+        assert all(tile.kind != "CrystalClusterTile" for tile in flexible_world.values())
+
+        narrow_path = tmp_path / "narrow.json"
+        narrow_path.write_text(
+            json.dumps(
+                {
+                    "width": 3,
+                    "height": 1,
+                    "tilesets": [{"firstgid": 1, "tiles": [{"id": 0, "type": "Floor"}]}],
+                    "layers": [{"name": "Tiles", "type": "tilelayer", "data": [1, 0, 1]}],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        narrow_world = _load_tiled_map(str(narrow_path), 2, fake_tiles)
+
+        assert [narrow_world[(x, 0, 2)].kind for x in range(3)] == ["Floor", "Wall", "Floor"]
+
     def test_load_tiles_prefers_json_per_level_and_loads_optional_side_areas(self, tmp_path, monkeypatch):
         map_dir = tmp_path / "map_files"
         map_dir.mkdir()

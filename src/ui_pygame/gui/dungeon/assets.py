@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import re
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -13,8 +14,12 @@ from .geometry import Quad
 from .projector import ProjectedSurface, project_texture_to_quad
 
 
-TEXTURE_PATHS = {
+TEXTURE_MANIFEST_NAME = "dungeon_texture_manifest.json"
+
+DEFAULT_TEXTURE_PATHS = {
     "wall": "walls/brick.png",
+    "wall_funhouse": "walls/funhouse.png",
+    "wall_funhouse_boundary": "walls/funhouse_boundary.png",
     "door_closed": "walls/closed_door.png",
     "door_open": "walls/opened_door.png",
     "floor": "floors/dirt.png",
@@ -23,10 +28,13 @@ TEXTURE_PATHS = {
     "floor_funhouse": "floors/funhouse.png",
     "floor_pit": "floors/dirt_pit.png",
     "ceiling": "ceilings/stone.png",
+    "ceiling_funhouse": "ceilings/funhouse.png",
     "ceiling_pit": "ceilings/stone_pit.png",
 }
 
-SPECIAL_TEXTURE_PATHS = {
+TEXTURE_PATHS = dict(DEFAULT_TEXTURE_PATHS)
+
+DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "stairs_up": "special_tiles/stairs_up.png",
     "stairs_down": "special_tiles/stairs_down.png",
     "ladder_up": "special_tiles/ladder_up.png",
@@ -53,8 +61,12 @@ SPECIAL_TEXTURE_PATHS = {
     "unobtainium": "special_tiles/unobtainium.png",
 }
 
+SPECIAL_TEXTURE_PATHS = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
+
 FALLBACK_COLORS = {
     "wall": (90, 90, 104),
+    "wall_funhouse": (54, 40, 70),
+    "wall_funhouse_boundary": (46, 42, 64),
     "door_closed": (90, 60, 30),
     "door_open": (120, 90, 60),
     "floor": (128, 118, 92),
@@ -63,6 +75,7 @@ FALLBACK_COLORS = {
     "floor_funhouse": (148, 148, 148),
     "floor_pit": (92, 76, 60),
     "ceiling": (70, 68, 76),
+    "ceiling_funhouse": (44, 36, 58),
     "ceiling_pit": (52, 52, 58),
 }
 
@@ -91,6 +104,14 @@ SPECIAL_FALLBACK_COLORS = {
     "empty_golden_chalice_altar": (140, 130, 95),
     "secret_shop": (120, 80, 60),
     "unobtainium": (110, 180, 190),
+    "rubble": (102, 96, 88),
+    "fungus_patch": (88, 116, 82),
+    "crystal_cluster": (92, 148, 176),
+    "bone_pile": (164, 150, 126),
+    "broken_gear": (126, 104, 86),
+    "torch_lit": (198, 122, 54),
+    "sconce_unlit": (92, 82, 72),
+    "sconce_broken": (70, 66, 62),
 }
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -152,6 +173,8 @@ class TextureLibrary:
         else:
             self.tileset_base = DEFAULT_TILESET_BASE
         self.assets_base = self.tileset_base.parent
+        self.texture_paths = dict(DEFAULT_TEXTURE_PATHS)
+        self.special_texture_paths = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
         self._loaded = False
         self._textures: dict[str, pygame.Surface] = {}
         self._projected_cache: OrderedDict[tuple, ProjectedSurface] = OrderedDict()
@@ -165,6 +188,30 @@ class TextureLibrary:
         self._scene_surface_slot_overrides: dict[str, str] = {}
         self._asset_fallbacks: dict[str, str] = {}
         self._surface_slot_revision = 0
+        self._load_manifest()
+
+    def _load_manifest(self) -> None:
+        manifest_path = self.tileset_base / TEXTURE_MANIFEST_NAME
+        if not manifest_path.exists():
+            return
+
+        try:
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            self._record_asset_fallback("manifest", "dungeon_textures", manifest_path)
+            return
+
+        textures = data.get("textures", {})
+        if isinstance(textures, dict):
+            for texture_key, rel_path in textures.items():
+                if isinstance(texture_key, str) and isinstance(rel_path, str):
+                    self.texture_paths[texture_key] = rel_path
+
+        special_textures = data.get("special_textures", {})
+        if isinstance(special_textures, dict):
+            for texture_key, rel_path in special_textures.items():
+                if isinstance(texture_key, str) and isinstance(rel_path, str):
+                    self.special_texture_paths[texture_key] = rel_path
 
     def get_asset_fallbacks(self) -> dict[str, str]:
         """Return missing or failed asset paths that are using fallback behavior."""
@@ -219,14 +266,14 @@ class TextureLibrary:
         if self._loaded:
             return
 
-        for texture_key, rel_path in TEXTURE_PATHS.items():
+        for texture_key, rel_path in self.texture_paths.items():
             full_path = self.tileset_base / rel_path
             if os.path.exists(full_path):
                 self._textures[texture_key] = self._load_image_surface(full_path)
             else:
                 self._record_asset_fallback("texture", texture_key, full_path)
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
-                fallback.fill((*FALLBACK_COLORS[texture_key], 255))
+                fallback.fill((*FALLBACK_COLORS.get(texture_key, FALLBACK_COLORS["wall"]), 255))
                 self._textures[texture_key] = fallback
 
         self._loaded = True
@@ -244,12 +291,12 @@ class TextureLibrary:
 
     def get_special_texture(self, texture_key: str, size: int | None = None) -> pygame.Surface | None:
         self.ensure_loaded()
-        if texture_key not in SPECIAL_TEXTURE_PATHS:
+        if texture_key not in self.special_texture_paths:
             return None
 
         base = self._special_base_textures.get(texture_key)
         if base is None:
-            rel_path = SPECIAL_TEXTURE_PATHS[texture_key]
+            rel_path = self.special_texture_paths[texture_key]
             full_path = self._resolve_asset_path(rel_path)
             if os.path.exists(full_path):
                 try:
@@ -261,7 +308,7 @@ class TextureLibrary:
                 self._record_asset_fallback("special", texture_key, full_path)
             if base is None:
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
-                fallback.fill((*SPECIAL_FALLBACK_COLORS[texture_key], 255))
+                fallback.fill((*SPECIAL_FALLBACK_COLORS.get(texture_key, SPECIAL_FALLBACK_COLORS["empty_altar"]), 255))
                 base = fallback
             self._special_base_textures[texture_key] = base
 
@@ -531,21 +578,19 @@ class TextureLibrary:
         self._surface_slot_revision += 1
         self._panel_texture_cache.clear()
 
-    @staticmethod
-    def _is_valid_surface_slot_override(slot_id: object, texture_key: object) -> bool:
+    def _is_valid_surface_slot_override(self, slot_id: object, texture_key: object) -> bool:
         return (
             isinstance(slot_id, str)
             and slot_id.startswith(("floor:", "ceiling:", "wall:"))
             and isinstance(texture_key, str)
-            and texture_key in TEXTURE_PATHS
+            and texture_key in self.texture_paths
         )
 
-    @classmethod
-    def _filter_surface_slot_overrides(cls, overrides: dict[str, str]) -> dict[str, str]:
+    def _filter_surface_slot_overrides(self, overrides: dict[str, str]) -> dict[str, str]:
         return {
             slot_id: texture_key
             for slot_id, texture_key in overrides.items()
-            if cls._is_valid_surface_slot_override(slot_id, texture_key)
+            if self._is_valid_surface_slot_override(slot_id, texture_key)
         }
 
     def _get_surface_panel_override_signature(self, panel_id: str, texture_key: str):
@@ -823,6 +868,9 @@ class TextureLibrary:
             )
         )
 
+    def _texture_or_default(self, texture_key: str, default_key: str) -> str:
+        return texture_key if texture_key in self.texture_paths else default_key
+
     def get_floor_key(self, tile, fallback_tile=None) -> str:
         if self._is_floor_overlay_tile(tile) and fallback_tile is not None:
             return self.get_floor_key(fallback_tile)
@@ -836,12 +884,34 @@ class TextureLibrary:
             return "floor_spring"
         if "LadderDown" in tile_type:
             return "floor_pit"
+        if "RootGrowthTile" in tile_type:
+            return self._texture_or_default("floor_roots", "floor")
+        if "FungusPatchTile" in tile_type:
+            return self._texture_or_default("floor_fungus", "floor")
+        if "CrystalClusterTile" in tile_type:
+            return self._texture_or_default("floor_crystal", "floor")
+        if any(name in tile_type for name in ("RubbleTile", "BonePileTile", "BrokenGearTile")):
+            return self._texture_or_default("floor_debris", "floor")
         return "floor"
+
+    def get_wall_key(self, tile) -> str:
+        tile_type = type(tile).__name__ if tile else ""
+        if tile_type == "FunhouseBoundaryWall":
+            return self._texture_or_default("wall_funhouse_boundary", "wall_funhouse")
+        if tile_type in ("FunhouseWall", "MirrorWall"):
+            return self._texture_or_default("wall_funhouse", "wall")
+        return "wall"
 
     def get_ceiling_key(self, tile) -> str:
         tile_type = type(tile).__name__ if tile else ""
+        if "Funhouse" in tile_type:
+            return self._texture_or_default("ceiling_funhouse", "ceiling")
         if "LadderUp" in tile_type:
             return "ceiling_pit"
+        if "FungusPatchTile" in tile_type:
+            return self._texture_or_default("ceiling_fungus", "ceiling")
+        if "CrystalClusterTile" in tile_type:
+            return self._texture_or_default("ceiling_crystal", "ceiling")
         return "ceiling"
 
     def get_projected_surface(

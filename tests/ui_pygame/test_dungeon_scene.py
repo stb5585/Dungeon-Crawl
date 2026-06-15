@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.ui_pygame.gui.dungeon.scene import extract_visible_scene
+from src.ui_pygame.gui.dungeon.scene import FunhouseBoundaryWall, extract_visible_scene
 
 
 class OpenTile:
@@ -11,6 +11,10 @@ class OpenTile:
 
 class WallTile:
     enter = False
+
+
+class FunhousePath:
+    enter = True
 
 
 @dataclass
@@ -105,3 +109,19 @@ def test_extract_visible_scene_tracks_side_branch_corridor_tiles():
     assert isinstance(depth1.left_branch, OpenTile)
     assert isinstance(depth1.left_forward, OpenTile)
     assert isinstance(depth1.left_forward_outer, WallTile)
+
+
+def test_extract_visible_scene_marks_funhouse_missing_cells_as_impassable_boundary_walls():
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): FunhousePath(),
+        (1, 0, 1): FunhousePath(),
+    }
+
+    scene = extract_visible_scene(player, world)
+    depth1 = scene.depths[0]
+
+    assert isinstance(depth1.left, FunhouseBoundaryWall)
+    assert depth1.left.enter is False
+    assert isinstance(depth1.right, FunhouseBoundaryWall)
+    assert depth1.right.enter is False

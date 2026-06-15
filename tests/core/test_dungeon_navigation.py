@@ -4,6 +4,7 @@ Smoke tests for core dungeon navigation behavior.
 """
 
 from src.core.character import Combat, Level, Resource, Stats
+from src.core import map_tiles
 from src.core.player import DIRECTIONS, Player
 
 
@@ -62,3 +63,19 @@ def test_movement():
     assert "east" in movable_directions
     assert player.quit is False
     assert player.in_town() is False
+
+
+def test_decorative_dungeon_tiles_are_traversable_hooks():
+    for tile_class in (
+        map_tiles.RubbleTile,
+        map_tiles.RootGrowthTile,
+        map_tiles.FungusPatchTile,
+        map_tiles.CrystalClusterTile,
+        map_tiles.BonePileTile,
+        map_tiles.BrokenGearTile,
+    ):
+        tile = tile_class(1, 2, 3)
+
+        assert tile.enter is True
+        assert tile.special is False
+        assert tile.enemy is None
