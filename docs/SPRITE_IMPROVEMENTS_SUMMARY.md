@@ -37,7 +37,7 @@ Your sprites were being rendered as void-like appearances for dark colors (espec
 
 ### 3. New Documentation
 **Files**:
-- `src/ui_pygame/assets/sprites/README.md` - Updated sprite system docs
+- `src/ui_pygame/assets/sprites/README.md` - Updated sprite system docs at the time; this asset README has since been retired during asset cleanup.
 - `docs/SPRITE_RENDERING_IMPROVEMENTS.md` - Complete technical guide
 
 ## How to Use

@@ -18,15 +18,15 @@ from .input_guards import (
 )
 
 
-RELIC_SPRITE_DIR = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "relics"
-RELIC_SPRITES = {
-    "Triangulus": "triangulus.png",
-    "Quadrata": "quadrata.png",
-    "Hexagonum": "hexagonum.png",
-    "Luna": "luna.png",
-    "Polaris": "polaris.png",
-    "Infinitas": "infinitas.png",
-    "Golden Chalice": "golden_chalice.png",
+ITEM_ART_DIR = Path(__file__).resolve().parents[1] / "assets" / "item_art"
+RELIC_ART_FILES = {
+    "Triangulus": Path("special/relics/triangulus.png"),
+    "Quadrata": Path("special/relics/quadrata.png"),
+    "Hexagonum": Path("special/relics/hexagonum.png"),
+    "Luna": Path("special/relics/luna.png"),
+    "Polaris": Path("special/relics/polaris.png"),
+    "Infinitas": Path("special/relics/infinitas.png"),
+    "Golden Chalice": Path("special/story/golden_chalice.png"),
 }
 
 
@@ -250,13 +250,13 @@ class BasePopupMenu:
 
     def relic_sprite_for_item(self, item) -> pygame.Surface | None:
         name = str(getattr(item, "name", item) or "")
-        filename = RELIC_SPRITES.get(name)
-        if not filename:
+        rel_path = RELIC_ART_FILES.get(name)
+        if rel_path is None:
             return None
         cached = self._relic_sprite_cache.get(name)
         if cached is not None:
             return cached
-        path = RELIC_SPRITE_DIR / filename
+        path = ITEM_ART_DIR / rel_path
         if not path.exists():
             return None
         try:

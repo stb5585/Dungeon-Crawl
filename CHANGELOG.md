@@ -4,6 +4,11 @@
 
 ### Changed
 
+#### Item Artwork Organization
+- Organized large selected-item artwork into category subdirectories under `src/ui_pygame/assets/item_art/`.
+- Replaced the old flat item-art render keys with nested `item_render_map.json` entries and kept optional legacy atlas fallback support.
+- Preserved the Chalice Map split: selected-item art uses `item_art/special/story/chalice_map.png`, while the dungeon/location reveal uses `assets/key_items/chalice_map.png`.
+
 #### Pygame Renderer and Combat UI Polish
 - Improved combat status icon readability with urgent-effect prioritization, duplicate compaction, counted labels, Maelstrom Weapon stack visibility, stronger alert coloring, and shared helper behavior across the main combat view and dungeon-combat HUD.
 - Tightened combat telegraph presentation with warning-colored wrapped log lines, a dedicated banner that tracks the full latest telegraph message, and clearing behavior after non-telegraph follow-up messages.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused coverage for large item render atlas loading."""
+"""Focused coverage for large item render loading."""
 
 from __future__ import annotations
 
@@ -67,6 +67,55 @@ def test_item_render_manager_uses_icon_map_conversion_and_category_fallbacks(tmp
     assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Helm", typ="Helmet", subtyp="Heavy")) == "helmet"
     assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Thing", typ="", subtyp="")) == "generic_item"
     assert "Mystery Thing" in manager.missing_mappings
+
+
+def test_item_render_manager_prefers_individual_item_art_for_exact_mapping(tmp_path):
+    _write_render_fixture(tmp_path)
+    art_root = tmp_path / "item_art"
+    art_root.mkdir()
+    (tmp_path / "item_render_map.json").write_text(json.dumps({"Rapier": "rapier"}), encoding="utf-8")
+    art = pygame.Surface((20, 20), pygame.SRCALPHA)
+    art.fill((12, 34, 210, 255))
+    pygame.image.save(art, art_root / "rapier.png")
+    manager = ItemRenderManager(
+        render_root=tmp_path,
+        item_art_root=art_root,
+        icon_map_path=tmp_path / "item_icon_map.json",
+        enhance_artwork=False,
+    )
+
+    render = manager.get_render_by_name("Rapier")
+
+    assert manager.get_render_key_for_item(SimpleNamespace(name="Rapier")) == "rapier"
+    assert render.get_size() == (20, 20)
+    assert render.get_at((1, 1)) == pygame.Color(12, 34, 210, 255)
+
+
+def test_item_render_manager_loads_nested_individual_item_art(tmp_path):
+    _write_render_fixture(tmp_path)
+    art_root = tmp_path / "item_art"
+    nested_root = art_root / "weapons" / "swords"
+    nested_root.mkdir(parents=True)
+    (tmp_path / "item_render_map.json").write_text(
+        json.dumps({"Excalibur": "weapons/swords/excalibur"}),
+        encoding="utf-8",
+    )
+    art = pygame.Surface((18, 22), pygame.SRCALPHA)
+    art.fill((220, 210, 44, 255))
+    pygame.image.save(art, nested_root / "excalibur.png")
+    manager = ItemRenderManager(
+        render_root=tmp_path,
+        item_art_root=art_root,
+        icon_map_path=tmp_path / "item_icon_map.json",
+        enhance_artwork=False,
+    )
+
+    render = manager.get_render_by_name("Excalibur")
+
+    assert manager.get_render_key_for_item(SimpleNamespace(name="Excalibur")) == "weapons/swords/excalibur"
+    assert manager.art_path_for_key("weapons/swords/excalibur") == nested_root / "excalibur.png"
+    assert render.get_size() == (18, 22)
+    assert render.get_at((1, 1)) == pygame.Color(220, 210, 44, 255)
 
 
 def test_item_render_manager_missing_frame_and_cache_reuse(tmp_path):
@@ -154,5 +203,177 @@ def test_default_item_render_map_covers_instantiable_catalog_items():
             continue
 
     missing = sorted(item_names - set(manager.render_map))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_helmet_catalog():
+    manager = ItemRenderManager()
+    generic_keys = {"helmet", "armor", "generic_item"}
+
+    missing = []
+    for helmet_classes in items.items_dict["Helmet"].values():
+        for helmet_cls in helmet_classes:
+            helmet = helmet_cls()
+            render_key = manager.get_render_key_for_item(helmet)
+            art_path = manager.art_path_for_key(render_key)
+            if render_key in generic_keys or not art_path.exists():
+                missing.append((helmet.name, render_key))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_potion_families():
+    manager = ItemRenderManager()
+    generic_keys = {"consumable", "antidote", "generic_item"}
+
+    missing = []
+    for potion_subtyp, potion_classes in items.items_dict["Potion"].items():
+        if potion_subtyp == "Status":
+            continue
+        for potion_cls in potion_classes:
+            potion = potion_cls()
+            render_key = manager.get_render_key_for_item(potion)
+            art_path = manager.art_path_for_key(render_key)
+            if render_key in generic_keys or not art_path.exists():
+                missing.append((potion.name, render_key))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_status_item_family():
+    manager = ItemRenderManager()
+    generic_keys = {"consumable", "generic_item"}
+
+    missing = []
+    for potion_cls in [*items.items_dict["Potion"]["Status"], items.Remedy]:
+        potion = potion_cls()
+        render_key = manager.get_render_key_for_item(potion)
+        art_path = manager.art_path_for_key(render_key)
+        if render_key in generic_keys or not art_path.exists():
+            missing.append((potion.name, render_key))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_unique_and_special_items():
+    manager = ItemRenderManager()
+    item_classes = [
+        items.Excalibur,
+        items.Excalibur2,
+        items.Mjolnir,
+        items.Necronomicon,
+        items.VisionPendant,
+        items.DragonStaff,
+        items.Gungnir,
+        items.Svalinn,
+        items.MedusaShield,
+        items.RibbonPendant,
+        items.Jarnbjorn,
+        items.Carnwennan,
+        items.GodsHand,
+        items.IndrasFist,
+        items.Skullcrusher,
+        items.PrincessGuard,
+        items.VulcansHammer,
+        items.EarthHammer,
+        items.Magus,
+        items.CodexEternity,
+        items.CompendiumAncients,
+        items.DragonRouge,
+        items.ClassRing,
+        items.ForceRing,
+        items.MagicPendant,
+        items.InvisibilityPendant,
+        items.LevitationPendant,
+        items.GorgonPendant,
+        items.GarfunkelPendant,
+        items.DharmaPendant,
+        items.ElementalChain,
+        items.FireAmulet,
+        items.IceAmulet,
+        items.ElectricAmulet,
+        items.WaterAmulet,
+        items.EarthAmulet,
+        items.WindAmulet,
+        items.ElementalAmulet,
+        items.Unobtainium,
+        items.DeadSoldier,
+        items.Relic1,
+        items.Relic2,
+        items.Relic3,
+        items.Relic4,
+        items.Relic5,
+        items.Relic6,
+    ]
+
+    missing = []
+    for item_cls in item_classes:
+        item = item_cls()
+        render_key = manager.get_render_key_for_item(item)
+        art_path = manager.art_path_for_key(render_key)
+        if not art_path.exists():
+            missing.append((item.name, render_key))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_scroll_catalog():
+    manager = ItemRenderManager()
+    generic_keys = {"scroll", "generic_item"}
+
+    missing = []
+    for scroll_cls in items.items_dict["Misc"]["Scroll"]:
+        scroll = scroll_cls()
+        render_key = manager.get_render_key_for_item(scroll)
+        art_path = manager.art_path_for_key(render_key)
+        if render_key in generic_keys or not art_path.exists():
+            missing.append((scroll.name, render_key))
+
+    assert missing == []
+
+
+def test_default_item_render_map_uses_individual_art_for_material_and_key_families():
+    manager = ItemRenderManager()
+    generic_keys = {"crafting_material", "quest_item", "gem", "generic_item"}
+    item_classes = [
+        items.RatTail,
+        items.MysteryMeat,
+        items.Leather,
+        items.Feather,
+        items.SnakeSkin,
+        items.ScrapMetal,
+        items.CursedHops,
+        items.BirdFat,
+        items.ElementalMote,
+        items.PowerCore,
+        items.Phylactery,
+        items.Key,
+        items.OldKey,
+        items.MasterKey,
+        items.CrypticKey,
+        items.BrassKey,
+        items.BlacksmithsHammer,
+        items.JesterToken,
+        items.TicketPiece,
+        items.LuckyLocket,
+        items.Joker,
+        items.ChaliceMap,
+        items.JoffreysLetter,
+        items.EmptyVial,
+        items.SpringWater,
+        items.DragonTear,
+        items.ChiryuKoma,
+        items.Excaliper,
+        items.GoldenChalice,
+    ]
+
+    missing = []
+    for item_cls in item_classes:
+        item = item_cls()
+        render_key = manager.get_render_key_for_item(item)
+        art_path = manager.art_path_for_key(render_key)
+        if render_key in generic_keys or not art_path.exists():
+            missing.append((item.name, render_key))
 
     assert missing == []

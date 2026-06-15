@@ -1,4 +1,4 @@
-"""Large item artwork atlas loading for selected-item presentation panels."""
+"""Large item artwork loading for selected-item presentation panels."""
 
 from __future__ import annotations
 
@@ -16,14 +16,15 @@ from src.ui_pygame.assets.icon_manager import IconManager
 
 logger = logging.getLogger(__name__)
 
-ITEM_RENDER_ROOT = Path(__file__).resolve().parent / "item_renders"
+ITEM_RENDER_ROOT = Path(__file__).resolve().parent
+ITEM_ART_ROOT = Path(__file__).resolve().parent / "item_art"
 ICON_MAP_PATH = Path(__file__).resolve().parent / "item_icons" / "item_icon_map.json"
 _SHARED_ITEM_RENDER_MANAGER: ItemRenderManager | None = None
 
 
 @dataclass(frozen=True)
 class ItemRenderFrame:
-    """Atlas frame metadata for one large item render archetype."""
+    """Optional legacy atlas frame metadata for one large item render."""
 
     key: str
     rect: pygame.Rect
@@ -67,10 +68,12 @@ class ItemRenderManager:
         atlas_json: Path | None = None,
         atlas_image: Path | None = None,
         render_map_path: Path | None = None,
+        item_art_root: Path | None = None,
         icon_map_path: Path | None = None,
         enhance_artwork: bool = True,
     ) -> None:
         self.render_root = Path(render_root or ITEM_RENDER_ROOT)
+        self.item_art_root = Path(item_art_root or ITEM_ART_ROOT)
         self.atlas_json_path = Path(atlas_json or self.render_root / "item_render_atlas.json")
         self.atlas_image_path = Path(atlas_image or self.render_root / "item_render_atlas.png")
         self.render_map_path = Path(render_map_path or self.render_root / "item_render_map.json")
@@ -100,7 +103,7 @@ class ItemRenderManager:
 
     def load_manifest(self) -> None:
         if not self.atlas_json_path.exists():
-            logger.warning("Item render atlas JSON missing: %s", self.atlas_json_path)
+            logger.debug("Optional item render atlas JSON missing: %s", self.atlas_json_path)
             return
         try:
             data = json.loads(self.atlas_json_path.read_text(encoding="utf-8"))
@@ -136,7 +139,7 @@ class ItemRenderManager:
         if self._atlas_surface is not None:
             return self._atlas_surface
         if not self.atlas_image_path.exists():
-            logger.warning("Item render atlas image missing: %s", self.atlas_image_path)
+            logger.debug("Optional item render atlas image missing: %s", self.atlas_image_path)
             return None
         try:
             surface = pygame.image.load(str(self.atlas_image_path))
@@ -162,9 +165,14 @@ class ItemRenderManager:
         if cached is not None:
             return cached
 
+        individual = self._load_individual_art(key)
+        if individual is not None:
+            self._render_cache[key] = individual
+            return individual
+
         frame = self.frames.get(key) or self.frames.get("generic_item")
         if frame is None:
-            logger.warning("Item render frame missing for %s and generic_item", key)
+            logger.debug("Item render frame missing for %s and generic_item", key)
             return self.fallback_surface()
 
         atlas = self.atlas_surface()
@@ -181,6 +189,24 @@ class ItemRenderManager:
             render = self.enhance_display_contrast(render)
         self._render_cache[key] = render
         return render
+
+    def _load_individual_art(self, key: str) -> pygame.Surface | None:
+        path = self.art_path_for_key(key)
+        if not path.exists():
+            return None
+        try:
+            surface = pygame.image.load(str(path))
+        except (pygame.error, OSError) as exc:
+            logger.warning("Could not load item art %s: %s", path, exc)
+            return None
+        try:
+            surface = surface.convert_alpha()
+        except pygame.error:
+            surface = surface.copy()
+        surface = self.trim_transparent_padding(surface)
+        if self.enhance_artwork:
+            surface = self.enhance_display_contrast(surface)
+        return surface
 
     @staticmethod
     def trim_transparent_padding(surface: pygame.Surface, *, alpha_threshold: int = 8, padding: int = 6) -> pygame.Surface:
@@ -255,7 +281,13 @@ class ItemRenderManager:
         return "generic_item"
 
     def _valid_key(self, key: str) -> str:
-        return key if key in self.frames else "generic_item"
+        if key in self.frames or self.art_path_for_key(key).exists():
+            return key
+        return "generic_item"
+
+    def art_path_for_key(self, key: str) -> Path:
+        """Return the PNG path for an item-art render key."""
+        return self.item_art_root / f"{key}.png"
 
     def fallback_surface(self) -> pygame.Surface:
         if self._fallback_surface is not None:

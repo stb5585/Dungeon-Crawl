@@ -22,7 +22,7 @@ This roadmap tracks the remaining work for Dungeon Crawl after the recent stabil
 - Pygame dungeon, town, combat, popup, and menu flows are functional, with remaining polish work concentrated in UX consistency and visual presentation.
 - Visual character creation now includes the selected portrait and sex/race/class identity on the naming screen.
 - Large item-render artwork is integrated for selected-item presentation contexts while compact lists continue to use small icons.
-- Tier 1 unique item artwork now has approved transparent individual PNGs under `src/ui_pygame/assets/item_art/`, with review sheets retained for visual QA.
+- Large item artwork now uses approved transparent individual PNGs organized under `src/ui_pygame/assets/item_art/` for regular, key, and special inventory selected-item views.
 - Combat simulator, battle logger, save diagnostics, renderer diagnostics, audio diagnostics, and gameplay-stat summaries are implemented.
 - Sound/music runtime integration is active, but final content assets are still incomplete.
 
@@ -78,7 +78,7 @@ Status: `Done`
 - Helmet equipment is now implemented across core equipment, save/load compatibility, curses and pygame shops, inventory/equipment popups, icon/artwork fallback, and Defense/resistance/invisibility modifiers. The current catalog includes Cloth, Light, Medium, and Heavy helmet progressions plus restricted and special-effect helmets.
 - The medium ultimate armor reward is now Klivanion; its retaliation effect, shop flows, item maps, and tests use the renamed item and effect text.
 - Character creation uses a visual naming screen with portrait preview plus selected sex, race, and class details.
-- Selected-item contexts now use the large item artwork atlas in inventory, equipment, shop, loot/reward, and modern Character Menu equipment views.
+- Selected-item contexts now use individual large item artwork in inventory, equipment, shop, loot/reward, and modern Character Menu equipment views.
 
 ### Audio Runtime And Staged Content
 
@@ -121,7 +121,7 @@ Status: `Active`
    - Status: `Done` for the current UX pass.
    - Implemented: sex-first character creation, race/sex portrait assets, base portrait atlas loading with individual PNG fallback support, reusable portrait composition/caching for future overlays, native-ratio portrait frame sizing, generic Character/Equipment tabs, wider 60/40 Character and Combat Stats panels, wider right-column level-progress bar using current-level XP progress, dual-wield main/offhand Attack display, larger right-aligned Name/Race/Class/Level text, Core Attributes positioned below the experience bar, larger character/combat/resistance text, right-aligned core/combat values, static side-by-side weaknesses/resistances block for all 10 resistance keys, panel dividers, spread-out paper-doll Equipment tab with an active Helmet equipment slot, larger equipment blocks with optional icon boxes and right-aligned subtype/base weapon/armor/block/weight/resistance details, in-slot equipment-buff reporting, popup quick-scroll and wrapped item descriptions, and town/dungeon opt-in routing.
    - Portrait implementation note: runtime prefers `base_portrait_atlas.png`/`.json`; the loader supports both the current `assets/portraits/` drop location and the suggested future `assets/portraits/base/` plus `fallback_individuals/` layout.
-   - Item artwork implementation note: selected-item views use large archetype artwork from `assets/item_renders/`; dense rows and compact slot summaries still use the small icon system.
+   - Item artwork implementation note: selected-item views use individual transparent artwork from organized `assets/item_art/` subdirectories through exact mappings in `assets/item_render_map.json`; dense rows and compact slot summaries still use the small icon system.
 2. Replace current shop mode-selection flow with shop tabs.
    - Status: `Done`.
    - Type selection remains in place for shop categories, while item sub-types are now browsed with tabs in the buy list.
@@ -153,10 +153,10 @@ Status: `Active`
    - Added `enemy_combat_sprite_scale.json` so large creatures can use per-enemy combat scale multipliers without changing every shared-canvas sprite.
    - Combat sprite review sheets can be rebuilt from approved transparent PNGs with `./.venv/bin/python tools/build_enemy_combat_sprites.py`.
 6. Expand realistic item artworks to include images for all items.
-   - Status: `Done` for the Tier 1 unique-art first pass.
-   - Approved individual transparent PNGs now cover legendary weapons, unique tomes/rods/scrolls, unique shields and armor, named helmets, quest/story items, and named accessories.
-   - Artwork is stored under `src/ui_pygame/assets/item_art/` with batch review sheets and a full Tier 1 alpha review sheet.
-   - Next item-art work should move to Tier 2 family art and selected-item integration for the new individual files.
+   - Status: `Done` for regular inventory, key inventory, and special inventory selected-item artwork.
+   - Approved individual transparent PNGs cover weapons, armor, helmets, offhands, accessories, potions, scrolls, keys, quest materials, status remedies, story items, Unobtainium, Dead Soldier, and the relic item-art variants.
+   - Natural/enemy-only equipment, empty equipment slots, summon-only natural objects, and compact row icons remain intentionally outside the large item-art set.
+   - The retired generic item render atlas has been removed; selected-item views resolve exact item artwork from `src/ui_pygame/assets/item_art/`.
 7. Update dungeon renderings to match new aesthetic.
    - Generate new floor, ceiling, and wall tiles
 
@@ -287,7 +287,16 @@ Status: `Planned`
                   - increases melee damage taken and lowers healing from any source
                   - persists until a shield is equipped
       - Lancer/Dragoon
+         - Jump: `implemented`
+         - Dragoon: Dragon Quest - following the defeat of the Red Dragon, the Dragoon can embark on a
+            quest to collect the 
       - Sentinel/Stalwart Defender
+         - Sentinel: Resolve - taking damage generates resolve that fills up a gauge
+            - the percentage of resolve affects certain abilities, culminating in an ultimate ability
+               - Shield Slam: increases damage dealt by the percentage filled
+               - Retaliate: blocked attacks have chance equal to the percentage filled to retaliate
+               - Shield Block: successful blocks trigger a concussive shock from the shield, stunning the attacker
+               - Last Stand: lowers the attack penalty by the percentage filled
 	- Mage
       - Sorcerer/Wizard
          - Elemental Affinity Wheel - casting spells of a particular element increases affinity with that element but at the detriment of the inverse element (fire/ice, electric/water, earth/wind)
@@ -309,11 +318,14 @@ Status: `Planned`
       - Cleric/Templar
       - Priest/Archbishop
       - Monk/Master Monk
+         - Sound Body and Mind - Arms, legs, head, body
       - Bard/Troubadour
 	- Pathfinder
       - Druid/Lycan
-      - Diviner/Geomancer
-         - Runic Alterations: defeating enemies with elemental spells gives chance to drop runes
+      - Diviner/Astromancer
+         - Geomancer has been renamed to Astromancer; need to adjust game to reflect this change
+            - change TetraDisaster to GrandDesign
+         - Astromancer: Runic Alterations - defeating enemies with elemental spells gives chance to drop runes
             - runes match the spell used when gained
             - combine rune(s) and gear to increase power
                - modifying weapons add elemental damage and/or attack stats

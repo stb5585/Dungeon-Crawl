@@ -111,7 +111,7 @@ This regenerates all 74+ sprites with the new colored system.
    - Removed blanket colorization logic
 
 3. **Updated**: `src/ui_pygame/assets/sprites/README.md`
-   - Documentation of new system and color palettes
+   - Documentation of the sprite system and color palettes at the time; this asset README has since been retired during asset cleanup.
 
 ## Adding Custom Enemy Types
 

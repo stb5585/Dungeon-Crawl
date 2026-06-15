@@ -154,8 +154,8 @@
   - Expected: The OffHand item list includes eligible fist weapons from inventory.
   - Expected: Equipping the second Indra's Fist keeps the main-hand weapon equipped and sets the offhand to Indra's Fist.
 - [ ] Try class-restricted cloth helmets with priest/diviner and non-priest/diviner classes.
-  - Expected: Mitre Hat can be equipped by Priest, Archbishop, Diviner, and Geomancer only.
-  - Expected: Circlet is blocked for Priest, Archbishop, Diviner, and Geomancer, but remains available to other cloth-helmet users.
+  - Expected: Mitre Hat can be equipped by Priest, Archbishop, Diviner, and Astromancer only.
+  - Expected: Circlet is blocked for Priest, Archbishop, Diviner, and Astromancer, but remains available to other cloth-helmet users.
 - [ ] Equip cloth armor such as Wizard's Robe and inspect Spell Modifier.
   - Expected: Cloth armor contributes a spell modifier bonus while non-cloth armor does not.
   - Expected: Future armor with explicit `spell_mod` uses that value instead of the derived cloth armor bonus.
@@ -332,9 +332,9 @@
   - Expected: Each visible inventory row displays an icon.
   - Expected: Repeated tier items intentionally share the same archetype icon.
 - [ ] Inspect consumables in Inventory.
-  - Expected: Health, mana, status/antidote, generic potion, food, and scroll-style items use the consumable archetypes.
+  - Expected: Health, mana, status/remedy, stat potion, elixir, and scroll-style items use their individual large artwork when selected.
 - [ ] Inspect quest/key/special items.
-  - Expected: Quest items, keys, gems/specials, and crafting-material style items use utility archetypes.
+  - Expected: Quest items, keys, gems/specials, and crafting-material style items use individual large artwork when selected.
 - [ ] Add or simulate an unknown item with no explicit mapping.
   - Expected: The UI logs a warning, infers from item type/subtype when possible, and otherwise displays `generic_item`.
 - [ ] Navigate inventory actions after icons render.
@@ -358,7 +358,7 @@
   - Expected: Loot entries show large artwork beside the item name, description, and stats.
   - Expected: Empty chest and unlock prompts are unchanged.
 - [ ] Simulate or create an item with no exact render mapping.
-  - Expected: The render manager falls back through icon mapping, category/slot, and then `generic_item` without blocking gameplay.
+  - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
 - [ ] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
