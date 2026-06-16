@@ -273,6 +273,8 @@ Status: `Active`
    - Keep type-hint work scoped to clear behavior boundaries rather than broad rewrites.
    - 2026-06-16: Added a typed signature and behavior docstring to `Player.quests()` to clarify enemy, item,
      and relic completion paths.
+   - 2026-06-16: Added typed signatures around class promotion rule application and `Job` equipment checks,
+     with focused coverage for spellbook transitions, helmet defaults, and accessory slot rules.
    - 2026-06-16: Added typed signatures to `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat
      heal helpers after consolidating instant-heal behavior.
    - 2026-06-16: Added typed signatures to data-driven support/status spell `cast()` methods and pinned

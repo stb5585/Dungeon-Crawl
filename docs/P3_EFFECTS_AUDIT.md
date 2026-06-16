@@ -104,6 +104,8 @@ Last updated: 2026-06-16
 - Quest coverage now includes item-instance collection quests, partial progress
   before the required total, and no repeated completion message after a quest is
   completed.
+- Class progression coverage now pins promotion spellbook transitions plus
+  `Job` helmet/accessory equip defaults after typing those helper surfaces.
 - `Player.quests()` now has a typed signature and behavior docstring for enemy,
   item, and relic completion paths.
 - Continue extracting shared combat/healing result helpers only where new

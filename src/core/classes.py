@@ -1,9 +1,13 @@
 ###########################################
 """class manager"""
+from __future__ import annotations
 
 from textwrap import wrap
+from typing import Any
 
 from . import abilities, items
+
+PromotionRule = dict[str, Any]
 
 
 # Promotion rules: Define ability/spell/skill transitions during class promotion
@@ -29,7 +33,7 @@ from . import abilities, items
 #   Footpad → Inquisitor: Loses stealth skills, gains investigative skills.
 # ================================================================================
 
-PROMOTION_ABILITY_RULES = {
+PROMOTION_ABILITY_RULES: dict[str, PromotionRule] = {
     "Warlock": {
         "clear_spells": False,  # Don't clear all spells
         "keep_spells": ["Enfeeble"],  # Keep only Enfeeble from Mage spells
@@ -75,7 +79,7 @@ PROMOTION_ABILITY_RULES = {
 }
 
 
-def apply_promotion_ability_rules(promoted_player, new_class_name):
+def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> str:
     """Apply ability transition rules for a promotion.
 
     Args:
@@ -139,21 +143,21 @@ class Job:
 
     def __init__(
         self,
-        name,
-        description,
-        str_plus,
-        int_plus,
-        wis_plus,
-        con_plus,
-        cha_plus,
-        dex_plus,
-        att_plus,
-        def_plus,
-        magic_plus,
-        magic_def_plus,
-        equipment,
-        restrictions,
-        pro_level,
+        name: str,
+        description: str,
+        str_plus: int,
+        int_plus: int,
+        wis_plus: int,
+        con_plus: int,
+        cha_plus: int,
+        dex_plus: int,
+        att_plus: int,
+        def_plus: int,
+        magic_plus: int,
+        magic_def_plus: int,
+        equipment: dict[str, items.Item],
+        restrictions: dict[str, list[str]],
+        pro_level: int,
     ):
         self.name = name
         self.description = "\n".join(wrap(description, 75, break_on_hyphens=False))
@@ -176,7 +180,7 @@ class Job:
         self.equipment.setdefault("Pendant", items.NoPendant())
         self.pro_level = pro_level
 
-    def equip_check(self, item, equip_slot):
+    def equip_check(self, item: items.Item | type[items.Item], equip_slot: str) -> bool:
         """
         Checks if the class allows the item type to be equipped
         """
