@@ -62,6 +62,7 @@ def test_no_arg_enemy_catalog_instantiates_and_renders_cleanly():
 
 
 def test_random_enemy_and_funhouse_enemy_follow_expected_catalog_edges(monkeypatch):
+    monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
     monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[0])
     assert isinstance(enemies.random_enemy("0"), enemies.GreenSlime)
 
@@ -71,6 +72,7 @@ def test_random_enemy_and_funhouse_enemy_follow_expected_catalog_edges(monkeypat
 
 
 def test_random_enemy_debug_override_is_explicit_and_clearable(monkeypatch):
+    monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
     monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[0])
     enemies.clear_random_enemy_override()
 
@@ -88,6 +90,25 @@ def test_random_enemy_debug_override_is_explicit_and_clearable(monkeypatch):
         assert isinstance(enemies.random_enemy("0"), enemies.GreenSlime)
     finally:
         enemies.clear_random_enemy_override()
+
+
+def test_random_enemy_debug_override_can_come_from_environment(monkeypatch):
+    monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[0])
+    enemies.clear_random_enemy_override()
+    monkeypatch.setenv("DUNGEON_FORCE_ENEMY", "Test")
+
+    try:
+        assert isinstance(enemies.random_enemy("0"), enemies.Test)
+
+        enemies.set_random_enemy_override(enemies.Goblin)
+        assert isinstance(enemies.random_enemy("0"), enemies.Goblin)
+
+        enemies.clear_random_enemy_override()
+        monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
+        assert isinstance(enemies.random_enemy("0"), enemies.GreenSlime)
+    finally:
+        enemies.clear_random_enemy_override()
+        monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
 
 
 def test_enemy_options_short_circuit_for_berserk_turtle_and_ice_block():

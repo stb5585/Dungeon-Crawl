@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+import os
 import random
 from textwrap import wrap
 
@@ -16,6 +17,7 @@ AbilityFactory = Callable[[], object]
 EnemyFactory = Callable[[], "Enemy"]
 RandomEnemyOverride = str | type["Enemy"] | EnemyFactory
 _random_enemy_override: RandomEnemyOverride | None = None
+_RANDOM_ENEMY_OVERRIDE_ENV = "DUNGEON_FORCE_ENEMY"
 
 
 def set_random_enemy_override(enemy: RandomEnemyOverride | None) -> None:
@@ -34,18 +36,22 @@ def clear_random_enemy_override() -> None:
 
 
 def _build_random_enemy_override() -> Enemy | None:
-    if _random_enemy_override is None:
+    override = _random_enemy_override
+    if override is None:
+        env_override = os.getenv(_RANDOM_ENEMY_OVERRIDE_ENV, "").strip()
+        override = env_override or None
+    if override is None:
         return None
-    if isinstance(_random_enemy_override, str):
-        enemy_cls = globals().get(_random_enemy_override)
+    if isinstance(override, str):
+        enemy_cls = globals().get(override)
         if not isinstance(enemy_cls, type) or not issubclass(enemy_cls, Enemy):
-            raise ValueError(f"Unknown random enemy override: {_random_enemy_override}")
+            raise ValueError(f"Unknown random enemy override: {override}")
         return enemy_cls()
-    if isinstance(_random_enemy_override, type):
-        if not issubclass(_random_enemy_override, Enemy):
+    if isinstance(override, type):
+        if not issubclass(override, Enemy):
             raise TypeError("Random enemy override class must inherit Enemy.")
-        return _random_enemy_override()
-    enemy = _random_enemy_override()
+        return override()
+    enemy = override()
     if not isinstance(enemy, Enemy):
         raise TypeError("Random enemy override factory must return an Enemy.")
     return enemy

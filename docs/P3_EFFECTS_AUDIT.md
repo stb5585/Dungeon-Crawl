@@ -99,6 +99,8 @@ Last updated: 2026-06-16
 - `random_enemy()` now returns the selected catalog enemy by default, while
   explicit `set_random_enemy_override()` / `clear_random_enemy_override()`
   helpers preserve targeted debug encounters for ability playtesting.
+- `DUNGEON_FORCE_ENEMY` now feeds the same random enemy override path, allowing
+  debug launch scripts to force targeted encounters without code edits.
 - Enemy combat-item selection now recognizes the live `Elixir` subtype for
   mixed health/mana recovery while keeping `Both` as a compatibility alias.
 

@@ -111,10 +111,14 @@
 - [x] Enter combat with more than six available actions, such as debug actions plus item/spell/skill options.
   - Expected: The action menu compacts into the bottom command panel without overflowing below the screen.
   - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
-- [ ] Use `src.core.enemies.set_random_enemy_override("Test")` during an ability debug run, then call
+- [ ] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in
+  the script during an ability debug run.
+  - Expected: Random encounters use the requested debug enemy only while the environment variable is active,
+    then return to normal catalog selection.
+- [ ] Use `src.core.enemies.set_random_enemy_override("Test")` from a Python harness, then call
   `src.core.enemies.clear_random_enemy_override()`.
-  - Expected: Random encounters use the requested debug enemy only while the override is active, then return to
-    normal catalog selection.
+  - Expected: The explicit helper still forces targeted encounters and takes precedence over the environment
+    variable when both are set.
 - [x] Inspect enemy details with Vision, Reveal, Seeker, or Inquisitor sight during a boss fight.
   - Expected: Boss fights suppress enemy detail visibility even when ordinary encounters would reveal HP, type, or resistance details.
 

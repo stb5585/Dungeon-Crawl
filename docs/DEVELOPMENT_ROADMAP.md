@@ -237,6 +237,8 @@ Status: `Active`
      interim `CombatResult` contracts do not leak stale reusable state.
    - 2026-06-16: Replaced the hidden `random_enemy()` debug override with explicit
      `set_random_enemy_override()` / `clear_random_enemy_override()` helpers for ability playtesting.
+   - 2026-06-16: Wired `DUNGEON_FORCE_ENEMY` into the random enemy override path so debug launchers can force
+     ability-test encounters without code edits.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -268,6 +270,8 @@ Status: `Active`
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
      - 2026-06-16: Re-enabled real random enemy catalog selection by default and validated explicit debug
        enemy overrides for targeted ability playtesting.
+     - 2026-06-16: Added environment-variable coverage for forced random encounters, including explicit helper
+       precedence and reset behavior.
      - 2026-06-16: Fixed enemy consumable selection so Elixir/Megalixir count as mixed health/mana recovery
        items instead of looking only for an unused `Both` subtype.
    - Quest completion/reward flows.
