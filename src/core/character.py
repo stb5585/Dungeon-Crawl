@@ -1205,19 +1205,11 @@ class Character:
         
         # Handle Mana Shield
         if self.magic_effects["Mana Shield"].active:
-            mana_loss = damage // self.magic_effects["Mana Shield"].duration
-            if mana_loss > self.mana.current:
-                abs_dam = self.mana.current * self.magic_effects["Mana Shield"].duration
-                message += f"The mana shield around {self.name} absorbs {abs_dam} damage.\n"
-                damage -= abs_dam
-                self.mana.current = 0
-                self.magic_effects["Mana Shield"].active = False
-                message += f"The mana shield dissolves around {self.name}.\n"
-            else:
-                message += f"The mana shield around {self.name} absorbs {damage} damage.\n"
-                self.mana.current -= mana_loss
-                damage = 0
-                hit = False
+            damage, shield_message, fully_absorbed = attacker._apply_mana_shield(
+                self, damage
+            )
+            message += shield_message
+            hit = not fully_absorbed
         
         return (hit, message, damage)
 

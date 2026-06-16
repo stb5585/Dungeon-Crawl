@@ -172,6 +172,10 @@ class TestCharacterHelpers:
     def test_handle_defenses_and_damage_reduction_cover_shields_and_magic_defense(self):
         defender = TestGameState.create_player(class_name="Warrior", race_name="Human")
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        status_events = []
+        attacker._emit_status_event = lambda *args, **kwargs: status_events.append(
+            (args, kwargs)
+        )
 
         defender.magic_effects["Mana Shield"].active = True
         defender.magic_effects["Mana Shield"].duration = 2
@@ -182,6 +186,19 @@ class TestCharacterHelpers:
         assert "absorbs 8 damage" in message
         assert damage == 0
         assert defender.mana.current == 1
+
+        defender.magic_effects["Mana Shield"].active = True
+        defender.magic_effects["Mana Shield"].duration = 3
+        defender.mana.current = 2
+
+        hit, message, damage = defender.handle_defenses(attacker, damage=10)
+        assert hit is True
+        assert "absorbs 6 damage" in message
+        assert "mana shield dissolves" in message
+        assert damage == 4
+        assert defender.mana.current == 0
+        assert defender.magic_effects["Mana Shield"].active is False
+        assert status_events[-1][1]["source"] == "Mana Depleted"
 
         defender.resistance["Fire"] = 0.25
         defender.check_mod = lambda mod, enemy=None, typ=None, **_kwargs: 50 if mod == "magic def" else defender.resistance.get(typ, 0)

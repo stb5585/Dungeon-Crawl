@@ -225,6 +225,8 @@ Status: `Active`
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
      - 2026-06-16: Fixed and covered finite Silence expiry while preserving `duration=-1` indefinite Silence.
+     - 2026-06-16: Reused the shared Mana Shield absorption helper from `handle_defenses()` and covered
+       shield depletion with leftover damage and depletion events.
    - Enemy AI behavior where tactical choices are meaningful.
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.

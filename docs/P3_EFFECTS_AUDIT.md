@@ -47,6 +47,9 @@ Last updated: 2026-06-16
   evaluated.
 - Timed Silence now expires through `Character.effects()` while
   `duration=-1` Silence remains indefinite until cured.
+- `Character.handle_defenses()` now reuses the shared Mana Shield absorption
+  helper, and coverage pins shield depletion, leftover damage, and the
+  "Mana Depleted" status event path.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
   179 YAML ability files and verifies each one can produce a combat-ready
   object.
@@ -69,5 +72,5 @@ Last updated: 2026-06-16
   `type: damage`.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
-- Continue status interaction coverage for Sleep, Prone, and shield/reflect
+- Continue status interaction coverage for Sleep, Prone, and reflect
   interactions.
