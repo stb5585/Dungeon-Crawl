@@ -26,11 +26,16 @@ Last updated: 2026-06-16
   modifiers, matching the newer data-driven healing behavior.
 - Type-only imports in the primitive effect modules now reference
   `src.core.character` directly.
+- Data-driven weapon skills now populate `CombatResult.damage` from the HP
+  removed by their weapon strikes, so follow-up effects and presentation code
+  can rely on the same result field used by data-driven spells.
+- `tests/core/test_ability_result_contracts.py` now pins representative
+  result-shape expectations for a damage spell and a multi-strike weapon skill.
 
 ## Follow-Up Work
 
 - Add result-shape contract tests that compare representative legacy and YAML
-  abilities.
+  abilities where true legacy implementations still exist.
 - Audit whether `DamageEffect` should remain registered for external/custom
   ability data, since built-in YAML abilities no longer appear to use
   `type: damage`.

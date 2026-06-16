@@ -438,17 +438,22 @@ class DataDrivenSkill(Skill):
 
             hit = False
             crit = 1
+            total_damage = 0
             for _ in range(self._strikes):
+                hp_before = target.health.current if target is not None else 0
                 use_str, h, c = user.weapon_damage(target, **wd_kwargs)
                 msg += use_str
                 if h:
                     hit = True
                     crit = max(crit, c)
+                    if target is not None:
+                        total_damage += max(0, hp_before - target.health.current)
                 if target is not None and not target.is_alive():
                     break
 
             result.hit = hit
             result.crit = crit if crit > 1 else None
+            result.damage = total_damage
         else:
             hit = True
             crit = 1

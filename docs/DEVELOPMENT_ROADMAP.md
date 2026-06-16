@@ -209,6 +209,8 @@ Status: `Active`
    - Keep output formats consistent between legacy and YAML abilities.
    - 2026-06-16: Started the P3 effects audit and cleaned up stale primitive effect contracts. See
      `docs/P3_EFFECTS_AUDIT.md`; next work is result-shape contract coverage before deeper combat-pipeline extraction.
+   - 2026-06-16: Added result-shape contract coverage for data-driven damage spells and weapon skills; weapon
+     skills now populate `CombatResult.damage` from actual hit damage.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
    - Status-effect interaction scenarios.
