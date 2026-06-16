@@ -435,7 +435,7 @@ class Enemy(Character):
                 choices.append(item_name)
             elif item.subtyp == "Mana" and self.mana.current < self.mana.max:
                 choices.append(item_name)
-            elif item.subtyp == "Both" and (
+            elif item.subtyp in {"Elixir", "Both"} and (
                 self.health.current < self.health.max or self.mana.current < self.mana.max
             ):
                 choices.append(item_name)

@@ -210,6 +210,18 @@ def test_enemy_can_choose_and_use_combat_consumable_from_inventory(monkeypatch):
     assert "Health Potion" not in potion_enemy.inventory
 
 
+def test_enemy_can_choose_elixir_for_health_or_mana_recovery(monkeypatch):
+    target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
+    elixir_enemy = _make_enemy(name="Potion Goblin")
+    elixir_enemy.health.current = elixir_enemy.health.max
+    elixir_enemy.mana.current = 1
+    elixir_enemy.inventory["Elixir"] = [items.Elixir]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[-1])
+
+    assert elixir_enemy.options(target, [], None) == ("Use Item", "Elixir")
+
+
 def test_enemy_priority_stack_can_request_specific_consumable(monkeypatch):
     target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
     potion_enemy = _make_enemy(name="Potion Goblin")

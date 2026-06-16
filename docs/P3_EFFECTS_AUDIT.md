@@ -98,6 +98,8 @@ Last updated: 2026-06-16
   files are required content.
 - `random_enemy()` now returns the selected catalog enemy again instead of
   replacing every selection with the debug `Test` enemy.
+- Enemy combat-item selection now recognizes the live `Elixir` subtype for
+  mixed health/mana recovery while keeping `Both` as a compatibility alias.
 
 ## Follow-Up Work
 

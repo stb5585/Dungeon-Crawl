@@ -267,6 +267,8 @@ Status: `Active`
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
      - 2026-06-16: Re-enabled real random enemy catalog selection and validated catalog edge coverage.
+     - 2026-06-16: Fixed enemy consumable selection so Elixir/Megalixir count as mixed health/mana recovery
+       items instead of looking only for an unused `Both` subtype.
    - Quest completion/reward flows.
      - 2026-06-16: Added item-collection quest coverage for partial progress, item-instance matching, and
        no duplicate completion messages after completion.
