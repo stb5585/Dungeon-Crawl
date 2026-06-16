@@ -111,5 +111,7 @@ Last updated: 2026-06-16
 - Base legacy ability entry points now carry typed signatures for optional
   targets and flexible kwargs, matching the result lifecycle contracts covered
   in `tests/core/test_ability_result_contracts.py`.
+- Remaining consumable/stat/status potion and Sanctuary scroll overrides now
+  carry typed `use()` signatures matching the base item call contract.
 - Continue extracting shared combat/healing result helpers only where new
   contract coverage exposes duplication or drift.

@@ -4058,7 +4058,12 @@ class HPPotion(Potion):
                          value=10000, rarity=0.7, subtyp='Stat')
         self.mod = 10
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.health.max += self.mod
         if user.in_town():
@@ -4074,7 +4079,12 @@ class MPPotion(Potion):
                          value=15000, rarity=0.6, subtyp='Stat')
         self.mod = 10
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.mana.max += self.mod
         if user.in_town():
@@ -4089,7 +4099,12 @@ class StrengthPotion(Potion):
         super().__init__(name="Strength Potion", description="A potion that permanently increases your strength by 1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.strength += 1
         use_str = f"{user.name}'s strength has increased by 1!\n"
@@ -4103,7 +4118,12 @@ class IntelPotion(Potion):
                                                                  " by 1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.intel += 1
         use_str = f"{user.name}'s intelligence has increased by 1!\n"
@@ -4116,7 +4136,12 @@ class WisdomPotion(Potion):
         super().__init__(name="Wisdom Potion", description="A potion that permanently increases your wisdom by 1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.wisdom += 1
         use_str = f"{user.name}'s wisdom has increased by 1!\n"
@@ -4130,7 +4155,12 @@ class ConPotion(Potion):
                                                                  " by 1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.con += 1
         use_str = f"{user.name}'s constitution has increased by 1!\n"
@@ -4143,7 +4173,12 @@ class CharismaPotion(Potion):
         super().__init__(name="Charisma Potion", description="A potion that permanently increases your charisma by 1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.charisma += 1
         use_str = f"{user.name}'s charisma has increased by 1!\n"
@@ -4157,7 +4192,12 @@ class DexterityPotion(Potion):
                                                               "1.",
                          value=50000, rarity=0.3, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.dex += 1
         use_str = f"{user.name}'s dexterity has increased by 1!\n"
@@ -4170,7 +4210,12 @@ class AardBeing(Potion):
         super().__init__(name="Aard of Being", description="A potion that permanently increases all stats by 1.",
                          value=250000, rarity=0.01, subtyp='Stat')
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         user.modify_inventory(self, subtract=True)
         user.stats.strength += 1
         user.stats.intel += 1
@@ -4270,7 +4315,12 @@ class Bandage(Status):
         self.rarity = 0.8
         self.status = "Bleed"
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         use_str = ""
         if not user.physical_effects[self.status].active:
             use_str += f"You are not affected by {self.status.lower()}.\n"
@@ -4310,7 +4360,12 @@ class Remedy(Status):
         self.rarity = 0.2
         self.status = ["Poison", "Blind", "Silence", "Doom"]
 
-    def use(self, user, target=None):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         use_str = ""
         if not any([user.status_effects[x].active for x in self.status]):
             use_str += f"You are not affected by any negative status effects.\n"
@@ -4669,7 +4724,12 @@ class SanctuaryScroll(Scroll):
         self.rarity = 0.25
         self.spell = abilities.Sanctuary()
 
-    def use(self, user):
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
         use_str = f"{user.name} uses {self.name}.\n"
         use_str += self.spell.cast_out(user=user)
         self.charges -= 1

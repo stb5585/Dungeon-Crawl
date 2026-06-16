@@ -277,6 +277,8 @@ Status: `Active`
      with focused coverage for spellbook transitions, helmet defaults, and accessory slot rules.
    - 2026-06-16: Tightened base legacy `Ability`, `Skill`, `Spell`, `Attack`, and `HealSpell` entry-point
      signatures to reflect optional targets and flexible kwargs without changing runtime behavior.
+   - 2026-06-16: Added typed `use()` signatures to remaining consumable/stat/status potion and Sanctuary
+     scroll overrides so they match the base item call contract.
    - 2026-06-16: Added typed signatures to `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat
      heal helpers after consolidating instant-heal behavior.
    - 2026-06-16: Added typed signatures to data-driven support/status spell `cast()` methods and pinned
