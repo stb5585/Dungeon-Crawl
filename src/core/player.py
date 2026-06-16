@@ -2035,7 +2035,14 @@ class Player(Character):
             enemy.mana.current = enemy.mana.max
             self.death()
 
-    def quests(self, enemy=None, item=None):
+    def quests(self, enemy: object | None = None, item: object | None = None) -> str:
+        """Update quest completion state for enemy, item, or relic progress.
+
+        Enemy completions cover bounties plus named Main/Side defeat quests.
+        Item completions match either item display names or class names so
+        JSON-loaded quest definitions and object-backed definitions both work.
+        When no enemy or item is supplied, the Holy Relics aggregate is checked.
+        """
         quest_message = ""
         if enemy is not None:
             if enemy.name in self.quest_dict['Bounty']:

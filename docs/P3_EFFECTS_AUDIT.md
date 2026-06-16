@@ -54,6 +54,8 @@ Last updated: 2026-06-16
 - Quest coverage now includes item-instance collection quests, partial progress
   before the required total, and no repeated completion message after a quest is
   completed.
+- `Player.quests()` now has a typed signature and behavior docstring for enemy,
+  item, and relic completion paths.
 - Audit whether `DamageEffect` should remain registered for external/custom
   ability data, since built-in YAML abilities no longer appear to use
   `type: damage`.

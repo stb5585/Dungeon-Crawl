@@ -230,6 +230,8 @@ Status: `Active`
 3. Continue targeted type hints and docstrings.
    - Highest-value modules: `abilities.py`, `items.py`, `enemies.py`, and follow-up `character.py` cleanup.
    - Keep type-hint work scoped to clear behavior boundaries rather than broad rewrites.
+   - 2026-06-16: Added a typed signature and behavior docstring to `Player.quests()` to clarify enemy, item,
+     and relic completion paths.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
 
 ### P4 - Content And Systems Expansion
