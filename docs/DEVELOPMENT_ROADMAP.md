@@ -275,6 +275,8 @@ Status: `Active`
      and relic completion paths.
    - 2026-06-16: Added typed signatures around class promotion rule application and `Job` equipment checks,
      with focused coverage for spellbook transitions, helmet defaults, and accessory slot rules.
+   - 2026-06-16: Tightened base legacy `Ability`, `Skill`, `Spell`, `Attack`, and `HealSpell` entry-point
+     signatures to reflect optional targets and flexible kwargs without changing runtime behavior.
    - 2026-06-16: Added typed signatures to `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat
      heal helpers after consolidating instant-heal behavior.
    - 2026-06-16: Added typed signatures to data-driven support/status spell `cast()` methods and pinned

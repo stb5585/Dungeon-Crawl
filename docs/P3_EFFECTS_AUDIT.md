@@ -108,5 +108,8 @@ Last updated: 2026-06-16
   `Job` helmet/accessory equip defaults after typing those helper surfaces.
 - `Player.quests()` now has a typed signature and behavior docstring for enemy,
   item, and relic completion paths.
+- Base legacy ability entry points now carry typed signatures for optional
+  targets and flexible kwargs, matching the result lifecycle contracts covered
+  in `tests/core/test_ability_result_contracts.py`.
 - Continue extracting shared combat/healing result helpers only where new
   contract coverage exposes duplication or drift.

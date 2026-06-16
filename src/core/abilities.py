@@ -67,7 +67,7 @@ class Ability:
             typ: str = "",
             subtyp: str = "",
             dmg_mod: float = 1.0,
-            ):
+            ) -> None:
         """
         Args:
             name (str): name of the ability
@@ -231,7 +231,7 @@ class Skill(Ability):
             name: str,
             description: str,
             weapon: bool = False
-            ):
+            ) -> None:
         """
         Args:
             name (str): name of the ability
@@ -242,7 +242,12 @@ class Skill(Ability):
         self.typ = "Skill"
         self.weapon = weapon
 
-    def use(self, user: Character, target: Character = None, **kwargs) -> CombatResult:
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> CombatResult:
         """
         Applies the skill to the target.
         Ensures self.result exists and sets up basic properties.
@@ -301,7 +306,7 @@ class Spell(Ability):
             name: str,
             description: str,
             school: str | None = None,
-            ):
+            ) -> None:
         """
         Args:
             name (str): name of the ability
@@ -312,7 +317,12 @@ class Spell(Ability):
         self.typ: str = "Spell"
         self.school = school
 
-    def cast(self, user: Character, target: Character = None, **kwargs: Any) -> CombatResult:
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> CombatResult:
         """
         Applies the spell to the target.
         Ensures self.result exists and sets up basic properties.
@@ -1509,14 +1519,21 @@ class Attack(Spell):
             cost: int,
             dmg_mod: float,
             crit: int,
-            ):
+            ) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.dmg_mod = dmg_mod
         self.crit = crit
         self.turns = None
 
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        cover: bool = False,
+        special: bool = False,
+        fam: bool = False,
+    ) -> str:
         cast_message = ""
         if not (special or fam 
                 or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
@@ -1687,7 +1704,14 @@ class HealSpell(Spell):
         caster._emit_healing_event(actual_heal, source=self.name)
         return actual_heal
 
-    def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        cover: bool = False,
+        special: bool = False,
+        fam: bool = False,
+    ) -> str:
         """Heal calculation while in combat"""
         cast_message = ""
         if not fam:
