@@ -403,6 +403,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.load_files = ["save1"]
     game.player_char = None
     game.initialize_managers = lambda: init_calls.append(True)
+    save_list = ["save1"]
+    monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: list(save_list)))
     stop_calls = []
     music_calls = []
     game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
@@ -456,8 +458,10 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
     presenter_messages.clear()
     game.load_files = []
+    save_list.clear()
     assert pygame_game.PygameGame.load_game(game) is None
     assert presenter_messages[-1][1] == "No saved games found!"
+    assert game.load_files == []
 
     class FakeLoadScreen:
         def __init__(self, presenter_obj):
@@ -474,10 +478,12 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         SimpleNamespace(in_town=lambda: True, quit=True),
         None,
     ]
-    game.load_files = ["save1"]
+    save_list[:] = ["save1"]
+    game.load_files = []
     loaded = pygame_game.PygameGame.load_game(game)
     assert loaded.quit is False
     assert loaded._suppress_heal_message is True
+    assert game.load_files == ["save1"]
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True
     assert progress_calls
@@ -586,6 +592,7 @@ def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
     game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
     game.new_game = lambda: SimpleNamespace(name="Hero")
     game.run = lambda: run_calls.append(True)
+    monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: []))
 
     class FakeMenu:
         def __init__(self, _presenter):
@@ -602,6 +609,40 @@ def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
     assert run_calls == [True]
     assert stop_calls == [{"fade_ms": 250}, {"fade_ms": 250}]
     assert music_calls == [("menu", {})]
+
+
+def test_main_menu_refreshes_save_files_before_rendering_options(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.running = True
+    game.debug_mode = False
+    game.load_files = []
+    game.player_char = None
+    game._stop_music = lambda **_kwargs: None
+    game._play_location_music = lambda *_args, **_kwargs: None
+    game.new_game = lambda: None
+    game.load_game = lambda: load_calls.append(True)
+    game.run = lambda: None
+    load_calls = []
+    menu_calls = []
+    monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: ["fresh.save"]))
+
+    class FakeMenu:
+        def __init__(self, _presenter):
+            pass
+
+        def navigate(self, options, **_kwargs):
+            menu_calls.append(tuple(options))
+            return menu_choices.pop(0)
+
+    menu_choices = [1, 3]
+    monkeypatch.setattr(pygame_game, "MainMenuScreen", FakeMenu)
+
+    game.main_menu()
+
+    assert menu_calls[0] == ("New Game", "Load Game", "Settings", "Exit")
+    assert load_calls == [True]
+    assert game.load_files == ["fresh.save"]
 
 
 def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):

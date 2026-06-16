@@ -141,6 +141,13 @@ class LoadGameScreen:
         header = self.small_font.render("Save Files", True, self.GOLD)
         self.screen.blit(header, (x, y))
         y += line_height
+
+        hint = self.small_font.render("DEL/BACKSPACE: Delete selected save", True, self.GRAY)
+        hint_rect = hint.get_rect(
+            centerx=self.file_list_rect.centerx,
+            bottom=self.file_list_rect.bottom - 12,
+        )
+        self.screen.blit(hint, hint_rect)
         
         # Draw file list
         max_visible = 10
@@ -190,6 +197,34 @@ class LoadGameScreen:
         
         for save_file in save_files:
             try:
+                metadata = SaveManager.describe_save_file(save_file)
+                if (
+                    not metadata["valid"]
+                    or not metadata["extension_matches_expected"]
+                    or not metadata["is_file"]
+                ):
+                    self.save_data.append({
+                        'name': 'Invalid save',
+                        'race': '?',
+                        'sex': '?',
+                        'class': '?',
+                        'level': '?',
+                        'file': save_file,
+                        'loadable': False,
+                    })
+                    continue
+                if metadata["empty"]:
+                    self.save_data.append({
+                        'name': 'Corrupted save',
+                        'race': '?',
+                        'sex': '?',
+                        'class': '?',
+                        'level': '?',
+                        'file': save_file,
+                        'loadable': False,
+                    })
+                    continue
+
                 player_char = SaveManager.load_player(save_file)
                 if player_char:
                     # Extract character information
@@ -201,7 +236,8 @@ class LoadGameScreen:
                         'level': getattr(player_char.level, 'level', 1) if hasattr(player_char, 'level') else 1,
                         'experience': getattr(player_char.level, 'exp', 0) if hasattr(player_char, 'level') else 0,
                         'gold': getattr(player_char, 'gold', 0),
-                        'file': save_file
+                        'file': save_file,
+                        'loadable': True,
                     }
                     
                     # Try to get stats
@@ -226,7 +262,8 @@ class LoadGameScreen:
                         'sex': '?',
                         'class': '?',
                         'level': '?',
-                        'file': save_file
+                        'file': save_file,
+                        'loadable': False,
                     })
             except Exception as e:
                 # Error loading save
@@ -236,8 +273,24 @@ class LoadGameScreen:
                     'sex': '?',
                     'class': '?',
                     'level': '?',
-                    'file': save_file
+                    'file': save_file,
+                    'loadable': False,
                 })
+
+    def show_unloadable_save_notice(self, save_file) -> None:
+        """Warn that the selected save cannot be loaded without leaving this screen."""
+        notice = ConfirmationPopup(
+            self.presenter,
+            f"{save_file} cannot be loaded.\n\nUse DEL/BACKSPACE to delete it.",
+            show_buttons=False,
+        )
+        self.draw_all()
+        notice_background = self.screen.copy()
+        notice.show(
+            background_draw_func=lambda: self.screen.blit(notice_background, (0, 0)),
+            flush_events=True,
+            require_key_release=True,
+        )
 
     def delete_selected_save(self) -> bool:
         """Delete the currently selected save file after confirmation."""
@@ -249,8 +302,10 @@ class LoadGameScreen:
             self.presenter,
             f"Delete {save_file}? This cannot be undone.",
         )
+        self.draw_all()
+        popup_background = self.screen.copy()
         if not popup.show(
-            background_draw_func=self.draw_all,
+            background_draw_func=lambda: self.screen.blit(popup_background, (0, 0)),
             flush_events=True,
             require_key_release=True,
         ):
@@ -262,8 +317,10 @@ class LoadGameScreen:
                 f"Could not delete {save_file}.",
                 show_buttons=False,
             )
+            self.draw_all()
+            notice_background = self.screen.copy()
             notice.show(
-                background_draw_func=self.draw_all,
+                background_draw_func=lambda: self.screen.blit(notice_background, (0, 0)),
                 flush_events=True,
                 require_key_release=True,
             )
@@ -319,7 +376,14 @@ class LoadGameScreen:
                     elif event.key == pygame.K_DOWN:
                         self.current_selection = (self.current_selection + 1) % len(self.save_data)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                        return self.save_data[self.current_selection]['file']
+                        selected_save = self.save_data[self.current_selection]
+                        if selected_save.get('loadable', True):
+                            return selected_save['file']
+                        self.show_unloadable_save_notice(selected_save['file'])
+                        input_armed = prepare_guarded_input(
+                            flush_events=True,
+                            require_key_release=True,
+                        )
                     elif event.key in (pygame.K_DELETE, pygame.K_BACKSPACE):
                         self.delete_selected_save()
                         if not self.save_data:

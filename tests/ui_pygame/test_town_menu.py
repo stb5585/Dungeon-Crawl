@@ -80,12 +80,12 @@ def test_town_menu_draw_panel(monkeypatch):
         lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)),
     )
 
-    screen.draw_menu_panel(["Shop", "Inn", "Quit"])
+    screen.draw_menu_panel(["Shops", "Inn", "Quit"])
 
     assert panel_calls
     assert draw_rect_calls
     assert "Town of Silvana" in presenter.title_font.render_calls
-    assert "Shop" in presenter.normal_font.render_calls
+    assert "Shops" in presenter.normal_font.render_calls
     assert "Inn" in presenter.normal_font.render_calls
     assert "ESC: Quit" in presenter.small_font.render_calls
     assert "L: Debug Level Up" in presenter.small_font.render_calls
@@ -107,18 +107,19 @@ def test_town_menu_navigation_and_debug_level(monkeypatch):
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
-    assert screen.navigate(["Shop", "Inn", "Quit"]) == 1
+    assert screen.navigate(["Shops", "Inn", "Quit"]) == 1
     assert debug_calls == [True]
 
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
-    assert screen.navigate(["Shop", "Inn", "Quit"]) == 2
+    assert screen.navigate(["Shops", "Inn", "Quit"]) == 2
 
     screen.current_selection = 0
     clear_calls = []
     pressed_states = iter([[1], [1], [], []])
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.pump", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
@@ -128,14 +129,14 @@ def test_town_menu_navigation_and_debug_level(monkeypatch):
     ])
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.clear", lambda: clear_calls.append(True))
-    assert screen.navigate(["Shop", "Inn", "Quit"], flush_events=True, require_key_release=True) == 1
+    assert screen.navigate(["Shops", "Inn", "Quit"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
 
     screen.current_selection = 0
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)]])
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
-    assert screen.navigate(["Shop", "Inn", "Quit"], flush_events=True, require_key_release=True) == 0
+    assert screen.navigate(["Shops", "Inn", "Quit"], flush_events=True, require_key_release=True) == 0
 
 
 def test_town_menu_quit_event_raises(monkeypatch):

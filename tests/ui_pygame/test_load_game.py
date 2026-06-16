@@ -49,6 +49,9 @@ class RecordingScreen:
     def blit(self, surface, position):
         self.blit_calls.append((surface, position))
 
+    def copy(self):
+        return DummySurface(self._size, text="screen-copy")
+
 
 def _make_presenter():
     return SimpleNamespace(
@@ -60,6 +63,16 @@ def _make_presenter():
         small_font=RecordingFont(),
         clock=SimpleNamespace(tick=lambda _fps: None),
     )
+
+
+def _valid_save_metadata(filename, *, empty=False):
+    return {
+        "filename": filename,
+        "valid": True,
+        "extension_matches_expected": True,
+        "is_file": True,
+        "empty": empty,
+    }
 
 
 def test_load_game_draw_helpers_and_data_loading(monkeypatch):
@@ -89,14 +102,25 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
             return player_b
         raise RuntimeError("broken")
 
+    def fake_describe_save_file(filename):
+        metadata = _valid_save_metadata(filename, empty=filename == "empty.save")
+        if filename == "../bad.save":
+            metadata["valid"] = False
+            metadata["is_file"] = False
+        return metadata
+
+    monkeypatch.setattr(load_game.SaveManager, "describe_save_file", staticmethod(fake_describe_save_file))
     monkeypatch.setattr(load_game.SaveManager, "load_player", staticmethod(fake_load_player))
     screen.load_save_files(["a.save", "b.save", "c.save"])
 
     assert screen.save_data[0]["name"] == "Hero"
+    assert screen.save_data[0]["loadable"] is True
     assert screen.save_data[0]["sex"] == "Female"
     assert screen.save_data[0]["stats"]["STR"] == 10
     assert screen.save_data[1]["name"] == "Corrupted save"
+    assert screen.save_data[1]["loadable"] is False
     assert screen.save_data[2]["name"] == "Error loading"
+    assert screen.save_data[2]["loadable"] is False
 
     screen.draw_header()
     assert "Choose the character to load" in presenter.normal_font.render_calls
@@ -115,6 +139,13 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     screen.draw_file_list()
     assert "Save Files" in presenter.small_font.render_calls
     assert "Hero (Lvl 5)" in presenter.small_font.render_calls
+    assert "DEL/BACKSPACE: Delete selected save" in presenter.small_font.render_calls
+
+    screen.load_save_files(["empty.save", "../bad.save"])
+    assert screen.save_data[0]["name"] == "Corrupted save"
+    assert screen.save_data[0]["loadable"] is False
+    assert screen.save_data[1]["name"] == "Invalid save"
+    assert screen.save_data[1]["loadable"] is False
 
     screen.save_data = []
     screen.draw_file_list()
@@ -136,6 +167,7 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
         {"name": "Mage", "level": 3, "file": "b.save"},
     ]
     screen.save_files = ["a.save", "b.save"]
+    monkeypatch.setattr(screen, "load_save_files", lambda _save_files: None)
     monkeypatch.setattr(screen, "draw_all", lambda: None)
 
     event_batches = iter([
@@ -177,6 +209,11 @@ def test_load_game_navigation_deletes_selected_save(monkeypatch):
     monkeypatch.setattr(screen, "draw_all", lambda: None)
     monkeypatch.setattr(
         load_game.SaveManager,
+        "describe_save_file",
+        staticmethod(_valid_save_metadata),
+    )
+    monkeypatch.setattr(
+        load_game.SaveManager,
         "load_player",
         staticmethod(
             lambda filename: SimpleNamespace(
@@ -201,6 +238,7 @@ def test_load_game_navigation_deletes_selected_save(monkeypatch):
         def show(self, **kwargs):
             assert kwargs["flush_events"] is True
             assert kwargs["require_key_release"] is True
+            kwargs["background_draw_func"]()
             return True
 
     monkeypatch.setattr(load_game, "ConfirmationPopup", FakePopup)
@@ -214,3 +252,55 @@ def test_load_game_navigation_deletes_selected_save(monkeypatch):
     assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "b.save"
     assert deleted == ["a.save"]
     assert popup_messages == [("Delete a.save? This cannot be undone.", True)]
+
+
+def test_load_game_navigation_warns_for_unloadable_save_without_returning(monkeypatch):
+    presenter = _make_presenter()
+    screen = load_game.LoadGameScreen(presenter)
+    monkeypatch.setattr(screen, "draw_all", lambda: None)
+    monkeypatch.setattr(
+        load_game.SaveManager,
+        "describe_save_file",
+        staticmethod(lambda filename: _valid_save_metadata(filename, empty=filename == "empty.save")),
+    )
+    monkeypatch.setattr(
+        load_game.SaveManager,
+        "load_player",
+        staticmethod(
+            lambda filename: SimpleNamespace(
+                name="hero",
+                race=SimpleNamespace(name="Human"),
+                cls=SimpleNamespace(name="Warrior"),
+                level=SimpleNamespace(level=1, exp=0),
+                gold=0,
+            )
+            if filename == "hero.save"
+            else None
+        ),
+    )
+
+    popup_messages = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=True):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            assert kwargs["flush_events"] is True
+            assert kwargs["require_key_release"] is True
+            kwargs["background_draw_func"]()
+            return True
+
+    monkeypatch.setattr(load_game, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(["empty.save", "hero.save"], flush_events=True, require_key_release=True) == "hero.save"
+    assert popup_messages == [
+        ("empty.save cannot be loaded.\n\nUse DEL/BACKSPACE to delete it.", False)
+    ]

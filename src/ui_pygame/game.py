@@ -111,6 +111,11 @@ class PygameGame:
         self.stdscr = _PygameStdscr(self.presenter)
         self._play_location_music("town")
 
+    def refresh_load_files(self):
+        """Refresh the cached save-file list from disk."""
+        self.load_files = SaveManager.list_saves()
+        return self.load_files
+
     @staticmethod
     def _popup_show_kwargs(background_draw_func=None, min_display_ms: int | None = None):
         """Common modal-popup options for top-level pygame flows."""
@@ -360,6 +365,7 @@ class PygameGame:
         
         while self.running:
             # Build menu options each iteration to pick up new save files
+            self.refresh_load_files()
             menu_options = ['New Game']
             if self.load_files:
                 menu_options.append('Load Game')
@@ -489,6 +495,7 @@ class PygameGame:
         
     def load_game(self):
         """Load a saved game."""
+        self.refresh_load_files()
         if not self.load_files:
             self.presenter.show_message("No saved games found!")
             return None
@@ -592,9 +599,9 @@ class PygameGame:
         # Build options list first so it can be reused for popups
         options = [
             "Barracks",
-            "Shop",
-            "Inn",
-            "Church",
+            "Shops",
+            "The Thirsty Dog Tavern",
+            "Church of Elysia",
             "Enter Dungeon",
         ]
 
@@ -651,13 +658,13 @@ class PygameGame:
             if choice_label == "Barracks":
                 self.visit_barracks()
 
-            elif choice_label == "Shop":
+            elif choice_label == "Shops":
                 self.visit_shop()
 
-            elif choice_label == "Inn":
+            elif choice_label == "The Thirsty Dog Tavern":
                 self.visit_inn()
                 
-            elif choice_label == "Church":
+            elif choice_label == "Church of Elysia":
                 self.visit_church()
 
             elif choice_label == "Enter Dungeon":
