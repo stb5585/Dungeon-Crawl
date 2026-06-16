@@ -242,13 +242,16 @@ def test_render_loot_popup_item_empty_and_unlock_prompt_branches(monkeypatch):
     popup._render_loot_popup([item], "Treasure Chest")
     assert "Treasure Chest Opened!" in bundle.title_font.render_calls
     assert "Press any key to continue..." in bundle.small_font.render_calls
+    popup._render_loot_popup([item], "Mimic Reward")
+    assert "Mimic Reward" in bundle.title_font.render_calls
+    assert "Mimic Reward Opened!" not in bundle.title_font.render_calls
 
     y = popup._render_item(item, 10, 20, 300)
     assert y > 20
     assert ("Mythic Sword", (82, 118)) in render_calls
     assert "Mythic Sword" in bundle.item_font.render_calls
     assert "Line one" in bundle.desc_font.render_calls
-    assert "Line four" not in bundle.desc_font.render_calls
+    assert "Line four" in bundle.desc_font.render_calls
     assert "Value: 120g | Damage: 9 | Armor: 0 | Type: Blade" in bundle.small_font.render_calls
 
     plain_item = SimpleNamespace(name="Stone")

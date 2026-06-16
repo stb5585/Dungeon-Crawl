@@ -1169,9 +1169,9 @@ class GUICombatManager:
     
     def _select_skill(self, player_char, enemy):
         """Show skill selection menu and return selected skill name."""
-        # Filter out passive skills
+        # Filter out passive and currently unusable equipment-dependent skills.
         skills = [name for name, skill in player_char.spellbook['Skills'].items()
-                  if not getattr(skill, 'passive', False)]
+                  if self._skill_available_for_selection(player_char, skill)]
         
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
@@ -1222,6 +1222,17 @@ class GUICombatManager:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
+
+    def _skill_available_for_selection(self, player_char, skill) -> bool:
+        """Return whether a learned skill should be shown in the combat skill list."""
+        if getattr(skill, 'passive', False):
+            return False
+
+        if getattr(skill, 'name', None) == "Shield Slam":
+            offhand = getattr(player_char, 'equipment', {}).get('OffHand')
+            return getattr(offhand, 'subtyp', None) == "Shield"
+
+        return True
     
     def _render_selection_menu(self, title, options, selected, scroll_offset=0):
         """Render an in-combat selection panel without covering the enemy view."""

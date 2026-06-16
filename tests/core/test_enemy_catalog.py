@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, enemies, items
@@ -209,6 +211,23 @@ def test_required_argument_enemy_constructors_render_expected_state():
     assert minion.name == "Practice Dummy"
     assert minion.level.pro_level == 4
     assert any(entry["ability"] == "Attack" for entry in minion.action_stack)
+
+
+@pytest.mark.parametrize(
+    "enemy_cls",
+    [
+        enemies.Minotaur,
+        enemies.Jester,
+        enemies.Incubus,
+        enemies.Circe,
+        enemies.Merzhin,
+    ],
+)
+def test_bosses_and_minibosses_are_immune_to_disarm(enemy_cls):
+    enemy = enemy_cls()
+
+    assert "Disarm" in enemy.status_immunity
+    assert enemy.can_be_disarmed() is False
 
 
 def test_enemy_legacy_options_can_select_spell_and_skill(monkeypatch):

@@ -731,6 +731,19 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._select_skill(player, enemy) is None
     assert manager.combat_view.messages[-1] == "No skills learned!"
 
+    player.equipment = {"OffHand": SimpleNamespace(subtyp="None")}
+    player.spellbook["Skills"] = {
+        "Shield Slam": SimpleNamespace(name="Shield Slam", cost=2, passive=False),
+    }
+    assert manager._select_skill(player, enemy) is None
+    assert manager.combat_view.messages[-1] == "No skills learned!"
+
+    player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_skill(player, enemy) == "Shield Slam"
+    assert menu_calls[-1][1] == ("Shield Slam (MP: 2)",)
+
     player.spellbook["Skills"] = {
         "Passive Stance": SimpleNamespace(cost=0, passive=True),
         "Slash": SimpleNamespace(cost=1, passive=False),

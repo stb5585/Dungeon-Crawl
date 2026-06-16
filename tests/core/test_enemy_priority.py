@@ -79,6 +79,105 @@ def test_priority_if_allows_disarm_when_target_armed(monkeypatch):
     assert (action, ability) == ("Use Skill", "Disarm")
 
 
+def test_priority_ai_skips_weapon_skills_while_disarmed(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Skills"]["Mortal Strike"] = abilities.MortalStrike()
+    enemy.equipment["Weapon"] = items.Weapon("Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True)
+    enemy.physical_effects["Disarm"].active = True
+    enemy.action_stack = [
+        {"ability": "Mortal Strike", "priority": ActionPriority.HIGH},
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+    captured = []
+
+    def choose(seq):
+        captured.extend(seq)
+        return next(entry for entry in seq if entry[0] == "Attack")
+
+    monkeypatch.setattr(random, "choice", choose)
+
+    action, ability = enemy.options(target, [], None)
+
+    assert (action, ability) == ("Attack", None)
+    assert not any(entry[:2] == ("Use Skill", "Mortal Strike") for entry in captured)
+
+
+def test_priority_ai_prioritizes_pickup_for_weapon_dependent_enemy(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Spells"] = {}
+    enemy.spellbook["Skills"] = {"Mortal Strike": abilities.MortalStrike()}
+    enemy.equipment["Weapon"] = items.Weapon("Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True)
+    enemy.physical_effects["Disarm"].active = True
+    enemy.action_stack = [
+        {"ability": "Mortal Strike", "priority": ActionPriority.HIGH},
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+    captured = []
+
+    def choose(seq):
+        captured.extend(seq)
+        return seq[0]
+
+    monkeypatch.setattr(random, "choice", choose)
+
+    action, ability = enemy.options(target, [], None)
+
+    pickup_entries = [entry for entry in captured if entry[0] == "Pickup Weapon"]
+    assert (action, ability) == ("Pickup Weapon", None)
+    assert len(pickup_entries) == 3
+
+
+def test_priority_ai_keeps_pickup_low_for_spell_focused_enemy(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Skills"] = {}
+    enemy.spellbook["Spells"] = {
+        "Firebolt": abilities.Firebolt(),
+        "Enfeeble": abilities.Enfeeble(),
+    }
+    enemy.equipment["Weapon"] = items.Weapon("Staff", "", 0, 0.0, 1, 1, "1-Handed", "Staff", False, True)
+    enemy.physical_effects["Disarm"].active = True
+    enemy.action_stack = [
+        {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
+        {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+    ]
+    captured = []
+
+    def choose(seq):
+        captured.extend(seq)
+        return next(entry for entry in seq if entry[0] == "Cast Spell")
+
+    monkeypatch.setattr(random, "choice", choose)
+
+    action, ability = enemy.options(target, [], None)
+
+    pickup_entries = [entry for entry in captured if entry[0] == "Pickup Weapon"]
+    spell_entries = [entry for entry in captured if entry[0] == "Cast Spell"]
+    assert action == "Cast Spell"
+    assert ability in {"Firebolt", "Enfeeble"}
+    assert len(pickup_entries) == 1
+    assert len(spell_entries) == 4
+
+
+def test_priority_action_stack_can_explicitly_request_pickup_weapon(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy._pickup_weapon_priority = lambda: ActionPriority.SKIP
+    enemy.equipment["Weapon"] = items.Weapon("Sword", "", 0, 0.0, 1, 1, "1-Handed", "Sword", False, True)
+    enemy.physical_effects["Disarm"].active = True
+    enemy.action_stack = [
+        {"ability": "Pickup Weapon", "priority": ActionPriority.HIGH},
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    action, ability = enemy.options(target, [], None)
+
+    assert (action, ability) == ("Pickup Weapon", None)
+
+
 def test_priority_if_list_supports_magic_effect_conditions(monkeypatch):
     """
     action_stack configs in enemies.py sometimes use list-style priority_if rules and refer

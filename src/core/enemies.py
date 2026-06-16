@@ -306,6 +306,20 @@ class Enemy(Character):
         # Build weighted pool of available actions from action_stack
         self.last_action_stack_entry = None
         weighted_actions = []
+        pickup_priority = self._pickup_weapon_priority()
+        if pickup_priority != ActionPriority.SKIP:
+            for _ in range(self._priority_to_weight(pickup_priority)):
+                weighted_actions.append(
+                    (
+                        "Pickup Weapon",
+                        None,
+                        {
+                            "ability": "Pickup Weapon",
+                            "priority": pickup_priority,
+                            "reason": "disarmed",
+                        },
+                    )
+                )
         
         for action_entry in self.action_stack:
             if not isinstance(action_entry, dict):
@@ -341,6 +355,10 @@ class Enemy(Character):
                 action_type = "Attack"
                 ability_name = None
                 usable = not self.tunnel
+            elif ability_name == "Pickup Weapon":
+                action_type = "Pickup Weapon"
+                ability_name = None
+                usable = self.is_disarmed()
             elif ability_name in self.spellbook.get("Spells", {}):
                 if self.abilities_suppressed():
                     continue
@@ -366,6 +384,8 @@ class Enemy(Character):
                 if self.tunnel and ability_name != "Surface":
                     continue
                 if ability_name == "Backstab" and not target.incapacitated():
+                    continue
+                if skill.weapon and self.is_disarmed():
                     continue
                 if ability_name == "Smoke Screen":
                     steal_ready = bool(self.status_effects.get("Steal Success", StatusEffect()).active)
@@ -401,6 +421,28 @@ class Enemy(Character):
         if ability_name in self.single_use_abilities:
             self._used_single_use_abilities.add(ability_name)
         return action_type, ability_name
+
+    def _pickup_weapon_priority(self) -> ActionPriority:
+        """Classify how urgently this enemy should recover from Disarm."""
+        if not self.is_disarmed():
+            return ActionPriority.SKIP
+
+        skills = [
+            skill for skill in self.spellbook.get("Skills", {}).values()
+            if not getattr(skill, "passive", False)
+        ]
+        spells = [
+            spell for spell in self.spellbook.get("Spells", {}).values()
+            if not getattr(spell, "passive", False)
+            and getattr(spell, "cost", 0) <= self.mana.current
+        ]
+        weapon_skills = [skill for skill in skills if getattr(skill, "weapon", False)]
+
+        if weapon_skills or not spells:
+            return ActionPriority.HIGH
+        if len(spells) >= 2 and not weapon_skills:
+            return ActionPriority.LOW
+        return ActionPriority.NORMAL
 
     def _fallback_action_selection(self, target: Character, tile: object) -> tuple[str, str | None]:
         """Fallback to standard random action selection if action_stack can't be used."""
@@ -1291,6 +1333,7 @@ class Imp(Fiend):
         self.spellbook = {"Spells": {'Corruption': abilities.Corruption(),
                                      "Silence": abilities.Silence()},
                           "Skills": {}}
+        self.flying = True
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
@@ -1486,7 +1529,7 @@ class Minotaur(Monster):
                                      'Charge': abilities.Charge(),
                                      "Disarm": abilities.Disarm(),
                                      'Parry': abilities.Parry()}}
-        self.status_immunity = ["Death"]
+        self.status_immunity = ["Death", "Disarm"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
@@ -3239,7 +3282,7 @@ class Jester(Humanoid):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.inventory['Item'] = [items.random_item(6)]
         self.inventory['Joker'] = [items.Joker]
-        self.status_immunity = ["Death", "Stone"]
+        self.status_immunity = ["Death", "Stone", "Disarm"]
         self.level.pro_level = 5
         self.sight = True
         self._jester_form = ""
@@ -3557,7 +3600,7 @@ class Incubus(Fiend):
                                      'Mana Drain': abilities.ManaDrain()}}
         self.resistance['Shadow'] = 0.5
         self.resistance['Holy'] = -0.25
-        self.status_immunity = ["Death", "Stone"]
+        self.status_immunity = ["Death", "Stone", "Disarm"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
@@ -4193,7 +4236,7 @@ class Circe(Humanoid):
             "Poison": 0.5,
             "Physical": 0.1,
         }
-        self.status_immunity = ["Death", "Stone", "Sleep"]
+        self.status_immunity = ["Death", "Stone", "Sleep", "Disarm"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
@@ -4240,7 +4283,7 @@ class Merzhin(Humanoid):
                                      "Boost": abilities.Boost(),
                                      "Ruin": abilities.Ruin()},
                           "Skills": {"Mana Shield": abilities.ManaShield2()}}
-        self.status_immunity = ["Death", "Stone"]
+        self.status_immunity = ["Death", "Stone", "Disarm"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},

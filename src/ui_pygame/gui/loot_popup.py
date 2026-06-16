@@ -178,7 +178,7 @@ class LootPopup:
             return  # Don't draw contents during animation
         
         # Title
-        title_text = self.title_font.render(f"{chest_type} Opened!", True, self.gold_color)
+        title_text = self.title_font.render(self._format_loot_title(chest_type), True, self.gold_color)
         title_rect = title_text.get_rect(centerx=popup_x + current_width // 2, top=popup_y + 20)
         self.screen.blit(title_text, title_rect)
         
@@ -228,7 +228,7 @@ class LootPopup:
         # Item description (wrapped)
         if hasattr(item, 'description') and item.description:
             desc_lines = item.description.split('\n')
-            for line in desc_lines[:3]:  # Limit to 3 lines
+            for line in desc_lines[:4]:
                 desc_text = self.desc_font.render(line.strip(), True, self.text_color)
                 desc_rect = desc_text.get_rect(centerx=text_center_x, top=y)
                 self.screen.blit(desc_text, desc_rect)
@@ -255,6 +255,12 @@ class LootPopup:
             y += 25
         
         return max(y, art_rect.bottom)
+
+    @staticmethod
+    def _format_loot_title(chest_type):
+        if str(chest_type).endswith("Reward"):
+            return str(chest_type)
+        return f"{chest_type} Opened!"
     
     def _render_empty_chest(self, chest_type):
         """Render empty chest message."""

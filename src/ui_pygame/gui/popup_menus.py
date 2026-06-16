@@ -1099,13 +1099,16 @@ class EquipmentPopupMenu(BasePopupMenu):
                 if item_name in seen_item_names:
                     continue
                 
+                equip_check = getattr(getattr(player_char, "cls", None), "equip_check", None)
+
                 # Direct type match
                 if item_typ == target_typ:
+                    if callable(equip_check) and not equip_check(inv_item, slot):
+                        continue
                     equippable.append(inv_item)
                     seen_item_names.add(item_name)
                 # One-handed weapons that pass class restrictions can be equipped offhand.
                 elif slot == "OffHand" and item_typ == "Weapon":
-                    equip_check = getattr(getattr(player_char, "cls", None), "equip_check", None)
                     if callable(equip_check) and equip_check(inv_item, "OffHand"):
                         equippable.append(inv_item)
                         seen_item_names.add(item_name)
@@ -1113,6 +1116,8 @@ class EquipmentPopupMenu(BasePopupMenu):
                 elif item_typ == "Accessory":
                     subtyp = getattr(inv_item, "subtyp", None)
                     if (subtyp == "Ring" and slot == "Ring") or (subtyp == "Pendant" and slot == "Pendant"):
+                        if callable(equip_check) and not equip_check(inv_item, slot):
+                            continue
                         equippable.append(inv_item)
                         seen_item_names.add(item_name)
         
@@ -1347,18 +1352,32 @@ class QuestPopupMenu(BasePopupMenu):
             f"Status: {'Complete' if completed else 'In Progress'}",
             "",
         ]
-        
-        if bounty_data.get('reward'):
-            lines.append("+ Item Reward")
-        
+
         for line in lines:
             text = self.normal_font.render(line, True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
-        y = self._draw_reward_line(f"Reward: {bounty_data.get('gold', 0)} Gold", "Gold", x, y)
+
+        text = self.normal_font.render("Rewards:", True, self.GOLD)
+        self.screen.blit(text, (x, y))
         y += self.line_height
-        y = self._draw_reward_line(f"Experience: {bounty_data.get('exp', 0)}", None, x, y)
+
+        y = self._draw_reward_line(f"{bounty_data.get('gold', 0)} Gold", "Gold", x, y)
         y += self.line_height
+
+        y = self._draw_reward_line(f"{bounty_data.get('exp', 0)} Experience", None, x, y)
+        y += self.line_height
+
+        reward = bounty_data.get('reward')
+        if reward:
+            reward_item = None
+            reward_name = "Unknown Item"
+            try:
+                reward_item = reward() if callable(reward) else reward
+                reward_name = getattr(reward_item, "name", str(reward_item))
+            except Exception:
+                reward_name = getattr(reward, "__name__", "Unknown Item")
+            self._draw_reward_line(reward_name, reward_item, x, y)
 
     def _quest_description_text(self, quest_data) -> str:
         if not isinstance(quest_data, dict):

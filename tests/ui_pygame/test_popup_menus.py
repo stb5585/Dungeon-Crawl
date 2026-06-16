@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
+from src.core import classes, items
 from src.ui_pygame.gui import popup_menus
 
 
@@ -713,6 +714,24 @@ def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):
     assert all(item.name != "Offhand Sword" for item in equippable)
 
 
+def test_equipment_popup_weapon_slot_excludes_class_restricted_weapons(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    popup = popup_menus.EquipmentPopupMenu(presenter, parent)
+
+    player.cls = classes.Healer()
+    staff = items.Quarterstaff()
+    sledgehammer = items.Sledgehammer()
+    player.inventory = {"Weapons": [staff, sledgehammer]}
+
+    equippable = popup._get_equippable_items_for_slot(player, "Weapon")
+
+    assert any(item.name == "Quarterstaff" for item in equippable)
+    assert all(item.name != "Sledgehammer" for item in equippable)
+
+
 def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -778,6 +797,46 @@ def test_quest_popup_draws_reward_icons(monkeypatch):
 
     assert icon_calls == ["Gold"]
     assert "50 Gold" in presenter.normal_font.render_calls
+
+
+def test_quest_popup_draws_bounty_rewards_like_regular_rewards(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    player.quest_dict = {
+        "Bounty": {
+            "Goblin Hunt": [
+                {
+                    "enemy": SimpleNamespace(name="Goblin"),
+                    "num": 3,
+                    "gold": 40,
+                    "exp": 20,
+                    "reward": lambda: DummyItem("Goblin Charm", typ="Misc"),
+                },
+                1,
+                False,
+            ],
+        },
+    }
+    popup = popup_menus.QuestPopupMenu(presenter, parent)
+    popup.build_items(player)
+    icon_calls = []
+    popup.icon_manager = SimpleNamespace(
+        get_icon=lambda item, **_kwargs: icon_calls.append(getattr(item, "name", item))
+        or pygame.surface.Surface((32, 32), pygame.SRCALPHA)
+    )
+
+    popup.draw_details(player)
+
+    assert "Rewards:" in presenter.normal_font.render_calls
+    assert "40 Gold" in presenter.normal_font.render_calls
+    assert "20 Experience" in presenter.normal_font.render_calls
+    assert "Goblin Charm" in presenter.normal_font.render_calls
+    assert "+ Item Reward" not in presenter.normal_font.render_calls
+    assert "Reward: 40 Gold" not in presenter.normal_font.render_calls
+    assert "Experience: 20" not in presenter.normal_font.render_calls
+    assert icon_calls == ["Gold", "Goblin Charm"]
 
 
 def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):

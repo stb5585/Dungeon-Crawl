@@ -90,6 +90,11 @@ class TestCharacterHelpers:
         player.physical_effects["Disarm"].active = True
         assert player.is_disarmed() is True
 
+        player.status_immunity.append("Disarm")
+        assert player.can_be_disarmed() is False
+        assert player.is_disarmed() is False
+        player.status_immunity.remove("Disarm")
+
         player.equipment["Weapon"] = items.Claw()
         assert player.can_be_disarmed() is False
         assert player.is_disarmed() is False

@@ -558,6 +558,8 @@ class Character:
         raise NotImplementedError(f"{effect} does not exist in character attributes.")
 
     def can_be_disarmed(self) -> bool:
+        if "Disarm" in getattr(self, "status_immunity", []):
+            return False
         weapon = self.equipment.get("Weapon") if isinstance(self.equipment, dict) else None
         if weapon is None:
             return False
