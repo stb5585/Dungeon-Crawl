@@ -292,7 +292,10 @@ class DataDrivenSpell(Spell):
         for effect in self._effects:
             # Snapshot target HP before effect
             hp_before = target.health.current
-            effects_before = dict(result.effects_applied)
+            effects_before = {
+                key: list(values)
+                for key, values in result.effects_applied.items()
+            }
 
             try:
                 effect.apply(caster, target, result)

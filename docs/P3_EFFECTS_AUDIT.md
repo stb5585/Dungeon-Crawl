@@ -56,6 +56,12 @@ Last updated: 2026-06-16
 - Reflected data-driven damage spells now update `CombatResult.target` to the
   actual damaged character and retain the original reflector name in
   `extra["reflected_by"]`.
+- Representative concrete legacy/YAML comparison coverage now pins shared
+  Fire burn behavior between legacy `FireSpell.special_effect()` and
+  data-driven `Fireball`.
+- Data-driven spell effect-message detection now snapshots effect buckets by
+  value, so newly appended bucket entries (for example fire DOT) can generate
+  presentation messages.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
@@ -69,8 +75,6 @@ Last updated: 2026-06-16
 
 ## Follow-Up Work
 
-- Add result-shape contract tests that compare representative concrete legacy
-  and YAML abilities where true legacy implementations still exist.
 - Enemy priority coverage now includes redundant target-status skips and
   target-positive-effect Dispel selection.
 - Quest coverage now includes item-instance collection quests, partial progress

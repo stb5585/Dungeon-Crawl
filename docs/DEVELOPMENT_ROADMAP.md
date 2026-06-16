@@ -221,6 +221,10 @@ Status: `Active`
      the original reflector in `CombatResult.extra["reflected_by"]`.
    - 2026-06-16: Aligned legacy `ElectricSpell` stun messaging with `Character.apply_stun()` so post-stun
      immunity does not produce false “stunned” text.
+   - 2026-06-16: Added a representative concrete legacy-vs-YAML burn contract comparing legacy `FireSpell`
+     and data-driven `Fireball` DOT behavior.
+   - 2026-06-16: Fixed data-driven spell effect-message detection by snapshotting effect buckets by value
+     instead of sharing the mutable bucket lists.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -229,6 +233,7 @@ Status: `Active`
        result-shape contracts.
      - 2026-06-16: Added a catalog audit test proving built-in YAML abilities avoid primitive `DamageEffect`
        entries.
+     - 2026-06-16: Added legacy/YAML burn comparison coverage for fire spell DOT presentation and state.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
