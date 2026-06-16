@@ -332,6 +332,17 @@ class StatusApplyEffect(Effect):
         else:
             dur = self.duration
 
+        if self.status_name == "Stun":
+            if target.apply_stun(dur, source=result.action, applier=actor):
+                result.effects_applied["Status"].append(self.status_name)
+            else:
+                stun = target.status_effects.get("Stun")
+                if stun is not None and stun.active:
+                    result.extra["status_already_active"] = self.status_name
+                else:
+                    result.extra["status_immune"] = self.status_name
+            return
+
         target.status_effects[self.status_name].active = True
         target.status_effects[self.status_name].duration = max(
             dur, target.status_effects[self.status_name].duration

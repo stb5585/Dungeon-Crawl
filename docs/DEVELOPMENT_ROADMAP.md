@@ -211,9 +211,12 @@ Status: `Active`
      `docs/P3_EFFECTS_AUDIT.md`; next work is result-shape contract coverage before deeper combat-pipeline extraction.
    - 2026-06-16: Added result-shape contract coverage for data-driven damage spells and weapon skills; weapon
      skills now populate `CombatResult.damage` from actual hit damage.
+   - 2026-06-16: Aligned composed Stun application with `Character.apply_stun` so YAML effects respect the
+     post-stun immunity window.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
    - Status-effect interaction scenarios.
+     - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
    - Enemy AI behavior where tactical choices are meaningful.
    - Quest completion/reward flows.
    - Save/load round trips only when new persistence risks appear.

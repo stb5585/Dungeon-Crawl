@@ -31,6 +31,11 @@ Last updated: 2026-06-16
   can rely on the same result field used by data-driven spells.
 - `tests/core/test_ability_result_contracts.py` now pins representative
   result-shape expectations for a damage spell and a multi-strike weapon skill.
+- `StatusApplyEffect` now delegates Stun application to
+  `Character.apply_stun`, keeping YAML/composed status effects aligned with the
+  post-stun immunity window used by other stun sources.
+- `tests/core/test_status_effect_interactions.py` covers the effect-driven
+  Stun immunity path.
 
 ## Follow-Up Work
 
@@ -41,3 +46,5 @@ Last updated: 2026-06-16
   `type: damage`.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
+- Continue status interaction coverage for Sleep, Prone, Silence,
+  poison/bleed/regen ordering, and shield/reflect interactions.
