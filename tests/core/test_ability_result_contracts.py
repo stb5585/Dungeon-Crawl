@@ -365,3 +365,31 @@ def test_legacy_base_skill_use_resets_reusable_combat_result():
         "Class": [],
     }
     assert result.extra == {"cost": 0, "type": "Skill", "subtype": ""}
+
+
+def test_passive_placeholder_power_ups_reset_reusable_results():
+    actor = _player()
+    cases = [
+        (abilities.EternalConduit(), "shared_healing_and_buffs"),
+        (abilities.SongInspiration(), "stat_bonus_and_status_removal"),
+        (abilities.PackBond(), "companion_bonus_and_intercept"),
+    ]
+
+    for ability, effect_name in cases:
+        ability.result.message = "stale text"
+        ability.result.damage = 99
+        ability.result.effects_applied["Status"].append("Stale")
+
+        result = ability.special_effect(actor)
+
+        _assert_result_contract(
+            result,
+            action=ability.name,
+            actor=actor,
+            target=None,
+        )
+        assert result is ability.result
+        assert result.extra["effect"] == effect_name
+        assert result.message == ""
+        assert result.damage == 0
+        assert result.effects_applied["Status"] == []

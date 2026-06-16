@@ -1104,8 +1104,9 @@ class EternalConduit(Ability):
         )
 
     def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
-        # TODO: actual shared healing/buff logic to be implemented
-        return CombatResult(action=self.name, extra={"effect": "shared_healing_and_buffs"})
+        result = self._reset_result(actor=user)
+        result.extra["effect"] = "shared_healing_and_buffs"
+        return result
 
 
 class StrokeLuck(PowerUp):
@@ -1175,14 +1176,13 @@ class SongInspiration(PowerUp):
             description="The Troubadour's presence inspires allies and self, granting "
             "a small bonus to all stats and occasionally removing negative status "
             "effects at the start of combat.",
-            passive=True,
-            typ="Skill",
-            subtyp="Power Up"
         )
+        self.passive = True
 
     def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
-        # TODO: actual stat bonus and status removal logic to be implemented
-        return CombatResult(action=self.name, extra={"effect": "stat_bonus_and_status_removal"})
+        result = self._reset_result(actor=user)
+        result.extra["effect"] = "stat_bonus_and_status_removal"
+        return result
 
 
 class LunarFrenzy(PowerUp):
@@ -1242,14 +1242,13 @@ class PackBond(PowerUp):
             "bond, granting increased damage and defense when fighting alongside a "
             "companion. Occasionally, the companion will intercept attacks or provide"
             " a healing effect.",
-            passive=True,
-            typ="Skill",
-            subtyp="Power Up"
         )
+        self.passive = True
 
     def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
-        # TODO: actual companion bonus and intercept/heal logic to be implemented
-        return CombatResult(action=self.name, extra={"effect": "companion_bonus_and_intercept"})
+        result = self._reset_result(actor=user)
+        result.extra["effect"] = "companion_bonus_and_intercept"
+        return result
 
 
 # Enemy skills

@@ -233,6 +233,8 @@ Status: `Active`
      YAML hybrid and out-of-combat heals through the same actual-healing helper.
    - 2026-06-16: Corrected composite Mana Shield/Crusader shield helper calls for weapon-spell follow-ups and
      related custom effects so they use the shared attacker/defender absorption helpers consistently.
+   - 2026-06-16: Routed passive placeholder power-up hooks through the shared result reset helper so their
+     interim `CombatResult` contracts do not leak stale reusable state.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -245,6 +247,8 @@ Status: `Active`
      - 2026-06-16: Added legacy/YAML ice comparison coverage for extra-damage presentation and state.
      - 2026-06-16: Added legacy/YAML heal coverage for capped healing and healing-received modifiers.
      - 2026-06-16: Added YAML `cast_out()` heal coverage for capped actual-healing reporting.
+     - 2026-06-16: Added result lifecycle coverage for passive placeholder power-up hooks while their final
+       gameplay effects remain future content work.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.

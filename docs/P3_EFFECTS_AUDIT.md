@@ -37,6 +37,9 @@ Last updated: 2026-06-16
   between old-style ability calls.
 - `tests/core/test_ability_result_contracts.py` also covers the legacy base
   result reset contracts.
+- Passive placeholder power-up hooks now also reuse
+  `Ability._reset_result()`, preserving their interim effect markers while
+  clearing stale reusable result state.
 - `StatusApplyEffect` now delegates Stun application to
   `Character.apply_stun`, keeping YAML/composed status effects aligned with the
   post-stun immunity window used by other stun sources.
