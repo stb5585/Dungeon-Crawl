@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from .base import Effect
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
     from src.core.combat.combat_result import CombatResult
 
 
@@ -59,7 +59,9 @@ class StatModifierEffect(Effect):
             target.stat_effects[effect_key].duration = self.duration
             target.stat_effects[effect_key].extra = self.modifier
         
-        result.effects_applied['Stat'].append(f"{effect_key} {'Buff' if self.modifier > 0 else 'Debuff'}")
+        result.effects_applied.setdefault('Stat', []).append(
+            f"{effect_key} {'Buff' if self.modifier > 0 else 'Debuff'}"
+        )
 
 
 class AttackBuffEffect(StatModifierEffect):
@@ -174,4 +176,4 @@ class ResistanceEffect(Effect):
             target.magic_effects[effect_key].duration = self.duration
             target.magic_effects[effect_key].extra = self.amount
         
-        result.effects_applied['Magic'].append(f"{effect_key}")
+        result.effects_applied.setdefault('Magic', []).append(f"{effect_key}")

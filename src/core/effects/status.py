@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .base import Effect
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
     from src.core.combat.combat_result import CombatResult
 
 
@@ -22,5 +22,5 @@ class StatusEffect(Effect):
         if self.name in target.status_effects:
             target.status_effects[self.name].active = True
             target.status_effects[self.name].duration = self.duration
-            result.effects_applied['Status'].append(self.name)
+            result.effects_applied.setdefault('Status', []).append(self.name)
             result.extra['status_effect'] = self.name

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .base import Effect
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
     from src.core.combat.combat_result import CombatResult
 
 
@@ -19,8 +19,12 @@ class HealEffect(Effect):
 
     def apply(self, user: Character, target: Character, result: CombatResult) -> None:
         heal_amount = int(self.base_healing + user.stats.wisdom * self.scaling)
-        target.health.current = min(target.health.max, target.health.current + heal_amount)
-        result.healing = heal_amount
+        multiplier = getattr(target, "healing_received_multiplier", None)
+        if callable(multiplier):
+            heal_amount = int(heal_amount * multiplier())
+        actual_heal = max(0, min(heal_amount, target.health.max - target.health.current))
+        target.health.current += actual_heal
+        result.healing = (result.healing or 0) + actual_heal
 
 
 class RegenEffect(Effect):
@@ -36,4 +40,4 @@ class RegenEffect(Effect):
         target.magic_effects["Regen"].active = True
         target.magic_effects["Regen"].duration = self.duration
         target.magic_effects["Regen"].extra = healing_per_tick
-        result.effects_applied['Magic'].append('Regen')
+        result.effects_applied.setdefault('Magic', []).append('Regen')

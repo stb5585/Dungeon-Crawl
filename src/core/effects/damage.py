@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .base import Effect
 
 if TYPE_CHECKING:
-    from character import Character
+    from src.core.character import Character
     from src.core.combat.combat_result import CombatResult
 
 
@@ -18,6 +18,17 @@ class DamageEffect(Effect):
         self.scaling = scaling
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
-        damage = int(self.base_damage + actor.strength * self.scaling)
-        target.hp -= damage
-        result.damage = damage
+        stats = getattr(actor, "stats", None)
+        strength = getattr(stats, "strength", getattr(actor, "strength", 0))
+        damage = max(0, int(self.base_damage + strength * self.scaling))
+
+        health = getattr(target, "health", None)
+        if health is not None and hasattr(health, "current"):
+            health.current = max(0, health.current - damage)
+        elif hasattr(target, "hp"):
+            target.hp = max(0, target.hp - damage)
+        else:
+            raise AttributeError("DamageEffect target requires health.current or hp")
+
+        result.damage = (result.damage or 0) + damage
+        result.extra["last_damage"] = damage

@@ -207,6 +207,8 @@ Status: `Active`
 1. Continue effects-system integration beyond the migration.
    - Replace older inline combat logic in legacy ability code with composable effects where practical.
    - Keep output formats consistent between legacy and YAML abilities.
+   - 2026-06-16: Started the P3 effects audit and cleaned up stale primitive effect contracts. See
+     `docs/P3_EFFECTS_AUDIT.md`; next work is result-shape contract coverage before deeper combat-pipeline extraction.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
    - Status-effect interaction scenarios.
