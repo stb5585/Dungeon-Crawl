@@ -219,6 +219,8 @@ Status: `Active`
      definitions, while built-in YAML abilities are now covered to ensure they do not use `type: damage`.
    - 2026-06-16: Aligned reflected data-driven damage spell results with the actual damaged target and record
      the original reflector in `CombatResult.extra["reflected_by"]`.
+   - 2026-06-16: Aligned legacy `ElectricSpell` stun messaging with `Character.apply_stun()` so post-stun
+     immunity does not produce false “stunned” text.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -237,6 +239,7 @@ Status: `Active`
        redirected target.
      - 2026-06-16: Added Sleep/Prone interaction coverage proving Prone recovery waits until the tick after
        Sleep expires.
+     - 2026-06-16: Added legacy electric-stun coverage against the post-stun immunity path.
    - Enemy AI behavior where tactical choices are meaningful.
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.

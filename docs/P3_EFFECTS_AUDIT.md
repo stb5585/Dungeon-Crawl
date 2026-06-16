@@ -40,8 +40,11 @@ Last updated: 2026-06-16
 - `StatusApplyEffect` now delegates Stun application to
   `Character.apply_stun`, keeping YAML/composed status effects aligned with the
   post-stun immunity window used by other stun sources.
+- Legacy `ElectricSpell` stun messaging now also depends on successful
+  `Character.apply_stun()` application, avoiding false “stunned” text during
+  post-stun immunity.
 - `tests/core/test_status_effect_interactions.py` covers the effect-driven
-  Stun immunity path.
+  and legacy electric Stun immunity paths.
 - Status interaction coverage now pins the per-turn ordering for Poison, burn
   DOT, Bleed, and Regen, including final-turn cleanup before the Regen heal is
   evaluated.

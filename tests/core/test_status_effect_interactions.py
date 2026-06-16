@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.core import abilities
 from src.core.combat.combat_result import CombatResult
 from src.core.effects import StatusApplyEffect
 from tests.test_framework import TestGameState
@@ -50,6 +51,26 @@ def test_status_apply_stun_respects_post_stun_immunity(monkeypatch):
     assert target.status_effects["Stun"].active is True
     assert target.status_effects["Stun"].duration == 2
     assert applied.effects_applied["Status"] == ["Stun"]
+
+
+def test_legacy_electric_spell_stun_message_requires_applied_stun(monkeypatch):
+    actor = _combatant("Storm", intel=100)
+    target = _combatant("Target", wisdom=1)
+    spell = abilities.ElectricSpell("Legacy Shock", "Legacy electric stun.", 0, 1, 1)
+    monkeypatch.setattr("src.core.abilities.random.randint", lambda _low, high: high)
+
+    target.status_effects["Stun"].extra = 1
+    message = spell.special_effect(actor, target, damage=10, crit=1)
+
+    assert message == ""
+    assert target.status_effects["Stun"].active is False
+
+    target.status_effects["Stun"].extra = 0
+    message = spell.special_effect(actor, target, damage=10, crit=1)
+
+    assert "Target gets shocked and is stunned." in message
+    assert target.status_effects["Stun"].active is True
+    assert target.status_effects["Stun"].duration == 2
 
 
 def test_damage_over_time_effects_resolve_before_regen(monkeypatch):

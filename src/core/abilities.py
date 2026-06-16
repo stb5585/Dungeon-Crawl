@@ -1888,12 +1888,13 @@ class ElectricSpell(Attack):
             att_roll = random.randint(0, caster.stats.intel // 2)
             def_roll = random.randint(target.stats.wisdom // 4, target.stats.wisdom)
             if target.stun_contest_success(caster, att_roll, def_roll):
-                special_str += f"{target.name} gets shocked and is stunned.\n"
-                target.apply_stun(
+                applied = target.apply_stun(
                     max(1 + crit, target.status_effects["Stun"].duration),
                     source=self.name,
                     applier=caster,
                 )
+                if applied:
+                    special_str += f"{target.name} gets shocked and is stunned.\n"
         return special_str
 
 
