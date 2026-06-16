@@ -916,7 +916,14 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
         self._message = message
         self.subtyp = subtype
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        cover: bool = False,
+        special: bool = False,
+        fam: bool = False,
+    ) -> str:
         if self._target_self and not fam:
             target = caster
         elif target is None:
@@ -1067,7 +1074,14 @@ class DataDrivenStatusSpell(_get_status_spell_class()):
         if school:
             self.school = school
 
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        cover: bool = False,
+        special: bool = False,
+        fam: bool = False,
+    ) -> str:
         # Mana deduction
         if not (
             special

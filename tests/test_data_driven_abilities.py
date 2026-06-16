@@ -1387,6 +1387,7 @@ class TestBatch2CombatIntegration:
         msg = spell.cast(caster)
         assert not caster.status_effects["Blind"].active
         assert not caster.status_effects["Poison"].active
+        assert "All negative status effects have been cured for Tester!" in msg
 
     def test_mirror_image_creates_duplicates(self):
         from src.core import abilities

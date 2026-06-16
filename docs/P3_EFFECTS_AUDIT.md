@@ -77,6 +77,8 @@ Last updated: 2026-06-16
   heals.
 - `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat heal helpers
   now carry typed signatures around the consolidated healing behavior.
+- Data-driven support/status spell `cast()` methods now carry typed signatures,
+  with Cleanse coverage pinning default-target presentation.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
