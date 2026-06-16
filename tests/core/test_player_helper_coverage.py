@@ -196,6 +196,32 @@ class TestPlayerHelperCoverage:
         assert "The Holy Relics" in relic_message
         assert player.quest_dict["Main"]["The Holy Relics"]["Completed"] is True
 
+    def test_quests_item_collection_requires_total_and_does_not_repeat_completion(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        mystery_meat = items.MysteryMeat()
+        player.special_inventory = {mystery_meat.name: [items.MysteryMeat()]}
+        player.quest_dict = {
+            "Bounty": {},
+            "Main": {},
+            "Side": {
+                "Where's the Beef?": {
+                    "What": mystery_meat,
+                    "Total": 2,
+                    "Completed": False,
+                },
+            },
+        }
+
+        partial_message = player.quests(item=mystery_meat)
+        player.special_inventory[mystery_meat.name].append(items.MysteryMeat())
+        complete_message = player.quests(item=mystery_meat)
+        repeated_message = player.quests(item=mystery_meat)
+
+        assert partial_message == ""
+        assert "Where's the Beef?" in complete_message
+        assert repeated_message == ""
+        assert player.quest_dict["Side"]["Where's the Beef?"]["Completed"] is True
+
     def test_check_mod_support_branches_cover_shield_magic_heal_and_magic_defense(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", pro_level=3)
         player.equipment["OffHand"] = items.Buckler()

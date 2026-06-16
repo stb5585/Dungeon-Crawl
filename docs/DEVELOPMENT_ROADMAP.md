@@ -224,6 +224,8 @@ Status: `Active`
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
    - Quest completion/reward flows.
+     - 2026-06-16: Added item-collection quest coverage for partial progress, item-instance matching, and
+       no duplicate completion messages after completion.
    - Save/load round trips only when new persistence risks appear.
 3. Continue targeted type hints and docstrings.
    - Highest-value modules: `abilities.py`, `items.py`, `enemies.py`, and follow-up `character.py` cleanup.

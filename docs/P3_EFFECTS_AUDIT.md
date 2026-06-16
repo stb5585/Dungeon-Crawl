@@ -51,6 +51,9 @@ Last updated: 2026-06-16
   abilities where true legacy implementations still exist.
 - Enemy priority coverage now includes redundant target-status skips and
   target-positive-effect Dispel selection.
+- Quest coverage now includes item-instance collection quests, partial progress
+  before the required total, and no repeated completion message after a quest is
+  completed.
 - Audit whether `DamageEffect` should remain registered for external/custom
   ability data, since built-in YAML abilities no longer appear to use
   `type: damage`.
