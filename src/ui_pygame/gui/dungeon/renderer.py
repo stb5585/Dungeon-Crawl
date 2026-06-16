@@ -1509,6 +1509,44 @@ class SceneRenderer:
                 )
             return
 
+        if "Rotator" in tile_type:
+            self._render_floor_sprite(
+                "rotator",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="rotator",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
+        if "FunhouseTeleporter" in tile_type:
+            if not bool(getattr(tile, "active", True)):
+                return
+            self._render_floor_sprite(
+                "funhouse_teleporter",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="funhouse_teleporter",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
+        if tile_type == "FakeWall" and bool(getattr(tile, "visited", False)):
+            self._render_floor_sprite(
+                "fake_path",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="fake_path",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
         if "Boulder" in tile_type:
             sprite_key = "boulder" if bool(getattr(tile, "read", False)) else "boulder_sword"
             self._render_floor_sprite(
@@ -1719,6 +1757,9 @@ class SceneRenderer:
             return False
 
         tile_type = type(tile).__name__
+        if tile_type == "FakeWall":
+            return bool(getattr(tile, "visited", False))
+
         return any(
             name in tile_type
             for name in (
@@ -1871,6 +1912,12 @@ class SceneRenderer:
             return {1: 0.45, 2: 0.38, 3: 0.32}.get(depth, 0.32)
         if kind == "warp_point":
             return {1: 1.08, 2: 0.88, 3: 0.68}.get(depth, 0.68)
+        if kind == "rotator":
+            return {1: 0.56, 2: 0.46, 3: 0.34}.get(depth, 0.34)
+        if kind == "funhouse_teleporter":
+            return {1: 0.66, 2: 0.54, 3: 0.42}.get(depth, 0.42)
+        if kind == "fake_path":
+            return {1: 0.34, 2: 0.28, 3: 0.22}.get(depth, 0.22)
         if kind == "decorative_prop":
             return {1: 0.62, 2: 0.50, 3: 0.38}.get(depth, 0.38)
         return {1: 1.0, 2: 0.8, 3: 0.6}.get(depth, 0.6)

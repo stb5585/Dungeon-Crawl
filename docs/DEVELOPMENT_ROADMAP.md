@@ -185,15 +185,19 @@ Status: `Active`
 1. Continue renderer smoke-test work around structural-depth and side-corridor behavior.
    - Preserve center-wall stopping behavior.
    - Preserve valid depth-2/depth-3 side floor, ceiling, wall, and door routing.
+   - Added structural-depth smoke coverage for blocking center walls with visible side openings, preserving side-corridor wall presentation and the depth-2 center floor/ceiling slots reused for side-lane routing.
 2. Continue door and side-opening presentation validation.
    - Keep hidden/detected/open Ore Vault behavior stable.
    - Preserve single-side-door visibility unless playtesting says it is confusing.
 3. Finish special-tile placement polish for future floor-bound props.
    - Existing defeated-boss, spring, chest, door, and side-special coverage is useful; extend it only for concrete new props or regressions.
+   - Started P2 polish by rendering Rotator and active FunhouseTeleporter tiles as floor-bound special sprites, with repo-relative asset resolution and smoke coverage for inactive teleporter fallback behavior.
+   - Added visited-only FakeWall/Fake Path presentation so revealed fake paths get a subtle floor marker while hidden fake walls remain visually indistinguishable from ordinary walls.
 4. Keep asset fallback diagnostics visible during renderer changes.
    - Use existing grouped fallback and panel-slot diagnostics before adding new debug helpers.
 5. Gameplay element refinement.
    - The load bar when loading a game is jumpy instead of a smooth progression.
+   - Smoothed the pygame load progress popup with time-based 60 FPS interpolation while preserving the existing load-game flow and debug/test compatibility.
 
 ### P3 - Core Refactoring And Test Confidence
 

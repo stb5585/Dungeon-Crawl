@@ -59,6 +59,9 @@ DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "empty_golden_chalice_altar": "special_tiles/empty_golden_chalice_altar.png",
     "secret_shop": "special_tiles/secret_shop.png",
     "unobtainium": "special_tiles/unobtainium.png",
+    "rotator": "map_files/tileset/rotator.png",
+    "funhouse_teleporter": "map_files/tileset/funhouse_teleporter.png",
+    "fake_path": "map_files/tileset/fake_wall.png",
 }
 
 SPECIAL_TEXTURE_PATHS = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
@@ -104,6 +107,9 @@ SPECIAL_FALLBACK_COLORS = {
     "empty_golden_chalice_altar": (140, 130, 95),
     "secret_shop": (120, 80, 60),
     "unobtainium": (110, 180, 190),
+    "rotator": (150, 118, 78),
+    "funhouse_teleporter": (128, 92, 188),
+    "fake_path": (92, 88, 82),
     "rubble": (102, 96, 88),
     "fungus_patch": (88, 116, 82),
     "crystal_cluster": (92, 148, 176),
@@ -390,6 +396,8 @@ class TextureLibrary:
         if path.is_absolute():
             return path
         if rel_path.startswith("src/"):
+            return PROJECT_ROOT / path
+        if rel_path.startswith("map_files/"):
             return PROJECT_ROOT / path
         if rel_path.startswith("sprites/"):
             return self.assets_base / path

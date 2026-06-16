@@ -469,6 +469,36 @@ def test_show_message_progress_popup_and_dialogue_paths(monkeypatch):
     assert "Press any key to continue..." in presenter.small_font.render_calls
 
 
+def test_show_progress_popup_uses_smooth_time_based_fill(monkeypatch):
+    bundle = _install_presenter_fakes(monkeypatch)
+    presenter = bundle.presenter
+
+    tick_values = iter([1000, 1000, 1016, 1033, 1050])
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.time.get_ticks",
+        lambda: next(tick_values),
+    )
+    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: [])
+
+    filled_widths = []
+
+    def recording_rect(_surface, color, rect, width=0):
+        if color == pygame_presenter.GRAY and width == 0 and rect.height == 20:
+            filled_widths.append(rect.width)
+
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.draw.rect",
+        recording_rect,
+    )
+
+    presenter.show_progress_popup("Loading", "Please wait", steps=1, total_time=0.05)
+
+    assert len(filled_widths) >= 3
+    assert filled_widths == sorted(filled_widths)
+    assert filled_widths[-1] > filled_widths[0]
+    assert bundle.presenter.clock.ticks == [60, 60, 60]
+
+
 def test_input_confirmation_and_basic_render_helpers(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter

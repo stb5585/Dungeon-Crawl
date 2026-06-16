@@ -158,6 +158,17 @@ class WarpPoint:
     enter = True
 
 
+class Rotator:
+    enter = True
+
+
+class FunhouseTeleporter:
+    enter = True
+
+    def __init__(self, active=True):
+        self.active = active
+
+
 class BossRoom:
     enter = False
 
@@ -652,9 +663,15 @@ def test_texture_library_loads_migrated_special_and_enemy_sprites():
         "golden_chalice_altar",
         "secret_shop",
         "unobtainium",
+        "rotator",
+        "funhouse_teleporter",
+        "fake_path",
     ):
         assert textures.get_special_texture(key) is not None
 
+    assert "special:rotator" not in textures.get_asset_fallbacks()
+    assert "special:funhouse_teleporter" not in textures.get_asset_fallbacks()
+    assert "special:fake_path" not in textures.get_asset_fallbacks()
     assert textures.get_enemy_texture("Minotaur") is not None
 
     pygame.quit()
@@ -991,6 +1008,33 @@ def test_scene_renderer_renders_side_corridor_outer_wall_in_side_wall_layer():
 
     corridor_wall = next(command for command in commands if command.panel_id == "d2:right_corridor_outer_wall")
     assert corridor_wall.order == 3
+
+    pygame.quit()
+
+
+def test_scene_renderer_preserves_side_opening_depth_after_center_wall():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+        (1, 2, 1): WallTile(),
+    }
+
+    commands, _ = _build_scene_commands(scene_renderer, player, world)
+    panel_ids = {command.panel_id for command in commands}
+
+    assert "d1:back_wall" in panel_ids
+    assert "d2:right_corridor_outer_wall" in panel_ids
+    assert any(panel_id.startswith("d2:center_floor") for panel_id in panel_ids)
+    assert any(panel_id.startswith("d2:center_ceiling") for panel_id in panel_ids)
 
     pygame.quit()
 
@@ -1683,6 +1727,83 @@ def test_scene_renderer_keeps_hidden_ore_vault_door_as_wall():
 
     assert ("d1:back_wall", "wall") in calls
     assert ("d1:back_wall_slot0", "door_closed") not in calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_hidden_fake_wall_as_wall_without_marker():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): FakeWall(visited=False),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+    }
+
+    projected_calls = []
+    special_calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+    original_get_special_texture = scene_renderer.textures.get_special_texture
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        projected_calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    def recording_get_special_texture(texture_key, size=None):
+        special_calls.append((texture_key, size))
+        return original_get_special_texture(texture_key, size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer.textures.get_special_texture = recording_get_special_texture
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall", "wall") in projected_calls
+    assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
+
+    pygame.quit()
+
+
+def test_scene_renderer_marks_revealed_fake_wall_as_floor_path():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): FakeWall(visited=True),
+        (2, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+        (1, -1, 1): OpenTile(),
+        (1, 1, 1): OpenTile(),
+    }
+
+    projected_calls = []
+    special_calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+    original_get_special_texture = scene_renderer.textures.get_special_texture
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        projected_calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    def recording_get_special_texture(texture_key, size=None):
+        special_calls.append((texture_key, size))
+        return original_get_special_texture(texture_key, size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer.textures.get_special_texture = recording_get_special_texture
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall", "wall") not in projected_calls
+    assert ("fake_path", 81) in special_calls
 
     pygame.quit()
 
@@ -2534,6 +2655,8 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
         UnobtainiumRoom(visited=False),
         SecretShop(),
         WarpPoint(),
+        Rotator(),
+        FunhouseTeleporter(active=True),
         BossRoom(enemy=DummyEnemy("Minotaur")),
         BossRoom(enemy=DummyEnemy("Jester")),
     )
@@ -2553,8 +2676,41 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("unobtainium", 72) in special_calls
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
+    assert ("rotator", 89) in special_calls
+    assert ("funhouse_teleporter", 105) in special_calls
     assert ("Minotaur", 160) in enemy_calls
     assert ("Jester", 104) in enemy_calls
+
+    pygame.quit()
+
+
+def test_scene_renderer_skips_inactive_funhouse_teleporter_sprite():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    rect = pygame.Rect(120, 120, 160, 160)
+
+    special_calls = []
+    original_get_special_texture = scene_renderer.textures.get_special_texture
+
+    def recording_get_special_texture(texture_key, size=None):
+        special_calls.append((texture_key, size))
+        return original_get_special_texture(texture_key, size)
+
+    scene_renderer.textures.get_special_texture = recording_get_special_texture
+
+    before = pygame.image.tostring(screen, "RGBA")
+    scene_renderer._render_special_tile(
+        FunhouseTeleporter(active=False),
+        rect,
+        darkness=0.0,
+        depth=1,
+    )
+    after = pygame.image.tostring(screen, "RGBA")
+
+    assert not any(texture_key == "funhouse_teleporter" for texture_key, _size in special_calls)
+    assert before == after
 
     pygame.quit()
 

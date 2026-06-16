@@ -979,16 +979,14 @@ class PygamePresenter(GamePresenter):
 
     def show_progress_popup(self, header: str = "Load Game", message: str = "Loading game file...",
                              steps: int = 20, total_time: float = 3.0):
-        """Show a centered popup with a progress bar, similar to curses version.
+        """Show a centered popup with a smooth time-based progress bar.
 
         Args:
             header: Title shown at the top of the popup
             message: Message shown above the progress bar
-            steps: Number of increments to animate
+            steps: Legacy debug-mode frame hint
             total_time: Total time in seconds to animate the bar
         """
-        import time
-
         # Popup dimensions and position
         popup_width = max(420, self.width // 2 - 100)
         popup_height = 180
@@ -1004,11 +1002,21 @@ class PygamePresenter(GamePresenter):
             24,
         )
 
-        # Calculate delay per step
-        delay = total_time / max(1, steps)
-
         # Animate progress
-        for i in range(steps + 1):
+        duration_ms = max(0, int(total_time * 1000))
+        start_ms = pygame.time.get_ticks() if duration_ms > 0 else 0
+        frame_index = 0
+        debug_frames = max(1, int(steps))
+
+        while True:
+            if duration_ms <= 0:
+                progress = 1.0
+            elif self.debug_mode:
+                progress = min(1.0, frame_index / debug_frames)
+            else:
+                elapsed_ms = max(0, pygame.time.get_ticks() - start_ms)
+                progress = min(1.0, elapsed_ms / duration_ms)
+
             # Handle window events to keep UI responsive
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1041,14 +1049,17 @@ class PygamePresenter(GamePresenter):
             pygame.draw.rect(self.screen, WHITE, bar_rect, 2)
 
             # Filled portion
-            filled_width = int((bar_rect.width - 4) * (i / max(1, steps)))
+            filled_width = int((bar_rect.width - 4) * progress)
             if filled_width > 0:
                 filled_rect = pygame.Rect(bar_rect.left + 2, bar_rect.top + 2, filled_width, bar_rect.height - 4)
                 pygame.draw.rect(self.screen, GRAY, filled_rect)
 
             pygame.display.flip()
-            if not self.debug_mode:
-                time.sleep(delay)
+            if progress >= 1.0:
+                break
+
+            frame_index += 1
+            self.clock.tick(60)
         
     def cleanup(self):
         """Clean up Pygame resources."""
