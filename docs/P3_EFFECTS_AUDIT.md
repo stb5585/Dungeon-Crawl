@@ -96,8 +96,9 @@ Last updated: 2026-06-16
   external/custom `EffectFactory` definitions.
 - The fixed Batch 1 spell loader test no longer skips missing files; those YAML
   files are required content.
-- `random_enemy()` now returns the selected catalog enemy again instead of
-  replacing every selection with the debug `Test` enemy.
+- `random_enemy()` now returns the selected catalog enemy by default, while
+  explicit `set_random_enemy_override()` / `clear_random_enemy_override()`
+  helpers preserve targeted debug encounters for ability playtesting.
 - Enemy combat-item selection now recognizes the live `Elixir` subtype for
   mixed health/mana recovery while keeping `Both` as a compatibility alias.
 

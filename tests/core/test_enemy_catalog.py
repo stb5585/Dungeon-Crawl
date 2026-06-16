@@ -70,6 +70,26 @@ def test_random_enemy_and_funhouse_enemy_follow_expected_catalog_edges(monkeypat
     assert isinstance(enemies.funhouse_enemy(), enemies.Copycat)
 
 
+def test_random_enemy_debug_override_is_explicit_and_clearable(monkeypatch):
+    monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[0])
+    enemies.clear_random_enemy_override()
+
+    try:
+        enemies.set_random_enemy_override("Test")
+        assert isinstance(enemies.random_enemy("0"), enemies.Test)
+
+        enemies.set_random_enemy_override(enemies.Goblin)
+        assert isinstance(enemies.random_enemy("0"), enemies.Goblin)
+
+        enemies.set_random_enemy_override(lambda: enemies.Skeleton())
+        assert isinstance(enemies.random_enemy("0"), enemies.Skeleton)
+
+        enemies.clear_random_enemy_override()
+        assert isinstance(enemies.random_enemy("0"), enemies.GreenSlime)
+    finally:
+        enemies.clear_random_enemy_override()
+
+
 def test_enemy_options_short_circuit_for_berserk_turtle_and_ice_block():
     target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
 

@@ -2,6 +2,7 @@
 """ enemy manager """
 from __future__ import annotations
 
+from collections.abc import Callable
 import random
 from textwrap import wrap
 
@@ -11,11 +12,51 @@ from .combat.action_queue import ActionPriority
 from .constants import ENEMY_LOW_HEALTH_THRESHOLD
 
 
+RandomEnemyOverride = str | type["Enemy"] | Callable[[], "Enemy"]
+_random_enemy_override: RandomEnemyOverride | None = None
+
+
+def set_random_enemy_override(enemy: RandomEnemyOverride | None) -> None:
+    """Force random encounters to use a specific enemy for debug playtesting.
+
+    Accepts an enemy class, a zero-argument factory, an enemy class name, or
+    ``None`` to clear the override.
+    """
+    global _random_enemy_override
+    _random_enemy_override = enemy
+
+
+def clear_random_enemy_override() -> None:
+    """Return random encounters to normal catalog selection."""
+    set_random_enemy_override(None)
+
+
+def _build_random_enemy_override() -> Enemy | None:
+    if _random_enemy_override is None:
+        return None
+    if isinstance(_random_enemy_override, str):
+        enemy_cls = globals().get(_random_enemy_override)
+        if not isinstance(enemy_cls, type) or not issubclass(enemy_cls, Enemy):
+            raise ValueError(f"Unknown random enemy override: {_random_enemy_override}")
+        return enemy_cls()
+    if isinstance(_random_enemy_override, type):
+        if not issubclass(_random_enemy_override, Enemy):
+            raise TypeError("Random enemy override class must inherit Enemy.")
+        return _random_enemy_override()
+    enemy = _random_enemy_override()
+    if not isinstance(enemy, Enemy):
+        raise TypeError("Random enemy override factory must return an Enemy.")
+    return enemy
+
+
 # Functions
 def random_enemy(level: str) -> Enemy:
     """
     Takes the current level a player is on and returns a random enemy
     """
+    if forced_enemy := _build_random_enemy_override():
+        return forced_enemy
+
     monsters = {
       '0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
       '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
