@@ -275,6 +275,8 @@ Status: `Active`
      Cleanse's default-target presentation.
    - 2026-06-16: Added typed signatures to data-driven weapon/custom spell constructors and `cast()` methods
      after the shield-helper cleanup, keeping Smite and Turn Undead wrapper contracts explicit.
+   - 2026-06-16: Extended typed signatures across the remaining data-driven charging, magic-missile, Jump,
+     and movement wrapper entry points.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
 
 ### P4 - Content And Systems Expansion

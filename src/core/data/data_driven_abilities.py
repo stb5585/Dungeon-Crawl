@@ -1348,7 +1348,7 @@ class DataDrivenChargingSkill(Skill):
         self.charging: bool = False
         self.charge_turns: int = 0
         self.charge_target: Character | None = None
-        self._charge_context: dict | None = None
+        self._charge_context: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------
     # Charging helpers
@@ -1404,7 +1404,7 @@ class DataDrivenChargingSkill(Skill):
     def use(
         self,
         user: Character,
-        target: Character = None,
+        target: Character | None = None,
         cover: bool = False,
         special: bool = False,
         **kwargs: Any,
@@ -1480,7 +1480,7 @@ class DataDrivenMagicMissileSpell(Spell):
     def cast(
         self,
         caster: Character,
-        target: Character = None,
+        target: Character | None = None,
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
@@ -1703,7 +1703,7 @@ class DataDrivenJumpSkill(Skill):
         "Skyfall": False,
     }
 
-    _DEFAULT_UNLOCK_REQUIREMENTS: dict[str, dict] = {
+    _DEFAULT_UNLOCK_REQUIREMENTS: dict[str, dict[str, Any]] = {
         "Crit": {"type": "initial", "requirement": None},
         "Defend": {"type": "lancer_level", "requirement": 5},
         "Quick Dive": {"type": "lancer_level", "requirement": 10},
@@ -1731,9 +1731,9 @@ class DataDrivenJumpSkill(Skill):
         charge_time: int = 1,
         telegraph_message: str | None = None,
         prone_while_charging: bool = True,
-        unlock_requirements: dict | None = None,
-        modifications_defaults: dict | None = None,
-        unlocked_defaults: dict | None = None,
+        unlock_requirements: dict[str, dict[str, Any]] | None = None,
+        modifications_defaults: dict[str, bool] | None = None,
+        unlocked_defaults: dict[str, bool] | None = None,
         priority: str | None = None,
         notes: str | None = None,
     ):
@@ -1757,7 +1757,7 @@ class DataDrivenJumpSkill(Skill):
         self.unlocked_modifications: dict[str, bool] = dict(
             unlocked_defaults or self._DEFAULT_UNLOCKED
         )
-        self.unlock_requirements: dict[str, dict] = dict(
+        self.unlock_requirements: dict[str, dict[str, Any]] = dict(
             unlock_requirements or self._DEFAULT_UNLOCK_REQUIREMENTS
         )
 
@@ -1777,7 +1777,9 @@ class DataDrivenJumpSkill(Skill):
     # Modification management (1-to-1 parity with original Jump)
     # ==================================================================
 
-    def get_max_active_modifications(self, user: Character = None) -> int:
+    def get_max_active_modifications(
+        self, user: Character | None = None
+    ) -> int:
         """Max active mods: 1 + (level // 15), cap 5, +1 for ClassRing."""
         if user is None:
             return 5
@@ -1815,8 +1817,8 @@ class DataDrivenJumpSkill(Skill):
         return False
 
     def check_and_unlock_level_modifications(
-        self, user_level, user_class=None
-    ) -> list:
+        self, user_level: Any, user_class: Any | None = None
+    ) -> list[str]:
         if hasattr(user_level, "level"):
             user_level = user_level.level
         if hasattr(user_class, "name"):
@@ -1866,13 +1868,13 @@ class DataDrivenJumpSkill(Skill):
     def is_modification_unlocked(self, mod_name: str) -> bool:
         return self.unlocked_modifications.get(mod_name, False)
 
-    def get_unlocked_modifications(self) -> list:
+    def get_unlocked_modifications(self) -> list[str]:
         return [m for m, u in self.unlocked_modifications.items() if u]
 
     def get_active_count(self) -> int:
         return sum(1 for a in self.modifications.values() if a)
 
-    def enforce_modification_limit(self, user: Character = None) -> list:
+    def enforce_modification_limit(self, user: Character | None = None) -> list[str]:
         max_allowed = self.get_max_active_modifications(user)
         current_active = self.get_active_count()
         deactivated: list[str] = []
@@ -1888,7 +1890,7 @@ class DataDrivenJumpSkill(Skill):
         return deactivated
 
     def set_modification(
-        self, mod_name: str, active: bool, user: Character = None
+        self, mod_name: str, active: bool, user: Character | None = None
     ) -> tuple[bool, str]:
         if mod_name not in self.modifications:
             return (False, "Modification doesn't exist")
@@ -1945,7 +1947,7 @@ class DataDrivenJumpSkill(Skill):
 
         return (True, "")
 
-    def get_active_modifications(self) -> list:
+    def get_active_modifications(self) -> list[str]:
         return [m for m, a in self.modifications.items() if a]
 
     # ==================================================================
@@ -2059,10 +2061,10 @@ class DataDrivenJumpSkill(Skill):
     def use(
         self,
         user: Character,
-        target: Character = None,
+        target: Character | None = None,
         cover: bool = False,
         special: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         if self.charging:
             # Interrupt if incapacitated (unless Unstoppable)
@@ -2146,19 +2148,24 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
         cost: int,
         movement_type: str = "sanctuary",
         combat: bool = True,
-        effects: list | None = None,
+        effects: list[Effect] | None = None,
         notes: str | None = None,
     ):
         super().__init__(name, description, cost)
         self._movement_type = movement_type
         self.combat = combat
-        self._effects = effects or []
+        self._effects: list[Effect] = effects or []
         self._notes = notes
 
     # ------------------------------------------------------------------
     # cast_out - the primary entry point for movement spells
     # ------------------------------------------------------------------
-    def cast_out(self, user=None, selection_callback=None, game=None):
+    def cast_out(
+        self,
+        user: Character | None = None,
+        selection_callback: Any | None = None,
+        game: Any | None = None,
+    ) -> str:
         """
         Dispatch to the appropriate movement behaviour.
 
@@ -2176,7 +2183,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
     # ------------------------------------------------------------------
     # Sanctuary behaviour
     # ------------------------------------------------------------------
-    def _cast_sanctuary(self, user) -> str:
+    def _cast_sanctuary(self, user: Character) -> str:
         user.mana.current -= self.cost
         user.health.current = user.health.max
         user.mana.current = user.mana.max
@@ -2189,7 +2196,11 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
     # ------------------------------------------------------------------
     # Teleport behaviour
     # ------------------------------------------------------------------
-    def _cast_teleport(self, selection_callback=None, game=None) -> str:
+    def _cast_teleport(
+        self,
+        selection_callback: Any | None = None,
+        game: Any | None = None,
+    ) -> str:
         import random as _random
 
         teleport_message = (

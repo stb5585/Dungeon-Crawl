@@ -81,6 +81,8 @@ Last updated: 2026-06-16
   with Cleanse coverage pinning default-target presentation.
 - Data-driven weapon/custom spell constructors and `cast()` methods now carry
   typed signatures around the Smite/Turn Undead wrapper contracts.
+- Data-driven charging, magic-missile, Jump, and movement wrapper entry points
+  now carry typed signatures around their existing flexible call contracts.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
