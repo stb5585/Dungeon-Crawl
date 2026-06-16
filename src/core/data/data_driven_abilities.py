@@ -791,7 +791,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         self._instant_heal = instant_heal
 
     # -- HoT helper (Regen pattern) ------------------------------------
-    def hot(self, target, heal):
+    def hot(self, target: Character, heal: int) -> None:
         """Apply heal-over-time using the Regen magic effect."""
         target.magic_effects["Regen"].active = True
         target.magic_effects["Regen"].duration = max(
@@ -810,12 +810,26 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
             pass
 
     # -- cast override to support Hydration hybrid ---------------------
-    def cast(self, caster, target=None, cover=False, special=False, fam=False):
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        cover: bool = False,
+        special: bool = False,
+        fam: bool = False,
+    ) -> str:
         if self._instant_heal and self.turns > 0:
             return self._cast_hybrid(caster, target, cover, special, fam)
         return super().cast(caster, target, cover, special, fam)
 
-    def _cast_hybrid(self, caster, target, cover, special, fam):
+    def _cast_hybrid(
+        self,
+        caster: Character,
+        target: Character | None,
+        cover: bool,
+        special: bool,
+        fam: bool,
+    ) -> str:
         """Hydration-style: instant heal THEN apply HoT."""
         cast_message = ""
         if not fam:
@@ -844,7 +858,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         return cast_message
 
     # -- out-of-combat heal --------------------------------------------
-    def cast_out(self, actor):
+    def cast_out(self, actor: Character) -> str:
         """UI-agnostic out-of-combat heal."""
         cast_message = f"{actor.name} casts {self.name}.\n"
         if actor.health.current == actor.health.max:

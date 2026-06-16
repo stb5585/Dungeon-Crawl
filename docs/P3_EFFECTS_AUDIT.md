@@ -71,6 +71,8 @@ Last updated: 2026-06-16
 - `HealSpell._apply_instant_healing()` now centralizes instant-heal cap,
   modifier, and event logic for legacy casts plus YAML hybrid and out-of-combat
   heals.
+- `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat heal helpers
+  now carry typed signatures around the consolidated healing behavior.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all

@@ -266,6 +266,8 @@ Status: `Active`
    - Keep type-hint work scoped to clear behavior boundaries rather than broad rewrites.
    - 2026-06-16: Added a typed signature and behavior docstring to `Player.quests()` to clarify enemy, item,
      and relic completion paths.
+   - 2026-06-16: Added typed signatures to `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat
+     heal helpers after consolidating instant-heal behavior.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
 
 ### P4 - Content And Systems Expansion
