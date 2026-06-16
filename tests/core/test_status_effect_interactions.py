@@ -50,3 +50,37 @@ def test_status_apply_stun_respects_post_stun_immunity(monkeypatch):
     assert target.status_effects["Stun"].active is True
     assert target.status_effects["Stun"].duration == 2
     assert applied.effects_applied["Status"] == ["Stun"]
+
+
+def test_damage_over_time_effects_resolve_before_regen(monkeypatch):
+    character = _combatant("Patient", wisdom=10)
+    character.health.max = 120
+    character.health.current = 100
+    character.combat.magic_def = 0
+
+    character.status_effects["Poison"].active = True
+    character.status_effects["Poison"].duration = 1
+    character.status_effects["Poison"].extra = 10
+    character.magic_effects["DOT"].active = True
+    character.magic_effects["DOT"].duration = 1
+    character.magic_effects["DOT"].extra = 6
+    character.magic_effects["DOT"].source = "Burn"
+    character.physical_effects["Bleed"].active = True
+    character.physical_effects["Bleed"].duration = 1
+    character.physical_effects["Bleed"].extra = 8
+    character.magic_effects["Regen"].active = True
+    character.magic_effects["Regen"].duration = 1
+    character.magic_effects["Regen"].extra = 10
+
+    monkeypatch.setattr("src.core.character.random.randint", lambda *_args: 0)
+
+    text = character.effects()
+
+    assert character.health.current == 83
+    assert text.index("poison damages") < text.index("burns for")
+    assert text.index("burns for") < text.index("bleeds for")
+    assert text.index("bleeds for") < text.index("health has regenerated")
+    assert character.status_effects["Poison"].active is False
+    assert character.magic_effects["DOT"].active is False
+    assert character.physical_effects["Bleed"].active is False
+    assert character.magic_effects["Regen"].active is False

@@ -219,6 +219,7 @@ Status: `Active`
        obsolete file-missing skip from fixed Batch 1 spell coverage.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
+     - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
    - Enemy AI behavior where tactical choices are meaningful.
    - Quest completion/reward flows.
    - Save/load round trips only when new persistence risks appear.
