@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import os
+import random
 from dataclasses import dataclass
 
 import pygame
@@ -37,6 +38,8 @@ class SceneRenderer:
         self.debug_commands = os.getenv("DUNGEON_RENDERER_DEBUG_COMMANDS") == "1"
         self.debug_surface_slots = os.getenv("DUNGEON_RENDERER_DEBUG_SURFACE_SLOTS") == "1"
         self.enable_wall_overlays = os.getenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS") == "1"
+        self._force_field_seed_counter = 0
+        self._jester_force_field_body_cache: dict[tuple[int, int, int], pygame.Surface] = {}
         self._last_debug_snapshot: str | None = None
 
     @property
@@ -64,6 +67,7 @@ class SceneRenderer:
             )
             for depth in (1, 2, 3)
         }
+        self._precache_jester_force_field_bodies(world_dict, zones)
 
         commands = self._build_render_commands(scene, zones)
         self._emit_debug_snapshot(scene, commands)
@@ -78,6 +82,7 @@ class SceneRenderer:
             screen.blit(projected.surface, projected.topleft)
 
         self._render_special_tiles(scene, zones)
+        self._render_jester_force_fields(scene, zones)
         if self.enable_wall_overlays:
             self._render_wall_overlays(scene, zones)
 
@@ -1190,7 +1195,11 @@ class SceneRenderer:
                 center_path_open = False
 
         for visible_depth in reversed(visible_center_depths):
-            if visible_depth.depth == max_visible_depth and not is_wall(visible_depth.center):
+            if (
+                visible_depth.depth == max_visible_depth
+                and not is_wall(visible_depth.center)
+                and "BossRoom" not in type(visible_depth.center).__name__
+            ):
                 continue
             rect = pygame.Rect(zones[visible_depth.depth].back_wall_rect.to_int_tuple())
             render_depth = visible_depth.depth
@@ -1255,6 +1264,96 @@ class SceneRenderer:
                 darkness=self._get_layer_darkness(visible_depth.depth),
                 depth=visible_depth.depth,
             )
+
+    def _render_jester_force_fields(self, scene, zones, *, body: bool = True, arcs: bool = True) -> None:
+        for visible_depth in scene.depths:
+            tile = visible_depth.center
+            zone = zones.get(visible_depth.depth)
+            if zone is None:
+                continue
+
+            if map_tiles.jester_force_field_blocks_entry(tile, self.player_char):
+                self._render_jester_force_field(
+                    pygame.Rect(zone.back_wall_rect.to_int_tuple()),
+                    darkness=self._get_layer_darkness(visible_depth.depth),
+                    depth=visible_depth.depth,
+                    body=body,
+                    arcs=arcs,
+                )
+
+            self._render_side_jester_force_field(
+                visible_depth.left_forward,
+                visible_depth.left,
+                visible_depth.center,
+                zone,
+                zones.get(visible_depth.depth + 1),
+                visible_depth.depth,
+                "left",
+                body=body,
+                arcs=arcs,
+            )
+            self._render_side_jester_force_field(
+                visible_depth.right_forward,
+                visible_depth.right,
+                visible_depth.center,
+                zone,
+                zones.get(visible_depth.depth + 1),
+                visible_depth.depth,
+                "right",
+                body=body,
+                arcs=arcs,
+            )
+
+    def _render_side_jester_force_field(
+        self,
+        tile,
+        opening_tile,
+        center_tile,
+        zone,
+        next_zone,
+        depth: int,
+        side: str,
+        *,
+        body: bool = True,
+        arcs: bool = True,
+    ) -> None:
+        if not map_tiles.jester_force_field_blocks_entry(tile, self.player_char):
+            return
+        if self._opening_tile_blocks_view(opening_tile):
+            return
+
+        opening_rect = self._get_side_opening_rect(zone, side)
+        render_rect = self._get_side_special_render_rect(
+            opening_rect,
+            tile,
+            side,
+            center_tile=center_tile,
+            zone=zone,
+            next_zone=next_zone,
+            depth=depth,
+        )
+        if not isinstance(render_rect, pygame.Rect):
+            render_rect = pygame.Rect(
+                round(render_rect.x),
+                round(render_rect.y),
+                max(1, round(render_rect.w)),
+                max(1, round(render_rect.h)),
+            )
+
+        previous_clip = self.screen.get_clip()
+        try:
+            clip_rect = self._get_side_special_clip_rect(opening_rect, tile, side, center_tile=center_tile)
+            if clip_rect is not None:
+                self.screen.set_clip(clip_rect)
+            self._render_jester_force_field(
+                render_rect,
+                darkness=self._get_layer_darkness(depth),
+                depth=depth,
+                body=body,
+                arcs=arcs,
+            )
+        finally:
+            self.screen.set_clip(previous_clip)
 
     def _render_side_special_tiles(self, visible_depth, zone, next_zone=None) -> None:
         if next_zone is None:
@@ -1359,6 +1458,8 @@ class SceneRenderer:
             return
         if self._is_door_tile(tile):
             return
+        if self._is_side_surface_only_ladder(tile):
+            return
 
         render_depth = depth
         if (
@@ -1366,6 +1467,7 @@ class SceneRenderer:
             and next_zone is not None
             and self._is_floor_sprite_tile(tile)
             and type(tile).__name__ != "FakeWall"
+            and "BossRoom" not in type(tile).__name__
         ):
             render_depth = depth + 1
 
@@ -1400,6 +1502,67 @@ class SceneRenderer:
             )
         finally:
             self.screen.set_clip(previous_clip)
+
+    def _precache_jester_force_field_bodies(self, world_dict, zones) -> None:
+        sealed_jester_tiles = [
+            tile
+            for tile in world_dict.values()
+            if map_tiles.jester_force_field_blocks_entry(tile, self.player_char)
+        ]
+        if not sealed_jester_tiles:
+            return
+
+        sample_tile = sealed_jester_tiles[0]
+        for depth, zone in zones.items():
+            darkness = self._get_layer_darkness(depth)
+            alpha = self._get_jester_force_field_alpha(darkness, depth)
+            self._precache_jester_force_field_body_for_rect(
+                pygame.Rect(zone.back_wall_rect.to_int_tuple()),
+                alpha,
+            )
+            for side in ("left", "right"):
+                opening_rect = self._get_side_opening_rect(zone, side)
+                render_rect = self._get_side_special_render_rect(
+                    opening_rect,
+                    sample_tile,
+                    side,
+                    center_tile=None,
+                    zone=zone,
+                    next_zone=zones.get(depth + 1),
+                    depth=depth,
+                )
+                if not isinstance(render_rect, pygame.Rect):
+                    render_rect = pygame.Rect(
+                        round(render_rect.x),
+                        round(render_rect.y),
+                        max(1, round(render_rect.w)),
+                        max(1, round(render_rect.h)),
+                    )
+                self._precache_jester_force_field_body_for_rect(render_rect, alpha)
+                if zones.get(depth + 1) is None:
+                    continue
+                surface_rect = self._get_side_special_render_rect(
+                    opening_rect,
+                    sample_tile,
+                    side,
+                    center_tile=sample_tile,
+                    zone=zone,
+                    next_zone=zones.get(depth + 1),
+                    depth=depth,
+                )
+                if not isinstance(surface_rect, pygame.Rect):
+                    surface_rect = pygame.Rect(
+                        round(surface_rect.x),
+                        round(surface_rect.y),
+                        max(1, round(surface_rect.w)),
+                        max(1, round(surface_rect.h)),
+                    )
+                self._precache_jester_force_field_body_for_rect(surface_rect, alpha)
+
+    def _precache_jester_force_field_body_for_rect(self, rect: pygame.Rect, alpha: int) -> None:
+        field_rect = self._get_jester_force_field_rect(rect)
+        if field_rect.width > 0 and field_rect.height > 0:
+            self._get_jester_force_field_body(field_rect.size, alpha)
 
     def _render_special_tile(
         self,
@@ -1527,17 +1690,6 @@ class SceneRenderer:
             return
 
         if "FunhouseTeleporter" in tile_type:
-            if not bool(getattr(tile, "active", True)):
-                return
-            self._render_floor_sprite(
-                "funhouse_teleporter",
-                rect,
-                darkness=darkness,
-                depth=depth,
-                kind="funhouse_teleporter",
-                side=side,
-                lateral_view=lateral_view,
-            )
             return
 
         if tile_type == "FakeWall" and bool(getattr(tile, "visited", False)):
@@ -1623,6 +1775,7 @@ class SceneRenderer:
 
         if "BossRoom" in tile_type:
             self._render_boss_enemy(tile, rect, darkness=darkness, depth=depth, side=side, lateral_view=lateral_view)
+            return
 
     def _render_translucent_fake_wall_panel(
         self,
@@ -1756,9 +1909,10 @@ class SceneRenderer:
 
         size_ratio = {0: 2.0, 1: 1.0, 2: 0.8, 3: 0.65}.get(depth, 0.65)
         size_ratio *= get_enemy_combat_sprite_manager().get_dungeon_scale_for_enemy(enemy)
-        if lateral_view:
-            size_ratio *= 0.9
-        sprite_size = max(8, int(min(rect.width, rect.height) * size_ratio))
+        sprite_basis = min(rect.width, rect.height)
+        if lateral_view and side is not None:
+            sprite_basis = rect.height
+        sprite_size = max(8, int(sprite_basis * size_ratio))
         sprite = self.textures.get_enemy_texture(enemy_name, sprite_size)
 
         if sprite is None:
@@ -1778,15 +1932,212 @@ class SceneRenderer:
         shaded = self._apply_darkness_to_surface(sprite, darkness)
         self.screen.blit(shaded, sprite_rect.topleft)
 
+    def _render_jester_force_field(
+        self,
+        rect: pygame.Rect,
+        darkness: float,
+        depth: int,
+        *,
+        body: bool = True,
+        arcs: bool = True,
+    ) -> None:
+        darkness_factor = max(0.0, 1.0 - min(1.0, darkness))
+        if darkness_factor <= 0.0:
+            return
+
+        field_rect = self._get_jester_force_field_rect(rect)
+        if field_rect.width <= 0 or field_rect.height <= 0:
+            return
+
+        alpha = self._get_jester_force_field_alpha(darkness, depth)
+        overlay = pygame.Surface(field_rect.size, pygame.SRCALPHA)
+
+        border_color = (124, 176, 236, max(54, alpha - 14))
+        inner_color = (92, 224, 246, max(48, alpha - 28))
+        glow_color = (40, 184, 230, max(42, alpha // 2))
+        hot_color = (96, 230, 255, max(90, min(178, alpha + 34)))
+        core_color = (244, 254, 255, max(150, min(232, alpha + 82)))
+
+        if body:
+            overlay.blit(self._get_jester_force_field_body(field_rect.size, alpha), (0, 0))
+            overlay_rect = overlay.get_rect()
+            pygame.draw.rect(overlay, border_color, overlay_rect, width=1, border_radius=2)
+
+        if arcs:
+            self._force_field_seed_counter += 1
+            rng = random.Random((pygame.time.get_ticks() * 1009) + (self._force_field_seed_counter * 9173) + depth)
+            outer_glow = pygame.Surface(overlay.get_size(), pygame.SRCALPHA)
+            inner_glow = pygame.Surface(overlay.get_size(), pygame.SRCALPHA)
+            for start_ratio in (0.20, 0.48, 0.76):
+                start_x = round(field_rect.width * start_ratio) + rng.randint(-3, 3)
+                end_x = start_x + rng.randint(-6, 6)
+                start = (max(2, min(field_rect.width - 3, start_x)), 0)
+                end = (max(2, min(field_rect.width - 3, end_x)), field_rect.height)
+                displacement = max(8.0, field_rect.width * 0.20)
+                points = self._build_midpoint_lightning_points(start, end, displacement, rng, iterations=6)
+                self._draw_layered_lightning(
+                    overlay,
+                    points,
+                    glow_color,
+                    hot_color,
+                    core_color,
+                    outer_glow=outer_glow,
+                    inner_glow=inner_glow,
+                )
+
+                for branch_start in points[2:-2:4]:
+                    branch_direction = -1 if rng.random() < 0.5 else 1
+                    branch_end = (
+                        max(2, min(field_rect.width - 3, branch_start[0] + branch_direction * rng.randint(8, 20))),
+                        max(2, min(field_rect.height - 3, branch_start[1] + rng.randint(-6, 10))),
+                    )
+                    branch_points = self._build_midpoint_lightning_points(
+                        branch_start,
+                        branch_end,
+                        max(4.0, field_rect.width * 0.06),
+                        rng,
+                        iterations=4,
+                    )
+                    self._draw_layered_lightning(
+                        overlay,
+                        branch_points,
+                        glow_color,
+                        hot_color,
+                        core_color,
+                        outer_glow=outer_glow,
+                        inner_glow=inner_glow,
+                    )
+
+            overlay.blit(outer_glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            overlay.blit(inner_glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+        self.screen.blit(overlay, field_rect.topleft)
+
+    @staticmethod
+    def _get_jester_force_field_rect(rect: pygame.Rect) -> pygame.Rect:
+        inset_x = max(1, round(rect.width * 0.01))
+        inset_y = max(1, round(rect.height * 0.01))
+        return rect.inflate(-inset_x * 2, -inset_y * 2)
+
+    @staticmethod
+    def _get_jester_force_field_alpha(darkness: float, depth: int) -> int:
+        darkness_factor = max(0.0, 1.0 - min(1.0, darkness))
+        field_visibility = 0.62 + (darkness_factor * 0.38)
+        return max(72, min(142, round((132 - (depth * 8)) * field_visibility)))
+
+    def _get_jester_force_field_body(self, size: tuple[int, int], alpha: int) -> pygame.Surface:
+        cache_key = (size[0], size[1], alpha)
+        cached = self._jester_force_field_body_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        if len(self._jester_force_field_body_cache) > 12:
+            self._jester_force_field_body_cache.clear()
+
+        width, height = size
+        if width <= 0 or height <= 0:
+            return pygame.Surface(size, pygame.SRCALPHA)
+
+        surface = pygame.Surface(size, pygame.SRCALPHA)
+        surface.fill((14, 18, 58, min(160, round(alpha * 0.38))))
+
+        center_x = width / 2
+        center_y = height / 2
+        max_radius = max(width, height) * 0.62
+        for layer in range(9, 0, -1):
+            ratio = layer / 9
+            radius_x = max(1, round(max_radius * ratio))
+            radius_y = max(1, round(max_radius * ratio))
+            center_light = 1.0 - ratio
+            color = (
+                round(30 + (44 * center_light)),
+                round(70 + (104 * center_light)),
+                round(118 + (118 * center_light)),
+                max(8, round(alpha * (0.07 + (0.09 * center_light)))),
+            )
+            pygame.draw.ellipse(
+                surface,
+                color,
+                pygame.Rect(
+                    round(center_x - radius_x),
+                    round(center_y - radius_y),
+                    radius_x * 2,
+                    radius_y * 2,
+                ),
+            )
+
+        self._jester_force_field_body_cache[cache_key] = surface
+        return surface
+
+    @staticmethod
+    def _build_midpoint_lightning_points(
+        start: tuple[int, int],
+        end: tuple[int, int],
+        displacement: float,
+        rng: random.Random,
+        *,
+        iterations: int,
+    ) -> list[tuple[int, int]]:
+        points = [(float(start[0]), float(start[1])), (float(end[0]), float(end[1]))]
+        current_displacement = displacement
+
+        for _ in range(iterations):
+            next_points = [points[0]]
+            for point_a, point_b in zip(points, points[1:]):
+                mid_x = (point_a[0] + point_b[0]) / 2.0
+                mid_y = (point_a[1] + point_b[1]) / 2.0
+                dx = point_b[0] - point_a[0]
+                dy = point_b[1] - point_a[1]
+                length = math.hypot(dx, dy)
+                if length == 0:
+                    next_points.append(point_b)
+                    continue
+
+                normal_x = -dy / length
+                normal_y = dx / length
+                offset = rng.uniform(-current_displacement, current_displacement)
+                mid_x += normal_x * offset
+                mid_y += normal_y * offset
+                next_points.append((mid_x, mid_y))
+                next_points.append(point_b)
+            points = next_points
+            current_displacement *= 0.5
+
+        return [(round(x), round(y)) for x, y in points]
+
+    @staticmethod
+    def _draw_layered_lightning(
+        surface: pygame.Surface,
+        points: list[tuple[int, int]],
+        glow_color: tuple[int, int, int, int],
+        hot_color: tuple[int, int, int, int],
+        core_color: tuple[int, int, int, int],
+        outer_glow: pygame.Surface | None = None,
+        inner_glow: pygame.Surface | None = None,
+    ) -> None:
+        if len(points) < 2:
+            return
+
+        blit_glow = outer_glow is None or inner_glow is None
+        if outer_glow is None:
+            outer_glow = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        if inner_glow is None:
+            inner_glow = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+
+        pygame.draw.lines(outer_glow, glow_color, False, points, 8)
+        pygame.draw.lines(inner_glow, hot_color, False, points, 4)
+        if blit_glow:
+            surface.blit(outer_glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            surface.blit(inner_glow, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+        pygame.draw.lines(surface, core_color, False, points, 1)
+
     @staticmethod
     def _is_floor_sprite_tile(tile) -> bool:
         if tile is None:
             return False
 
         tile_type = type(tile).__name__
-        if tile_type == "FakeWall":
-            return bool(getattr(tile, "visited", False))
-
         return any(
             name in tile_type
             for name in (
@@ -1805,6 +2156,11 @@ class SceneRenderer:
                 "BrokenGearTile",
             )
         )
+
+    @staticmethod
+    def _is_side_surface_only_ladder(tile) -> bool:
+        tile_type = type(tile).__name__ if tile is not None else ""
+        return "LadderDown" in tile_type or "LadderUp" in tile_type
 
     @staticmethod
     def _is_chest_tile(tile) -> bool:
@@ -1941,10 +2297,6 @@ class SceneRenderer:
             return {1: 1.08, 2: 0.88, 3: 0.68}.get(depth, 0.68)
         if kind == "rotator":
             return {1: 0.56, 2: 0.46, 3: 0.34}.get(depth, 0.34)
-        if kind == "funhouse_teleporter":
-            return {1: 0.66, 2: 0.54, 3: 0.42}.get(depth, 0.42)
-        if kind == "fake_path":
-            return {1: 0.34, 2: 0.28, 3: 0.22}.get(depth, 0.22)
         if kind == "decorative_prop":
             return {1: 0.62, 2: 0.50, 3: 0.38}.get(depth, 0.38)
         return {1: 1.0, 2: 0.8, 3: 0.6}.get(depth, 0.6)
@@ -2083,9 +2435,6 @@ class SceneRenderer:
         next_zone=None,
         depth: int | None = None,
     ) -> pygame.Rect:
-        if type(tile).__name__ == "FakeWall":
-            return rect
-
         if not self._is_floor_sprite_tile(tile) or is_wall(center_tile):
             return rect
 
@@ -2115,6 +2464,9 @@ class SceneRenderer:
             return None
 
         if not SceneRenderer._is_floor_sprite_tile(tile):
+            return rect
+
+        if "BossRoom" in type(tile).__name__:
             return rect
 
         if SceneRenderer._is_chest_tile(tile):

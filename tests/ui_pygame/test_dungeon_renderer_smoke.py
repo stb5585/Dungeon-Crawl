@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import json
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pygame
 
+from src.core import map_tiles
 from src.ui_pygame.gui.dungeon.assets import TEXTURE_PATHS, TextureLibrary
 from src.ui_pygame.gui.dungeon.geometry import build_depth_rect, build_next_depth_rect, build_zone_geometry
 from src.ui_pygame.gui.dungeon.geometry import Quad
@@ -170,11 +172,15 @@ class FunhouseTeleporter:
 
 
 class BossRoom:
-    enter = False
+    enter = True
 
     def __init__(self, enemy=None, defeated=False):
         self.enemy = enemy
         self.defeated = defeated
+
+
+class JesterBossRoom(BossRoom):
+    pass
 
 
 class DummyEnemy:
@@ -213,6 +219,60 @@ def _build_scene_commands(scene_renderer: SceneRenderer, player, world):
         for depth in (1, 2, 3)
     }
     return scene_renderer._build_render_commands(scene, zones), zones
+
+
+def _render_side_forward_tile_case(tile, side: str, side_depth: int):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+
+    side_y = -1 if side == "left" else 1
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (3, 0, 1): OpenTile(),
+        (0, side_y, 1): OpenTile(),
+        (1, side_y, 1): OpenTile(),
+        (2, side_y, 1): OpenTile(),
+        (3, side_y, 1): OpenTile(),
+    }
+    world[(side_depth, side_y, 1)] = tile
+
+    projected_calls = []
+    rendered_tiles = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+    original_render_special_tile = scene_renderer._render_special_tile
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        projected_calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        rendered_tiles.append((type(tile).__name__ if tile else None, depth, side, lateral_view))
+        return original_render_special_tile(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer._render_special_tile = recording_render_special_tile
+
+    try:
+        scene_renderer.render(player, world)
+        return (
+            projected_calls,
+            rendered_tiles,
+            scene_renderer.textures.get_surface_slot_overrides(),
+        )
+    finally:
+        pygame.quit()
 
 
 def test_dungeon_renderer_smoke():
@@ -391,6 +451,21 @@ def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
     tile = WallWithPosition()
 
     assert SceneRenderer._get_wall_overlay_key(tile, depth=1) == SceneRenderer._get_wall_overlay_key(tile, depth=3)
+
+
+def test_texture_library_brightens_funhouse_floor_texture():
+    pygame.init()
+    base = pygame.Surface((2, 2), pygame.SRCALPHA)
+    base.fill((42, 34, 26, 180))
+
+    brightened = TextureLibrary._brighten_funhouse_floor_texture(base)
+
+    assert brightened.get_at((0, 0)).r > base.get_at((0, 0)).r
+    assert brightened.get_at((0, 0)).g > base.get_at((0, 0)).g
+    assert brightened.get_at((0, 0)).b > base.get_at((0, 0)).b
+    assert brightened.get_at((0, 0)).a == base.get_at((0, 0)).a
+
+    pygame.quit()
 
 
 def test_wall_overlays_are_opt_in(monkeypatch):
@@ -664,14 +739,10 @@ def test_texture_library_loads_migrated_special_and_enemy_sprites():
         "secret_shop",
         "unobtainium",
         "rotator",
-        "funhouse_teleporter",
-        "fake_path",
     ):
         assert textures.get_special_texture(key) is not None
 
     assert "special:rotator" not in textures.get_asset_fallbacks()
-    assert "special:funhouse_teleporter" not in textures.get_asset_fallbacks()
-    assert "special:fake_path" not in textures.get_asset_fallbacks()
     assert textures.get_enemy_texture("Minotaur") is not None
 
     pygame.quit()
@@ -1763,7 +1834,7 @@ def test_scene_renderer_keeps_hidden_fake_wall_as_wall_without_marker():
     scene_renderer.render(player, world)
 
     assert ("d1:back_wall", "wall") in projected_calls
-    assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
+    assert special_calls == []
 
     pygame.quit()
 
@@ -1818,7 +1889,7 @@ def test_scene_renderer_marks_revealed_fake_wall_as_translucent_wall_panel():
 
     assert ("d1:back_wall", "wall") not in projected_calls
     assert translucent_wall_calls == [(1, None, False)]
-    assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
+    assert special_calls == []
 
     pygame.quit()
 
@@ -1863,7 +1934,7 @@ def test_scene_renderer_marks_revealed_side_fake_wall_as_translucent_wall_panel(
     scene_renderer.render(player, world)
 
     assert (1, "left", True) in translucent_wall_calls
-    assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
+    assert special_calls == []
 
     pygame.quit()
 
@@ -2165,6 +2236,7 @@ def test_side_floor_special_clip_rect_keeps_chest_behind_blocking_corner():
     right_clip = SceneRenderer._get_side_special_clip_rect(rect, Boulder(), "right", center_tile=WallTile())
     portal_clip = SceneRenderer._get_side_special_clip_rect(rect, Portal(), "left", center_tile=WallTile())
     chest_clip = SceneRenderer._get_side_special_clip_rect(rect, ChestRoom(), "left", center_tile=WallTile())
+    boss_clip = SceneRenderer._get_side_special_clip_rect(rect, BossRoom(), "left", center_tile=WallTile())
     unclipped_boulder = SceneRenderer._get_side_special_clip_rect(rect, Boulder(), "left", center_tile=OpenTile())
 
     assert left_render.w > rect.width
@@ -2184,6 +2256,7 @@ def test_side_floor_special_clip_rect_keeps_chest_behind_blocking_corner():
 
     assert portal_clip == rect
     assert chest_clip == rect
+    assert boss_clip == rect
     assert unclipped_boulder is None
 
     pygame.quit()
@@ -2476,6 +2549,28 @@ def test_scene_renderer_routes_side_ladder_floor_through_center_floor_slot_overr
     pygame.quit()
 
 
+def test_scene_renderer_keeps_side_ladder_down_surface_only_at_all_visible_depths():
+    for side in ("left", "right"):
+        for side_depth in (1, 2, 3):
+            calls, rendered_tiles, overrides = _render_side_forward_tile_case(LadderDown(), side, side_depth)
+            assert ("LadderDown", side_depth, side, True) not in rendered_tiles
+
+            if side_depth == 3:
+                assert not any(texture_key == "floor_pit" for _panel_id, texture_key in calls)
+                assert overrides == {}
+                continue
+
+            surface_depth = side_depth + 1
+            slot_suffix = "xm1" if side == "left" else "xp1"
+            assert overrides == {
+                f"floor:visible:d{surface_depth}:{slot_suffix}": "floor_pit",
+            }
+            assert any(
+                panel_id.startswith(f"d{surface_depth}:center_floor_slot") and texture_key == "floor_pit"
+                for panel_id, texture_key in calls
+            )
+
+
 def test_scene_renderer_localizes_current_underground_spring_floor_to_center_slot():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -2716,7 +2811,6 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
         SecretShop(),
         WarpPoint(),
         Rotator(),
-        FunhouseTeleporter(active=True),
         BossRoom(enemy=DummyEnemy("Minotaur")),
         BossRoom(enemy=DummyEnemy("Jester")),
     )
@@ -2737,14 +2831,13 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
     assert ("rotator", 89) in special_calls
-    assert ("funhouse_teleporter", 105) in special_calls
     assert ("Minotaur", 160) in enemy_calls
     assert ("Jester", 104) in enemy_calls
 
     pygame.quit()
 
 
-def test_scene_renderer_skips_inactive_funhouse_teleporter_sprite():
+def test_scene_renderer_skips_funhouse_teleporter_sprite():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
     presenter = DummyPresenter(width=640, height=480, screen=screen)
@@ -2761,16 +2854,16 @@ def test_scene_renderer_skips_inactive_funhouse_teleporter_sprite():
     scene_renderer.textures.get_special_texture = recording_get_special_texture
 
     before = pygame.image.tostring(screen, "RGBA")
-    scene_renderer._render_special_tile(
-        FunhouseTeleporter(active=False),
-        rect,
-        darkness=0.0,
-        depth=1,
-    )
-    after = pygame.image.tostring(screen, "RGBA")
-
-    assert not any(texture_key == "funhouse_teleporter" for texture_key, _size in special_calls)
-    assert before == after
+    for tile in (FunhouseTeleporter(active=True), FunhouseTeleporter(active=False)):
+        scene_renderer._render_special_tile(
+            tile,
+            rect,
+            darkness=0.0,
+            depth=1,
+        )
+        after = pygame.image.tostring(screen, "RGBA")
+        assert not any(texture_key == "funhouse_teleporter" for texture_key, _size in special_calls)
+        assert before == after
 
     pygame.quit()
 
@@ -2810,6 +2903,238 @@ def test_scene_renderer_renders_defeated_boss_replacement_visual():
     assert ("burial_site", 112) in special_calls
     assert enemy_calls == []
     assert before != after
+
+    pygame.quit()
+
+
+def test_scene_renderer_draws_jester_force_field_at_all_visible_depths_until_tokens_collected():
+    pygame.init()
+    try:
+        for jester_depth in (1, 2, 3):
+            screen = pygame.display.set_mode((640, 480))
+            presenter = DummyPresenter(width=640, height=480, screen=screen)
+            scene_renderer = SceneRenderer(presenter, TextureLibrary())
+            player = DummyPlayer(facing="east")
+            world = {
+                (0, 0, 1): OpenTile(),
+                **{(depth, 0, 1): OpenTile() for depth in range(1, jester_depth)},
+                (jester_depth, 0, 1): JesterBossRoom(enemy=DummyEnemy("Jester")),
+            }
+
+            calls = []
+            boss_calls = []
+            render_order = []
+
+            def recording_render_force_field(rect, darkness, depth, *, body=True, arcs=True):
+                if body:
+                    render_order.append("force_field_body")
+                if arcs:
+                    render_order.append("force_field_arcs")
+                calls.append((rect.copy(), darkness, depth, body, arcs))
+
+            def recording_render_boss_enemy(tile, rect, darkness, depth, side=None, lateral_view=False):
+                render_order.append("boss")
+                boss_calls.append((tile, rect.copy(), darkness, depth, side, lateral_view))
+
+            scene_renderer._render_jester_force_field = recording_render_force_field
+            scene_renderer._render_boss_enemy = recording_render_boss_enemy
+
+            scene_renderer.render(player, world)
+
+            view_w, view_h = scene_renderer._get_viewport_size()
+            depth_rect = build_depth_rect(view_w, view_h, jester_depth)
+            expected_zone = build_zone_geometry(
+                depth_rect,
+                build_next_depth_rect(depth_rect),
+                depth=jester_depth,
+            )
+            expected_rect = pygame.Rect(expected_zone.back_wall_rect.to_int_tuple())
+
+            assert len(calls) == 1
+            assert calls[0][0] == expected_rect
+            assert calls[0][2] == jester_depth
+            assert calls[0][3:] == (True, True)
+            assert len(boss_calls) == 1
+            assert render_order == ["boss", "force_field_body", "force_field_arcs"]
+
+            calls.clear()
+            boss_calls.clear()
+            render_order.clear()
+            player.special_inventory = {
+                "Jester Token": [
+                    SimpleNamespace(name="Jester Token") for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
+                ],
+            }
+
+            scene_renderer.render(player, world)
+
+            assert calls == []
+            assert len(boss_calls) == 1
+            assert render_order == ["boss"]
+    finally:
+        pygame.quit()
+
+
+def test_scene_renderer_draws_side_jester_force_field_in_front_of_side_boss():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer(facing="east")
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): WallTile(),
+        (0, -1, 1): OpenTile(),
+        (1, -1, 1): JesterBossRoom(enemy=DummyEnemy("Jester")),
+    }
+
+    calls = []
+    boss_calls = []
+    render_order = []
+    boss_clips = []
+
+    def recording_render_force_field(rect, darkness, depth, *, body=True, arcs=True):
+        if body:
+            render_order.append("force_field_body")
+        if arcs:
+            render_order.append("force_field_arcs")
+        calls.append((rect.copy(), darkness, depth, body, arcs))
+
+    def recording_render_boss_enemy(tile, rect, darkness, depth, side=None, lateral_view=False):
+        render_order.append("boss")
+        boss_clips.append(screen.get_clip().copy())
+        boss_calls.append((tile, rect.copy(), darkness, depth, side, lateral_view))
+
+    scene_renderer._render_jester_force_field = recording_render_force_field
+    scene_renderer._render_boss_enemy = recording_render_boss_enemy
+
+    scene_renderer.render(player, world)
+    view_w, view_h = scene_renderer._get_viewport_size()
+    depth1_zone = build_zone_geometry(
+        build_depth_rect(view_w, view_h, 1),
+        build_next_depth_rect(build_depth_rect(view_w, view_h, 1)),
+        depth=1,
+    )
+    expected_clip = SceneRenderer._get_side_opening_rect(depth1_zone, "left")
+
+    assert len(boss_calls) == 1
+    assert boss_calls[0][3:] == (1, "left", True)
+    assert boss_clips == [expected_clip]
+    assert len(calls) == 1
+    assert calls[0][2:] == (1, True, True)
+    assert render_order == ["boss", "force_field_body", "force_field_arcs"]
+
+    pygame.quit()
+
+
+def test_scene_renderer_sizes_side_jester_from_opening_height():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    rect = pygame.Rect(0, 120, 64, 240)
+    texture_calls = []
+
+    def recording_get_enemy_texture(enemy_name, size=None):
+        texture_calls.append((enemy_name, size))
+        return pygame.Surface((size, size), pygame.SRCALPHA)
+
+    scene_renderer.textures.get_enemy_texture = recording_get_enemy_texture
+
+    scene_renderer._render_boss_enemy(
+        JesterBossRoom(enemy=DummyEnemy("Jester")),
+        rect,
+        darkness=0.0,
+        depth=1,
+        side="left",
+        lateral_view=True,
+    )
+
+    assert texture_calls == [("Jester", 156)]
+
+    pygame.quit()
+
+
+def test_scene_renderer_jester_force_field_draws_overlay_pixels():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+
+    before = pygame.image.tostring(screen, "RGBA")
+    scene_renderer._render_jester_force_field(
+        pygame.Rect(120, 120, 160, 160),
+        darkness=0.0,
+        depth=1,
+    )
+    after = pygame.image.tostring(screen, "RGBA")
+
+    assert before != after
+    assert any(
+        screen.get_at((x, y)).g > 90 and screen.get_at((x, y)).b > 100
+        for x in range(120, 280)
+        for y in range(120, 280)
+    )
+
+    pygame.quit()
+
+
+def test_scene_renderer_jester_force_field_remains_visible_with_darkness():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+
+    before = pygame.image.tostring(screen, "RGBA")
+    scene_renderer._render_jester_force_field(
+        pygame.Rect(120, 120, 160, 160),
+        darkness=0.65,
+        depth=3,
+    )
+    after = pygame.image.tostring(screen, "RGBA")
+
+    assert before != after
+    assert any(
+        screen.get_at((x, y)).g > 110 and screen.get_at((x, y)).b > 115
+        for x in range(120, 280)
+        for y in range(120, 280)
+    )
+
+    pygame.quit()
+
+
+def test_scene_renderer_caches_jester_force_field_body_surface():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    rect = pygame.Rect(120, 120, 160, 160)
+
+    scene_renderer._render_jester_force_field(rect, darkness=0.65, depth=3, arcs=False)
+    cache_size_after_first_render = len(scene_renderer._jester_force_field_body_cache)
+    scene_renderer._render_jester_force_field(rect, darkness=0.65, depth=3, arcs=False)
+
+    assert cache_size_after_first_render == 1
+    assert len(scene_renderer._jester_force_field_body_cache) == 1
+
+    pygame.quit()
+
+
+def test_scene_renderer_prewarms_jester_force_field_body_cache_for_area():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer(facing="east")
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): OpenTile(),
+        (8, 8, 1): JesterBossRoom(enemy=DummyEnemy("Jester")),
+    }
+
+    scene_renderer.render(player, world)
+
+    assert len(scene_renderer._jester_force_field_body_cache) > 1
 
     pygame.quit()
 
@@ -3101,6 +3426,28 @@ def test_scene_renderer_routes_left_side_ladder_ceiling_through_center_ceiling_s
     }
 
     pygame.quit()
+
+
+def test_scene_renderer_keeps_side_ladder_up_surface_only_at_all_visible_depths():
+    for side in ("left", "right"):
+        for side_depth in (1, 2, 3):
+            calls, rendered_tiles, overrides = _render_side_forward_tile_case(LadderUp(), side, side_depth)
+            assert ("LadderUp", side_depth, side, True) not in rendered_tiles
+
+            if side_depth == 3:
+                assert not any(texture_key == "ceiling_pit" for _panel_id, texture_key in calls)
+                assert overrides == {}
+                continue
+
+            surface_depth = side_depth + 1
+            slot_suffix = "xm1" if side == "left" else "xp1"
+            assert overrides == {
+                f"ceiling:visible:d{surface_depth}:{slot_suffix}": "ceiling_pit",
+            }
+            assert any(
+                panel_id.startswith(f"d{surface_depth}:center_ceiling_slot") and texture_key == "ceiling_pit"
+                for panel_id, texture_key in calls
+            )
 
 
 def test_scene_renderer_routes_side_wall_through_wall_slot_commands():

@@ -60,8 +60,6 @@ DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "secret_shop": "special_tiles/secret_shop.png",
     "unobtainium": "special_tiles/unobtainium.png",
     "rotator": "map_files/tileset/rotator.png",
-    "funhouse_teleporter": "map_files/tileset/funhouse_teleporter.png",
-    "fake_path": "map_files/tileset/fake_wall.png",
 }
 
 SPECIAL_TEXTURE_PATHS = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
@@ -108,8 +106,6 @@ SPECIAL_FALLBACK_COLORS = {
     "secret_shop": (120, 80, 60),
     "unobtainium": (110, 180, 190),
     "rotator": (150, 118, 78),
-    "funhouse_teleporter": (128, 92, 188),
-    "fake_path": (92, 88, 82),
     "rubble": (102, 96, 88),
     "fungus_patch": (88, 116, 82),
     "crystal_cluster": (92, 148, 176),
@@ -275,12 +271,15 @@ class TextureLibrary:
         for texture_key, rel_path in self.texture_paths.items():
             full_path = self.tileset_base / rel_path
             if os.path.exists(full_path):
-                self._textures[texture_key] = self._load_image_surface(full_path)
+                self._textures[texture_key] = self._prepare_texture(
+                    texture_key,
+                    self._load_image_surface(full_path),
+                )
             else:
                 self._record_asset_fallback("texture", texture_key, full_path)
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
                 fallback.fill((*FALLBACK_COLORS.get(texture_key, FALLBACK_COLORS["wall"]), 255))
-                self._textures[texture_key] = fallback
+                self._textures[texture_key] = self._prepare_texture(texture_key, fallback)
 
         self._loaded = True
 
@@ -290,6 +289,18 @@ class TextureLibrary:
         if pygame.display.get_surface() is not None:
             return surface.convert_alpha()
         return surface.copy()
+
+    @classmethod
+    def _prepare_texture(cls, texture_key: str, surface: pygame.Surface) -> pygame.Surface:
+        if texture_key == "floor_funhouse":
+            return cls._brighten_funhouse_floor_texture(surface)
+        return surface
+
+    @staticmethod
+    def _brighten_funhouse_floor_texture(surface: pygame.Surface) -> pygame.Surface:
+        brightened = surface.copy()
+        brightened.fill((72, 58, 88, 0), special_flags=pygame.BLEND_RGB_ADD)
+        return brightened
 
     def get_texture(self, texture_key: str) -> pygame.Surface:
         self.ensure_loaded()

@@ -476,11 +476,27 @@ def test_move_forward_branches_and_turning(monkeypatch):
         manager._enemy_combat_sprite_image_path("jester.png"),
     )
 
-    player.special_inventory["Jester Token"] = [SimpleNamespace(name="Jester Token") for _ in range(4)]
+    player.special_inventory["Jester Token"] = [
+        SimpleNamespace(name="Jester Token")
+        for _ in range(dungeon_manager.map_tiles.JESTER_TOKENS_REQUIRED)
+    ]
     destination = player.world_dict[(5, 4, 1)]
     assert manager.move_forward() is True
     assert (player.location_x, player.location_y) == (5, 4)
     assert destination.visited is True
+
+    player.location_x, player.location_y = (5, 5)
+    player.special_inventory = {}
+    player.world_dict[(5, 5, 1)] = DummyTile(enter=True)
+    assert manager.move_forward() is False
+    assert "force field" in manager.messages[-1].lower()
+
+    player.special_inventory["Jester Token"] = [
+        SimpleNamespace(name="Jester Token")
+        for _ in range(dungeon_manager.map_tiles.JESTER_TOKENS_REQUIRED)
+    ]
+    assert manager.move_forward() is True
+    assert (player.location_x, player.location_y) == (5, 4)
 
     player.location_x, player.location_y = (5, 5)
     player.step_calls.clear()
@@ -595,6 +611,11 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     )
     manager._interact_chest(funhouse, "FunhouseMimicChest")
     assert any(call[0] == "Jester Token" and call[1].get("rare") is True for call in player.inventory_calls)
+    assert loot_calls[-2][0:2] == ("Fun Loot", "Chest")
+    assert loot_calls[-1][0:2] == ("Jester Token", "Mimic Reward")
+    assert loot_calls[-1][2]["flush_events"] is True
+    assert loot_calls[-1][2]["require_key_release"] is True
+    assert callable(loot_calls[-1][2]["background_draw_func"])
 
     empty = SimpleNamespace(open=False, locked=False, loot=None, generate_loot=lambda: None)
     manager._interact_chest(empty, "Chest")

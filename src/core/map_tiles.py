@@ -288,6 +288,15 @@ def jester_force_field_blocks(tile, player_char, facing: str) -> bool:
     return jester_token_count(player_char) < JESTER_TOKENS_REQUIRED
 
 
+def jester_force_field_blocks_entry(tile, player_char) -> bool:
+    """Return True when direct entry into the Jester boss room is still sealed."""
+    if type(tile).__name__ != "JesterBossRoom":
+        return False
+    if getattr(tile, "defeated", False):
+        return False
+    return jester_token_count(player_char) < JESTER_TOKENS_REQUIRED
+
+
 def deactivate_funhouse_teleporters(player_char) -> None:
     """Turn off all funhouse entry teleporters after the Jester is defeated."""
     for tile in getattr(player_char, "world_dict", {}).values():

@@ -414,11 +414,28 @@ class TestSpecialTiles:
         assert "force field" in tile.intro_text(game).lower()
         assert "force field" in tile.special_text(game).lower()
 
-        player.special_inventory["Jester Token"] = [items.JesterToken() for _ in range(4)]
+        player.special_inventory["Jester Token"] = [
+            items.JesterToken() for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
+        ]
         actions = tile.available_actions(player)
         assert map_tiles.actions_dict["MoveForward"] in actions
         assert "fades" in tile.intro_text(game).lower()
         assert "drops" in tile.special_text(game).lower()
+
+    def test_jester_force_field_blocks_direct_boss_entry_until_tokens_collected(self):
+        player = _make_player()
+        boss = map_tiles.JesterBossRoom(0, -1, 7)
+
+        assert map_tiles.jester_force_field_blocks_entry(boss, player) is True
+
+        player.special_inventory["Jester Token"] = [
+            items.JesterToken() for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
+        ]
+        assert map_tiles.jester_force_field_blocks_entry(boss, player) is False
+
+        boss.defeated = True
+        player.special_inventory.clear()
+        assert map_tiles.jester_force_field_blocks_entry(boss, player) is False
 
     def test_underground_spring_handles_naivete_drink_nimue_and_excalibur(self):
         player = _make_player(class_name="Summoner", pro_level=1)

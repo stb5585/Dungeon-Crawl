@@ -574,7 +574,10 @@ class DungeonManager:
                 return False
 
         current_tile = self.get_current_tile()
-        if current_tile and map_tiles.jester_force_field_blocks(current_tile, self.player_char, self.player_char.facing):
+        if (
+            current_tile
+            and map_tiles.jester_force_field_blocks(current_tile, self.player_char, self.player_char.facing)
+        ) or map_tiles.jester_force_field_blocks_entry(tile_ahead, self.player_char):
             self._show_special_event_dialogue(
                 map_tiles.JESTER_FORCE_FIELD_EVENT,
                 title="Jester",
@@ -979,6 +982,14 @@ class DungeonManager:
             if is_funhouse_mimic:
                 from src.core import items as items_module
                 token = items_module.JesterToken()
+                self._refresh_cached_frame()
+                self.loot_popup.show_loot(
+                    token,
+                    "Mimic Reward",
+                    background_draw_func=self._draw_cached_popup_background,
+                    flush_events=True,
+                    require_key_release=True,
+                )
                 self.player_char.modify_inventory(token, rare=True)
                 self.add_message(f"A shimmering {token.name} manifests as the Mimic dissolves!")
         else:
