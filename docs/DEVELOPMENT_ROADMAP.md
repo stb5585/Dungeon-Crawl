@@ -112,7 +112,7 @@ Completed in the June 2026 P0 pass:
    - Audio diagnostics and location/combat music routing.
 3. Updated roadmap and playtest checklist entries for the completed P0 pass.
 
-Next active priority: `P3 - Core Refactoring And Test Confidence`.
+Next active priority: `P4 - Content And Systems Expansion`.
 
 ### P1 - Pygame UX Polish
 
@@ -203,7 +203,12 @@ Status: `Done`
 
 ### P3 - Core Refactoring And Test Confidence
 
-Status: `Active`
+Status: `Done`
+
+P3 closure note: the remaining work after the final audit is future content or
+opportunistic refactoring. There are no explicit `pytest.mark.skip` or `xfail`
+tests left in the focused test tree search, and passive Power Up placeholders
+remain P4 content work rather than P3 blockers.
 
 1. Continue effects-system integration beyond the migration.
    - Replace older inline combat logic in legacy ability code with composable effects where practical.
@@ -307,10 +312,14 @@ Status: `Active`
    - 2026-06-16: Added focused `character.py` type aliases and attribute annotations for effect maps,
      inventories, ability books, weapon-damage results, and defense-resolution tuples.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
+   - 2026-06-16: Audited the test tree for explicit `pytest.mark.skip` / `xfail` usage; no actionable skipped
+     tests remain in the focused search.
+   - 2026-06-16: Deferred passive Power Up final gameplay effects and item/content TODOs to P4 because they are
+     feature/content work rather than missing P3 refactoring coverage.
 
 ### P4 - Content And Systems Expansion
 
-Status: `Planned`
+Status: `Active`
 
 1. Quest and realm expansion.
    - Finish or expand Playhouse/Jester content.

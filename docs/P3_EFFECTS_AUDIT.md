@@ -107,7 +107,7 @@ Last updated: 2026-06-16
   documented and typed as active shared defense contracts for legacy spells,
   YAML abilities, and composite effects rather than planned stubs.
 
-## Follow-Up Work
+## Closure Notes
 
 - Enemy priority coverage now includes redundant target-status skips and
   target-positive-effect Dispel selection.
@@ -129,5 +129,10 @@ Last updated: 2026-06-16
   factories, fixed resistance maps, and helper-built spellbooks.
 - `Character` now carries focused type aliases and attribute annotations for
   effect maps, inventories, ability books, and combat result tuple contracts.
-- Continue extracting shared combat/healing result helpers only where new
-  contract coverage exposes duplication or drift.
+- A focused search found no explicit `pytest.mark.skip` / `xfail` tests left to
+  convert for P3.
+- Passive Power Up final gameplay effects, item TODOs, and content-expansion
+  placeholders are deferred to P4; their current reusable-result contracts are
+  covered, so they are not P3 blockers.
+- Future shared combat/healing helper extraction should stay evidence-driven:
+  extract only where new contract coverage exposes duplication or drift.
