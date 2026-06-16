@@ -118,6 +118,8 @@ Last updated: 2026-06-16
   in `tests/core/test_ability_result_contracts.py`.
 - Remaining consumable/stat/status potion and Sanctuary scroll overrides now
   carry typed `use()` signatures matching the base item call contract.
+- Loot helper annotations now reflect that `random_item()` returns an item
+  class/factory from the rarity cache rather than an instantiated item.
 - Enemy catalog helpers now carry typed contracts around random enemy override
   factories, fixed resistance maps, and helper-built spellbooks.
 - Continue extracting shared combat/healing result helpers only where new

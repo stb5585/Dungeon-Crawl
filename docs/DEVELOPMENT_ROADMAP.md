@@ -285,6 +285,8 @@ Status: `Active`
      signatures to reflect optional targets and flexible kwargs without changing runtime behavior.
    - 2026-06-16: Added typed `use()` signatures to remaining consumable/stat/status potion and Sanctuary
      scroll overrides so they match the base item call contract.
+   - 2026-06-16: Corrected loot helper type contracts so `random_item()` and the rarity cache are typed as
+     item-class factories, matching existing inventory and loot-table usage.
    - 2026-06-16: Tightened enemy catalog helper types around random encounter selection, debug enemy
      overrides, fixed resistance maps, and spellbook construction.
    - 2026-06-16: Added typed signatures to `DataDrivenHealSpell` cast, hybrid heal, HoT, and out-of-combat

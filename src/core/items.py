@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 # Functions
-_rarity_table_cache: dict[str, list] | None = None
+_rarity_table_cache: dict[str, list[type[Item]]] | None = None
 _RARITY_BUCKETS = np.array([1.0, 0.9, 0.8, 0.75, 0.50, 0.4, 0.2, 0.0])
 _STAT_THEME_PREFIXES = {
     "strength": "Mighty",
@@ -104,13 +104,13 @@ def item_metadata_lines(item: object) -> list[str]:
     return lines
 
 
-def _build_rarity_table() -> dict[str, list]:
+def _build_rarity_table() -> dict[str, list[type[Item]]]:
     """Build and cache the rarity-bucketed loot table from items_dict."""
     global _rarity_table_cache
     if _rarity_table_cache is not None:
         return _rarity_table_cache
 
-    rarity_table: dict[str, list] = {str(i): [] for i in range(1, 9)}
+    rarity_table: dict[str, list[type[Item]]] = {str(i): [] for i in range(1, 9)}
     for typ, typ_dict in items_dict.items():
         if typ == "Weapon":
             for handed in ["1-Handed", "2-Handed"]:
@@ -132,7 +132,7 @@ def _build_rarity_table() -> dict[str, list]:
     return _rarity_table_cache
 
 
-def random_item(z: int) -> Item:
+def random_item(z: int) -> type[Item]:
     """
     Returns a random item based on the given integer.
     Clamps z to the valid range [1, 8].
