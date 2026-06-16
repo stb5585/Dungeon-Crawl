@@ -15,17 +15,17 @@
   - Expected: Overlay sprites have transparent backgrounds, muted colors, and soft contact shadows without visible green/chroma fringes.
 - [ ] Face ordinary walls across multiple floors.
   - Expected: Torch/sconce overlays appear occasionally, with cleaner lit fixtures high in the dungeon and more broken/unlit fixtures deeper down.
-- [ ] Enter and walk along funhouse boundaries.
+- [x] Enter and walk along funhouse boundaries.
   - Expected: Exterior funhouse boundaries use the funhouse boundary wall material at side depths and remain impassable.
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
   - Expected: Door/wall surface-slot states render consistently without stale slot overrides from a previous view.
-- [ ] Face a blocking center wall while one side corridor or side opening remains visible.
+- [x] Face a blocking center wall while one side corridor or side opening remains visible.
   - Expected: The center wall remains the dominant forward face, while the visible side opening still shows its side wall, door, corridor face, or floor/ceiling lane cue.
-- [ ] Face an unvisited FakeWall/Fake Path from the dungeon view.
+- [x] Face an unvisited FakeWall/Fake Path from the dungeon view.
   - Expected: The fake path is not visually revealed and renders like an ordinary wall until discovered.
-- [ ] Step through or revisit a discovered FakeWall/Fake Path.
+- [x] Step through or revisit a discovered FakeWall/Fake Path.
   - Expected: The revealed fake path behaves like an open passage and shows a translucent normal wall panel rather than a tiny wall sprite or unrelated marker.
-- [ ] Revisit a room after moving through side corridors and backtracking.
+- [x] Revisit a room after moving through side corridors and backtracking.
   - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
 - [ ] Run renderer diagnostics after moving through several dungeon views.
   - Expected: Projected-surface cache diagnostics report bounded cache size, remaining capacity, and full/not-full state.
@@ -111,14 +111,11 @@
 - [x] Enter combat with more than six available actions, such as debug actions plus item/spell/skill options.
   - Expected: The action menu compacts into the bottom command panel without overflowing below the screen.
   - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
-- [ ] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in
-  the script during an ability debug run.
-  - Expected: Random encounters use the requested debug enemy only while the environment variable is active,
-    then return to normal catalog selection.
+- [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in the script during an ability debug run.
+  - Expected: Random encounters use the requested debug enemy only while the environment variable is active, then return to normal catalog selection.
 - [ ] Use `src.core.enemies.set_random_enemy_override("Test")` from a Python harness, then call
   `src.core.enemies.clear_random_enemy_override()`.
-  - Expected: The explicit helper still forces targeted encounters and takes precedence over the environment
-    variable when both are set.
+  - Expected: The explicit helper still forces targeted encounters and takes precedence over the environment variable when both are set.
 - [x] Inspect enemy details with Vision, Reveal, Seeker, or Inquisitor sight during a boss fight.
   - Expected: Boss fights suppress enemy detail visibility even when ordinary encounters would reveal HP, type, or resistance details.
 
@@ -126,38 +123,38 @@
 - [x] Enter combat against early enemies such as Giant Rat, Skeleton, Goblin, and Slime.
   - Expected: The center combat enemy is a transparent full-body sprite, not a rectangular portrait or token.
   - Expected: Existing HP bars, menus, targeting, turn order, and combat mechanics are unchanged.
-- [ ] Enter combat against mid-game enemies such as Gnoll, Satyr, Vampire, Troll, and Dragonkin.
+- [x] Enter combat against mid-game enemies such as Gnoll, Satyr, Vampire, Troll, and Dragonkin.
   - Expected: Enemy weapons/body shapes match their current enemy definitions closely enough for combat readability.
   - Expected: Sprites preserve aspect ratio and do not cover the enemy HP bar or action menu.
-- [ ] Enter combat against late-game or boss enemies such as Beholder, Hydra, Red Dragon, Cerberus, and The Devil.
+- [x] Enter combat against late-game or boss enemies such as Beholder, Hydra, Red Dragon, Cerberus, and The Devil.
   - Expected: Large enemies use `enemy_combat_sprite_scale.json` for intentional size differences while remaining centered and readable.
   - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
 
 ### Main Menu
-- [ ] Load an existing save from the pygame Load Game screen.
+- [x] Load an existing save from the pygame Load Game screen.
   - Expected: The loading popup progress bar fills smoothly instead of advancing in visibly jumpy chunks.
-- [ ] Quit from a pygame session after visiting dungeon or popup-heavy screens.
+- [x] Quit from a pygame session after visiting dungeon or popup-heavy screens.
   - Expected: The game exits cleanly without leaving stale popup backgrounds or hanging the window.
-- [ ] Open several popups after moving between town, dungeon, and combat views.
+- [x] Open several popups after moving between town, dungeon, and combat views.
   - Expected: A stale or unavailable popup background falls back cleanly instead of repeating an old scene.
   - Expected: Popup-background diagnostics expose provider presence and fallback count after stale-provider fallbacks.
-- [ ] Open a yes/no or message confirmation after a screen transition.
+- [x] Open a yes/no or message confirmation after a screen transition.
   - Expected: The popup draws over a copied background instead of mutating the live screen surface.
-- [ ] Level up and open the stat-selection prompt after changing screens.
+- [x] Level up and open the stat-selection prompt after changing screens.
   - Expected: Level-up overlays use a copied background and do not smear or redraw over the live screen unexpectedly.
   - Expected: Level-up and stat-selection prompts accept the first fresh key once no key is held, even without a KEYUP event.
 - [ ] Open choice, reward, quantity, and code-entry popups after changing screens.
   - Expected: Each popup draws over the current copied view instead of reusing a live or empty background surface.
   - Expected: Confirmation, reward, quantity, and code-entry popups all wait for the same buffered-key release rule before accepting input.
   - Expected: If no keys are currently held, the next fresh key press is accepted even if no synthetic KEYUP event arrives first.
-- [ ] Enter combat or a character/shop selector after a previous key-driven transition.
+- [x] Enter combat or a character/shop selector after a previous key-driven transition.
   - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
   - Expected: Combat action-grid navigation accepts the first fresh movement/confirm key after turn start once pygame key state has been pumped.
-- [ ] Move through main, town, load-game, shop-selection, race, sex, class, and location menus after a prior key press.
+- [x] Move through main, town, load-game, shop-selection, race, sex, class, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
-- [ ] Open the in-dungeon popup menu after a key-driven transition.
+- [x] Open the in-dungeon popup menu after a key-driven transition.
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
-- [ ] Open inventory, equipment, or quest popups after a key-driven transition.
+- [x] Open inventory, equipment, or quest popups after a key-driven transition.
   - Expected: Popup menus ignore still-held buffered keys but accept the first fresh selection key without requiring a KEYUP event.
   - Expected: Holding Up or Down quick-scrolls long popup lists with a short repeat pause and without skipping selectable rows.
   - Expected: Long item descriptions wrap inside the details panel instead of running off-screen.
@@ -167,13 +164,13 @@
 - [ ] Resize the pygame window or test smaller supported resolutions with the modern menu enabled.
   - Expected: Panels remain aligned, text stays readable, and no UI elements overlap incoherently.
   - Expected: Equipment and effect text clips cleanly instead of spilling into neighboring panels.
-- [ ] Save and load after creating characters with different sex choices.
+- [x] Save and load after creating characters with different sex choices.
   - Expected: The load-game save summary shows Sex alongside Level, Race, and Class.
   - Expected: Inventory, equipment management, and character progression remain unchanged.
-- [ ] Open the pygame Character Menu before and after equipping a stronger weapon.
+- [x] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.
-- [ ] Open the pygame Character Menu before and after equipping stronger armor.
+- [x] Open the pygame Character Menu before and after equipping stronger armor.
   - Expected: The Defense stat includes equipped armor and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat defense only if armor-adjusted defense cannot be calculated.
 - [ ] Equip the special helmets and inspect their persistent effects.
@@ -242,15 +239,15 @@
 ## Regression Areas
 
 ### Save/Load
-- [ ] Save after receiving Old Keys, quit, and reload.
+- [x] Save after receiving Old Keys, quit, and reload.
   - Expected: The Old Key count persists.
   - Expected: Multi-key quest rewards survive a SaveManager round trip.
 - [ ] Open the Load Game menu after a failed or interrupted save attempt.
   - Expected: Only real `.save` files appear; temporary leftovers and directories are hidden.
-- [ ] Delete a real save file from the pygame Load Game menu.
+- [x] Delete a real save file from the pygame Load Game menu.
   - Expected: The delete action asks for confirmation before removing the selected save file.
   - Expected: The deleted save disappears from the list and the next visible save can still be loaded.
-- [ ] Attempt to delete or load invalid save entries such as blank names or folder-like entries.
+- [x] Attempt to delete or load invalid save entries such as blank names or folder-like entries.
   - Expected: The game refuses the invalid entry without loading directories, deleting directories, or creating blank-name saves.
 - [ ] Validate save names from a debug/menu path before attempting load or delete.
   - Expected: Normal `.save` names pass; blank, absolute, path-bearing, and non-text entries are rejected.
@@ -271,7 +268,7 @@
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
   - Expected: Tile-state diagnostics count valid entries, malformed positions, malformed state payloads, and positions absent from the loaded world.
   - Expected: Tile-state diagnostics identify restorable attribute counts and any unknown legacy/custom attribute keys.
-- [ ] Attempt to load a corrupted save file.
+- [x] Attempt to load a corrupted save file.
   - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 
 ### Quest Log
@@ -355,41 +352,41 @@
   - Expected: Negative delays are treated as instant actions and helper-created actions include debug metadata.
 
 ### Item Icons
-- [ ] Open the modern Character Menu equipment tab with weapon, armor, offhand, ring, pendant, and helmet states.
+- [x] Open the modern Character Menu equipment tab with weapon, armor, offhand, ring, pendant, and helmet states.
   - Expected: Implemented equipment slots display an archetype icon next to the item name, including `No Helmet`.
   - Expected: Empty equipment slots do not crash and preserve the existing slot text.
-- [ ] Open Inventory with weapons, armor, accessories, potions, scrolls, quest items, and special/key items.
+- [x] Open Inventory with weapons, armor, accessories, potions, scrolls, quest items, and special/key items.
   - Expected: Each visible inventory row displays an icon.
   - Expected: Repeated tier items intentionally share the same archetype icon.
-- [ ] Inspect consumables in Inventory.
+- [x] Inspect consumables in Inventory.
   - Expected: Health, mana, status/remedy, stat potion, elixir, and scroll-style items use their individual large artwork when selected.
-- [ ] Inspect quest/key/special items.
+- [x] Inspect quest/key/special items.
   - Expected: Quest items, keys, gems/specials, and crafting-material style items use individual large artwork when selected.
 - [ ] Add or simulate an unknown item with no explicit mapping.
   - Expected: The UI logs a warning, infers from item type/subtype when possible, and otherwise displays `generic_item`.
-- [ ] Navigate inventory actions after icons render.
+- [x] Navigate inventory actions after icons render.
   - Expected: Equip, use, drop, cancel, sorting, and scrolling behavior still works.
-- [ ] Save and reload a character after icon rendering.
+- [x] Save and reload a character after icon rendering.
   - Expected: Save data is unchanged; icons are derived from item names/types at render time.
 
 ### Large Item Artwork
-- [ ] Open Inventory and highlight weapons, armor, accessories, consumables, quest items, and unknown/fallback items.
+- [x] Open Inventory and highlight weapons, armor, accessories, consumables, quest items, and unknown/fallback items.
   - Expected: The selected-item detail panel shows large artwork while compact inventory rows still use small icons.
   - Expected: Long item names and wrapped descriptions do not overlap the artwork.
-- [ ] Open Equipment and move through weapon, armor, helmet, offhand, ring, and pendant slots.
+- [x] Open Equipment and move through weapon, armor, helmet, offhand, ring, and pendant slots.
   - Expected: Equipped item detail views show large artwork where panel width allows it.
   - Expected: The modern Character Menu Equipment tab uses large artwork in its slot cards rather than small icons.
   - Expected: Empty equipment slots do not crash.
-- [ ] Open a shop buy/sell list and highlight equippable and non-equippable items.
+- [x] Open a shop buy/sell list and highlight equippable and non-equippable items.
   - Expected: The left option panel shows the selected item artwork while buy/sell items are being browsed.
   - Expected: The selected item description panel remains readable and text-focused.
   - Expected: Price, owned count, and stat comparison panels continue to work.
-- [ ] Open a chest or reward popup that grants loot.
+- [x] Open a chest or reward popup that grants loot.
   - Expected: Loot entries show large artwork beside the item name, description, and stats.
   - Expected: Empty chest and unlock prompts are unchanged.
 - [ ] Simulate or create an item with no exact render mapping.
   - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
-- [ ] Save and reload after viewing item artwork.
+- [x] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
 ### Enemy Sprite Artwork
@@ -398,7 +395,7 @@
   - Expected: Boss combat, victory, defeat, and flee flows still function.
 - [ ] Simulate or create an enemy with no exact mapping, category, or useful name hint.
   - Expected: `generic_enemy` displays without crashing combat.
-- [ ] Inspect the combat target panel while Sight is active and inactive.
+- [x] Inspect the combat target panel while Sight is active and inactive.
   - Expected: Enemy sprite and name remain visible.
   - Expected: HP, weaknesses, resistances, and status icons appear only when combat visibility rules allow them.
 - [ ] Verify enemy sprite lookup does not affect saves.
@@ -408,11 +405,11 @@
   - Expected: Combat sprites and enemy tokens are used for their intended visual layers.
 
 ### Enemy Combat Sprites
-- [ ] Review the generated enemy combat sprite sheet.
+- [x] Review the generated enemy combat sprite sheet.
   - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows every sprite on a neutral dungeon background.
   - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
-- [ ] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.
+- [x] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.
   - Expected: Center combat uses `EnemyCombatSpriteManager` sprites from `enemy_combat_sprites/`.
   - Expected: Enemy portraits, enemy render artwork, and enemy tokens do not appear as the center enemy body.
-- [ ] Trigger damage and defeat animations.
+- [x] Trigger damage and defeat animations.
   - Expected: Damage flash and death fade/scale still apply to the transparent sprite surface.

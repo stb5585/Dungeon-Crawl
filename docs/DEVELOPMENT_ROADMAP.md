@@ -352,6 +352,8 @@ Status: `Active`
    - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.
    - Add way to inspect currently equipped items.
    - Equipment details when equipping should include whether the weapon is a one-handed or two-handed weapon.
+   - Armor should affect speed and other mobility-specific actions
+      - heavier armor affects more, making the choice more important
 5. Deeper balance tuning.
    - Revisit stat-dump tradeoffs.
    - Re-run race-baseline comparisons once class kits are stable.
@@ -509,6 +511,13 @@ Status: `Planned`
 - Log messages are still not being fully flushed to the logger before proceeding to the next turn or end of combat.
 - DOT status from Slot Machine does not apply a debuff to the statuses.
 - Lick should not be able to apply Hangover status.
+- When being teleported back to town after an event (e.g. Bring Him Home conclusion), there is a blink of the dungeon view after the town load screen before the town menu screen appears.
+- There is a slight hang right before combat, likely from loading the enemy sprite and combat overlay
+
+## Additional UX Improvements
+
+- The red border around the combat view when health is low should be improved; perhaps a pulsing, radial red overlay
+- The Alchemist and Jeweler should have tabs instead of the menu selection (similar to blacksmith)
 
 ## Resolved Archive
 
