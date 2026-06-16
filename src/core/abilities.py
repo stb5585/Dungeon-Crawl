@@ -256,12 +256,7 @@ class Skill(Ability):
         Returns:
             CombatResult: the result of the skill
         """
-        self._ensure_result()
-        self.result.actor = user
-        self.result.target = target
-        self.result.damage = 0
-        self.result.extra['cost'] = self.cost
-        return self.result
+        return self._reset_result(actor=user, target=target)
 
 
 class Spell(Ability):
@@ -331,12 +326,7 @@ class Spell(Ability):
         Returns:
             CombatResult: the result of the spell
         """
-        self._ensure_result()
-        self.result.actor = user
-        self.result.target = target
-        self.result.damage = 0
-        self.result.extra['cost'] = self.cost
-        return self.result
+        return self._reset_result(actor=user, target=target)
 
 
 """

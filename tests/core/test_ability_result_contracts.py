@@ -116,3 +116,59 @@ def test_weapon_data_driven_skill_records_weapon_damage_in_result():
     assert result.extra["last_damage"] == 14
     assert target.health.current == 486
     assert len(calls) == 2
+
+
+def test_legacy_base_spell_cast_resets_reusable_combat_result():
+    caster = _player()
+    target = _target()
+    spell = abilities.Spell("Legacy Probe", "A minimal legacy spell.")
+    spell.result.message = "stale text"
+    spell.result.hit = True
+    spell.result.damage = 99
+    spell.result.healing = 7
+    spell.result.effects_applied["Status"].append("Poison")
+    spell.result.extra["stale"] = True
+
+    result = spell.cast(caster, target)
+
+    _assert_result_contract(result, action="Legacy Probe", actor=caster, target=target)
+    assert result.hit is None
+    assert result.damage == 0
+    assert result.healing == 0
+    assert result.message == ""
+    assert result.effects_applied == {
+        "Status": [],
+        "Physical": [],
+        "Stat": [],
+        "Magic": [],
+        "Class": [],
+    }
+    assert result.extra == {"cost": 0, "type": "Spell", "subtype": ""}
+
+
+def test_legacy_base_skill_use_resets_reusable_combat_result():
+    user = _player("User")
+    target = _target()
+    skill = abilities.Skill("Legacy Feint", "A minimal legacy skill.")
+    skill.result.message = "old move"
+    skill.result.hit = False
+    skill.result.damage = 42
+    skill.result.healing = 3
+    skill.result.effects_applied["Physical"].append("Prone")
+    skill.result.extra["old"] = "value"
+
+    result = skill.use(user, target)
+
+    _assert_result_contract(result, action="Legacy Feint", actor=user, target=target)
+    assert result.hit is None
+    assert result.damage == 0
+    assert result.healing == 0
+    assert result.message == ""
+    assert result.effects_applied == {
+        "Status": [],
+        "Physical": [],
+        "Stat": [],
+        "Magic": [],
+        "Class": [],
+    }
+    assert result.extra == {"cost": 0, "type": "Skill", "subtype": ""}

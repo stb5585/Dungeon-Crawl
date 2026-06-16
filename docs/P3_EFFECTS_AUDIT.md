@@ -31,6 +31,12 @@ Last updated: 2026-06-16
   can rely on the same result field used by data-driven spells.
 - `tests/core/test_ability_result_contracts.py` now pins representative
   result-shape expectations for a damage spell and a multi-strike weapon skill.
+- Legacy base `Spell.cast()` and `Skill.use()` now reuse the shared
+  `Ability._reset_result()` lifecycle helper, preventing stale reusable
+  messages, effect buckets, extra data, or damage/healing fields from leaking
+  between old-style ability calls.
+- `tests/core/test_ability_result_contracts.py` also covers the legacy base
+  result reset contracts.
 - `StatusApplyEffect` now delegates Stun application to
   `Character.apply_stun`, keeping YAML/composed status effects aligned with the
   post-stun immunity window used by other stun sources.
@@ -47,8 +53,8 @@ Last updated: 2026-06-16
 
 ## Follow-Up Work
 
-- Add result-shape contract tests that compare representative legacy and YAML
-  abilities where true legacy implementations still exist.
+- Add result-shape contract tests that compare representative concrete legacy
+  and YAML abilities where true legacy implementations still exist.
 - Enemy priority coverage now includes redundant target-status skips and
   target-positive-effect Dispel selection.
 - Quest coverage now includes item-instance collection quests, partial progress
