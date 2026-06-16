@@ -103,6 +103,9 @@ Last updated: 2026-06-16
   debug launch scripts to force targeted encounters without code edits.
 - Enemy combat-item selection now recognizes the live `Elixir` subtype for
   mixed health/mana recovery while keeping `Both` as a compatibility alias.
+- `Character.handle_defenses()` and `Character.damage_reduction()` are now
+  documented and typed as active shared defense contracts for legacy spells,
+  YAML abilities, and composite effects rather than planned stubs.
 
 ## Follow-Up Work
 
@@ -124,5 +127,7 @@ Last updated: 2026-06-16
   class/factory from the rarity cache rather than an instantiated item.
 - Enemy catalog helpers now carry typed contracts around random enemy override
   factories, fixed resistance maps, and helper-built spellbooks.
+- `Character` now carries focused type aliases and attribute annotations for
+  effect maps, inventories, ability books, and combat result tuple contracts.
 - Continue extracting shared combat/healing result helpers only where new
   contract coverage exposes duplication or drift.

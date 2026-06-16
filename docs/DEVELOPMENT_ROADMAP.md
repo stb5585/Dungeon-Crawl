@@ -240,6 +240,8 @@ Status: `Active`
      `set_random_enemy_override()` / `clear_random_enemy_override()` helpers for ability playtesting.
    - 2026-06-16: Wired `DUNGEON_FORCE_ENEMY` into the random enemy override path so debug launchers can force
      ability-test encounters without code edits.
+   - 2026-06-16: Clarified `Character.handle_defenses()` / `damage_reduction()` as active shared spell/effect
+     defense contracts rather than stale stubs.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -302,6 +304,8 @@ Status: `Active`
      after the shield-helper cleanup, keeping Smite and Turn Undead wrapper contracts explicit.
    - 2026-06-16: Extended typed signatures across the remaining data-driven charging, magic-missile, Jump,
      and movement wrapper entry points.
+   - 2026-06-16: Added focused `character.py` type aliases and attribute annotations for effect maps,
+     inventories, ability books, weapon-damage results, and defense-resolution tuples.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
 
 ### P4 - Content And Systems Expansion

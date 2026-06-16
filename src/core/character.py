@@ -185,6 +185,15 @@ class StatusEffect:
     source: str = ""
 
 
+EffectMap = dict[str, StatusEffect]
+AbilityBook = dict[str, dict[str, object]]
+InventoryMap = dict[str, list[object]]
+WeaponDamageResult = tuple[str, bool, int]
+DefenseResolution = tuple[bool, str, int]
+AbsorptionResult = tuple[int, str, bool]
+DamageReductionResult = tuple[int, str]
+
+
 class Character:
     """
     A class representing a character in a game, encapsulating attributes such as health, 
@@ -225,7 +234,7 @@ class Character:
     """
 
 
-    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat):
+    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
         self.name = name
         self.race = None
         self.cls = None
@@ -234,58 +243,58 @@ class Character:
         self.mana = mana
         self.stats = stats
         self.combat = combat
-        self.gold = 0
-        self.equipment = {}
-        self.inventory = {}
-        self.spellbook = {'Spells': {},
-                          'Skills': {}}
-        self.status_effects = {"Berserk": StatusEffect(False, 0),
-                                "Blind": StatusEffect(False, 0),
-                                "Blind Rage": StatusEffect(False, 0),
-                                "Hangover": StatusEffect(False, 0),
-                                "Doom": StatusEffect(False, 0),
-                                "Poison": StatusEffect(False, 0, 0),
-                                "Silence": StatusEffect(False, 0),
-                                "Sleep": StatusEffect(False, 0),
-                                "Stun": StatusEffect(False, 0),
-                                "Defend": StatusEffect(False, 0, 0),
-                                "Steal Success": StatusEffect(False, 0),
-                                "Shapeshifted": StatusEffect(False, 0)}
-        self.physical_effects = {"Bleed": StatusEffect(False, 0, 0),
-                                 "Disarm": StatusEffect(False, 0),
-                                 "Prone": StatusEffect(False, 0)}
-        self.stat_effects = {"Attack": StatusEffect(False, 0, 0),
-                             "Defense": StatusEffect(False, 0, 0),
-                             "Magic": StatusEffect(False, 0, 0),
-                             "Magic Defense": StatusEffect(False, 0, 0),
-                             "Speed": StatusEffect(False, 0, 0)}
-        self.magic_effects = {"DOT": StatusEffect(False, 0, 0),
-                              "Duplicates": StatusEffect(False, 0),
-                              "Ice Block": StatusEffect(False, 0),
-                              "Mana Shield": StatusEffect(False, 0),
-                              "Reflect": StatusEffect(False, 0),
-                              "Regen": StatusEffect(False, 0, 0),
-                              "Resist Fire": StatusEffect(False, 0, 0),
-                              "Resist Ice": StatusEffect(False, 0, 0),
-                              "Resist Electric": StatusEffect(False, 0, 0),
-                              "Resist Water": StatusEffect(False, 0, 0),
-                              "Resist Earth": StatusEffect(False, 0, 0),
-                              "Resist Wind": StatusEffect(False, 0, 0),
-                              "Totem": StatusEffect(False, 0),
-                              "Astral Shift": StatusEffect(False, 0)}
-        self.class_effects = {"Jump": StatusEffect(False, 0),
-                              "Power Up": StatusEffect(False, 0, 0)}
-        self.status_immunity = []
-        self.resistance = {'Fire': 0.,
-                           'Ice': 0.,
-                           'Electric': 0.,
-                           'Water': 0.,
-                           'Earth': 0.,
-                           'Wind': 0.,
-                           'Shadow': 0.,
-                           'Holy': 0.,
-                           "Poison": 0.,
-                           'Physical': 0.}
+        self.gold: int = 0
+        self.equipment: dict[str, object] = {}
+        self.inventory: InventoryMap = {}
+        self.spellbook: AbilityBook = {'Spells': {},
+                                       'Skills': {}}
+        self.status_effects: EffectMap = {"Berserk": StatusEffect(False, 0),
+                                          "Blind": StatusEffect(False, 0),
+                                          "Blind Rage": StatusEffect(False, 0),
+                                          "Hangover": StatusEffect(False, 0),
+                                          "Doom": StatusEffect(False, 0),
+                                          "Poison": StatusEffect(False, 0, 0),
+                                          "Silence": StatusEffect(False, 0),
+                                          "Sleep": StatusEffect(False, 0),
+                                          "Stun": StatusEffect(False, 0),
+                                          "Defend": StatusEffect(False, 0, 0),
+                                          "Steal Success": StatusEffect(False, 0),
+                                          "Shapeshifted": StatusEffect(False, 0)}
+        self.physical_effects: EffectMap = {"Bleed": StatusEffect(False, 0, 0),
+                                            "Disarm": StatusEffect(False, 0),
+                                            "Prone": StatusEffect(False, 0)}
+        self.stat_effects: EffectMap = {"Attack": StatusEffect(False, 0, 0),
+                                        "Defense": StatusEffect(False, 0, 0),
+                                        "Magic": StatusEffect(False, 0, 0),
+                                        "Magic Defense": StatusEffect(False, 0, 0),
+                                        "Speed": StatusEffect(False, 0, 0)}
+        self.magic_effects: EffectMap = {"DOT": StatusEffect(False, 0, 0),
+                                         "Duplicates": StatusEffect(False, 0),
+                                         "Ice Block": StatusEffect(False, 0),
+                                         "Mana Shield": StatusEffect(False, 0),
+                                         "Reflect": StatusEffect(False, 0),
+                                         "Regen": StatusEffect(False, 0, 0),
+                                         "Resist Fire": StatusEffect(False, 0, 0),
+                                         "Resist Ice": StatusEffect(False, 0, 0),
+                                         "Resist Electric": StatusEffect(False, 0, 0),
+                                         "Resist Water": StatusEffect(False, 0, 0),
+                                         "Resist Earth": StatusEffect(False, 0, 0),
+                                         "Resist Wind": StatusEffect(False, 0, 0),
+                                         "Totem": StatusEffect(False, 0),
+                                         "Astral Shift": StatusEffect(False, 0)}
+        self.class_effects: EffectMap = {"Jump": StatusEffect(False, 0),
+                                         "Power Up": StatusEffect(False, 0, 0)}
+        self.status_immunity: list[str] = []
+        self.resistance: dict[str, float] = {'Fire': 0.,
+                                             'Ice': 0.,
+                                             'Electric': 0.,
+                                             'Water': 0.,
+                                             'Earth': 0.,
+                                             'Wind': 0.,
+                                             'Shadow': 0.,
+                                             'Holy': 0.,
+                                             "Poison": 0.,
+                                             'Physical': 0.}
         self.anti_magic_active = False
         self.flying = False
         self.invisible = False
@@ -537,7 +546,7 @@ class Character:
             pass
         return adj_attacker > defender_roll
 
-    def effect_handler(self, effect: str) -> dict[str, StatusEffect]:
+    def effect_handler(self, effect: str) -> EffectMap:
         effect_dicts = [self.status_effects,
                         self.physical_effects,
                         self.stat_effects,
@@ -674,7 +683,16 @@ class Character:
         
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
-    def weapon_damage(self, defender, dmg_mod=1.0, crit=1, ignore=False, cover=False, hit=False, use_offhand=True) -> tuple[str, bool, int]:
+    def weapon_damage(
+        self,
+        defender: Character,
+        dmg_mod: float = 1.0,
+        crit: int = 1,
+        ignore: bool = False,
+        cover: bool = False,
+        hit: bool = False,
+        use_offhand: bool = True,
+    ) -> WeaponDamageResult:
         """
         Function that controls melee attacks during combat
         defender(Character): the target of the attack
@@ -917,7 +935,7 @@ class Character:
     def _apply_absorption(
         self, defender: Character, damage: int, raw_dmg: int,
         crit_per: float, att: str, cover: bool, crit: int
-    ) -> tuple[int, str, bool]:
+    ) -> AbsorptionResult:
         """
         Apply cover, shield block, mana shield, class shields, and reflect.
 
@@ -999,7 +1017,7 @@ class Character:
 
         return damage, msg, False
 
-    def _apply_mana_shield(self, defender: Character, damage: int) -> tuple[int, str, bool]:
+    def _apply_mana_shield(self, defender: Character, damage: int) -> AbsorptionResult:
         """Handle Mana Shield absorption. Returns (damage, msg, fully_absorbed)."""
         msg = ""
         mana_loss = damage // defender.magic_effects["Mana Shield"].duration
@@ -1017,7 +1035,7 @@ class Character:
             defender.mana.current -= mana_loss
             return 0, msg, True
 
-    def _apply_crusader_shield(self, defender: Character, damage: int) -> tuple[int, str, bool]:
+    def _apply_crusader_shield(self, defender: Character, damage: int) -> AbsorptionResult:
         """Handle Crusader Power Up absorb shield. Returns (damage, msg, fully_absorbed)."""
         msg = ""
         if damage >= defender.class_effects["Power Up"].extra:
@@ -1034,7 +1052,7 @@ class Character:
 
     def _apply_damage_reduction(
         self, defender: Character, damage: int, att: str, ignore: bool
-    ) -> tuple[int, str]:
+    ) -> DamageReductionResult:
         """Apply resistance, armor, defensive stance, and astral shift reductions."""
         msg = ""
 
@@ -1184,12 +1202,20 @@ class Character:
 
         return msg
 
-    def handle_defenses(self, attacker: Character, damage: int, cover: bool = False, typ: str = "Physical") -> tuple[bool, str, int]:
+    def handle_defenses(
+        self,
+        attacker: Character,
+        damage: int,
+        cover: bool = False,
+        typ: str = "Physical",
+    ) -> DefenseResolution:
         """
-        Stub method for handling defensive calculations.
-        
-        This method was planned but never fully implemented. Currently handles
-        ManaShield logic, otherwise passes damage through unchanged.
+        Resolve active pre-reduction defenses for spell/effect damage.
+
+        This is the shared entry point used by legacy spells, YAML abilities,
+        and composite effects before elemental or magic-defense reduction. It
+        currently handles Mana Shield absorption and returns pass-through
+        damage for callers without an active shield.
         
         Args:
             attacker: The attacking character
@@ -1213,12 +1239,14 @@ class Character:
         
         return (hit, message, damage)
 
-    def damage_reduction(self, damage: int, attacker: Character, typ: str = "Physical") -> tuple[bool, str, int]:
+    def damage_reduction(self, damage: int, attacker: Character, typ: str = "Physical") -> DefenseResolution:
         """
-        Stub method for calculating damage reduction.
-        
-        This method was planned but never fully implemented. For now, it applies
-        basic resistance checks.
+        Apply elemental resistance and magic-defense reduction to incoming damage.
+
+        This is the shared post-defense reduction step for legacy spells, YAML
+        abilities, and composite effects. Weapon attacks use
+        ``_apply_damage_reduction()`` because they also need equipment and
+        armor-specific context.
         
         Args:
             damage: Incoming damage value
