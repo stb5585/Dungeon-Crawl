@@ -49,6 +49,8 @@ Last updated: 2026-06-16
 
 - Add result-shape contract tests that compare representative legacy and YAML
   abilities where true legacy implementations still exist.
+- Enemy priority coverage now includes redundant target-status skips and
+  target-positive-effect Dispel selection.
 - Audit whether `DamageEffect` should remain registered for external/custom
   ability data, since built-in YAML abilities no longer appear to use
   `type: damage`.

@@ -53,7 +53,7 @@ def test_priority_if_skips_disarm_when_target_unarmed():
     action, ability = enemy.options(target, [], None)
 
     assert action == "Attack"
-    assert ability == "Attack"
+    assert ability is None
 
 
 def test_priority_if_allows_disarm_when_target_armed(monkeypatch):
@@ -106,7 +106,62 @@ def test_priority_if_list_supports_magic_effect_conditions(monkeypatch):
     action, ability = enemy.options(target, [], None)
 
     assert action == "Attack"
-    assert ability == "Attack"
+    assert ability is None
+
+
+def test_priority_if_skips_redundant_target_status_spell(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Spells"]["Sleep"] = abilities.Sleep()
+    target.status_effects["Sleep"].active = True
+    target.status_effects["Sleep"].duration = 2
+    enemy.action_stack = [
+        {
+            "ability": "Sleep",
+            "priority": ActionPriority.HIGH,
+            "priority_if": {
+                "target_status": "Sleep",
+                "priority": ActionPriority.SKIP,
+                "else": ActionPriority.HIGH,
+            },
+        },
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    action, ability = enemy.options(target, [], None)
+
+    assert (action, ability) == ("Attack", None)
+
+
+def test_priority_if_targets_positive_effects_for_dispel(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Spells"]["Dispel"] = abilities.Dispel()
+    enemy.mana.current = 999
+    enemy.mana.max = 999
+    enemy.action_stack = [
+        {
+            "ability": "Dispel",
+            "priority": ActionPriority.HIGH,
+            "priority_if": {
+                "target_has_positive_effects": True,
+                "priority": ActionPriority.HIGH,
+                "else": ActionPriority.SKIP,
+            },
+        },
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    action, ability = enemy.options(target, [], None)
+    assert (action, ability) == ("Attack", None)
+
+    target.stat_effects["Attack"].active = True
+    action, ability = enemy.options(target, [], None)
+    assert (action, ability) == ("Cast Spell", "Dispel")
 
 
 def test_priority_if_list_threshold_percent_parsing():
@@ -152,7 +207,7 @@ def test_single_use_ability_only_selected_once(monkeypatch):
     second_action, second_ability = enemy.options(target, [], None)
 
     assert (first_action, first_ability) == ("Cast Spell", "Regen")
-    assert (second_action, second_ability) == ("Attack", "Attack")
+    assert (second_action, second_ability) == ("Attack", None)
 
 
 def test_action_stack_selection_records_delay_and_telegraph_metadata(monkeypatch):

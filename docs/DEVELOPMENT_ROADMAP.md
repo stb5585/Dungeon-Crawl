@@ -221,6 +221,8 @@ Status: `Active`
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
    - Enemy AI behavior where tactical choices are meaningful.
+     - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
+       Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
    - Quest completion/reward flows.
    - Save/load round trips only when new persistence risks appear.
 3. Continue targeted type hints and docstrings.
