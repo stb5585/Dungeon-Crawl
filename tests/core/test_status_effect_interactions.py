@@ -105,3 +105,26 @@ def test_timed_silence_expires_but_indefinite_silence_persists():
     assert text == ""
     assert character.status_effects["Silence"].active is True
     assert character.status_effects["Silence"].duration == -1
+
+
+def test_prone_recovery_waits_until_after_sleep_expires(monkeypatch):
+    character = _combatant("Sleeper", wisdom=10)
+    character.status_effects["Sleep"].active = True
+    character.status_effects["Sleep"].duration = 1
+    character.physical_effects["Prone"].active = True
+    character.physical_effects["Prone"].duration = 1
+
+    text = character.effects()
+
+    assert "no longer asleep" in text
+    assert "no longer prone" not in text
+    assert character.status_effects["Sleep"].active is False
+    assert character.physical_effects["Prone"].active is True
+    assert character.physical_effects["Prone"].duration == 1
+
+    monkeypatch.setattr("src.core.character.random.randint", lambda *_args: 0)
+
+    text = character.effects()
+
+    assert "Sleeper is no longer prone." in text
+    assert character.physical_effects["Prone"].active is False

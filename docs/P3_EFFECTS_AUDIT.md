@@ -53,6 +53,8 @@ Last updated: 2026-06-16
 - Reflected data-driven damage spells now update `CombatResult.target` to the
   actual damaged character and retain the original reflector name in
   `extra["reflected_by"]`.
+- Sleep/Prone interaction coverage now pins that Prone recovery waits until
+  the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
   179 YAML ability files and verifies each one can produce a combat-ready
   object.
@@ -75,4 +77,5 @@ Last updated: 2026-06-16
   item, and relic completion paths.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
-- Continue status interaction coverage for Sleep and Prone interactions.
+- Continue extracting shared combat/healing result helpers only where new
+  contract coverage exposes duplication or drift.

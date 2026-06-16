@@ -235,6 +235,8 @@ Status: `Active`
        shield depletion with leftover damage and depletion events.
      - 2026-06-16: Added reflected damage-spell result coverage so presentation/result consumers see the
        redirected target.
+     - 2026-06-16: Added Sleep/Prone interaction coverage proving Prone recovery waits until the tick after
+       Sleep expires.
    - Enemy AI behavior where tactical choices are meaningful.
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
