@@ -2,7 +2,7 @@
 """ enemy manager """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 import random
 from textwrap import wrap
 
@@ -12,7 +12,9 @@ from .combat.action_queue import ActionPriority
 from .constants import ENEMY_LOW_HEALTH_THRESHOLD
 
 
-RandomEnemyOverride = str | type["Enemy"] | Callable[[], "Enemy"]
+AbilityFactory = Callable[[], object]
+EnemyFactory = Callable[[], "Enemy"]
+RandomEnemyOverride = str | type["Enemy"] | EnemyFactory
 _random_enemy_override: RandomEnemyOverride | None = None
 
 
@@ -57,7 +59,7 @@ def random_enemy(level: str) -> Enemy:
     if forced_enemy := _build_random_enemy_override():
         return forced_enemy
 
-    monsters = {
+    monsters: dict[str, list[Enemy]] = {
       '0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
       '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
           Panther(), TwistedDwarf(), BattleToad(), Satyr()],
@@ -90,7 +92,7 @@ def funhouse_enemy() -> Enemy:
     return random.choice([Puppet(), Harlequin(), Trickster(), Copycat()])
 
 
-def _fixed_resistances(**overrides):
+def _fixed_resistances(**overrides: float) -> dict[str, float]:
     resistances = {
         'Fire': 0.0,
         'Ice': 0.0,
@@ -107,8 +109,12 @@ def _fixed_resistances(**overrides):
     return resistances
 
 
-def _build_spellbook(*, spells=(), skills=()):
-    spellbook = {"Spells": {}, "Skills": {}}
+def _build_spellbook(
+    *,
+    spells: Iterable[AbilityFactory] = (),
+    skills: Iterable[AbilityFactory] = (),
+) -> dict[str, dict[str, object]]:
+    spellbook: dict[str, dict[str, object]] = {"Spells": {}, "Skills": {}}
     for ability_ctor in spells:
         ability = ability_ctor()
         spellbook["Spells"][ability.name] = ability
