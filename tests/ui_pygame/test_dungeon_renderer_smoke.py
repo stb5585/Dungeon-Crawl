@@ -1768,7 +1768,7 @@ def test_scene_renderer_keeps_hidden_fake_wall_as_wall_without_marker():
     pygame.quit()
 
 
-def test_scene_renderer_marks_revealed_fake_wall_as_floor_path():
+def test_scene_renderer_marks_revealed_fake_wall_as_translucent_wall_panel():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
     presenter = DummyPresenter(width=640, height=480, screen=screen)
@@ -1786,10 +1786,10 @@ def test_scene_renderer_marks_revealed_fake_wall_as_floor_path():
 
     projected_calls = []
     special_calls = []
-    marker_calls = []
+    translucent_wall_calls = []
     original_get_projected_surface = scene_renderer.textures.get_projected_surface
     original_get_special_texture = scene_renderer.textures.get_special_texture
-    original_render_fake_path_marker = scene_renderer._render_fake_path_marker
+    original_render_translucent_fake_wall_panel = scene_renderer._render_translucent_fake_wall_panel
 
     def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
         projected_calls.append((panel_id, texture_key))
@@ -1799,24 +1799,31 @@ def test_scene_renderer_marks_revealed_fake_wall_as_floor_path():
         special_calls.append((texture_key, size))
         return original_get_special_texture(texture_key, size)
 
-    def recording_render_fake_path_marker(rect, darkness, depth, side=None, lateral_view=False):
-        marker_calls.append((depth, side, lateral_view))
-        return original_render_fake_path_marker(rect, darkness, depth, side=side, lateral_view=lateral_view)
+    def recording_render_translucent_fake_wall_panel(tile, rect, darkness, depth, side=None, lateral_view=False):
+        translucent_wall_calls.append((depth, side, lateral_view))
+        return original_render_translucent_fake_wall_panel(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
 
     scene_renderer.textures.get_projected_surface = recording_get_projected_surface
     scene_renderer.textures.get_special_texture = recording_get_special_texture
-    scene_renderer._render_fake_path_marker = recording_render_fake_path_marker
+    scene_renderer._render_translucent_fake_wall_panel = recording_render_translucent_fake_wall_panel
 
     scene_renderer.render(player, world)
 
     assert ("d1:back_wall", "wall") not in projected_calls
-    assert marker_calls == [(1, None, False)]
+    assert translucent_wall_calls == [(1, None, False)]
     assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
 
     pygame.quit()
 
 
-def test_scene_renderer_marks_revealed_side_fake_wall_as_floor_path():
+def test_scene_renderer_marks_revealed_side_fake_wall_as_translucent_wall_panel():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
     presenter = DummyPresenter(width=640, height=480, screen=screen)
@@ -1831,24 +1838,31 @@ def test_scene_renderer_marks_revealed_side_fake_wall_as_floor_path():
     }
 
     special_calls = []
-    marker_calls = []
+    translucent_wall_calls = []
     original_get_special_texture = scene_renderer.textures.get_special_texture
-    original_render_fake_path_marker = scene_renderer._render_fake_path_marker
+    original_render_translucent_fake_wall_panel = scene_renderer._render_translucent_fake_wall_panel
 
     def recording_get_special_texture(texture_key, size=None):
         special_calls.append((texture_key, size))
         return original_get_special_texture(texture_key, size)
 
-    def recording_render_fake_path_marker(rect, darkness, depth, side=None, lateral_view=False):
-        marker_calls.append((depth, side, lateral_view))
-        return original_render_fake_path_marker(rect, darkness, depth, side=side, lateral_view=lateral_view)
+    def recording_render_translucent_fake_wall_panel(tile, rect, darkness, depth, side=None, lateral_view=False):
+        translucent_wall_calls.append((depth, side, lateral_view))
+        return original_render_translucent_fake_wall_panel(
+            tile,
+            rect,
+            darkness,
+            depth,
+            side=side,
+            lateral_view=lateral_view,
+        )
 
     scene_renderer.textures.get_special_texture = recording_get_special_texture
-    scene_renderer._render_fake_path_marker = recording_render_fake_path_marker
+    scene_renderer._render_translucent_fake_wall_panel = recording_render_translucent_fake_wall_panel
 
     scene_renderer.render(player, world)
 
-    assert (2, "left", True) in marker_calls
+    assert (1, "left", True) in translucent_wall_calls
     assert not any(texture_key == "fake_path" for texture_key, _size in special_calls)
 
     pygame.quit()

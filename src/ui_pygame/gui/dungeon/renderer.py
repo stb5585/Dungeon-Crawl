@@ -1361,7 +1361,12 @@ class SceneRenderer:
             return
 
         render_depth = depth
-        if zone is not None and next_zone is not None and self._is_floor_sprite_tile(tile):
+        if (
+            zone is not None
+            and next_zone is not None
+            and self._is_floor_sprite_tile(tile)
+            and type(tile).__name__ != "FakeWall"
+        ):
             render_depth = depth + 1
 
         render_rect = self._get_side_special_render_rect(
@@ -1536,7 +1541,8 @@ class SceneRenderer:
             return
 
         if tile_type == "FakeWall" and bool(getattr(tile, "visited", False)):
-            self._render_fake_path_marker(
+            self._render_translucent_fake_wall_panel(
+                tile,
                 rect,
                 darkness=darkness,
                 depth=depth,
@@ -1618,8 +1624,9 @@ class SceneRenderer:
         if "BossRoom" in tile_type:
             self._render_boss_enemy(tile, rect, darkness=darkness, depth=depth, side=side, lateral_view=lateral_view)
 
-    def _render_fake_path_marker(
+    def _render_translucent_fake_wall_panel(
         self,
+        tile,
         rect: pygame.Rect,
         darkness: float,
         depth: int,
@@ -1630,44 +1637,15 @@ class SceneRenderer:
         if darkness_factor <= 0.0:
             return
 
-        width_ratio = 0.34 if not lateral_view else 0.46
-        height_ratio = 0.035 if not lateral_view else 0.045
-        marker_width = max(8, round(rect.width * width_ratio))
-        marker_height = max(3, round(rect.height * height_ratio))
-        bottom_offset = max(2, round(rect.height * (0.08 if not lateral_view else 0.10)))
-        anchor_x, anchor_y = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
-        bottom = anchor_y - bottom_offset
+        wall_texture = self.textures.get_texture(self.textures.get_wall_key(tile))
+        target_rect = rect
+        if lateral_view and side is not None:
+            target_rect = self._get_special_sprite_rect(rect, side=side, lateral_view=True)
 
-        alpha = max(18, min(96, round(76 * darkness_factor)))
-        fill_color = (116, 112, 96, alpha)
-        edge_color = (178, 166, 112, min(128, alpha + 28))
-
-        if lateral_view and side == "left":
-            points = [
-                (anchor_x - marker_width, bottom - marker_height),
-                (anchor_x - round(marker_width * 0.18), bottom - round(marker_height * 1.35)),
-                (anchor_x, bottom - round(marker_height * 0.20)),
-                (anchor_x - round(marker_width * 0.78), bottom + marker_height),
-            ]
-        elif lateral_view and side == "right":
-            points = [
-                (anchor_x + round(marker_width * 0.18), bottom - round(marker_height * 1.35)),
-                (anchor_x + marker_width, bottom - marker_height),
-                (anchor_x + round(marker_width * 0.78), bottom + marker_height),
-                (anchor_x, bottom - round(marker_height * 0.20)),
-            ]
-        else:
-            half_width = marker_width // 2
-            points = [
-                (anchor_x - half_width, bottom - marker_height),
-                (anchor_x + half_width, bottom - marker_height),
-                (anchor_x + round(half_width * 0.62), bottom + marker_height),
-                (anchor_x - round(half_width * 0.62), bottom + marker_height),
-            ]
-
-        line_width = 2 if depth <= 1 else 1
-        pygame.draw.polygon(self.screen, fill_color, points)
-        pygame.draw.lines(self.screen, edge_color, True, points, line_width)
+        scaled = pygame.transform.smoothscale(wall_texture, target_rect.size)
+        shaded = self._apply_darkness_to_surface(scaled, darkness)
+        shaded.set_alpha(max(36, min(118, round(104 * darkness_factor))))
+        self.screen.blit(shaded, target_rect.topleft)
 
     def _render_special_sprite(
         self,
@@ -2105,6 +2083,9 @@ class SceneRenderer:
         next_zone=None,
         depth: int | None = None,
     ) -> pygame.Rect:
+        if type(tile).__name__ == "FakeWall":
+            return rect
+
         if not self._is_floor_sprite_tile(tile) or is_wall(center_tile):
             return rect
 
