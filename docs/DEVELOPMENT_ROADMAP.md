@@ -72,7 +72,7 @@ Status: `Done`
 - Shared popup background fallback behavior is hardened for empty/live-screen/broken providers.
 - Combat UI now has status-icon priority, overflow, urgent coloring, label fitting, counted duplicate labels, Maelstrom stack visibility, Blind Rage labeling, telegraph-colored log lines, a dedicated telegraph banner, and long-name fitting.
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
-- The P2 renderer/exploration presentation pass added Rotator, active FunhouseTeleporter, and visited-only FakeWall/Fake Path floor-bound presentation, smoothed the pygame load progress popup, and expanded structural-depth side-opening smoke coverage.
+- The P2 renderer/exploration presentation pass added Rotator, active FunhouseTeleporter, and visited-only FakeWall/Fake Path floor-bound presentation without revealing hidden fake walls or drawing tiny wall sprites, smoothed the pygame load progress popup, and expanded structural-depth side-opening smoke coverage.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
 - The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout with Helmet support, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
@@ -194,6 +194,7 @@ Status: `Done`
    - Existing defeated-boss, spring, chest, door, and side-special coverage is useful; extend it only for concrete new props or regressions.
    - Started P2 polish by rendering Rotator and active FunhouseTeleporter tiles as floor-bound special sprites, with repo-relative asset resolution and smoke coverage for inactive teleporter fallback behavior.
    - Added visited-only FakeWall/Fake Path presentation so revealed fake paths get a subtle floor marker while hidden fake walls remain visually indistinguishable from ordinary walls.
+   - Replaced the revealed FakeWall/Fake Path wall-texture sprite with procedural floor-bound marker geometry and added side-corridor smoke coverage.
 4. Keep asset fallback diagnostics visible during renderer changes.
    - Use existing grouped fallback and panel-slot diagnostics before adding new debug helpers.
 5. Gameplay element refinement.

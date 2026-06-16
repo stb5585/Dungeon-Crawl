@@ -24,7 +24,7 @@
 - [ ] Face an unvisited FakeWall/Fake Path from the dungeon view.
   - Expected: The fake path is not visually revealed and renders like an ordinary wall until discovered.
 - [ ] Step through or revisit a discovered FakeWall/Fake Path.
-  - Expected: The revealed fake path behaves like an open passage and shows a subtle floor-bound marker matching the minimap's discovered-path cue.
+  - Expected: The revealed fake path behaves like an open passage and shows a subtle floor-bound marker, not a tiny wall sprite, matching the minimap's discovered-path cue.
 - [ ] Revisit a room after moving through side corridors and backtracking.
   - Expected: Floor, ceiling, and wall textures return to the room's actual tile state instead of showing debug or stale override textures.
 - [ ] Run renderer diagnostics after moving through several dungeon views.

@@ -1536,12 +1536,10 @@ class SceneRenderer:
             return
 
         if tile_type == "FakeWall" and bool(getattr(tile, "visited", False)):
-            self._render_floor_sprite(
-                "fake_path",
+            self._render_fake_path_marker(
                 rect,
                 darkness=darkness,
                 depth=depth,
-                kind="fake_path",
                 side=side,
                 lateral_view=lateral_view,
             )
@@ -1619,6 +1617,57 @@ class SceneRenderer:
 
         if "BossRoom" in tile_type:
             self._render_boss_enemy(tile, rect, darkness=darkness, depth=depth, side=side, lateral_view=lateral_view)
+
+    def _render_fake_path_marker(
+        self,
+        rect: pygame.Rect,
+        darkness: float,
+        depth: int,
+        side: str | None = None,
+        lateral_view: bool = False,
+    ) -> None:
+        darkness_factor = 1.0 - max(0.0, min(1.0, darkness))
+        if darkness_factor <= 0.0:
+            return
+
+        width_ratio = 0.34 if not lateral_view else 0.46
+        height_ratio = 0.035 if not lateral_view else 0.045
+        marker_width = max(8, round(rect.width * width_ratio))
+        marker_height = max(3, round(rect.height * height_ratio))
+        bottom_offset = max(2, round(rect.height * (0.08 if not lateral_view else 0.10)))
+        anchor_x, anchor_y = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
+        bottom = anchor_y - bottom_offset
+
+        alpha = max(18, min(96, round(76 * darkness_factor)))
+        fill_color = (116, 112, 96, alpha)
+        edge_color = (178, 166, 112, min(128, alpha + 28))
+
+        if lateral_view and side == "left":
+            points = [
+                (anchor_x - marker_width, bottom - marker_height),
+                (anchor_x - round(marker_width * 0.18), bottom - round(marker_height * 1.35)),
+                (anchor_x, bottom - round(marker_height * 0.20)),
+                (anchor_x - round(marker_width * 0.78), bottom + marker_height),
+            ]
+        elif lateral_view and side == "right":
+            points = [
+                (anchor_x + round(marker_width * 0.18), bottom - round(marker_height * 1.35)),
+                (anchor_x + marker_width, bottom - marker_height),
+                (anchor_x + round(marker_width * 0.78), bottom + marker_height),
+                (anchor_x, bottom - round(marker_height * 0.20)),
+            ]
+        else:
+            half_width = marker_width // 2
+            points = [
+                (anchor_x - half_width, bottom - marker_height),
+                (anchor_x + half_width, bottom - marker_height),
+                (anchor_x + round(half_width * 0.62), bottom + marker_height),
+                (anchor_x - round(half_width * 0.62), bottom + marker_height),
+            ]
+
+        line_width = 2 if depth <= 1 else 1
+        pygame.draw.polygon(self.screen, fill_color, points)
+        pygame.draw.lines(self.screen, edge_color, True, points, line_width)
 
     def _render_special_sprite(
         self,
