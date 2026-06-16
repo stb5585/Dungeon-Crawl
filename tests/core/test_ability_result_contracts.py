@@ -176,6 +176,48 @@ def test_legacy_fire_spell_and_yaml_fireball_share_burn_contract(monkeypatch):
     assert yaml_target.magic_effects["DOT"].source == "Burn"
 
 
+def test_legacy_ice_spell_and_yaml_ice_lance_share_extra_damage_contract(monkeypatch):
+    caster = _player()
+    legacy_target = _target("Legacy Target")
+    yaml_target = _target("YAML Target")
+    legacy = abilities.IceSpell("Legacy Ice", "Legacy ice spell.", 0, 1.0, 3)
+    yaml_spell = abilities.IceLance()
+
+    monkeypatch.setattr("src.core.abilities.random.randint", lambda _low, high: high)
+    monkeypatch.setattr(
+        "src.core.data.data_driven_abilities.random.randint",
+        lambda _low, high: high,
+    )
+    monkeypatch.setattr(
+        "src.core.data.data_driven_abilities.random.uniform",
+        lambda _low, _high: 1.0,
+    )
+    monkeypatch.setattr("random.randint", lambda _low, high: high)
+    caster.check_mod = lambda *_args, **_kwargs: 30
+    caster.hit_chance = lambda *_args, **_kwargs: 1.0
+    yaml_target.dodge_chance = lambda *_args, **_kwargs: 0.0
+    yaml_target.handle_defenses = lambda _caster, damage, *_args, **_kwargs: (
+        True,
+        "",
+        damage,
+    )
+    yaml_target.damage_reduction = lambda damage, *_args, **_kwargs: (
+        True,
+        "",
+        damage,
+    )
+
+    legacy_message = legacy.special_effect(caster, legacy_target, damage=30, crit=1)
+    yaml_result = yaml_spell.cast(caster, yaml_target, special=True)
+
+    assert "Legacy Target is chilled to the bone, taking an extra 30 damage." in legacy_message
+    assert legacy_target.health.current == 470
+    assert "YAML Target is chilled to the bone, taking an extra 30 damage." in yaml_result.message
+    assert yaml_result.extra["extra_damage"] == 30
+    assert yaml_result.damage == 30
+    assert yaml_target.health.current == 440
+
+
 def test_weapon_data_driven_skill_records_weapon_damage_in_result():
     user = _player("Warrior")
     target = _target()

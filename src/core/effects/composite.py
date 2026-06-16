@@ -232,6 +232,9 @@ class DynamicExtraDamageEffect(Effect):
 
         target.health.current -= dmg
         result.extra["extra_damage"] = dmg
+        result.extra.setdefault("messages", []).append(
+            self.message_template.format(target=target.name, damage=dmg)
+        )
 
 
 class StatusApplyEffect(Effect):

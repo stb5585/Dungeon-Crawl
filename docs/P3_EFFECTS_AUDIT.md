@@ -62,6 +62,9 @@ Last updated: 2026-06-16
 - Data-driven spell effect-message detection now snapshots effect buckets by
   value, so newly appended bucket entries (for example fire DOT) can generate
   presentation messages.
+- Legacy/YAML comparison coverage now also pins ice extra-damage behavior, and
+  `DynamicExtraDamageEffect` message templates flow through data-driven spell
+  presentation.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all

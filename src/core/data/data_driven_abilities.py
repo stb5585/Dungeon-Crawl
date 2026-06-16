@@ -296,6 +296,7 @@ class DataDrivenSpell(Spell):
                 key: list(values)
                 for key, values in result.effects_applied.items()
             }
+            messages_before = len(result.extra.get("messages", []))
 
             try:
                 effect.apply(caster, target, result)
@@ -305,11 +306,17 @@ class DataDrivenSpell(Spell):
 
             # Build messages from observable state changes
             hp_diff = hp_before - target.health.current
-            if hp_diff > 0 and hp_diff != damage:
+            effect_messages = result.extra.get("messages", [])[messages_before:]
+            if hp_diff > 0:
                 # Effect dealt additional damage beyond the base spell
-                msg += (
-                    f"{target.name} takes an extra {hp_diff} damage.\n"
-                )
+                if effect_messages:
+                    msg += "".join(effect_messages)
+                else:
+                    msg += (
+                        f"{target.name} takes an extra {hp_diff} damage.\n"
+                    )
+            elif effect_messages:
+                msg += "".join(effect_messages)
 
             # Check for newly applied status effects
             for status in result.effects_applied.get("Status", []):

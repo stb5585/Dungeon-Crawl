@@ -225,6 +225,8 @@ Status: `Active`
      and data-driven `Fireball` DOT behavior.
    - 2026-06-16: Fixed data-driven spell effect-message detection by snapshotting effect buckets by value
      instead of sharing the mutable bucket lists.
+   - 2026-06-16: Added a legacy `IceSpell` vs YAML `Ice Lance` extra-damage contract and routed
+     `DynamicExtraDamageEffect` message templates through data-driven spell presentation.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -234,6 +236,7 @@ Status: `Active`
      - 2026-06-16: Added a catalog audit test proving built-in YAML abilities avoid primitive `DamageEffect`
        entries.
      - 2026-06-16: Added legacy/YAML burn comparison coverage for fire spell DOT presentation and state.
+     - 2026-06-16: Added legacy/YAML ice comparison coverage for extra-damage presentation and state.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
