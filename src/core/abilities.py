@@ -1684,7 +1684,6 @@ class HealSpell(Spell):
             caster.mana.current -= self.cost
         crit = 1
         heal_mod = caster.check_mod("heal")
-        base_heal = target.health.max * self.heal
         heal = int(
             (random.randint(target.health.max // 2, target.health.max) + heal_mod)
             * self.heal
@@ -1697,10 +1696,12 @@ class HealSpell(Spell):
                 crit = 2
             crit_per = random.uniform(1, crit)
             heal = int(heal * crit_per)
-            target.health.current += heal
-            caster._emit_healing_event(heal, source=self.name)
+            heal = int(heal * target.healing_received_multiplier())
+            actual_heal = min(heal, target.health.max - target.health.current)
+            target.health.current += actual_heal
+            caster._emit_healing_event(actual_heal, source=self.name)
             cast_message += (
-                f"{caster.name} heals {target.name} for {heal} hit points.\n"
+                f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
             )
             if target.health.current >= target.health.max:
                 target.health.current = target.health.max

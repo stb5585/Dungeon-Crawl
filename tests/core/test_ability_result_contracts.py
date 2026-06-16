@@ -218,6 +218,55 @@ def test_legacy_ice_spell_and_yaml_ice_lance_share_extra_damage_contract(monkeyp
     assert yaml_target.health.current == 440
 
 
+def test_legacy_and_yaml_heal_report_actual_capped_healing(monkeypatch):
+    legacy_caster = _player("Legacy Healer")
+    yaml_caster = _player("YAML Healer")
+    for caster in (legacy_caster, yaml_caster):
+        caster.health.max = 100
+        caster.health.current = 95
+        caster.check_mod = lambda *_args, **_kwargs: 0
+
+    legacy_events = []
+    yaml_events = []
+    legacy_caster._emit_healing_event = lambda amount, **_kwargs: legacy_events.append(amount)
+    yaml_caster._emit_healing_event = lambda amount, **_kwargs: yaml_events.append(amount)
+    monkeypatch.setattr("src.core.abilities.random.randint", lambda _low, high: high)
+    monkeypatch.setattr("src.core.abilities.random.uniform", lambda _low, _high: 1.0)
+
+    legacy = abilities.HealSpell("Legacy Heal", "Legacy heal spell.", 0, 0.3, 10)
+    yaml_heal = abilities.Heal()
+
+    legacy_message = legacy.cast(legacy_caster, special=True)
+    yaml_message = yaml_heal.cast(yaml_caster, special=True)
+
+    assert "Legacy Healer heals Legacy Healer for 5 hit points." in legacy_message
+    assert "YAML Healer heals YAML Healer for 5 hit points." in yaml_message
+    assert legacy_caster.health.current == 100
+    assert yaml_caster.health.current == 100
+    assert legacy_events == [5]
+    assert yaml_events == [5]
+
+
+def test_instant_heal_respects_healing_received_multiplier(monkeypatch):
+    caster = _player("Poisoned Healer")
+    caster.health.max = 100
+    caster.health.current = 50
+    caster.status_effects["Poison"].active = True
+    caster.check_mod = lambda *_args, **_kwargs: 0
+    events = []
+    caster._emit_healing_event = lambda amount, **_kwargs: events.append(amount)
+    monkeypatch.setattr("src.core.abilities.random.randint", lambda _low, high: high)
+    monkeypatch.setattr("src.core.abilities.random.uniform", lambda _low, _high: 1.0)
+
+    message = abilities.HealSpell("Legacy Heal", "Legacy heal spell.", 0, 0.3, 10).cast(
+        caster, special=True
+    )
+
+    assert "Poisoned Healer heals Poisoned Healer for 21 hit points." in message
+    assert caster.health.current == 71
+    assert events == [21]
+
+
 def test_weapon_data_driven_skill_records_weapon_damage_in_result():
     user = _player("Warrior")
     target = _target()

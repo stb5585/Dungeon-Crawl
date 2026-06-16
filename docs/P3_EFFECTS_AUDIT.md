@@ -65,6 +65,9 @@ Last updated: 2026-06-16
 - Legacy/YAML comparison coverage now also pins ice extra-damage behavior, and
   `DynamicExtraDamageEffect` message templates flow through data-driven spell
   presentation.
+- The shared instant `HealSpell.cast()` path now reports and emits actual
+  healing after health caps and healing-received modifiers, covering both
+  remaining legacy subclasses and YAML `DataDrivenHealSpell` wrappers.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all

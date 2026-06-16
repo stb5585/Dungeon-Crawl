@@ -227,6 +227,8 @@ Status: `Active`
      instead of sharing the mutable bucket lists.
    - 2026-06-16: Added a legacy `IceSpell` vs YAML `Ice Lance` extra-damage contract and routed
      `DynamicExtraDamageEffect` message templates through data-driven spell presentation.
+   - 2026-06-16: Tightened the shared instant `HealSpell.cast()` path so legacy and YAML heals report and emit
+     actual applied healing after caps and healing-received modifiers.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -237,6 +239,7 @@ Status: `Active`
        entries.
      - 2026-06-16: Added legacy/YAML burn comparison coverage for fire spell DOT presentation and state.
      - 2026-06-16: Added legacy/YAML ice comparison coverage for extra-damage presentation and state.
+     - 2026-06-16: Added legacy/YAML heal coverage for capped healing and healing-received modifiers.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
