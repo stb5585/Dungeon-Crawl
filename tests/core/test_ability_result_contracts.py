@@ -267,6 +267,25 @@ def test_instant_heal_respects_healing_received_multiplier(monkeypatch):
     assert events == [21]
 
 
+def test_yaml_heal_cast_out_uses_shared_actual_healing_helper(monkeypatch):
+    caster = _player("Explorer")
+    caster.health.max = 100
+    caster.health.current = 95
+    caster.check_mod = lambda *_args, **_kwargs: 0
+    events = []
+    caster._emit_healing_event = lambda amount, **_kwargs: events.append(amount)
+    monkeypatch.setattr(
+        "src.core.data.data_driven_abilities.random.randint",
+        lambda _low, high: high,
+    )
+
+    message = abilities.Heal().cast_out(caster)
+
+    assert "Explorer heals themself for 5 hit points." in message
+    assert caster.health.current == 100
+    assert events == [5]
+
+
 def test_weapon_data_driven_skill_records_weapon_damage_in_result():
     user = _player("Warrior")
     target = _target()

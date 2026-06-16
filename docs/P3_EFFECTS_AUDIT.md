@@ -68,6 +68,9 @@ Last updated: 2026-06-16
 - The shared instant `HealSpell.cast()` path now reports and emits actual
   healing after health caps and healing-received modifiers, covering both
   remaining legacy subclasses and YAML `DataDrivenHealSpell` wrappers.
+- `HealSpell._apply_instant_healing()` now centralizes instant-heal cap,
+  modifier, and event logic for legacy casts plus YAML hybrid and out-of-combat
+  heals.
 - Sleep/Prone interaction coverage now pins that Prone recovery waits until
   the tick after Sleep expires.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
@@ -88,7 +91,5 @@ Last updated: 2026-06-16
   completed.
 - `Player.quests()` now has a typed signature and behavior docstring for enemy,
   item, and relic completion paths.
-- Extract shared combat/healing result helpers only after the contract tests are
-  in place.
 - Continue extracting shared combat/healing result helpers only where new
   contract coverage exposes duplication or drift.

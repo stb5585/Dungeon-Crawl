@@ -1675,6 +1675,19 @@ class HealSpell(Spell):
         self.subtyp = "Heal"
         self.combat = False
 
+    def _apply_instant_healing(
+        self,
+        caster: Character,
+        target: Character,
+        heal: int,
+    ) -> int:
+        """Apply a rolled heal after target modifiers and return actual healing."""
+        heal = int(heal * target.healing_received_multiplier())
+        actual_heal = max(0, min(heal, target.health.max - target.health.current))
+        target.health.current += actual_heal
+        caster._emit_healing_event(actual_heal, source=self.name)
+        return actual_heal
+
     def cast(self, caster: Character, target: Character=None, cover: bool=False, special: bool=False, fam: bool=False) -> str:
         """Heal calculation while in combat"""
         cast_message = ""
@@ -1696,10 +1709,7 @@ class HealSpell(Spell):
                 crit = 2
             crit_per = random.uniform(1, crit)
             heal = int(heal * crit_per)
-            heal = int(heal * target.healing_received_multiplier())
-            actual_heal = min(heal, target.health.max - target.health.current)
-            target.health.current += actual_heal
-            caster._emit_healing_event(actual_heal, source=self.name)
+            actual_heal = self._apply_instant_healing(caster, target, heal)
             cast_message += (
                 f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
             )

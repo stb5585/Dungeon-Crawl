@@ -833,10 +833,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
             crit = 2
         crit_per = random.uniform(1, crit)
         heal = int(heal * crit_per)
-        heal = int(heal * target.healing_received_multiplier())
-        actual_heal = min(heal, target.health.max - target.health.current)
-        target.health.current += actual_heal
-        caster._emit_healing_event(actual_heal, source=self.name)
+        actual_heal = self._apply_instant_healing(caster, target, heal)
         cast_message += (
             f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
         )
@@ -861,10 +858,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
             cast_message += "Critical Heal!\n"
             crit = 2
         heal *= crit
-        heal = int(heal * actor.healing_received_multiplier())
-        actual_heal = min(heal, actor.health.max - actor.health.current)
-        actor.health.current += actual_heal
-        actor._emit_healing_event(actual_heal, source=self.name)
+        actual_heal = self._apply_instant_healing(actor, actor, heal)
         cast_message += (
             f"{actor.name} heals themself for {actual_heal} hit points.\n"
         )
