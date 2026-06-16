@@ -126,6 +126,8 @@
   - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
 
 ### Main Menu
+- [ ] Load an existing save from the pygame Load Game screen.
+  - Expected: The loading popup progress bar fills smoothly instead of advancing in visibly jumpy chunks.
 - [ ] Quit from a pygame session after visiting dungeon or popup-heavy screens.
   - Expected: The game exits cleanly without leaving stale popup backgrounds or hanging the window.
 - [ ] Open several popups after moving between town, dungeon, and combat views.

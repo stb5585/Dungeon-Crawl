@@ -72,6 +72,7 @@ Status: `Done`
 - Shared popup background fallback behavior is hardened for empty/live-screen/broken providers.
 - Combat UI now has status-icon priority, overflow, urgent coloring, label fitting, counted duplicate labels, Maelstrom stack visibility, Blind Rage labeling, telegraph-colored log lines, a dedicated telegraph banner, and long-name fitting.
 - Dungeon renderer coverage and fixes now cover defeated-boss visuals, minimap door/chest state, side-door behavior, Ore Vault door rendering, side-corridor floor/ceiling/wall slot routing, side-view chest orientation, soft vignette framing, and texture override diagnostics.
+- The P2 renderer/exploration presentation pass added Rotator, active FunhouseTeleporter, and visited-only FakeWall/Fake Path floor-bound presentation, smoothed the pygame load progress popup, and expanded structural-depth side-opening smoke coverage.
 - Shop item lists support long-list paging, Home/End navigation, preserved-scroll clamping, item ranges, stat-themed names, and elemental metadata display.
 - Pygame Character Menu now reports weapon-adjusted Attack and armor-adjusted Defense through the same core modifier paths used by combat/equipment previews.
 - The modern Pygame Character Menu is the default town and dungeon character menu. It includes tabbed character/equipment views, race/sex portraits, grouped weaknesses/resistances, a paper-doll equipment layout with Helmet support, dual-wield attack display, item artwork, in-slot equipment details/buffs, and styled inventory equip-failure notices.
@@ -111,7 +112,7 @@ Completed in the June 2026 P0 pass:
    - Audio diagnostics and location/combat music routing.
 3. Updated roadmap and playtest checklist entries for the completed P0 pass.
 
-Next active priority: `P2 - Renderer And Exploration Presentation`.
+Next active priority: `P3 - Core Refactoring And Test Confidence`.
 
 ### P1 - Pygame UX Polish
 
@@ -180,7 +181,7 @@ Status: `Done`
 
 ### P2 - Renderer And Exploration Presentation
 
-Status: `Active`
+Status: `Done`
 
 1. Continue renderer smoke-test work around structural-depth and side-corridor behavior.
    - Preserve center-wall stopping behavior.
@@ -201,7 +202,7 @@ Status: `Active`
 
 ### P3 - Core Refactoring And Test Confidence
 
-Status: `Planned`
+Status: `Active`
 
 1. Continue effects-system integration beyond the migration.
    - Replace older inline combat logic in legacy ability code with composable effects where practical.
