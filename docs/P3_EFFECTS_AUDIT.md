@@ -36,6 +36,11 @@ Last updated: 2026-06-16
   post-stun immunity window used by other stun sources.
 - `tests/core/test_status_effect_interactions.py` covers the effect-driven
   Stun immunity path.
+- `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
+  179 YAML ability files and verifies each one can produce a combat-ready
+  object.
+- The fixed Batch 1 spell loader test no longer skips missing files; those YAML
+  files are required content.
 
 ## Follow-Up Work
 

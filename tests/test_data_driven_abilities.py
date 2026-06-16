@@ -315,14 +315,30 @@ class TestYAMLLoading:
         from src.core.data.data_driven_abilities import DataDrivenSpell
 
         filepath = self.ABILITIES_DIR / filename
-        if not filepath.exists():
-            pytest.skip(f"{filename} not found")
 
         ability = AbilityFactory.create_from_yaml(filepath)
         assert isinstance(ability, DataDrivenSpell), f"{filename} should produce DataDrivenSpell"
         assert ability.subtyp == expected_subtyp
         assert ability.cost > 0 or ability.dmg_mod > 0
         assert len(ability._effects) >= 0
+
+    def test_all_yaml_abilities_load_combat_ready(self):
+        from src.core.data.ability_loader import AbilityFactory
+
+        yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
+        assert len(yaml_paths) == 179
+
+        loaded_names = []
+        for path in yaml_paths:
+            ability = AbilityFactory.create_from_yaml(path)
+            assert ability.name
+            assert ability.description is not None
+            assert hasattr(ability, "cost"), f"{path.name} missing cost attribute"
+            loaded_names.append(ability.name)
+
+        assert "Fireball" in loaded_names
+        assert "Jump" in loaded_names
+        assert "Cataclysm" in loaded_names
 
     def test_load_directory_produces_combat_ready(self):
         from src.core.data.ability_loader import AbilityFactory

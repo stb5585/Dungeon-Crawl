@@ -215,6 +215,8 @@ Status: `Active`
      post-stun immunity window.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
+     - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
+       obsolete file-missing skip from fixed Batch 1 spell coverage.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
    - Enemy AI behavior where tactical choices are meaningful.
