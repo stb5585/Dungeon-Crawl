@@ -146,7 +146,9 @@ class DataDrivenSpell(Spell):
 
         # ── 5. Crit roll ────────────────────────────────────────────
         if reflect:
+            result.extra["reflected_by"] = target.name
             target = caster
+            result.target = target
             msg += f"{self.name} is reflected back at {caster.name}!\n"
 
         crit = 1

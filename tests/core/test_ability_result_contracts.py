@@ -93,6 +93,41 @@ def test_data_driven_damage_spell_returns_stable_combat_result(monkeypatch):
     assert "damages Target for 60 hit points" in result.message
 
 
+def test_data_driven_damage_spell_reflect_updates_result_target(monkeypatch):
+    caster = _player()
+    target = _target()
+    spell = abilities.Fireball()
+    target.magic_effects["Reflect"].active = True
+
+    monkeypatch.setattr(
+        "src.core.data.data_driven_abilities.random.randint",
+        lambda _low, high: high,
+    )
+    monkeypatch.setattr(
+        "src.core.data.data_driven_abilities.random.uniform",
+        lambda _low, _high: 1.0,
+    )
+    caster.check_mod = lambda *_args, **_kwargs: 30
+    caster.hit_chance = lambda *_args, **_kwargs: 1.0
+    target.dodge_chance = lambda *_args, **_kwargs: 0.0
+    caster.handle_defenses = lambda _caster, damage, *_args, **_kwargs: (
+        True,
+        "",
+        damage,
+    )
+    caster.damage_reduction = lambda damage, *_args, **_kwargs: (True, "", damage)
+
+    result = spell.cast(caster, target)
+
+    _assert_result_contract(result, action="Fireball", actor=caster, target=caster)
+    assert result.hit is True
+    assert result.damage == 60
+    assert caster.health.current == 240
+    assert target.health.current == 500
+    assert result.extra["reflected_by"] == "Target"
+    assert "Fireball is reflected back at Caster!" in result.message
+
+
 def test_weapon_data_driven_skill_records_weapon_damage_in_result():
     user = _player("Warrior")
     target = _target()

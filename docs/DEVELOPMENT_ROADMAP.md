@@ -217,6 +217,8 @@ Status: `Active`
      old-style reusable ability instances do not leak stale messages, effect buckets, or damage fields.
    - 2026-06-16: Audited primitive `DamageEffect` registration: it remains available for custom `EffectFactory`
      definitions, while built-in YAML abilities are now covered to ensure they do not use `type: damage`.
+   - 2026-06-16: Aligned reflected data-driven damage spell results with the actual damaged target and record
+     the original reflector in `CombatResult.extra["reflected_by"]`.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -231,6 +233,8 @@ Status: `Active`
      - 2026-06-16: Fixed and covered finite Silence expiry while preserving `duration=-1` indefinite Silence.
      - 2026-06-16: Reused the shared Mana Shield absorption helper from `handle_defenses()` and covered
        shield depletion with leftover damage and depletion events.
+     - 2026-06-16: Added reflected damage-spell result coverage so presentation/result consumers see the
+       redirected target.
    - Enemy AI behavior where tactical choices are meaningful.
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.

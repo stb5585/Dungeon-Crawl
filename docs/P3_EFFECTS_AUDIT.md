@@ -50,6 +50,9 @@ Last updated: 2026-06-16
 - `Character.handle_defenses()` now reuses the shared Mana Shield absorption
   helper, and coverage pins shield depletion, leftover damage, and the
   "Mana Depleted" status event path.
+- Reflected data-driven damage spells now update `CombatResult.target` to the
+  actual damaged character and retain the original reflector name in
+  `extra["reflected_by"]`.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
   179 YAML ability files and verifies each one can produce a combat-ready
   object.
@@ -72,5 +75,4 @@ Last updated: 2026-06-16
   item, and relic completion paths.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
-- Continue status interaction coverage for Sleep, Prone, and reflect
-  interactions.
+- Continue status interaction coverage for Sleep and Prone interactions.
