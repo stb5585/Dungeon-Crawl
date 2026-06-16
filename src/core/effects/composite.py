@@ -2196,14 +2196,16 @@ class HolyFollowupEffect:
         # Mana Shield / Crusader Shield
         hit = True
         if target.magic_effects["Mana Shield"].active:
-            hit, shield_msg, damage = target._apply_mana_shield(damage)
+            damage, shield_msg, absorbed = actor._apply_mana_shield(target, damage)
+            hit = not absorbed
             messages.append(shield_msg)
         elif (
             target.cls.name == "Crusader"
             and getattr(target, "power_up", False)
             and target.class_effects["Power Up"].active
         ):
-            hit, shield_msg, damage = target.handle_crusader_shield(damage)
+            damage, shield_msg, absorbed = actor._apply_crusader_shield(target, damage)
+            hit = not absorbed
             messages.append(shield_msg)
 
         # Holy resist
@@ -2811,7 +2813,7 @@ class DetonateEffect(Effect):
 
         # Shield absorption
         if target.magic_effects["Mana Shield"].active:
-            _, message, damage = target._apply_mana_shield(damage)
+            damage, message, _absorbed = actor._apply_mana_shield(target, damage)
             messages.append(message)
         elif (
             hasattr(target, "cls")
@@ -2819,7 +2821,7 @@ class DetonateEffect(Effect):
             and getattr(target, "power_up", False)
             and target.class_effects["Power Up"].active
         ):
-            _, message, damage = target.handle_crusader_shield(damage)
+            damage, message, _absorbed = actor._apply_crusader_shield(target, damage)
             messages.append(message)
 
         if damage > 0:
@@ -3224,7 +3226,8 @@ class StompEffect(Effect):
 
             # Mana Shield
             if target.magic_effects["Mana Shield"].active:
-                hit, message, damage = target._apply_mana_shield(damage)
+                damage, message, absorbed = actor._apply_mana_shield(target, damage)
+                hit = not absorbed
                 messages.append(message)
             elif (
                 getattr(target, "cls", None)
@@ -3232,7 +3235,8 @@ class StompEffect(Effect):
                 and getattr(target, "power_up", False)
                 and target.class_effects["Power Up"].active
             ):
-                hit, message, damage = target.handle_crusader_shield(damage)
+                damage, message, absorbed = actor._apply_crusader_shield(target, damage)
+                hit = not absorbed
                 messages.append(message)
 
             if damage > 0:
@@ -3350,7 +3354,8 @@ class ThrowRockEffect(Effect):
 
             # Mana Shield
             if target.magic_effects["Mana Shield"].active:
-                hit, message, damage = target._apply_mana_shield(damage)
+                damage, message, absorbed = actor._apply_mana_shield(target, damage)
+                hit = not absorbed
                 messages.append(message)
             elif (
                 getattr(target, "cls", None)
@@ -3358,7 +3363,8 @@ class ThrowRockEffect(Effect):
                 and getattr(target, "power_up", False)
                 and target.class_effects["Power Up"].active
             ):
-                hit, message, damage = target.handle_crusader_shield(damage)
+                damage, message, absorbed = actor._apply_crusader_shield(target, damage)
+                hit = not absorbed
                 messages.append(message)
 
             if damage > 0:

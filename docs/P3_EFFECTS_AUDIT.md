@@ -53,6 +53,10 @@ Last updated: 2026-06-16
 - `Character.handle_defenses()` now reuses the shared Mana Shield absorption
   helper, and coverage pins shield depletion, leftover damage, and the
   "Mana Depleted" status event path.
+- Composite weapon-spell follow-ups and related custom effects now call the
+  shared Mana Shield/Crusader shield absorption helpers with the current
+  attacker/defender contract; Smite coverage pins Mana Shield absorption text
+  and mana consumption.
 - Reflected data-driven damage spells now update `CombatResult.target` to the
   actual damaged character and retain the original reflector name in
   `extra["reflected_by"]`.

@@ -231,6 +231,8 @@ Status: `Active`
      actual applied healing after caps and healing-received modifiers.
    - 2026-06-16: Extracted shared instant-heal application into `HealSpell._apply_instant_healing()` and routed
      YAML hybrid and out-of-combat heals through the same actual-healing helper.
+   - 2026-06-16: Corrected composite Mana Shield/Crusader shield helper calls for weapon-spell follow-ups and
+     related custom effects so they use the shared attacker/defender absorption helpers consistently.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -251,6 +253,7 @@ Status: `Active`
        shield depletion with leftover damage and depletion events.
      - 2026-06-16: Added reflected damage-spell result coverage so presentation/result consumers see the
        redirected target.
+     - 2026-06-16: Added Smite follow-up coverage for Mana Shield absorption messages and mana consumption.
      - 2026-06-16: Added Sleep/Prone interaction coverage proving Prone recovery waits until the tick after
        Sleep expires.
      - 2026-06-16: Added legacy electric-stun coverage against the post-stun immunity path.

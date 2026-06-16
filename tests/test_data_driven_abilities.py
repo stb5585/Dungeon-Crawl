@@ -6442,6 +6442,28 @@ class TestBatch8SmiteFamily:
         assert isinstance(result, str)
         assert len(result) > 0
 
+    def test_smite_followup_uses_mana_shield_absorption(self, monkeypatch):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        target.magic_effects["Mana Shield"].active = True
+        target.magic_effects["Mana Shield"].duration = 2
+        target.mana.current = 100
+        user.weapon_damage = lambda _target, **_kwargs: (
+            "Paladin hits Enemy.\n",
+            True,
+            1,
+        )
+        user.check_mod = lambda mod, **_kwargs: 30 if mod == "magic" else 0
+        target.check_mod = lambda mod, **_kwargs: 0
+        monkeypatch.setattr("random.randint", lambda _low, high: high)
+        monkeypatch.setattr("random.uniform", lambda _low, _high: 1.0)
+
+        result = abilities.Smite().cast(user, target, special=True)
+
+        assert "mana shield around Enemy absorbs 30 damage" in result
+        assert target.magic_effects["Mana Shield"].active is True
+        assert target.mana.current == 85
+
 
 class TestBatch8TurnUndeadFamily:
     """TurnUndead / TurnUndead2 - undead-only kill or holy damage."""

@@ -1536,17 +1536,18 @@ class DataDrivenMagicMissileSpell(Spell):
 
                     # Mana Shield
                     if target.magic_effects["Mana Shield"].active:
-                        hits[i], message, damage = target._apply_mana_shield(
-                            damage
+                        damage, message, absorbed = caster._apply_mana_shield(
+                            target, damage
                         )
+                        hits[i] = not absorbed
                         cast_message += message
                     elif (
                         target.cls.name == "Crusader"
                         and target.power_up
                         and target.class_effects["Power Up"].active
                     ):
-                        _, message, damage = target.handle_crusader_shield(
-                            damage
+                        damage, message, _absorbed = caster._apply_crusader_shield(
+                            target, damage
                         )
                         cast_message += message
 
