@@ -340,6 +340,32 @@ class TestYAMLLoading:
         assert "Jump" in loaded_names
         assert "Cataclysm" in loaded_names
 
+    def test_builtin_yaml_abilities_do_not_use_primitive_damage_effects(self):
+        import yaml
+
+        def find_damage_effects(node, path):
+            matches = []
+            if isinstance(node, dict):
+                if str(node.get("type", "")).lower() == "damage":
+                    matches.append(path)
+                for key, value in node.items():
+                    matches.extend(find_damage_effects(value, f"{path}.{key}"))
+            elif isinstance(node, list):
+                for index, value in enumerate(node):
+                    matches.extend(find_damage_effects(value, f"{path}[{index}]"))
+            return matches
+
+        yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
+        damage_effect_paths = []
+        for path in yaml_paths:
+            with path.open("r", encoding="utf-8") as handle:
+                payload = yaml.safe_load(handle) or {}
+            damage_effect_paths.extend(
+                f"{path.name}:{match}" for match in find_damage_effects(payload, "$")
+            )
+
+        assert damage_effect_paths == []
+
     def test_load_directory_produces_combat_ready(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSpell, DataDrivenSkill

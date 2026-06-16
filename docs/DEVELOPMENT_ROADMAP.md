@@ -215,12 +215,16 @@ Status: `Active`
      post-stun immunity window.
    - 2026-06-16: Reused the shared result reset helper for legacy base `Spell.cast()` and `Skill.use()` paths so
      old-style reusable ability instances do not leak stale messages, effect buckets, or damage fields.
+   - 2026-06-16: Audited primitive `DamageEffect` registration: it remains available for custom `EffectFactory`
+     definitions, while built-in YAML abilities are now covered to ensure they do not use `type: damage`.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
        obsolete file-missing skip from fixed Batch 1 spell coverage.
      - 2026-06-16: Added legacy base `Spell`/`Skill` result lifecycle regressions to complement the YAML
        result-shape contracts.
+     - 2026-06-16: Added a catalog audit test proving built-in YAML abilities avoid primitive `DamageEffect`
+       entries.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.

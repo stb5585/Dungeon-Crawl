@@ -53,6 +53,9 @@ Last updated: 2026-06-16
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
   179 YAML ability files and verifies each one can produce a combat-ready
   object.
+- Built-in YAML abilities are now audited to ensure none use primitive
+  `type: damage` effects; `DamageEffect` remains registered and covered for
+  external/custom `EffectFactory` definitions.
 - The fixed Batch 1 spell loader test no longer skips missing files; those YAML
   files are required content.
 
@@ -67,9 +70,6 @@ Last updated: 2026-06-16
   completed.
 - `Player.quests()` now has a typed signature and behavior docstring for enemy,
   item, and relic completion paths.
-- Audit whether `DamageEffect` should remain registered for external/custom
-  ability data, since built-in YAML abilities no longer appear to use
-  `type: damage`.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
 - Continue status interaction coverage for Sleep, Prone, and reflect
