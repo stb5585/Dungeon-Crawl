@@ -1194,7 +1194,7 @@ class DataDrivenWeaponSpell(Spell):
         dmg_mod: float = 1.0,
         crit: int = 5,
         subtyp: str = "Holy",
-        effects: list | None = None,
+        effects: list[Effect] | None = None,
         school: str | None = None,
         rank: int | None = None,
     ):
@@ -1204,16 +1204,16 @@ class DataDrivenWeaponSpell(Spell):
         self.crit = crit
         self.subtyp = subtyp
         self.rank = rank
-        self._effects: list = effects or []
+        self._effects: list[Effect] = effects or []
 
     def cast(
         self,
-        caster,
-        target=None,
+        caster: Character,
+        target: Character,
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
-    ):
+    ) -> str:
         if not (special or fam):
             caster.mana.current -= self.cost
 
@@ -1256,7 +1256,7 @@ class DataDrivenCustomSpell(Spell):
         dmg_mod: float = 1.0,
         crit: int = 5,
         subtyp: str = "Holy",
-        effects: list | None = None,
+        effects: list[Effect] | None = None,
         school: str | None = None,
         rank: int | None = None,
     ):
@@ -1266,16 +1266,16 @@ class DataDrivenCustomSpell(Spell):
         self.crit = crit
         self.subtyp = subtyp
         self.rank = rank
-        self._effects: list = effects or []
+        self._effects: list[Effect] = effects or []
 
     def cast(
         self,
-        caster,
-        target=None,
+        caster: Character,
+        target: Character,
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
-    ):
+    ) -> str:
         if not (special or fam):
             caster.mana.current -= self.cost
 
