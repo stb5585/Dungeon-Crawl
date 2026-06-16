@@ -84,3 +84,24 @@ def test_damage_over_time_effects_resolve_before_regen(monkeypatch):
     assert character.magic_effects["DOT"].active is False
     assert character.physical_effects["Bleed"].active is False
     assert character.magic_effects["Regen"].active is False
+
+
+def test_timed_silence_expires_but_indefinite_silence_persists():
+    character = _combatant("Mage", wisdom=10)
+    character.status_effects["Silence"].active = True
+    character.status_effects["Silence"].duration = 1
+
+    text = character.effects()
+
+    assert "Mage can speak again." in text
+    assert character.status_effects["Silence"].active is False
+    assert character.status_effects["Silence"].duration == 0
+
+    character.status_effects["Silence"].active = True
+    character.status_effects["Silence"].duration = -1
+
+    text = character.effects()
+
+    assert text == ""
+    assert character.status_effects["Silence"].active is True
+    assert character.status_effects["Silence"].duration == -1

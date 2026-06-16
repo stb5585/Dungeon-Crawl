@@ -45,6 +45,8 @@ Last updated: 2026-06-16
 - Status interaction coverage now pins the per-turn ordering for Poison, burn
   DOT, Bleed, and Regen, including final-turn cleanup before the Regen heal is
   evaluated.
+- Timed Silence now expires through `Character.effects()` while
+  `duration=-1` Silence remains indefinite until cured.
 - `TestYAMLLoading.test_all_yaml_abilities_load_combat_ready` now walks all
   179 YAML ability files and verifies each one can produce a combat-ready
   object.
@@ -67,5 +69,5 @@ Last updated: 2026-06-16
   `type: damage`.
 - Extract shared combat/healing result helpers only after the contract tests are
   in place.
-- Continue status interaction coverage for Sleep, Prone, Silence, and
-  shield/reflect interactions.
+- Continue status interaction coverage for Sleep, Prone, and shield/reflect
+  interactions.

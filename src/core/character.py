@@ -1488,6 +1488,11 @@ class Character:
                 if not self.status_effects["Sleep"].duration:
                     status_text += f"{self.name} is no longer asleep.\n"
                     default(effect="Sleep")
+            if self.status_effects["Silence"].active and self.status_effects["Silence"].duration > 0:
+                self.status_effects["Silence"].duration -= 1
+                if not self.status_effects["Silence"].duration:
+                    status_text += f"{self.name} can speak again.\n"
+                    default(effect="Silence")
             if self.status_effects["Berserk"].active:
                 self.status_effects["Berserk"].duration -= 1
                 if not self.status_effects["Berserk"].duration:
