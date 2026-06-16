@@ -96,6 +96,8 @@ Last updated: 2026-06-16
   external/custom `EffectFactory` definitions.
 - The fixed Batch 1 spell loader test no longer skips missing files; those YAML
   files are required content.
+- `random_enemy()` now returns the selected catalog enemy again instead of
+  replacing every selection with the debug `Test` enemy.
 
 ## Follow-Up Work
 

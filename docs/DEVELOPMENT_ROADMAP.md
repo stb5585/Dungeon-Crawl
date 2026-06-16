@@ -235,6 +235,8 @@ Status: `Active`
      related custom effects so they use the shared attacker/defender absorption helpers consistently.
    - 2026-06-16: Routed passive placeholder power-up hooks through the shared result reset helper so their
      interim `CombatResult` contracts do not leak stale reusable state.
+   - 2026-06-16: Removed the stale `random_enemy()` debug override that forced all random encounters to the
+     `Test` enemy after catalog selection.
 2. Expand high-value automated coverage.
    - Ability effects across the full ability set.
      - 2026-06-16: Added a combat-ready YAML catalog smoke test covering all 179 ability files and removed an
@@ -264,6 +266,7 @@ Status: `Active`
    - Enemy AI behavior where tactical choices are meaningful.
      - 2026-06-16: Added priority-stack coverage for redundant target-status skips and target-positive-effect
        Dispel selection; refreshed Attack fallback assertions to match the engine's `("Attack", None)` contract.
+     - 2026-06-16: Re-enabled real random enemy catalog selection and validated catalog edge coverage.
    - Quest completion/reward flows.
      - 2026-06-16: Added item-collection quest coverage for partial progress, item-instance matching, and
        no duplicate completion messages after completion.
