@@ -1121,14 +1121,19 @@ def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypat
 
     manager._play_smoke_screen_visual = play_smoke_screen_visual
 
+    def execute_smoke_screen(action, choice=None, slot_machine_callback=None):
+        manager.engine.flee = True
+        return SimpleNamespace(
+            message="Bandit vanishes in smoke.",
+            fled=False,
+        )
+
     manager.engine = SimpleNamespace(
+        flee=False,
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Use Skill", "Smoke Screen"),
-        execute_action=lambda action, choice=None, slot_machine_callback=None: SimpleNamespace(
-            message="Bandit vanishes in smoke.",
-            fled=True,
-        ),
+        execute_action=execute_smoke_screen,
     )
 
     assert manager._enemy_turn(player, enemy) == "flee"

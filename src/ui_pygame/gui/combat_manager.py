@@ -1043,7 +1043,7 @@ class GUICombatManager:
 
         self._preserve_waitress_for_transition(enemy)
 
-        if result.fled:
+        if result.fled or bool(getattr(self.engine, "flee", False)):
             return "flee"
         return "action_taken"
     
@@ -1441,7 +1441,8 @@ class GUICombatManager:
             action == "Use Skill"
             and (choice == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
         )
-        if result.fled and is_smoke_screen:
+        action_fled = result.fled or bool(getattr(self.engine, "flee", False))
+        if action_fled and is_smoke_screen:
             self.combat_view.hide_enemy_for_flee()
 
         # Display messages
@@ -1468,7 +1469,7 @@ class GUICombatManager:
             self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
         self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
-        if result.fled:
+        if action_fled:
             return "flee"
 
         # Render updated state and show result (with animation updates)
