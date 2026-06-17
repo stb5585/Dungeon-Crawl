@@ -375,11 +375,12 @@ Implemented:
    - Added one-time milestone supply deposits to the Barracks storage locker for selected turned-in quests.
 - P4b town presentation hooks:
    - Added contextual town-menu location details for the Sergeant/Barracks, tavern patrons, shop purveyors, Church priest, Old Warehouse guards, and staffed Warp Point scientists.
+- Bring Him Home presentation hook:
+   - Added a post-turn-in Timmy/family scene after the Sergeant receives the completed quest.
 
 Next Ready Slice:
 
 - Add greater immersive details after content hooks are confirmed:
-  - Add a presentation hook for the Bring Him Home child once the relevant scene flow is audited.
   - Add artistic renderings for town NPCs/venues in a later asset pass.
 
 Needs Design Decision:

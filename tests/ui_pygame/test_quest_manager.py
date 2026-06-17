@@ -328,6 +328,20 @@ def test_content_old_key_rewards_turn_in_through_pygame_manager(monkeypatch):
     assert player.quest_dict["Main"]["A Bad Dream"]["Turned In"] is True
 
 
+def test_bring_him_home_turn_in_shows_timmy_home_event(monkeypatch):
+    player = _make_player(level=5)
+    player.quest_dict["Side"]["Bring Him Home"] = _content_quest("Sergeant", "Side", "Bring Him Home")
+    rendered = []
+    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text))
+    monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
+
+    manager._turn_in("Bring Him Home", "Side")
+
+    assert player.quest_dict["Side"]["Bring Him Home"]["Turned In"] is True
+    assert any("Timmy hides behind her coat" in text for text in rendered)
+    assert any("brought a family back together" in text for text in rendered)
+
+
 def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):
     player = _make_player(level=12)
     player.quest_dict["Main"]["Done Quest"] = {"Completed": True, "Turned In": False}

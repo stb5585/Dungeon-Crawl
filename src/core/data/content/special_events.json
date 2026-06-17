@@ -8,6 +8,15 @@
             "You have found the little boy, Timmy, and escort him home."
             ]
     },
+    "Timmy Home": {
+        "Text": [
+            "A woman rushes past the Sergeant before he can finish thanking you.",
+            "Timmy hides behind her coat, still dusty from the dungeon, but alive.",
+            "'I told them someone brave would find me,' he says, trying very hard not to cry.",
+            "The Sergeant looks away for a moment and clears his throat.",
+            "'You did more than complete an assignment today. You brought a family back together.'"
+            ]
+    },
     "Unobtainium": {
         "Text": [
             "A brilliant column of light highlights a small piece of ore resting on the ground at the center of the room.",

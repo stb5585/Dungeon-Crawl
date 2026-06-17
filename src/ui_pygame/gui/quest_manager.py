@@ -475,6 +475,8 @@ class QuestManager:
                         self._show_popup(popup)
         elif quest_name == "The Wizard's Folly":
             show_special_event_text("Nimue After Merzhin")
+        elif quest_name == "Bring Him Home":
+            show_special_event_text("Timmy Home")
     
     def _already_killed(self, enemy_name: str) -> bool:
         kill_dict = getattr(self.player_char, 'kill_dict', {})
