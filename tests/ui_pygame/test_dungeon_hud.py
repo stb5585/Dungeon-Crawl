@@ -210,6 +210,28 @@ def test_status_icons_compact_overflow_in_combat_hud(monkeypatch):
     assert hud.status_colors["urgent_negative"] in colors
 
 
+def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    font = RecordingFont()
+    icon_surface = DummySurface((14, 14), text="stun-icon")
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.load_status_icon_surface", lambda _label, _size: icon_surface)
+    player = _make_player()
+    player.status_effects = {"Stun": _effect()}
+    player.physical_effects = {}
+    player.stat_effects = {}
+    player.magic_effects = {}
+    player.class_effects = {}
+    player.maelstrom_hits = 0
+
+    hud._render_status_icons(player, 100)
+
+    assert font.render_calls == []
+    assert bundle.draw_rect_calls == []
+    assert any(surface is icon_surface for surface, _position in bundle.screen.blit_calls)
+
+
 def test_dense_combat_hud_status_icons_keep_urgent_counts_and_overflow(monkeypatch):
     bundle = _make_hud(monkeypatch)
     hud = bundle.hud

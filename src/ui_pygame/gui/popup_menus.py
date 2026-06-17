@@ -2149,9 +2149,6 @@ class EquipmentSelectionPopup(BasePopupMenu):
         self.screen.blit(name_text, (x, y))
         y += name_text.get_height() + 8
 
-        if actual_item is not None and str(getattr(actual_item, "typ", "") or "") == "Weapon":
-            y = self._render_aligned_detail_row("Hands", self._weapon_handedness(actual_item), x, y)
-        
         # Handle different option types
         if item_str == "Cancel":
             return  # Don't show diff for cancel

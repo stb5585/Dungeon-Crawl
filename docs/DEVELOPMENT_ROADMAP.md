@@ -336,23 +336,29 @@ Implemented:
 
 - Added post-fight/tavern comments, Sergeant relic and Warp Point hints, and staffed Warp Point scientist flavor.
 - Added one-handed/two-handed weapon details to equipment previews and equipped-slot inspection details.
-  - Equipment slots show `(1H)` or `(2H)` for weapons; equip popups keep the dedicated Hands detail row.
+  - Equipment slots show `(1H)` or `(2H)` for weapons; equip popups use the weapon name suffix without a separate Hands row.
 - Preserved inventory sort selection when reopening the Character Menu inventory popup.
 - Aligned ordinary player/enemy combat log lines with player blue/enemy red while preserving outcome colors for damage, healing, misses, and resists.
 - Expanded combat-log color classification for item special-effect style messages.
 - Rebalanced Smoke Screen to cost 0 MP.
 - Tuned Bandit post-steal AI so Smoke Screen is strongly favored, but not guaranteed, while `Steal Success` is active.
-- Replaced status-effect initials with effect artwork where current assets exist, with text fallback for missing icons.
+- Replaced status-effect initials with standalone effect artwork where current assets exist, with text fallback for missing icons.
+- Removed the duplicate Hands row from equipment replacement popups.
+- Bosses and the Waitress suppress Vision enemy-detail reveals in the pygame combat view.
+- Added an enemy MP bar when Vision-style enemy details are visible and the enemy has mana.
 - Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
   - Mirror Image duplicates the user.
-  - Smoke Screen obscures targets when a smoke effect flag is present.
+  - Smoke Screen briefly obscures targets when the skill is used or a smoke effect flag is present.
   - Future visual candidates: Jump/landing impacts, Charge wind-up impacts, Reflect/Magic reflection flashes, Stun/Prone hit accents, and elemental strike overlays.
+    - Jump and Charge wind-up/impacts would likely require enemy sprite stance adjustments; this should be deferred until later
+    - We can explore the others but they will be dependent on execution for approval
 
 Ready / Needs Exploration:
 
 - Add remaining status-effect artwork in a later asset pass; current fallback initials remain valid where no PNG exists.
 - Revisit broader ability visuals after choosing the next batch from the candidate list above.
+- Deferred: creation of artistic renderings for Warp Point
 
 #### P4b - Quest And Realm Content
 

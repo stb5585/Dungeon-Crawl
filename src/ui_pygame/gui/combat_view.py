@@ -186,6 +186,7 @@ class CombatView:
         self.enemy_visual_offset = (0, 0)
         self._active_impact_effects: list[CombatImpactEffect] = []
         self._active_float_texts: list[FloatingCombatText] = []
+        self._transient_smoke_visuals: dict[str, int] = {}
         self._enemy_recoil_until_ms = 0
         self._last_enemy_target_rect = pygame.Rect(
             self.combat_width // 2 - 120,
@@ -259,6 +260,21 @@ class CombatView:
                 start_ms=pygame.time.get_ticks(),
             )
         )
+
+    def trigger_smoke_screen_visual(self, target: str, duration_ms: int = 900) -> None:
+        """Show the smoke cloud briefly for instant Smoke Screen escapes."""
+        if target not in {"enemy", "player"}:
+            return
+        self._transient_smoke_visuals[target] = pygame.time.get_ticks() + max(1, int(duration_ms))
+
+    def _transient_smoke_active(self, target: str) -> bool:
+        until_ms = self._transient_smoke_visuals.get(target, 0)
+        if until_ms <= 0:
+            return False
+        if pygame.time.get_ticks() <= until_ms:
+            return True
+        self._transient_smoke_visuals.pop(target, None)
+        return False
     
     def enemy_dies(self, enemy):
         """Trigger death animation when enemy dies."""
@@ -845,14 +861,13 @@ class CombatView:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            pygame.draw.rect(self.screen, color, rect, border_radius=4)
-            pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
-
             icon_surface = load_status_icon_surface(label, (icon_h - 4, icon_h - 4))
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)
             else:
+                pygame.draw.rect(self.screen, color, rect, border_radius=4)
+                pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
                 fitted_label = fit_status_icon_label(font, label, icon_w - 6)
                 text_surf = font.render(fitted_label, True, (255, 255, 255))
                 text_rect = text_surf.get_rect(center=rect.center)
@@ -891,6 +906,14 @@ class CombatView:
             return True
         
         return False
+
+    def _enemy_details_visible(self, player_char, enemy, show_enemy_details=None) -> bool:
+        """Return whether sight-based enemy details should be displayed."""
+        if show_enemy_details is not None:
+            return bool(show_enemy_details)
+        if self._is_boss_enemy(enemy) or getattr(enemy, "name", "") == "Waitress":
+            return False
+        return self._has_sight(player_char)
     
     def _colorize_sprite(self, sprite, enemy):
         """Prepare sprite for rendering.
@@ -1035,7 +1058,11 @@ class CombatView:
             self._render_duplicate_silhouettes(rect, self._active_duplicate_count(character))
         if self._magic_effect_active(character, "Mana Shield"):
             self._render_mana_shield_visual(rect)
-        if self._magic_effect_active(character, "Smoke Screen") or self._magic_effect_active(character, "SmokeScreen"):
+        if (
+            self._transient_smoke_active(target)
+            or self._magic_effect_active(character, "Smoke Screen")
+            or self._magic_effect_active(character, "SmokeScreen")
+        ):
             self._render_smoke_screen_visual(rect)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
@@ -1048,8 +1075,8 @@ class CombatView:
         combat_rect = pygame.Rect(0, 0, self.combat_width, self.combat_height)
         self.screen.fill(self.colors['background'], combat_rect)
         
-        # Check if player has sight
-        has_sight = self._has_sight(player_char) if show_enemy_details is None else bool(show_enemy_details)
+        # Check if player can see enemy details
+        has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
         
         # Render enemy in center
         self._render_enemy(enemy, has_sight)
@@ -1182,7 +1209,7 @@ class CombatView:
         name_rect = name_surf.get_rect(center=(center_x, center_y - enemy_size - 30))
         self.screen.blit(name_surf, name_rect)
         
-        # Enemy HP bar (only visible with sight)
+        # Enemy HP/MP bars (only visible with sight)
         if has_sight:
             bar_width = 200
             bar_height = 20
@@ -1205,6 +1232,20 @@ class CombatView:
             hp_surf = small_font.render(hp_text, True, self.colors['text'])
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
+
+            enemy_mana = getattr(enemy, "mana", None)
+            if enemy_mana is not None and getattr(enemy_mana, "max", 0) > 0:
+                mp_y = bar_y + bar_height + 6
+                pygame.draw.rect(self.screen, (100, 100, 100),
+                               pygame.Rect(bar_x, mp_y, bar_width, bar_height))
+                mp_ratio = enemy_mana.current / max(enemy_mana.max, 1)
+                mp_width = int(bar_width * mp_ratio)
+                pygame.draw.rect(self.screen, self.colors['mp_bar'],
+                               pygame.Rect(bar_x, mp_y, mp_width, bar_height))
+                mp_text = f"MP {enemy_mana.current}/{enemy_mana.max}"
+                mp_surf = small_font.render(mp_text, True, self.colors['text'])
+                mp_rect = mp_surf.get_rect(center=(center_x, mp_y + bar_height // 2))
+                self.screen.blit(mp_surf, mp_rect)
 
         self._render_active_impact_effects()
         self._render_floating_texts()
@@ -1496,7 +1537,7 @@ class CombatView:
             flash_clock.tick(60)
             elapsed += flash_clock.get_time()
 
-    def render_enemy_in_dungeon(self, player_char, enemy):
+    def render_enemy_in_dungeon(self, player_char, enemy, show_enemy_details=None):
         """Render the enemy as if it's standing in the dungeon ahead of the player."""
         # Update animations
         self.update_animations()
@@ -1515,8 +1556,8 @@ class CombatView:
         # Get animator for this enemy
         animator = self._get_sprite_animator(enemy)
         
-        # Check if player has sight
-        has_sight = self._has_sight(player_char)
+        # Check if player can see enemy details
+        has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
         
         sprite_size = self._enemy_dungeon_combat_sprite_size(enemy)
         display_sprite = self._enemy_sprite_surface(enemy, sprite_size, has_sight=has_sight)
@@ -1595,7 +1636,7 @@ class CombatView:
         self.screen.blit(shadow_surf, shadow_rect)
         self.screen.blit(name_surf, name_rect)
         
-        # Enemy HP bar above name (only visible with sight)
+        # Enemy HP/MP bars above name (only visible with sight)
         if has_sight:
             bar_width = 250
             bar_height = 25
@@ -1623,10 +1664,28 @@ class CombatView:
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
 
+            resource_bottom = bar_y + bar_height
+            enemy_mana = getattr(enemy, "mana", None)
+            if enemy_mana is not None and getattr(enemy_mana, "max", 0) > 0:
+                mp_y = resource_bottom + 6
+                pygame.draw.rect(self.screen, (40, 40, 40),
+                               pygame.Rect(bar_x, mp_y, bar_width, bar_height))
+                mp_ratio = enemy_mana.current / max(enemy_mana.max, 1)
+                mp_width = int(bar_width * mp_ratio)
+                pygame.draw.rect(self.screen, self.colors['mp_bar'],
+                               pygame.Rect(bar_x, mp_y, mp_width, bar_height))
+                pygame.draw.rect(self.screen, (150, 150, 150),
+                               pygame.Rect(bar_x, mp_y, bar_width, bar_height), 2)
+                mp_text = f"MP {enemy_mana.current}/{enemy_mana.max}"
+                mp_surf = hp_font.render(mp_text, True, (255, 255, 255))
+                mp_rect = mp_surf.get_rect(center=(center_x, mp_y + bar_height // 2))
+                self.screen.blit(mp_surf, mp_rect)
+                resource_bottom = mp_y + bar_height
+
             # Status icons under the HP bar
             icons = self._collect_status_icons(enemy)
             if icons:
-                self._render_status_icons(icons, bar_x, bar_y + bar_height + 8, max_width=bar_width)
+                self._render_status_icons(icons, bar_x, resource_bottom + 8, max_width=bar_width)
 
         self._render_active_impact_effects()
         self._render_floating_texts()
@@ -1643,7 +1702,7 @@ class CombatView:
         self._render_player_danger_vignette(player_char)
         self._render_turn_indicator(player_char, enemy, current_turn=current_turn, overlay=True)
         self._render_telegraph_banner(enemy=enemy, overlay=True)
-        has_sight = self._has_sight(player_char) if show_enemy_details is None else bool(show_enemy_details)
+        has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
         self._render_enemy_info_panel(enemy, has_sight, overlay=True)
         self._render_ability_status_visuals(enemy, "enemy")
         self._render_ability_status_visuals(player_char, "player")

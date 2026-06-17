@@ -718,18 +718,17 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
 
     rendered = presenter.large_font.render_calls + presenter.normal_font.render_calls
     assert "Bastard Sword (2H)" in rendered
-    assert "Hands" in rendered
-    assert "Two-handed" in rendered
+    assert "Hands" not in rendered
+    assert "Two-handed" not in rendered
     assert "Attack" in rendered
     assert "36 -> 40" in rendered
 
     positions = {
         surface.text: position[0]
         for surface, position in presenter.screen.blit_calls
-        if getattr(surface, "text", None) in {"Attack", "36 -> 40", "Hands", "Two-handed"}
+        if getattr(surface, "text", None) in {"Attack", "36 -> 40"}
     }
     assert positions["36 -> 40"] > positions["Attack"]
-    assert positions["Two-handed"] > positions["Hands"]
 
 
 def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):

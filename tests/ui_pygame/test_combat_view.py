@@ -611,6 +611,53 @@ def test_status_icons_compact_overflow_and_telegraph_log_color(monkeypatch):
     assert (normal_line, (240, 240, 240)) in font.color_calls
 
 
+def test_status_art_icons_render_without_badge_background(monkeypatch):
+    view = _make_view()
+    font = RecordingFont()
+    rect_calls = []
+    icon_surface = DummySurface((14, 14), text="stun-icon")
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.load_status_icon_surface", lambda _label, _size: icon_surface)
+
+    view._render_status_icons([("STN", False)], 10, 20, max_width=90)
+
+    assert not rect_calls
+    assert font.render_calls == []
+    assert any(surface is icon_surface for surface, _pos, _args, _kwargs in view.screen.blit_calls)
+
+
+def test_enemy_detail_visibility_hides_bosses_and_shows_non_boss_mana(monkeypatch):
+    view = _make_view()
+    player = _make_character()
+    player.equipment["Pendant"].mod = "Vision"
+    boss = SimpleNamespace(name="Jester", boss=True)
+    enemy = SimpleNamespace(
+        name="Bandit",
+        health=SimpleNamespace(current=8, max=10),
+        mana=SimpleNamespace(current=7, max=16),
+        flying=False,
+        tunnel=False,
+        magic_effects={},
+        class_effects={},
+    )
+    font = RecordingFont()
+
+    assert view._enemy_details_visible(player, boss) is False
+    assert view._enemy_details_visible(player, enemy) is True
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(view, "_enemy_sprite_surface", lambda *_args, **_kwargs: DummySurface((80, 80), text="enemy"))
+    monkeypatch.setattr(view, "_enemy_combat_sprite_size", lambda _enemy: (80, 80))
+
+    view._render_enemy(enemy, has_sight=True)
+
+    assert "MP 7/16" in font.render_calls
+
+
 def test_combat_log_color_classifies_item_special_effect_messages():
     view = _make_view()
     view._set_combat_log_actors(
@@ -824,6 +871,13 @@ def test_ability_status_visuals_draw_shield_smoke_and_duplicates(monkeypatch):
     assert ellipse_calls
     assert circle_calls
     assert len(view.screen.blit_calls) > blit_count
+
+    smoke_only = SimpleNamespace(magic_effects={})
+    circle_calls.clear()
+    view.trigger_smoke_screen_visual("enemy")
+    view._last_enemy_target_rect = pygame.Rect(200, 160, 120, 160)
+    view._render_ability_status_visuals(smoke_only, "enemy", include_duplicates=False)
+    assert circle_calls
 
 
 def test_combat_feedback_text_recoil_and_low_health_vignette(monkeypatch):

@@ -316,6 +316,26 @@ class GUICombatManager:
         color = self.combat_view.colors.get("log_heal", (120, 210, 135))
         self.combat_view.trigger_floating_text(target, f"+{amount}", color)
 
+    def _play_smoke_screen_visual(
+        self,
+        player_char: Player,
+        enemy: Character,
+        target: str,
+        frames: int = 24,
+    ) -> None:
+        """Briefly show smoke for instant Smoke Screen escapes."""
+        self.combat_view.trigger_smoke_screen_visual(target)
+        clock = pygame.time.Clock()
+        for _ in range(frames):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                self._handle_combat_log_scroll_event(event)
+            self._render_combat_frame(player_char, enemy, [], -1)
+            pygame.display.flip()
+            clock.tick(60)
+
     def _show_slot_machine_reveal(self, user: Character, target: Character) -> str:
         """Animate a Slot Machine spin popup and reveal cards left-to-right."""
         cards = random.sample(SLOT_CARD_DECK, 3)
@@ -991,7 +1011,10 @@ class GUICombatManager:
             if line.strip():
                 self.combat_view.add_combat_message(line)
 
-        self._flush_result_frame(player_char, enemy)
+        if engine_action == "Use Skill" and choice == "Smoke Screen":
+            self._play_smoke_screen_visual(player_char, enemy, "player")
+        else:
+            self._flush_result_frame(player_char, enemy)
 
         # Show damage flash for enemy damage
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
@@ -1420,7 +1443,10 @@ class GUICombatManager:
                 self.combat_view.add_combat_message(line)
         self._add_new_player_stun_message(player_char, player_stun_before, result.message)
 
-        self._flush_result_frame(player_char, enemy)
+        if action == "Use Skill" and choice == "Smoke Screen":
+            self._play_smoke_screen_visual(player_char, enemy, "enemy")
+        else:
+            self._flush_result_frame(player_char, enemy)
 
         # Check if enemy shapeshifted (name changed)
         if enemy.name != enemy_name_before:
@@ -1473,16 +1499,17 @@ class GUICombatManager:
                 # Fallback to black screen if dungeon rendering fails
                 self.screen.fill((0, 0, 0))
         
-        # Render enemy in the dungeon (in front of player)
-        self.combat_view.render_enemy_in_dungeon(player_char, enemy)
-        
-        # Render combat HUD overlay (action menu and combat log)
         current_turn = None
         if self.engine is not None and getattr(self.engine, "attacker", None) is not None:
             current_turn = "player" if self.engine.is_player_turn() else "enemy"
         show_enemy_details = None
         if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
             show_enemy_details = self.engine.show_enemy_details()
+
+        # Render enemy in the dungeon (in front of player)
+        self.combat_view.render_enemy_in_dungeon(player_char, enemy, show_enemy_details=show_enemy_details)
+
+        # Render combat HUD overlay (action menu and combat log)
         self.combat_view.render_combat_overlay(
             player_char,
             enemy,
