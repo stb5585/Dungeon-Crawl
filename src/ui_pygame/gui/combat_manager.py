@@ -1462,6 +1462,8 @@ class GUICombatManager:
         self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         if result.fled:
+            if action == "Use Skill" and choice == "Smoke Screen":
+                self.combat_view.hide_enemy_for_flee()
             return "flee"
 
         # Render updated state and show result (with animation updates)

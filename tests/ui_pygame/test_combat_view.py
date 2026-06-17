@@ -1026,6 +1026,39 @@ def test_center_combat_enemy_fades_while_smoke_screen_active(monkeypatch):
     assert sprite_blits[-1].alpha == 77
 
 
+def test_enemy_hidden_for_flee_skips_sprite_until_log_reset(monkeypatch):
+    view = _make_view()
+    enemy = SimpleNamespace(
+        name="Bandit",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "bandit",
+        get_combat_scale_for_enemy=lambda _enemy: 1.0,
+        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="hidden-bandit"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    view.hide_enemy_for_flee()
+    view._render_enemy(enemy, has_sight=True)
+
+    assert not any(
+        getattr(surface, "text", "") == "hidden-bandit"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+    view.reset_combat_log()
+    view._render_enemy(enemy, has_sight=True)
+
+    assert any(
+        getattr(surface, "text", "") == "hidden-bandit"
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+    )
+
+
 def test_center_combat_boss_uses_mapped_scale_sprite_box(monkeypatch):
     view = _make_view()
     calls = []

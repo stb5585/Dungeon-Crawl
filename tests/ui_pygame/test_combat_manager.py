@@ -75,6 +75,7 @@ class DummyCombatView:
         self.enemy_deaths = []
         self.reset_calls = 0
         self.render_calls = []
+        self.hide_enemy_calls = 0
         self.colors = {"log_damage": (235, 120, 105), "log_heal": (120, 210, 135)}
 
     def scroll_log(self, amount):
@@ -85,6 +86,9 @@ class DummyCombatView:
 
     def reset_combat_log(self):
         self.reset_calls += 1
+
+    def hide_enemy_for_flee(self):
+        self.hide_enemy_calls += 1
 
     def render_enemy_in_dungeon(self, *args, **kwargs):
         self.render_calls.append(("enemy", args, kwargs))
@@ -1096,3 +1100,33 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     assert manager.combat_view.messages[-1] == "Hero is stunned and cannot act."
     assert manager.combat_view.reload_calls[-1] == enemy
     assert manager.combat_view.flash_calls[-1][0] is True
+
+
+def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Bandit")
+    enemy.spellbook = {"Skills": {"Smoke Screen": SimpleNamespace(name="Smoke Screen")}}
+    player.status_effects = {"Stun": SimpleNamespace(active=False)}
+    smoke_visuals = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *_args: None
+    manager._play_smoke_screen_visual = lambda _player, _enemy, target: smoke_visuals.append(target)
+
+    manager.engine = SimpleNamespace(
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        get_enemy_action=lambda: ("Use Skill", "Smoke Screen"),
+        execute_action=lambda action, choice=None, slot_machine_callback=None: SimpleNamespace(
+            message="Bandit vanishes in smoke.",
+            fled=True,
+        ),
+    )
+
+    assert manager._enemy_turn(player, enemy) == "flee"
+    assert smoke_visuals == ["enemy"]
+    assert manager.combat_view.hide_enemy_calls == 1

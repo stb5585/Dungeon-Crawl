@@ -200,6 +200,7 @@ class CombatView:
             220,
             110,
         )
+        self._hide_enemy_for_flee = False
         self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
@@ -267,6 +268,10 @@ class CombatView:
             return
         self._transient_smoke_visuals[target] = pygame.time.get_ticks() + max(1, int(duration_ms))
 
+    def hide_enemy_for_flee(self) -> None:
+        """Keep the enemy hidden after a smoke-screen escape until combat cleanup."""
+        self._hide_enemy_for_flee = True
+
     def _transient_smoke_active(self, target: str) -> bool:
         until_ms = self._transient_smoke_visuals.get(target, 0)
         if until_ms <= 0:
@@ -317,6 +322,7 @@ class CombatView:
         self.log_scroll_offset = 0
         self._active_telegraph_line = None
         self._suppress_logged_telegraph_banner = False
+        self._hide_enemy_for_flee = False
 
     def _prune_impact_effects(self) -> None:
         if not self._active_impact_effects:
@@ -1130,6 +1136,9 @@ class CombatView:
     
     def _render_enemy(self, enemy, has_sight=True):
         """Render the enemy sprite/representation with animations."""
+        if self._hide_enemy_for_flee:
+            return
+
         visual_offset_x, visual_offset_y = self.enemy_visual_offset
         center_x = self.combat_width // 2 + visual_offset_x + self._enemy_recoil_offset()
         boss_enemy = self._is_boss_enemy(enemy)
@@ -1575,6 +1584,9 @@ class CombatView:
 
     def render_enemy_in_dungeon(self, player_char, enemy, show_enemy_details=None):
         """Render the enemy as if it's standing in the dungeon ahead of the player."""
+        if self._hide_enemy_for_flee:
+            return
+
         # Update animations
         self.update_animations()
         
