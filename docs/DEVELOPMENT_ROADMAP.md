@@ -366,10 +366,12 @@ Implemented:
 - Realm of Cambion audit:
    - Documented entry/exit, portal, rotator, anti-magic terminal, and Merzhin win/loss flow in `docs/P4B_REALM_OF_CAMBION_AUDIT.md`.
    - Added pygame regression coverage for Merzhin victory and defeat return handling.
+- Realm of Cambion content expansion:
+   - Added non-modal flavor messages for portal travel, rotator movement, and anti-magic terminal state.
+   - Added Nimue follow-up dialogue after `The Wizard's Folly` is turned in.
 
 Next Ready Slice:
 
-- Expand Realm of Cambion follow-up content using the completed audit as the implementation guide.
 - Add post-fight dialogue variants, subtle busboy hints, and milestone storage rewards after auditing quest/dialogue hooks.
 - Add greater immersive details after content hooks are confirmed:
   - Scientist(s) manning the Warp Point.

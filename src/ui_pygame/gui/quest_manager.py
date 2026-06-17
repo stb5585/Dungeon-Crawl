@@ -439,19 +439,23 @@ class QuestManager:
 
     def _handle_quest_events(self, quest_name: str) -> None:
         """Handle special events triggered by specific quest turn-ins."""
+        def show_special_event_text(event_name: str) -> None:
+            from src.core.data.data_loader import get_special_events
+
+            event_text = get_special_events().get(event_name, {}).get("Text", [])
+            if not event_text:
+                return
+            formatted_text = "\n".join(event_text)
+            if self.quest_text_renderer:
+                self.quest_text_renderer(self._format_for_renderer(formatted_text))
+            else:
+                wrapped_text = "\n".join(textwrap.wrap(formatted_text, width=self.wrap_width))
+                popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
+                self._show_popup(popup)
+
         if quest_name == "A Bad Dream":
             # Show Busboy special event
-            from src.core.data.data_loader import get_special_events
-            special_events = get_special_events()
-            busboy_text = special_events.get("Busboy", {}).get("Text", [])
-            if busboy_text:
-                formatted_text = "\n".join(busboy_text)
-                wrapped_text = "\n".join(textwrap.wrap(formatted_text, width=self.wrap_width))
-                if self.quest_text_renderer:
-                    self.quest_text_renderer(wrapped_text)
-                else:
-                    popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
-                    self._show_popup(popup)
+            show_special_event_text("Busboy")
             
             # Transfer "Where's the Beef?" quest to Busboy if it exists
             if "Where's the Beef?" in self.player_char.quest_dict.get("Side", {}):
@@ -469,6 +473,8 @@ class QuestManager:
                         wrapped_transfer = "\n".join(textwrap.wrap(transfer_msg, width=self.wrap_width))
                         popup = ConfirmationPopup(self.presenter, wrapped_transfer, show_buttons=False)
                         self._show_popup(popup)
+        elif quest_name == "The Wizard's Folly":
+            show_special_event_text("Nimue After Merzhin")
     
     def _already_killed(self, enemy_name: str) -> bool:
         kill_dict = getattr(self.player_char, 'kill_dict', {})

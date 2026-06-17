@@ -44,6 +44,9 @@ def test_portal_uses_cambion_pair_mapping():
 
     assert (player.location_x, player.location_y, player.location_z) == (17, 1, REALM_OF_CAMBION_LEVEL)
     assert player.facing == "east"
+    assert map_tiles.pop_cambion_messages(player) == [
+        "The portal smells sharply of rain on hot stone."
+    ]
 
 
 def test_rotator_pushes_to_a_walkable_neighbor():
@@ -65,6 +68,28 @@ def test_rotator_pushes_to_a_walkable_neighbor():
         (11, 19, REALM_OF_CAMBION_LEVEL),
     }
     assert (player.location_x, player.location_y, player.location_z) != (10, 18, REALM_OF_CAMBION_LEVEL)
+    messages = map_tiles.pop_cambion_messages(player)
+    assert "The room spins violently" in messages[-2]
+    assert "anti-magic field hums" in messages[-1]
+
+
+def test_rotator_flavor_changes_after_anti_magic_field_drops():
+    player = _build_player()
+    game = SimpleNamespace(player_char=player)
+    map_tiles.enter_realm_of_cambion(player)
+    map_tiles.disable_cambion_anti_magic(player)
+    rotator = player.world_dict[(11, 18, REALM_OF_CAMBION_LEVEL)]
+
+    player.location_x = 11
+    player.location_y = 18
+    player.location_z = REALM_OF_CAMBION_LEVEL
+    player.previous_location = (10, 18, REALM_OF_CAMBION_LEVEL)
+
+    random.seed(0)
+    rotator.modify_player(game)
+
+    messages = map_tiles.pop_cambion_messages(player)
+    assert "anti-magic field silent" in messages[-1]
 
 
 def test_anti_magic_switch_disables_field_with_correct_code():
@@ -80,6 +105,7 @@ def test_anti_magic_switch_disables_field_with_correct_code():
     assert result is True
     assert map_tiles.cambion_anti_magic_active(player) is False
     assert player.anti_magic_active is False
+    assert "distant portals flare" in map_tiles.pop_cambion_messages(player)[0]
 
 
 def test_anti_magic_switch_wrong_code_triggers_alarm_combat():

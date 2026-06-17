@@ -167,6 +167,27 @@ for left, right in CAMBION_PORTAL_PAIRS:
     CAMBION_PORTAL_MAP[left] = right
     CAMBION_PORTAL_MAP[right] = left
 
+CAMBION_PORTAL_FLAVOR = {
+    (1, 1, REALM_OF_CAMBION_LEVEL): "The portal exhales cold mist, carrying the echo of a voice counting backward.",
+    (9, 1, REALM_OF_CAMBION_LEVEL): "For an instant, the corridor beyond the portal appears upside down.",
+    (11, 1, REALM_OF_CAMBION_LEVEL): "The portal flashes with the silhouette of a tower that is not on any map.",
+    (17, 1, REALM_OF_CAMBION_LEVEL): "The portal smells sharply of rain on hot stone.",
+    (28, 1, REALM_OF_CAMBION_LEVEL): "A ribbon of green light coils around your wrist before snapping back into the portal.",
+    (1, 4, REALM_OF_CAMBION_LEVEL): "The portal surface ripples like water disturbed from below.",
+    (24, 6, REALM_OF_CAMBION_LEVEL): "Something laughs from the other side, then abruptly forgets the joke.",
+    (4, 11, REALM_OF_CAMBION_LEVEL): "The portal reflects you a heartbeat too late.",
+    (20, 13, REALM_OF_CAMBION_LEVEL): "The portal's edge briefly hardens into black glass.",
+    (28, 15, REALM_OF_CAMBION_LEVEL): "A pressure behind your eyes fades as the portal takes hold.",
+    (6, 18, REALM_OF_CAMBION_LEVEL): "The portal opens with the sound of pages tearing.",
+}
+for left, right in CAMBION_PORTAL_PAIRS:
+    CAMBION_PORTAL_FLAVOR.setdefault(right, CAMBION_PORTAL_FLAVOR[left])
+
+CAMBION_ROTATOR_FLAVOR = {
+    True: "The anti-magic field hums through the mechanism as the room rights itself.",
+    False: "With the anti-magic field silent, the mechanism wobbles before throwing you onward.",
+}
+
 
 def _enterable_adjacent_positions(world_dict, x: int, y: int, z: int) -> list[tuple[str, tuple[int, int, int]]]:
     positions = []
@@ -1065,7 +1086,13 @@ class Portal(EmptyCavePath):
             if destination_tile:
                 destination_tile.visited = True
                 destination_tile.adjacent_visited(player_char)
-            _queue_cambion_message(player_char, "Space folds in on itself and spits you out elsewhere in the realm.")
+            _queue_cambion_message(
+                player_char,
+                CAMBION_PORTAL_FLAVOR.get(
+                    pos,
+                    "Space folds in on itself and spits you out elsewhere in the realm.",
+                ),
+            )
             return
         return_to_underground_spring(player_char)
 
@@ -1108,6 +1135,7 @@ class Rotator(EmptyCavePath):
             destination_tile.visited = True
             destination_tile.adjacent_visited(player_char)
         _queue_cambion_message(player_char, "The room spins violently and throws you down a different passage.")
+        _queue_cambion_message(player_char, CAMBION_ROTATOR_FLAVOR[cambion_anti_magic_active(player_char)])
 
 
 class Trap(EmptyCavePath):
@@ -1154,12 +1182,15 @@ class AntiMagicSwitch(EmptyCavePath):
         player_char = game.player_char
         state = _ensure_cambion_state(player_char)
         if not state["anti_magic_active"]:
-            _queue_cambion_message(player_char, "The terminal displays: SHIELD OFFLINE.")
+            _queue_cambion_message(player_char, "The terminal displays: SHIELD OFFLINE. The realm feels less certain without its hum.")
             return True
 
         if str(code).strip() == CAMBION_SWITCH_CODE:
             disable_cambion_anti_magic(player_char)
-            _queue_cambion_message(player_char, "The terminal accepts the code. The anti-magic field collapses.")
+            _queue_cambion_message(
+                player_char,
+                "The terminal accepts the code. The anti-magic field collapses, and distant portals flare in reply.",
+            )
             return True
 
         state["alarm_count"] += 1

@@ -529,3 +529,19 @@ def test_handle_quest_events_popup_fallback(monkeypatch):
     assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
     assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
     assert player.quest_dict["Side"]["Where's the Beef?"]["Who"] == "Busboy"
+
+
+def test_wizards_folly_turn_in_shows_nimue_followup_with_renderer(monkeypatch):
+    player = _make_player()
+    rendered = []
+    monkeypatch.setattr(
+        "src.core.data.data_loader.get_special_events",
+        lambda: {"Nimue After Merzhin": {"Text": ["The water settles.", "Nimue remembers."]}},
+    )
+
+    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=18)
+    manager._handle_quest_events("The Wizard's Folly")
+
+    assert rendered
+    assert "The water settles." in rendered[-1]
+    assert "Nimue remembers." in rendered[-1]

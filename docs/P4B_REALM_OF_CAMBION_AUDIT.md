@@ -1,6 +1,6 @@
 # P4b Realm Of Cambion Audit
 
-Status: `Audited`
+Status: `Implemented For Current P4b Slice`
 
 ## Confirmed Current Flow
 
@@ -18,6 +18,11 @@ Status: `Audited`
 
 ## Next Content Targets
 
-- Add post-Merzhin follow-up dialogue or town reactions after quest turn-in hooks are selected.
-- Add subtle Realm of Cambion flavor messages around portals, rotators, and anti-magic state only where they do not interrupt movement.
+- Implemented post-Merzhin Nimue follow-up dialogue on `The Wizard's Folly` turn-in.
+- Implemented subtle Realm of Cambion flavor messages around portals, rotators, and anti-magic terminal state without interrupting movement.
 - Defer new special tiles until a concrete content beat requires one.
+
+## Remaining Content Targets
+
+- Add broader town reactions once specific NPCs and timing are chosen.
+- Add deeper Realm of Cambion content beats only when they require new rooms, events, rewards, or special tiles.
