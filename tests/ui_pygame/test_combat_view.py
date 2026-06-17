@@ -992,6 +992,40 @@ def test_center_combat_enemy_draws_active_mirror_images(monkeypatch):
     assert sprite_blits[-1].alpha is None
 
 
+def test_center_combat_enemy_fades_while_smoke_screen_active(monkeypatch):
+    view = _make_view()
+    enemy = SimpleNamespace(
+        name="Bandit",
+        health=SimpleNamespace(current=8, max=12),
+        flying=False,
+        tunnel=False,
+        magic_effects={
+            "Smoke Screen": SimpleNamespace(active=True),
+        },
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "bandit",
+        get_combat_scale_for_enemy=lambda _enemy: 1.0,
+        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="smoke-combat-sprite"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.ellipse", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.time.get_ticks", lambda: 0)
+
+    view._render_enemy(enemy, has_sight=True)
+
+    sprite_blits = [
+        surface
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "") == "smoke-combat-sprite"
+    ]
+    assert sprite_blits
+    assert sprite_blits[-1].alpha == 77
+
+
 def test_center_combat_boss_uses_mapped_scale_sprite_box(monkeypatch):
     view = _make_view()
     calls = []

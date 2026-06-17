@@ -1076,15 +1076,26 @@ class CombatView:
 
         self.screen.blit(surface, smoke_rect.topleft)
 
+    def _smoke_screen_active_for(self, character, target: str) -> bool:
+        return (
+            self._transient_smoke_active(target)
+            or self._magic_effect_active(character, "Smoke Screen")
+            or self._magic_effect_active(character, "SmokeScreen")
+        )
+
+    def _fade_sprite_for_smoke_screen(self, sprite, character, target: str):
+        if not self._smoke_screen_active_for(character, target):
+            return sprite
+        pulse = (math.sin(pygame.time.get_ticks() / 140) + 1) / 2
+        faded = sprite.copy()
+        faded.set_alpha(int(56 + pulse * 42))
+        return faded
+
     def _render_ability_status_visuals(self, character, target: str, *, include_duplicates: bool = True) -> None:
         rect = self._target_rect_for_effect(target)
         if self._magic_effect_active(character, "Mana Shield"):
             self._render_mana_shield_visual(rect)
-        if (
-            self._transient_smoke_active(target)
-            or self._magic_effect_active(character, "Smoke Screen")
-            or self._magic_effect_active(character, "SmokeScreen")
-        ):
+        if self._smoke_screen_active_for(character, target):
             self._render_smoke_screen_visual(rect)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
@@ -1182,6 +1193,9 @@ class CombatView:
                 alpha_surf.fill((255, 255, 255, fade_alpha))
                 display_sprite = display_sprite.copy()
                 display_sprite.blit(alpha_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+            if animator.animation_type != 'death':
+                display_sprite = self._fade_sprite_for_smoke_screen(display_sprite, enemy, "enemy")
             
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
@@ -1605,6 +1619,9 @@ class CombatView:
                 alpha_surf.fill((255, 255, 255, fade_alpha))
                 display_sprite = display_sprite.copy()
                 display_sprite.blit(alpha_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+            if animator.animation_type != 'death':
+                display_sprite = self._fade_sprite_for_smoke_screen(display_sprite, enemy, "enemy")
             
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y

@@ -30,47 +30,109 @@ def test_jester_starts_in_crimson_form():
     assert "Mirror Image" in jester.spellbook["Spells"]
 
 
-def test_jester_switches_forms_based_on_player_profile():
+def test_jester_switches_forms_based_on_player_profile(monkeypatch):
     jester = enemies.Jester()
     target = _make_target()
+    jester._jester_form_shift_delay = 0
+    monkeypatch.setattr(enemies.random, "random", lambda: 0.0)
+    monkeypatch.setattr(enemies.random, "randint", lambda _low, _high: 1)
+    monkeypatch.setattr(
+        enemies.random,
+        "choices",
+        lambda candidates, weights, k=1: [candidates[weights.index(max(weights))]],
+    )
 
     target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 80 if mod == "magic" else 20
     text = jester.special_effects(target)
-    assert text == "The Jester changes form.\nThe act changes with the audience."
+    assert text == (
+        "The Jester changes form: Yellow Heckler.\n"
+        "A yellow grin spreads across his mask, mocking every spark of magic you raise."
+    )
     assert jester._jester_form == "amber"
     assert jester.picture == "jester1.png"
 
+    jester._jester_form_shift_delay = 0
     target.magic_effects["Reflect"].active = True
     text = jester.special_effects(target)
-    assert text == "The Jester changes form.\nThe act changes with the audience."
+    assert text == (
+        "The Jester changes form: Blue Mirrorlord.\n"
+        "Blue glass ripples over his costume, turning the whole room into a laughing mirror."
+    )
     assert jester._jester_form == "azure"
     assert jester.picture == "jester4.png"
 
+    jester._jester_form_shift_delay = 0
     target.magic_effects["Reflect"].active = False
     target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 90 if mod == "weapon" else 20
     text = jester.special_effects(target)
-    assert text == "The Jester changes form.\nThe act changes with the audience."
+    assert text == (
+        "The Jester changes form: Green Cutpurse.\n"
+        "Green motes scatter from his boots as the Jester slips into a knife dancer's stance."
+    )
     assert jester._jester_form == "verdant"
     assert jester.picture == "jester3.png"
 
+    jester._jester_form_shift_delay = 0
     target.health.current = max(1, int(target.health.max * 0.20))
     text = jester.special_effects(target)
-    assert text == "The Jester changes form.\nThe act changes with the audience."
+    assert text == (
+        "The Jester changes form: Purple Hexer.\n"
+        "Purple smoke coils from his sleeves as he prepares a killing punchline."
+    )
     assert jester._jester_form == "violet"
     assert jester.picture == "jester2.png"
 
 
-def test_jester_form_cooldowns_prevent_blue_green_lock():
+def test_jester_does_not_change_form_while_stunned(monkeypatch):
+    jester = enemies.Jester()
+    target = _make_target()
+    jester._jester_form_shift_delay = 0
+    jester.status_effects["Stun"].active = True
+    monkeypatch.setattr(enemies.random, "random", lambda: 0.0)
+    monkeypatch.setattr(enemies.random, "choices", lambda candidates, weights, k=1: ["amber"])
+
+    assert jester.special_effects(target) == ""
+    assert jester._jester_form == "crimson"
+    assert jester.picture == "jester.png"
+
+
+def test_jester_form_delay_and_roll_prevent_constant_shifts(monkeypatch):
     jester = enemies.Jester()
     target = _make_target()
     target.magic_effects["Reflect"].active = True
     target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 80
+    jester._jester_form_shift_delay = 0
+    monkeypatch.setattr(enemies.random, "random", lambda: 0.0)
+    monkeypatch.setattr(enemies.random, "randint", lambda _low, _high: 2)
+    monkeypatch.setattr(enemies.random, "choices", lambda candidates, weights, k=1: ["azure"])
 
-    forms = []
-    for _ in range(4):
-        jester.special_effects(target)
-        forms.append(jester._jester_form)
+    first = jester.special_effects(target)
+    assert "Blue Mirrorlord" in first
+    assert jester._jester_form == "azure"
 
-    assert "azure" in forms
-    assert "amber" in forms
-    assert "verdant" in forms
+    assert jester.special_effects(target) == ""
+    assert jester.special_effects(target) == ""
+    assert jester._jester_form == "azure"
+
+    monkeypatch.setattr(enemies.random, "random", lambda: 0.99)
+    jester._jester_form_shift_delay = 0
+    assert jester.special_effects(target) == ""
+    assert jester._jester_form == "azure"
+
+
+def test_jester_weighted_choice_keeps_all_forms_possible(monkeypatch):
+    jester = enemies.Jester()
+    target = _make_target()
+    target.mana.current = 0
+    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 20
+
+    captured = {}
+    monkeypatch.setattr(enemies.random, "random", lambda: 0.0)
+    monkeypatch.setattr(enemies.random, "choices", lambda candidates, weights, k=1: captured.update({
+        "candidates": tuple(candidates),
+        "weights": tuple(weights),
+    }) or ["violet"])
+
+    jester._jester_form_shift_delay = 0
+    assert "Purple Hexer" in jester.special_effects(target)
+    assert set(captured["candidates"]) == {"amber", "violet", "verdant", "azure"}

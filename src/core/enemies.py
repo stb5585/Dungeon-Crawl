@@ -3297,6 +3297,7 @@ class Jester(Humanoid):
         self.sight = True
         self._jester_form = ""
         self._jester_form_cooldowns: dict[str, int] = {}
+        self._jester_form_shift_delay = 1
         self._apply_jester_form("crimson", track_cooldown=False)
 
     def _apply_jester_form(self, form_key: str, *, track_cooldown: bool = True) -> None:
@@ -3317,7 +3318,17 @@ class Jester(Humanoid):
             for form, turns in self._jester_form_cooldowns.items()
             if form != active_form and turns > 1
         }
-        self._jester_form_cooldowns[active_form] = 2
+        self._jester_form_cooldowns[active_form] = 3
+        self._jester_form_shift_delay = random.randint(1, 2)
+
+    def _advance_jester_form_timers(self) -> None:
+        self._jester_form_cooldowns = {
+            form: turns - 1
+            for form, turns in self._jester_form_cooldowns.items()
+            if turns > 1
+        }
+        if self._jester_form_shift_delay > 0:
+            self._jester_form_shift_delay -= 1
 
     def _choose_jester_form(self, target: Character) -> str:
         hp_pct = (target.health.current / max(1, target.health.max)) if getattr(target, "health", None) else 1.0
@@ -3344,37 +3355,53 @@ class Jester(Humanoid):
             except Exception:
                 magic_pressure = 0
 
-        candidates = []
+        weights = {
+            "crimson": 2,
+            "amber": 1,
+            "violet": 1,
+            "verdant": 1,
+            "azure": 1,
+        }
         if hp_pct <= 0.35:
-            candidates.append("violet")
+            weights["violet"] += 6
+        elif hp_pct <= 0.60:
+            weights["crimson"] += 2
         if target_has_buffs:
-            candidates.append("azure")
+            weights["azure"] += 5
         if mana_pct >= 0.50 and magic_pressure >= physical_pressure * 0.80:
-            candidates.append("amber")
+            weights["amber"] += 5
         if physical_pressure > magic_pressure * 0.80:
-            candidates.append("verdant")
-        candidates.append("crimson")
+            weights["verdant"] += 5
+        if abs(physical_pressure - magic_pressure) <= max(10, max(physical_pressure, magic_pressure) * 0.20):
+            weights["crimson"] += 3
 
-        seen = set()
-        candidates = [form for form in candidates if not (form in seen or seen.add(form))]
-        for form in candidates:
-            if form != self._jester_form and self._jester_form_cooldowns.get(form, 0) <= 0:
-                return form
-        for form in candidates:
-            if form != self._jester_form:
-                return form
-        return self._jester_form
+        candidates = [
+            form for form in self.FORM_DEFS
+            if form != self._jester_form and self._jester_form_cooldowns.get(form, 0) <= 0
+        ]
+        if not candidates:
+            return self._jester_form
+
+        return random.choices(candidates, weights=[weights[form] for form in candidates], k=1)[0]
 
     def special_effects(self, target: Character) -> str:
-        if not self.is_alive():
+        if not self.is_alive() or self.incapacitated():
+            return ""
+        if self._jester_form_shift_delay > 0:
+            self._advance_jester_form_timers()
+            return ""
+        self._advance_jester_form_timers()
+        if random.random() >= 0.65:
+            self._jester_form_shift_delay = 1
             return ""
         next_form = self._choose_jester_form(target)
         if next_form == self._jester_form:
             return ""
         self._apply_jester_form(next_form)
+        form = self.FORM_DEFS[next_form]
         return (
-            "The Jester changes form.\n"
-            "The act changes with the audience."
+            f"The Jester changes form: {form['title']}.\n"
+            f"{form['announcement']}"
         )
 
 
