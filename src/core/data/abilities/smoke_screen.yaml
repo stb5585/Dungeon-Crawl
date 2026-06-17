@@ -2,4 +2,4 @@ name: Smoke Screen
 type: Skill
 subtype: Stealth
 description: Create a cloud of smoke, enabling escape.
-cost: 5
+cost: 0

@@ -23,6 +23,7 @@ from .status_icons import (
     combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
+    load_status_icon_surface,
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_color,
@@ -757,13 +758,32 @@ class CombatView:
             return self.colors["telegraph"]
         if any(
             term in lower
-            for term in ("health regenerated", "health has regenerated", "regenerates", "restores", "recovers", "heals")
+            for term in ("health regenerated", "health has regenerated", "regenerates", "restore", "restores", "recovers", "heals")
         ):
             return self.colors["log_heal"]
-        if any(term in lower for term in (" damage", "damages ", "bleeding", "poison", "takes ", "loses ")):
-            return self.colors["log_damage"]
         if any(term in lower for term in ("miss", "resist", "immune", "fails")):
             return self.colors["log_muted"]
+        if any(
+            term in lower
+            for term in (
+                " damage",
+                "damages ",
+                "bleeding",
+                "bleeds",
+                "burns",
+                "poison",
+                "scorches",
+                "shocks",
+                "slain",
+                "stun",
+                "disarm",
+                "falls prone",
+                "knocked",
+                "takes ",
+                "loses ",
+            )
+        ):
+            return self.colors["log_damage"]
         if self._line_starts_with_actor(lower, self._combat_log_player_name):
             return self.colors["log_player"]
         if self._line_starts_with_actor(lower, self._combat_log_enemy_name):
@@ -828,10 +848,15 @@ class CombatView:
             pygame.draw.rect(self.screen, color, rect, border_radius=4)
             pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
 
-            fitted_label = fit_status_icon_label(font, label, icon_w - 6)
-            text_surf = font.render(fitted_label, True, (255, 255, 255))
-            text_rect = text_surf.get_rect(center=rect.center)
-            self.screen.blit(text_surf, text_rect)
+            icon_surface = load_status_icon_surface(label, (icon_h - 4, icon_h - 4))
+            if icon_surface is not None:
+                icon_rect = icon_surface.get_rect(center=rect.center)
+                self.screen.blit(icon_surface, icon_rect)
+            else:
+                fitted_label = fit_status_icon_label(font, label, icon_w - 6)
+                text_surf = font.render(fitted_label, True, (255, 255, 255))
+                text_rect = text_surf.get_rect(center=rect.center)
+                self.screen.blit(text_surf, text_rect)
 
     def reload_enemy_sprite(self, enemy) -> None:
         """Compatibility hook for enemies that change visual form during combat."""

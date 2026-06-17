@@ -2,7 +2,22 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 StatusIcon = tuple[str, bool | None]
+
+STATUS_ICON_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "effects"
+STATUS_ICON_ASSETS = {
+    "BRK": "berserk.png",
+    "BRN": "dot.png",
+    "DOT": "dot.png",
+    "PRN": "prone.png",
+    "RND": "bleed.png",
+    "SIL": "silence.png",
+    "SLP": "sleep.png",
+    "STN": "stun.png",
+}
+_STATUS_ICON_SURFACE_CACHE: dict[tuple[str, tuple[int, int]], object | None] = {}
 
 STATUS_ICON_COLORS = {
     "positive": (70, 170, 90),
@@ -83,6 +98,41 @@ def _split_counted_label(label: str) -> tuple[str, int]:
     suffix = label[len(stripped):]
     count = int(suffix) if suffix else 1
     return stripped, count
+
+
+def status_icon_asset_path(label: str) -> Path | None:
+    """Return the artwork path for a status label when an asset exists."""
+    base_label, _count = _split_counted_label(label)
+    filename = STATUS_ICON_ASSETS.get(base_label)
+    if not filename:
+        return None
+    path = STATUS_ICON_ASSET_DIR / filename
+    return path if path.exists() else None
+
+
+def load_status_icon_surface(label: str, size: tuple[int, int]):
+    """Load and scale status artwork, returning None when no asset is usable."""
+    path = status_icon_asset_path(label)
+    if path is None:
+        return None
+
+    cache_key = (str(path), size)
+    if cache_key in _STATUS_ICON_SURFACE_CACHE:
+        return _STATUS_ICON_SURFACE_CACHE[cache_key]
+
+    try:
+        import pygame
+
+        image = pygame.image.load(str(path)).convert_alpha()
+        try:
+            surface = pygame.transform.smoothscale(image, size)
+        except (AttributeError, pygame.error):
+            surface = pygame.transform.scale(image, size)
+    except Exception:
+        surface = None
+
+    _STATUS_ICON_SURFACE_CACHE[cache_key] = surface
+    return surface
 
 
 def _priority_label(label: str) -> str:

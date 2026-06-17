@@ -611,6 +611,21 @@ def test_status_icons_compact_overflow_and_telegraph_log_color(monkeypatch):
     assert (normal_line, (240, 240, 240)) in font.color_calls
 
 
+def test_combat_log_color_classifies_item_special_effect_messages():
+    view = _make_view()
+    view._set_combat_log_actors(
+        SimpleNamespace(name="Hero"),
+        SimpleNamespace(name="Bandit"),
+    )
+
+    assert view._combat_log_color("Hero's Robes of Merlin restore 4 mana.") == view.colors["log_heal"]
+    assert view._combat_log_color("Bandit's Klivanion shocks Hero for 3 lightning damage.") == view.colors["log_damage"]
+    assert view._combat_log_color("Hero is stunned by the Klivanion.") == view.colors["log_damage"]
+    assert view._combat_log_color("Bandit resists the poison.") == view.colors["log_muted"]
+    assert view._combat_log_color("Hero's shield hums with power.") == view.colors["log_player"]
+    assert view._combat_log_color("Bandit's armor gleams.") == view.colors["log_enemy"]
+
+
 def test_status_icon_priority_keeps_urgent_effects_visible_before_overflow(monkeypatch):
     view = _make_view()
     font = RecordingFont()

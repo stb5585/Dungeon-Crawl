@@ -1667,7 +1667,7 @@ class TestBatch3YAMLLoading:
         ("dispel_slash.yaml", "Dispel Slash", 20),
         ("life_tap.yaml", "Life Tap", 0),
         ("mana_tap.yaml", "Mana Tap", 0),
-        ("smoke_screen.yaml", "Smoke Screen", 5),
+        ("smoke_screen.yaml", "Smoke Screen", 0),
     ])
     def test_load_skill(self, filename, expected_name, expected_cost):
         from src.core.data.ability_loader import AbilityFactory
@@ -1857,7 +1857,7 @@ class TestBatch3CombatIntegration:
         ss = abilities.SmokeScreen()
         mana_before = user.mana.current
         result = ss.use(user, target)
-        assert user.mana.current == mana_before - 5
+        assert user.mana.current == mana_before
         assert result == ""
 
     def test_goad_ice_block_check(self):

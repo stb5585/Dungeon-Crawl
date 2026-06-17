@@ -202,7 +202,7 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert helmet.item_name == "Iron Helm"
     assert helmet.details == ("Type: Heavy", "Base Armor: 4")
     weapon = next(slot for slot in slots if slot.slot == "Weapon")
-    assert weapon.item_name == "Sword"
+    assert weapon.item_name == "Sword (1H)"
     assert weapon.details == ("Type: Sword", "Base Damage: 12", "Crit: 15%")
     armor = next(slot for slot in slots if slot.slot == "Armor")
     assert armor.details == ("Type: Medium", "Base Armor: 8")
@@ -329,7 +329,7 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Item Details" not in presenter.normal_font.render_calls
     assert "Equipment Buffs" not in presenter.normal_font.render_calls
     assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.normal_font.render_calls))
-    assert "Sword" in presenter.normal_font.render_calls
+    assert "Sword (1H)" in presenter.normal_font.render_calls
     assert "Type:" in presenter.small_font.render_calls
     assert "Sword" in presenter.small_font.render_calls
     assert "Base Damage:" in presenter.small_font.render_calls

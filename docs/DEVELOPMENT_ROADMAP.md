@@ -336,17 +336,23 @@ Implemented:
 
 - Added post-fight/tavern comments, Sergeant relic and Warp Point hints, and staffed Warp Point scientist flavor.
 - Added one-handed/two-handed weapon details to equipment previews and equipped-slot inspection details.
+  - Equipment slots show `(1H)` or `(2H)` for weapons; equip popups keep the dedicated Hands detail row.
 - Preserved inventory sort selection when reopening the Character Menu inventory popup.
 - Aligned ordinary player/enemy combat log lines with player blue/enemy red while preserving outcome colors for damage, healing, misses, and resists.
+- Expanded combat-log color classification for item special-effect style messages.
+- Rebalanced Smoke Screen to cost 0 MP.
+- Tuned Bandit post-steal AI so Smoke Screen is strongly favored, but not guaranteed, while `Steal Success` is active.
+- Replaced status-effect initials with effect artwork where current assets exist, with text fallback for missing icons.
 - Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
   - Mirror Image duplicates the user.
   - Smoke Screen obscures targets when a smoke effect flag is present.
+  - Future visual candidates: Jump/landing impacts, Charge wind-up impacts, Reflect/Magic reflection flashes, Stun/Prone hit accents, and elemental strike overlays.
 
 Ready / Needs Exploration:
 
-- Add item special-effect logging after auditing weapon/item effect result messages and where each effect should surface in the combat log.
-- Replace status-effect initials with icon artwork where assets exist; current inspection found item icon assets, but no dedicated status-icon artwork path yet.
+- Add remaining status-effect artwork in a later asset pass; current fallback initials remain valid where no PNG exists.
+- Revisit broader ability visuals after choosing the next batch from the candidate list above.
 
 #### P4b - Quest And Realm Content
 

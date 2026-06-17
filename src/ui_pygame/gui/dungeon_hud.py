@@ -11,6 +11,7 @@ from .status_icons import (
     combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
+    load_status_icon_surface,
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_color,
@@ -208,10 +209,15 @@ class DungeonHUD:
             pygame.draw.rect(self.screen, color, rect, border_radius=4)
             pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
 
-            fitted_label = fit_status_icon_label(font, label, icon_w - 6)
-            text_surf = font.render(fitted_label, True, (255, 255, 255))
-            text_rect = text_surf.get_rect(center=rect.center)
-            self.screen.blit(text_surf, text_rect)
+            icon_surface = load_status_icon_surface(label, (icon_h - 4, icon_h - 4))
+            if icon_surface is not None:
+                icon_rect = icon_surface.get_rect(center=rect.center)
+                self.screen.blit(icon_surface, icon_rect)
+            else:
+                fitted_label = fit_status_icon_label(font, label, icon_w - 6)
+                text_surf = font.render(fitted_label, True, (255, 255, 255))
+                text_rect = text_surf.get_rect(center=rect.center)
+                self.screen.blit(text_surf, text_rect)
 
         rows = (len(visible_icons) + per_row - 1) // per_row
         return y_offset + rows * (icon_h + padding)

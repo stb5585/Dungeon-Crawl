@@ -6,7 +6,7 @@ import random
 from src.core import abilities, items
 from src.core.character import Character, Combat, Resource, Stats
 from src.core.combat.action_queue import ActionPriority
-from src.core.enemies import Enemy
+from src.core.enemies import Bandit, Enemy
 
 
 def _make_enemy():
@@ -77,6 +77,29 @@ def test_priority_if_allows_disarm_when_target_armed(monkeypatch):
     action, ability = enemy.options(target, [], None)
 
     assert (action, ability) == ("Use Skill", "Disarm")
+
+
+def test_bandit_steal_success_makes_smoke_screen_most_likely(monkeypatch):
+    bandit = Bandit()
+    target = _make_target(True)
+    bandit.status_effects["Steal Success"].active = True
+    bandit.status_effects["Steal Success"].duration = 2
+    captured = []
+
+    def choose(seq):
+        captured.extend(seq)
+        return next(entry for entry in seq if entry[:2] == ("Use Skill", "Smoke Screen"))
+
+    monkeypatch.setattr(random, "choice", choose)
+
+    action, ability = bandit.options(target, [], None)
+
+    assert (action, ability) == ("Use Skill", "Smoke Screen")
+    smoke_entries = [entry for entry in captured if entry[:2] == ("Use Skill", "Smoke Screen")]
+    competing_entries = [entry for entry in captured if entry[:2] != ("Use Skill", "Smoke Screen")]
+    assert len(smoke_entries) == 3
+    assert len(competing_entries) == 2
+    assert not any(entry[:2] == ("Use Skill", "Steal") for entry in captured)
 
 
 def test_priority_ai_skips_weapon_skills_while_disarmed(monkeypatch):

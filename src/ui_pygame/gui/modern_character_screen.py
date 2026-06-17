@@ -546,8 +546,12 @@ class ModernCharacterScreen(TownScreenBase):
     def _equipment_display_name(cls, item) -> str:
         name = cls._attr_name(item)
         typ = str(getattr(item, "typ", "") or "")
-        if typ == "Weapon" and cls._weapon_handedness(item) == "Two-handed":
-            return f"{name} (2H)"
+        if typ == "Weapon":
+            handedness = cls._weapon_handedness(item)
+            if handedness == "Two-handed":
+                return f"{name} (2H)"
+            if handedness == "One-handed":
+                return f"{name} (1H)"
         return name
 
     def equipment_slot_detail_rows(self, slot: str, item) -> tuple[tuple[str, str], ...]:

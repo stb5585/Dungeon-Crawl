@@ -15,6 +15,7 @@ from src.ui_pygame.gui.status_icons import (
     is_urgent_status_icon,
     prioritize_status_icons,
     stat_effect_status_icon,
+    status_icon_asset_path,
     status_icon_color,
     status_icon_priority,
 )
@@ -196,3 +197,11 @@ def test_fit_status_icon_label_keeps_text_inside_icon():
     assert fit_status_icon_label(font, "STN", 24) == "STN"
     assert fit_status_icon_label(font, "LONGSTATUS", 32).endswith(".")
     assert fit_status_icon_label(font, "+12", 12) == "+"
+
+
+def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
+    assert status_icon_asset_path("STN").name == "stun.png"
+    assert status_icon_asset_path("STN2").name == "stun.png"
+    assert status_icon_asset_path("PRN").name == "prone.png"
+    assert status_icon_asset_path("RND").name == "bleed.png"
+    assert status_icon_asset_path("PSN") is None
