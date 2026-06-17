@@ -200,6 +200,10 @@ class BossTile(DummyTile):
         return "Boss intro"
 
 
+class MerzhinBossRoom(BossTile):
+    pass
+
+
 class WarningTile(DummyTile):
     def intro_text(self, _game):
         return ""
@@ -909,6 +913,70 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirmMenu)
     manager._show_menu()
     assert manager.player_char.quit is True
+
+
+def test_merzhin_victory_collapses_realm_and_returns_to_saved_location(monkeypatch):
+    manager, _presenter, player, _game = _make_manager(monkeypatch)
+    manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
+    dirty_calls = []
+    manager._mark_view_dirty = lambda: dirty_calls.append("dirty")
+    player.location_x = 22
+    player.location_y = 2
+    player.location_z = dungeon_manager.map_tiles.REALM_OF_CAMBION_LEVEL
+    player.cambion_return = (4, 9, 3, "south")
+    player.exit_realm_of_cambion = lambda: (
+        setattr(player, "location_x", 4),
+        setattr(player, "location_y", 9),
+        setattr(player, "location_z", 3),
+        setattr(player, "facing", "south"),
+        setattr(player, "cambion_return", None),
+    )
+    enemy = SimpleNamespace(name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True)
+    tile = MerzhinBossRoom(enemy)
+    tile.read = True
+    player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
+    manager.combat_manager.start_combat = lambda *_args, **_kwargs: True
+
+    manager._check_tile_effects()
+
+    assert tile.enemy is None
+    assert "You emerge victorious!" in manager.messages
+    assert "Merzhin falls and the Realm of Cambion collapses around you." in manager.messages
+    assert (player.location_x, player.location_y, player.location_z, player.facing) == (4, 9, 3, "south")
+    assert dirty_calls == ["dirty"]
+
+
+def test_merzhin_defeat_returns_from_realm_without_town_death_flow(monkeypatch):
+    manager, _presenter, player, _game = _make_manager(monkeypatch)
+    manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
+    dirty_calls = []
+    manager._mark_view_dirty = lambda: dirty_calls.append("dirty")
+    player.location_x = 22
+    player.location_y = 2
+    player.location_z = dungeon_manager.map_tiles.REALM_OF_CAMBION_LEVEL
+    player.in_realm_of_cambion = lambda: True
+    player.exit_realm_of_cambion = lambda: (
+        setattr(player, "location_x", 4),
+        setattr(player, "location_y", 9),
+        setattr(player, "location_z", 3),
+    )
+    player.to_town = lambda: manager.messages.append("unexpected-town")
+    player.is_alive = lambda: False
+    enemy = SimpleNamespace(name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True)
+    tile = MerzhinBossRoom(enemy)
+    tile.read = True
+    player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
+    manager.running = True
+    manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
+
+    manager._check_tile_effects()
+
+    assert "You were defeated... The Realm of Cambion hurls you back to the spring." in " ".join(manager.messages)
+    assert "unexpected-town" not in manager.messages
+    assert (player.location_x, player.location_y, player.location_z) == (4, 9, 3)
+    assert player.state == "normal"
+    assert manager.running is False
+    assert dirty_calls == ["dirty"]
 
 
 def test_dungeon_popup_menu_guard_accepts_fresh_key_without_keyup(monkeypatch):
