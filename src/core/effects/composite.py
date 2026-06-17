@@ -2706,6 +2706,16 @@ class LickEffect(Effect):
     Silence/Blind get permanent duration (-1), Poison gets 5% HP extra.
     """
 
+    RANDOM_STATUS_POOL = (
+        "Berserk",
+        "Blind",
+        "Doom",
+        "Poison",
+        "Silence",
+        "Sleep",
+        "Stun",
+    )
+
     def __init__(self, **_kw):
         super().__init__()
 
@@ -2719,7 +2729,14 @@ class LickEffect(Effect):
         if _rng.randint(
             actor.stats.strength // 2, actor.stats.strength
         ) > _rng.randint(target.stats.con // 2, target.stats.con):
-            random_effect = _rng.choice(list(target.status_effects))
+            available_effects = [
+                effect
+                for effect in self.RANDOM_STATUS_POOL
+                if effect in target.status_effects
+            ]
+            if not available_effects:
+                return
+            random_effect = _rng.choice(available_effects)
             if not any([
                 random_effect in getattr(target, "status_immunity", []),
                 f"Status-{random_effect}" in target.equipment["Pendant"].mod,
@@ -4165,7 +4182,29 @@ class SlotMachineEffect(Effect):
         )
 
     @staticmethod
-    def _apply_random_pair_effect(target: Character, duration: int, amount: int, rng, messages: list[str]) -> None:
+    def _record_slot_pair_effect(result: CombatResult, target: Character, effect: str, effect_dict) -> None:
+        if effect in target.status_effects:
+            result.effects_applied.setdefault("Status", []).append(effect)
+            result.extra["status_effect"] = effect
+        elif effect in target.physical_effects:
+            result.effects_applied.setdefault("Physical", []).append(effect)
+        elif effect in target.stat_effects:
+            result.effects_applied.setdefault("Stat", []).append(effect)
+        elif effect in target.magic_effects:
+            result.effects_applied.setdefault("Magic", []).append(effect)
+        if effect == "DOT":
+            effect_dict[effect].source = "Slot Machine"
+
+    @classmethod
+    def _apply_random_pair_effect(
+        cls,
+        target: Character,
+        duration: int,
+        amount: int,
+        rng,
+        messages: list[str],
+        result: CombatResult,
+    ) -> None:
         effects = [
             "Berserk", "Blind", "Doom", "Poison", "Silence",
             "Sleep", "Stun", "Bleed", "Disarm", "Prone",
@@ -4207,6 +4246,8 @@ class SlotMachineEffect(Effect):
         if effect in ["Poison", "Bleed", "DOT"]:
             amount *= int(target.health.max * 0.01)
             effect_dict[effect].extra = amount
+            if effect == "DOT":
+                effect_dict[effect].source = "Slot Machine"
         if effect in target.stat_effects:
             combat_effect = (
                 "magic_def" if effect == "Magic Defense"
@@ -4218,6 +4259,7 @@ class SlotMachineEffect(Effect):
                 f"temporarily increased by {amount}.\n"
             )
             effect_dict[effect].extra = amount
+        cls._record_slot_pair_effect(result, target, effect, effect_dict)
 
     def _apply_card_spin(
         self,
@@ -4229,6 +4271,7 @@ class SlotMachineEffect(Effect):
         target_chance: int,
         rng,
         messages: list[str],
+        result: CombatResult,
     ) -> None:
         label = self.card_hand_label(cards)
         score = self._card_hand_score(cards)
@@ -4293,7 +4336,7 @@ class SlotMachineEffect(Effect):
             duration = max(1, min(10, amount))
             if not rng.randint(0, 1):
                 target = actor
-            self._apply_random_pair_effect(target, duration, amount ** 2, rng, messages)
+            self._apply_random_pair_effect(target, duration, amount ** 2, rng, messages, result)
             return
 
         messages.append("Chance!\n")
@@ -4338,6 +4381,7 @@ class SlotMachineEffect(Effect):
                     target_chance,
                     _rng,
                     messages,
+                    result,
                 )
                 success = True
                 continue
@@ -4474,9 +4518,11 @@ class SlotMachineEffect(Effect):
                         effect_dict[effect].duration = max(
                             duration, effect_dict[effect].duration
                         )
-                    if effect == ["Poison", "Bleed", "DOT"]:
+                    if effect in ["Poison", "Bleed", "DOT"]:
                         amount *= int(target.health.max * 0.01)
                         effect_dict[effect].extra = amount
+                        if effect == "DOT":
+                            effect_dict[effect].source = "Slot Machine"
                     if effect in target.stat_effects:
                         combat_effect = (
                             "magic_def" if effect == "Magic Defense"
@@ -4488,6 +4534,7 @@ class SlotMachineEffect(Effect):
                             f"temporarily increased by {amount}.\n"
                         )
                         effect_dict[effect].extra = amount
+                    self._record_slot_pair_effect(result, target, effect, effect_dict)
 
             elif all(int(x) % 2 == 0 for x in list(spin)):
                 messages.append("Evens!\n")

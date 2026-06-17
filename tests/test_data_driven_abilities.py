@@ -5703,6 +5703,17 @@ class TestBatch9Lick:
                 break
         assert affected, "Lick should sometimes apply a random status"
 
+    def test_lick_does_not_apply_hangover(self, monkeypatch):
+        from src.core import abilities
+
+        monkeypatch.setattr("random.choice", lambda seq: "Hangover" if "Hangover" in seq else seq[0])
+        monkeypatch.setattr("random.randint", lambda start, end: end)
+
+        user, target = self._make_combatants()
+        abilities.Lick().use(user, target)
+
+        assert target.status_effects["Hangover"].active is False
+
 
 class TestBatch9BrainGorge:
     """BrainGorge - weapon hit + latch + extra damage + intel drain."""
@@ -6843,6 +6854,24 @@ class TestBatch14SlotMachine:
         msg = result if isinstance(result, str) else str(result)
         assert "pair" in msg.lower()
         assert "randomly selected" in msg.lower() or "immune" in msg.lower() or "no effect" in msg.lower()
+
+    def test_slot_machine_pair_can_apply_visible_dot_debuff(self, monkeypatch):
+        from src.core import abilities
+
+        monkeypatch.setattr("random.choice", lambda seq: "DOT" if "DOT" in seq else seq[0])
+        monkeypatch.setattr("random.randint", lambda start, end: end)
+
+        user, target = self._make_combatants()
+        result = abilities.SlotMachine().use(
+            user, target,
+            slot_machine_callback=lambda u, t: "AS,AD,9C",
+        )
+
+        assert target.magic_effects["DOT"].active is True
+        assert target.magic_effects["DOT"].duration > 0
+        assert target.magic_effects["DOT"].extra > 0
+        assert target.magic_effects["DOT"].source == "Slot Machine"
+        assert "DOT has been randomly selected" in str(result)
 
     def test_slot_machine_random_produces_output(self):
         """Random spins should always produce some output."""
