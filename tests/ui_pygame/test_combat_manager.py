@@ -1115,7 +1115,11 @@ def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypat
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     manager._render_combat_frame = lambda *args, **kwargs: None
     manager._flush_result_frame = lambda *_args: None
-    manager._play_smoke_screen_visual = lambda _player, _enemy, target: smoke_visuals.append(target)
+
+    def play_smoke_screen_visual(_player, _enemy, target):
+        smoke_visuals.append((target, manager.combat_view.hide_enemy_calls))
+
+    manager._play_smoke_screen_visual = play_smoke_screen_visual
 
     manager.engine = SimpleNamespace(
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
@@ -1128,5 +1132,5 @@ def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypat
     )
 
     assert manager._enemy_turn(player, enemy) == "flee"
-    assert smoke_visuals == ["enemy"]
+    assert smoke_visuals == [("enemy", 1)]
     assert manager.combat_view.hide_enemy_calls == 1

@@ -1430,12 +1430,19 @@ class GUICombatManager:
 
         # Delegate to engine (handles Smoke Screen flee, Slot Machine, Doublecast, Jump, etc.)
         slot_cb = None
+        skill_obj = None
         if action == "Use Skill" and choice:
             skill_obj = enemy.spellbook.get('Skills', {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
 
         result = self.engine.execute_action(action, choice=choice, slot_machine_callback=slot_cb)
+        is_smoke_screen = (
+            action == "Use Skill"
+            and (choice == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
+        )
+        if result.fled and is_smoke_screen:
+            self.combat_view.hide_enemy_for_flee()
 
         # Display messages
         for line in result.message.strip().split('\n'):
@@ -1443,7 +1450,7 @@ class GUICombatManager:
                 self.combat_view.add_combat_message(line)
         self._add_new_player_stun_message(player_char, player_stun_before, result.message)
 
-        if action == "Use Skill" and choice == "Smoke Screen":
+        if is_smoke_screen:
             self._play_smoke_screen_visual(player_char, enemy, "enemy")
         else:
             self._flush_result_frame(player_char, enemy)
@@ -1462,8 +1469,6 @@ class GUICombatManager:
         self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         if result.fled:
-            if action == "Use Skill" and choice == "Smoke Screen":
-                self.combat_view.hide_enemy_for_flee()
             return "flee"
 
         # Render updated state and show result (with animation updates)
