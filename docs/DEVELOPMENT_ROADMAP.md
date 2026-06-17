@@ -508,21 +508,19 @@ Status: `Planned`
 
 ## Found Bugfixes
 
-- Log messages are still not being fully flushed to the logger before proceeding to the next turn or end of combat.
-- DOT status from Slot Machine does not apply a debuff to the statuses.
-- Lick should not be able to apply Hangover status.
-- When being teleported back to town after an event (e.g. Bring Him Home conclusion), there is a blink of the dungeon view after the town load screen before the town menu screen appears.
-- There is a slight hang right before combat, likely from loading the enemy sprite and combat overlay
+- None currently tracked from the latest playtest pass.
 
 ## Additional UX Improvements
 
-- The red border around the combat view when health is low should be improved; perhaps a pulsing, radial red overlay
-- The Alchemist and Jeweler should have tabs instead of the menu selection (similar to blacksmith)
+- None currently tracked from the latest playtest pass.
 
 ## Resolved Archive
 
 ### Recent Improvements
 
+- Added a pulsing radial danger vignette for low-health pygame combat.
+- Alchemist and Jeweler Buy flows now open tabbed item browsers.
+- Combat startup warms enemy combat sprites before the first combat frame.
 - Increased Old Key quest rewards for early/main quest turn-ins.
 - Added staged SFX routing for ice/frost, scream/howl/nightmare, Mortal Strike, shield block, underground spring, and door-open interactions.
 - Added dungeon music aliasing and location/context music routing.
@@ -530,6 +528,10 @@ Status: `Planned`
 
 ### Recent Bug Fixes
 
+- Combat post-turn log messages flush to the visible combat log before turn swaps or end-of-combat flow.
+- Slot Machine DOT now applies tick damage metadata and appears in status icons.
+- Lick no longer selects Hangover as a random status.
+- Town-return loading clears stale dungeon background providers to avoid a dungeon-view blink before the town menu.
 - Dungeon music no longer keeps playing when exiting the dungeon or returning to the main menu.
 - Combat and menu input guards pump pygame events before reading physical key state, so the first fresh combat action key after turn start is accepted once no key is held.
 - Jump clears forced-action state after landing.

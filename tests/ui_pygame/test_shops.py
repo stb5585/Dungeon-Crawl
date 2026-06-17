@@ -249,6 +249,25 @@ def test_visit_alchemist_and_jeweler_cover_quest_and_sell_paths(monkeypatch):
     assert any("May fortune favor you!" in message for message, _buttons in FakePopup.messages)
 
 
+def test_alchemist_and_jeweler_buy_open_tabbed_browsers(monkeypatch):
+    manager = _manager(monkeypatch, level=15)
+    buy_calls = []
+
+    FakeShopScreen.option_sequences = [["Buy", "Leave"], ["Buy", "Leave"]]
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
+    monkeypatch.setattr(manager, "buy_alchemist_goods", lambda: buy_calls.append("alchemist"))
+    monkeypatch.setattr(manager, "buy_jewelry", lambda: buy_calls.append("jewelry"))
+
+    manager.visit_alchemist()
+    manager.visit_jeweler()
+
+    assert buy_calls == ["alchemist", "jewelry"]
+    assert FakeShopScreen.instances[0].set_calls == [["Buy", "Sell", "Quests", "Leave"]]
+    assert FakeShopScreen.instances[1].set_calls == [["Buy", "Sell", "Quests", "Leave"]]
+
+
 def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     manager = _manager(monkeypatch, level=20)
     item_calls = []
@@ -266,9 +285,11 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     manager.buy_shields()
     manager.buy_rings()
     manager.buy_pendants()
+    manager.buy_jewelry()
     manager.buy_scrolls(background_image="dungeon.png")
     manager.buy_misc()
     manager.buy_potions(background_image="dungeon.png")
+    manager.buy_alchemist_goods()
 
     assert item_calls[0][1] == "1-Handed Weapons"
     assert set(item_calls[0][0]) >= {"Fist", "Dagger", "Sword"}
@@ -279,11 +300,16 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     assert item_calls[3][1] == "Shield"
     assert item_calls[4][1] == "Ring"
     assert item_calls[5][1] == "Pendant"
-    assert item_calls[6][1] == "Scroll"
-    assert item_calls[6][2] == "dungeon.png"
-    assert item_calls[7][1] == "Misc"
-    assert item_calls[8][1] == "Potions"
-    assert item_calls[8][2] == "dungeon.png"
+    assert item_calls[6][1] == "Jewelry"
+    assert set(item_calls[6][0]) == {"Rings", "Pendants"}
+    assert item_calls[7][1] == "Scroll"
+    assert item_calls[7][2] == "dungeon.png"
+    assert item_calls[8][1] == "Misc"
+    assert item_calls[9][1] == "Potions"
+    assert item_calls[9][2] == "dungeon.png"
+    assert item_calls[10][1] == "Alchemist Goods"
+    assert "Potions" in item_calls[10][0]
+    assert "Scrolls" in item_calls[10][0]
 
 
 def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):

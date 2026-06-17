@@ -92,19 +92,7 @@ class ShopManager(TownScreenBase):
                 popup.show(flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
-                # Update options to show buy categories
-                shop_screen.set_options(["Potions", "Scrolls", "Misc", "Back"])
-                buy_choice = shop_screen.navigate_options()
-                
-                if buy_choice == "Potions":
-                    self.buy_potions()
-                elif buy_choice == "Scrolls":
-                    self.buy_scrolls()
-                elif buy_choice == "Misc":
-                    self.buy_misc()
-                
-                # Always restore main options after buying or going back
-                shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
+                self.buy_alchemist_goods()
                 shop_screen.shop_message = "Welcome to Ye Olde Item Shoppe."
             elif choice == "Sell":
                 self.sell_items()
@@ -137,17 +125,7 @@ class ShopManager(TownScreenBase):
                 popup.show(flush_events=True, require_key_release=True)
                 break
             elif choice == "Buy":
-                # Update options to show buy categories
-                shop_screen.set_options(["Rings", "Pendants", "Back"])
-                buy_choice = shop_screen.navigate_options()
-                
-                if buy_choice == "Rings":
-                    self.buy_rings()
-                elif buy_choice == "Pendants":
-                    self.buy_pendants()
-                
-                # Always restore main options after buying or going back
-                shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
+                self.buy_jewelry()
                 shop_screen.shop_message = "Come glimpse the finest jewelry in the land."
             elif choice == "Sell":
                 self.sell_items()
@@ -202,6 +180,14 @@ class ShopManager(TownScreenBase):
         """Buy pendants from jeweler."""
         pendant_list = items_module.items_dict["Accessory"]["Pendant"]
         self.buy_equipment(pendant_list, "Pendant", )
+
+    def buy_jewelry(self):
+        """Buy rings and pendants from one tabbed jeweler browser."""
+        jewelry_tabs = {
+            "Rings": items_module.items_dict["Accessory"]["Ring"],
+            "Pendants": items_module.items_dict["Accessory"]["Pendant"],
+        }
+        self._buy_with_shop_screen(jewelry_tabs, "Jewelry")
     
     def buy_scrolls(self, background_image="town.png"):
         """Buy scrolls from alchemist."""
@@ -221,6 +207,17 @@ class ShopManager(TownScreenBase):
         """Buy potions from alchemist with level-based availability."""
         potion_dict = {"Restorative": self._potion_item_classes()}
         self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
+
+    def buy_alchemist_goods(self):
+        """Buy alchemist stock from one tabbed browser."""
+        misc_dict = dict(items_module.items_dict.get("Misc", {}))
+        scrolls = misc_dict.pop("Scroll", [])
+        alchemist_tabs = {
+            "Potions": self._potion_item_classes(),
+            "Scrolls": scrolls,
+            **self._available_item_groups(misc_dict),
+        }
+        self._buy_with_shop_screen(alchemist_tabs, "Alchemist Goods")
 
     def _potion_item_classes(self):
         """Return level-appropriate restorative potion classes."""
