@@ -321,162 +321,176 @@ remain P4 content work rather than P3 blockers.
 
 Status: `Active`
 
-1. Quest and realm expansion.
-   - Finish or expand Playhouse/Jester content.
-   - Add the class-specific Class Ring questline if still desired.
-   - Add post-fight NPC dialogue changes.
-   - Expand Realm of Cambion follow-up content.
-   - Add missing special tiles such as Portal, Rotator, Teleporter, and Fake Path where still needed.
-   - Implement concept of Psychopomp, a creature or spirit that escorts the newly deceased to the afterlife and often resembles self
-      - if player dies outside of starter area, instead of being resurrected in town, require passage of trial to return
-      - possibly defeat scaled-up version of self; difficulty based on where character dies
-   - Greater immersive gameplay details
-      - Scientist(s) manning the Warp Point
-      - Artistic renderings for NPCs
-         - Sergeant in Barracks
-         - Patrons in Inn
-         - Shop purveyors
-         - Guards at Old Warehouse
-         - Priest at Church
-         - Little boy lost in dungeon (Bring Him Home quest)
-2. Racial passive follow-up.
-   - Decide whether the original "7 sins / 7 virtues" ideas should become deeper passives or remain design flavor.
-   - Avoid weakening the already-implemented always-on race identity pass.
-3. Gameplay statistics expansion.
-   - Decide whether persistent history, run summaries, or account-style stats are worth adding beyond the current grouped run popup.
-4. Equipment and progression expansion.
-   - Helmet slot support and the initial Cloth/Light/Medium/Heavy helmet catalog are now done.
-      - Add quest/process for obtaining ultimate helmets.
-   - Most originally listed item-system improvements are now done.
-   - Future equipment work should focus on clearly scoped new mechanics, class kits, or content rewards.
-   - Equipment durability; continuing to use a broken item without fixing can make it shatter, losing it forever.
-   - Add way to inspect currently equipped items.
-   - Equipment details when equipping should include whether the weapon is a one-handed or two-handed weapon.
-   - Armor should affect speed and other mobility-specific actions
-      - heavier armor affects more, making the choice more important
-5. Deeper balance tuning.
-   - Revisit stat-dump tradeoffs.
-   - Re-run race-baseline comparisons once class kits are stable.
-   - Revisit progression scaling outliers.
-   - Use simulator-backed reports for PvE tuning.
-6. Item improvement and expansion.
-   - Item identification tied to intelligence; low intelligence characters will find more unidentified items, requiring either a scroll or shop to identify.
-   - Item usage for buffs or special attacks; using it too much can cause it to break/shatter.
-7. Bestiary implementation.
-   - Allow the player to view information about previously defeated enemies.
-   - Use enemy artwork with details gleaned from combat encounters; higher perception characters (including when wearing Pendant of Vision) will uncover more information.
-   - Add achievements and/or rewards for completion.
-8. Combat Improvements
-   - Add multi-enemy combat support; may require rebalancing
-   - Create combat stack based on speed; greater speed diff can result in multiple turns in a row
-   - Combat logging improvements
-      - Add logging for item special effects (e.g. when an attack disarms an enemy)
-      - Change the player log color to match the icon colors (player blue, enemy red)
-   - Add visual representation of abilities
-      - Mana Shield creates a blue force field glow around the user
-      - Mirror Image duplicates the user
-      - Smoke Screen should obscure the user and then have them disappear while it fades
-9. Unique class mechanics
-   - Warrior
-      - Weapon Master/Grandmaster of Arms/Berserker
-         - Implement second promotion class Grandmaster of Arms
-         - Weapon Master/Grandmaster of Arms: Weapon Discipline
-            - gain proficiency with a weapon type as it's used
-            - each weapon type levels from 0-100 and has 10 levels
-            - experience is gained by attacking; critical hits double experience
-            - can no longer be leveled once promoted to Berserker; player must either max out weapon of choice or select Grandmaster of Arms promotion
-         - Grandmaster of Arms: Weapon Specialty
-            - weapon types that gain max level now trigger certain abilities/buffs
-               - Fist: Hundred Hand Slap -
-               - Dagger:
-               - Sword:
-               - Club:
-               - Longsword:
-               - Battle Axe:
-               - Hammer:
-         - Berserker: Battle Scars
-            - surviving combat with less than 10% health gives chance of permanent scar
-            - scars provide permanent stat bonuses (e.g. +1 to stat, +5 health or mana, +1% crit chance, +1% life steal, etc.)
-      - Paladin/Crusader
-         - Oathbringer: choose an path to follow
-            - Redemption: the path of the pacifist
-               - gain Redeem ability; success affected by charisma and inversely related to enemy HP percentage (bosses are immune and won't trigger Mark of Perdition)
-               - successful redeem trigger Redemption aura
-                  - lowers encounter rate but increases experience and gold and chance to redeem enemies
-                  - persists until an enemy is killed instead of Redeem
-               - killing a non-boss enemy has a chance to trigger Mark of Perdition based on charisma (lower charisma = higher chance)
-                  - increases encounter rate and lowers experience and gold
-                  - persists until next successful Redeem
-            - Conquest: the path of the warmonger
-               - killing enemies that you currently have a bounty on triggers Conquest aura
-                  - increases initiative and offensive combat stats (attack, crit, hit)
-                  - lasts 5 minutes and stacks up to 3 times
-               - running away from any enemy drops Conquest aura and triggers Mark of the Craven
-                  - decreases initiative and offensive combat stats (attack, crit, hit)
-                  - persists until killing a bounty target
-            - Retribution: the path of the punitive
-               - successful counterattacks (Parry) trigger Retribution aura
-                  - increases dodge chance and critical damage
-                  - lasts 5 minutes (killing blow doubles duration)
-               - unequipping, breaking, or being disarmed triggers Mark of Mercy
-                  - if HP drops below 10%, enemy can mercy-kill player
-                  - persists until weapon is equipped or picked up
-            - Protection: the path of the defender
-               - blocking an attack can trigger Protection aura
-                  - increases block amount and regens health every turn active
-                  - lasts 2 turns but can stack up to 5 times, resetting the duration each time
-               - if a shield is not equipped (unequipped or broken), player will be affected by Mark of Vulnerability
-                  - increases melee damage taken and lowers healing from any source
-                  - persists until a shield is equipped
-      - Lancer/Dragoon
-         - Jump: `implemented`
-         - Dragoon: Dragon Quest - following the defeat of the Red Dragon, the Dragoon can embark on a
-            quest to collect the 
-      - Sentinel/Stalwart Defender
-         - Sentinel: Resolve - taking damage generates resolve that fills up a gauge
-            - the percentage of resolve affects certain abilities, culminating in an ultimate ability
-               - Shield Slam: increases damage dealt by the percentage filled
-               - Retaliate: blocked attacks have chance equal to the percentage filled to retaliate
-               - Shield Block: successful blocks trigger a concussive shock from the shield, stunning the attacker
-               - Last Stand: lowers the attack penalty by the percentage filled
-	- Mage
-      - Sorcerer/Wizard
-         - Elemental Affinity Wheel - casting spells of a particular element increases affinity with that element but at the detriment of the inverse element (fire/ice, electric/water, earth/wind)
-            - once affinity reaches a certain level, unlocks 2nd level spell of that element
-            - for level 3 spells, must be Wizard class with even higher affinity; if affinity level reached before becoming Wizard, spell will be learned on promotion
-            - represented visually with a hex radar chart
-            - affinity grows/shrinks based on intelligence level
-               - 15 intel is baseline; equal gain and loss
-               - every point above or below changes the affinity gained/lost by 5%
-      - Warlock/Shadowcaster
-      - Spellblade/Knight Enchanter
-      - Summoner/Grand Summoner
-	- Footpad
-      - Thief/Rogue
-      - Inquisitor/Seeker
-      - Assassin/Ninja
-      - Spell Stealer/Arcane Trickster
-	- Healer
-      - Cleric/Templar
-      - Priest/Archbishop
-      - Monk/Master Monk
-         - Sound Body and Mind - Arms, legs, head, body
-      - Bard/Troubadour
-	- Pathfinder
-      - Druid/Lycan
-      - Diviner/Astromancer
-         - Geomancer has been renamed to Astromancer in runtime class, item, race, ability, and test references.
-            - change TetraDisaster to GrandDesign
-         - Astromancer: Runic Alterations - defeating enemies with elemental spells gives chance to drop runes
-            - runes match the spell used when gained
-            - combine rune(s) and gear to increase power
-               - modifying weapons add elemental damage and/or attack stats
-               - modifying armor/helmets adds elemental resistance and/or defensive stats
-               - modifying accessories adds buffs and/or spell damage/defense
-               - modifying spells increases damage and/or hit chance and/or crit chance
-            - runes can be replaced but they are lost
-      - Shaman/Soulcatcher
-      - Ranger/Beast Master
+P4 is split into smaller tracks so low-risk content and polish can move while larger systems remain explicitly decision-gated. Status labels:
+
+- `Ready`: scoped enough to implement after normal code/data inspection.
+- `Needs Exploration`: inspect current data, UI, save, or engine shape before implementation.
+- `Needs Design Decision`: product/design choice required before implementation.
+- `Deferred`: intentionally postponed until a design spec or prerequisite exists.
+
+#### P4a - Immediate Content And UX Wins
+
+Status: `Ready`
+
+- Add post-fight NPC dialogue, tavern comments, Sergeant quest hints, relic flavor text, and Warp Point scientist flavor.
+- Add equipped-item inspection and include one-handed/two-handed weapon details in equip previews.
+- Improve combat logs by adding item special-effect logging and aligning player/enemy log colors with icon colors.
+- Add limited ability-specific visuals:
+  - Mana Shield creates a blue force field glow around the user.
+  - Mirror Image duplicates the user.
+  - Smoke Screen obscures the user, then fades as they disappear.
+- Preserve inventory sort selection instead of resetting it when reopening the Character Menu.
+- Replace status-effect initials with icon artwork where assets exist.
+
+Needs Exploration:
+
+- Inspect dialogue/quest data shape, current equipment-detail UI, combat log styling hooks, and status icon asset availability before implementation.
+
+#### P4b - Quest And Realm Content
+
+Status: `Needs Exploration`
+
+- Expand Realm of Cambion follow-up content after auditing current realm entry/exit and boss resolution paths.
+   - Audit missing special-tile needs for Portal, Rotator, Teleporter, and Fake Path before adding any new map tiles.
+- Add post-fight dialogue variants, subtle busboy hints, and milestone storage rewards after auditing quest/dialogue hooks.
+- Add greater immersive details after content hooks are confirmed:
+  - Scientist(s) manning the Warp Point.
+  - Artistic renderings or presentation hooks for the Sergeant, Inn patrons, shop purveyors, Old Warehouse guards, Church priest, and the Bring Him Home child.
+
+Needs Design Decision:
+
+- Decide whether the class-specific Class Ring questline remains P4 content, becomes a passive reward path, or is cut.
+   - Answer: obtaining the standard Class Ring item stays a passive reward for defeating the Red Dragon boss; activating it requires outlining questlines for each second promotion class
+- Define Dragoon Dragon Quest objective and reward; current note is incomplete.
+   - Answer:
+- Define Psychopomp death-trial rules:
+  - optional challenge, mandatory death recovery, or deferred concept;
+   - Answer: save this for special event if defeated against final boss; Devil will not let your body return to town for resurrection, instead sends you to "purgatory"; this realm leads to a battle against a copy of oneself (psychopomp) that the player must win to return to the living realm
+  - trigger locations and starter-area exemption;
+   - Answer: always triggers when defeated while fighting the final boss for the first time (cannot win the initial encounter)
+  - trial objective, self-scaling rules, rewards, penalties, and save behavior.
+   - Answer: must defeat Psychopomp, a boss-like scaled version of yourself controlled by AI
+   - while exploring "purgatory", the player will encounter a disfigured being who claims to know the way back to the living realm
+   - requires obtaining several clues throughout purgatory through defeating mini-bosses and exploring the realm; these clues reveal a secret to defeating the Psycopomp, which releases your soul and allows the user to return
+   - the being allows the player to save their progress; is also revealed to be an angel sent to guide the player out to ultimately defeat the Devil; completing this challenge allows the user to defeat the final boss
+
+#### P4c - Knowledge And Collection Systems
+
+Status: `Ready` for MVP, `Needs Design Decision` for rewards/history
+
+- Implement a Bestiary MVP:
+  - record defeated enemies in the save;
+  - display enemy artwork and basic defeated-enemy details;
+  - reveal additional details from sight/perception sources, including Pendant of Vision and Inquisitor/Seeker traits.
+
+Needs Exploration:
+
+- Inspect save schema, enemy metadata, enemy artwork lookup, sight/perception helpers, and current gameplay-stat persistence.
+
+Needs Design Decision:
+
+- Decide whether Bestiary progress is per-save only or account-style persistent history.
+- Decide whether completion grants achievements, rewards, titles, or remains informational.
+- Decide whether persistent gameplay history, run summaries, or account-style stats are worth adding beyond the current grouped run popup.
+
+#### P4d - Equipment And Item Systems
+
+Status: `Needs Exploration`
+
+- Outline the quest/process for obtaining ultimate helmets.
+- Investigate equip-while-buying UX and whether purchase flow should support selecting equipment slots.
+- Validate already-implemented cloth armor spell modifiers and ultimate armor special effects.
+- Explore elemental armor options, elemental item notes in character/equipment displays, Tome special effects, rarity/shop/drop separation, and random healing/mana refresher spots.
+
+Needs Design Decision:
+
+- Define durability, repair, broken-item, and shatter/loss rules before implementation.
+- Define item identification economy:
+  - intelligence-based unidentified drop chance;
+  - scroll/shop identification access;
+  - inventory, shop, save, and loot-display behavior.
+- Define usable equipment/accessory behavior, including whether repeated use consumes durability.
+- Define armor speed and mobility penalties by armor weight/class.
+- Decide whether equipment naming themes such as "Rapier of the Wolf" are cosmetic only or mechanical.
+
+Deferred:
+
+- Do not implement durability or identification until a design spec covers save compatibility, loot generation, shops, UI, combat effects, and regression tests.
+
+#### P4e - Class Mechanics And Progression Kits
+
+Status: `Ready` for small rename, `Needs Design Decision` for mechanics
+
+- Rename Astromancer `TetraDisaster` to `GrandDesign` after a reference audit across abilities, data, tests, saves, and UI text.
+
+Needs Design Decision:
+
+- Warrior line:
+  - Implement Grandmaster of Arms as a second promotion path.
+  - Define Weapon Discipline storage, XP gain, critical-hit bonus, promotion lockout, and UI display.
+  - Define Grandmaster weapon specialties for Fist, Dagger, Sword, Club, Longsword, Battle Axe, and Hammer.
+  - Define Berserker Battle Scars trigger chance, permanent stat pool, caps, and save behavior.
+- Paladin/Crusader:
+  - Define Oathbringer path selection and permanence.
+  - Specify Redemption, Conquest, Retribution, and Protection aura/mark triggers, durations, stacking, boss rules, bounty interactions, and UI.
+- Lancer/Dragoon:
+  - Keep Jump marked implemented.
+  - Define Dragon Quest objective and reward before implementation.
+- Sentinel/Stalwart Defender:
+  - Define Resolve gauge storage, gain rate, decay/reset rules, UI, and effects on Shield Slam, Retaliate, Shield Block, and Last Stand.
+- Mage:
+  - Define Elemental Affinity Wheel storage, spell unlock thresholds, Wizard promotion behavior, inverse-element pairs, and radar-chart UI.
+  - Define Demonologist contract acquisition, fiend interactions, corruption/bargain drawbacks, and Shadowcaster overlap.
+  - Define Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics.
+- Footpad:
+  - Define Thief/Rogue, Inquisitor/Seeker, Assassin/Ninja, and Spell Stealer/Arcane Trickster follow-up mechanics.
+- Healer:
+  - Define Cleric/Templar, Priest/Archbishop, Monk/Master Monk Sound Body and Mind, and Bard/Troubadour mechanics.
+- Pathfinder:
+  - Define Druid/Lycan and Ranger/Beast Master follow-up mechanics.
+  - Define Astromancer Runic Alterations drop rules, rune inventory, gear/spell modification, replacement/loss rules, UI, and save behavior.
+  - Define Shaman/Soulcatcher rank-1 elemental spell unlock quests, Staff incentives, and Magic Defense/absorption Totem behavior.
+
+Deferred:
+
+- Do not implement major class kits until each has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
+- Keep deep race-passive expansion deferred until the current always-on race identity pass has enough playtest feedback; the "7 sins / 7 virtues" ideas remain design flavor unless promoted by spec.
+
+#### P4f - Combat Architecture And Balance
+
+Status: `Needs Exploration`
+
+- Use simulator-backed reports for stat-dump tradeoffs, poison/stun/crit scaling, progression outliers, and PvE tuning.
+- Re-run race-baseline comparisons once class kits are stable.
+- Validate enemy item usage after stealing consumables.
+- Explore ability/menu improvements:
+  - spell/skill ordering by mana cost;
+  - Diviner/Astromancer specialty-first spell casting;
+  - Wind eject effects and reward handling;
+  - Absorb Essence rework;
+  - mana-percentage damage abilities;
+  - Prismatic Rays;
+  - Throw inventory-item ability;
+  - magic-stat success scaling;
+  - status-gated skills;
+  - out-of-combat timed buffs/debuffs;
+  - Monk/Master Monk bare-handed skill support and attack bonuses.
+
+Needs Design Decision:
+
+- Decide whether class/race-specific level scaling belongs in P4.
+- Decide whether to convert random rolls to DnD-style dice rolls.
+- Decide whether charisma or another stat should affect experience.
+- Decide whether Silence should affect summons.
+- Decide Nightmare/flying creature land/takeoff behavior.
+- Decide whether status ticks continue after enemy defeat.
+- Decide ignore-vs-defense semantics and shield/reflect resolution order.
+- Decide unlockable races/classes/levels and difficulty-level strategy.
+
+Deferred:
+
+- Defer multi-enemy combat until battle-engine targeting, encounter generation, UI layout, loot/XP allocation, AI, and balance implications are designed.
+- Defer speed-based combat stacks until initiative/action-queue rules, multiple-turn caps, UI messaging, and simulator impact are designed.
 
 ### P5 - Audio Content Completion
 
@@ -500,10 +514,11 @@ Status: `Planned`
 
 ## Deferred Or Decision-Gated Items
 
-- Shop tab UX is decision-gated behind whether the current shop mode flow remains too slow after paging/navigation improvements.
-- Spell/hit particle effects are deferred until the team chooses where animation adds clarity instead of visual noise.
-- Persistent statistics history is deferred until current-run stats feel insufficient in play.
+- Durability, item identification, and usable equipment/accessory systems are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
+- Persistent statistics history is decision-gated behind whether Bestiary/account-style collection should be per-save or persistent.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
+- Major class kits are deferred until each kit has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
+- Multi-enemy combat and speed-based combat stacks are deferred until battle-engine, UI, encounter-generation, and balance designs are complete.
 - Laser/bird staged SFX routing is deferred until event payloads or creature-specific hooks are clear enough to avoid brittle name guesses.
 
 ## Found Bugfixes
