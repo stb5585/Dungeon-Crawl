@@ -91,6 +91,23 @@ def test_town_menu_draw_panel(monkeypatch):
     assert "L: Debug Level Up" in presenter.small_font.render_calls
 
 
+def test_town_menu_draws_selected_location_detail(monkeypatch):
+    presenter = _make_presenter()
+    monkeypatch.setattr(town_menu.TownMenuScreen, "_load_background", lambda self: setattr(self, "background", None))
+    screen = town_menu.TownMenuScreen(presenter)
+    screen.current_selection = 1
+
+    panel_calls = []
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
+    monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    screen.draw_menu_panel(["Old Warehouse", "Warp Point", "Quit to Main Menu"])
+
+    assert any(alpha == 170 for _rect, alpha in panel_calls)
+    assert "Warp Point" in presenter.normal_font.render_calls
+    assert any("field scientists" in text for text in presenter.small_font.render_calls)
+
+
 def test_town_menu_navigation_and_debug_level(monkeypatch):
     debug_calls = []
     presenter = _make_presenter(debug_mode=True)

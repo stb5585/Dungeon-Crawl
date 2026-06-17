@@ -2,6 +2,8 @@
 Town Menu screen for Pygame GUI with background image.
 """
 
+import textwrap
+
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -12,6 +14,39 @@ class TownMenuScreen(TownScreenBase):
     """
     Town menu screen that displays the town background and location options.
     """
+
+    LOCATION_DETAILS = {
+        "Barracks": (
+            "Sergeant's maps, casualty ledgers, and the quartermaster's storage lockers crowd the command room."
+        ),
+        "Shops": (
+            "Lanterns burn over the counters while Griswold, the Alchemist, and the Jeweler prepare their wares."
+        ),
+        "The Thirsty Dog Tavern": (
+            "Patrons trade rumors in low voices, and the Busboy hears more than anyone realizes."
+        ),
+        "Church of Elysia": (
+            "The priest keeps vigil by candlelight, ready to heal wounds and bless the road ahead."
+        ),
+        "Enter Dungeon": (
+            "The dungeon mouth waits beyond town, cold air spilling from the stairwell below."
+        ),
+        "Old Warehouse": (
+            "Guards block the reinforced doors while machines hum somewhere behind the walls."
+        ),
+        "Warp Point": (
+            "Two field scientists watch the brass-ringed platform, hands never far from the lever bank."
+        ),
+        "Character Menu": (
+            "Review equipment, inventory, quests, and key items before stepping back into danger."
+        ),
+        "Statistics": (
+            "Review the record of your run: travel, combat, survival, and personal bests."
+        ),
+        "Quit to Main Menu": (
+            "Step away from Silvana and return to the main menu."
+        ),
+    }
     
     def __init__(self, presenter):
         super().__init__(presenter)
@@ -62,6 +97,8 @@ class TownMenuScreen(TownScreenBase):
             option_text = self.normal_font.render(option, True, color)
             option_rect = option_text.get_rect(left=panel_x + 40, centery=y + 15)
             self.screen.blit(option_text, option_rect)
+
+        self.draw_location_detail(options)
         
         # Instructions at bottom
         instructions = [
@@ -77,6 +114,35 @@ class TownMenuScreen(TownScreenBase):
             instr_rect = instr_text.get_rect(centerx=panel_x + panel_width // 2, top=instructions_y)
             self.screen.blit(instr_text, instr_rect)
             instructions_y += 25
+
+    def draw_location_detail(self, options):
+        """Draw contextual flavor for the currently selected town location."""
+        if not options:
+            return
+
+        selected = options[max(0, min(self.current_selection, len(options) - 1))]
+        detail = self.LOCATION_DETAILS.get(selected)
+        if not detail:
+            return
+
+        panel_margin = 24
+        detail_rect = pygame.Rect(
+            panel_margin,
+            self.height - 150,
+            max(260, self.width - 400 - (panel_margin * 2)),
+            112,
+        )
+        self.draw_semi_transparent_panel(detail_rect, alpha=170)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, detail_rect, 2)
+
+        title_surface = self.normal_font.render(selected, True, self.colors.GOLD)
+        self.screen.blit(title_surface, (detail_rect.left + 16, detail_rect.top + 12))
+
+        text_y = detail_rect.top + 42
+        for line in textwrap.wrap(detail, width=58)[:3]:
+            line_surface = self.small_font.render(line, True, self.colors.WHITE)
+            self.screen.blit(line_surface, (detail_rect.left + 16, text_y))
+            text_y += 20
     
     def navigate(
         self,

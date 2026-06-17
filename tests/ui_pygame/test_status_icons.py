@@ -204,4 +204,5 @@ def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
     assert status_icon_asset_path("STN2").name == "stun.png"
     assert status_icon_asset_path("PRN").name == "prone.png"
     assert status_icon_asset_path("RND").name == "bleed.png"
-    assert status_icon_asset_path("PSN") is None
+    assert status_icon_asset_path("BLD").name == "blind.png"
+    assert status_icon_asset_path("PSN").name == "poison.png"

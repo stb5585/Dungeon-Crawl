@@ -8,10 +8,12 @@ StatusIcon = tuple[str, bool | None]
 
 STATUS_ICON_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "effects"
 STATUS_ICON_ASSETS = {
+    "BLD": "blind.png",
     "BRK": "berserk.png",
     "BRN": "dot.png",
     "DOT": "dot.png",
     "PRN": "prone.png",
+    "PSN": "poison.png",
     "RND": "bleed.png",
     "SIL": "silence.png",
     "SLP": "sleep.png",
