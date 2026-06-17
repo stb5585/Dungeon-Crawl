@@ -129,6 +129,19 @@ def test_p4a_content_hooks_load_tavern_sergeant_and_warp_flavor():
     assert "scientists" in warp_quest["Help Text"]
 
 
+def test_p4b_content_hooks_load_post_fight_and_storage_flavor():
+    from src.core.data import data_loader
+
+    data_loader.clear_cache()
+    patrons = data_loader.get_patron_dialogues()
+    tavern_flavor = data_loader.get_tavern_flavor_dialogues()
+
+    assert any("Jester fell" in line for line in patrons["Barkeep"][65])
+    assert any("Cambion" in line for line in patrons["Soldier"][65])
+    assert any("portal room" in line for line in patrons["Busboy"][65])
+    assert any("storage lockers" in line for line in tavern_flavor)
+
+
 def test_holy_grail_rotation_hints_cover_hooded_and_sergeant_states():
     from src.core.town import get_holy_grail_rotation_hints
 

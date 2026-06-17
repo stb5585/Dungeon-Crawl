@@ -12,6 +12,44 @@ from .town_base import TownScreenBase
 
 class BarracksManager(TownScreenBase):
     """Manages barracks interactions with pygame presenter."""
+
+    MILESTONE_STORAGE_REWARDS = (
+        (
+            "Rookie Mistake",
+            (
+                (items.HealthPotion, 2),
+                (items.ManaPotion, 1),
+            ),
+        ),
+        (
+            "The Butcher",
+            (
+                (items.HealthPotion, 3),
+                (items.ManaPotion, 1),
+            ),
+        ),
+        (
+            "A Bad Dream",
+            (
+                (items.GreatHealthPotion, 2),
+                (items.GreatManaPotion, 1),
+            ),
+        ),
+        (
+            "No Laughing Matter",
+            (
+                (items.Remedy, 2),
+                (items.Elixir, 1),
+            ),
+        ),
+        (
+            "The Wizard's Folly",
+            (
+                (items.Elixir, 2),
+                (items.Megalixir, 1),
+            ),
+        ),
+    )
     
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
@@ -28,6 +66,8 @@ class BarracksManager(TownScreenBase):
         barracks_screen.draw_all()
         barracks_background = self.presenter.screen.copy()
         draw_barracks_background = lambda: self.presenter.screen.blit(barracks_background, (0, 0))
+
+        self._grant_milestone_storage_rewards(draw_barracks_background)
 
         # Curses parity: if player has Brass Key, resolve Joffrey's Key handoff.
         if "Brass Key" in self.player_char.special_inventory:
@@ -88,6 +128,47 @@ class BarracksManager(TownScreenBase):
             
             elif choice_idx == 1:  # Storage
                 self.manage_storage()
+
+    def _quest_turned_in(self, quest_name):
+        quest_dict = getattr(self.player_char, "quest_dict", {})
+        for quest_type in ("Main", "Side"):
+            quest_data = quest_dict.get(quest_type, {}).get(quest_name)
+            if isinstance(quest_data, dict) and quest_data.get("Turned In"):
+                return True
+        return False
+
+    def _grant_milestone_storage_rewards(self, background_draw_func=None):
+        """Deposit one-time milestone supplies in the player's storage locker."""
+        quest_dict = getattr(self.player_char, "quest_dict", None)
+        if not isinstance(quest_dict, dict):
+            return []
+
+        claimed = quest_dict.setdefault("Milestone Storage Rewards", {})
+        granted = []
+        for quest_name, rewards in self.MILESTONE_STORAGE_REWARDS:
+            if claimed.get(quest_name) or not self._quest_turned_in(quest_name):
+                continue
+
+            for item_factory, quantity in rewards:
+                item = item_factory()
+                self.player_char.modify_inventory(item, num=quantity, storage=True)
+                granted.append(f"{quantity}x {item.name}")
+            claimed[quest_name] = True
+
+        if granted:
+            reward_text = ", ".join(granted)
+            popup = ConfirmationPopup(
+                self.presenter,
+                f"The quartermaster stocked your storage locker with milestone supplies: {reward_text}.",
+                show_buttons=False,
+            )
+            popup.show(
+                background_draw_func=background_draw_func,
+                flush_events=True,
+                require_key_release=True,
+            )
+
+        return granted
     
     def manage_storage(self):
         """Access storage system."""

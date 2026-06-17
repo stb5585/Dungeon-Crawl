@@ -924,6 +924,9 @@ class TestSaveSystemRoundTrips:
                     "Total": 12,
                 }
             },
+            "Milestone Storage Rewards": {
+                "Rookie Mistake": True,
+            },
         }
 
         serialized = QuestDataSerializer.serialize_quest_dict(quest_dict)
@@ -932,6 +935,7 @@ class TestSaveSystemRoundTrips:
         bounty = restored["Bounty"]["Goblin"][0]
         assert bounty["enemy"].name == "Goblin"
         assert bounty["reward"] == items.Antidote
+        assert restored["Milestone Storage Rewards"]["Rookie Mistake"] is True
 
         side_quest = restored["Side"]["Where's the Beef?"]
         assert side_quest["What"].name == "Mystery Meat"

@@ -369,10 +369,13 @@ Implemented:
 - Realm of Cambion content expansion:
    - Added non-modal flavor messages for portal travel, rotator movement, and anti-magic terminal state.
    - Added Nimue follow-up dialogue after `The Wizard's Folly` is turned in.
+- P4b town response content:
+   - Added post-fight tavern dialogue variants for Jester and Realm of Cambion progress.
+   - Added subtle Busboy and Soldier hints for portal/Cambion aftermath.
+   - Added one-time milestone supply deposits to the Barracks storage locker for selected turned-in quests.
 
 Next Ready Slice:
 
-- Add post-fight dialogue variants, subtle busboy hints, and milestone storage rewards after auditing quest/dialogue hooks.
 - Add greater immersive details after content hooks are confirmed:
   - Scientist(s) manning the Warp Point.
   - Artistic renderings or presentation hooks for the Sergeant, Inn patrons, shop purveyors, Old Warehouse guards, Church priest, and the Bring Him Home child.

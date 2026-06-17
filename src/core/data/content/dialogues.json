@@ -19,6 +19,10 @@
       "25": [
         "The whole room gets quieter when you come back from a boss fight. That's respect, friend, even if nobody says it outright.",
         "If the Sergeant starts sounding less angry and more worried, that means you are getting close to something important."
+      ],
+      "65": [
+        "After the Jester fell, three people paid their tabs without making a single joke. I have never seen this room so relieved.",
+        "The old warehouse guards asked me to set aside food for the scientists. Whatever they are building, it keeps them awake for days."
       ]
     },
     "Waitress": {
@@ -50,7 +54,8 @@
         "After the Iron Golem fell, the engineers started hauling brass coils toward the old warehouse. Something big is coming."
       ],
       "65": [
-        "The Devil is immune to normal weapons but legend says there is a material that will do the job."
+        "The Devil is immune to normal weapons but legend says there is a material that will do the job.",
+        "The reports from Cambion do not read like normal patrol notes. Left turns become right turns, doors forget where they open, and every survivor swears Merzhin was laughing from somewhere else."
       ]
     },
     "Drunkard": {
@@ -82,6 +87,10 @@
       "50": [
         "The scientists tip in strange coins and smell like ozone. They keep asking whether the fifth floor is still intact.",
         "One of the guards said the relics hum louder when they are brought near each other. I have been trying very hard not to think about that."
+      ],
+      "65": [
+        "A guard left a note under his cup that just said, 'The Jester is gone.' Nobody touched the table for an hour.",
+        "Someone from the old warehouse said the portal room smells like rain after you come back from Cambion. I hope that means you came back in one piece."
       ]
     },
     "Hooded Figure": {
@@ -158,6 +167,8 @@
     "If you need potions, visit the alchemist. They saved my life once.",
     "I've heard rumors of a secret shop somewhere in the depths...",
     "The Bounty Board offers rewards for hunting dangerous creatures.",
+    "The quartermaster has started leaving supplies in proven adventurers' storage lockers.",
+    "Some victories make the tavern louder. Others make everyone lower their voices and count who came home.",
     "Some say there's treasure beyond imagination in the depths."
   ]
 }

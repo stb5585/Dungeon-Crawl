@@ -119,6 +119,45 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
     assert ("Great Health Potion", 5, False, False, False) in player.inventory_calls
 
 
+def test_milestone_storage_rewards_are_deposited_once(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.calls = []
+    player = _make_player()
+    player.quest_dict = {
+        "Bounty": {},
+        "Main": {
+            "The Butcher": {"Turned In": True},
+            "A Bad Dream": {"Turned In": False},
+        },
+        "Side": {
+            "Rookie Mistake": {"Turned In": True},
+        },
+    }
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
+    manager = barracks.BarracksManager(presenter, player)
+
+    granted = manager._grant_milestone_storage_rewards()
+    second_granted = manager._grant_milestone_storage_rewards()
+
+    assert granted == [
+        "2x Health Potion",
+        "1x Mana Potion",
+        "3x Health Potion",
+        "1x Mana Potion",
+    ]
+    assert second_granted == []
+    assert player.quest_dict["Milestone Storage Rewards"] == {
+        "Rookie Mistake": True,
+        "The Butcher": True,
+    }
+    assert ("Health Potion", 2, True, False, False) in player.inventory_calls
+    assert ("Mana Potion", 1, True, False, False) in player.inventory_calls
+    assert ("Health Potion", 3, True, False, False) in player.inventory_calls
+    assert any("milestone supplies" in message for message in FakePopup.messages)
+
+
 def test_manage_storage_store_and_retrieve(monkeypatch):
     FakePopup.messages = []
     FakePopup.calls = []
