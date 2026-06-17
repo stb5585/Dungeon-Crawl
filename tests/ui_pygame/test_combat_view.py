@@ -1028,35 +1028,46 @@ def test_center_combat_enemy_fades_while_smoke_screen_active(monkeypatch):
 
 def test_enemy_hidden_for_flee_skips_sprite_until_log_reset(monkeypatch):
     view = _make_view()
+    sprite_calls = []
     enemy = SimpleNamespace(
         name="Bandit",
         health=SimpleNamespace(current=8, max=12),
         flying=False,
         tunnel=False,
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
     )
     view.enemy_combat_sprite_manager = SimpleNamespace(
         get_sprite_key_for_enemy=lambda _enemy: "bandit",
         get_combat_scale_for_enemy=lambda _enemy: 1.0,
-        get_scaled_sprite_by_key=lambda key, size: DummySurface(size, text="hidden-bandit"),
+        get_scaled_sprite_by_key=lambda key, size: sprite_calls.append(("main", key, size)) or DummySurface(size, text="hidden-bandit"),
+        get_scaled_sprite=lambda _enemy, size: sprite_calls.append(("panel", size)) or DummySurface(size, text="hidden-bandit-panel"),
     )
 
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
     view.hide_enemy_for_flee()
     view._render_enemy(enemy, has_sight=True)
+    view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
 
     assert not any(
-        getattr(surface, "text", "") == "hidden-bandit"
+        getattr(surface, "text", "") in {"hidden-bandit", "hidden-bandit-panel"}
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
     )
+    assert sprite_calls == []
 
     view.reset_combat_log()
     view._render_enemy(enemy, has_sight=True)
+    view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
 
     assert any(
         getattr(surface, "text", "") == "hidden-bandit"
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
     )
+    assert any(call[0] == "panel" for call in sprite_calls)
 
 
 def test_center_combat_boss_uses_mapped_scale_sprite_box(monkeypatch):

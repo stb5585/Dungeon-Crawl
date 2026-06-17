@@ -1297,6 +1297,9 @@ class CombatView:
 
     def _render_enemy_info_panel(self, enemy, has_sight=True, overlay=True):
         """Render combat artwork and target details without replacing gameplay sprites."""
+        if self._hide_enemy_for_flee:
+            return
+
         panel_x = int(self.screen_width * 0.65) + 12 if overlay else self.combat_width + 12
         panel_w = self.screen_width - panel_x - 12
         if panel_w < 170:
