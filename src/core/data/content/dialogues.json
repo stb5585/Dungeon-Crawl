@@ -15,6 +15,10 @@
         "Locked chests contain more powerful items compared with unlocked ones, however you need a key or a lockpick to get to the treasure.",
         "Boss enemies have true sight, so that Invisibility Pendant is useless against them.",
         "Some status effects last until the end of combat or until healed. Make sure to stock up on potions!"
+      ],
+      "25": [
+        "The whole room gets quieter when you come back from a boss fight. That's respect, friend, even if nobody says it outright.",
+        "If the Sergeant starts sounding less angry and more worried, that means you are getting close to something important."
       ]
     },
     "Waitress": {
@@ -41,6 +45,10 @@
       "25": [
         "I just finished my shift guarding the old warehouse behind the barracks. They won't tell us what's in there but I have seen several scientists come and go."
       ],
+      "50": [
+        "The Sergeant keeps a ledger of every relic report. If you bring him proof, he'll know exactly which blood-soaked story it belongs to.",
+        "After the Iron Golem fell, the engineers started hauling brass coils toward the old warehouse. Something big is coming."
+      ],
       "65": [
         "The Devil is immune to normal weapons but legend says there is a material that will do the job."
       ]
@@ -66,6 +74,14 @@
         "Entering the town will replenish your health and mana. Seems like you could take advantage of that.",
         "Some spells can be cast outside of battle. You can do so in the Character Menu after inspecting the spell.",
         "The guy in the corner gives me the creeps...tips well though."
+      ],
+      "20": [
+        "A soldier came in after patrol, pale as milk, saying the walls themselves shifted down there.",
+        "People leave notes under their cups now. Names of monsters, places they saw lights, that kind of thing. I pretend not to read them."
+      ],
+      "50": [
+        "The scientists tip in strange coins and smell like ozone. They keep asking whether the fifth floor is still intact.",
+        "One of the guards said the relics hum louder when they are brought near each other. I have been trying very hard not to think about that."
       ]
     },
     "Hooded Figure": {
@@ -133,6 +149,9 @@
     "I heard there are powerful artifacts deep in the dungeon...",
     "Many adventurers have entered the dungeon, but few return.",
     "They say the evil grows stronger with each passing day.",
+    "Word travels fast after a boss falls. Even the quiet patrons listen for your boots at the door.",
+    "The Sergeant's people have started pinning monster sketches over the barracks map.",
+    "A pair of scientists keep arguing about something called a stable descent field.",
     "Be careful down there, adventurer. The monsters are cunning.",
     "I lost my brother to the dungeon. Please, be safe.",
     "The blacksmith Griswold is the best in the kingdom!",

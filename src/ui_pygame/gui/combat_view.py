@@ -930,10 +930,18 @@ class CombatView:
         edge = max(1, int(320 * self._enemy_combat_sprite_scale(enemy)))
         return (edge, edge)
 
-    def _active_duplicate_count(self, enemy) -> int:
-        """Return visible Mirror Image duplicate count for an enemy."""
+    @staticmethod
+    def _magic_effect_active(character, name: str) -> bool:
         try:
-            effect = enemy.magic_effects.get("Duplicates")
+            effect = character.magic_effects.get(name)
+            return bool(effect and effect.active)
+        except AttributeError:
+            return False
+
+    def _active_duplicate_count(self, character) -> int:
+        """Return visible Mirror Image duplicate count for a character."""
+        try:
+            effect = character.magic_effects.get("Duplicates")
             if not effect or not effect.active:
                 return 0
             return max(0, min(4, int(effect.duration)))
@@ -955,6 +963,55 @@ class CombatView:
             ghost.set_alpha(max(55, 118 - index * 14))
             ghost_rect = ghost.get_rect(center=(center[0] + offset_x, center[1] + offset_y))
             self.screen.blit(ghost, ghost_rect)
+
+    def _render_mana_shield_visual(self, rect: pygame.Rect) -> None:
+        padding = 30
+        shield_rect = rect.inflate(padding, padding)
+        surface = pygame.Surface(shield_rect.size, pygame.SRCALPHA)
+        pulse = (math.sin(pygame.time.get_ticks() / 180) + 1) / 2
+        alpha = int(70 + pulse * 65)
+        pygame.draw.ellipse(surface, (80, 170, 255, alpha), surface.get_rect(), 4)
+        inner = surface.get_rect().inflate(-14, -14)
+        if inner.width > 0 and inner.height > 0:
+            pygame.draw.ellipse(surface, (140, 210, 255, max(35, alpha // 2)), inner, 2)
+        self.screen.blit(surface, shield_rect.topleft)
+
+    def _render_smoke_screen_visual(self, rect: pygame.Rect) -> None:
+        smoke_rect = rect.inflate(54, 34)
+        surface = pygame.Surface(smoke_rect.size, pygame.SRCALPHA)
+        ticks = pygame.time.get_ticks()
+        centers = (
+            (0.26, 0.58, 28),
+            (0.44, 0.45, 34),
+            (0.62, 0.55, 30),
+            (0.76, 0.40, 22),
+        )
+        for index, (x_pct, y_pct, radius) in enumerate(centers):
+            drift = math.sin((ticks / 220) + index) * 7
+            center = (int(smoke_rect.width * x_pct + drift), int(smoke_rect.height * y_pct))
+            pygame.draw.circle(surface, (170, 170, 178, 72), center, radius)
+        self.screen.blit(surface, smoke_rect.topleft)
+
+    def _render_duplicate_silhouettes(self, rect: pygame.Rect, duplicate_count: int) -> None:
+        if duplicate_count <= 0:
+            return
+        offsets = [(-14, -5), (14, 5), (-8, 10), (8, -10)]
+        for index in range(duplicate_count):
+            offset_x, offset_y = offsets[index % len(offsets)]
+            ghost_rect = rect.move(offset_x, offset_y).inflate(-10, -8)
+            surface = pygame.Surface(ghost_rect.size, pygame.SRCALPHA)
+            pygame.draw.rect(surface, (170, 205, 255, max(45, 100 - index * 14)), surface.get_rect(), border_radius=12)
+            pygame.draw.rect(surface, (220, 235, 255, max(35, 85 - index * 12)), surface.get_rect(), 2, border_radius=12)
+            self.screen.blit(surface, ghost_rect.topleft)
+
+    def _render_ability_status_visuals(self, character, target: str, *, include_duplicates: bool = True) -> None:
+        rect = self._target_rect_for_effect(target)
+        if include_duplicates:
+            self._render_duplicate_silhouettes(rect, self._active_duplicate_count(character))
+        if self._magic_effect_active(character, "Mana Shield"):
+            self._render_mana_shield_visual(rect)
+        if self._magic_effect_active(character, "Smoke Screen") or self._magic_effect_active(character, "SmokeScreen"):
+            self._render_smoke_screen_visual(rect)
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
         """Render the complete combat view."""
@@ -1091,6 +1148,8 @@ class CombatView:
                              (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
             pygame.draw.circle(self.screen, (0, 0, 0),
                              (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
+
+        self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
         
         # Enemy name (always visible)
         font = pygame.font.Font(None, 32)
@@ -1238,6 +1297,8 @@ class CombatView:
         icons = self._collect_status_icons(player_char)
         if icons:
             self._render_status_icons(icons, x, y + 60, max_width=260)
+        self._last_player_target_rect = pygame.Rect(x - 8, y - 10, 248, 104)
+        self._render_ability_status_visuals(player_char, "player")
 
         # Encumbered warning
         if getattr(player_char, 'encumbered', False):
@@ -1496,6 +1557,8 @@ class CombatView:
                              (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
             pygame.draw.circle(self.screen, (0, 0, 0),
                              (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
+
+        self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
         
         # Enemy name label at top of sprite
         font = pygame.font.Font(None, 36)
@@ -1557,6 +1620,8 @@ class CombatView:
         self._render_telegraph_banner(enemy=enemy, overlay=True)
         has_sight = self._has_sight(player_char) if show_enemy_details is None else bool(show_enemy_details)
         self._render_enemy_info_panel(enemy, has_sight, overlay=True)
+        self._render_ability_status_visuals(enemy, "enemy")
+        self._render_ability_status_visuals(player_char, "player")
 
         # Render combat log at bottom-left
         self._render_combat_log_overlay()

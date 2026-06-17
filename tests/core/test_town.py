@@ -113,6 +113,22 @@ def test_old_key_quest_rewards_are_intentionally_generous():
     assert bad_dream["Reward Number"] == 3
 
 
+def test_p4a_content_hooks_load_tavern_sergeant_and_warp_flavor():
+    from src.core.data import data_loader
+
+    data_loader.clear_cache()
+    patrons = data_loader.get_patron_dialogues()
+    tavern_flavor = data_loader.get_tavern_flavor_dialogues()
+    quests = data_loader.get_quests()
+
+    assert any("boss fight" in line for line in patrons["Barkeep"][25])
+    assert any("stable descent field" in line for line in tavern_flavor)
+    assert "tracking the guardians" in quests["Sergeant"]["Main"]["1"]["The Holy Relics"]["Help Text"]
+    warp_quest = quests["Sergeant"]["Main"]["60"]["In the Day of Our Lord"]
+    assert "staffed warp point" in warp_quest["End Text"]
+    assert "scientists" in warp_quest["Help Text"]
+
+
 def test_holy_grail_rotation_hints_cover_hooded_and_sergeant_states():
     from src.core.town import get_holy_grail_rotation_hints
 

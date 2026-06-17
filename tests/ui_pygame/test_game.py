@@ -521,6 +521,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
         quit=False,
     )
     assert game.use_warp_point(background_draw_func=lambda: None) == "dungeon"
+    assert any("Two field scientists" in message for message in popup_messages)
+    assert any("throw their levers" in message for message in popup_messages)
     assert popup_kwargs[0]["flush_events"] is True
     assert popup_kwargs[0]["require_key_release"] is True
     assert callable(popup_kwargs[0]["background_draw_func"])
@@ -548,6 +550,7 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     )
     assert game.use_warp_point(background_draw_func=lambda: None) == "dungeon"
     assert render_menu_calls
+    assert "Two field scientists" in render_menu_calls[0][0]
     assert render_menu_calls[0][1] == ("Yes", "No")
     assert render_menu_calls[0][2]["split_layout"] is True
 

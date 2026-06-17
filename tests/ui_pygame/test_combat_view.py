@@ -782,6 +782,35 @@ def test_impact_effects_use_target_rects_and_expire(monkeypatch):
     assert view._active_impact_effects == []
 
 
+def test_ability_status_visuals_draw_shield_smoke_and_duplicates(monkeypatch):
+    view = _make_view()
+    rect_calls = []
+    ellipse_calls = []
+    circle_calls = []
+    blit_count = len(view.screen.blit_calls)
+    character = SimpleNamespace(
+        magic_effects={
+            "Duplicates": SimpleNamespace(active=True, duration=2),
+            "Mana Shield": SimpleNamespace(active=True),
+            "Smoke Screen": SimpleNamespace(active=True),
+        }
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.ellipse", lambda *_args, **_kwargs: ellipse_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: circle_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.time.get_ticks", lambda: 1000)
+
+    view._last_player_target_rect = pygame.Rect(30, 320, 220, 110)
+    view._render_ability_status_visuals(character, "player")
+
+    assert rect_calls
+    assert ellipse_calls
+    assert circle_calls
+    assert len(view.screen.blit_calls) > blit_count
+
+
 def test_combat_feedback_text_recoil_and_low_health_vignette(monkeypatch):
     view = _make_view()
     enemy = SimpleNamespace(name="Goblin")

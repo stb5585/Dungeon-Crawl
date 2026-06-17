@@ -330,21 +330,23 @@ P4 is split into smaller tracks so low-risk content and polish can move while la
 
 #### P4a - Immediate Content And UX Wins
 
-Status: `Ready`
+Status: `Partially Implemented`
 
-- Add post-fight NPC dialogue, tavern comments, Sergeant quest hints, relic flavor text, and Warp Point scientist flavor.
-- Add equipped-item inspection and include one-handed/two-handed weapon details in equip previews.
-- Improve combat logs by adding item special-effect logging and aligning player/enemy log colors with icon colors.
-- Add limited ability-specific visuals:
+Implemented:
+
+- Added post-fight/tavern comments, Sergeant relic and Warp Point hints, and staffed Warp Point scientist flavor.
+- Added one-handed/two-handed weapon details to equipment previews and equipped-slot inspection details.
+- Preserved inventory sort selection when reopening the Character Menu inventory popup.
+- Aligned ordinary player/enemy combat log lines with player blue/enemy red while preserving outcome colors for damage, healing, misses, and resists.
+- Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
   - Mirror Image duplicates the user.
-  - Smoke Screen obscures the user, then fades as they disappear.
-- Preserve inventory sort selection instead of resetting it when reopening the Character Menu.
-- Replace status-effect initials with icon artwork where assets exist.
+  - Smoke Screen obscures targets when a smoke effect flag is present.
 
-Needs Exploration:
+Ready / Needs Exploration:
 
-- Inspect dialogue/quest data shape, current equipment-detail UI, combat log styling hooks, and status icon asset availability before implementation.
+- Add item special-effect logging after auditing weapon/item effect result messages and where each effect should surface in the combat log.
+- Replace status-effect initials with icon artwork where assets exist; current inspection found item icon assets, but no dedicated status-icon artwork path yet.
 
 #### P4b - Quest And Realm Content
 

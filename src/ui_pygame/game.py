@@ -756,7 +756,12 @@ class PygameGame:
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
-        prompt = f"Hello, {self.player_char.name}.\n\nDo you want to warp down to level 5?"
+        prompt = (
+            "Two field scientists stand beside the brass-ringed platform, "
+            "checking gauges that hum with blue light.\n\n"
+            f"\"Hello, {self.player_char.name}.\"\n\n"
+            "Do you want to warp down to level 5?"
+        )
         if hasattr(self.presenter, "render_menu"):
             confirmed = self.presenter.render_menu(
                 prompt,
@@ -784,6 +789,7 @@ class PygameGame:
 
             popup = ConfirmationPopup(
                 self.presenter,
+                "The scientists throw their levers in sequence.\n"
                 "You step into the warp point,\n"
                 "taking you deep into the dungeon.",
                 show_buttons=False,
