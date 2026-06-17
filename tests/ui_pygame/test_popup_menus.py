@@ -328,6 +328,7 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
 
     popup.handle_key_down(player, SimpleNamespace(key=pygame.K_s))
     assert popup.title.startswith("Inventory [Type]")
+    assert player.inventory_sort_mode == "Type"
 
     notices = []
 
@@ -693,6 +694,44 @@ def test_equipment_popup_uses_player_equip_logic_for_two_handed_weapons(monkeypa
     assert player.equipment["OffHand"].name == "None"
 
 
+def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    two_hander = DummyItem("Bastard Sword", typ="Weapon", subtyp="Longsword")
+    two_hander.handed = 2
+    player.inventory = {"Weapons": [two_hander]}
+    player.equip_diff = lambda _item, _slot, buy=False: f"{'Attack':16}  {'36 -> 40':>6}"
+    popup = popup_menus.EquipmentSelectionPopup(
+        presenter,
+        parent,
+        title="Weapon Slot",
+        options=["Bastard Sword"],
+        slot="Weapon",
+        current_item=player.equipment["Weapon"],
+        player_char=player,
+    )
+
+    popup.build_items(player)
+    popup.draw_details(player)
+
+    rendered = presenter.large_font.render_calls + presenter.normal_font.render_calls
+    assert "Bastard Sword (2H)" in rendered
+    assert "Hands" in rendered
+    assert "Two-handed" in rendered
+    assert "Attack" in rendered
+    assert "36 -> 40" in rendered
+
+    positions = {
+        surface.text: position[0]
+        for surface, position in presenter.screen.blit_calls
+        if getattr(surface, "text", None) in {"Attack", "36 -> 40", "Hands", "Two-handed"}
+    }
+    assert positions["36 -> 40"] > positions["Attack"]
+    assert positions["Two-handed"] > positions["Hands"]
+
+
 def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -919,8 +958,12 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
     inv.build_items(player)
     assert inv.items[0][2] >= inv.items[-1][2]
     assert parent._inventory_sort_mode == "Quantity"
+    assert player.inventory_sort_mode == "Quantity"
     reopened_inv = popup_menus.InventoryPopupMenu(presenter, parent)
     assert reopened_inv._current_mode() == "Quantity"
+    player.inventory_sort_mode = "Combat"
+    reopened_inv.build_items(player)
+    assert reopened_inv._current_mode() == "Combat"
     inv.sort_mode_idx = inv.sort_modes.index("Combat")
     inv.build_items(player)
     assert inv.items[0][1].name == "Apple"

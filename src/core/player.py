@@ -362,6 +362,7 @@ class Player(Character):
         self.transform_type = self.cls
         self.encumbered = False
         self.power_up = False
+        self.inventory_sort_mode = "Name"
         self.gameplay_stats = normalize_gameplay_stats(current_level=self.level.level)
         # Dwarf Gluttony (racial sin): out-of-combat hangover that can affect initiative
         # for a number of steps after using combat consumables.
@@ -1486,6 +1487,9 @@ class Player(Character):
         # Save the current equipment reference BEFORE any modifications
         original_item = self.equipment[equip_slot]
         original_offhand = self.equipment["OffHand"] if equip_slot == "Weapon" else None
+        original_sight = self.sight
+        original_invisible = self.invisible
+        original_flying = self.flying
 
         try:
             # Get current stats with original equipment
@@ -1521,6 +1525,19 @@ class Player(Character):
 
             # Temporarily equip new item - directly modify equipment dict
             self.equipment[equip_slot] = item
+            if equip_slot == "Pendant":
+                if getattr(original_item, "name", "") == "Pendant of Vision" and self.cls.name not in ["Inquisitor", "Seeker"]:
+                    self.sight = False
+                if getattr(original_item, "name", "") in ["Invisibility Amulet", "Tarnkappe", "Tarnhelm"]:
+                    self.invisible = False
+                if getattr(original_item, "name", "") == "Levitation Necklace":
+                    self.flying = False
+                if item.name == "Pendant of Vision":
+                    self.sight = True
+                if item.name in ["Invisibility Amulet", "Tarnkappe", "Tarnhelm"]:
+                    self.invisible = True
+                if item.name == "Levitation Necklace":
+                    self.flying = True
             if equip_slot == "Weapon" and item.subtyp in self.cls.restrictions["OffHand"] and buy:
                 self.equipment["OffHand"] = item
 
@@ -1590,6 +1607,9 @@ class Player(Character):
             self.equipment[equip_slot] = original_item
             if equip_slot == "Weapon" and original_offhand:
                 self.equipment["OffHand"] = original_offhand
+            self.sight = original_sight
+            self.invisible = original_invisible
+            self.flying = original_flying
 
     def unequip(self, typ=None, promo=False):
         if typ:

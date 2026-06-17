@@ -714,6 +714,7 @@ class PlayerDataSerializer:
             'state': player.state,
             'warp_point': player.warp_point,
             'intro_shown': getattr(player, 'intro_shown', False),
+            'inventory_sort_mode': getattr(player, 'inventory_sort_mode', 'Name'),
             
             # Derived data - serialize quest_dict properly
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
@@ -796,6 +797,7 @@ class PlayerDataSerializer:
         player.state = data['state']
         player.warp_point = data['warp_point']
         player.facing = data['facing']
+        player.inventory_sort_mode = data.get('inventory_sort_mode', 'Name')
         
         # Restore class and race
         if data.get('class_name'):

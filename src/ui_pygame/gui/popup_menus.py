@@ -214,6 +214,25 @@ class BasePopupMenu:
             "Subtyp:": "Sub-type",
         }.get(label, label)
 
+    @staticmethod
+    def _weapon_handedness(item) -> str:
+        handed = getattr(item, "handed", None)
+        try:
+            if int(handed) >= 2:
+                return "Two-handed"
+            if int(handed) == 1:
+                return "One-handed"
+        except (TypeError, ValueError):
+            pass
+        return "Two-handed" if str(getattr(item, "subtyp", "") or "") in {"Longsword", "Battle Axe", "Hammer"} else "One-handed"
+
+    @classmethod
+    def _equipment_display_name(cls, item) -> str:
+        name = str(getattr(item, "name", item) or item)
+        if str(getattr(item, "typ", "") or "") == "Weapon" and cls._weapon_handedness(item) == "Two-handed":
+            return f"{name} (2H)"
+        return name
+
     def build_items(self, player_char):
         """Override in subclass to populate self.items."""
         self.items = []
@@ -590,9 +609,11 @@ class InventoryPopupMenu(BasePopupMenu):
         stored_mode = getattr(parent_screen, "_inventory_sort_mode", self.sort_modes[0])
         self.sort_mode_idx = self.sort_modes.index(stored_mode) if stored_mode in self.sort_modes else 0
 
-    def _store_sort_mode(self):
+    def _store_sort_mode(self, player_char=None):
         if self.parent_screen is not None:
             setattr(self.parent_screen, "_inventory_sort_mode", self._current_mode())
+        if player_char is not None:
+            setattr(player_char, "inventory_sort_mode", self._current_mode())
 
     def _is_combat_usable(self, item) -> bool:
         subtyp = getattr(item, "subtyp", None)
@@ -604,9 +625,9 @@ class InventoryPopupMenu(BasePopupMenu):
     def _current_mode(self) -> str:
         return self.sort_modes[self.sort_mode_idx]
 
-    def _cycle_mode(self):
+    def _cycle_mode(self, player_char=None):
         self.sort_mode_idx = (self.sort_mode_idx + 1) % len(self.sort_modes)
-        self._store_sort_mode()
+        self._store_sort_mode(player_char)
 
     def _sort_inventory_items(self, items):
         mode = self._current_mode()
@@ -624,6 +645,9 @@ class InventoryPopupMenu(BasePopupMenu):
         return sorted(items, key=lambda entry: str(getattr(entry[1], "name", "")).lower())
 
     def build_items(self, player_char):
+        stored_mode = getattr(player_char, "inventory_sort_mode", None)
+        if stored_mode in self.sort_modes:
+            self.sort_mode_idx = self.sort_modes.index(stored_mode)
         items = []
         # Flatten inventory dict: {category: [items]} and group identical items
         inv = getattr(player_char, "inventory", {})
@@ -647,7 +671,7 @@ class InventoryPopupMenu(BasePopupMenu):
         self.selected_index = 0 if items else -1
         self.scroll_offset = 0
         self.title = f"Inventory [{self._current_mode()}]"
-        self._store_sort_mode()
+        self._store_sort_mode(player_char)
 
     def item_display_text(self, item):
         category, obj, count = item
@@ -801,7 +825,7 @@ class InventoryPopupMenu(BasePopupMenu):
 
     def handle_key_down(self, player_char, event) -> bool:
         if event.key in (pygame.K_s,):
-            self._cycle_mode()
+            self._cycle_mode(player_char)
             self.build_items(player_char)
             if self.items and self.selected_index < 0:
                 self.selected_index = 0
@@ -2077,6 +2101,34 @@ class EquipmentSelectionPopup(BasePopupMenu):
     def build_items(self, player_char):
         self.items = list(self._options)
 
+    def _find_option_item(self, player_char, item_str: str):
+        for _category, items_list in player_char.inventory.items():
+            for inv_item in items_list:
+                if getattr(inv_item, "name", str(inv_item)) == item_str:
+                    return inv_item
+        return None
+
+    def _render_aligned_detail_row(self, label: str, value: str, x: int, y: int) -> int:
+        label_text = self.normal_font.render(label, True, self.LIGHT_GRAY)
+        value_text = self.normal_font.render(value, True, self.LIGHT_GRAY)
+        self.screen.blit(label_text, (x, y))
+        value_x = max(x + 145, self.details_rect.right - 16 - value_text.get_width())
+        self.screen.blit(value_text, (value_x, y))
+        return y + self.line_height
+
+    def _render_diff_lines(self, diff_str: str, x: int, y: int) -> int:
+        for line in diff_str.split("\n"):
+            if not line.strip():
+                continue
+            label = line[:16].strip()
+            value = line[18:].strip() if len(line) > 18 else ""
+            if not value:
+                parts = line.split(None, 1)
+                label = parts[0] if parts else line.strip()
+                value = parts[1] if len(parts) > 1 else ""
+            y = self._render_aligned_detail_row(label, value, x, y)
+        return y
+
     def draw_details(self, player_char):
         """Override to show item details with equipment diffs."""
         item = self.items[self.selected_index] if self.items else None
@@ -2089,11 +2141,16 @@ class EquipmentSelectionPopup(BasePopupMenu):
 
         # Extract the actual item from the option string
         item_str = str(item)
+        actual_item = None if item_str in {"Cancel", "Unequip"} else self._find_option_item(player_char, item_str)
+        display_name = self._equipment_display_name(actual_item) if actual_item is not None else item_str
         
         # Display item name
-        name_text = self.large_font.render(item_str, True, self.WHITE)
+        name_text = self.large_font.render(display_name, True, self.WHITE)
         self.screen.blit(name_text, (x, y))
         y += name_text.get_height() + 8
+
+        if actual_item is not None and str(getattr(actual_item, "typ", "") or "") == "Weapon":
+            y = self._render_aligned_detail_row("Hands", self._weapon_handedness(actual_item), x, y)
         
         # Handle different option types
         if item_str == "Cancel":
@@ -2115,32 +2172,15 @@ class EquipmentSelectionPopup(BasePopupMenu):
                     placeholder = no_item_classes[self.slot]()
                     diff_str = self.player_char_ref.equip_diff(placeholder, self.slot)
                     if diff_str:
-                        for line in diff_str.split("\n"):
-                            text = self.normal_font.render(line, True, self.LIGHT_GRAY)
-                            self.screen.blit(text, (x, y))
-                            y += self.line_height
+                        y = self._render_diff_lines(diff_str, x, y)
         
         else:
-            # Search through inventory for matching item and show diff
-            actual_item = None
-            for category, items_list in player_char.inventory.items():
-                for inv_item in items_list:
-                    if getattr(inv_item, "name", str(inv_item)) == item_str:
-                        actual_item = inv_item
-                        break
-                if actual_item:
-                    break
-            
             # If we found the item, show the diff
             if actual_item and self.slot and self.player_char_ref:
                 try:
                     diff_str = self.player_char_ref.equip_diff(actual_item, self.slot)
                     if diff_str:
-                        # Split diff into lines and display
-                        for line in diff_str.split("\n"):
-                            text = self.normal_font.render(line, True, self.LIGHT_GRAY)
-                            self.screen.blit(text, (x, y))
-                            y += self.line_height
+                        y = self._render_diff_lines(diff_str, x, y)
                 except Exception:
                     pass  # Silently fail if equip_diff fails
 

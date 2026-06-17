@@ -422,7 +422,7 @@ class ModernCharacterScreen(TownScreenBase):
                 slots.append(
                     EquipmentSlotSummary(
                         slot,
-                        self._attr_name(item),
+                        self._equipment_display_name(item),
                         description,
                         ", ".join(details),
                         details,
@@ -439,7 +439,18 @@ class ModernCharacterScreen(TownScreenBase):
             detail_rows = self.equipment_slot_detail_rows(slot, item)
             details = tuple(f"{label}: {value}" for label, value in detail_rows)
             buffs = self.equipment_slot_buffs(item)
-            slots.append(EquipmentSlotSummary(slot, self._attr_name(item), description, ", ".join(details), details, detail_rows, buffs, item))
+            slots.append(
+                EquipmentSlotSummary(
+                    slot,
+                    self._equipment_display_name(item),
+                    description,
+                    ", ".join(details),
+                    details,
+                    detail_rows,
+                    buffs,
+                    item,
+                )
+            )
         return slots
 
     def selectable_equipment_slots(self, player_char) -> list[str]:
@@ -531,6 +542,14 @@ class ModernCharacterScreen(TownScreenBase):
         subtyp = str(getattr(item, "subtyp", "") or "")
         return "Two-handed" if subtyp in TWO_HANDED_WEAPON_SUBTYPES else "One-handed"
 
+    @classmethod
+    def _equipment_display_name(cls, item) -> str:
+        name = cls._attr_name(item)
+        typ = str(getattr(item, "typ", "") or "")
+        if typ == "Weapon" and cls._weapon_handedness(item) == "Two-handed":
+            return f"{name} (2H)"
+        return name
+
     def equipment_slot_detail_rows(self, slot: str, item) -> tuple[tuple[str, str], ...]:
         details: list[tuple[str, str]] = []
         typ = str(getattr(item, "typ", "") or "")
@@ -539,7 +558,6 @@ class ModernCharacterScreen(TownScreenBase):
             details.append(("Type", subtyp))
 
         if slot in {"Weapon", "OffHand"} and (typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")):
-            details.append(("Hands", self._weapon_handedness(item)))
             details.append(("Base Damage", self._display_number(getattr(item, "damage", 0))))
             details.append(("Crit", self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0)))))
         elif slot in {"Armor", "Helmet"} or typ in {"Armor", "Helmet"} or getattr(item, "armor", None) not in (None, 0, ""):

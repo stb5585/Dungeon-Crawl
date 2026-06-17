@@ -1246,6 +1246,9 @@ class GUICombatManager:
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             return getattr(offhand, 'subtyp', None) == "Shield"
 
+        if getattr(skill, 'weapon', False) and player_char.is_disarmed():
+            return False
+
         return True
     
     def _render_selection_menu(self, title, options, selected, scroll_offset=0):

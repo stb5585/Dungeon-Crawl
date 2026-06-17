@@ -1804,6 +1804,18 @@ class TestBatch3CombatIntegration:
         ps.use(user, target)
         assert user.mana.current == mana_before - 5
 
+    def test_piercing_strike_requires_weapon_when_disarmed(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        user.is_disarmed = lambda: True
+        ps = abilities.PiercingStrike()
+        mana_before = user.mana.current
+
+        result = ps.use(user, target)
+
+        assert "requires a weapon" in result
+        assert user.mana.current == mana_before
+
     def test_double_strike_deducts_mana(self):
         from src.core import abilities
         user, target = self._make_combatants()

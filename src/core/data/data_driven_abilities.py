@@ -429,6 +429,9 @@ class DataDrivenSkill(Skill):
                     getattr(target, "tunnel", False)]):
                 return "It has no effect.\n"
 
+        if self.weapon and hasattr(user, "is_disarmed") and user.is_disarmed():
+            return f"{self.name} requires a weapon."
+
         if not special:
             user.mana.current -= self.cost
 

@@ -749,6 +749,17 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._select_skill(player, enemy) == "Shield Slam"
     assert menu_calls[-1][1] == ("Shield Slam (MP: 2)",)
 
+    player.is_disarmed = lambda: True
+    player.spellbook["Skills"] = {
+        "Piercing Strike": SimpleNamespace(name="Piercing Strike", cost=5, passive=False, weapon=True),
+        "Smoke Screen": SimpleNamespace(name="Smoke Screen", cost=1, passive=False, weapon=False),
+    }
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_skill(player, enemy) == "Smoke Screen"
+    assert menu_calls[-1][1] == ("Smoke Screen (MP: 1)",)
+    player.is_disarmed = lambda: False
+
     player.spellbook["Skills"] = {
         "Passive Stance": SimpleNamespace(cost=0, passive=True),
         "Slash": SimpleNamespace(cost=1, passive=False),

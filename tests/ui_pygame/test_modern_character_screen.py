@@ -202,7 +202,8 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert helmet.item_name == "Iron Helm"
     assert helmet.details == ("Type: Heavy", "Base Armor: 4")
     weapon = next(slot for slot in slots if slot.slot == "Weapon")
-    assert weapon.details == ("Type: Sword", "Hands: One-handed", "Base Damage: 12", "Crit: 15%")
+    assert weapon.item_name == "Sword"
+    assert weapon.details == ("Type: Sword", "Base Damage: 12", "Crit: 15%")
     armor = next(slot for slot in slots if slot.slot == "Armor")
     assert armor.details == ("Type: Medium", "Base Armor: 8")
     ring = next(slot for slot in slots if slot.slot == "Ring")
@@ -244,9 +245,9 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player.cls = SimpleNamespace(name="Warrior", equip_check=lambda _item, slot: slot != "OffHand")
     two_handed_slots = screen.build_equipment_slots(player)
     occupied_offhand = next(slot for slot in two_handed_slots if slot.slot == "OffHand")
-    assert occupied_offhand.item_name == "Claymore"
+    assert occupied_offhand.item_name == "Claymore (2H)"
     assert occupied_offhand.icon_item is player.equipment["Weapon"]
-    assert occupied_offhand.details == ("Type: Longsword", "Hands: Two-handed", "Base Damage: 28", "Crit: 15%")
+    assert occupied_offhand.details == ("Type: Longsword", "Base Damage: 28", "Crit: 15%")
 
     player.cls = SimpleNamespace(name="Berserker", equip_check=lambda _item, slot: slot == "OffHand")
     berserker_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
@@ -333,7 +334,6 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Sword" in presenter.small_font.render_calls
     assert "Base Damage:" in presenter.small_font.render_calls
     assert "12" in presenter.small_font.render_calls
-    assert "Hands:" in presenter.small_font.render_calls
     assert "Crit:" in presenter.small_font.render_calls
     assert any(name == "Sword" for name, _size in loaded_renders)
     assert any(name == "Mail" for name, _size in loaded_renders)

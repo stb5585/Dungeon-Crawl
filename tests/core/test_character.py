@@ -288,6 +288,19 @@ class TestStatusEffectImprovements:
 
         assert bleed_damage > base_damage
 
+    def test_equip_diff_pendant_preview_does_not_leak_vision_buff(self):
+        player = TestGameState.create_player(name="PendantHero", class_name="Warrior", race_name="Human")
+        player.equipment["Pendant"] = items.VisionPendant()
+        player.sight = True
+
+        diff = player.equip_diff(items.AntidotePendant(), "Pendant")
+
+        assert "Buffs" in diff
+        assert "Status-Poison, Vision" not in diff
+        assert "Status-Poison" in diff
+        assert player.equipment["Pendant"].name == "Pendant of Vision"
+        assert player.sight is True
+
 
 class TestGameplayStatistics:
     def test_player_initializes_gameplay_stats_defaults(self):
@@ -339,11 +352,13 @@ class TestGameplayStatistics:
             "highest_damage_dealt": 88,
             "highest_damage_taken": 34,
         })
+        player.inventory_sort_mode = "Combat"
 
         serialized = PlayerDataSerializer.serialize(player)
         restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
         assert restored.gameplay_stats == player.gameplay_stats
+        assert restored.inventory_sort_mode == "Combat"
 
     def test_player_data_serializer_backfills_missing_gameplay_stats(self):
         player = TestGameState.create_player(
