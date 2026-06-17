@@ -639,14 +639,11 @@ class PygameGame:
             # If any issue occurs, continue without blocking town menu
             pass
 
-        # Check for Rookie Mistake quest completion upon entering town
-        if ("Dead Soldier" in self.player_char.special_inventory and 
-                'Rookie Mistake' in self.player_char.quest_dict.get('Side', {}) and
-                not self.player_char.quest_dict['Side']['Rookie Mistake']['Completed']):
-            self.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
+        # The Rookie event already notifies the player; town entry only drops off the body.
+        rookie_quest = self.player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        if "Dead Soldier" in self.player_char.special_inventory and rookie_quest is not None:
+            rookie_quest['Completed'] = True
             self.player_char.modify_inventory(items.DeadSoldier(), subtract=True, rare=True)
-            popup = ConfirmationPopup(self.presenter, "You have completed the quest Rookie Mistake.", show_buttons=False)
-            popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
 
         while True:
             choice_idx = town_screen.navigate(

@@ -131,6 +131,14 @@ class DeadBody:
         self.read = read
 
 
+class RookieCavePath:
+    enter = True
+    rookie_body_marker = True
+
+    def __init__(self, read=False):
+        self.read = read
+
+
 class RelicRoom:
     enter = False
 
@@ -392,6 +400,7 @@ def test_texture_library_loads_dungeon_texture_manifest():
     assert textures.get_texture("door_open").get_at((256, 330)).a == 0
     assert textures.get_texture("door_open").get_at((256, 490)).a == 0
     assert max(textures.get_special_texture("crystal_cluster", size=64).get_size()) == 64
+    assert textures.get_special_texture("dead_soldier_item") is not None
 
     pygame.quit()
 
@@ -2097,6 +2106,7 @@ def test_scene_renderer_builds_skewed_lateral_floor_sprite_quads():
 def test_scene_renderer_scales_ladder_down_as_pit_floor_sprite():
     assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(2, "ladder_down")
     assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(1, "chest")
+    assert SceneRenderer._get_floor_sprite_ratio(1, "dead_soldier_item") < SceneRenderer._get_floor_sprite_ratio(1, "dead_body")
 
 
 def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
@@ -2803,6 +2813,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
         Boulder(read=True),
         DeadBody(read=False),
         DeadBody(read=True),
+        RookieCavePath(read=False),
         RelicRoom(read=False),
         RelicRoom(read=True),
         GoldenChaliceRoom(read=False),
@@ -2818,11 +2829,14 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     for tile in tiles:
         scene_renderer._render_special_tile(tile, rect, darkness=0.0, depth=1)
 
+    assert SceneRenderer._is_floor_sprite_tile(RookieCavePath(read=False)) is True
+    assert SceneRenderer._is_floor_sprite_tile(RookieCavePath(read=True)) is False
     assert ("portal", None) in special_calls
     assert ("boulder_sword", 112) in special_calls
     assert ("boulder", 112) in special_calls
     assert ("dead_body", 120) in special_calls
     assert ("burial_site", 120) in special_calls
+    assert ("dead_soldier_item", 67) in special_calls
     assert ("triangulus_altar", 96) in special_calls
     assert ("empty_altar", 96) in special_calls
     assert ("golden_chalice_altar", 96) in special_calls

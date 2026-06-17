@@ -694,22 +694,35 @@ class CavePath0(CavePath):
 
 class CavePath1(CavePath):
 
+    @property
+    def rookie_body_marker(self):
+        return (self.x, self.y, self.z) == (8, 8, 1)
+
+    def _should_trigger_rookie_event(self, player_char):
+        rookie_quest = player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        return bool(self.rookie_body_marker and rookie_quest and not rookie_quest.get('Completed'))
+
     def modify_player(self, game, textbox=None, popup_class=None):
+        if self._should_trigger_rookie_event(game.player_char):
+            self.visited = True
+            self.adjacent_visited(game.player_char)
+            game.special_event("Rookie")
+            rookie_item = items.DeadSoldier()
+            game.player_char.modify_inventory(rookie_item, rare=True)
+            quest_message = "You found the rookie! He's dead...\n"
+            game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
+            quest_message += "You have completed the quest Rookie Mistake.\n"
+            if textbox:
+                textbox.print_text_in_rectangle(quest_message)
+            self.read = True
+            self._enter_rookie_combat(game.player_char)
+            return
         super().modify_player(game, textbox=textbox)
-        if (self.x, self.y, self.z) == (8, 8, 1) and \
-            "Rookie Mistake" in game.player_char.quest_dict['Side']:
-            if not game.player_char.quest_dict['Side']['Rookie Mistake']['Completed']:
-                game.special_event("Rookie")
-                game.player_char.modify_inventory(items.DeadSoldier(), rare=True)
-                quest_message = "You found the rookie! He's dead...\n"
-                if textbox:
-                    textbox.print_text_in_rectangle(quest_message)
-                elif popup_class and game.presenter is not None:
-                    # Pygame version - show quest notification as a popup
-                    dungeon_bg = game.presenter.screen.copy()
-                    popup = popup_class(game.presenter, quest_message, show_buttons=False)
-                    popup.show(background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)))
-                self.enter_combat(game.player_char)
+
+    def _enter_rookie_combat(self, player_char):
+        self.enemy = enemies.Zombie()
+        _apply_cambion_antimagic(self, player_char, self.enemy)
+        player_char.state = 'fight'
 
     def enter_combat(self, player_char):
         self.enemy = enemies.random_enemy(str(self.z))

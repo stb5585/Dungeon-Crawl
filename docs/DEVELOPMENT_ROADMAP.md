@@ -330,7 +330,7 @@ P4 is split into smaller tracks so low-risk content and polish can move while la
 
 #### P4a - Immediate Content And UX Wins
 
-Status: `Partially Implemented`
+Status: `Complete`
 
 Implemented:
 
@@ -351,20 +351,20 @@ Implemented:
 - Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
   - Mirror Image uses duplicated sprite shimmer only.
-  - Smoke Screen creates a foot-level smoke burst that rises to obscure the target when the skill is used or a smoke effect flag is present.
-  - Future visual candidates: Jump/landing impacts, Charge wind-up impacts, Reflect/Magic reflection flashes, Stun/Prone hit accents, and elemental strike overlays.
-    - Jump and Charge wind-up/impacts would likely require enemy sprite stance adjustments; this should be deferred until later
-    - We can explore the others but they will be dependent on execution for approval
-
-Ready / Needs Exploration:
-
-- Add remaining status-effect artwork in a later asset pass; current fallback initials remain valid where no PNG exists.
-- Revisit broader ability visuals after choosing the next batch from the candidate list above.
-- Deferred: creation of artistic renderings for Warp Point
+  - Smoke Screen creates a foot-level smoke burst that rises to obscure the target; the enemy fades out and stays hidden through the flee transition.
 
 #### P4b - Quest And Realm Content
 
-Status: `Needs Exploration`
+Status: `Active` for Rookie Mistake, `Needs Exploration` for remaining quest/realm work
+
+Implemented:
+
+- Quest: Rookie Mistake
+   - Removed the second generic town-entry completion popup after the event popup.
+   - Added a floor marker at the Rookie location using the Dead Soldier item artwork.
+   - Changed the post-Rookie encounter to Zombie instead of a random enemy.
+
+Next Ready Slice:
 
 - Expand Realm of Cambion follow-up content after auditing current realm entry/exit and boss resolution paths.
    - Audit missing special-tile needs for Portal, Rotator, Teleporter, and Fake Path before adding any new map tiles.
@@ -378,7 +378,7 @@ Needs Design Decision:
 - Decide whether the class-specific Class Ring questline remains P4 content, becomes a passive reward path, or is cut.
    - Answer: obtaining the standard Class Ring item stays a passive reward for defeating the Red Dragon boss; activating it requires outlining questlines for each second promotion class
 - Define Dragoon Dragon Quest objective and reward; current note is incomplete.
-   - Answer:
+   - Answer: TBD
 - Define Psychopomp death-trial rules:
   - optional challenge, mandatory death recovery, or deferred concept;
    - Answer: save this for special event if defeated against final boss; Devil will not let your body return to town for resurrection, instead sends you to "purgatory"; this realm leads to a battle against a copy of oneself (psychopomp) that the player must win to return to the living realm
@@ -530,6 +530,10 @@ Status: `Planned`
 
 ## Deferred Or Decision-Gated Items
 
+- Remaining status-effect artwork is deferred to a later asset pass; current fallback initials remain valid where no PNG exists.
+- Broader ability visuals are deferred until a future batch is selected; candidates include Reflect/Magic reflection flashes, Stun/Prone hit accents, elemental strike overlays, and other approved combat reads.
+- Jump and Charge wind-up/impact visuals are deferred until enemy sprite stance adjustments are planned.
+- Warp Point artistic renderings are deferred to a later presentation/art pass.
 - Durability, item identification, and usable equipment/accessory systems are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
 - Persistent statistics history is decision-gated behind whether Bestiary/account-style collection should be per-save or persistent.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.

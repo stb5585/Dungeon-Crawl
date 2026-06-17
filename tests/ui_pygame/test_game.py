@@ -757,3 +757,55 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert any("Statistics" in options for options in options_seen)
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True
+
+
+def test_town_menu_silently_drops_off_rookie_body_without_extra_popup(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(
+        town_heal=lambda: None,
+        _suppress_heal_message=True,
+        special_inventory={"Dead Soldier": [SimpleNamespace(name="Dead Soldier")]},
+        quest_dict={"Side": {"Rookie Mistake": {"Completed": True, "Turned In": False}}},
+        warp_point=False,
+        quit=False,
+    )
+    removed_items = []
+
+    def modify_inventory(item, subtract=False, rare=False, **_kwargs):
+        removed_items.append((item.name, subtract, rare))
+        game.player_char.special_inventory[item.name].pop(0)
+        if not game.player_char.special_inventory[item.name]:
+            del game.player_char.special_inventory[item.name]
+
+    game.player_char.modify_inventory = modify_inventory
+    popup_messages = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append(message)
+
+        def show(self, **_kwargs):
+            return True
+
+    class FakeTownMenu:
+        def __init__(self, _presenter):
+            pass
+
+        def draw_background(self):
+            return None
+
+        def draw_menu_panel(self, _options):
+            return None
+
+        def navigate(self, options, **_kwargs):
+            return len(options) - 1
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(pygame_game, "TownMenuScreen", FakeTownMenu)
+
+    assert game.town_menu() == "quit"
+    assert removed_items == [("Dead Soldier", True, True)]
+    assert "Dead Soldier" not in game.player_char.special_inventory
+    assert game.player_char.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
+    assert "You have completed the quest Rookie Mistake." not in popup_messages

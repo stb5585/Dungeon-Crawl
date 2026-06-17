@@ -682,6 +682,57 @@ class TestSpecialTiles:
         armor_shop.modify_player(game)
         assert shop_calls[-1] == "armor"
 
+    def test_rookie_mistake_body_completes_quest_and_forces_zombie_encounter(self):
+        player = _make_player()
+        player.quest_dict["Side"]["Rookie Mistake"] = {
+            "What": "Rookie",
+            "Total": 1,
+            "Completed": False,
+            "Turned In": False,
+        }
+        game = _make_game(player)
+        textbox = RecordingTextBox()
+
+        rookie_tile = map_tiles.CavePath1(8, 8, 1)
+        rookie_tile.modify_player(game, textbox=textbox)
+
+        assert game.events == ["Rookie"]
+        assert "Dead Soldier" in player.special_inventory
+        assert player.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
+        assert player.quest_dict["Side"]["Rookie Mistake"]["Turned In"] is False
+        assert "You found the rookie" in textbox.messages[-1]
+        assert "You have completed the quest Rookie Mistake." in textbox.messages[-1]
+        assert type(rookie_tile.enemy).__name__ == "Zombie"
+        assert player.state == "fight"
+        assert rookie_tile.read is True
+
+    def test_rookie_mistake_pygame_path_does_not_show_completion_popup_before_combat(self):
+        player = _make_player()
+        player.quest_dict["Side"]["Rookie Mistake"] = {
+            "What": "Rookie",
+            "Total": 1,
+            "Completed": False,
+            "Turned In": False,
+        }
+        game = _make_game(player)
+        game.presenter = SimpleNamespace(screen=SimpleNamespace(copy=lambda: "background"))
+        popup_calls = []
+
+        class Popup:
+            def __init__(self, *_args, **_kwargs):
+                popup_calls.append(("init", _args, _kwargs))
+
+            def show(self, **_kwargs):
+                popup_calls.append(("show", _kwargs))
+
+        rookie_tile = map_tiles.CavePath1(8, 8, 1)
+        rookie_tile.modify_player(game, popup_class=Popup)
+
+        assert popup_calls == []
+        assert player.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
+        assert type(rookie_tile.enemy).__name__ == "Zombie"
+        assert player.state == "fight"
+
     def test_ore_vault_hidden_branch_warp_idle_branch_and_funhouse_return_guard(self, monkeypatch):
         player = _make_player()
         player.world_dict = {

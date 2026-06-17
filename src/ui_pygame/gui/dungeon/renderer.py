@@ -1716,6 +1716,20 @@ class SceneRenderer:
             )
             return
 
+        if bool(getattr(tile, "rookie_body_marker", False)):
+            if bool(getattr(tile, "read", False)):
+                return
+            self._render_floor_sprite(
+                "dead_soldier_item",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="dead_soldier_item",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
         if "DeadBody" in tile_type:
             sprite_key = "burial_site" if bool(getattr(tile, "read", False)) else "dead_body"
             self._render_floor_sprite(
@@ -2136,6 +2150,8 @@ class SceneRenderer:
     def _is_floor_sprite_tile(tile) -> bool:
         if tile is None:
             return False
+        if bool(getattr(tile, "rookie_body_marker", False)):
+            return not bool(getattr(tile, "read", False))
 
         tile_type = type(tile).__name__
         return any(
@@ -2287,6 +2303,8 @@ class SceneRenderer:
             return {1: 0.70, 2: 0.58, 3: 0.46}.get(depth, 0.46)
         if kind == "dead_body":
             return {1: 0.75, 2: 0.60, 3: 0.46}.get(depth, 0.46)
+        if kind == "dead_soldier_item":
+            return {1: 0.42, 2: 0.34, 3: 0.26}.get(depth, 0.26)
         if kind == "defeated_boss":
             return {1: 0.70, 2: 0.56, 3: 0.42}.get(depth, 0.42)
         if kind == "altar":
