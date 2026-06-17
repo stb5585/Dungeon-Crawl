@@ -1194,7 +1194,7 @@ class Bandit(Humanoid):
             {"ability": "Disarm", "priority": ActionPriority.LOW,
              "priority_if": [{"condition": "self_status",
                               "value": "Steal Success",
-                              "priority": ActionPriority.LOW},
+                              "priority": ActionPriority.SKIP},
                              {"condition": "target_has_weapon",
                               "value": True,
                               "priority": ActionPriority.HIGH,

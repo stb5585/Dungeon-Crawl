@@ -203,7 +203,7 @@ def test_status_icons_compact_overflow_in_combat_hud(monkeypatch):
 
     y = hud._render_status_icons(_make_player(), 100, max_rows=1)
 
-    assert y == 124
+    assert y == 132
     assert any(text.startswith("+") for text in font.render_calls)
     colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
     assert hud.status_colors["overflow"] in colors
@@ -215,8 +215,12 @@ def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
     hud = bundle.hud
     font = RecordingFont()
     icon_surface = DummySurface((14, 14), text="stun-icon")
+    icon_sizes = []
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.load_status_icon_surface", lambda _label, _size: icon_surface)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_hud.load_status_icon_surface",
+        lambda _label, size: icon_sizes.append(size) or icon_surface,
+    )
     player = _make_player()
     player.status_effects = {"Stun": _effect()}
     player.physical_effects = {}
@@ -229,6 +233,7 @@ def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
 
     assert font.render_calls == []
     assert bundle.draw_rect_calls == []
+    assert icon_sizes == [(24, 24)]
     assert any(surface is icon_surface for surface, _position in bundle.screen.blit_calls)
 
 
@@ -265,7 +270,7 @@ def test_dense_combat_hud_status_icons_keep_urgent_counts_and_overflow(monkeypat
 
     y = hud._render_status_icons(player, 100, max_rows=1)
 
-    assert y == 124
+    assert y == 132
     assert font.render_calls[:4] == ["STN2", "SLP", "SIL", "PRN2"]
     assert any(text.startswith("+") for text in font.render_calls)
     colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]

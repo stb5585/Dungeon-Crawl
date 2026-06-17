@@ -616,15 +616,20 @@ def test_status_art_icons_render_without_badge_background(monkeypatch):
     font = RecordingFont()
     rect_calls = []
     icon_surface = DummySurface((14, 14), text="stun-icon")
+    icon_sizes = []
 
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: font)
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
-    monkeypatch.setattr("src.ui_pygame.gui.combat_view.load_status_icon_surface", lambda _label, _size: icon_surface)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.load_status_icon_surface",
+        lambda _label, size: icon_sizes.append(size) or icon_surface,
+    )
 
     view._render_status_icons([("STN", False)], 10, 20, max_width=90)
 
     assert not rect_calls
     assert font.render_calls == []
+    assert icon_sizes == [(24, 24)]
     assert any(surface is icon_surface for surface, _pos, _args, _kwargs in view.screen.blit_calls)
 
 
@@ -655,6 +660,7 @@ def test_enemy_detail_visibility_hides_bosses_and_shows_non_boss_mana(monkeypatc
 
     view._render_enemy(enemy, has_sight=True)
 
+    assert "HP 8/10" in font.render_calls
     assert "MP 7/16" in font.render_calls
 
 

@@ -4001,6 +4001,17 @@ class TestBatch12Steal:
                 break
         assert gold_stolen, "Steal should steal gold sometimes"
 
+    def test_steal_success_lasts_long_enough_for_smoke_screen_retries(self, monkeypatch):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        monkeypatch.setattr("random.choice", lambda _seq: "Gold")
+        monkeypatch.setattr("random.randint", lambda _low, high: high)
+
+        abilities.Steal().use(user, target)
+
+        assert user.status_effects["Steal Success"].active is True
+        assert user.status_effects["Steal Success"].duration >= 5
+
     def test_steal_blocked_by_ice_block(self):
         from src.core import abilities
         user, target = self._make_combatants()

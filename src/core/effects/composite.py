@@ -3471,7 +3471,7 @@ class StealEffect(Effect):
                     if steal_effect is not None:
                         steal_effect.active = True
                         steal_effect.duration = max(
-                            steal_effect.duration, 2
+                            steal_effect.duration, 5
                         )
                     messages.append(
                         f"{actor.name} steals {item_key} from "
@@ -3491,7 +3491,7 @@ class StealEffect(Effect):
                 steal_effect = actor.status_effects.get("Steal Success")
                 if steal_effect is not None:
                     steal_effect.active = True
-                    steal_effect.duration = max(steal_effect.duration, 2)
+                    steal_effect.duration = max(steal_effect.duration, 5)
                 messages.append(
                     f"{actor.name} steals {gold_amount} gold from "
                     f"{target.name}.\n"

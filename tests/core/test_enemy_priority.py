@@ -98,8 +98,9 @@ def test_bandit_steal_success_makes_smoke_screen_most_likely(monkeypatch):
     smoke_entries = [entry for entry in captured if entry[:2] == ("Use Skill", "Smoke Screen")]
     competing_entries = [entry for entry in captured if entry[:2] != ("Use Skill", "Smoke Screen")]
     assert len(smoke_entries) == 3
-    assert len(competing_entries) == 2
+    assert len(competing_entries) == 1
     assert not any(entry[:2] == ("Use Skill", "Steal") for entry in captured)
+    assert not any(entry[:2] == ("Use Skill", "Disarm") for entry in captured)
 
 
 def test_priority_ai_skips_weapon_skills_while_disarmed(monkeypatch):

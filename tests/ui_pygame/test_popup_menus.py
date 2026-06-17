@@ -718,6 +718,7 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
 
     rendered = presenter.large_font.render_calls + presenter.normal_font.render_calls
     assert "Bastard Sword (2H)" in rendered
+    assert popup._equipment_display_name(DummyItem("Dirk", typ="Weapon", subtyp="Dagger")) == "Dirk (1H)"
     assert "Hands" not in rendered
     assert "Two-handed" not in rendered
     assert "Attack" in rendered

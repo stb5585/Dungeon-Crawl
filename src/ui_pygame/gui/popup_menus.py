@@ -229,8 +229,12 @@ class BasePopupMenu:
     @classmethod
     def _equipment_display_name(cls, item) -> str:
         name = str(getattr(item, "name", item) or item)
-        if str(getattr(item, "typ", "") or "") == "Weapon" and cls._weapon_handedness(item) == "Two-handed":
-            return f"{name} (2H)"
+        if str(getattr(item, "typ", "") or "") == "Weapon":
+            handedness = cls._weapon_handedness(item)
+            if handedness == "Two-handed":
+                return f"{name} (2H)"
+            if handedness == "One-handed":
+                return f"{name} (1H)"
         return name
 
     def build_items(self, player_char):

@@ -191,7 +191,7 @@ class DungeonHUD:
             return y_offset
 
         icon_w = 42
-        icon_h = 18
+        icon_h = 26
         padding = 6
         max_width = self.hud_width - 40
         per_row = max(1, max_width // (icon_w + padding))
@@ -206,7 +206,7 @@ class DungeonHUD:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = load_status_icon_surface(label, (icon_h - 4, icon_h - 4))
+            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2))
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)

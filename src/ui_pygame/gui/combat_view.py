@@ -848,7 +848,7 @@ class CombatView:
 
         font = pygame.font.Font(None, 16)
         icon_w = 38
-        icon_h = 18
+        icon_h = 26
         padding = 6
         per_row = max(1, max_width // (icon_w + padding))
         visible_icons = compact_status_icons(icons, per_row, max_rows)
@@ -861,7 +861,7 @@ class CombatView:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = load_status_icon_surface(label, (icon_h - 4, icon_h - 4))
+            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2))
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)
@@ -1228,7 +1228,7 @@ class CombatView:
             
             # HP text
             small_font = pygame.font.Font(None, 18)
-            hp_text = f"{enemy.health.current}/{enemy.health.max}"
+            hp_text = f"HP {enemy.health.current}/{enemy.health.max}"
             hp_surf = small_font.render(hp_text, True, self.colors['text'])
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
@@ -1659,7 +1659,7 @@ class CombatView:
             
             # HP text
             hp_font = pygame.font.Font(None, 22)
-            hp_text = f"{enemy.health.current}/{enemy.health.max}"
+            hp_text = f"HP {enemy.health.current}/{enemy.health.max}"
             hp_surf = hp_font.render(hp_text, True, (255, 255, 255))
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)

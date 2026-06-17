@@ -337,15 +337,16 @@ Implemented:
 - Added post-fight/tavern comments, Sergeant relic and Warp Point hints, and staffed Warp Point scientist flavor.
 - Added one-handed/two-handed weapon details to equipment previews and equipped-slot inspection details.
   - Equipment slots show `(1H)` or `(2H)` for weapons; equip popups use the weapon name suffix without a separate Hands row.
+  - Equipment replacement popup detail titles show `(1H)` for one-handed weapons and `(2H)` for two-handed weapons.
 - Preserved inventory sort selection when reopening the Character Menu inventory popup.
 - Aligned ordinary player/enemy combat log lines with player blue/enemy red while preserving outcome colors for damage, healing, misses, and resists.
 - Expanded combat-log color classification for item special-effect style messages.
 - Rebalanced Smoke Screen to cost 0 MP.
-- Tuned Bandit post-steal AI so Smoke Screen is strongly favored, but not guaranteed, while `Steal Success` is active.
-- Replaced status-effect initials with standalone effect artwork where current assets exist, with text fallback for missing icons.
+- Tuned Bandit post-steal AI so Smoke Screen is strongly favored across a longer `Steal Success` retry window, but not guaranteed.
+- Replaced status-effect initials with larger standalone effect artwork where current assets exist, with text fallback for missing icons.
 - Removed the duplicate Hands row from equipment replacement popups.
 - Bosses and the Waitress suppress Vision enemy-detail reveals in the pygame combat view.
-- Added an enemy MP bar when Vision-style enemy details are visible and the enemy has mana.
+- Added enemy HP/MP labels when Vision-style enemy details are visible and the enemy has mana.
 - Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
   - Mirror Image duplicates the user.
