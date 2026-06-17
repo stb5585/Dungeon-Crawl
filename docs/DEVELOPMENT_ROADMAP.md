@@ -402,16 +402,20 @@ Needs Design Decision:
 
 #### P4c - Knowledge And Collection Systems
 
-Status: `Ready` for MVP, `Needs Design Decision` for rewards/history
+Status: `Partially Implemented`, `Needs Design Decision` for rewards/history
 
-- Implement a Bestiary MVP:
-  - record defeated enemies in the save;
-  - display enemy artwork and basic defeated-enemy details;
-  - reveal additional details from sight/perception sources, including Pendant of Vision and Inquisitor/Seeker traits.
+Implemented:
+
+- Bestiary MVP:
+  - Uses per-save defeated enemy records from `kill_dict`, which already round-trips through save/load.
+  - Adds a read-only Bestiary popup to the Character Menu.
+  - Displays defeated enemy names, categories, and defeated counts.
+  - Displays enemy artwork when the combat sprite manager has art for that enemy.
+  - Reveals HP/MP, combat stats, XP/gold, and notable resistances when the player has Vision, Inquisitor, Seeker, or sight-based insight.
 
 Needs Exploration:
 
-- Inspect save schema, enemy metadata, enemy artwork lookup, sight/perception helpers, and current gameplay-stat persistence.
+- Decide whether to expand the Bestiary beyond defeated enemies, such as seen enemies, boss lore, ability lists, drops, or encounter locations.
 
 Needs Design Decision:
 

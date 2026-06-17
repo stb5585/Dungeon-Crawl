@@ -199,6 +199,39 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     assert result[0] == "selected"
 
 
+def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Regular": {"Goblin": 2, "No Count": 0}},
+        cls=SimpleNamespace(name="Warrior"),
+        equipment={"Pendant": SimpleNamespace(mod="")},
+        sight=False,
+    )
+    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda _enemy, _rect: None)
+
+    popup.build_items(player)
+
+    assert [popup.item_display_text(item) for item in popup.items] == ["Goblin x2"]
+    assert popup.items[0]["enemy"].name == "Goblin"
+
+    popup.draw_details(player)
+    assert "Goblin" in presenter.large_font.render_calls
+    assert "Type: Regular" in presenter.normal_font.render_calls
+    assert "Defeated: 2" in presenter.normal_font.render_calls
+    assert "Details unknown." in presenter.normal_font.render_calls
+
+    presenter.normal_font.render_calls.clear()
+    presenter.small_font.render_calls.clear()
+    player.sight = True
+    popup.draw_details(player)
+
+    assert any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
+    assert any(text.startswith("Attack:") for text in presenter.normal_font.render_calls)
+    assert any(text.startswith("Experience:") for text in presenter.normal_font.render_calls)
+
+
 def test_base_popup_quick_scrolls_when_arrow_key_is_held(monkeypatch):
     presenter = _make_presenter()
     parent = _make_parent()

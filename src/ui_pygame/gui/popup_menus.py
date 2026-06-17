@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pygame
 
-from src.core import items
+from src.core import enemies, items
 from src.core import map_tiles
 from src.ui_pygame.assets.icon_manager import IconManager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
@@ -1638,6 +1638,188 @@ class QuestPopupMenu(BasePopupMenu):
     def on_select(self, player_char, item):
         """Quests are view-only for now."""
         return None  # Keep menu open
+
+
+class BestiaryPopupMenu(BasePopupMenu):
+    """Read-only per-save bestiary sourced from defeated enemy records."""
+
+    def __init__(self, presenter, parent_screen):
+        super().__init__(presenter, parent_screen, title="Bestiary")
+        self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
+        self.list_rect = pygame.Rect(
+            self.popup_rect.left + 24,
+            self.popup_rect.top + 72,
+            int(self.popup_rect.width * 0.34),
+            self.popup_rect.height - 120,
+        )
+        self.details_rect = pygame.Rect(
+            self.popup_rect.left + int(self.popup_rect.width * 0.37),
+            self.popup_rect.top + 72,
+            int(self.popup_rect.width * 0.58) - 32,
+            self.popup_rect.height - 120,
+        )
+
+    def build_items(self, player_char):
+        kill_dict = getattr(player_char, "kill_dict", {}) or {}
+        entries = []
+        for enemy_type, enemies_by_name in kill_dict.items():
+            if not isinstance(enemies_by_name, dict):
+                continue
+            for enemy_name, count in enemies_by_name.items():
+                try:
+                    defeated_count = int(count)
+                except (TypeError, ValueError):
+                    defeated_count = 0
+                if defeated_count <= 0:
+                    continue
+                entries.append(
+                    {
+                        "is_header": False,
+                        "text": f"{enemy_name} x{defeated_count}",
+                        "enemy_name": str(enemy_name),
+                        "enemy_type": str(enemy_type),
+                        "count": defeated_count,
+                        "enemy": self.enemy_instance(str(enemy_name)),
+                    }
+                )
+
+        self.items = sorted(entries, key=lambda item: (item["enemy_type"], item["enemy_name"])) or [
+            {"is_header": False, "text": "No defeated enemies", "empty": True}
+        ]
+        self.selected_index = 0
+        self.scroll_offset = 0
+
+    def item_display_text(self, item):
+        if isinstance(item, dict):
+            return item.get("text", "")
+        return str(item)
+
+    @staticmethod
+    def has_bestiary_insight(player_char) -> bool:
+        cls_name = getattr(getattr(player_char, "cls", None), "name", "")
+        if cls_name in {"Inquisitor", "Seeker"}:
+            return True
+        if getattr(player_char, "sight", False):
+            return True
+        pendant = getattr(player_char, "equipment", {}).get("Pendant") if hasattr(player_char, "equipment") else None
+        return getattr(pendant, "mod", None) == "Vision"
+
+    @staticmethod
+    def enemy_instance(enemy_name: str):
+        for attr_name in dir(enemies):
+            attr = getattr(enemies, attr_name)
+            if not isinstance(attr, type):
+                continue
+            try:
+                if not issubclass(attr, enemies.Enemy):
+                    continue
+            except TypeError:
+                continue
+            try:
+                candidate = attr()
+            except Exception:
+                continue
+            if getattr(candidate, "name", None) == enemy_name:
+                return candidate
+        return None
+
+    @staticmethod
+    def _resource_max(resource) -> int | None:
+        value = getattr(resource, "max", None)
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _draw_enemy_sprite(self, enemy, rect: pygame.Rect) -> None:
+        if enemy is None or rect.width <= 0 or rect.height <= 0:
+            return
+        try:
+            from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+
+            sprite = get_enemy_combat_sprite_manager().get_scaled_sprite(enemy, rect.size)
+        except Exception:
+            return
+        if sprite is not None:
+            self.screen.blit(sprite, rect)
+
+    def _draw_detail_line(self, label: str, value, x: int, y: int) -> int:
+        self.screen.blit(self.normal_font.render(f"{label}: {value}", True, self.WHITE), (x, y))
+        return y + self.line_height
+
+    def draw_details(self, player_char):
+        item = self.items[self.selected_index] if self.items else None
+        x = self.details_rect.left + 16
+        y = self.details_rect.top + 12
+
+        if not isinstance(item, dict) or item.get("empty"):
+            self.screen.blit(self.normal_font.render("No defeated enemies recorded.", True, self.GRAY), (x, y))
+            return
+
+        enemy_name = item["enemy_name"]
+        enemy = item.get("enemy")
+        name_text = self.large_font.render(enemy_name, True, self.WHITE)
+        self.screen.blit(name_text, (x, y))
+
+        sprite_rect = pygame.Rect(self.details_rect.right - 148, y, 128, 128)
+        self._draw_enemy_sprite(enemy, sprite_rect)
+        y += name_text.get_height() + 10
+
+        y = self._draw_detail_line("Type", item["enemy_type"], x, y)
+        y = self._draw_detail_line("Defeated", item["count"], x, y)
+
+        if enemy is None:
+            y += 8
+            self.screen.blit(self.normal_font.render("No enemy details available.", True, self.GRAY), (x, y))
+            return
+
+        if not self.has_bestiary_insight(player_char):
+            y += 8
+            self.screen.blit(self.normal_font.render("Details unknown.", True, self.GRAY), (x, y))
+            y += self.line_height
+            hint = "Use Vision, Inquisitor, or Seeker sight to study defeated enemies."
+            for line in self._wrap_text(hint, self.details_rect.width - 32):
+                self.screen.blit(self.small_font.render(line, True, self.LIGHT_GRAY), (x, y))
+                y += self.line_height
+            return
+
+        y += 8
+        hp = self._resource_max(getattr(enemy, "health", None))
+        mp = self._resource_max(getattr(enemy, "mana", None))
+        if hp is not None:
+            y = self._draw_detail_line("HP", hp, x, y)
+        if mp is not None and mp > 0:
+            y = self._draw_detail_line("MP", mp, x, y)
+
+        combat = getattr(enemy, "combat", None)
+        if combat is not None:
+            y = self._draw_detail_line("Attack", getattr(combat, "attack", 0), x, y)
+            y = self._draw_detail_line("Defense", getattr(combat, "defense", 0), x, y)
+            y = self._draw_detail_line("Magic", getattr(combat, "magic", 0), x, y)
+            y = self._draw_detail_line("Magic Defense", getattr(combat, "magic_def", 0), x, y)
+
+        y = self._draw_detail_line("Experience", getattr(enemy, "experience", 0), x, y)
+        y = self._draw_detail_line("Gold", getattr(enemy, "gold", 0), x, y)
+
+        resistance = getattr(enemy, "resistance", {}) or {}
+        notable = []
+        for name, value in resistance.items():
+            try:
+                percent = float(value or 0)
+            except (TypeError, ValueError):
+                continue
+            if percent != 0:
+                notable.append(f"{name} {int(percent * 100):+d}%")
+        if notable:
+            y += 8
+            self.screen.blit(self.normal_font.render("Resistances", True, self.GOLD), (x, y))
+            y += self.line_height
+            for line in self._wrap_text(", ".join(notable), self.details_rect.width - 32):
+                self.screen.blit(self.small_font.render(line, True, self.WHITE), (x, y))
+                y += self.line_height
+
+    def on_select(self, player_char, item):
+        return None
 
 
 class SimpleListPopupMenu(BasePopupMenu):

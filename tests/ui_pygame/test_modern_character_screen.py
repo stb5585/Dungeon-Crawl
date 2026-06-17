@@ -122,6 +122,7 @@ def _make_player():
         physical_effects={"Bleed": _effect(False)},
         spellbook={"Spells": {}, "Skills": {}},
         special_inventory={},
+        kill_dict={"Regular": {"Goblin": 2}},
         sight=True,
     )
     player.current_weight = lambda: 19
@@ -478,9 +479,30 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
-    assert screen.menu_options == ["Inventory", "Quests", "Key Items", "Specials", "Exit Menu"]
+    assert screen.menu_options == ["Inventory", "Quests", "Key Items", "Bestiary", "Specials", "Exit Menu"]
     assert "Change Equipment" not in screen.menu_options
     assert "Quit Game" not in screen.menu_options
+
+
+def test_modern_character_menu_opens_bestiary(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    opened = []
+
+    class FakeBestiaryPopup:
+        def __init__(self, _presenter, _parent):
+            opened.append("created")
+
+        def show(self, _player, **kwargs):
+            opened.append((kwargs.get("flush_events"), kwargs.get("require_key_release")))
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "BestiaryPopupMenu", FakeBestiaryPopup)
+
+    assert screen._open_menu_choice("Bestiary", player) is None
+    assert opened == ["created", (True, True)]
 
 
 def test_town_character_info_uses_modern_screen_by_default(monkeypatch):

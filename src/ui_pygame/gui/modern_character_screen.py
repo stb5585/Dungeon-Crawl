@@ -13,7 +13,7 @@ from src.ui_pygame.assets.portrait_manager import PortraitManager
 
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
-from .popup_menus import EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
+from .popup_menus import BestiaryPopupMenu, EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
 from .town_base import TownScreenBase
 
 
@@ -1006,6 +1006,9 @@ class ModernCharacterScreen(TownScreenBase):
             else:
                 popup = SimpleListPopupMenu(self.presenter, self, title="Key Items", source_fn=self._get_key_items_list)
                 _ = popup.show(player_char, flush_events=True, require_key_release=True)
+        elif chosen == "Bestiary":
+            popup = BestiaryPopupMenu(self.presenter, self)
+            _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Specials":
             popup = SimpleListPopupMenu(self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
@@ -1020,7 +1023,7 @@ class ModernCharacterScreen(TownScreenBase):
         return None
 
     def _base_menu_options(self) -> list[str]:
-        return ["Inventory", "Quests", "Key Items", "Specials", "Exit Menu"]
+        return ["Inventory", "Quests", "Key Items", "Bestiary", "Specials", "Exit Menu"]
 
     def open_selected_equipment_change(self, player_char) -> None:
         slot_name = self.selected_equipment_slot(player_char)
