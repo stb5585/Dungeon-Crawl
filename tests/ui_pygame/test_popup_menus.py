@@ -918,6 +918,9 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
     inv.sort_mode_idx = inv.sort_modes.index("Quantity")
     inv.build_items(player)
     assert inv.items[0][2] >= inv.items[-1][2]
+    assert parent._inventory_sort_mode == "Quantity"
+    reopened_inv = popup_menus.InventoryPopupMenu(presenter, parent)
+    assert reopened_inv._current_mode() == "Quantity"
     inv.sort_mode_idx = inv.sort_modes.index("Combat")
     inv.build_items(player)
     assert inv.items[0][1].name == "Apple"

@@ -587,7 +587,12 @@ class InventoryPopupMenu(BasePopupMenu):
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Inventory")
         self.sort_modes = ["Name", "Type", "Quantity", "Combat"]
-        self.sort_mode_idx = 0
+        stored_mode = getattr(parent_screen, "_inventory_sort_mode", self.sort_modes[0])
+        self.sort_mode_idx = self.sort_modes.index(stored_mode) if stored_mode in self.sort_modes else 0
+
+    def _store_sort_mode(self):
+        if self.parent_screen is not None:
+            setattr(self.parent_screen, "_inventory_sort_mode", self._current_mode())
 
     def _is_combat_usable(self, item) -> bool:
         subtyp = getattr(item, "subtyp", None)
@@ -601,6 +606,7 @@ class InventoryPopupMenu(BasePopupMenu):
 
     def _cycle_mode(self):
         self.sort_mode_idx = (self.sort_mode_idx + 1) % len(self.sort_modes)
+        self._store_sort_mode()
 
     def _sort_inventory_items(self, items):
         mode = self._current_mode()
@@ -641,6 +647,7 @@ class InventoryPopupMenu(BasePopupMenu):
         self.selected_index = 0 if items else -1
         self.scroll_offset = 0
         self.title = f"Inventory [{self._current_mode()}]"
+        self._store_sort_mode()
 
     def item_display_text(self, item):
         category, obj, count = item

@@ -56,6 +56,7 @@ DEFAULT_CHARACTER_TABS = (
 )
 
 EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant")
+TWO_HANDED_WEAPON_SUBTYPES = frozenset({"Longsword", "Battle Axe", "Hammer"})
 RESISTANCE_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
 RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
 PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
@@ -516,6 +517,20 @@ class ModernCharacterScreen(TownScreenBase):
             return str(value)
         return f"{numeric * 100:.1f}%".replace(".0%", "%")
 
+    @staticmethod
+    def _weapon_handedness(item) -> str:
+        handed = getattr(item, "handed", None)
+        try:
+            if int(handed) >= 2:
+                return "Two-handed"
+            if int(handed) == 1:
+                return "One-handed"
+        except (TypeError, ValueError):
+            pass
+
+        subtyp = str(getattr(item, "subtyp", "") or "")
+        return "Two-handed" if subtyp in TWO_HANDED_WEAPON_SUBTYPES else "One-handed"
+
     def equipment_slot_detail_rows(self, slot: str, item) -> tuple[tuple[str, str], ...]:
         details: list[tuple[str, str]] = []
         typ = str(getattr(item, "typ", "") or "")
@@ -524,6 +539,7 @@ class ModernCharacterScreen(TownScreenBase):
             details.append(("Type", subtyp))
 
         if slot in {"Weapon", "OffHand"} and (typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")):
+            details.append(("Hands", self._weapon_handedness(item)))
             details.append(("Base Damage", self._display_number(getattr(item, "damage", 0))))
             details.append(("Crit", self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0)))))
         elif slot in {"Armor", "Helmet"} or typ in {"Armor", "Helmet"} or getattr(item, "armor", None) not in (None, 0, ""):

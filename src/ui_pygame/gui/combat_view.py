@@ -163,6 +163,8 @@ class CombatView:
             'log_damage': (235, 120, 105),
             'log_heal': (120, 210, 135),
             'log_muted': (175, 175, 180),
+            'log_player': (50, 150, 250),
+            'log_enemy': (200, 50, 50),
         }
         
         # Combat log
@@ -172,6 +174,8 @@ class CombatView:
         self.log_scroll_offset = 0
         self._active_telegraph_line: str | None = None
         self._suppress_logged_telegraph_banner = False
+        self._combat_log_player_name: str | None = None
+        self._combat_log_enemy_name: str | None = None
 
         # Status icon colors
         self.status_colors = STATUS_ICON_COLORS
@@ -760,7 +764,22 @@ class CombatView:
             return self.colors["log_damage"]
         if any(term in lower for term in ("miss", "resist", "immune", "fails")):
             return self.colors["log_muted"]
+        if self._line_starts_with_actor(lower, self._combat_log_player_name):
+            return self.colors["log_player"]
+        if self._line_starts_with_actor(lower, self._combat_log_enemy_name):
+            return self.colors["log_enemy"]
         return (240, 240, 240) if overlay else self.colors["text"]
+
+    @staticmethod
+    def _line_starts_with_actor(lower_line: str, actor_name: str | None) -> bool:
+        if not actor_name:
+            return False
+        actor = actor_name.strip().lower()
+        return bool(actor) and (lower_line.startswith(actor + " ") or lower_line.startswith(actor + "'"))
+
+    def _set_combat_log_actors(self, player_char, enemy) -> None:
+        self._combat_log_player_name = str(getattr(player_char, "name", "") or "") or None
+        self._combat_log_enemy_name = str(getattr(enemy, "name", "") or "") or None
 
     def _combat_log_marker_color(self, line: str, overlay: bool = False) -> tuple[int, int, int]:
         if self._is_telegraph_message(line):
@@ -939,6 +958,7 @@ class CombatView:
     
     def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
         """Render the complete combat view."""
+        self._set_combat_log_actors(player_char, enemy)
         # Update animations
         self.update_animations()
         
@@ -1525,6 +1545,7 @@ class CombatView:
 
     def render_combat_overlay(self, player_char, enemy, actions, selected_action, current_turn=None, show_enemy_details=None):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
+        self._set_combat_log_actors(player_char, enemy)
         self._last_player_target_rect = pygame.Rect(
             26,
             self.screen_height - 312,
