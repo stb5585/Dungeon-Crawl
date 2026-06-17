@@ -345,12 +345,13 @@ Implemented:
 - Tuned Bandit post-steal AI so Smoke Screen is strongly favored across a longer `Steal Success` retry window, but not guaranteed.
 - Replaced status-effect initials with larger standalone effect artwork where current assets exist, with text fallback for missing icons.
 - Removed the duplicate Hands row from equipment replacement popups.
+- Moved save loading and manager initialization into the pygame progress popup lifecycle so the load bar does not complete before the expensive restore work runs.
 - Bosses and the Waitress suppress Vision enemy-detail reveals in the pygame combat view.
 - Added enemy HP/MP labels when Vision-style enemy details are visible and the enemy has mana.
 - Added limited ability-specific visuals:
   - Mana Shield creates a blue force field glow around the user.
-  - Mirror Image duplicates the user.
-  - Smoke Screen briefly obscures targets when the skill is used or a smoke effect flag is present.
+  - Mirror Image uses duplicated sprite shimmer only.
+  - Smoke Screen creates a foot-level smoke burst that rises to obscure the target when the skill is used or a smoke effect flag is present.
   - Future visual candidates: Jump/landing impacts, Charge wind-up impacts, Reflect/Magic reflection flashes, Stun/Prone hit accents, and elemental strike overlays.
     - Jump and Charge wind-up/impacts would likely require enemy sprite stance adjustments; this should be deferred until later
     - We can explore the others but they will be dependent on execution for approval

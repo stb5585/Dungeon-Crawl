@@ -850,7 +850,7 @@ def test_impact_effects_use_target_rects_and_expire(monkeypatch):
     assert view._active_impact_effects == []
 
 
-def test_ability_status_visuals_draw_shield_smoke_and_duplicates(monkeypatch):
+def test_ability_status_visuals_draw_shield_and_rising_smoke_without_duplicate_overlay(monkeypatch):
     view = _make_view()
     rect_calls = []
     ellipse_calls = []
@@ -873,7 +873,7 @@ def test_ability_status_visuals_draw_shield_smoke_and_duplicates(monkeypatch):
     view._last_player_target_rect = pygame.Rect(30, 320, 220, 110)
     view._render_ability_status_visuals(character, "player")
 
-    assert rect_calls
+    assert not rect_calls
     assert ellipse_calls
     assert circle_calls
     assert len(view.screen.blit_calls) > blit_count

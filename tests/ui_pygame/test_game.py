@@ -388,9 +388,15 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     popup_show_calls = []
     presenter_messages = []
     progress_calls = []
+
+    def show_progress_popup(**kwargs):
+        progress_calls.append(kwargs)
+        work = kwargs.get("work")
+        return work() if work else None
+
     presenter = SimpleNamespace(
         show_message=lambda message, title="": presenter_messages.append((title, message)),
-        show_progress_popup=lambda **kwargs: progress_calls.append(kwargs),
+        show_progress_popup=show_progress_popup,
         cleanup=lambda: cleanup_calls.append(True),
         set_background_provider=lambda provider: background_provider_calls.append(provider),
     )

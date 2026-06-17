@@ -511,25 +511,32 @@ class PygameGame:
         if selected_file is None:
             return None
         
-        # Show loading popup similar to curses UI
-        self.presenter.show_progress_popup(header="Load Game", message="Loading game file...")
+        def load_selected_game():
+            player_char = SaveManager.load_player(selected_file)
+            if player_char is None:
+                return None
 
-        # Load the character from the selected file
-        player_char = SaveManager.load_player(selected_file)
+            # Reset quit flag - player is loading to continue playing
+            player_char.quit = False
+
+            # Set flag to suppress heal message if loading in town
+            if player_char.in_town():
+                player_char._suppress_heal_message = True
+            # Skip blocking message; jump straight into the game
+
+            self.player_char = player_char
+            self.initialize_managers()
+            return player_char
+
+        # Show loading popup similar to curses UI while the save and managers restore.
+        player_char = self.presenter.show_progress_popup(
+            header="Load Game",
+            message="Loading game file...",
+            work=load_selected_game,
+        )
         if player_char is None:
             self.presenter.show_message("Failed to load character!")
             return None
-            
-        # Reset quit flag - player is loading to continue playing
-        player_char.quit = False
-        
-        # Set flag to suppress heal message if loading in town
-        if player_char.in_town():
-            player_char._suppress_heal_message = True
-        # Skip blocking message; jump straight into the game
-        
-        self.player_char = player_char
-        self.initialize_managers()
         
         return player_char
         

@@ -977,8 +977,14 @@ class PygamePresenter(GamePresenter):
                     waiting = False
             self.clock.tick(30)
 
-    def show_progress_popup(self, header: str = "Load Game", message: str = "Loading game file...",
-                             steps: int = 20, total_time: float = 3.0):
+    def show_progress_popup(
+        self,
+        header: str = "Load Game",
+        message: str = "Loading game file...",
+        steps: int = 20,
+        total_time: float = 3.0,
+        work: Callable[[], Any] | None = None,
+    ) -> Any:
         """Show a centered popup with a smooth time-based progress bar.
 
         Args:
@@ -986,6 +992,7 @@ class PygamePresenter(GamePresenter):
             message: Message shown above the progress bar
             steps: Legacy debug-mode frame hint
             total_time: Total time in seconds to animate the bar
+            work: Optional callback to run while the popup is visible
         """
         # Popup dimensions and position
         popup_width = max(420, self.width // 2 - 100)
@@ -1007,9 +1014,13 @@ class PygamePresenter(GamePresenter):
         start_ms = pygame.time.get_ticks() if duration_ms > 0 else 0
         frame_index = 0
         debug_frames = max(1, int(steps))
+        work_done = work is None
+        work_result = None
 
         while True:
-            if duration_ms <= 0:
+            if not work_done:
+                progress = 0.0
+            elif duration_ms <= 0:
                 progress = 1.0
             elif self.debug_mode:
                 progress = min(1.0, frame_index / debug_frames)
@@ -1055,11 +1066,23 @@ class PygamePresenter(GamePresenter):
                 pygame.draw.rect(self.screen, GRAY, filled_rect)
 
             pygame.display.flip()
+            if not work_done:
+                try:
+                    pygame.event.pump()
+                except pygame.error:
+                    pass
+                work_result = work()
+                work_done = True
+                frame_index = 0
+                start_ms = pygame.time.get_ticks() if duration_ms > 0 else 0
+                continue
+
             if progress >= 1.0:
                 break
 
             frame_index += 1
             self.clock.tick(60)
+        return work_result
         
     def cleanup(self):
         """Clean up Pygame resources."""

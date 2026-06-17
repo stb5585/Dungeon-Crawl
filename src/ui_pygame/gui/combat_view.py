@@ -1025,37 +1025,59 @@ class CombatView:
         self.screen.blit(surface, shield_rect.topleft)
 
     def _render_smoke_screen_visual(self, rect: pygame.Rect) -> None:
-        smoke_rect = rect.inflate(54, 34)
+        smoke_width = max(120, int(rect.width * 1.35))
+        smoke_height = max(120, int(rect.height * 0.95))
+        smoke_rect = pygame.Rect(0, 0, smoke_width, smoke_height)
+        smoke_rect.midbottom = (rect.centerx, rect.bottom + 12)
         surface = pygame.Surface(smoke_rect.size, pygame.SRCALPHA)
         ticks = pygame.time.get_ticks()
-        centers = (
-            (0.26, 0.58, 28),
-            (0.44, 0.45, 34),
-            (0.62, 0.55, 30),
-            (0.76, 0.40, 22),
-        )
-        for index, (x_pct, y_pct, radius) in enumerate(centers):
-            drift = math.sin((ticks / 220) + index) * 7
-            center = (int(smoke_rect.width * x_pct + drift), int(smoke_rect.height * y_pct))
-            pygame.draw.circle(surface, (170, 170, 178, 72), center, radius)
-        self.screen.blit(surface, smoke_rect.topleft)
 
-    def _render_duplicate_silhouettes(self, rect: pygame.Rect, duplicate_count: int) -> None:
-        if duplicate_count <= 0:
-            return
-        offsets = [(-14, -5), (14, 5), (-8, 10), (8, -10)]
-        for index in range(duplicate_count):
-            offset_x, offset_y = offsets[index % len(offsets)]
-            ghost_rect = rect.move(offset_x, offset_y).inflate(-10, -8)
-            surface = pygame.Surface(ghost_rect.size, pygame.SRCALPHA)
-            pygame.draw.rect(surface, (170, 205, 255, max(45, 100 - index * 14)), surface.get_rect(), border_radius=12)
-            pygame.draw.rect(surface, (220, 235, 255, max(35, 85 - index * 12)), surface.get_rect(), 2, border_radius=12)
-            self.screen.blit(surface, ghost_rect.topleft)
+        base_puffs = (
+            (0.20, 0.86, 32, 22, 106),
+            (0.36, 0.90, 42, 26, 124),
+            (0.54, 0.84, 46, 30, 132),
+            (0.72, 0.89, 36, 24, 112),
+            (0.84, 0.82, 28, 20, 92),
+        )
+        for index, (x_pct, y_pct, width, height, alpha) in enumerate(base_puffs):
+            drift = math.sin((ticks / 180) + index * 0.8) * 6
+            puff_rect = pygame.Rect(0, 0, width * 2, height * 2)
+            puff_rect.center = (
+                int(smoke_rect.width * x_pct + drift),
+                int(smoke_rect.height * y_pct),
+            )
+            pygame.draw.ellipse(surface, (128, 132, 140, alpha), puff_rect)
+            pygame.draw.circle(
+                surface,
+                (178, 180, 188, max(60, alpha - 42)),
+                puff_rect.center,
+                max(14, min(width, height)),
+            )
+
+        for index in range(16):
+            phase = ((ticks / 760) + index * 0.137) % 1.0
+            y_pct = 0.92 - phase * 0.74
+            spread = 0.10 + phase * 0.30
+            sway = math.sin((ticks / 230) + index * 1.9) * smoke_rect.width * spread
+            x_pct = 0.50 + math.sin(index * 2.35) * (0.10 + phase * 0.12)
+            center_x = int(smoke_rect.width * x_pct + sway)
+            center_y = int(smoke_rect.height * y_pct)
+            radius_x = int(20 + phase * 42 + (index % 3) * 5)
+            radius_y = int(16 + phase * 34 + (index % 2) * 4)
+            alpha = int(118 - phase * 48)
+            wisp_rect = pygame.Rect(0, 0, radius_x * 2, radius_y * 2)
+            wisp_rect.center = (center_x, center_y)
+            color_shift = int(phase * 28)
+            pygame.draw.ellipse(
+                surface,
+                (148 + color_shift, 150 + color_shift, 160 + color_shift, alpha),
+                wisp_rect,
+            )
+
+        self.screen.blit(surface, smoke_rect.topleft)
 
     def _render_ability_status_visuals(self, character, target: str, *, include_duplicates: bool = True) -> None:
         rect = self._target_rect_for_effect(target)
-        if include_duplicates:
-            self._render_duplicate_silhouettes(rect, self._active_duplicate_count(character))
         if self._magic_effect_active(character, "Mana Shield"):
             self._render_mana_shield_visual(rect)
         if (

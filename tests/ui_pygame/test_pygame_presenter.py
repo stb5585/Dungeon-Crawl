@@ -499,6 +499,28 @@ def test_show_progress_popup_uses_smooth_time_based_fill(monkeypatch):
     assert bundle.presenter.clock.ticks == [60, 60, 60]
 
 
+def test_show_progress_popup_runs_work_while_visible(monkeypatch):
+    bundle = _install_presenter_fakes(monkeypatch)
+    presenter = bundle.presenter
+
+    event_batches = iter([
+        [],
+        [],
+    ])
+    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    work_calls = []
+
+    def load_work():
+        work_calls.append("load")
+        return "loaded"
+
+    result = presenter.show_progress_popup("Loading", "Please wait", total_time=0.0, work=load_work)
+
+    assert result == "loaded"
+    assert work_calls == ["load"]
+    assert len(bundle.flip_calls) >= 2
+
+
 def test_input_confirmation_and_basic_render_helpers(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
