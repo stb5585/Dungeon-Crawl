@@ -512,7 +512,11 @@ class DungeonManager:
     def _show_town_entry_loading_screen(self, message: str = "Returning to town...") -> None:
         """Display the shared transition screen before control returns to town."""
         try:
+            self._detach_dungeon_background_provider()
             self._show_dungeon_loading_screen(message)
+            self._cached_view = None
+            self.view_dirty = False
+            self.ui_dirty = False
         except Exception as exc:
             logger.warning("Could not show town loading screen: %s", exc)
 

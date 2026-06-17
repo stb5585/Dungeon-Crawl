@@ -494,6 +494,7 @@ class GUICombatManager:
         self.combat_view.reset_combat_log()
         self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
         self._combat_background = self._capture_background()
+        self._prepare_enemy_combat_assets(enemy)
         
         # Show initial combat screen with brief transition delay (with animation updates)
         init_clock = pygame.time.Clock()
@@ -584,6 +585,15 @@ class GUICombatManager:
         # Combat ended - show result
         return self._handle_combat_end(player_char, enemy, fled)
 
+    def _prepare_enemy_combat_assets(self, enemy: Character) -> None:
+        """Warm the current enemy's combat sprites before the first combat frame."""
+        prepare = getattr(self.combat_view, "prepare_enemy_assets", None)
+        if callable(prepare):
+            try:
+                prepare(enemy)
+            except Exception:
+                pass
+
     def _build_display_actions(self) -> list[str]:
         """Build the pygame display-friendly action list from the engine's available actions."""
         raw_actions = self.engine.available_actions
@@ -628,11 +638,15 @@ class GUICombatManager:
         visual_before = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
         post = self.engine.post_turn()
         visual_after = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
+        added_message = False
         for msg in post.messages:
             if msg:
                 for line in msg.strip().split('\n'):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
+                        added_message = True
+        if added_message:
+            self._flush_result_frame(player_char, enemy)
         if visual_after != visual_before:
             self._play_enemy_visual_transition(player_char, enemy, visual_before, visual_after)
 

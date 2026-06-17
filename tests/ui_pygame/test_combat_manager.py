@@ -291,10 +291,14 @@ def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
 def test_post_turn_and_special_effect_helpers(monkeypatch):
     manager = _make_manager(monkeypatch)
     manager.engine = SimpleNamespace(post_turn=lambda: SimpleNamespace(messages=["Line one\nLine two", "", "Last line"]))
+    flushes = []
+    manager._flush_result_frame = lambda player, enemy: flushes.append((player, enemy, tuple(manager.combat_view.messages)))
     manager._post_turn_processing(_make_player(), _make_enemy())
     assert manager.combat_view.messages == ["Line one", "Line two", "Last line"]
+    assert flushes[-1][2] == ("Line one", "Line two", "Last line")
 
     manager.combat_view.messages.clear()
+    flushes.clear()
     enemy = _make_enemy()
     enemy.picture = "jester.png"
 
@@ -315,6 +319,7 @@ def test_post_turn_and_special_effect_helpers(monkeypatch):
     assert len(manager.combat_view.reload_calls) >= 6
     assert any(call[0] == "enemy" for call in manager.combat_view.render_calls)
     assert manager.combat_view.messages == ["Palette shift!"]
+    assert flushes[-1][2] == ("Palette shift!",)
 
 
 def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):

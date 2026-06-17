@@ -405,6 +405,22 @@ def test_background_loading_loading_screen_and_popup_background(monkeypatch, cap
     manager._show_dungeon_loading_screen("Loading...", duration=0.5)
     assert presenter.screen.blit_calls
 
+    provider_calls = []
+    presenter.set_background_provider = lambda provider: provider_calls.append(provider)
+    manager._cached_view = "dungeon-frame"
+    manager.view_dirty = True
+    manager.ui_dirty = True
+    loading_calls = []
+    manager._show_dungeon_loading_screen = lambda message, duration=1.25: loading_calls.append((message, duration))
+
+    manager._show_town_entry_loading_screen("Returning to town...")
+
+    assert provider_calls == [None]
+    assert loading_calls == [("Returning to town...", 1.25)]
+    assert manager._cached_view is None
+    assert manager.view_dirty is False
+    assert manager.ui_dirty is False
+
 
 def test_walkable_spawn_selection_and_stair_usage(monkeypatch):
     manager, _presenter, player, _game = _make_manager(monkeypatch)

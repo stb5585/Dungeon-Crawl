@@ -219,7 +219,10 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("ATK", True) not in icons
 
     character = _make_character()
-    character.magic_effects["DOT"] = _effect(source="Burn")
+    character.magic_effects["DOT"] = _effect(source="Slot Machine")
+    assert ("DOT", False) in view._collect_status_icons(character)
+
+    character.magic_effects["DOT"].source = "Burn"
     assert ("BRN", False) in view._collect_status_icons(character)
 
     character.stat_effects["Magic"] = _effect(extra=0)
@@ -779,10 +782,12 @@ def test_combat_feedback_text_recoil_and_low_health_vignette(monkeypatch):
     enemy = SimpleNamespace(name="Goblin")
     player = SimpleNamespace(health=SimpleNamespace(current=8, max=50))
     rect_calls = []
+    ellipse_calls = []
 
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.ellipse", lambda *_args, **_kwargs: ellipse_calls.append((_args, _kwargs)))
     ticks = iter([1000, 1010, 1000, 1240, 1900])
     monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.time.get_ticks", lambda: next(ticks, 1900))
 
@@ -800,7 +805,7 @@ def test_combat_feedback_text_recoil_and_low_health_vignette(monkeypatch):
     assert view._active_float_texts == []
 
     view._render_player_danger_vignette(player)
-    assert rect_calls
+    assert ellipse_calls
 
 
 def test_center_combat_enemy_uses_combat_sprite_manager_not_combat_artwork(monkeypatch):
@@ -828,6 +833,21 @@ def test_center_combat_enemy_uses_combat_sprite_manager_not_combat_artwork(monke
         getattr(surface, "text", "") == "combat-sprite"
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
     )
+
+
+def test_prepare_enemy_assets_warms_combat_and_dungeon_sizes():
+    view = _make_view()
+    calls = []
+    enemy = SimpleNamespace(name="Goblin")
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda _enemy: "goblin",
+        get_combat_scale_for_enemy=lambda _enemy: 1.0,
+        get_scaled_sprite_by_key=lambda key, size: calls.append((key, size)) or DummySurface(size),
+    )
+
+    view.prepare_enemy_assets(enemy)
+
+    assert calls == [("goblin", (256, 256)), ("goblin", (320, 320))]
 
 
 def test_center_combat_enemy_draws_active_mirror_images(monkeypatch):

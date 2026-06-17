@@ -597,18 +597,29 @@ class CombatView:
             return
 
         intensity = min(1.0, (0.25 - ratio) / 0.25)
-        alpha = int(34 + intensity * 54)
+        pulse = (math.sin(pygame.time.get_ticks() / 210.0) + 1.0) / 2.0
+        alpha = int(36 + intensity * 58 + pulse * (12 + intensity * 34))
         overlay = pygame.Surface((self.combat_width, self.screen_height), pygame.SRCALPHA)
-        edge_color = (150, 30, 24, alpha)
-        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, 0, self.combat_width, 6))
-        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, self.screen_height - 156, self.combat_width, 6))
-        pygame.draw.rect(overlay, edge_color, pygame.Rect(0, 0, 8, self.screen_height))
-        pygame.draw.rect(overlay, edge_color, pygame.Rect(self.combat_width - 8, 0, 8, self.screen_height))
+        center_rect = pygame.Rect(
+            -int(self.combat_width * 0.10),
+            -int(self.screen_height * 0.18),
+            int(self.combat_width * 1.20),
+            int(self.screen_height * 1.32),
+        )
+        for index, width in enumerate((80, 54, 32, 16)):
+            ring_alpha = max(18, alpha - index * 22)
+            ring_rect = center_rect.inflate(index * 56, index * 42)
+            pygame.draw.ellipse(
+                overlay,
+                (160, 24, 22, ring_alpha),
+                ring_rect,
+                width=width,
+            )
         if intensity > 0.5:
-            pulse_alpha = int((intensity - 0.5) * 70)
+            pulse_alpha = int((intensity - 0.5) * (58 + pulse * 48))
             pygame.draw.rect(
                 overlay,
-                (100, 20, 20, pulse_alpha),
+                (110, 18, 18, pulse_alpha),
                 pygame.Rect(0, self.screen_height - 312, self.combat_width, 156),
             )
         self.screen.blit(overlay, (0, 0))
@@ -682,8 +693,9 @@ class CombatView:
             icons.append(("DEF", True))
 
         dot_effect = character.magic_effects.get("DOT")
-        if dot_effect and dot_effect.active and getattr(dot_effect, "source", "").lower() == "burn":
-            icons.append(("BRN", False))
+        if dot_effect and dot_effect.active:
+            source = getattr(dot_effect, "source", "").lower()
+            icons.append(("BRN" if source == "burn" else "DOT", False))
 
         for name, effect in character.status_effects.items():
             if effect.active and name not in skip_effects:
@@ -805,6 +817,14 @@ class CombatView:
     def reload_enemy_sprite(self, enemy) -> None:
         """Compatibility hook for enemies that change visual form during combat."""
         return None
+
+    def prepare_enemy_assets(self, enemy) -> None:
+        """Populate scaled enemy sprite caches before the first combat frame."""
+        for size in (
+            self._enemy_combat_sprite_size(enemy),
+            self._enemy_dungeon_combat_sprite_size(enemy),
+        ):
+            self._enemy_sprite_surface(enemy, size, has_sight=True)
     
     def _has_sight(self, player_char):
         """Check if player has sight ability.
