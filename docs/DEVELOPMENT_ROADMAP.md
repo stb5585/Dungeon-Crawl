@@ -355,7 +355,7 @@ Implemented:
 
 #### P4b - Quest And Realm Content
 
-Status: `Active` for Rookie Mistake, `Needs Exploration` for remaining quest/realm work
+Status: `Active` for decision cleanup, `Ready For Spec` for Class Ring activation and Psychopomp/Purgatory
 
 Implemented:
 
@@ -378,27 +378,37 @@ Implemented:
 - Bring Him Home presentation hook:
    - Added a post-turn-in Timmy/family scene after the Sergeant receives the completed quest.
 
-Next Ready Slice:
+Ready For Spec:
 
-- Add greater immersive details after content hooks are confirmed:
-  - Add artistic renderings for town NPCs/venues in a later asset pass.
+- Class Ring activation questlines:
+   - Standard Class Ring acquisition stays implemented as a passive reward for defeating the Red Dragon.
+   - Class Ring activation remains P4b content, but implementation is blocked until at least one second-promotion activation questline has a complete one-page spec.
+   - Each second-promotion activation spec must define: trigger, quest giver/location, objective, reward behavior, UI text, save state, and regression tests.
+   - Write activation specs for: Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Demonologist, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Archdruid, Astromancer, Soulcatcher, and Beast Master.
+- Psychopomp/Purgatory full design spec:
+   - Locked concept: the first final-boss defeat sends the player to Purgatory instead of normal town resurrection.
+   - Locked objective: explore Purgatory, defeat mini-bosses, gather clues, identify the secret to defeating a boss-like self-copy Psychopomp, then return to life.
+   - Locked NPC beat: a disfigured being guides and allows saving, then is revealed as an angelic guide who helps the player ultimately defeat the Devil.
+   - Spec must define: realm layout, clue count/content, mini-boss roster, save restrictions, self-copy scaling, fail/retry behavior, final-boss re-entry, UI messaging, migration behavior, and regression tests.
+- Realm of Cambion follow-up content:
+   - Current portal, rotator, anti-magic terminal, Merzhin win/loss, and Nimue follow-up beats are implemented.
+   - Add deeper Realm of Cambion content only when a concrete new room, event, reward, or special tile is chosen.
 
 Needs Design Decision:
 
-- Decide whether the class-specific Class Ring questline remains P4 content, becomes a passive reward path, or is cut.
-   - Answer: obtaining the standard Class Ring item stays a passive reward for defeating the Red Dragon boss; activating it requires outlining questlines for each second promotion class
-- Define Dragoon Dragon Quest objective and reward; current note is incomplete.
-   - Answer: TBD
-- Define Psychopomp death-trial rules:
-  - optional challenge, mandatory death recovery, or deferred concept;
-   - Answer: save this for special event if defeated against final boss; Devil will not let your body return to town for resurrection, instead sends you to "purgatory"; this realm leads to a battle against a copy of oneself (psychopomp) that the player must win to return to the living realm
-  - trigger locations and starter-area exemption;
-   - Answer: always triggers when defeated while fighting the final boss for the first time (cannot win the initial encounter)
-  - trial objective, self-scaling rules, rewards, penalties, and save behavior.
-   - Answer: must defeat Psychopomp, a boss-like scaled version of yourself controlled by AI
-   - while exploring "purgatory", the player will encounter a disfigured being who claims to know the way back to the living realm
-   - requires obtaining several clues throughout purgatory through defeating mini-bosses and exploring the realm; these clues reveal a secret to defeating the Psycopomp, which releases your soul and allows the user to return
-   - the being allows the player to save their progress; is also revealed to be an angel sent to guide the player out to ultimately defeat the Devil; completing this challenge allows the user to defeat the final boss
+- Dragoon Dragon Quest:
+   - Objective and reward remain `TBD`.
+   - Decide the target creature/trial, unlock timing, reward type, and whether the reward modifies Jump, grants equipment, or unlocks Dragoon-specific progression.
+- Class Ring activation priority:
+   - Decide which second-promotion class gets the first activation questline spec.
+- Purgatory implementation order:
+   - Decide whether Psychopomp/Purgatory should be implemented before or after the remaining P4b questline content.
+
+Deferred Asset Pass:
+
+- Artistic renderings for town NPCs/venues are deferred until art direction and target list are selected.
+- Deferred targets include Sergeant/Barracks, inn patrons, shop purveyors, Church priest, Old Warehouse guards, staffed Warp Point scientists, and Bring Him Home family/child scenes.
+- Do not generate or add new artistic assets until the desired visual style, asset dimensions, and target list are chosen.
 
 #### P4c - Knowledge And Collection Systems
 
