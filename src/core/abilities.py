@@ -2377,6 +2377,8 @@ skill_dict = {
         "10": HealthManaDrain,
         "20": Familiar3,
         },
+    "Demonologist": {
+        },
     "Spellblade": {
         "1": EnhanceBlade,
         "6": ManaSlice,
@@ -2577,6 +2579,8 @@ spell_dict = {
     "Shadowcaster": {
         "8": ShadowBolt3,
         "18": Desoul,
+        },
+    "Demonologist": {
         },
     "Spellblade": {
         "20": Reflect,

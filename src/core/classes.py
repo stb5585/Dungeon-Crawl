@@ -798,8 +798,9 @@ class Warlock(Job):
 class Shadowcaster(Job):
     """
     Promotion: Mage -> Warlock -> Shadowcaster
-    Additional Pros: Increased wisdom gain
-    Additional Cons: None
+    Additional Pros: Increased intel, wisdom, and dex gain
+    Additional Cons: Decreased charisma gain
+    Special Mechanic:
     """
 
     def __init__(self):
@@ -809,11 +810,11 @@ class Shadowcaster(Job):
             "conjure the most demonic of powers, including the practicing"
             " of forbidden blood magic.",
             str_plus=0,
-            int_plus=2,
+            int_plus=3,
             wis_plus=2,
             con_plus=1,
-            cha_plus=2,
-            dex_plus=0,
+            cha_plus=0,
+            dex_plus=1,
             att_plus=1,
             def_plus=1,
             magic_plus=5,
@@ -835,8 +836,10 @@ class Shadowcaster(Job):
 class Demonologist(Job):  # TODO
     """
     Promotion: Mage -> Warlock -> Demonologist
-    Additional Pros:
-    Additional Cons:
+    Additional Pros: Increased wisdom and defense
+    Additional Cons: Decreased magic gain
+    Special Mechanic: can obtain contracts from fiends that grant unique abilities and buffs
+        but also have drawbacks  TODO
     """
 
     def __init__(self):
@@ -850,9 +853,9 @@ class Demonologist(Job):  # TODO
             cha_plus=2,
             dex_plus=0,
             att_plus=1,
-            def_plus=1,
-            magic_plus=5,
-            magic_def_plus=3,
+            def_plus=2,
+            magic_plus=3,
+            magic_def_plus=4,
             equipment={
                 "Weapon": items.Rondel(),
                 "OffHand": items.DragonRouge(),
