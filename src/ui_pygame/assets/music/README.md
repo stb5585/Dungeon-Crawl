@@ -1,6 +1,6 @@
 # Music Directory
 
-This directory contains background music for Dungeon Crawl.
+This directory contains background music for The Forsaken Tenet.
 
 ## Supported Formats
 

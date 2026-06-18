@@ -1,8 +1,8 @@
-# Dungeon Crawl Development Roadmap
+# The Forsaken Tenet Development Roadmap
 
 *Updated: June 2026*
 
-This roadmap tracks the remaining work for Dungeon Crawl after the recent stabilization and coverage passes. Completed work is summarized briefly so the active backlog stays readable.
+This roadmap tracks the remaining work for **The Forsaken Tenet** after the recent stabilization and coverage passes. Completed work is summarized briefly so the active backlog stays readable. Code, scripts, and legacy docs may still refer to the project as Dungeon Crawl until the rename is implemented as a separate cleanup pass.
 
 ## Status Legend
 
@@ -32,6 +32,61 @@ This roadmap tracks the remaining work for Dungeon Crawl after the recent stabil
 - YAML ability definitions under `src/core/data/abilities/`: `179`
 - Event types in `EventType`: `38`
 - Latest full-suite result recorded in prior roadmap notes: `1398` passing tests with `81%` total coverage across `src/`
+
+## Narrative Direction
+
+Current title: **The Forsaken Tenet**
+
+The title points to the central mystery without revealing it early. The forsaken tenet is **Voluntas**, the forgotten seventh principle of reality: Choice and Free Will. Vesperion forsook his duty as its Guardian, history forgot it, the world lost it, and the player rediscovers it late in the story.
+
+### Core Mythology
+
+Before time and before the mortal races, there was only **Elysia**, the First Light and source of all creation. To give structure to reality, Elysia established Seven Principles, each embodied by a Guardian:
+
+1. `Triangulus`: Self, expressed through Mind, Body, and Spirit.
+2. `Quadrata`: Order.
+3. `Hexagonum`: Nature.
+4. `Luna`: Love.
+5. `Polaris`: Guidance.
+6. `Infinitas`: Eternity and endless struggle.
+7. `Voluntas`: Choice and Free Will.
+
+From the Seven Principles came all life and all races. No mortal people are favored or chosen above another; humans, elves, dwarves, halflings, gnomes, and all other peoples are equally children of Elysia and equally shaped by the Seven Principles.
+
+The missing seventh Principle is `Voluntas`. Voluntas gives moral meaning to the other six. Without it, Self becomes programming, Order becomes tyranny, Nature becomes instinct, Love becomes obligation, Guidance becomes control, and Eternity becomes imprisonment.
+
+### Antagonist And The Hollowing
+
+The Great Evil is **Vesperion**, the former Guardian of Voluntas, a celestial being associated with wisdom, light, and the Evening Star. Vesperion is not driven by simple conquest. After witnessing war, betrayal, cruelty, greed, grief, and loss, he came to believe Voluntas was Elysia's mistake. To him, free will is not a gift but a disease that produces endless suffering.
+
+Believing he was acting mercifully, Vesperion attempted to remove Voluntas from existence. This event became known as **The Hollowing**. The world was not destroyed, but something fundamental was lost. The Seventh Principle disappeared from memory, and history slowly rewrote itself until most of creation believed there had only ever been six principles.
+
+### Story Roles
+
+- The six relics are real and powerful, but incomplete. The surviving Guardians left them as safeguards designed to guide a future champion toward the forgotten truth. Over centuries, their original purpose was forgotten and they became objects of legend.
+- The hero begins as an ordinary adventurer tasked with recovering the Six Relics to stop the Great Evil. The expected story is simple: gather the relics, defeat the Great Evil, save the world. The late-game turn reveals that this understanding is incomplete.
+- The Hooded Figure should ultimately be a hidden servant or witness of Voluntas, guiding the hero toward forgotten truth rather than toward raw power.
+- The Acolyte should embody Vesperion's argument instead of serving as a simple villain. Their belief should come from suffering and the sincere conviction that removing free will would prevent more pain.
+
+### The Liminal Gap And Voluntas Reveal
+
+After the first confrontation with Vesperion, the hero is defeated or killed. The player's soul awakens in **The Liminal Gap**, a surreal realm between existence and oblivion. It should feel abandoned, dreamlike, distorted, familiar, and wrong, with fragments of memory, forgotten truths, and remnants of ancient souls drifting through it.
+
+The Liminal Gap is one of the few places untouched by the Hollowing, so traces of the Seventh Principle remain there. The Six Relics awaken and guide the player toward surviving echoes of the Six Guardians. These should not become a repetitive sequence of boss fights; each Guardian presents a unique trial reflecting its principle. Some trials may involve combat, while others involve understanding, sacrifice, exploration, or difficult decisions.
+
+Completing the trials reveals hidden lore about Elysia, the Seven Principles, the Hollowing, and Vesperion's fall. After the six trials, the player discovers there should be a Seventh Guardian. The seat of Voluntas stands empty because Vesperion himself was once its Guardian, and the principle was deliberately removed from history.
+
+The player eventually discovers that Voluntas was never truly destroyed. Unlike the other principles, Voluntas cannot exist as a relic, artifact, or monument. It exists wherever a soul chooses.
+
+The path to Voluntas culminates in a Reflection Battle against a self-copy representing every path not taken and every possible version of the hero. The player must prove they possess Voluntas by affirming their identity and exercising true choice. Defeating the reflection symbolizes embracing the path the player has chosen through class, promotion, equipment, and playstyle.
+
+Class progression should therefore become part of the story's argument. Promotions and build choices are not only mechanics; they are evidence that the hero is shaped by will rather than destiny.
+
+### Final Conflict
+
+The final confrontation is not framed as simple good versus evil. It asks whether free will is worth the suffering it creates.
+
+Armed with the truth, the hero returns from The Liminal Gap and confronts Vesperion once more. Vesperion argues that removing Voluntas will end suffering. The hero answers that without Voluntas, love, sacrifice, courage, redemption, and growth cannot exist. The fate of creation rests on whether the Seventh Principle should survive.
 
 ## Completed Summary
 
@@ -355,7 +410,7 @@ Implemented:
 
 #### P4b - Quest And Realm Content
 
-Status: `Active` for decision cleanup, `Ready For Spec` for Class Ring activation and Psychopomp/Purgatory
+Status: `Active` for decision cleanup, `Ready For Spec` for Class Ring activation and Psychopomp/The Liminal Gap
 
 Implemented:
 
@@ -385,11 +440,15 @@ Ready For Spec:
    - Class Ring activation remains P4b content, but implementation is blocked until at least one second-promotion activation questline has a complete one-page spec.
    - Each second-promotion activation spec must define: trigger, quest giver/location, objective, reward behavior, UI text, save state, and regression tests.
    - Write activation specs for: Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Demonologist, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Archdruid, Astromancer, Soulcatcher, and Beast Master.
-- Psychopomp/Purgatory full design spec:
-   - Locked concept: the first final-boss defeat sends the player to Purgatory instead of normal town resurrection.
-   - Locked objective: explore Purgatory, defeat mini-bosses, gather clues, identify the secret to defeating a boss-like self-copy Psychopomp, then return to life.
-   - Locked NPC beat: a disfigured being guides and allows saving, then is revealed as an angelic guide who helps the player ultimately defeat the Devil.
-   - Spec must define: realm layout, clue count/content, mini-boss roster, save restrictions, self-copy scaling, fail/retry behavior, final-boss re-entry, UI messaging, migration behavior, and regression tests.
+- Main Storyline Plot and The Liminal Gap full design spec:
+   - Locked creation premise: Elysia established Seven Principles, each embodied by a Guardian, and all mortal races are equally children of Elysia.
+   - Locked story beat: the first confrontation with Vesperion defeats or kills the hero and sends them to The Liminal Gap instead of normal town resurrection.
+   - Locked objective: explore The Liminal Gap, complete the Six Guardian trials, gather clues, discover Voluntas, identify the secret to defeating a boss-like self-copy Psychopomp, then return to life.
+   - Locked trial structure: Guardian trials should vary by principle and may use combat, understanding, sacrifice, exploration, or difficult decisions instead of repeating one boss-battle template.
+   - Locked Reflection Battle: the self-copy represents every possible version of the hero and tests whether the player can prove Voluntas through a chosen path.
+   - Locked NPC beat: a disfigured being guides and allows saving, then is revealed as an angelic guide who helps the player ultimately oppose Vesperion.
+   - Spec must define: realm layout, clue count/content, Guardian trial roster, mini-boss roster where appropriate, save restrictions, self-copy scaling, fail/retry behavior, Vesperion re-entry, UI messaging, migration behavior, and regression tests.
+   - Spec must also define how the six relics are recontextualized as powerful but incomplete without Voluntas.
 - Realm of Cambion follow-up content:
    - Current portal, rotator, anti-magic terminal, Merzhin win/loss, and Nimue follow-up beats are implemented.
    - Add deeper Realm of Cambion content only when a concrete new room, event, reward, or special tile is chosen.
@@ -401,8 +460,10 @@ Needs Design Decision:
    - Decide the target creature/trial, unlock timing, reward type, and whether the reward modifies Jump, grants equipment, or unlocks Dragoon-specific progression.
 - Class Ring activation priority:
    - Decide which second-promotion class gets the first activation questline spec.
-- Purgatory implementation order:
-   - Decide whether Psychopomp/Purgatory should be implemented before or after the remaining P4b questline content.
+- The Liminal Gap implementation order:
+   - Decide whether Psychopomp/The Liminal Gap should be implemented before or after the remaining P4b questline content.
+- Vesperion/Acolyte/Hooded Figure reveal order:
+   - Decide where the player first learns the names `Vesperion` and `Voluntas`, when the Hooded Figure's allegiance becomes clear, and how the Acolyte voices Vesperion's mercy-through-control argument.
 
 Deferred Asset Pass:
 
@@ -476,6 +537,9 @@ Needs Design Decision:
 - Lancer/Dragoon:
   - Keep Jump marked implemented.
   - Define Dragon Quest objective and reward before implementation.
+- Narrative integration:
+  - Tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood.
+  - Avoid implementing class-progression story beats until the associated quest/spec defines trigger timing, player-facing text, save flags, and whether the beat is optional or required.
 - Sentinel/Stalwart Defender:
   - Define Resolve gauge storage, gain rate, decay/reset rules, UI, and effects on Shield Slam, Retaliate, Shield Block, and Last Stand.
 - Mage:
@@ -545,12 +609,10 @@ Status: `Planned`
    - Weapon name or attack source on weapon-damage events.
    - Ability/item/source metadata where UI and audio layers need presentation-specific behavior.
 
-### P6 - Removal of UI Curses Game Edition
+### P6 - Additional Improvements
 
-Status: `Planned`
-
-1. Remove parallel `curses` UI implementation of the Dungeon Crawl game
-2. Confirm all dependencies and plugin code is removed.
+1. Add mouse/cursor support; make menu options clickable
+2. Create additional portrait options for greater customization (i.e. different skin colors, facial features, etc.)
 
 ## Deferred Or Decision-Gated Items
 

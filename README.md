@@ -1,4 +1,4 @@
-TITLE: Dungeon Crawl (working title)
+TITLE: The Forsaken Tenet
 
 AUTHOR: Shawn Thomas Booth
 
@@ -41,7 +41,7 @@ DESCRIPTION:
 
 ## Recent Improvements (February 2026)
 
-Dungeon Crawl has completed a major code restructuring focused on architecture, maintainability, and feature parity:
+The Forsaken Tenet has completed a major code restructuring focused on architecture, maintainability, and feature parity:
 
 ### Completed Refactoring
 - **Data Externalization** - Quest system, dialogues, and special events now in JSON files (src/core/data/content/)

@@ -1,8 +1,8 @@
-# Dungeon Crawl - Pygame GUI
+# The Forsaken Tenet - Pygame GUI
 
 ## Overview
 
-The GUI version of Dungeon Crawl uses Pygame to provide a graphical interface for combat instead of the traditional curses text interface.
+The GUI version of The Forsaken Tenet uses Pygame to provide a graphical interface for combat instead of the traditional curses text interface.
 
 ## Features
 

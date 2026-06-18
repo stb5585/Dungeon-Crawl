@@ -1,6 +1,6 @@
 # Sound Effects Directory
 
-This directory contains sound effects for Dungeon Crawl.
+This directory contains sound effects for The Forsaken Tenet.
 
 ## Supported Formats
 

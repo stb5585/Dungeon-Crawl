@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Dungeon Crawl sound system provides immersive audio feedback through sound effects and background music, automatically triggered by game events.
+The Forsaken Tenet sound system provides immersive audio feedback through sound effects and background music, automatically triggered by game events.
 
 ## Getting Started
 
