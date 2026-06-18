@@ -1,5 +1,5 @@
 """
-Pygame-based presenter for Dungeon Crawl combat.
+Pygame-based presenter for The Forsaken Tenet combat.
 
 This presenter implements the GamePresenter interface using Pygame for graphical combat display.
 It subscribes to the event system for animations and real-time updates.
@@ -92,7 +92,7 @@ class PygamePresenter(GamePresenter):
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Dungeon Crawl - Combat")  # TODO: what is this?
+        pygame.display.set_caption("The Forsaken Tenet - Combat")
         
         # Fonts
         self.title_font = pygame.font.Font(None, 48)

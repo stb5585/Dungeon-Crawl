@@ -1,5 +1,5 @@
 """
-Sound Manager - Handles sound effects and music for Dungeon Crawl.
+Sound Manager - Handles sound effects and music for The Forsaken Tenet.
 
 Integrates with the event bus to play sounds based on game events.
 """

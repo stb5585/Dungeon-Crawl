@@ -1,5 +1,5 @@
 """
-Sprite Manager - Loads and manages sprite assets for Dungeon Crawl.
+Sprite Manager - Loads and manages sprite assets for The Forsaken Tenet.
 
 This module provides a centralized sprite management system with caching,
 player sprite loading, effect/icon loading, and easy sprite retrieval.

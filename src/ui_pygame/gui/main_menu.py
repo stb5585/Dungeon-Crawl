@@ -2,6 +2,8 @@
 Main menu screen for Pygame GUI - matches curses terminal layout.
 """
 
+from pathlib import Path
+
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -11,6 +13,8 @@ class MainMenuScreen:
     """
     Main menu that matches the curses terminal style.
     """
+
+    BACKGROUND_PATH = Path(__file__).resolve().parents[1] / "assets" / "backgrounds" / "main_menu.png"
     
     def __init__(self, presenter):
         self.presenter = presenter
@@ -30,63 +34,65 @@ class MainMenuScreen:
         self.title_font = presenter.title_font
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
-        
-        # Try to load a monospaced font for ASCII art
-        try:
-            self.ascii_font = pygame.font.Font(pygame.font.match_font('courier', bold=True), 16)
-        except Exception:
-            # Fallback to default monospace
-            self.ascii_font = pygame.font.SysFont('monospace', 16, bold=True)
-        
-        # ASCII Art Title (matching curses version)
-        self.title_art = [
-            " /$$$$$$$  /$$   /$$ /$$   /$$  /$$$$$$  /$$$$$$$$  /$$$$$$  /$$   /$$",
-            "| $$__  $$| $$  | $$| $$$ | $$ /$$__  $$| $$_____/ /$$__  $$| $$$ | $$",
-            "| $$  \\ $$| $$  | $$| $$$$| $$| $$  \\__/| $$      | $$  \\ $$| $$$$| $$",
-            "| $$  | $$| $$  | $$| $$ $$ $$| $$ /$$$$| $$$$$   | $$  | $$| $$ $$ $$",
-            "| $$  | $$| $$  | $$| $$  $$$$| $$|_  $$| $$__/   | $$  | $$| $$  $$$$",
-            "| $$  | $$| $$  | $$| $$\\  $$$| $$  \\ $$| $$      | $$  | $$| $$\\  $$$",
-            "| $$$$$$$/|  $$$$$$/| $$ \\  $$|  $$$$$$/| $$$$$$$$|  $$$$$$/| $$ \\  $$",
-            "|_______/  \\______/ |__/  \\__/ \\______/ |________/ \\______/ |__/  \\__/",
-            "",
-            "            /$$$$$$  /$$$$$$$   /$$$$$$  /$$      /$$ /$$",
-            "           /$$__  $$| $$__  $$ /$$__  $$| $$  /$ | $$| $$",
-            "          | $$  \\__/| $$  \\ $$| $$  \\ $$| $$ /$$$| $$| $$",
-            "          | $$      | $$$$$$$/| $$$$$$$$| $$/$$ $$ $$| $$",
-            "          | $$      | $$__  $$| $$__  $$| $$$$_  $$$$| $$",
-            "          | $$    $$| $$  \\ $$| $$  | $$| $$$/ \\  $$$| $$",
-            "          |  $$$$$$/| $$  | $$| $$  | $$| $$/   \\  $$| $$$$$$$$",
-            "           \\______/ |__/  |__/|__/  |__/|__/     \\__/|________/"
-        ]
+        self.background = self._load_background()
         
         self.current_option = 0
         self.options = []
+
+    def _load_background(self):
+        """Load the main menu title background if it is available."""
+        try:
+            return pygame.image.load(str(self.BACKGROUND_PATH))
+        except (FileNotFoundError, pygame.error, OSError):
+            return None
+
+    def _scale_background(self, image):
+        source_width, source_height = image.get_size()
+        if source_width <= 0 or source_height <= 0:
+            return image, (0, 0)
+
+        scale = max(self.width / source_width, self.height / source_height)
+        scaled_size = (int(source_width * scale), int(source_height * scale))
+        scaled = pygame.transform.smoothscale(image, scaled_size)
+        offset = ((self.width - scaled_size[0]) // 2, (self.height - scaled_size[1]) // 2)
+        return scaled, offset
+
+    def draw_background(self):
+        """Draw the title background, falling back to a flat fill."""
+        if self.background is None:
+            self.screen.fill(self.BLACK)
+            return
+
+        scaled, offset = self._scale_background(self.background)
+        self.screen.blit(scaled, offset)
     
     def draw_title(self):
-        """Draw the ASCII art title."""
-        # Calculate starting position to center the title
-        line_height = 18  # Tight spacing for ASCII art
-        title_height = len(self.title_art) * line_height
-        start_y = max(20, (self.height // 2) - title_height - 80)
-        
-        # Find the longest line to center everything relative to it
-        max_width = max(self.ascii_font.size(line)[0] for line in self.title_art if line)
-        
-        # Draw each line of ASCII art using monospaced font
-        for i, line in enumerate(self.title_art):
-            text = self.ascii_font.render(line, True, self.WHITE)
-            # Center based on the longest line width
-            text_x = (self.width - max_width) // 2
-            self.screen.blit(text, (text_x, start_y + i * line_height))
+        """Draw a text title only when the title background is unavailable."""
+        if self.background is not None:
+            return
+
+        title = self.title_font.render("The Forsaken Tenet", True, self.GOLD)
+        subtitle = self.normal_font.render("A tale of choice, memory, and the Seventh Principle", True, self.WHITE)
+        title_rect = title.get_rect(centerx=self.width // 2, top=max(40, self.height // 5))
+        subtitle_rect = subtitle.get_rect(centerx=self.width // 2, top=title_rect.bottom + 16)
+        self.screen.blit(title, title_rect)
+        self.screen.blit(subtitle, subtitle_rect)
     
     def draw_menu(self):
         """Draw the menu options."""
-        # Calculate menu position - centered below title
-        menu_start_y = (self.height // 2) + 50
+        menu_width = min(360, self.width - 80)
         line_height = 40
+        menu_height = max(1, len(self.options)) * line_height + 28
+        menu_x = self.width // 2 - menu_width // 2
+        menu_y = self.height - menu_height - 54
+
+        panel = pygame.Surface((menu_width, menu_height), pygame.SRCALPHA)
+        panel.fill((0, 0, 0, 150))
+        self.screen.blit(panel, (menu_x, menu_y))
+        pygame.draw.rect(self.screen, (190, 160, 82), (menu_x, menu_y, menu_width, menu_height), 1)
         
         for i, option in enumerate(self.options):
-            y = menu_start_y + i * line_height
+            y = menu_y + 14 + i * line_height
             
             # Highlight selected option
             if i == self.current_option:
@@ -115,7 +121,7 @@ class MainMenuScreen:
     
     def draw(self):
         """Draw the entire main menu."""
-        self.screen.fill(self.BLACK)
+        self.draw_background()
         self.draw_title()
         self.draw_menu()
         pygame.display.flip()

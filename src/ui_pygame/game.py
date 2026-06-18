@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GUI Game Launcher for Dungeon Crawl
+GUI Game Launcher for The Forsaken Tenet
 Uses Pygame for graphical presentation instead of curses text interface.
 """
 
@@ -54,7 +54,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 class PygameGame:
     """
-    GUI version of the Dungeon Crawl game using Pygame.
+    GUI version of The Forsaken Tenet using Pygame.
     """
     
     def __init__(self, debug_mode=False):
@@ -909,7 +909,7 @@ def main():
     """Entry point for GUI game."""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Dungeon Crawl GUI Game')
+    parser = argparse.ArgumentParser(description='The Forsaken Tenet GUI Game')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode (disable random combat)')
     parser.add_argument(
         '--character-menu',

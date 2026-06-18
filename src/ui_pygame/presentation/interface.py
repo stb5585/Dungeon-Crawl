@@ -303,7 +303,7 @@ class ConsolePresenter(GamePresenter):
     """
     
     def initialize(self) -> None:
-        print("=== Dungeon Crawl - Console Mode ===")
+        print("=== The Forsaken Tenet - Console Mode ===")
     
     def cleanup(self) -> None:
         print("=== Game Over ===")

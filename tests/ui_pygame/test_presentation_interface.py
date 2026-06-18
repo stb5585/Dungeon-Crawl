@@ -139,7 +139,7 @@ def test_console_presenter_renders_text_views(capsys):
     presenter.cleanup()
 
     output = capsys.readouterr().out
-    assert "Dungeon Crawl - Console Mode" in output
+    assert "The Forsaken Tenet - Console Mode" in output
     assert "Hero (HP: 80/100)" in output
     assert "Goblin (HP: 10/30)" in output
     assert "A wild foe appears!" in output

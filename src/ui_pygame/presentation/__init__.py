@@ -1,5 +1,5 @@
 """
-Presentation Module for Dungeon Crawl
+Presentation Module for The Forsaken Tenet
 
 Provides abstract interfaces and implementations for different UI technologies.
 """

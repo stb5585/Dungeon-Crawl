@@ -1,4 +1,4 @@
 """
-GUI module for Pygame-based Dungeon Crawl interface.
+GUI module for The Forsaken Tenet's Pygame interface.
 Contains modular components for each game location and system.
 """

@@ -1,5 +1,5 @@
 """
-Sprite Generator - Creates placeholder sprites for Dungeon Crawl.
+Sprite Generator - Creates placeholder sprites for The Forsaken Tenet.
 
 This module generates simple, recognizable sprites programmatically using Pygame.
 These can be replaced with actual artwork later.

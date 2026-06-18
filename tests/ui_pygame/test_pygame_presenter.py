@@ -237,7 +237,7 @@ def test_presenter_initializes_subscriptions_and_basic_event_handlers(monkeypatc
     presenter = bundle.presenter
 
     subscribed = {event_type for event_type, _callback in bundle.event_bus.subscriptions}
-    assert bundle.captions == ["Dungeon Crawl - Combat"]
+    assert bundle.captions == ["The Forsaken Tenet - Combat"]
     assert {
         EventType.COMBAT_START,
         EventType.COMBAT_END,

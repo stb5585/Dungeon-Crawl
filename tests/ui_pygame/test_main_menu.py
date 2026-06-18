@@ -16,6 +16,9 @@ class DummySurface:
         self._size = size
         self.text = text
 
+    def get_size(self):
+        return self._size
+
     def get_width(self):
         return self._size[0]
 
@@ -67,9 +70,13 @@ def _make_presenter():
 
 def test_main_menu_draw_and_navigation(monkeypatch):
     presenter = _make_presenter()
-    ascii_font = RecordingFont()
-    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.font.match_font", lambda *_args, **_kwargs: "courier")
-    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.font.Font", lambda *_args, **_kwargs: ascii_font)
+    background = DummySurface((1536, 1024), text="background")
+    scaled_background = DummySurface((1050, 700), text="scaled")
+    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.image.load", lambda *_args, **_kwargs: background)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.main_menu.pygame.transform.smoothscale",
+        lambda _surface, _size: scaled_background,
+    )
     screen = main_menu.MainMenuScreen(presenter)
 
     draw_calls = []
@@ -79,8 +86,11 @@ def test_main_menu_draw_and_navigation(monkeypatch):
 
     screen.options = ["New Game", "Load Game", "Quit"]
     screen.current_option = 1
+    screen.draw_background()
+    assert presenter.screen.blit_calls[-1][0] is scaled_background
+
     screen.draw_title()
-    assert ascii_font.render_calls
+    assert "The Forsaken Tenet" not in presenter.title_font.render_calls
 
     screen.draw_menu()
     assert "New Game" in presenter.normal_font.render_calls
@@ -88,7 +98,6 @@ def test_main_menu_draw_and_navigation(monkeypatch):
     assert draw_calls
 
     screen.draw()
-    assert presenter.screen.fill_calls
     assert flip_calls
 
     event_batches = iter([
@@ -112,12 +121,11 @@ def test_main_menu_draw_and_navigation(monkeypatch):
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])
     monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.get", lambda: next(event_batches, []))
     monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.clear", lambda: clear_calls.append(True))
-    assert screen.navigate(["New Game", "Load Game", "Quit"], flush_events=True, require_key_release=True) == 1
+    assert screen.navigate(["New Game", "Load Game", "Quit"], flush_events=True, require_key_release=True) == 0
     assert clear_calls == [True]
 
     screen.current_option = 0
@@ -129,8 +137,10 @@ def test_main_menu_draw_and_navigation(monkeypatch):
 
 def test_main_menu_quit_event_raises_system_exit(monkeypatch):
     presenter = _make_presenter()
-    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.font.match_font", lambda *_args, **_kwargs: "courier")
-    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.main_menu.pygame.image.load",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(FileNotFoundError()),
+    )
     screen = main_menu.MainMenuScreen(presenter)
     monkeypatch.setattr(screen, "draw", lambda: None)
 
@@ -145,3 +155,18 @@ def test_main_menu_quit_event_raises_system_exit(monkeypatch):
     with pytest.raises(SystemExit):
         screen.navigate(["Play"])
     assert quit_calls
+
+
+def test_main_menu_falls_back_to_text_title_when_background_missing(monkeypatch):
+    presenter = _make_presenter()
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.main_menu.pygame.image.load",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(FileNotFoundError()),
+    )
+    screen = main_menu.MainMenuScreen(presenter)
+
+    screen.draw_background()
+    screen.draw_title()
+
+    assert presenter.screen.fill_calls == [screen.BLACK]
+    assert "The Forsaken Tenet" in presenter.title_font.render_calls
