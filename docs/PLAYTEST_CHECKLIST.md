@@ -41,9 +41,12 @@
 - [x] Use Defend in pygame combat.
   - Expected: The `DEF` status icon is green/positive.
   - Expected: `DEF` falls off after one turn unless Defend is selected again.
-- [ ] Trigger or simulate Blind Rage in combat.
+- [x] Trigger or simulate Blind Rage in combat.
   - Expected: The status row shows a distinct `BRG` icon.
   - Expected: `BRG` is prioritized with other urgent negative combat states before overflow.
+- [ ] Trigger or simulate the newly wired effect artwork in pygame combat.
+  - Expected: Astral Shift, Ice Block, Mana Shield, Mirror Image, Speed up/down, and generic/burn/poison/bleed DOT states use PNG icons instead of text-only fallback pills.
+  - Expected: Spell Reflect uses the magic reflect icon, while Totem's melee-reflect secondary uses the melee reflect icon.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Resize the game window or view a crowded combat overlay.
@@ -272,7 +275,7 @@
   - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 
 ### Quest Log
-- [ ] Accept and complete a main quest that grants item rewards.
+- [x] Accept and complete a main quest that grants item rewards.
   - Expected: Quest completion and turned-in state are recorded correctly.
 - [ ] Inspect quest status summary diagnostics after accepting, completing, and turning in quests.
   - Expected: Main/Side/Bounty category counts distinguish total, completed, turned-in, ready-to-turn-in, and active quests.

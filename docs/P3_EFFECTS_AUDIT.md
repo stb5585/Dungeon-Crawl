@@ -1,6 +1,6 @@
 # P3 Effects Audit
 
-Last updated: 2026-06-16
+Last updated: 2026-06-19
 
 ## Current Findings
 
@@ -14,6 +14,34 @@ Last updated: 2026-06-16
   effects were broadly aligned with current data structures, but their result
   bucket writes were tightened to preserve the `CombatResult` shape when reused
   in smaller harnesses.
+
+## DOT And Effect Icon Audit
+
+- DOT effect buckets:
+  - `status_effects["Poison"]`: poison DOT, shown as `PSN` / `poison.png`.
+  - `physical_effects["Bleed"]`: bleed DOT, shown as `RND` / `bleed.png`.
+  - `magic_effects["DOT"]` with `source == "Burn"`: fire burn DOT, shown as `BRN` / `burn.png`.
+  - `magic_effects["DOT"]` with other sources such as `Acid`, `Corruption`, or `Slot Machine`: generic DOT, shown as `DOT` / `dot.png`.
+- Ability DOT applicators:
+  - Burn/generic DOT: `Firebolt`, `Fireball`, `Firestorm`, `Scorch`, `Molten Rock`, `Volcano`, `Hellfire`, `Corruption`, `Acid Spit`, `Eruption`, and `Slot Machine`.
+  - Poison DOT: `Poison Breath`, `Poison Strike`, `Hex`, `Lick`, and `Slot Machine`.
+  - Bleed DOT: `Mortal Strike`, `Mortal Strike 2`, `Jump` with the `Rend` modification, and `Slot Machine`.
+  - Indirect DOT: `Cataclysm` can invoke DOT-applying spells from the caster spellbook.
+- Weapon/natural-weapon DOT applicators found outside the ability data layer:
+  - Bleed: `Excalibur`, `Jarnbjorn`, `Claw3`, `Bear Claw`, `Cerberus Claws`, and `Tentacle`.
+  - Poison: `Stinger`, `Pincers`, and `Viper Bite`.
+  - Burn: `Elemental Blade` when its selected element is Fire.
+- Active HUD labels still using text fallback because no PNG asset exists:
+  - `HAN` / `Hangover`
+  - `RF`, `RI`, `RE`, `RW`, `RTH`, `RWI` / elemental resistance buffs
+- Newly wired effect icon assets:
+  - `AST` / `Astral Shift`
+  - `DUP` / `Mirror Image` / `Duplicates` fallback icon mapping
+  - `ICE` / `Ice Block`
+  - `MSH` / `Mana Shield`
+  - `RFL` / magic-spell `Reflect`
+  - `RFM` / Totem melee reflect secondary
+  - `SPD` / `Speed` stat effects and Totem speed secondary
 
 ## Cleanup Completed
 

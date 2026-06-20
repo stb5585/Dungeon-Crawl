@@ -456,7 +456,9 @@ Ready For Spec:
 Needs Design Decision:
 
 - Dragoon Dragon Quest:
-   - Objective and reward remain `TBD`.
+   - Quest Trigger: the player must be a Lancer/Dragoon and must have found the Dragon's Tear item, which teaches the player the Recover Jump mod, it must be equipped, and the player must use Jump; this will actually "heal" the Red Dragon, allowing them to transform back into their true self, an elf-like entity named Kaelenon
+   - Objective: It is revealed that they traveled from an alternate realm but got stuck and lost the ability to tranform back over time; after some discussion, they ask the player for help and in return they will grant them a reward; the player must find the entry point to the alternate realm so that Kaelenon can return home
+   - Reward: Draconite, a mythical gemstone taken from the head of a dragon; can be given to the Jeweler in exchange for a <TODO>
    - Decide the target creature/trial, unlock timing, reward type, and whether the reward modifies Jump, grants equipment, or unlocks Dragoon-specific progression.
 - Class Ring activation priority:
    - Decide which second-promotion class gets the first activation questline spec.
@@ -482,7 +484,8 @@ Implemented:
   - Adds a read-only Bestiary popup to the Character Menu.
   - Displays defeated enemy names, categories, and defeated counts.
   - Displays enemy artwork when the combat sprite manager has art for that enemy.
-  - Reveals HP/MP, combat stats, XP/gold, and notable resistances when the player has Vision, Inquisitor, Seeker, or sight-based insight.
+  - Reveals stable enemy details only when the player had detail visibility while fighting that enemy.
+  - Displays stable level/type, defeated count, one-row-per-resistance details, observed abilities, immunities, and special features without volatile enemy stat rolls.
 
 Needs Exploration:
 
@@ -522,7 +525,8 @@ Deferred:
 
 Status: `Ready` for small rename, `Needs Design Decision` for mechanics
 
-- Rename Astromancer `TetraDisaster` to `GrandDesign` after a reference audit across abilities, data, tests, saves, and UI text.
+- Re-design Astromancer ultimate ability `TetraDisaster` after a reference audit across abilities, data, tests, saves, and UI text.
+   - Astromancer is a prophet/time mage mix
 
 Needs Design Decision:
 
@@ -612,11 +616,14 @@ Status: `Planned`
 ### P6 - Additional Improvements
 
 1. Add mouse/cursor support; make menu options clickable
-2. Create additional portrait options for greater customization (i.e. different skin colors, facial features, etc.)
+2. Additional artistic renderings
+   - Create additional portrait options for greater customization (i.e. different skin colors, facial features, etc.)
+   - Replace certain dungeon sprite renderings: stairs up/down, secret shop
+3. Increase the border size in the Equipment tab so the selected equipment slot stands out more
 
 ## Deferred Or Decision-Gated Items
 
-- Remaining status-effect artwork is deferred to a later asset pass; current fallback initials remain valid where no PNG exists.
+- Remaining status-effect artwork beyond the wired combat-state/stat-effect set is deferred to a later asset pass; current fallback initials remain valid where no PNG exists.
 - Broader ability visuals are deferred until a future batch is selected; candidates include Reflect/Magic reflection flashes, Stun/Prone hit accents, elemental strike overlays, and other approved combat reads.
 - Jump and Charge wind-up/impact visuals are deferred until enemy sprite stance adjustments are planned.
 - Warp Point artistic renderings are deferred to a later presentation/art pass.
@@ -629,17 +636,28 @@ Status: `Planned`
 
 ## Found Bugfixes
 
-- None currently tracked from the latest playtest pass.
+None currently listed.
 
 ## Additional UX Improvements
 
-- None currently tracked from the latest playtest pass.
+None currently listed.
 
 ## Resolved Archive
 
 ### Recent Improvements
 
+- Combat HUD replaces the minimap with a class-focused panel for familiar, summon, Totem, and active class-effect state.
+- Shaman/Soulcatcher Totem presentation now has stronger aspect-colored combat-focus glyph rendering.
+- Active Totem now shows its combat benefits as status icons instead of `TOT`, with combat-view marker rendering removed now that Totem lives in the HUD panel.
+- Status icons now use the Astral Shift, Ice Block, Mana Shield, Mirror Image, magic Reflect, Totem melee reflect, and Speed up/down PNG assets.
+- Equipment previews now include resistance changes, color-code stat deltas, and equipment slots surface resistance/immunity bonuses.
+- Bestiary detail reveal is recorded during combat when enemy details are visible; current Vision no longer retroactively unlocks old kills, random enemy combat stats are hidden, and entries show stable level/type/defeat count/resistance/ability/feature details.
+- Status icons now use the Blind Rage, Burn, Regen, and Maelstrom Weapon PNG assets; counted labels such as `MW5` render stack-count badges over the base artwork.
+- Visible charge telegraphs now use a compact "is charging" combat-log/banner indicator while detailed telegraph text remains available to the combat engine/logger.
+- Bestiary entries are alphabetized by monster name, render resistances one per row under a `Resistances` header, and list immunities separately from features.
 - Added a pulsing radial danger vignette for low-health pygame combat.
+- Moved the dungeon minimap lower in the HUD, enlarged it, and anchored it so combat status effects do not shift the map.
+- Wired PNG status artwork for Doom, Disarm, and Attack/Defense/Magic/Magic Defense up/down effects.
 - Alchemist and Jeweler Buy flows now open tabbed item browsers.
 - Combat startup warms enemy combat sprites before the first combat frame.
 - Increased Old Key quest rewards for early/main quest turn-ins.
@@ -649,8 +667,25 @@ Status: `Planned`
 
 ### Recent Bug Fixes
 
+- Gameplay dungeon rendering now enables the deterministic torch/sconce wall overlays so sconces can appear on eligible wall tiles again.
+- Equipment resistance previews compare against pre-existing effective resistance values, preserve non-zero current resistance context while stats stay delta-only, and Character screen weakness/resistance groups include equipped resistance items.
+- Magic Pendant now reports its `Magic Dodge` buff in character buff summaries.
+- Bestiary entries load enemy details lazily so the Character Menu opens faster, and Mimic resolves to its combat artwork/details.
+- Mirror Image duplicate handling now keeps remaining images interceptable after one vanishes, including multi-hit spells, and stale zero-duration duplicate state no longer renders visual copies.
+- Mana Shield no longer absorbs negative damage or activates against nonpositive mana, and Amber Jester skips Mana Shield below 20% mana.
+- Slot Machine card-hand outcome logging no longer repeats the outcome label around the card list.
+- Verified Dispel removes Regen through the shared full-dispel effect.
 - Combat post-turn log messages flush to the visible combat log before turn swaps or end-of-combat flow.
+- Combat log wrapping is cached between message changes so long battles do not spend more time rewrapping old log history every frame.
+- Decorative floor props, including BonePileTile, stay grounded when viewed through side openings instead of projecting onto the wall plane.
+- Blinded and silence Hex log messages use damage/debuff coloring instead of player-blue coloring.
+- Combat action menus refresh immediately after silence expires on the player's pre-turn tick.
+- Already-started charged skills, including Jump, resolve their forced follow-up even if silence lands during the charge.
+- Regular Health Potions no longer exceed their advertised combat heal tier through high luck modifiers.
+- Crimson Jester Dispel targets positive `Character.stat_effects`, Amber Jester Mana Shield is treated as a skill, and barracks milestone storage rewards deposit without storage-key crashes.
+- The Jester post-fight event waits until the battle victory and loot popups have run.
 - Slot Machine DOT now applies tick damage metadata and appears in status icons.
+- Generic DOT status effects appear in the pygame HUD/status icon row.
 - Lick no longer selects Hangover as a random status.
 - Town-return loading clears stale dungeon background providers to avoid a dungeon-view blink before the town menu.
 - Dungeon music no longer keeps playing when exiting the dungeon or returning to the main menu.
