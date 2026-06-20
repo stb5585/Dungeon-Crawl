@@ -16,8 +16,10 @@ from src.ui_pygame.gui.status_icons import (
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_asset_path,
+    status_icon_stack_count,
     status_icon_color,
     status_icon_priority,
+    totem_status_icons,
 )
 
 
@@ -200,9 +202,48 @@ def test_fit_status_icon_label_keeps_text_inside_icon():
 
 
 def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
+    assert status_icon_asset_path("AST").name == "astral_shift.png"
     assert status_icon_asset_path("STN").name == "stun.png"
     assert status_icon_asset_path("STN2").name == "stun.png"
     assert status_icon_asset_path("PRN").name == "prone.png"
     assert status_icon_asset_path("RND").name == "bleed.png"
     assert status_icon_asset_path("BLD").name == "blind.png"
+    assert status_icon_asset_path("BRG").name == "blind_rage.png"
+    assert status_icon_asset_path("BRN").name == "burn.png"
     assert status_icon_asset_path("PSN").name == "poison.png"
+    assert status_icon_asset_path("DOM").name == "doom.png"
+    assert status_icon_asset_path("DSA").name == "disarm.png"
+    assert status_icon_asset_path("DUP").name == "mirror_image.png"
+    assert status_icon_asset_path("ICE").name == "ice_block.png"
+    assert status_icon_asset_path("MSH").name == "mana_shield.png"
+    assert status_icon_asset_path("REG").name == "regen.png"
+    assert status_icon_asset_path("RFL").name == "reflect_magic.png"
+    assert status_icon_asset_path("RFM").name == "reflect_melee.png"
+    assert status_icon_asset_path("MW5").name == "maelstrom_weapon.png"
+    assert status_icon_asset_path("ATK", True).name == "attack_up.png"
+    assert status_icon_asset_path("ATK2", False).name == "attack_down.png"
+    assert status_icon_asset_path("DEF", True).name == "defense_up.png"
+    assert status_icon_asset_path("DEF", False).name == "defense_down.png"
+    assert status_icon_asset_path("MAG", True).name == "magic_up.png"
+    assert status_icon_asset_path("MAG", False).name == "magic_down.png"
+    assert status_icon_asset_path("MDF", True).name == "magic_defense_up.png"
+    assert status_icon_asset_path("MDF", False).name == "magic_defense_down.png"
+    assert status_icon_asset_path("SPD", True).name == "speed_up.png"
+    assert status_icon_asset_path("SPD", False).name == "speed_down.png"
+    assert status_icon_stack_count("MW5") == 5
+    assert status_icon_stack_count("MW") == 1
+
+
+def test_totem_reflect_uses_melee_reflect_icon():
+    character = SimpleNamespace(
+        magic_effects={
+            "Totem": SimpleNamespace(
+                active=True,
+                extra={"attack_bonus": 0, "defense_bonus": 0, "secondary": "reflect"},
+            )
+        }
+    )
+
+    assert status_icon_asset_path("RFL").name == "reflect_magic.png"
+    assert ("RFM", True) in totem_status_icons(character)
+    assert status_icon_asset_path("RFM").name == "reflect_melee.png"

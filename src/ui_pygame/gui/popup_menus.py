@@ -2,6 +2,7 @@
 Docstring for gui.popup_menus
 """
 
+import re
 from pathlib import Path
 
 import pygame
@@ -44,6 +45,8 @@ class BasePopupMenu:
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
         self.GOLD = (218, 165, 32)
+        self.GREEN = (95, 210, 110)
+        self.RED = (230, 90, 80)
         self.GRAY = (128, 128, 128)
         self.LIGHT_GRAY = (192, 192, 192)
         self.BORDER_COLOR = (200, 200, 200)
@@ -1643,8 +1646,11 @@ class QuestPopupMenu(BasePopupMenu):
 class BestiaryPopupMenu(BasePopupMenu):
     """Read-only per-save bestiary sourced from defeated enemy records."""
 
+    _enemy_class_index: dict[str, type[enemies.Enemy]] | None = None
+
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Bestiary")
+        self._enemy_cache: dict[str, enemies.Enemy | None] = {}
         self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
         self.list_rect = pygame.Rect(
             self.popup_rect.left + 24,
@@ -1679,11 +1685,10 @@ class BestiaryPopupMenu(BasePopupMenu):
                         "enemy_name": str(enemy_name),
                         "enemy_type": str(enemy_type),
                         "count": defeated_count,
-                        "enemy": self.enemy_instance(str(enemy_name)),
                     }
                 )
 
-        self.items = sorted(entries, key=lambda item: (item["enemy_type"], item["enemy_name"])) or [
+        self.items = sorted(entries, key=lambda item: item["enemy_name"]) or [
             {"is_header": False, "text": "No defeated enemies", "empty": True}
         ]
         self.selected_index = 0
@@ -1695,17 +1700,17 @@ class BestiaryPopupMenu(BasePopupMenu):
         return str(item)
 
     @staticmethod
-    def has_bestiary_insight(player_char) -> bool:
-        cls_name = getattr(getattr(player_char, "cls", None), "name", "")
-        if cls_name in {"Inquisitor", "Seeker"}:
-            return True
-        if getattr(player_char, "sight", False):
-            return True
-        pendant = getattr(player_char, "equipment", {}).get("Pendant") if hasattr(player_char, "equipment") else None
-        return getattr(pendant, "mod", None) == "Vision"
+    def observed_record(player_char, enemy_name: str) -> dict:
+        bestiary = getattr(player_char, "bestiary", {}) or {}
+        record = bestiary.get(enemy_name, {})
+        return record if isinstance(record, dict) else {}
 
-    @staticmethod
-    def enemy_instance(enemy_name: str):
+    @classmethod
+    def _build_enemy_class_index(cls) -> dict[str, type[enemies.Enemy]]:
+        if cls._enemy_class_index is not None:
+            return cls._enemy_class_index
+
+        index: dict[str, type[enemies.Enemy]] = {}
         for attr_name in dir(enemies):
             attr = getattr(enemies, attr_name)
             if not isinstance(attr, type):
@@ -1715,12 +1720,43 @@ class BestiaryPopupMenu(BasePopupMenu):
                     continue
             except TypeError:
                 continue
+            index.setdefault(attr_name, attr)
+        cls._enemy_class_index = index
+        return index
+
+    def enemy_instance(self, enemy_name: str):
+        if enemy_name in self._enemy_cache:
+            return self._enemy_cache[enemy_name]
+
+        class_index = self._build_enemy_class_index()
+        attr_name = "".join(str(enemy_name).split())
+        candidate_cls = class_index.get(attr_name)
+        if candidate_cls is not None:
             try:
-                candidate = attr()
+                candidate = candidate_cls()
+            except TypeError:
+                if candidate_cls is getattr(enemies, "Mimic", None):
+                    try:
+                        candidate = candidate_cls(1)
+                    except Exception:
+                        candidate = None
+                else:
+                    candidate = None
+            except Exception:
+                candidate = None
+            if candidate is not None and getattr(candidate, "name", None) == enemy_name:
+                self._enemy_cache[enemy_name] = candidate
+                return candidate
+
+        for candidate_cls in class_index.values():
+            try:
+                candidate = candidate_cls()
             except Exception:
                 continue
             if getattr(candidate, "name", None) == enemy_name:
+                self._enemy_cache[enemy_name] = candidate
                 return candidate
+        self._enemy_cache[enemy_name] = None
         return None
 
     @staticmethod
@@ -1731,13 +1767,30 @@ class BestiaryPopupMenu(BasePopupMenu):
         except (TypeError, ValueError):
             return None
 
-    def _draw_enemy_sprite(self, enemy, rect: pygame.Rect) -> None:
-        if enemy is None or rect.width <= 0 or rect.height <= 0:
+    @staticmethod
+    def _format_resistance(value) -> str:
+        try:
+            return f"{int(float(value) * 100):+d}%"
+        except (TypeError, ValueError):
+            return str(value)
+
+    @staticmethod
+    def _display_list(values, empty_text="None") -> str:
+        clean_values = [str(value) for value in (values or []) if str(value)]
+        return ", ".join(clean_values) if clean_values else empty_text
+
+    def _draw_enemy_sprite(self, enemy, rect: pygame.Rect, enemy_name: str | None = None) -> None:
+        if rect.width <= 0 or rect.height <= 0:
             return
         try:
             from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
-            sprite = get_enemy_combat_sprite_manager().get_scaled_sprite(enemy, rect.size)
+            manager = get_enemy_combat_sprite_manager()
+            sprite = (
+                manager.get_scaled_sprite(enemy, rect.size)
+                if enemy is not None
+                else manager.get_scaled_sprite_by_name(str(enemy_name or ""), rect.size)
+            )
         except Exception:
             return
         if sprite is not None:
@@ -1746,6 +1799,14 @@ class BestiaryPopupMenu(BasePopupMenu):
     def _draw_detail_line(self, label: str, value, x: int, y: int) -> int:
         self.screen.blit(self.normal_font.render(f"{label}: {value}", True, self.WHITE), (x, y))
         return y + self.line_height
+
+    def _draw_detail_section(self, title: str, rows: list[str], x: int, y: int, empty_text: str = "None") -> int:
+        self.screen.blit(self.normal_font.render(title, True, self.GOLD), (x, y))
+        y += self.line_height
+        for row in rows or [empty_text]:
+            self.screen.blit(self.small_font.render(row, True, self.WHITE), (x + 12, y))
+            y += self.line_height
+        return y
 
     def draw_details(self, player_char):
         item = self.items[self.selected_index] if self.items else None
@@ -1757,66 +1818,57 @@ class BestiaryPopupMenu(BasePopupMenu):
             return
 
         enemy_name = item["enemy_name"]
-        enemy = item.get("enemy")
+        observed = self.observed_record(player_char, enemy_name)
+        enemy = self.enemy_instance(enemy_name)
         name_text = self.large_font.render(enemy_name, True, self.WHITE)
         self.screen.blit(name_text, (x, y))
 
         sprite_rect = pygame.Rect(self.details_rect.right - 148, y, 128, 128)
-        self._draw_enemy_sprite(enemy, sprite_rect)
+        self._draw_enemy_sprite(enemy, sprite_rect, enemy_name=enemy_name)
         y += name_text.get_height() + 10
 
-        y = self._draw_detail_line("Type", item["enemy_type"], x, y)
+        y = self._draw_detail_line("Name", observed.get("name", enemy_name), x, y)
+        difficulty = observed.get("difficulty_level")
+        if difficulty is None:
+            difficulty = observed.get("pro_level", observed.get("level", "Unknown"))
+        y = self._draw_detail_line("Pro/Difficulty Level", difficulty, x, y)
+        y = self._draw_detail_line("Type", observed.get("type", item["enemy_type"]), x, y)
         y = self._draw_detail_line("Defeated", item["count"], x, y)
 
-        if enemy is None:
-            y += 8
-            self.screen.blit(self.normal_font.render("No enemy details available.", True, self.GRAY), (x, y))
-            return
-
-        if not self.has_bestiary_insight(player_char):
+        if not observed:
             y += 8
             self.screen.blit(self.normal_font.render("Details unknown.", True, self.GRAY), (x, y))
             y += self.line_height
-            hint = "Use Vision, Inquisitor, or Seeker sight to study defeated enemies."
+            hint = "Use Vision while fighting this enemy to reveal bestiary details."
             for line in self._wrap_text(hint, self.details_rect.width - 32):
                 self.screen.blit(self.small_font.render(line, True, self.LIGHT_GRAY), (x, y))
                 y += self.line_height
             return
 
         y += 8
-        hp = self._resource_max(getattr(enemy, "health", None))
-        mp = self._resource_max(getattr(enemy, "mana", None))
-        if hp is not None:
-            y = self._draw_detail_line("HP", hp, x, y)
-        if mp is not None and mp > 0:
-            y = self._draw_detail_line("MP", mp, x, y)
-
-        combat = getattr(enemy, "combat", None)
-        if combat is not None:
-            y = self._draw_detail_line("Attack", getattr(combat, "attack", 0), x, y)
-            y = self._draw_detail_line("Defense", getattr(combat, "defense", 0), x, y)
-            y = self._draw_detail_line("Magic", getattr(combat, "magic", 0), x, y)
-            y = self._draw_detail_line("Magic Defense", getattr(combat, "magic_def", 0), x, y)
-
-        y = self._draw_detail_line("Experience", getattr(enemy, "experience", 0), x, y)
-        y = self._draw_detail_line("Gold", getattr(enemy, "gold", 0), x, y)
-
-        resistance = getattr(enemy, "resistance", {}) or {}
-        notable = []
-        for name, value in resistance.items():
-            try:
-                percent = float(value or 0)
-            except (TypeError, ValueError):
-                continue
-            if percent != 0:
-                notable.append(f"{name} {int(percent * 100):+d}%")
-        if notable:
-            y += 8
-            self.screen.blit(self.normal_font.render("Resistances", True, self.GOLD), (x, y))
-            y += self.line_height
-            for line in self._wrap_text(", ".join(notable), self.details_rect.width - 32):
-                self.screen.blit(self.small_font.render(line, True, self.WHITE), (x, y))
-                y += self.line_height
+        resistances = observed.get("resistances", {}) or {}
+        if isinstance(resistances, dict):
+            resistance_rows = [
+                f"{name} {self._format_resistance(value)}"
+                for name, value in resistances.items()
+            ]
+        else:
+            resistance_rows = []
+        y = self._draw_detail_section("Resistances", resistance_rows, x, y)
+        y += 4
+        y = self._draw_detail_line("Known Abilities", self._display_list(observed.get("known_abilities"), "None observed"), x, y)
+        features = list(observed.get("features", []) or [])
+        immunities = set(observed.get("immunities", []) or [])
+        for feature in list(features):
+            if str(feature).startswith("Immune:"):
+                features.remove(feature)
+                immunities.update(
+                    part.strip()
+                    for part in str(feature).removeprefix("Immune:").split(",")
+                    if part.strip()
+                )
+        y = self._draw_detail_line("Immunities", self._display_list(sorted(immunities)), x, y)
+        y = self._draw_detail_line("Features", self._display_list(features), x, y)
 
     def on_select(self, player_char, item):
         return None
@@ -2294,9 +2346,39 @@ class EquipmentSelectionPopup(BasePopupMenu):
                     return inv_item
         return None
 
-    def _render_aligned_detail_row(self, label: str, value: str, x: int, y: int) -> int:
-        label_text = self.normal_font.render(label, True, self.LIGHT_GRAY)
-        value_text = self.normal_font.render(value, True, self.LIGHT_GRAY)
+    @staticmethod
+    def _numeric_tokens(text: str) -> list[float]:
+        return [float(token) for token in re.findall(r"[+-]?\d+(?:\.\d+)?", text)]
+
+    @classmethod
+    def _diff_value_direction(cls, value: str) -> int:
+        if "->" not in value:
+            return 0
+        before_text, after_text = value.split("->", 1)
+        before_values = cls._numeric_tokens(before_text)
+        after_values = cls._numeric_tokens(after_text)
+        if not before_values or not after_values:
+            return 0
+        before = sum(before_values)
+        after = sum(after_values)
+        if after > before:
+            return 1
+        if after < before:
+            return -1
+        return 0
+
+    def _diff_value_color(self, value: str):
+        direction = self._diff_value_direction(value)
+        if direction > 0:
+            return self.GREEN
+        if direction < 0:
+            return self.RED
+        return self.LIGHT_GRAY
+
+    def _render_aligned_detail_row(self, label: str, value: str, x: int, y: int, color=None) -> int:
+        color = color or self.LIGHT_GRAY
+        label_text = self.normal_font.render(label, True, color)
+        value_text = self.normal_font.render(value, True, color)
         self.screen.blit(label_text, (x, y))
         value_x = max(x + 145, self.details_rect.right - 16 - value_text.get_width())
         self.screen.blit(value_text, (value_x, y))
@@ -2312,7 +2394,7 @@ class EquipmentSelectionPopup(BasePopupMenu):
                 parts = line.split(None, 1)
                 label = parts[0] if parts else line.strip()
                 value = parts[1] if len(parts) > 1 else ""
-            y = self._render_aligned_detail_row(label, value, x, y)
+            y = self._render_aligned_detail_row(label, value, x, y, self._diff_value_color(value))
         return y
 
     def draw_details(self, player_char):

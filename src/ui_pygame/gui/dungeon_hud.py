@@ -15,6 +15,8 @@ from .status_icons import (
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_color,
+    status_icon_stack_count,
+    totem_status_icons,
 )
 
 
@@ -81,15 +83,22 @@ class DungeonHUD:
         if combat_mode:
             y_offset = self._render_status_icons(player_char, y_offset)
             y_offset += 15
-        
-        # Minimap
-        y_offset = self._render_minimap(player_char, y_offset)
-        y_offset += 40
-        
-        # Compass - hide during combat
+
+        if combat_mode:
+            feature_height = self._combat_feature_height()
+            feature_y = self._combat_feature_title_y(feature_height)
+            self._render_combat_features(player_char, enemy, feature_y, feature_height=feature_height)
+            return
+
+        # Compass - hide during combat and keep it above the anchored minimap.
         if not combat_mode:
             y_offset = self._render_compass(player_char, y_offset)
             y_offset += 20
+
+        # Minimap stays pinned low in the HUD during exploration.
+        minimap_size = self._minimap_size(combat_mode=False)
+        minimap_y = self._minimap_title_y(minimap_size)
+        self._render_minimap(player_char, minimap_y, minimap_size=minimap_size)
 
     def _effect_label(self, effect_name):
         labels = {
@@ -132,6 +141,7 @@ class DungeonHUD:
             "Power Up",
             "Shapeshifted",
             "Steal Success",
+            "Totem",
         }
         positive_status = set()
         positive_magic = {
@@ -147,12 +157,14 @@ class DungeonHUD:
             "Resist Water",
             "Resist Earth",
             "Resist Wind",
-            "Totem",
         }
 
+        icons.extend(totem_status_icons(character))
+
         dot_effect = character.magic_effects.get("DOT")
-        if dot_effect and dot_effect.active and getattr(dot_effect, "source", "").lower() == "burn":
-            icons.append(("BRN", False))
+        if dot_effect and dot_effect.active:
+            source = getattr(dot_effect, "source", "").lower()
+            icons.append(("BRN" if source == "burn" else "DOT", False))
 
         for name, effect in character.status_effects.items():
             if effect.active and name not in skip_effects:
@@ -206,10 +218,21 @@ class DungeonHUD:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2))
+            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2), is_positive)
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)
+                stack_count = status_icon_stack_count(label)
+                if stack_count > 1:
+                    badge_text = str(stack_count)
+                    badge_font = pygame.font.Font(None, 15)
+                    badge_surf = badge_font.render(badge_text, True, (255, 255, 255))
+                    badge_radius = max(7, badge_surf.get_width() // 2 + 4)
+                    badge_center = (rect.right - badge_radius + 2, rect.top + badge_radius - 1)
+                    pygame.draw.circle(self.screen, (22, 22, 28), badge_center, badge_radius)
+                    pygame.draw.circle(self.screen, (240, 210, 92), badge_center, badge_radius, 1)
+                    badge_rect = badge_surf.get_rect(center=badge_center)
+                    self.screen.blit(badge_surf, badge_rect)
             else:
                 pygame.draw.rect(self.screen, color, rect, border_radius=4)
                 pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
@@ -362,10 +385,188 @@ class DungeonHUD:
         y_offset += (len(stats) // 2 + 1) * 22
         return y_offset
     
-    def _render_minimap(self, player_char, y_offset):
+    def _minimap_size(self, combat_mode: bool = False) -> int:
+        max_size = max(80, self.hud_width - 40)
+        if combat_mode:
+            return min(max_size, max(220, self.height - 420))
+        return min(max_size, max(220, self.height - 450))
+
+    def _minimap_title_y(self, minimap_size: int) -> int:
+        return max(20, self.height - minimap_size - 52)
+
+    def _combat_feature_height(self) -> int:
+        return min(max(190, self.height - 420), 260)
+
+    def _combat_feature_title_y(self, feature_height: int) -> int:
+        return max(20, self.height - feature_height - 52)
+
+    @staticmethod
+    def _truncate_text(font, text: str, max_width: int) -> str:
+        text = str(text)
+        def width(value: str) -> int:
+            size = getattr(font, "size", None)
+            if callable(size):
+                return size(value)[0]
+            return font.render(value, True, (255, 255, 255)).get_width()
+
+        if width(text) <= max_width:
+            return text
+        ellipsis = "..."
+        while text and width(text + ellipsis) > max_width:
+            text = text[:-1]
+        return text + ellipsis if text else ellipsis
+
+    @staticmethod
+    def _level_value(entity) -> int | None:
+        level = getattr(entity, "level", None)
+        for attr in ("level", "pro_level"):
+            value = getattr(level, attr, None)
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    @staticmethod
+    def _totem_effect(player_char):
+        try:
+            effect = player_char.magic_effects.get("Totem")
+        except AttributeError:
+            return None
+        return effect if effect and getattr(effect, "active", False) else None
+
+    @staticmethod
+    def _totem_summary(effect) -> tuple[str, str]:
+        extra = getattr(effect, "extra", None)
+        if not isinstance(extra, dict):
+            return "Totem", "Active"
+        aspect = str(extra.get("aspect") or "Totem")
+        secondary_labels = {
+            "reflect": "Reflect",
+            "healing": "Healing",
+            "elemental": "Elemental",
+            "speed": "Speed",
+            "crit_damage": "Crit Dmg",
+        }
+        benefits = []
+        try:
+            attack_bonus = float(extra.get("attack_bonus", 0) or 0)
+            defense_bonus = float(extra.get("defense_bonus", 0) or 0)
+        except (TypeError, ValueError):
+            attack_bonus = defense_bonus = 0
+        if attack_bonus > 0:
+            benefits.append(f"+{int(attack_bonus * 100)}% ATK")
+        if defense_bonus > 0:
+            benefits.append(f"+{int(defense_bonus * 100)}% DEF")
+        secondary = secondary_labels.get(extra.get("secondary"))
+        if secondary:
+            benefits.append(secondary)
+        return f"{aspect} Totem", ", ".join(benefits) or "Active"
+
+    def _combat_feature_lines(self, player_char, enemy=None) -> list[tuple[str, str, tuple[int, int, int]]]:
+        lines: list[tuple[str, str, tuple[int, int, int]]] = []
+        cls_name = getattr(getattr(player_char, "cls", None), "name", "Adventurer")
+        lines.append(("Class", cls_name, self.text_color))
+
+        familiar = getattr(player_char, "familiar", None)
+        if familiar:
+            familiar_name = getattr(familiar, "name", "Familiar")
+            spec = getattr(familiar, "spec", "")
+            level = self._level_value(familiar)
+            suffix = f"{spec} Lv {level}" if spec and level is not None else spec or (f"Lv {level}" if level is not None else "Ready")
+            lines.append(("Familiar", familiar_name, (170, 210, 255)))
+            lines.append(("Bond", suffix, self.text_color))
+
+        summons = getattr(player_char, "summons", {}) or {}
+        active_summons = []
+        for summon in summons.values():
+            is_alive = getattr(summon, "is_alive", None)
+            if callable(is_alive) and not is_alive():
+                continue
+            active_summons.append(getattr(summon, "name", str(summon)))
+        if active_summons:
+            summary = ", ".join(active_summons[:2])
+            if len(active_summons) > 2:
+                summary += f" +{len(active_summons) - 2}"
+            lines.append(("Summons", summary, (170, 210, 255)))
+
+        totem = self._totem_effect(player_char)
+        if totem:
+            label, benefits = self._totem_summary(totem)
+            lines.append(("Totem", label, (230, 205, 120)))
+            lines.append(("Benefit", benefits, self.text_color))
+            lines.append(("Turns", getattr(totem, "duration", 0), self.text_color))
+
+        class_effects = getattr(player_char, "class_effects", {}) or {}
+        for name, effect in class_effects.items():
+            if getattr(effect, "active", False):
+                lines.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
+
+        if len(lines) == 1:
+            enemy_name = getattr(enemy, "name", "Enemy")
+            lines.append(("Target", enemy_name, self.text_color))
+            lines.append(("Focus", "No class feature active", self.GRAY if hasattr(self, "GRAY") else (145, 145, 155)))
+        return lines
+
+    def _render_totem_focus_glyph(self, rect: pygame.Rect, effect) -> None:
+        extra = getattr(effect, "extra", None)
+        aspect = extra.get("aspect", "Earth") if isinstance(extra, dict) else "Earth"
+        colors = {
+            "Earth": (142, 104, 62),
+            "Water": (78, 156, 212),
+            "Fire": (220, 92, 48),
+            "Wind": (150, 204, 166),
+            "Soul": (180, 122, 220),
+        }
+        color = colors.get(aspect, (160, 136, 86))
+        center_x = rect.right - 44
+        base_y = rect.bottom - 30
+        pygame.draw.ellipse(self.screen, (18, 16, 18), pygame.Rect(center_x - 34, base_y + 12, 68, 16))
+        pygame.draw.ellipse(self.screen, color, pygame.Rect(center_x - 42, base_y + 4, 84, 28), 2)
+        shaft = pygame.Rect(center_x - 6, base_y - 34, 12, 50)
+        pygame.draw.rect(self.screen, color, shaft, border_radius=3)
+        pygame.draw.rect(self.screen, (35, 28, 24), shaft, 2, border_radius=3)
+        head = pygame.Rect(center_x - 18, base_y - 52, 36, 24)
+        pygame.draw.rect(self.screen, tuple(min(255, c + 38) for c in color), head, border_radius=4)
+        pygame.draw.rect(self.screen, (35, 28, 24), head, 2, border_radius=4)
+        pygame.draw.circle(self.screen, (248, 226, 142), head.center, 4)
+
+    def _render_combat_features(self, player_char, enemy, y_offset, feature_height=None):
+        """Render combat-relevant class systems in place of the exploration minimap."""
+        x_margin = self.hud_x + 20
+        panel_width = self.hud_width - 40
+        feature_height = feature_height or self._combat_feature_height()
+        title = self.stat_font.render("Combat Focus", True, (150, 150, 255))
+        self.screen.blit(title, (x_margin, y_offset))
+        panel_rect = pygame.Rect(x_margin, y_offset + 30, panel_width, feature_height - 30)
+        pygame.draw.rect(self.screen, (15, 15, 20), panel_rect)
+        pygame.draw.rect(self.screen, self.border_color, panel_rect, 2)
+
+        lines = self._combat_feature_lines(player_char, enemy)
+        y = panel_rect.top + 12
+        label_w = 78
+        max_value_w = max(60, panel_rect.width - label_w - 26)
+        for label, value, color in lines[:7]:
+            if y + 20 > panel_rect.bottom - 12:
+                break
+            label_surf = self.small_font.render(f"{label}:", True, (170, 170, 180))
+            self.screen.blit(label_surf, (panel_rect.left + 12, y))
+            value_text = self._truncate_text(self.small_font, str(value), max_value_w)
+            value_surf = self.small_font.render(value_text, True, color)
+            self.screen.blit(value_surf, (panel_rect.left + 12 + label_w, y))
+            y += 22
+
+        totem = self._totem_effect(player_char)
+        if totem:
+            self._render_totem_focus_glyph(panel_rect, totem)
+
+        return panel_rect.bottom + 5
+
+    def _render_minimap(self, player_char, y_offset, minimap_size=None):
         """Render minimap showing nearby explored areas."""
         x_margin = self.hud_x + 20
-        minimap_size = min(200, self.hud_width - 40)
+        minimap_size = minimap_size or min(200, self.hud_width - 40)
         visible_adjacent = self._get_visible_adjacent_positions(player_char)
         
         # Title

@@ -596,10 +596,25 @@ class ModernCharacterScreen(TownScreenBase):
             if percent:
                 buffs.append(f"+{percent}% {element} Resistance")
 
+        resistances = getattr(item, "resistances", None)
+        if isinstance(resistances, dict):
+            for name, value in resistances.items():
+                try:
+                    percent = int(float(value) * 100)
+                except (TypeError, ValueError):
+                    percent = 0
+                if percent:
+                    buffs.append(f"{percent:+d}% {name} Resistance")
+
         subtyp = str(getattr(item, "subtyp", "") or "")
         mod = str(getattr(item, "mod", "") or "")
         if mod and mod not in {"0", "No Mod", "None"} and not (subtyp == "Shield" and self._is_number(mod)):
-            buffs.append(mod)
+            if mod.startswith("Resist-"):
+                buffs.append(f"+50% {mod.removeprefix('Resist-')} Resistance")
+            elif mod.startswith("Immune-"):
+                buffs.append(f"Immune to {mod.removeprefix('Immune-')}")
+            else:
+                buffs.append(mod)
         return tuple(buffs)
 
     @staticmethod
@@ -615,7 +630,10 @@ class ModernCharacterScreen(TownScreenBase):
         weaknesses: list[ResistanceSummary] = []
         resistances: list[ResistanceSummary] = []
         for name in RESISTANCE_ORDER:
-            value = float(resistance.get(name, 0.0) or 0.0)
+            try:
+                value = float(player_char.check_mod("resist", typ=name) or 0.0)
+            except (AttributeError, TypeError, ValueError):
+                value = float(resistance.get(name, 0.0) or 0.0)
             summary = ResistanceSummary(name, value)
             if value < 0:
                 weaknesses.append(summary)

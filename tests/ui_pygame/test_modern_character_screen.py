@@ -129,15 +129,25 @@ def _make_player():
     player.max_weight = lambda: 140
     player.level_exp = lambda: 300
     player.critical_chance = lambda _slot: 0.125
-    player.check_mod = lambda mod: {
-        "weapon": 18,
-        "offhand": 8,
-        "armor": 22,
-        "shield": 15,
-        "magic def": 7,
-        "magic": 9,
-        "speed": 8,
-    }.get(mod, 0)
+    def check_mod(mod, typ=None):
+        if mod == "resist":
+            value = player.resistance.get(typ, 0)
+            pendant = player.equipment.get("Pendant")
+            pendant_mod = str(getattr(pendant, "mod", "") or "")
+            if pendant_mod.split("-")[-1] in {typ, "Elemental"} and typ in {"Fire", "Ice", "Electric", "Water", "Earth", "Wind"}:
+                value += 1 if "Immune" in pendant_mod else 0.5
+            return value
+        return {
+            "weapon": 18,
+            "offhand": 8,
+            "armor": 22,
+            "shield": 15,
+            "magic def": 7,
+            "magic": 9,
+            "speed": 8,
+        }.get(mod, 0)
+
+    player.check_mod = check_mod
     player.in_town = lambda: True
     return player
 
@@ -233,6 +243,28 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert svalinn.buffs == ("+25% Fire Resistance",)
     player.equipment["OffHand"] = None
 
+    player.equipment["Pendant"] = SimpleNamespace(
+        name="Fire Chain",
+        typ="Accessory",
+        subtyp="Pendant",
+        mod="Resist-Fire",
+        weight=0.2,
+    )
+    fire_chain = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Pendant")
+    assert fire_chain.buffs == ("+50% Fire Resistance",)
+
+    player.equipment["Armor"] = SimpleNamespace(
+        name="Resist Armor",
+        typ="Armor",
+        subtyp="Plate",
+        armor=12,
+        resistances={"Fire": 0.25, "Water": 0.25},
+        weight=18,
+    )
+    resist_armor = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Armor")
+    assert "+25% Fire Resistance" in resist_armor.buffs
+    assert "+25% Water Resistance" in resist_armor.buffs
+
     player.equipment["Weapon"] = SimpleNamespace(
         name="Claymore",
         typ="Weapon",
@@ -261,11 +293,18 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
 
     player.equipment["Weapon"] = SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4)
     player.equipment["OffHand"] = None
+    player.equipment["Pendant"] = SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2)
     player.cls = SimpleNamespace(name="Warrior", equip_check=lambda _item, _slot: True)
 
     grouped_resistances = screen.group_resistances(player)
     assert [entry.name for entry in grouped_resistances["weaknesses"]] == ["Fire", "Ice", "Water"]
     assert [entry.name for entry in grouped_resistances["resistances"]] == ["Poison", "Physical"]
+
+    player.equipment["Pendant"] = SimpleNamespace(name="Fire Chain", typ="Accessory", subtyp="Pendant", mod="Resist-Fire", weight=0.2)
+    grouped_resistances = screen.group_resistances(player)
+    assert "Fire" not in [entry.name for entry in grouped_resistances["weaknesses"]]
+    assert "Fire" in [entry.name for entry in grouped_resistances["resistances"]]
+    player.equipment["Pendant"] = SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2)
 
     equipment_buffs = screen.collect_equipment_buffs(player)
     assert [(buff.name, buff.source) for buff in equipment_buffs] == [

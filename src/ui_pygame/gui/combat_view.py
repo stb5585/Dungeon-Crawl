@@ -27,6 +27,8 @@ from .status_icons import (
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_color,
+    status_icon_stack_count,
+    totem_status_icons,
 )
 
 ASSETS_BASE_DIR = Path(__file__).resolve().parents[1] / "assets"
@@ -177,6 +179,8 @@ class CombatView:
         self._suppress_logged_telegraph_banner = False
         self._combat_log_player_name: str | None = None
         self._combat_log_enemy_name: str | None = None
+        self._combat_log_revision = 0
+        self._combat_log_wrap_cache: dict[tuple[int, int, bool, int], list[CombatLogLine]] = {}
 
         # Status icon colors
         self.status_colors = STATUS_ICON_COLORS
@@ -298,11 +302,13 @@ class CombatView:
         was_at_bottom = self.log_scroll_offset >= self._max_log_scroll()
         for line in cleaned_lines:
             if self._is_telegraph_message(line):
+                line = self._short_telegraph_message(line)
                 self._active_telegraph_line = line
                 self._suppress_logged_telegraph_banner = False
             self.combat_log.append(line)
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
+        self._invalidate_combat_log_wrap_cache()
         if was_at_bottom:
             self.log_scroll_offset = self._max_log_scroll()
         else:
@@ -323,6 +329,7 @@ class CombatView:
         self._active_telegraph_line = None
         self._suppress_logged_telegraph_banner = False
         self._hide_enemy_for_flee = False
+        self._invalidate_combat_log_wrap_cache()
 
     def _prune_impact_effects(self) -> None:
         if not self._active_impact_effects:
@@ -573,8 +580,18 @@ class CombatView:
         overlay: bool = False,
     ) -> list[CombatLogLine]:
         """Return combat log history flattened with source-message styling intact."""
+        cache_key = (
+            self._combat_log_revision,
+            max(160, max_width - 12),
+            overlay,
+            self._combat_log_font_cache_key(font),
+        )
+        cached = self._combat_log_wrap_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         entries: list[CombatLogLine] = []
-        wrap_width = max(160, max_width - 12)
+        wrap_width = cache_key[1]
         for message in self.combat_log:
             color = self._combat_log_color(message, overlay=overlay)
             marker_color = self._combat_log_marker_color(message, overlay=overlay)
@@ -588,7 +605,21 @@ class CombatView:
                         continuation=index > 0,
                     )
                 )
+        self._combat_log_wrap_cache[cache_key] = entries
         return entries
+
+    def _invalidate_combat_log_wrap_cache(self) -> None:
+        self._combat_log_revision += 1
+        self._combat_log_wrap_cache.clear()
+
+    @staticmethod
+    def _combat_log_font_cache_key(font: pygame.font.Font | None) -> int:
+        if font is None:
+            return 0
+        try:
+            return int(font.size("Dungeon Combat Log Probe")[0])
+        except Exception:
+            return id(font)
 
     def _draw_panel_surface(
         self,
@@ -715,9 +746,7 @@ class CombatView:
             "Resist Wind",
         }
 
-        if character.magic_effects.get("Totem") and character.magic_effects["Totem"].active:
-            icons.append(("ATK", True))
-            icons.append(("DEF", True))
+        icons.extend(totem_status_icons(character))
 
         dot_effect = character.magic_effects.get("DOT")
         if dot_effect and dot_effect.active:
@@ -768,11 +797,38 @@ class CombatView:
             " is melding ",
             " is drawing in ",
             " is preparing",
+            " is charging",
             " continues charging",
             " begins to charge",
             " while preparing",
         )
         return any(term in lower for term in telegraph_terms)
+
+    @staticmethod
+    def _short_telegraph_message(line: str) -> str:
+        stripped = str(line).strip()
+        if not stripped:
+            return "Enemy is charging."
+        if " continues charging" in stripped:
+            return stripped.split(" continues charging", 1)[0] + " is charging."
+        for marker in (
+            " is lowering ",
+            " is raising ",
+            " is inhaling ",
+            " is gathering ",
+            " is coiling ",
+            " is channeling ",
+            " is melding ",
+            " is drawing in ",
+            " is preparing",
+        ):
+            if marker in stripped:
+                return stripped.split(marker, 1)[0] + " is charging."
+        if " begins to charge" in stripped:
+            return stripped.split(" begins to charge", 1)[0] + " is charging."
+        if " while preparing" in stripped:
+            return stripped.split(" while preparing", 1)[0] + " is charging."
+        return stripped
 
     def _combat_log_color(self, line: str, overlay: bool = False):
         lower = line.lower()
@@ -794,6 +850,9 @@ class CombatView:
                 "bleeds",
                 "burns",
                 "poison",
+                "blind",
+                "silence",
+                "silenced",
                 "scorches",
                 "shocks",
                 "slain",
@@ -820,8 +879,12 @@ class CombatView:
         return bool(actor) and (lower_line.startswith(actor + " ") or lower_line.startswith(actor + "'"))
 
     def _set_combat_log_actors(self, player_char, enemy) -> None:
-        self._combat_log_player_name = str(getattr(player_char, "name", "") or "") or None
-        self._combat_log_enemy_name = str(getattr(enemy, "name", "") or "") or None
+        player_name = str(getattr(player_char, "name", "") or "") or None
+        enemy_name = str(getattr(enemy, "name", "") or "") or None
+        if player_name != self._combat_log_player_name or enemy_name != self._combat_log_enemy_name:
+            self._combat_log_player_name = player_name
+            self._combat_log_enemy_name = enemy_name
+            self._invalidate_combat_log_wrap_cache()
 
     def _combat_log_marker_color(self, line: str, overlay: bool = False) -> tuple[int, int, int]:
         if self._is_telegraph_message(line):
@@ -867,10 +930,21 @@ class CombatView:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2))
+            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2), is_positive)
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)
+                stack_count = status_icon_stack_count(label)
+                if stack_count > 1:
+                    badge_text = str(stack_count)
+                    badge_font = pygame.font.Font(None, 15)
+                    badge_surf = badge_font.render(badge_text, True, (255, 255, 255))
+                    badge_radius = max(7, badge_surf.get_width() // 2 + 4)
+                    badge_center = (rect.right - badge_radius + 2, rect.top + badge_radius - 1)
+                    pygame.draw.circle(self.screen, (22, 22, 28), badge_center, badge_radius)
+                    pygame.draw.circle(self.screen, (240, 210, 92), badge_center, badge_radius, 1)
+                    badge_rect = badge_surf.get_rect(center=badge_center)
+                    self.screen.blit(badge_surf, badge_rect)
             else:
                 pygame.draw.rect(self.screen, color, rect, border_radius=4)
                 pygame.draw.rect(self.screen, (20, 20, 20), rect, 1, border_radius=4)
@@ -998,7 +1072,12 @@ class CombatView:
             effect = character.magic_effects.get("Duplicates")
             if not effect or not effect.active:
                 return 0
-            return max(0, min(4, int(effect.duration)))
+            duration = int(effect.duration)
+            if duration <= 0:
+                effect.active = False
+                effect.duration = 0
+                return 0
+            return max(0, min(4, duration))
         except (AttributeError, TypeError, ValueError):
             return 0
 

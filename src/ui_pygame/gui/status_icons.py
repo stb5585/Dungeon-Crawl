@@ -8,16 +8,40 @@ StatusIcon = tuple[str, bool | None]
 
 STATUS_ICON_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "effects"
 STATUS_ICON_ASSETS = {
+    "AST": "astral_shift.png",
     "BLD": "blind.png",
+    "BRG": "blind_rage.png",
     "BRK": "berserk.png",
-    "BRN": "dot.png",
+    "BRN": "burn.png",
+    "DSA": "disarm.png",
+    "DOM": "doom.png",
     "DOT": "dot.png",
+    "DUP": "mirror_image.png",
+    "ICE": "ice_block.png",
+    "MSH": "mana_shield.png",
+    "MW": "maelstrom_weapon.png",
     "PRN": "prone.png",
     "PSN": "poison.png",
+    "REG": "regen.png",
+    "RFL": "reflect_magic.png",
+    "RFM": "reflect_melee.png",
     "RND": "bleed.png",
     "SIL": "silence.png",
     "SLP": "sleep.png",
     "STN": "stun.png",
+}
+
+STATUS_ICON_POLARITY_ASSETS = {
+    ("ATK", True): "attack_up.png",
+    ("ATK", False): "attack_down.png",
+    ("DEF", True): "defense_up.png",
+    ("DEF", False): "defense_down.png",
+    ("MAG", True): "magic_up.png",
+    ("MAG", False): "magic_down.png",
+    ("MDF", True): "magic_defense_up.png",
+    ("MDF", False): "magic_defense_down.png",
+    ("SPD", True): "speed_up.png",
+    ("SPD", False): "speed_down.png",
 }
 _STATUS_ICON_SURFACE_CACHE: dict[tuple[str, tuple[int, int]], object | None] = {}
 
@@ -45,10 +69,11 @@ URGENT_NEGATIVE_STATUS_LABELS = {
 IMPORTANT_POSITIVE_STATUS_LABELS = {
     "MSH": 0,
     "RFL": 1,
-    "ICE": 2,
-    "REG": 3,
-    "ATK": 4,
-    "DEF": 5,
+    "RFM": 2,
+    "ICE": 3,
+    "REG": 4,
+    "ATK": 5,
+    "DEF": 6,
 }
 
 
@@ -61,6 +86,42 @@ def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:
     if not getattr(effect, "active", False) or extra == 0:
         return None
     return (label, extra > 0)
+
+
+def totem_status_icons(character) -> list[StatusIcon]:
+    """Return visible benefit icons for an active Totem effect."""
+    try:
+        effect = character.magic_effects.get("Totem")
+    except AttributeError:
+        return []
+    if not effect or not getattr(effect, "active", False):
+        return []
+
+    extra = getattr(effect, "extra", None)
+    if not isinstance(extra, dict):
+        return [("ATK", True), ("DEF", True)]
+
+    icons: list[StatusIcon] = []
+    try:
+        if float(extra.get("attack_bonus", 0) or 0) > 0:
+            icons.append(("ATK", True))
+        if float(extra.get("defense_bonus", 0) or 0) > 0:
+            icons.append(("DEF", True))
+    except (TypeError, ValueError):
+        pass
+
+    secondary_icons = {
+        "reflect": ("RFM", True),
+        "healing": ("REG", True),
+        "speed": ("SPD", True),
+        "crit_damage": ("ATK", True),
+        "elemental": ("ATK", True),
+    }
+    secondary_icon = secondary_icons.get(extra.get("secondary"))
+    if secondary_icon is not None:
+        icons.append(secondary_icon)
+
+    return icons or [("ATK", True), ("DEF", True)]
 
 
 def describe_stat_effect_icon_filtering(stat_effects, labeler=None) -> dict[str, object]:
@@ -102,19 +163,31 @@ def _split_counted_label(label: str) -> tuple[str, int]:
     return stripped, count
 
 
-def status_icon_asset_path(label: str) -> Path | None:
+def status_icon_asset_path(label: str, is_positive: bool | None = None) -> Path | None:
     """Return the artwork path for a status label when an asset exists."""
     base_label, _count = _split_counted_label(label)
-    filename = STATUS_ICON_ASSETS.get(base_label)
+    filename = STATUS_ICON_POLARITY_ASSETS.get((base_label, is_positive))
+    if filename is None:
+        filename = STATUS_ICON_ASSETS.get(base_label)
     if not filename:
         return None
     path = STATUS_ICON_ASSET_DIR / filename
     return path if path.exists() else None
 
 
-def load_status_icon_surface(label: str, size: tuple[int, int]):
+def status_icon_stack_count(label: str) -> int:
+    """Return a numeric count suffix for labels like MW5 or PSN2."""
+    _base_label, count = _split_counted_label(label)
+    return count
+
+
+def load_status_icon_surface(
+    label: str,
+    size: tuple[int, int],
+    is_positive: bool | None = None,
+):
     """Load and scale status artwork, returning None when no asset is usable."""
-    path = status_icon_asset_path(label)
+    path = status_icon_asset_path(label, is_positive)
     if path is None:
         return None
 

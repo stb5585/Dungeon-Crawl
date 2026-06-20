@@ -34,9 +34,11 @@ class RenderedText:
 class RecordingFont:
     def __init__(self):
         self.render_calls = []
+        self.color_calls = []
 
     def render(self, text, _antialias, _color):
         self.render_calls.append(text)
+        self.color_calls.append((text, _color))
         return RenderedText(text)
 
     def size(self, text):
@@ -205,19 +207,35 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     popup = popup_menus.BestiaryPopupMenu(presenter, parent)
     player = SimpleNamespace(
         kill_dict={"Regular": {"Goblin": 2, "No Count": 0}},
+        bestiary={},
         cls=SimpleNamespace(name="Warrior"),
         equipment={"Pendant": SimpleNamespace(mod="")},
         sight=False,
     )
-    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda _enemy, _rect: None)
+    draw_calls = []
+    monkeypatch.setattr(
+        popup,
+        "_draw_enemy_sprite",
+        lambda _enemy, _rect, enemy_name=None: draw_calls.append(enemy_name),
+    )
 
     popup.build_items(player)
 
     assert [popup.item_display_text(item) for item in popup.items] == ["Goblin x2"]
-    assert popup.items[0]["enemy"].name == "Goblin"
+    assert "enemy" not in popup.items[0]
+
+    player.kill_dict = {"Regular": {"Zombie": 1}, "Aberration": {"Aberration": 1}}
+    popup.build_items(player)
+    assert [popup.item_display_text(item) for item in popup.items] == ["Aberration x1", "Zombie x1"]
+
+    player.kill_dict = {"Regular": {"Goblin": 2, "No Count": 0}}
+    popup.build_items(player)
 
     popup.draw_details(player)
     assert "Goblin" in presenter.large_font.render_calls
+    assert draw_calls == ["Goblin"]
+    assert "Name: Goblin" in presenter.normal_font.render_calls
+    assert "Pro/Difficulty Level: Unknown" in presenter.normal_font.render_calls
     assert "Type: Regular" in presenter.normal_font.render_calls
     assert "Defeated: 2" in presenter.normal_font.render_calls
     assert "Details unknown." in presenter.normal_font.render_calls
@@ -227,9 +245,74 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     player.sight = True
     popup.draw_details(player)
 
-    assert any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
-    assert any(text.startswith("Attack:") for text in presenter.normal_font.render_calls)
-    assert any(text.startswith("Experience:") for text in presenter.normal_font.render_calls)
+    assert "Details unknown." in presenter.normal_font.render_calls
+    assert not any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
+    assert not any(text.startswith("Attack:") for text in presenter.normal_font.render_calls)
+    assert not any(text.startswith("Experience:") for text in presenter.normal_font.render_calls)
+
+    presenter.normal_font.render_calls.clear()
+    player.bestiary = {
+        "Goblin": {
+            "name": "Goblin",
+            "type": "Regular",
+            "difficulty_level": 1,
+            "resistances": {"Fire": 0.25, "Holy": -0.1},
+            "known_abilities": ["Hex"],
+            "features": ["Sight"],
+            "immunities": ["Death"],
+        }
+    }
+    popup.draw_details(player)
+
+    assert "Pro/Difficulty Level: 1" in presenter.normal_font.render_calls
+    assert "Resistances" in presenter.normal_font.render_calls
+    assert "Fire +25%" in presenter.small_font.render_calls
+    assert "Holy -10%" in presenter.small_font.render_calls
+    assert "Known Abilities: Hex" in presenter.normal_font.render_calls
+    assert "Immunities: Death" in presenter.normal_font.render_calls
+    assert "Features: Sight" in presenter.normal_font.render_calls
+    assert not any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
+
+
+def test_bestiary_popup_resolves_mimic_details_and_art_lazily(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Aberration": {"Mimic": 1}},
+        bestiary={
+            "Mimic": {
+                "name": "Mimic",
+                "type": "Aberration",
+                "difficulty_level": 2,
+                "resistances": {},
+                "known_abilities": [],
+                "features": ["Boss"],
+            }
+        },
+        cls=SimpleNamespace(name="Seeker"),
+        equipment={"Pendant": SimpleNamespace(mod="")},
+        sight=False,
+    )
+    draw_calls = []
+    monkeypatch.setattr(
+        popup,
+        "_draw_enemy_sprite",
+        lambda enemy, _rect, enemy_name=None: draw_calls.append((getattr(enemy, "name", None), enemy_name)),
+    )
+
+    popup.build_items(player)
+
+    assert [popup.item_display_text(item) for item in popup.items] == ["Mimic x1"]
+    assert "enemy" not in popup.items[0]
+
+    popup.draw_details(player)
+
+    assert draw_calls == [("Mimic", "Mimic")]
+    assert "Resistances" in presenter.normal_font.render_calls
+    assert "None" in presenter.small_font.render_calls
+    assert "Known Abilities: None observed" in presenter.normal_font.render_calls
+    assert not any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
 
 
 def test_base_popup_quick_scrolls_when_arrow_key_is_held(monkeypatch):
@@ -735,7 +818,13 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
     two_hander = DummyItem("Bastard Sword", typ="Weapon", subtyp="Longsword")
     two_hander.handed = 2
     player.inventory = {"Weapons": [two_hander]}
-    player.equip_diff = lambda _item, _slot, buy=False: f"{'Attack':16}  {'36 -> 40':>6}"
+    player.equip_diff = lambda _item, _slot, buy=False: "\n".join(
+        [
+            f"{'Attack':16}  {'36 -> 40':>6}",
+            f"{'Armor':16}  {'12 -> 8':>6}",
+            f"{'Buffs':16}  {'Magic Dodge':>6}",
+        ]
+    )
     popup = popup_menus.EquipmentSelectionPopup(
         presenter,
         parent,
@@ -756,6 +845,10 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
     assert "Two-handed" not in rendered
     assert "Attack" in rendered
     assert "36 -> 40" in rendered
+    assert "Armor" in rendered
+    assert "12 -> 8" in rendered
+    assert "Buffs" in rendered
+    assert "Magic Dodge" in rendered
 
     positions = {
         surface.text: position[0]
@@ -763,6 +856,18 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
         if getattr(surface, "text", None) in {"Attack", "36 -> 40"}
     }
     assert positions["36 -> 40"] > positions["Attack"]
+
+    colors = dict(presenter.normal_font.color_calls)
+    assert colors["Attack"] == popup.GREEN
+    assert colors["36 -> 40"] == popup.GREEN
+    assert colors["Armor"] == popup.RED
+    assert colors["12 -> 8"] == popup.RED
+    assert colors["Buffs"] == popup.LIGHT_GRAY
+    assert colors["Magic Dodge"] == popup.LIGHT_GRAY
+    assert popup._diff_value_direction("10/5 -> 20") == 1
+    assert popup._diff_value_direction("20 -> 10/5") == -1
+    assert popup._diff_value_direction("+25% -> +75%") == 1
+    assert popup._diff_value_direction("Magic Dodge") == 0
 
 
 def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):

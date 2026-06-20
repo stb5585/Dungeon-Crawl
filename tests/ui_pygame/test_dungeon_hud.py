@@ -73,6 +73,7 @@ def _make_hud(monkeypatch):
     draw_rect_calls = []
     draw_line_calls = []
     draw_circle_calls = []
+    draw_ellipse_calls = []
     draw_polygon_calls = []
 
     def font_factory(*_args, **_kwargs):
@@ -84,6 +85,7 @@ def _make_hud(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.draw.rect", lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)))
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.draw.line", lambda *_args, **_kwargs: draw_line_calls.append((_args, _kwargs)))
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.draw.circle", lambda *_args, **_kwargs: draw_circle_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.draw.ellipse", lambda *_args, **_kwargs: draw_ellipse_calls.append((_args, _kwargs)))
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.draw.polygon", lambda *_args, **_kwargs: draw_polygon_calls.append((_args, _kwargs)))
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
 
@@ -98,6 +100,7 @@ def _make_hud(monkeypatch):
         draw_rect_calls=draw_rect_calls,
         draw_line_calls=draw_line_calls,
         draw_circle_calls=draw_circle_calls,
+        draw_ellipse_calls=draw_ellipse_calls,
         draw_polygon_calls=draw_polygon_calls,
     )
 
@@ -136,6 +139,8 @@ def _make_player():
         },
         class_effects={"Blessing": _effect()},
         world_dict={},
+        familiar=None,
+        summons={},
     )
     player.level_exp = lambda: 100
     return player
@@ -152,10 +157,11 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     icons = hud._collect_status_icons(player)
     assert ("PSN", False) in icons
     assert ("PRN", False) in icons
-    assert ("ATK", True) in icons
+    assert ("ATK2", True) in icons
     assert ("DEF", False) in icons
+    assert ("DEF", True) in icons
     assert ("REG", True) in icons
-    assert ("TOT", True) in icons
+    assert ("TOT", True) not in icons
     assert ("AST", True) in icons
     assert ("BLE", True) in icons
     assert ("MW2", True) in icons
@@ -166,11 +172,18 @@ def test_effect_and_status_icon_helpers(monkeypatch):
 
     player.class_effects["Attack"] = _effect()
     icons = hud._collect_status_icons(player)
-    assert ("ATK2", True) in icons
+    assert ("ATK3", True) in icons
 
     player.stat_effects["Magic"] = _effect(extra=0)
     assert ("MAG", True) not in hud._collect_status_icons(player)
     assert ("MAG", False) not in hud._collect_status_icons(player)
+
+    player.magic_effects["DOT"] = _effect()
+    player.magic_effects["DOT"].source = "Slot Machine"
+    assert ("DOT", False) in hud._collect_status_icons(player)
+
+    player.magic_effects["DOT"].source = "Burn"
+    assert ("BRN", False) in hud._collect_status_icons(player)
 
     player.spellbook = {"Skills": {}}
     assert ("MW2", True) not in hud._collect_status_icons(player)
@@ -219,7 +232,7 @@ def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
     monkeypatch.setattr(
         "src.ui_pygame.gui.dungeon_hud.load_status_icon_surface",
-        lambda _label, size: icon_sizes.append(size) or icon_surface,
+        lambda _label, size, _is_positive=None: icon_sizes.append(size) or icon_surface,
     )
     player = _make_player()
     player.status_effects = {"Stun": _effect()}
@@ -235,6 +248,33 @@ def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
     assert bundle.draw_rect_calls == []
     assert icon_sizes == [(24, 24)]
     assert any(surface is icon_surface for surface, _position in bundle.screen.blit_calls)
+
+
+def test_counted_art_status_icons_render_badge_over_icon_in_hud(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    font = RecordingFont()
+    icon_surface = DummySurface((14, 14), text="maelstrom-icon")
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.font.Font", lambda *_args, **_kwargs: font)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_hud.load_status_icon_surface",
+        lambda _label, _size, _is_positive=None: icon_surface,
+    )
+    player = _make_player()
+    player.status_effects = {}
+    player.physical_effects = {}
+    player.stat_effects = {}
+    player.magic_effects = {}
+    player.class_effects = {}
+    player.maelstrom_hits = 5
+    player.spellbook = {"Skills": {"Maelstrom Weapon": object()}}
+
+    hud._render_status_icons(player, 100)
+
+    blitted_text = [getattr(surface, "text", "") for surface, _position in bundle.screen.blit_calls]
+    assert "maelstrom-icon" in blitted_text
+    assert "5" in blitted_text
+    assert bundle.draw_circle_calls
 
 
 def test_dense_combat_hud_status_icons_keep_urgent_counts_and_overflow(monkeypatch):
@@ -417,6 +457,64 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert y3 > y2
 
 
+def test_combat_hud_replaces_minimap_with_class_focus_panel(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    feature_calls = []
+    minimap_calls = []
+
+    monkeypatch.setattr(hud, "_render_combat_indicator", lambda enemy, y: y + 10)
+    monkeypatch.setattr(hud, "_render_character_info", lambda player_char, y: y + 120)
+    monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y: y + 70)
+    monkeypatch.setattr(hud, "_render_status_icons", lambda player_char, y: y + 80)
+    monkeypatch.setattr(
+        hud,
+        "_render_combat_features",
+        lambda player_char, enemy, y, feature_height=None: feature_calls.append((y, feature_height, enemy.name)) or (y + feature_height),
+    )
+    monkeypatch.setattr(
+        hud,
+        "_render_minimap",
+        lambda player_char, y, minimap_size=None: minimap_calls.append((y, minimap_size)) or (y + minimap_size),
+    )
+
+    hud.render_hud(player, combat_mode=True, enemy=SimpleNamespace(name="Orc"))
+
+    feature_height = hud._combat_feature_height()
+    assert feature_calls == [(hud._combat_feature_title_y(feature_height), feature_height, "Orc")]
+    assert minimap_calls == []
+
+
+def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Soulcatcher")
+    player.familiar = SimpleNamespace(name="Izulu", spec="Mephit", level=SimpleNamespace(level=3))
+    player.summons = {
+        "Fuath": SimpleNamespace(name="Fuath", is_alive=lambda: True),
+        "Spent": SimpleNamespace(name="Spent", is_alive=lambda: False),
+    }
+    player.magic_effects["Totem"] = _effect(
+        extra={"aspect": "Fire", "attack_bonus": 0.25, "defense_bonus": 0, "secondary": "elemental"}
+    )
+    player.magic_effects["Totem"].duration = 6
+
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    assert ("Class", "Soulcatcher", hud.text_color) in lines
+    assert ("Familiar", "Izulu", (170, 210, 255)) in lines
+    assert any(label == "Summons" and value == "Fuath" for label, value, _color in lines)
+    assert ("Totem", "Fire Totem", (230, 205, 120)) in lines
+    assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
+
+    y = hud._render_combat_features(player, SimpleNamespace(name="Jester"), 120, feature_height=190)
+    assert y > 120
+    assert "Combat Focus" in bundle.stat_font.render_calls
+    assert "Totem:" in bundle.small_font.render_calls
+    assert bundle.draw_circle_calls
+
+
 def test_render_hud_full_flow(monkeypatch):
     bundle = _make_hud(monkeypatch)
     hud = bundle.hud
@@ -427,12 +525,21 @@ def test_render_hud_full_flow(monkeypatch):
     monkeypatch.setattr(hud, "_render_character_info", lambda player_char, y: calls.append(("info", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y: calls.append(("bars", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_status_icons", lambda player_char, y: calls.append(("status", player_char.name, y)) or (y + 10))
-    monkeypatch.setattr(hud, "_render_minimap", lambda player_char, y: calls.append(("map", player_char.name, y)) or (y + 10))
+    monkeypatch.setattr(
+        hud,
+        "_render_minimap",
+        lambda player_char, y, **_kwargs: calls.append(("map", player_char.name, y)) or (y + 10),
+    )
+    monkeypatch.setattr(
+        hud,
+        "_render_combat_features",
+        lambda player_char, enemy, y, **_kwargs: calls.append(("focus", player_char.name, y)) or (y + 10),
+    )
     monkeypatch.setattr(hud, "_render_compass", lambda player_char, y: calls.append(("compass", player_char.name, y)) or (y + 10))
 
     hud.render_hud(player, combat_mode=True, enemy=SimpleNamespace(name="Orc"))
-    assert [entry[0] for entry in calls] == ["combat", "info", "bars", "status", "map"]
+    assert [entry[0] for entry in calls] == ["combat", "info", "bars", "status", "focus"]
 
     calls.clear()
     hud.render_hud(player, combat_mode=False, enemy=None)
-    assert [entry[0] for entry in calls] == ["info", "bars", "map", "compass"]
+    assert [entry[0] for entry in calls] == ["info", "bars", "compass", "map"]
