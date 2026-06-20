@@ -219,6 +219,57 @@ class TestPlayerPreviewCoverage:
         assert player.equipment["Weapon"].name == "Blade"
         assert player.equipment["OffHand"].subtyp == "None"
 
+    def test_equip_diff_includes_resistance_changes(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        player.cls.equip_check = lambda item, equip_slot: True
+        player.resistance["Fire"] = 0.25
+        player.resistance["Shadow"] = 0.2
+        player.resistance["Holy"] = -0.2
+        player.resistance["Poison"] = 0.1
+
+        diff = player.equip_diff(items.FireChain(), "Pendant")
+
+        assert "Fire Resist" in diff
+        assert "+25% -> +75%" in diff
+        assert "Shadow Resist" in diff
+        assert "+20% -> +20%" in diff
+        assert "Holy Resist" in diff
+        assert "-20% -> -20%" in diff
+        assert "Poison Resist" in diff
+        assert "+10% -> +10%" in diff
+        assert "Physical Resist" not in diff
+
+        elemental_diff = player.equip_diff(items.ElementalChain(), "Pendant")
+        assert "Fire Resist" in elemental_diff
+        assert "+25% -> +75%" in elemental_diff
+        assert "Electric Resist" in elemental_diff
+        assert "Earth Resist" in elemental_diff
+        assert "Ice Resist" in elemental_diff
+        assert "Water Resist" in elemental_diff
+        assert "Wind Resist" in elemental_diff
+        assert "Shadow Resist" in elemental_diff
+        assert "+20% -> +20%" in elemental_diff
+        assert "Holy Resist" in elemental_diff
+        assert "-20% -> -20%" in elemental_diff
+        assert "Poison Resist" in elemental_diff
+        assert "+10% -> +10%" in elemental_diff
+        assert "Physical Resist" not in elemental_diff
+
+    def test_equip_diff_resistance_preview_uses_racial_baseline(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Half Orc")
+        player.cls.equip_check = lambda item, equip_slot: True
+
+        diff = player.equip_diff(items.ElementalChain(), "Pendant")
+
+        assert "Fire Resist" in diff
+        assert "+0% -> +50%" in diff
+        assert "Shadow Resist" in diff
+        assert "+20% -> +20%" in diff
+        assert "Poison Resist" in diff
+        assert "+10% -> +10%" in diff
+        assert "Holy Resist" in diff
+        assert "-20% -> -20%" in diff
+
     def test_equip_offhand_with_two_handed_weapon_unequips_weapon_and_jump_lookup_via_values(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.cls.equip_check = lambda item, equip_slot: True

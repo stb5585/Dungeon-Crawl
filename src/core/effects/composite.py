@@ -158,6 +158,16 @@ class DynamicDotEffect(Effect):
     Used by fire spells that set DOT damage to ``random(damage//4, damage//2)``.
     """
 
+    FIRE_DOT_ACTIONS = {
+        "Firebolt",
+        "Fireball",
+        "Firestorm",
+        "Scorch",
+        "Molten Rock",
+        "Volcano",
+        "Hellfire",
+    }
+
     def __init__(
         self,
         dot_type: str = "DOT",
@@ -187,7 +197,7 @@ class DynamicDotEffect(Effect):
         )
         if self.dot_type == "DOT":
             target.magic_effects[self.dot_type].source = (
-                "Burn" if result.action in {"Fireball", "Firestorm", "Hellfire", "Volcano"} else result.action
+                "Burn" if result.action in self.FIRE_DOT_ACTIONS else result.action
             )
         else:
             target.magic_effects[self.dot_type].source = self.dot_type
@@ -2907,18 +2917,12 @@ class CrushEffect(Effect):
 
         # Duplicates check
         if hit and target.magic_effects["Duplicates"].active:
-            chance = target.magic_effects["Duplicates"].duration - actor.check_mod(
-                "luck", luck_factor=15
-            )
-            if _rng.randint(0, max(0, chance)):
+            if target.consume_mirror_image(actor, rng=_rng):
                 hit = False
                 messages.append(
                     f"{actor.name} grabs for {target.name} but gets a mirror image "
                     f"instead and it vanishes from existence.\n"
                 )
-                target.magic_effects["Duplicates"].duration -= 1
-                if not target.magic_effects["Duplicates"].duration:
-                    target.magic_effects["Duplicates"].active = False
 
         if hit:
             messages.append(f"{actor.name} grabs {target.name}.\n")
@@ -3213,18 +3217,12 @@ class StompEffect(Effect):
 
         # Duplicates check
         if hit and target.magic_effects["Duplicates"].active:
-            chance = target.magic_effects["Duplicates"].duration - actor.check_mod(
-                "luck", luck_factor=15
-            )
-            if _rng.randint(0, max(0, chance)):
+            if target.consume_mirror_image(actor, rng=_rng):
                 hit = False
                 messages.append(
                     f"{actor.name} stomps but hits a mirror image of "
                     f"{target.name} and it vanishes from existence.\n"
                 )
-                target.magic_effects["Duplicates"].duration -= 1
-                if not target.magic_effects["Duplicates"].duration:
-                    target.magic_effects["Duplicates"].active = False
 
         cover = result.extra.get("use_kwargs", {}).get("cover", False)
         if cover and hit:
@@ -3336,18 +3334,12 @@ class ThrowRockEffect(Effect):
 
         # Duplicates check
         if hit and target.magic_effects["Duplicates"].active:
-            chance = target.magic_effects["Duplicates"].duration - actor.check_mod(
-                "luck", luck_factor=15
-            )
-            if _rng.randint(0, max(0, chance)):
+            if target.consume_mirror_image(actor, rng=_rng):
                 hit = False
                 messages.append(
                     f"{actor.name} throws a rock but hits a mirror image "
                     f"of {target.name} and it vanishes from existence.\n"
                 )
-                target.magic_effects["Duplicates"].duration -= 1
-                if not target.magic_effects["Duplicates"].duration:
-                    target.magic_effects["Duplicates"].active = False
 
         cover = result.extra.get("use_kwargs", {}).get("cover", False)
         if hit and cover:
@@ -4339,7 +4331,6 @@ class SlotMachineEffect(Effect):
             self._apply_random_pair_effect(target, duration, amount ** 2, rng, messages, result)
             return
 
-        messages.append("Chance!\n")
         mod = max(1, score // 3) / 10
         messages.append(
             f"{actor.name} gains {int(mod * 100)}% to attack.\n"

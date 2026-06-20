@@ -139,6 +139,24 @@ def test_player_data_deserialize_marks_killed_boss_tiles_defeated_without_world_
     assert restored.world_dict[(2, 2, 0)].defeated is False
 
 
+def test_player_data_serializer_round_trips_bestiary_records():
+    player = TestGameState.create_player(name="Scout", class_name="Warrior", race_name="Human", level=12)
+    player.bestiary = {
+        "Goblin": {
+            "name": "Goblin",
+            "type": "Regular",
+            "difficulty_level": 1,
+            "resistances": {"Fire": 0.25},
+            "known_abilities": ["Hex"],
+            "features": ["Sight"],
+        }
+    }
+
+    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+
+    assert restored.bestiary == player.bestiary
+
+
 def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(monkeypatch):
     player = TestGameState.create_player(name="JesterSlayer", class_name="Warrior", race_name="Human", level=12)
     player.kill_dict = {"Boss": {"Jester": 1}}

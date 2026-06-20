@@ -599,6 +599,16 @@ class Enemy(Character):
                     return bool(getattr(eff, "active", False)), eff
             return False, StatusEffect()
 
+        def _has_positive_stat_effect(ch: Character) -> bool:
+            stat_effects = getattr(ch, "stat_effects", {})
+            if not isinstance(stat_effects, dict):
+                return False
+            return any(
+                bool(getattr(effect, "active", False))
+                and getattr(effect, "extra", 0) > 0
+                for effect in stat_effects.values()
+            )
+
         def _matches_list_rule(cond: str, value: object) -> bool:
             """
             Evaluate a single list-style rule ("condition"/"value").
@@ -633,6 +643,9 @@ class Enemy(Character):
                     or any(bool(effect.active) for effect in magic_effects.values())
                 )
                 return bool(has_pos) == desired
+            if cond == "target_has_positive_stat_effects":
+                desired = bool(value)
+                return _has_positive_stat_effect(target) == desired
             if cond == "self_hp_pct_lt":
                 threshold = _pct_threshold(value)
                 if threshold is None:
@@ -710,6 +723,12 @@ class Enemy(Character):
                 any(bool(effect.active) for effect in magic_effects.values())
             )
             if has_positive_effects:
+                return condition.get("priority", fallback_priority)
+            return condition.get("else", fallback_priority)
+
+        if condition.get("target_has_positive_stat_effects") is not None:
+            has_positive_stat_effects = _has_positive_stat_effect(target)
+            if has_positive_stat_effects:
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
 
@@ -3188,17 +3207,19 @@ class Jester(Humanoid):
             "stats": {"strength": 28, "intel": 30, "wisdom": 24, "con": 38, "charisma": 99, "dex": 34},
             "combat": {"attack": 50, "defense": 34, "magic": 42, "magic_def": 32},
             "resistance": _fixed_resistances(Shadow=0.35, Holy=-0.15, Poison=0.25, Physical=0.10),
-            "spells": (abilities.Silence, abilities.MirrorImage2, abilities.Hex),
-            "skills": (abilities.GoldToss, abilities.SlotMachine),
+            "spells": (abilities.Silence, abilities.Hex, abilities.Fireball, abilities.Dispel),
+            "skills": (abilities.SlotMachine,),
             "action_stack": [
                 {"ability": "Attack", "priority": ActionPriority.NORMAL},
-                {"ability": "Gold Toss", "priority": ActionPriority.HIGH},
                 {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
-                {"ability": "Mirror Image", "priority": ActionPriority.HIGH,
-                 "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
                 {"ability": "Hex", "priority": ActionPriority.NORMAL},
+                {"ability": "Fireball", "priority": ActionPriority.NORMAL},
                 {"ability": "Silence", "priority": ActionPriority.NORMAL,
                  "priority_if": {"target_has_mana": True, "priority": ActionPriority.NORMAL, "else": ActionPriority.SKIP}},
+                {"ability": "Dispel", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"target_has_positive_stat_effects": True,
+                                  "priority": ActionPriority.NORMAL,
+                                  "else": ActionPriority.SKIP}},
             ],
         },
         "amber": {
@@ -3208,17 +3229,20 @@ class Jester(Humanoid):
             "stats": {"strength": 20, "intel": 38, "wisdom": 34, "con": 34, "charisma": 99, "dex": 28},
             "combat": {"attack": 32, "defense": 28, "magic": 54, "magic_def": 46},
             "resistance": _fixed_resistances(Fire=0.15, Electric=0.25, Shadow=0.25, Holy=0.20, Physical=-0.10),
-            "spells": (abilities.Silence, abilities.WeakenMind, abilities.ManaShield, abilities.MirrorImage2),
-            "skills": (abilities.GoldToss,),
+            "spells": (abilities.Silence, abilities.WeakenMind),
+            "skills": (abilities.GoldToss, abilities.ManaShield, abilities.ManaDrain),
             "action_stack": [
                 {"ability": "Silence", "priority": ActionPriority.HIGH,
                  "priority_if": {"target_has_mana": True, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
                 {"ability": "Weaken Mind", "priority": ActionPriority.HIGH,
                  "priority_if": {"target_has_mana": True, "priority": ActionPriority.HIGH, "else": ActionPriority.NORMAL}},
                 {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
-                 "priority_if": {"self_status": "Mana Shield", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
-                {"ability": "Mirror Image", "priority": ActionPriority.NORMAL,
-                 "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.NORMAL}},
+                 "priority_if": [
+                     {"condition": "self_mana_pct_lt", "value": 0.20, "priority": ActionPriority.SKIP},
+                     {"condition": "self_status", "value": "Mana Shield", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH},
+                 ]},
+                {"ability": "Mana Drain", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"target_has_mana": True, "priority": ActionPriority.NORMAL, "else": ActionPriority.SKIP}},
                 {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
                 {"ability": "Attack", "priority": ActionPriority.LOW},
             ],
@@ -3231,13 +3255,14 @@ class Jester(Humanoid):
             "combat": {"attack": 30, "defense": 30, "magic": 56, "magic_def": 40},
             "resistance": _fixed_resistances(Shadow=0.60, Holy=-0.35, Poison=0.35, Physical=-0.05),
             "spells": (abilities.Sleep, abilities.Corruption, abilities.Terrify),
-            "skills": (abilities.SlotMachine,),
+            "skills": (abilities.NightmareFuel,),
             "action_stack": [
                 {"ability": "Sleep", "priority": ActionPriority.HIGH,
                  "priority_if": {"target_status": "Sleep", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
+                {"ability": "Nightmare Fuel", "priority": ActionPriority.HIGH,
+                 "priority_if": {"target_status": "Sleep", "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
                 {"ability": "Corruption", "priority": ActionPriority.HIGH},
                 {"ability": "Terrify", "priority": ActionPriority.NORMAL},
-                {"ability": "Slot Machine", "priority": ActionPriority.NORMAL},
                 {"ability": "Attack", "priority": ActionPriority.LOW},
             ],
         },
@@ -3249,13 +3274,13 @@ class Jester(Humanoid):
             "combat": {"attack": 56, "defense": 42, "magic": 22, "magic_def": 26},
             "resistance": _fixed_resistances(Earth=0.20, Wind=0.20, Poison=0.50, Physical=0.30, Holy=-0.10),
             "spells": (),
-            "skills": (abilities.TripleStrike, abilities.Mug, abilities.PoisonStrike, abilities.SmokeScreen),
+            "skills": (abilities.TripleStrike, abilities.Mug, abilities.PoisonStrike, abilities.SleepingPowder),
             "action_stack": [
-                {"ability": "Triple Strike", "priority": ActionPriority.HIGH},
+                {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
                 {"ability": "Poison Strike", "priority": ActionPriority.HIGH},
                 {"ability": "Mug", "priority": ActionPriority.NORMAL},
-                {"ability": "Smoke Screen", "priority": ActionPriority.HIGH,
-                 "priority_if": {"self_hp_pct_lt": 0.35, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
+                {"ability": "Sleeping Powder", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"target_status": "Sleep", "priority": ActionPriority.SKIP, "else": ActionPriority.NORMAL}},
                 {"ability": "Attack", "priority": ActionPriority.NORMAL},
             ],
         },
@@ -3267,7 +3292,7 @@ class Jester(Humanoid):
             "combat": {"attack": 28, "defense": 48, "magic": 38, "magic_def": 52},
             "resistance": _fixed_resistances(Ice=0.35, Water=0.35, Shadow=0.20, Holy=0.20, Physical=0.25),
             "spells": (abilities.Reflect, abilities.Regen2, abilities.MirrorImage2),
-            "skills": (abilities.GoldToss,),
+            "skills": (abilities.Parry, abilities.Disarm),
             "action_stack": [
                 {"ability": "Reflect", "priority": ActionPriority.HIGH,
                  "priority_if": {"self_status": "Reflect", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
@@ -3275,7 +3300,8 @@ class Jester(Humanoid):
                  "priority_if": {"self_hp_pct_lt": 0.60, "priority": ActionPriority.HIGH, "else": ActionPriority.SKIP}},
                 {"ability": "Mirror Image", "priority": ActionPriority.HIGH,
                  "priority_if": {"self_status": "Duplicates", "priority": ActionPriority.SKIP, "else": ActionPriority.HIGH}},
-                {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
+                {"ability": "Disarm", "priority": ActionPriority.NORMAL,
+                 "priority_if": {"target_has_weapon": True, "priority": ActionPriority.NORMAL, "else": ActionPriority.SKIP}},
                 {"ability": "Attack", "priority": ActionPriority.LOW},
             ],
         },
@@ -3291,6 +3317,7 @@ class Jester(Humanoid):
         self.equipment = {'Weapon': items.Kukri(), 'Armor': items.StuddedCuirboulli(), 'OffHand': items.Kukri(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.inventory['Item'] = [items.random_item(6)]
+        self.inventory['Old Key'] = [items.OldKey]
         self.inventory['Joker'] = [items.Joker]
         self.status_immunity = ["Death", "Stone", "Disarm"]
         self.level.pro_level = 5

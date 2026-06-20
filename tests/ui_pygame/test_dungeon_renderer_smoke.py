@@ -77,6 +77,10 @@ class UndergroundSpring:
     enter = True
 
 
+class BonePileTile:
+    enter = True
+
+
 class FirePath:
     enter = True
 
@@ -487,6 +491,19 @@ def test_wall_overlays_are_opt_in(monkeypatch):
 
     monkeypatch.setenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS", "1")
     assert SceneRenderer(presenter, TextureLibrary()).enable_wall_overlays is True
+
+    pygame.quit()
+
+
+def test_dungeon_renderer_enables_wall_overlays_for_gameplay(monkeypatch):
+    pygame.init()
+    screen = pygame.Surface((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+
+    monkeypatch.delenv("DUNGEON_RENDERER_ENABLE_WALL_OVERLAYS", raising=False)
+    renderer = DungeonRenderer(presenter)
+
+    assert renderer.scene_renderer.enable_wall_overlays is True
 
     pygame.quit()
 
@@ -2153,6 +2170,50 @@ def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
     pygame.quit()
 
 
+def test_scene_renderer_places_center_decorative_prop_on_next_floor_slot():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): BonePileTile(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    rendered = []
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        if isinstance(tile, BonePileTile):
+            rendered.append((rect.copy(), depth, side, lateral_view))
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+    scene_renderer.render(player, world)
+
+    view_w, view_h = scene_renderer._get_viewport_size()
+    depth2_zone = build_zone_geometry(
+        build_depth_rect(view_w, view_h, 2),
+        build_next_depth_rect(build_depth_rect(view_w, view_h, 2)),
+        depth=2,
+    )
+    expected_bounds = scene_renderer._get_center_floor_slot_quad(depth2_zone, 2, "x0").bounding_rect()
+
+    assert rendered
+    rect, depth, side, lateral_view = rendered[0]
+    assert depth == 2
+    assert side is None
+    assert lateral_view is False
+    assert abs(rect.y - round(expected_bounds.y)) <= 1
+    assert abs(rect.bottom - round(expected_bounds.y + expected_bounds.h)) <= 1
+
+    pygame.quit()
+
+
 def test_project_texture_to_quad_preserves_transparent_sprite_background():
     pygame.init()
     texture = pygame.Surface((32, 32), pygame.SRCALPHA)
@@ -2293,6 +2354,34 @@ def test_lateral_chest_floor_sprite_stays_upright_without_projection(monkeypatch
         darkness=0,
         depth=2,
         kind="chest",
+        side="left",
+        lateral_view=True,
+    )
+
+    pygame.quit()
+
+
+def test_lateral_decorative_floor_sprite_stays_upright_without_projection(monkeypatch):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    sprite = pygame.Surface((24, 24), pygame.SRCALPHA)
+    sprite.fill((164, 150, 126, 255))
+
+    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite)
+
+    def fail_project(*_args, **_kwargs):
+        raise AssertionError("side-view decorative floor props should not be perspective-projected")
+
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon.renderer.project_texture_to_quad", fail_project)
+
+    scene_renderer._render_floor_sprite(
+        "bone_pile",
+        pygame.Rect(100, 120, 80, 70),
+        darkness=0,
+        depth=2,
+        kind="decorative_prop",
         side="left",
         lateral_view=True,
     )

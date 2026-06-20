@@ -53,6 +53,18 @@ class TestItemConsumables:
         assert player.status_effects["Hangover"].duration > 0
         assert "healed you" in result
 
+    def test_health_potion_combat_luck_cannot_exceed_regular_potion_tier(self, monkeypatch):
+        player = TestGameState.create_player(class_name="Dragoon", race_name="Human", health=(1200, 100))
+        player.state = "fight"
+        player.check_mod = lambda mod, luck_factor=None: 3 if mod == "luck" else 0
+        player.modify_inventory = lambda *_args, **_kwargs: None
+        monkeypatch.setattr("src.core.items.random.randint", lambda low, high: high)
+
+        result = items.HealthPotion().use(player)
+
+        assert player.health.current == 400
+        assert "healed you for 300 life" in result
+
     def test_mana_potion_full_mana_and_dwarf_out_of_combat_steps(self, monkeypatch):
         full_mana = TestGameState.create_player(class_name="Warrior", race_name="Human", mana=(50, 50))
         assert items.ManaPotion().use(full_mana) == "You are already at full mana.\n"

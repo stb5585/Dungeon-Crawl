@@ -231,6 +231,20 @@ def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
     assert manager.hud.calls
 
 
+def test_render_combat_frame_records_bestiary_details_when_visible(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Specter")
+    enemy.enemy_typ = "Undead"
+    calls = []
+    player.record_bestiary_enemy = lambda observed, enemy_type=None: calls.append((observed, enemy_type))
+    manager.engine = SimpleNamespace(is_player_turn=lambda: False, show_enemy_details=lambda: True)
+
+    manager._render_combat_frame(player, enemy, ["Attack"], 0)
+
+    assert calls == [(enemy, "Undead")]
+
+
 def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch):
     manager = _make_manager(monkeypatch)
 
@@ -616,8 +630,11 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
         pass
 
     class FakePopup:
-        def __init__(self, *_args, **_kwargs):
-            raise AssertionError("Jester victory should skip the generic victory popup")
+        def __init__(self, _presenter, message, show_buttons=False):
+            popup_messages.append(message)
+
+        def show(self, **_kwargs):
+            popup_messages.append("shown")
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
@@ -626,6 +643,7 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     render_calls = []
     monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
     monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
+    popup_messages = []
 
     manager.current_tile = JesterBossRoom()
     manager.engine = SimpleNamespace(
@@ -634,7 +652,9 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     )
 
     assert manager._handle_combat_end(player, enemy, fled=False) is True
-    assert len(render_calls) == 70
+    assert popup_messages[0].startswith("Victory! Jester defeated!")
+    assert "Gold +5" in popup_messages[0]
+    assert len(render_calls) == 71
     assert manager.combat_view.reset_calls == 1
     assert manager._combat_background is None
 
@@ -1034,6 +1054,41 @@ def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch
     assert actions == ["Defend"]
 
 
+def test_player_turn_refreshes_actions_after_silence_expires(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *_args: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    actions = []
+    manager.available_actions = ["Attack", "Defend", "Items"]
+    manager.engine = SimpleNamespace(
+        available_actions=["Attack", "Cast Spell", "Use Skill", "Use Item"],
+        player=player,
+        pre_turn=lambda: SimpleNamespace(
+            effects_text=f"{player.name} can speak again.",
+            died_from_effects=False,
+            can_act=True,
+            inactive_reason="",
+        ),
+        get_forced_action=lambda: None,
+        companion_turn=lambda: None,
+    )
+    manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["Spells"]
+    assert manager.available_actions == ["Attack", "Defend", "Spells", "Skills", "Items"]
+
+
 def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
@@ -1093,9 +1148,13 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
         pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Use Skill", "Hex"),
+        show_enemy_details=lambda: True,
         execute_action=execute_action,
     )
+    ability_calls = []
+    player.record_bestiary_ability = lambda observed, ability_name: ability_calls.append((observed, ability_name))
     assert manager._enemy_turn(player, enemy) is None
+    assert ability_calls == [(enemy, "Hex")]
     assert "Dark blast" in manager.combat_view.messages
     assert manager.combat_view.messages[-1] == "Hero is stunned and cannot act."
     assert manager.combat_view.reload_calls[-1] == enemy

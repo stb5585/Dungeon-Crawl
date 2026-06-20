@@ -653,6 +653,13 @@ class GUICombatManager:
 
         return deduped
 
+    def _refresh_display_actions(self) -> None:
+        """Refresh the visible combat action list when turn-start effects change availability."""
+        try:
+            self.available_actions = self._build_display_actions()
+        except AttributeError:
+            return
+
     def _post_turn_processing(self, player_char: Player, enemy: Character) -> None:
         """Handle engine post-turn + display any messages."""
         visual_before = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
@@ -746,6 +753,8 @@ class GUICombatManager:
             self.combat_view.add_combat_message(pre.inactive_reason.strip())
             self._flush_result_frame(player_char, enemy)
             return True  # Turn skipped
+
+        self._refresh_display_actions()
 
         # Check for forced actions (berserk, charging, jump)
         forced = self.engine.get_forced_action()
@@ -1392,6 +1401,7 @@ class GUICombatManager:
             player_stun_before = bool(player_char.status_effects["Stun"].active)
 
             result = self.engine.execute_action(forced.action, choice=forced.choice)
+            self._record_bestiary_ability_if_visible(player_char, enemy, forced.choice or forced.action)
             for line in result.message.strip().split('\n'):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
@@ -1437,6 +1447,7 @@ class GUICombatManager:
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
 
         result = self.engine.execute_action(action, choice=choice, slot_machine_callback=slot_cb)
+        self._record_bestiary_ability_if_visible(player_char, enemy, choice or action)
         is_smoke_screen = (
             action == "Use Skill"
             and (choice == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
@@ -1513,6 +1524,8 @@ class GUICombatManager:
         show_enemy_details = None
         if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
             show_enemy_details = self.engine.show_enemy_details()
+        if show_enemy_details and hasattr(player_char, "record_bestiary_enemy"):
+            player_char.record_bestiary_enemy(enemy, getattr(enemy, "enemy_typ", None))
 
         # Render enemy in the dungeon (in front of player)
         self.combat_view.render_enemy_in_dungeon(player_char, enemy, show_enemy_details=show_enemy_details)
@@ -1529,6 +1542,14 @@ class GUICombatManager:
         
         # Render HUD (right 1/3) with combat mode indicator
         self.hud.render_hud(player_char, combat_mode=True, enemy=enemy)
+
+    def _record_bestiary_ability_if_visible(self, player_char, enemy, ability_name) -> None:
+        if self.engine is None or not hasattr(self.engine, "show_enemy_details"):
+            return
+        if not self.engine.show_enemy_details():
+            return
+        if hasattr(player_char, "record_bestiary_ability"):
+            player_char.record_bestiary_ability(enemy, ability_name)
 
     def _refresh_combat_background(self, player_char, enemy):
         """Render and cache the latest combat frame for popups/overlays."""
@@ -1584,7 +1605,6 @@ class GUICombatManager:
             return False
 
         elif outcome.result == "victory":
-            dungeon_handles_victory = type(getattr(self, "current_tile", None)).__name__ == "JesterBossRoom"
             # Build end messages from outcome
             end_messages = [f"Victory! {enemy.name} defeated!"]
             # Parse the outcome message for display lines
@@ -1607,9 +1627,8 @@ class GUICombatManager:
                         sys.exit(0)
                     self._handle_combat_log_scroll_event(event)
 
-            if not dungeon_handles_victory:
-                self._pause_with_events(900)
-                _show_end_popup("\n".join(end_messages))
+            self._pause_with_events(900)
+            _show_end_popup("\n".join(end_messages))
 
             if outcome.level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)

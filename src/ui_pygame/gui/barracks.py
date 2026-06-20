@@ -137,6 +137,21 @@ class BarracksManager(TownScreenBase):
                 return True
         return False
 
+    def _deposit_storage_reward(self, item_factory, quantity: int) -> str | None:
+        """Add milestone reward items directly to storage without moving inventory."""
+        if quantity <= 0:
+            return None
+
+        storage = getattr(self.player_char, "storage", None)
+        if not isinstance(storage, dict):
+            self.player_char.storage = {}
+            storage = self.player_char.storage
+
+        sample_item = item_factory()
+        item_list = storage.setdefault(sample_item.name, [])
+        item_list.extend(item_factory() for _ in range(quantity))
+        return f"{quantity}x {sample_item.name}"
+
     def _grant_milestone_storage_rewards(self, background_draw_func=None):
         """Deposit one-time milestone supplies in the player's storage locker."""
         quest_dict = getattr(self.player_char, "quest_dict", None)
@@ -150,9 +165,9 @@ class BarracksManager(TownScreenBase):
                 continue
 
             for item_factory, quantity in rewards:
-                item = item_factory()
-                self.player_char.modify_inventory(item, num=quantity, storage=True)
-                granted.append(f"{quantity}x {item.name}")
+                grant_text = self._deposit_storage_reward(item_factory, quantity)
+                if grant_text:
+                    granted.append(grant_text)
             claimed[quest_name] = True
 
         if granted:

@@ -16,6 +16,7 @@ class DungeonRenderer:
 
         self.textures = TextureLibrary()
         self.scene_renderer = SceneRenderer(presenter, self.textures)
+        self.scene_renderer.enable_wall_overlays = True
         self.overlays = OverlayRenderer(presenter)
 
     def _refresh_screen_refs(self) -> None:

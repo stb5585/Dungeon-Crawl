@@ -643,10 +643,6 @@ class BattleEngine:
         slot_machine_callback: Callable | None = None,
     ) -> str:
         """Use a skill. Handles silence, Jump, Charge, Smoke Screen, etc."""
-        if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
-            return f"{self.attacker.name} cannot use skills because of {reason}!\n"
-
         if not choice:
             return f"{self.attacker.name} does nothing.\n"
 
@@ -660,8 +656,13 @@ class BattleEngine:
 
         skill = skills[choice]
         # Charging skills deduct mana at start, then must be allowed to continue
-        # even when the user is at 0 mana (otherwise the charge can never resolve).
+        # even when the user is at 0 mana or becomes silenced (otherwise the
+        # charge can never resolve).
         already_charging = bool(getattr(skill, "charging", False))
+        if self.attacker.abilities_suppressed() and not already_charging:
+            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            return f"{self.attacker.name} cannot use skills because of {reason}!\n"
+
         if not already_charging and self.attacker.mana.current < skill.cost:
             return f"{self.attacker.name} does not have enough mana to use {choice}!\n"
 

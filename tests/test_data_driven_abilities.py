@@ -196,6 +196,36 @@ class TestEffectFactory:
         assert isinstance(e, DynamicDotEffect)
         assert e.duration == 2
 
+    def test_dynamic_dot_marks_fire_actions_as_burn(self):
+        from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import EffectFactory
+        from tests.test_framework import TestGameState
+
+        effect = EffectFactory.create({
+            "type": "dynamic_dot",
+            "dot_type": "DOT",
+            "duration": 2,
+            "damage_lo_fraction": 1.0,
+            "damage_hi_fraction": 1.0,
+        })
+        actor = TestGameState.create_player(name="Caster")
+        target = TestGameState.create_player(name="Target")
+
+        fire_result = CombatResult(action="Firebolt", actor=actor, target=target)
+        fire_result.extra["last_damage"] = 10
+        effect.apply(actor, target, fire_result)
+
+        assert target.magic_effects["DOT"].source == "Burn"
+
+        target.magic_effects["DOT"].active = False
+        target.magic_effects["DOT"].duration = 0
+        target.magic_effects["DOT"].extra = 0
+        shadow_result = CombatResult(action="Corruption", actor=actor, target=target)
+        shadow_result.extra["last_damage"] = 10
+        effect.apply(actor, target, shadow_result)
+
+        assert target.magic_effects["DOT"].source == "Corruption"
+
     def test_create_dynamic_extra_damage(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DynamicExtraDamageEffect
@@ -6867,6 +6897,18 @@ class TestBatch14SlotMachine:
         assert target.gold < target_gold_before
         assert target.mana.current < target_mana_before
 
+    def test_slot_machine_chance_card_hand_logs_outcome_once(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        result = abilities.SlotMachine().use(
+            user, target,
+            slot_machine_callback=lambda u, t: "AH,7D,9C",
+        )
+        msg = result if isinstance(result, str) else str(result)
+
+        assert msg.count("Chance!") == 1
+        assert "Cards: AH,7D,9C" in msg
+
     def test_slot_machine_pair_card_hand_applies_pair_effect(self):
         from src.core import abilities
         user, target = self._make_combatants()
@@ -7346,6 +7388,23 @@ class TestBatch15MagicMissile:
         result = mm2.cast(caster, target)
         assert caster.mana.current == mana_before - 18
         assert isinstance(result, str)
+
+    def test_magic_missile_2_can_consume_multiple_mirror_images(self, monkeypatch):
+        from src.core import abilities
+        caster, target = self._make_combatants()
+        target.magic_effects["Duplicates"].active = True
+        target.magic_effects["Duplicates"].duration = 2
+        target.dodge_chance = lambda *_args, **_kwargs: False
+        target.incapacitated = lambda: False
+        caster.hit_chance = lambda *_args, **_kwargs: True
+        caster.check_mod = lambda mod, *_args, **_kwargs: 99 if mod == "luck" else 10
+        monkeypatch.setattr("src.core.data.data_driven_abilities.random.randint", lambda _a, _b: 1)
+
+        result = abilities.MagicMissile2().cast(caster, target, special=True)
+
+        assert result.count("mirror image") == 2
+        assert target.magic_effects["Duplicates"].active is False
+        assert target.magic_effects["Duplicates"].duration == 0
 
 
 class TestBatch15SaveSystem:

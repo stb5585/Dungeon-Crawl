@@ -3845,8 +3845,10 @@ class HealthPotion(Potion):
         else:
             # In combat: 50-100% with luck modifier
             rand_heal = int(user.health.max * self.percent)
+            heal_cap = max(1, rand_heal)
+            heal_floor = min(heal_cap, int(50 * self.percent))
             heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
-            heal = max(heal, int(50 * self.percent))
+            heal = max(min(heal, heal_cap), heal_floor)
         if is_dwarf:
             from .constants import (
                 DWARF_COMBAT_CONSUMABLE_MULTIPLIER,

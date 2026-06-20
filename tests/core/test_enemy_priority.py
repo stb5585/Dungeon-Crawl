@@ -6,7 +6,7 @@ import random
 from src.core import abilities, items
 from src.core.character import Character, Combat, Resource, Stats
 from src.core.combat.action_queue import ActionPriority
-from src.core.enemies import Bandit, Enemy
+from src.core.enemies import Bandit, Enemy, Jester
 
 
 def _make_enemy():
@@ -285,6 +285,82 @@ def test_priority_if_targets_positive_effects_for_dispel(monkeypatch):
     target.stat_effects["Attack"].active = True
     action, ability = enemy.options(target, [], None)
     assert (action, ability) == ("Cast Spell", "Dispel")
+
+
+def test_priority_if_targets_only_positive_stat_effects_for_dispel(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Spells"]["Dispel"] = abilities.Dispel()
+    enemy.mana.current = 999
+    enemy.mana.max = 999
+    enemy.action_stack = [
+        {
+            "ability": "Dispel",
+            "priority": ActionPriority.HIGH,
+            "priority_if": {
+                "target_has_positive_stat_effects": True,
+                "priority": ActionPriority.HIGH,
+                "else": ActionPriority.SKIP,
+            },
+        },
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+    ]
+
+    monkeypatch.setattr(random, "choice", lambda seq: seq[0])
+
+    target.magic_effects["Regen"].active = True
+    assert enemy.options(target, [], None) == ("Attack", None)
+
+    target.stat_effects["Defense"].active = True
+    target.stat_effects["Defense"].extra = -2
+    assert enemy.options(target, [], None) == ("Attack", None)
+
+    target.stat_effects["Attack"].active = True
+    target.stat_effects["Attack"].extra = 0
+    assert enemy.options(target, [], None) == ("Attack", None)
+
+    target.stat_effects["Attack"].extra = 3
+    assert enemy.options(target, [], None) == ("Cast Spell", "Dispel")
+
+
+def test_jester_dispel_only_targets_positive_player_stat_effects(monkeypatch):
+    jester = Jester()
+    target = _make_target(True)
+    jester.mana.current = jester.mana.max
+
+    def choose_dispel_if_available(seq):
+        return next((entry for entry in seq if entry[:2] == ("Cast Spell", "Dispel")), seq[0])
+
+    monkeypatch.setattr(random, "choice", choose_dispel_if_available)
+
+    target.magic_effects["Regen"].active = True
+    assert jester.options(target, [], None) != ("Cast Spell", "Dispel")
+
+    target.stat_effects["Defense"].active = True
+    target.stat_effects["Defense"].extra = -2
+    assert jester.options(target, [], None) != ("Cast Spell", "Dispel")
+
+    target.stat_effects["Attack"].active = True
+    target.stat_effects["Attack"].extra = 2
+    assert jester.options(target, [], None) == ("Cast Spell", "Dispel")
+
+
+def test_jester_mana_shield_skips_when_mana_is_low(monkeypatch):
+    jester = Jester()
+    jester._apply_jester_form("amber", track_cooldown=False)  # noqa: SLF001 - explicit form setup for AI coverage
+    target = _make_target(True)
+
+    def choose_mana_shield_if_available(seq):
+        return next((entry for entry in seq if entry[:2] == ("Use Skill", "Mana Shield")), seq[0])
+
+    monkeypatch.setattr(random, "choice", choose_mana_shield_if_available)
+
+    jester.mana.max = 100
+    jester.mana.current = 19
+    assert jester.options(target, [], None) != ("Use Skill", "Mana Shield")
+
+    jester.mana.current = 20
+    assert jester.options(target, [], None) == ("Use Skill", "Mana Shield")
 
 
 def test_priority_if_list_threshold_percent_parsing():

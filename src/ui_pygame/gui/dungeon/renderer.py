@@ -1203,7 +1203,11 @@ class SceneRenderer:
                 continue
             rect = pygame.Rect(zones[visible_depth.depth].back_wall_rect.to_int_tuple())
             render_depth = visible_depth.depth
-            if visible_depth.center is not None and "LadderDown" in type(visible_depth.center).__name__:
+            center_type = type(visible_depth.center).__name__ if visible_depth.center is not None else ""
+            if visible_depth.center is not None and (
+                "LadderDown" in center_type
+                or self._get_decorative_floor_sprite_key(center_type) is not None
+            ):
                 floor_depth = visible_depth.depth + 1
                 floor_zone = zones.get(floor_depth)
                 if floor_zone is None:
@@ -1871,7 +1875,7 @@ class SceneRenderer:
             )
 
         if lateral_view and side is not None:
-            if kind == "chest":
+            if kind in {"chest", "decorative_prop"}:
                 shaded = self._apply_darkness_to_surface(sprite, darkness)
                 self.screen.blit(shaded, sprite_rect.topleft)
             else:

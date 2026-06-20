@@ -719,6 +719,7 @@ class PlayerDataSerializer:
             # Derived data - serialize quest_dict properly
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
             'kill_dict': player.kill_dict,
+            'bestiary': getattr(player, 'bestiary', {}),
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
@@ -874,6 +875,7 @@ class PlayerDataSerializer:
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
         player.kill_dict = data.get('kill_dict', {})
+        player.bestiary = data.get('bestiary', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),

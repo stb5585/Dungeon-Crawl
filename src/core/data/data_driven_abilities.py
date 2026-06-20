@@ -1533,19 +1533,12 @@ class DataDrivenMagicMissileSpell(Spell):
 
                 # Duplicates (Mirror Image) interception
                 if hits[i] and target.magic_effects["Duplicates"].active:
-                    chance = (
-                        target.magic_effects["Duplicates"].duration
-                        - self.check_mod("luck", luck_factor=15)
-                    )
-                    if random.randint(0, max(0, chance)):
+                    if target.consume_mirror_image(caster, rng=random):
                         hits[i] = False
                         cast_message += (
                             f"{self.name} hits a mirror image of "
                             f"{target.name} and it vanishes from existence.\n"
                         )
-                        target.magic_effects["Duplicates"].duration -= 1
-                        if not target.magic_effects["Duplicates"].duration:
-                            target.magic_effects["Duplicates"].active = False
 
                 if hits[i]:
                     crit_per = random.uniform(1, crit)

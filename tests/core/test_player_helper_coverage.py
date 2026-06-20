@@ -59,6 +59,42 @@ class TestPlayerHelperCoverage:
         assert player.quit is False
         assert textbox.messages == []
 
+    def test_bestiary_observation_records_stable_enemy_details_and_abilities(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        enemy = SimpleNamespace(
+            name="Wraith",
+            enemy_typ="Undead",
+            level=SimpleNamespace(level=7, pro_level=2),
+            resistance={"Fire": 0.25, "Holy": -0.5, "Ice": 0.0},
+            flying=True,
+            sight=True,
+            invisible=False,
+            tunnel=False,
+            boss=False,
+            status_immunity=["Death", "Stone"],
+            status_effects={"Blind": SimpleNamespace(active=True)},
+            physical_effects={},
+            magic_effects={"Regen": SimpleNamespace(active=False)},
+        )
+
+        player.record_bestiary_enemy(enemy)
+        player.record_bestiary_ability(enemy, "Attack")
+        player.record_bestiary_ability(enemy, "Soul Drain")
+
+        record = player.bestiary["Wraith"]
+        assert record["type"] == "Undead"
+        assert record["difficulty_level"] == 2
+        assert record["resistances"] == {"Fire": 0.25, "Holy": -0.5}
+        assert record["known_abilities"] == ["Soul Drain"]
+        assert "Flying" in record["features"]
+        assert "Sight" in record["features"]
+        assert "Blind" in record["features"]
+        assert record["immunities"] == ["Death", "Stone"]
+
+        enemy.status_effects["Blind"].active = False
+        player.record_bestiary_enemy(enemy)
+        assert "Blind" in player.bestiary["Wraith"]["features"]
+
     def test_character_menu_dispatches_ui_actions_and_quit_flow(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.spellbook["Skills"]["Jump"] = SimpleNamespace(name="Jump", modifications=["Long"])

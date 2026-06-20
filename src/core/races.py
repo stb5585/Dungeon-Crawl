@@ -345,7 +345,7 @@ class HalfOrc(Race):
                          ),
                          sin=RacialTrait(
                              name="Wrath",
-                             description="Pain can trigger blind rage: you keep control, but your aim suffers briefly.",
+                             description="Pain can trigger Blind Rage: you keep control, but your aim suffers briefly.",
                          ),
                          )
 

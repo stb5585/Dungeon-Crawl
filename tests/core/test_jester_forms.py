@@ -26,8 +26,26 @@ def test_jester_starts_in_crimson_form():
 
     assert jester._jester_form == "crimson"
     assert jester.picture == "jester.png"
-    assert "Gold Toss" in jester.spellbook["Skills"]
-    assert "Mirror Image" in jester.spellbook["Spells"]
+    assert "Slot Machine" in jester.spellbook["Skills"]
+    assert "Fireball" in jester.spellbook["Spells"]
+    assert "Dispel" in jester.spellbook["Spells"]
+
+
+def test_jester_form_abilities_are_in_cast_and_use_buckets():
+    jester = enemies.Jester()
+
+    for form_name in jester.FORM_DEFS:
+        jester._apply_jester_form(form_name, track_cooldown=False)
+
+        for ability in jester.spellbook["Spells"].values():
+            assert hasattr(ability, "cast"), f"{form_name} spell {ability.name} cannot cast"
+
+        for ability in jester.spellbook["Skills"].values():
+            assert hasattr(ability, "use"), f"{form_name} skill {ability.name} cannot use"
+
+    jester._apply_jester_form("amber", track_cooldown=False)
+    assert "Mana Shield" in jester.spellbook["Skills"]
+    assert "Mana Shield" not in jester.spellbook["Spells"]
 
 
 def test_jester_switches_forms_based_on_player_profile(monkeypatch):

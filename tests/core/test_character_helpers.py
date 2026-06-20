@@ -174,6 +174,25 @@ class TestCharacterHelpers:
         assert defender.magic_effects["Duplicates"].active is False
         assert defender.magic_effects["Duplicates"].duration == 0
 
+    def test_mirror_images_remain_hittable_after_first_duplicate(self, monkeypatch):
+        attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        defender = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        defender.magic_effects["Duplicates"].active = True
+        defender.magic_effects["Duplicates"].duration = 4
+
+        monkeypatch.setattr("src.core.character.random.randint", lambda _a, _b: 1)
+        attacker.check_mod = lambda *_args, **_kwargs: 99
+
+        first_hit, first_message = attacker._handle_duplicates(defender, "attacks")
+        second_hit, second_message = attacker._handle_duplicates(defender, "attacks")
+
+        assert first_hit is False
+        assert second_hit is False
+        assert first_message.count("mirror image") == 1
+        assert second_message.count("mirror image") == 1
+        assert defender.magic_effects["Duplicates"].active is True
+        assert defender.magic_effects["Duplicates"].duration == 2
+
     def test_handle_defenses_and_damage_reduction_cover_shields_and_magic_defense(self):
         defender = TestGameState.create_player(class_name="Warrior", race_name="Human")
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -204,6 +223,17 @@ class TestCharacterHelpers:
         assert defender.mana.current == 0
         assert defender.magic_effects["Mana Shield"].active is False
         assert status_events[-1][1]["source"] == "Mana Depleted"
+
+        defender.magic_effects["Mana Shield"].active = True
+        defender.magic_effects["Mana Shield"].duration = 2
+        defender.mana.current = -4
+
+        hit, message, damage = defender.handle_defenses(attacker, damage=8)
+        assert hit is True
+        assert "absorbs -" not in message
+        assert "mana shield dissolves" in message
+        assert damage == 8
+        assert defender.magic_effects["Mana Shield"].active is False
 
         defender.resistance["Fire"] = 0.25
         defender.check_mod = lambda mod, enemy=None, typ=None, **_kwargs: 50 if mod == "magic def" else defender.resistance.get(typ, 0)

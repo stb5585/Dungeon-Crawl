@@ -152,9 +152,10 @@ def test_milestone_storage_rewards_are_deposited_once(monkeypatch):
         "Rookie Mistake": True,
         "The Butcher": True,
     }
-    assert ("Health Potion", 2, True, False, False) in player.inventory_calls
-    assert ("Mana Potion", 1, True, False, False) in player.inventory_calls
-    assert ("Health Potion", 3, True, False, False) in player.inventory_calls
+    assert player.storage.keys() == {"Health Potion", "Mana Potion"}
+    assert len(player.storage["Health Potion"]) == 5
+    assert len(player.storage["Mana Potion"]) == 2
+    assert player.inventory_calls == []
     assert any("milestone supplies" in message for message in FakePopup.messages)
 
 

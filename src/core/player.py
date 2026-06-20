@@ -50,6 +50,8 @@ DIRECTIONS = {
 
 
 REALM_OF_CAMBION_LEVEL = 8
+RESISTANCE_DISPLAY_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
+BASIC_BESTIARY_ACTIONS = {None, "", "Attack", "Defend", "Nothing", "Use Item", "Pickup Weapon"}
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MAP_FILES_DIR = PROJECT_ROOT / "map_files"
@@ -353,6 +355,7 @@ class Player(Character):
         self.world_dict = {}
         self.quest_dict = {'Bounty': {}, 'Main': {}, 'Side': {}}
         self.kill_dict = {}
+        self.bestiary = {}
         self.storage = {}
         self.warp_point = False
         self.quit = False
@@ -1508,16 +1511,8 @@ class Player(Character):
             spell_mod = self.check_mod('magic')
             heal_mod = self.check_mod('heal')
             buffs = self.buff_str()
-            diff_dict = {
-                "Attack": attack,
-                "Critical Chance": crit,
-                "Armor": str(armor),
-                "Block Chance": f"{block}%",
-                "Spell Defense": str(spell_def),
-                "Spell Modifier": str(spell_mod),
-                "Heal Modifier": str(heal_mod),
-                "Buffs": buffs
-            }
+            resistance_before = self._equipment_resistance_preview()
+            diff_dict = {}
 
             # return empty if item is not equipable by player
             if not self.cls.equip_check(item, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
@@ -1599,7 +1594,17 @@ class Player(Character):
                 diff_dict["Spell Modifier"] = f"{spell_mod} -> {self.check_mod('magic')}"
             if self.check_mod('heal') != heal_mod:
                 diff_dict["Heal Modifier"] = f"{heal_mod} -> {self.check_mod('heal')}"
-            diff_dict['Buffs'] = self.buff_str()
+            resistance_after = self._equipment_resistance_preview()
+            for resistance_name in RESISTANCE_DISPLAY_ORDER:
+                before = resistance_before.get(resistance_name, 0.0)
+                after = resistance_after.get(resistance_name, 0.0)
+                if before != after or before != 0:
+                    diff_dict[f"{resistance_name} Resist"] = (
+                        f"{self._format_resistance_preview(before)} -> {self._format_resistance_preview(after)}"
+                    )
+            new_buffs = self.buff_str()
+            if new_buffs != buffs:
+                diff_dict['Buffs'] = f"{buffs} -> {new_buffs}"
 
             return "\n".join([f"{x:16}{' ':2}{y:>6}" for x, y in diff_dict.items()])
         finally:
@@ -1610,6 +1615,106 @@ class Player(Character):
             self.sight = original_sight
             self.invisible = original_invisible
             self.flying = original_flying
+
+    def _equipment_resistance_preview(self) -> dict[str, float]:
+        """Return current resistance values including equipment preview state."""
+        values = {}
+        player_resistance = getattr(self, "resistance", {}) or {}
+        race_resistance = getattr(getattr(self, "race", None), "resistance", {}) or {}
+        for resistance_name in RESISTANCE_DISPLAY_ORDER:
+            try:
+                values[resistance_name] = float(self.check_mod("resist", typ=resistance_name) or 0.0)
+            except (TypeError, ValueError):
+                values[resistance_name] = 0.0
+            try:
+                player_base = float(player_resistance.get(resistance_name, 0.0) or 0.0)
+                race_base = float(race_resistance.get(resistance_name, 0.0) or 0.0)
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if player_base == 0.0 and race_base != 0.0:
+                values[resistance_name] += race_base
+        return values
+
+    @staticmethod
+    def _format_resistance_preview(value: float) -> str:
+        return f"{int(round(float(value) * 100)):+d}%"
+
+    def record_bestiary_enemy(self, enemy, enemy_type: str | None = None) -> None:
+        """Store stable enemy details observed while the player has combat insight."""
+        if enemy is None:
+            return
+        if not isinstance(getattr(self, "bestiary", None), dict):
+            self.bestiary = {}
+
+        enemy_name = str(getattr(enemy, "name", "") or "").strip()
+        if not enemy_name:
+            return
+
+        record = self.bestiary.setdefault(enemy_name, {})
+        record["name"] = enemy_name
+        record["type"] = str(enemy_type or getattr(enemy, "enemy_typ", "") or "Unknown")
+
+        level = getattr(enemy, "level", None)
+        base_level = getattr(level, "level", None)
+        pro_level = getattr(level, "pro_level", None)
+        difficulty_level = pro_level if pro_level not in (None, "", 0) else base_level
+        if difficulty_level not in (None, ""):
+            record["difficulty_level"] = difficulty_level
+        if base_level not in (None, ""):
+            record["level"] = base_level
+        if pro_level not in (None, ""):
+            record["pro_level"] = pro_level
+
+        resistance = getattr(enemy, "resistance", {}) or {}
+        notable_resistances = {}
+        for resistance_name in RESISTANCE_DISPLAY_ORDER:
+            try:
+                value = float(resistance.get(resistance_name, 0.0) or 0.0)
+            except (AttributeError, TypeError, ValueError):
+                value = 0.0
+            if value:
+                notable_resistances[resistance_name] = value
+        record["resistances"] = notable_resistances
+
+        features = []
+        for attr_name, label in (("flying", "Flying"), ("sight", "Sight"), ("invisible", "Invisible"), ("tunnel", "Tunnel"), ("boss", "Boss")):
+            if getattr(enemy, attr_name, False):
+                features.append(label)
+        for effect_dict_name in ("status_effects", "physical_effects", "magic_effects"):
+            effect_dict = getattr(enemy, effect_dict_name, {}) or {}
+            for effect_name, effect in effect_dict.items():
+                if getattr(effect, "active", False):
+                    features.append(str(effect_name))
+        immunities = sorted(set(str(value) for value in (getattr(enemy, "status_immunity", []) or []) if value))
+        observed_features = set(record.get("features", []) or [])
+        observed_immunities = set(record.get("immunities", []) or [])
+        for feature in list(observed_features):
+            if str(feature).startswith("Immune:"):
+                observed_features.discard(feature)
+                observed_immunities.update(
+                    part.strip()
+                    for part in str(feature).removeprefix("Immune:").split(",")
+                    if part.strip()
+                )
+        record["features"] = sorted(observed_features | set(features))
+        record["immunities"] = sorted(observed_immunities | set(immunities))
+        record.setdefault("known_abilities", [])
+
+    def record_bestiary_ability(self, enemy, ability_name: str | None) -> None:
+        """Record an enemy ability after it is seen during a revealed combat."""
+        if enemy is None:
+            return
+        ability = str(ability_name or "").strip()
+        if ability in BASIC_BESTIARY_ACTIONS:
+            return
+        self.record_bestiary_enemy(enemy)
+        enemy_name = str(getattr(enemy, "name", "") or "").strip()
+        if not enemy_name:
+            return
+        record = self.bestiary.setdefault(enemy_name, {})
+        abilities_seen = set(record.get("known_abilities", []) or [])
+        abilities_seen.add(ability)
+        record["known_abilities"] = sorted(abilities_seen)
 
     def unequip(self, typ=None, promo=False):
         if typ:

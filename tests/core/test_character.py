@@ -301,6 +301,12 @@ class TestStatusEffectImprovements:
         assert player.equipment["Pendant"].name == "Pendant of Vision"
         assert player.sight is True
 
+    def test_magic_pendant_reports_magic_dodge_buff(self):
+        player = TestGameState.create_player(name="PendantHero", class_name="Warrior", race_name="Human")
+        player.equipment["Pendant"] = items.MagicPendant()
+
+        assert "Magic Dodge" in player.buff_str()
+
 
 class TestGameplayStatistics:
     def test_player_initializes_gameplay_stats_defaults(self):

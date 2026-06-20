@@ -407,6 +407,34 @@ class TestBattleEngineBasics:
         res2 = engine.execute_action("Use Skill", choice="Charge")
         assert "Hit for 5 damage" in res2.message
 
+    def test_charging_skill_can_resolve_while_silenced(self):
+        """
+        Regression: silence should block new skill use, but not the forced
+        follow-up of an ability that was already charging.
+        """
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        class ChargingSkill:
+            name = "Jump"
+            cost = 10
+            charging = True
+
+            def use(self, _user, target=None):
+                self.charging = False
+                return f"Jump hits {target.name}.\n"
+
+        player.spellbook["Skills"]["Jump"] = ChargingSkill()
+        player.status_effects["Silence"].active = True
+        player.status_effects["Silence"].duration = 2
+
+        result = engine.execute_action("Use Skill", choice="Jump")
+
+        assert "cannot use skills because of silence" not in result.message
+        assert "Jump hits Goblin" in result.message
+        assert player.spellbook["Skills"]["Jump"].charging is False
+
     def test_execute_skill_calls_skill_use(self):
         engine, player, enemy, _tile = self._make_engine()
         engine.attacker = player

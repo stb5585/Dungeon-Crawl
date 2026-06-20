@@ -905,6 +905,36 @@ class Character:
             msg += f"{defender.name} evades {self.name}'s attack.\n"
         return msg, False
 
+    def consume_mirror_image(self, attacker: Character, rng=None, luck_factor: int = 15) -> bool:
+        """Return whether an incoming hit consumes one active mirror image."""
+        effect = self.magic_effects.get("Duplicates")
+        if not effect or not effect.active:
+            return False
+
+        try:
+            image_count = int(effect.duration)
+        except (TypeError, ValueError):
+            image_count = 0
+        if image_count <= 0:
+            effect.active = False
+            effect.duration = 0
+            return False
+
+        try:
+            luck_mod = int(attacker.check_mod("luck", enemy=self, luck_factor=luck_factor))
+        except Exception:
+            luck_mod = 0
+        effective_images = max(1, image_count - luck_mod)
+        roller = rng or random
+        if not roller.randint(0, effective_images):
+            return False
+
+        effect.duration = max(0, image_count - 1)
+        if effect.duration <= 0:
+            effect.active = False
+            effect.duration = 0
+        return True
+
     def _handle_duplicates(self, defender: Character, typ: str) -> tuple[bool, str]:
         """
         Check if the attack hits a mirror-image duplicate.
@@ -912,14 +942,10 @@ class Character:
         Returns:
             (still_hit, message)
         """
-        chance = defender.magic_effects["Duplicates"].duration - self.check_mod("luck", luck_factor=15)
-        if random.randint(0, max(0, chance)):
+        if defender.consume_mirror_image(self):
             self._reset_maelstrom()
             msg = (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
                    f"vanishes from existence.\n")
-            defender.magic_effects["Duplicates"].duration -= 1
-            if not defender.magic_effects["Duplicates"].duration:
-                defender.magic_effects["Duplicates"].active = False
             return False, msg
         return True, ""
 
@@ -1022,10 +1048,22 @@ class Character:
     def _apply_mana_shield(self, defender: Character, damage: int) -> AbsorptionResult:
         """Handle Mana Shield absorption. Returns (damage, msg, fully_absorbed)."""
         msg = ""
-        mana_loss = damage // defender.magic_effects["Mana Shield"].duration
-        if mana_loss > defender.mana.current:
-            abs_dam = defender.mana.current * defender.magic_effects["Mana Shield"].duration
-            msg += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
+        if damage <= 0:
+            return damage, msg, False
+
+        duration = max(1, int(defender.magic_effects["Mana Shield"].duration or 1))
+        available_mana = max(0, int(defender.mana.current))
+        if available_mana <= 0:
+            self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
+            defender.magic_effects["Mana Shield"].active = False
+            msg += f"The mana shield dissolves around {defender.name}.\n"
+            return damage, msg, False
+
+        mana_loss = damage // duration
+        if mana_loss > available_mana:
+            abs_dam = available_mana * duration
+            if abs_dam > 0:
+                msg += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
             damage -= abs_dam
             defender.mana.current = 0
             self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
@@ -1034,7 +1072,7 @@ class Character:
             return damage, msg, False
         else:
             msg += f"The mana shield around {defender.name} absorbs {damage} damage.\n"
-            defender.mana.current -= mana_loss
+            defender.mana.current = max(0, defender.mana.current - mana_loss)
             return 0, msg, True
 
     def _apply_crusader_shield(self, defender: Character, damage: int) -> AbsorptionResult:
@@ -1691,6 +1729,7 @@ class Character:
             buffs.append(self.equipment['Ring'].mod)
         if self.equipment['Pendant'].mod in \
             ["Vision", "Flying", "Invisible",
+             "Magic Dodge",
              "Status-Poison", "Status-Berserk", "Status-Stone", "Status-Silence", "Status-Death", "Status-All"]:
             buffs.append(self.equipment['Pendant'].mod)
         if self.flying and "Flying" not in buffs:
