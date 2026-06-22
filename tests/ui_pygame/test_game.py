@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.core import items
+from src.core.classes import class_rings
 from src.ui_pygame import game as pygame_game
 
 
@@ -757,6 +759,134 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert any("Statistics" in options for options in options_seen)
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True
+
+
+def test_old_warehouse_footpad_ring_jobs_require_visible_dormant_ring(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Rogue"),
+        class_ring_awakening=class_rings.default_state(),
+        inventory={"Class Ring": [items.ClassRing()]},
+        storage={},
+        equipment={},
+    )
+    popup_messages = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append(message)
+
+        def show(self, **_kwargs):
+            return True
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    assert game._footpad_class_ring_rite_label() == "Loaded Game"
+    assert game._footpad_class_ring_rite_available() is False
+    assert game.visit_old_warehouse() is False
+    assert popup_messages[-1] == "Authorized personnel only.\nPlease leave."
+
+    game.player_char.storage = {"Class Ring": [items.ClassRing()]}
+    assert game._footpad_class_ring_rite_available() is True
+
+    game.player_char.storage = {}
+    game.player_char.equipment["Ring"] = items.ClassRing()
+    assert game._footpad_class_ring_rite_available() is True
+
+    game.player_char.class_ring_awakening["awakened"]["Rogue"] = True
+    assert game._footpad_class_ring_rite_available() is False
+
+
+def test_old_warehouse_footpad_ring_jobs_awaken_mods(monkeypatch):
+    popup_messages = []
+    popup_kwargs = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append(message)
+
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
+            return True
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    for class_name, expected_mod, expected_label in (
+        ("Rogue", "Loaded Dice", "Loaded Game"),
+        ("Seeker", "Hidden Cache", "Cartographer's Proof"),
+        ("Ninja", "First Strike Plus", "No-Trace Contract"),
+        ("Arcane Trickster", "Spell Steal Buff", "Impossible Theft"),
+    ):
+        game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+        game.presenter = SimpleNamespace()
+        player = SimpleNamespace(
+            cls=SimpleNamespace(name=class_name),
+            class_ring_awakening=class_rings.default_state(),
+            storage={},
+            equipment={"Ring": items.ClassRing()},
+        )
+        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+            _player,
+            class_name,
+            **kwargs,
+        )
+        game.player_char = player
+
+        assert game.visit_old_warehouse(background_draw_func=lambda: None) is True
+        assert player.class_ring_awakening["awakened"][class_name] is True
+        assert player.equipment["Ring"].mod == expected_mod
+        assert any(expected_label in message for message in popup_messages)
+
+    assert all(call.get("flush_events") for call in popup_kwargs)
+    assert all(call.get("require_key_release") for call in popup_kwargs)
+
+
+def test_town_menu_keeps_old_warehouse_for_eligible_footpad_after_warp(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(
+        name="Shade",
+        cls=SimpleNamespace(name="Ninja"),
+        class_ring_awakening=class_rings.default_state(),
+        equipment={"Ring": items.ClassRing()},
+        storage={},
+        town_heal=lambda: None,
+        _suppress_heal_message=True,
+        special_inventory={},
+        quest_dict={"Side": {}},
+        warp_point=True,
+        quit=False,
+    )
+    options_seen = []
+
+    class FakeTownMenu:
+        def __init__(self, _presenter):
+            self.calls = 0
+
+        def draw_background(self):
+            return None
+
+        def draw_menu_panel(self, _options):
+            return None
+
+        def navigate(self, options, **_kwargs):
+            options_seen.append(tuple(options))
+            self.calls += 1
+            return len(options) - 1
+
+    class FakePopup:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def show(self, **_kwargs):
+            return True
+
+    monkeypatch.setattr(pygame_game, "TownMenuScreen", FakeTownMenu)
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    assert game.town_menu() == "quit"
+    assert any("Warp Point" in options and "Old Warehouse" in options for options in options_seen)
 
 
 def test_town_menu_silently_drops_off_rookie_body_without_extra_popup(monkeypatch):

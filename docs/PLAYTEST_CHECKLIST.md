@@ -33,6 +33,13 @@
   - Expected: Completing the rite awakens the ring, applies `+30% Summons`, and permanently sacrifices 5% max HP.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
+- [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
+  - Expected: The Old Warehouse guards offer the matching job: `Loaded Game`, `Cartographer's Proof`, `No-Trace Contract`, or `Impossible Theft`.
+  - Expected: Completing the job awakens the ring and applies the expected equipped mod.
+- [ ] Visit the Old Warehouse for a Footpad-branch job with the Class Ring only in inventory.
+  - Expected: The guards still deny access until the ring is equipped or stored.
+- [ ] Unlock Warp Point while a Footpad-branch Class Ring job is available.
+  - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
 
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.

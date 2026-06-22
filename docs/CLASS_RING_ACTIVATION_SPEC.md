@@ -6,7 +6,8 @@ Class Ring activation now has two implementation tiers:
 
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
-  `Shadowcaster`, `Knight Enchanter`, and `Grand Summoner`.
+  `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
+  `Ninja`, and `Arcane Trickster`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
   are implemented for the remaining second-promotion classes. Except for
@@ -299,12 +300,20 @@ class.
 
 - `Rogue`: `Loaded Game` awakens `Loaded Dice`, giving failed luck checks a 15%
   chance to become successes.
+  - Status: playable at the Old Warehouse when a dormant Rogue Class Ring is
+    equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
   cache per sufficiently mapped dungeon level.
+  - Status: playable at the Old Warehouse when a dormant Seeker Class Ring is
+    equipped or stored.
 - `Ninja`: `No-Trace Contract` awakens `First Strike Plus`, doubling the first
   standard attack when the Ninja has initiative.
+  - Status: playable at the Old Warehouse when a dormant Ninja Class Ring is
+    equipped or stored.
 - `Arcane Trickster`: `Impossible Theft` awakens `Spell Steal Buff`, granting
   +20% Magic damage and +10% dodge for 3 turns after a successful spell steal.
+  - Status: playable at the Old Warehouse when a dormant Arcane Trickster Class
+    Ring is equipped or stored.
 
 ### Healer And Pathfinder Branches
 

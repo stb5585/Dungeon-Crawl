@@ -12,7 +12,7 @@ import sys
 import pygame
 
 from src.core.character import Combat, Level, Resource, Stats
-from src.core.classes import archdruid, classes_dict
+from src.core.classes import archdruid, class_rings, classes_dict
 from src.core.data.data_loader import get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
@@ -56,6 +56,37 @@ class PygameGame:
     """
     GUI version of The Forsaken Tenet using Pygame.
     """
+
+    FOOTPAD_CLASS_RING_RITES = {
+        "Rogue": {
+            "label": "Loaded Game",
+            "intro": (
+                "The warehouse guards lead you to a crooked card table. You win by reading "
+                "the loaded game, not by pretending the dice were ever fair."
+            ),
+        },
+        "Seeker": {
+            "label": "Cartographer's Proof",
+            "intro": (
+                "A guard spreads half-burned route maps across a crate. Mark the missing paths, "
+                "and the Class Ring will learn where hidden caches breathe."
+            ),
+        },
+        "Ninja": {
+            "label": "No-Trace Contract",
+            "intro": (
+                "The lamps are snuffed one by one. A contract waits on black paper: leave no "
+                "trace, strike first, and let the ring remember silence."
+            ),
+        },
+        "Arcane Trickster": {
+            "label": "Impossible Theft",
+            "intro": (
+                "The guards lock a spell-sealed coffer in plain sight. The trick is not opening "
+                "it, but stealing the moment before the ward notices."
+            ),
+        },
+    }
     
     def __init__(self, debug_mode=False):
         pygame.init()
@@ -620,6 +651,8 @@ class PygameGame:
         # Add Warp Point or Old Warehouse based on player progress
         if getattr(self.player_char, 'warp_point', False):
             options.append("Warp Point")
+            if self._footpad_class_ring_rite_available():
+                options.append("Old Warehouse")
         else:
             options.append("Old Warehouse")
 
@@ -700,8 +733,12 @@ class PygameGame:
                     return "dungeon"
 
             elif choice_label == "Old Warehouse":
-                popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
-                popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
+                self.visit_old_warehouse(
+                    background_draw_func=lambda: (
+                        town_screen.draw_background(),
+                        town_screen.draw_menu_panel(options),
+                    )
+                )
 
             elif choice_label == "Character Menu":
                 self.show_character_info()
@@ -765,6 +802,57 @@ class PygameGame:
             flush_events=True,
             require_key_release=True,
         )
+
+    def _footpad_class_ring_rite_config(self):
+        return self.FOOTPAD_CLASS_RING_RITES.get(class_rings.class_name(self.player_char))
+
+    def _footpad_class_ring_rite_label(self):
+        config = self._footpad_class_ring_rite_config()
+        return config["label"] if config else "Class Ring Job"
+
+    def _footpad_class_ring_rite_available(self):
+        class_name = class_rings.class_name(self.player_char)
+        return (
+            class_name in self.FOOTPAD_CLASS_RING_RITES
+            and class_rings.has_visible_class_ring(self.player_char)
+            and not class_rings.is_awakened(self.player_char, class_name)
+        )
+
+    def visit_old_warehouse(self, background_draw_func=None):
+        """Handle Old Warehouse entry and Footpad-branch Class Ring jobs."""
+        if not self._footpad_class_ring_rite_available():
+            popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
+            popup.show(
+                background_draw_func=background_draw_func,
+                flush_events=True,
+                require_key_release=True,
+            )
+            return False
+
+        class_name = class_rings.class_name(self.player_char)
+        config = self._footpad_class_ring_rite_config()
+        popup = ConfirmationPopup(self.presenter, config["intro"], show_buttons=False)
+        popup.show(
+            background_draw_func=background_draw_func,
+            flush_events=True,
+            require_key_release=True,
+        )
+
+        success, message = self.player_char.awaken_class_ring(class_name)
+        ring = self.player_char.equipment.get("Ring")
+        if success and getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        popup = ConfirmationPopup(
+            self.presenter,
+            message.strip() or f"The Class Ring awakens through {config['label']}.",
+            show_buttons=False,
+        )
+        popup.show(
+            background_draw_func=background_draw_func,
+            flush_events=True,
+            require_key_release=True,
+        )
+        return success
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
