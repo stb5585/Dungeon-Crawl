@@ -440,15 +440,16 @@ Implemented:
    - Implemented Archdruid fourfold attunement, Ancient Grove town option, deterministic catalysts, aspect rituals, mastery caps, Harmony Bonus, save state, and regression coverage.
    - Implemented Berserker No Healing Duel activation through the Barracks, including visible-ring gating, no-normal-reward trial combat, no-healing failure handling, ring awakening, and regression coverage.
    - Implemented Dragoon Guard The Fall and Stalwart Defender Siege Trial activations through the Barracks, including visible-ring gating, no-normal-reward trial combat, ring awakening, and regression coverage.
+   - Implemented Wizard Four Formulae, Shadowcaster Debt Cap Trial, Knight Enchanter Arcane Duel, and Grand Summoner Conduit Ritual activations through the Church, including visible-ring gating, ring awakening, Grand Summoner HP sacrifice, and regression coverage.
    - Added legacy second-promotion Class Ring awakening state, dormant/awakened descriptions, activation helpers, and live hooks for the legacy effects that already have safe runtime integration points.
 
 Ready For Spec:
 
 - Remaining legacy Class Ring questline implementations:
    - Standard Class Ring acquisition stays implemented as a passive reward for defeating the Red Dragon.
-   - Grandmaster of Arms, Demonologist, Archdruid, Berserker, Dragoon, and Stalwart Defender are fully playable activation flows.
+   - Grandmaster of Arms, Demonologist, Archdruid, Berserker, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Knight Enchanter, and Grand Summoner are fully playable activation flows.
    - Existing second-promotion Class Ring directions are documented and have saved awakening state plus mechanics helpers.
-   - Remaining classes still need full trigger/location/trial UI, objective flow, reward messaging, and focused regression tests: Crusader, Wizard, Shadowcaster, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master.
+   - Remaining classes still need full trigger/location/trial UI, objective flow, reward messaging, and focused regression tests: Crusader, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master.
    - Crusader remains blocked on the Paladin vow-selection system.
    - Arcane Trickster and Troubadour need their future spell-steal and song systems before their ring effects can be fully event-driven.
 - Main Storyline Plot and The Liminal Gap full design spec:
@@ -555,6 +556,7 @@ Implemented:
 - Class Ring foundation:
    - Existing second-promotion rings now have dormant/awakened descriptions, saved awakening state, activation helpers, and selected live mechanics hooks.
   - Berserker, Dragoon, and Stalwart Defender now have playable Barracks activation flows.
+  - Wizard, Shadowcaster, Knight Enchanter, and Grand Summoner now have playable Church activation rites.
   - Remaining legacy classes still need full quest/trial UI flows before their activation paths are complete.
 
 Needs Design Decision:

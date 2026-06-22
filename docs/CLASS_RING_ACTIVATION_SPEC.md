@@ -5,7 +5,8 @@
 Class Ring activation now has two implementation tiers:
 
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
-  `Archdruid`, `Berserker`, `Dragoon`, and `Stalwart Defender`.
+  `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
+  `Shadowcaster`, `Knight Enchanter`, and `Grand Summoner`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
   are implemented for the remaining second-promotion classes. Except for
@@ -280,11 +281,19 @@ class.
 - `Wizard`: `Four Formulae` awakens `School Streak`. Failed spell riders for
   the same school add +15% rider chance; four stacks guarantee the next
   eligible rider.
+  - Status: playable in the Church when a dormant Wizard Class Ring is equipped
+    or stored.
 - `Shadowcaster`: `Debt Cap Trial` awakens `Umbral Debt`. Shadow damage stores
   healing reserve, while overcapping creates backlash.
+  - Status: playable in the Church when a dormant Shadowcaster Class Ring is
+    equipped or stored.
 - `Knight Enchanter`: `Arcane Duel` awakens the existing `Mana Tap+` ring hook.
+  - Status: playable in the Church when a dormant Knight Enchanter Class Ring is
+    equipped or stored.
 - `Grand Summoner`: `Conduit Ritual` permanently sacrifices 5% max HP and
   awakens +30% HP and damage for current and future summons.
+  - Status: playable in the Church when a dormant Grand Summoner Class Ring is
+    equipped or stored.
 
 ### Footpad Branch
 

@@ -7,7 +7,7 @@ import os
 
 from src.core import companions
 from src.core.abilities import spell_dict, skill_dict
-from src.core.classes import classes_dict, apply_promotion_ability_rules, demonologist
+from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
@@ -18,6 +18,37 @@ from .town_base import TownScreenBase
 
 class ChurchManager(TownScreenBase):
     """Manages church interactions with pygame presenter."""
+
+    ARCANE_CLASS_RING_RITES = {
+        "Wizard": {
+            "label": "Four Formulae",
+            "intro": (
+                "The priest opens a lectern of four interlocked formulae. Solve the pattern, "
+                "and the Class Ring will remember every failed spell rider as study rather than waste."
+            ),
+        },
+        "Shadowcaster": {
+            "label": "Debt Cap Trial",
+            "intro": (
+                "A black candle is lit beneath the altar. The rite teaches the ring to hold "
+                "shadow debt without letting it swallow its bearer."
+            ),
+        },
+        "Knight Enchanter": {
+            "label": "Arcane Duel",
+            "intro": (
+                "The chapel floor becomes a dueling circle of warded light. Steel and mana must "
+                "answer together before the ring accepts Mana Tap+."
+            ),
+        },
+        "Grand Summoner": {
+            "label": "Conduit Ritual",
+            "intro": (
+                "The priest marks a summoning circle around the Class Ring. A permanent sliver "
+                "of life is offered so every summoned ally can carry more of your will."
+            ),
+        },
+    }
     
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
@@ -26,6 +57,8 @@ class ChurchManager(TownScreenBase):
     def visit_church(self):
         """Visit the Church of Elysia."""
         church_options = ["Promotion", "Save Game", "Quests"]
+        if self._arcane_class_ring_rite_available():
+            church_options.append(self._arcane_class_ring_rite_label())
         if demonologist.is_demonologist(self.player_char):
             church_options.append("Hidden Crypt")
         church_options.append("Leave")
@@ -59,8 +92,60 @@ class ChurchManager(TownScreenBase):
                 )
                 qm.check_and_offer('Priest')
 
+            elif church_options[choice_idx] == self._arcane_class_ring_rite_label():
+                self.visit_arcane_class_ring_rite()
+
             elif church_options[choice_idx] == "Hidden Crypt":
                 self.visit_hidden_crypt()
+
+            rite_label = self._arcane_class_ring_rite_label()
+            if self._arcane_class_ring_rite_available() and rite_label not in church_options:
+                church_options.insert(-1, rite_label)
+            elif not self._arcane_class_ring_rite_available() and rite_label in church_options:
+                church_options.remove(rite_label)
+
+    def _arcane_class_ring_rite_config(self):
+        return self.ARCANE_CLASS_RING_RITES.get(class_rings.class_name(self.player_char))
+
+    def _arcane_class_ring_rite_label(self):
+        config = self._arcane_class_ring_rite_config()
+        return config["label"] if config else "Class Ring Rite"
+
+    def _arcane_class_ring_rite_available(self):
+        class_name = class_rings.class_name(self.player_char)
+        return (
+            class_name in self.ARCANE_CLASS_RING_RITES
+            and class_rings.has_visible_class_ring(self.player_char)
+            and not class_rings.is_awakened(self.player_char, class_name)
+        )
+
+    def visit_arcane_class_ring_rite(self):
+        """Complete non-Demonologist Mage-branch Class Ring rites."""
+        class_name = class_rings.class_name(self.player_char)
+        config = self._arcane_class_ring_rite_config()
+        if not config:
+            popup = ConfirmationPopup(self.presenter, "No Class Ring rite answers you here.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+        if not self._arcane_class_ring_rite_available():
+            popup = ConfirmationPopup(self.presenter, "The Class Ring is not ready for this rite.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+
+        popup = ConfirmationPopup(self.presenter, config["intro"], show_buttons=False)
+        popup.show(**self.popup_show_kwargs())
+
+        success, message = self.player_char.awaken_class_ring(class_name)
+        ring = self.player_char.equipment.get("Ring")
+        if success and getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        popup = ConfirmationPopup(
+            self.presenter,
+            message.strip() or f"The Class Ring awakens through {config['label']}.",
+            show_buttons=False,
+        )
+        popup.show(**self.popup_show_kwargs())
+        return success
     
     def handle_promotion(self):
         """Handle class promotion at level 30."""

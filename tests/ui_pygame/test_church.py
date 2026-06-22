@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.core import companions, items
-from src.core.classes import demonologist
+from src.core.classes import class_rings, demonologist
 from src.ui_pygame.gui import church
 
 
@@ -384,3 +384,59 @@ def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):
     assert player.familiar is None
     assert any("Balor is now your active contract." in message for message in FakePopup.messages)
     assert any("Class Ring awakens" in message for message in FakePopup.messages)
+
+
+def test_arcane_class_ring_rite_requires_visible_dormant_ring(monkeypatch):
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Wizard")
+    player.class_ring_awakening = class_rings.default_state()
+    player.inventory = {"Class Ring": [items.ClassRing()]}
+    presenter = _make_presenter()
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+
+    manager = church.ChurchManager(presenter, player)
+    assert manager._arcane_class_ring_rite_label() == "Four Formulae"
+    assert manager._arcane_class_ring_rite_available() is False
+
+    player.storage = {"Class Ring": [items.ClassRing()]}
+    assert manager._arcane_class_ring_rite_available() is True
+
+    player.storage = {}
+    player.equipment["Ring"] = items.ClassRing()
+    assert manager._arcane_class_ring_rite_available() is True
+
+    player.class_ring_awakening["awakened"]["Wizard"] = True
+    assert manager._arcane_class_ring_rite_available() is False
+
+
+def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
+    FakePopup.messages = []
+    presenter = _make_presenter()
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+
+    for class_name, expected_mod, expected_label in (
+        ("Wizard", "School Streak", "Four Formulae"),
+        ("Shadowcaster", "Umbral Debt", "Debt Cap Trial"),
+        ("Knight Enchanter", "Mana Tap+", "Arcane Duel"),
+        ("Grand Summoner", "+30% Summons", "Conduit Ritual"),
+    ):
+        player = _make_player()
+        player.cls = SimpleNamespace(name=class_name)
+        player.class_ring_awakening = class_rings.default_state()
+        player.equipment["Ring"] = items.ClassRing()
+        player.health = SimpleNamespace(current=200, max=200)
+        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+            _player,
+            class_name,
+            **kwargs,
+        )
+
+        manager = church.ChurchManager(presenter, player)
+        assert manager.visit_arcane_class_ring_rite() is True
+        assert player.class_ring_awakening["awakened"][class_name] is True
+        assert player.equipment["Ring"].mod == expected_mod
+        assert any(expected_label in message for message in FakePopup.messages)
+        if class_name == "Grand Summoner":
+            assert player.health.max == 190
+            assert player.health.current == 190

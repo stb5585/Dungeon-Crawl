@@ -25,6 +25,14 @@
   - Expected: Winning the trial awakens the ring and changes its equipped mod to `Guard Meter`.
 - [ ] Lose or flee from `Guard The Fall` or `Siege Trial`.
   - Expected: The ring remains dormant and the player is not sent through the normal death/resurrection flow.
+- [ ] Visit the Church as a Wizard, Shadowcaster, or Knight Enchanter with a dormant Class Ring equipped or stored.
+  - Expected: The Church menu includes the matching rite: `Four Formulae`, `Debt Cap Trial`, or `Arcane Duel`.
+  - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
+- [ ] Visit the Church as a Grand Summoner with a dormant Class Ring equipped or stored.
+  - Expected: The Church menu includes `Conduit Ritual`.
+  - Expected: Completing the rite awakens the ring, applies `+30% Summons`, and permanently sacrifices 5% max HP.
+- [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
+  - Expected: The class-specific rite does not appear until the ring is equipped or stored.
 
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
