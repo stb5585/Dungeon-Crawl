@@ -7,7 +7,7 @@ import os
 
 from src.core import companions
 from src.core.abilities import spell_dict, skill_dict
-from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist, paladin_vows
+from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist, paladin
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
@@ -179,12 +179,12 @@ class ChurchManager(TownScreenBase):
                 church_options.remove(rite_label)
 
     def _choose_paladin_vow(self):
-        choices = list(paladin_vows.PATHS)
+        choices = list(paladin.PATHS)
         idx = self.presenter.render_menu("Choose Paladin Vow", choices)
         if idx is None or not (0 <= idx < len(choices)):
             return None
         vow = choices[idx]
-        desc = paladin_vows.DESCRIPTIONS[vow]
+        desc = paladin.DESCRIPTIONS[vow]
         confirm = self.presenter.render_menu(
             f"Swear the Vow of {vow}?\n\n{desc}",
             ["Yes", "No"],
@@ -192,7 +192,7 @@ class ChurchManager(TownScreenBase):
         return vow if confirm == 0 else None
 
     def _legacy_paladin_vow_available(self):
-        return paladin_vows.is_paladin_lineage(self.player_char) and not paladin_vows.path(self.player_char)
+        return paladin.is_paladin_lineage(self.player_char) and not paladin.path(self.player_char)
 
     def visit_legacy_paladin_vow_choice(self):
         if not self._legacy_paladin_vow_available():
@@ -214,7 +214,7 @@ class ChurchManager(TownScreenBase):
             class_rings.class_name(self.player_char) == "Crusader"
             and class_rings.has_visible_class_ring(self.player_char)
             and not class_rings.is_awakened(self.player_char, "Crusader")
-            and bool(paladin_vows.path(self.player_char))
+            and bool(paladin.path(self.player_char))
         )
 
     def visit_crusader_vow_trial(self):
@@ -222,7 +222,7 @@ class ChurchManager(TownScreenBase):
             popup = ConfirmationPopup(self.presenter, "The Vow Trial does not answer yet.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
             return False
-        vow = paladin_vows.path(self.player_char)
+        vow = paladin.path(self.player_char)
         popup = ConfirmationPopup(
             self.presenter,
             f"The altar asks you to affirm the Vow of {vow}.",

@@ -307,12 +307,12 @@ class Redeem(Skill):
         target: Character | None = None,
         **kwargs: Any,
     ) -> str:
-        from .classes import paladin_vows
+        from .classes import paladin
 
         super().use(user, target, **kwargs)
         if target is None:
             return "There is no foe to redeem.\n"
-        return paladin_vows.attempt_redeem(user, target, rng=kwargs.get("rng"))
+        return paladin.attempt_redeem(user, target, rng=kwargs.get("rng"))
 
 
 class Challenge(Skill):
@@ -332,12 +332,12 @@ class Challenge(Skill):
         target: Character | None = None,
         **kwargs: Any,
     ) -> str:
-        from .classes import paladin_vows
+        from .classes import paladin
 
         super().use(user, target, **kwargs)
         if target is None:
             return "There is no foe to challenge.\n"
-        return paladin_vows.start_challenge(user, target)
+        return paladin.start_challenge(user, target)
 
 
 class Interpose(Skill):
@@ -357,10 +357,10 @@ class Interpose(Skill):
         target: Character | None = None,
         **kwargs: Any,
     ) -> str:
-        from .classes import paladin_vows
+        from .classes import paladin
 
         super().use(user, target, **kwargs)
-        return paladin_vows.start_interpose(user)
+        return paladin.start_interpose(user)
 
 
 class JudgmentRiposte(Skill):
@@ -380,10 +380,10 @@ class JudgmentRiposte(Skill):
         target: Character | None = None,
         **kwargs: Any,
     ) -> str:
-        from .classes import paladin_vows
+        from .classes import paladin
 
         super().use(user, target, **kwargs)
-        return paladin_vows.start_riposte(user)
+        return paladin.start_riposte(user)
 
 
 class Spell(Ability):

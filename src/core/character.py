@@ -689,9 +689,9 @@ class Character:
         except Exception:
             pass
         try:
-            from .classes import paladin_vows
+            from .classes import paladin
 
-            chance += paladin_vows.retribution_dodge_bonus(self)
+            chance += paladin.retribution_dodge_bonus(self)
         except Exception:
             pass
         # Dwarf Gluttony (in-combat hangover): reduced dodge while active.
@@ -792,9 +792,9 @@ class Character:
             crit_per = random.uniform(1, crits[i])
             if crit_per > 1:
                 try:
-                    from .classes import paladin_vows
+                    from .classes import paladin
 
-                    crit_per *= paladin_vows.retribution_crit_damage_multiplier(self)
+                    crit_per *= paladin.retribution_crit_damage_multiplier(self)
                 except Exception:
                     pass
             weapon_type = getattr(self.equipment[att], "subtyp", None)
@@ -879,9 +879,9 @@ class Character:
                     pass
                 lethal_msg = ""
                 try:
-                    from .classes import paladin_vows
+                    from .classes import paladin
 
-                    lethal_msg = paladin_vows.mercy_lethal_message(defender, damage)
+                    lethal_msg = paladin.mercy_lethal_message(defender, damage)
                 except Exception:
                     pass
                 if lethal_msg:
@@ -1070,9 +1070,9 @@ class Character:
         if can_block:
             blk_chance = defender.check_mod('shield', enemy=self) / 100
             try:
-                from .classes import paladin_vows
+                from .classes import paladin
 
-                blk_chance += paladin_vows.protection_block_bonus(defender)
+                blk_chance += paladin.protection_block_bonus(defender)
             except Exception:
                 pass
             if blk_chance > random.random():
@@ -1080,9 +1080,9 @@ class Character:
                 if 'Shield Block' in defender.spellbook['Skills']:
                     blk_per *= 1.25
                 try:
-                    from .classes import paladin_vows
+                    from .classes import paladin
 
-                    blk_per += paladin_vows.protection_mitigation_bonus(defender)
+                    blk_per += paladin.protection_mitigation_bonus(defender)
                 except Exception:
                     pass
                 if blk_per > 0:
@@ -1102,9 +1102,9 @@ class Character:
                         msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
                                 f"{blocked_pct} percent of the damage.\n")
                     try:
-                        from .classes import paladin_vows
+                        from .classes import paladin
 
-                        msg += paladin_vows.block_succeeded(defender)
+                        msg += paladin.block_succeeded(defender)
                     except Exception:
                         pass
             return damage, msg, False
@@ -1208,9 +1208,9 @@ class Character:
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
         try:
-            from .classes import paladin_vows
+            from .classes import paladin
 
-            damage = int(damage * paladin_vows.incoming_damage_multiplier(defender, "Physical"))
+            damage = int(damage * paladin.incoming_damage_multiplier(defender, "Physical"))
         except Exception:
             pass
 
@@ -1411,9 +1411,9 @@ class Character:
         
         final_damage = int(damage * (1 - resist))
         try:
-            from .classes import paladin_vows
+            from .classes import paladin
 
-            final_damage = int(final_damage * paladin_vows.incoming_damage_multiplier(self, typ))
+            final_damage = int(final_damage * paladin.incoming_damage_multiplier(self, typ))
         except Exception:
             pass
 

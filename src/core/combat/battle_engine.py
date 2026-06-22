@@ -44,7 +44,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import paladin_vows
+from ..classes import paladin
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -196,8 +196,8 @@ class BattleEngine:
             boss=self.boss,
         )
 
-        paladin_vows.advance_encounter(self.player)
-        paladin_vows.clear_transient_marks(self.player)
+        paladin.advance_encounter(self.player)
+        paladin.clear_transient_marks(self.player)
         return self.attacker, self.defender
 
     def battle_continues(self) -> bool:
@@ -269,7 +269,7 @@ class BattleEngine:
             if interrupted:
                 result.effects_text = f"{result.effects_text or ''}{interrupted}"
             if self.attacker == self.player:
-                vow_text = paladin_vows.on_incapacitated(self.player)
+                vow_text = paladin.on_incapacitated(self.player)
                 if vow_text:
                     result.effects_text = f"{result.effects_text or ''}{vow_text}"
             result.can_act = False
@@ -425,7 +425,7 @@ class BattleEngine:
                 self.flee = True
                 if hasattr(self.player, "record_flee"):
                     self.player.record_flee()
-                vow_text = paladin_vows.on_flee(self.player, success=True)
+                vow_text = paladin.on_flee(self.player, success=True)
                 if vow_text:
                     result.message += vow_text
 
@@ -534,12 +534,12 @@ class BattleEngine:
                         result.messages.append(special)
 
             if self.attacker == self.enemy and self.defender == self.player:
-                riposte = paladin_vows.resolve_riposte(self.player, self.enemy)
+                riposte = paladin.resolve_riposte(self.player, self.enemy)
                 if riposte:
                     result.messages.append(riposte)
 
-        paladin_vows.tick_turn(self.player)
-        paladin_vows.clear_transient_marks(self.player)
+        paladin.tick_turn(self.player)
+        paladin.clear_transient_marks(self.player)
         self.logger.next_turn()
         return result
 
@@ -889,7 +889,7 @@ class BattleEngine:
             if hasattr(self.player, "refresh_demonologist_contracts"):
                 self.player.refresh_demonologist_contracts()
 
-            vow_text = paladin_vows.on_enemy_defeated(
+            vow_text = paladin.on_enemy_defeated(
                 self.player,
                 self.enemy,
                 bounty_target=self._enemy_is_active_bounty(),
@@ -928,7 +928,7 @@ class BattleEngine:
         if not gold:
             return ""
         try:
-            gold = max(0, int(gold * paladin_vows.redemption_reward_multiplier(self.player)))
+            gold = max(0, int(gold * paladin.redemption_reward_multiplier(self.player)))
         except Exception:
             pass
         self.player.gold += gold

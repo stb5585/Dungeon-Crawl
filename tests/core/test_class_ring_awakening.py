@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
 from src.core.combat.battle_engine import BattleEngine
-from src.core.classes import class_rings, paladin_vows
+from src.core.classes import class_rings, paladin
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
@@ -124,8 +124,8 @@ def test_crusader_activation_requires_and_affirms_paladin_vow():
     assert "requires a sworn Paladin vow" in message
 
     player.choose_paladin_vow("Redemption")
-    paladin_vows.trigger_aura(player, "Redemption")
-    dormant_rate = paladin_vows.encounter_rate_multiplier(player)
+    paladin.trigger_aura(player, "Redemption")
+    dormant_rate = paladin.encounter_rate_multiplier(player)
 
     ok, message = player.awaken_class_ring()
     ring.class_mod(player)
@@ -134,7 +134,7 @@ def test_crusader_activation_requires_and_affirms_paladin_vow():
     assert "Vow Trial" in message
     assert ring.mod == "Vow Affirmation"
     assert player.class_ring_awakening["data"]["Crusader"]["vow"] == "Redemption"
-    assert paladin_vows.encounter_rate_multiplier(player) < dormant_rate
+    assert paladin.encounter_rate_multiplier(player) < dormant_rate
 
 
 def test_archbishop_intervention_and_reset_combat_flags():

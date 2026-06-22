@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.core import companions, items
-from src.core.classes import class_rings, demonologist, paladin_vows
+from src.core.classes import class_rings, demonologist, paladin
 from src.ui_pygame.gui import church
 
 
@@ -460,8 +460,8 @@ def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
 
     player = _make_player()
     player.cls = SimpleNamespace(name="Paladin")
-    player.paladin_vow = paladin_vows.default_state()
-    player.choose_paladin_vow = lambda vow: paladin_vows.choose_vow(player, vow)
+    player.paladin_vow = paladin.default_state()
+    player.choose_paladin_vow = lambda vow: paladin.choose_vow(player, vow)
     manager = church.ChurchManager(presenter, player)
 
     assert manager._legacy_paladin_vow_available() is True

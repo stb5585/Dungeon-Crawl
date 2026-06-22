@@ -609,9 +609,9 @@ class CavePath(MapTile):
 
         encounter_roll_max = 4 + extra_roll
         try:
-            from .classes import paladin_vows
+            from .classes import paladin
 
-            multiplier = paladin_vows.encounter_rate_multiplier(game.player_char)
+            multiplier = paladin.encounter_rate_multiplier(game.player_char)
             encounter_slots = max(1, int(round((encounter_roll_max + 1) / multiplier)))
             encounter_roll_max = max(0, encounter_slots - 1)
         except Exception:

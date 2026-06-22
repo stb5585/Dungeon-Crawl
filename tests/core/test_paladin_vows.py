@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 
 from src.core import abilities, items
-from src.core.classes import paladin_vows
+from src.core.classes import paladin
 from src.core.combat.battle_engine import BattleEngine
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
@@ -30,7 +30,7 @@ def _enemy(name="Bandit", hp=(40, 10), exp=25, gold=12):
 def test_vow_state_normalizes_legacy_values_and_grants_signature_skill():
     player = _player()
 
-    assert paladin_vows.normalize_state("redemption")["path"] == "Redemption"
+    assert paladin.normalize_state("redemption")["path"] == "Redemption"
 
     ok, message = player.choose_paladin_vow("Protection")
 
@@ -47,7 +47,7 @@ def test_vow_state_normalizes_legacy_values_and_grants_signature_skill():
 def test_save_load_preserves_vow_state_and_skill():
     player = _player()
     player.choose_paladin_vow("Retribution")
-    paladin_vows.trigger_aura(player, "Retribution", doubled=True)
+    paladin.trigger_aura(player, "Retribution", doubled=True)
 
     data = PlayerDataSerializer.serialize(player)
     restored = PlayerDataSerializer.deserialize(data, skip_tiles=True)
@@ -82,26 +82,26 @@ def test_vow_skills_update_state_for_challenge_interpose_and_riposte():
     conquest.choose_paladin_vow("Conquest")
     foe = _enemy()
     assert "Challenged Foe" in abilities.Challenge().use(conquest, foe)
-    assert paladin_vows.challenge_matches(conquest, foe)
-    paladin_vows.apply_mark(conquest, "Conquest")
-    paladin_vows.on_enemy_defeated(conquest, foe, bounty_target=True)
-    assert not paladin_vows.mark_active(conquest, "Mark of the Craven")
+    assert paladin.challenge_matches(conquest, foe)
+    paladin.apply_mark(conquest, "Conquest")
+    paladin.on_enemy_defeated(conquest, foe, bounty_target=True)
+    assert not paladin.mark_active(conquest, "Mark of the Craven")
 
     protection = _player()
     protection.choose_paladin_vow("Protection")
     assert "guarded stance" in abilities.Interpose().use(protection)
     assert protection.paladin_vow["interpose"]["turns"] == 2
-    assert paladin_vows.block_succeeded(protection)
+    assert paladin.block_succeeded(protection)
     assert protection.paladin_vow["aura"]["name"] == "Protection Aura"
 
     retribution = _player()
     retribution.choose_paladin_vow("Retribution")
     assert "retaliatory judgment" in abilities.JudgmentRiposte().use(retribution)
-    assert paladin_vows.pending_riposte(retribution)
+    assert paladin.pending_riposte(retribution)
     target = _enemy(hp=(30, 30))
-    result = paladin_vows.resolve_riposte(retribution, target)
+    result = paladin.resolve_riposte(retribution, target)
     assert "Judgment Riposte" in result
-    assert not paladin_vows.pending_riposte(retribution)
+    assert not paladin.pending_riposte(retribution)
 
 
 def test_crusader_affirmation_scales_aura_and_mark_values():
@@ -110,12 +110,12 @@ def test_crusader_affirmation_scales_aura_and_mark_values():
     player.equipment["Ring"] = ring
     player.choose_paladin_vow("Conquest")
 
-    paladin_vows.trigger_aura(player, "Conquest")
-    dormant = paladin_vows.conquest_damage_multiplier(player)
+    paladin.trigger_aura(player, "Conquest")
+    dormant = paladin.conquest_damage_multiplier(player)
 
     ok, message = player.awaken_class_ring("Crusader")
     ring.class_mod(player)
-    affirmed = paladin_vows.conquest_damage_multiplier(player)
+    affirmed = paladin.conquest_damage_multiplier(player)
 
     assert ok is True
     assert "Vow Trial" in message
@@ -123,5 +123,5 @@ def test_crusader_affirmation_scales_aura_and_mark_values():
     assert ring.mod == "Vow Affirmation"
     assert affirmed > dormant
 
-    paladin_vows.apply_mark(player, "Conquest")
-    assert paladin_vows.conquest_damage_multiplier(player) > 0.90
+    paladin.apply_mark(player, "Conquest")
+    assert paladin.conquest_damage_multiplier(player) > 0.90

@@ -348,9 +348,9 @@ def activate(character: Any, class_name_value: str | None = None, **kwargs: Any)
         return False, f"The {target} Class Ring is already awakened.\n"
 
     if target == "Crusader":
-        from . import paladin_vows
+        from . import paladin
 
-        vow = paladin_vows.normalize_path(kwargs.get("vow")) or paladin_vows.path(character)
+        vow = paladin.normalize_path(kwargs.get("vow")) or paladin.path(character)
         if not vow:
             return False, "The Vow Trial requires a sworn Paladin vow.\n"
         state["data"]["Crusader"]["vow"] = vow

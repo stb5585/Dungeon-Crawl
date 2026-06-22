@@ -37,9 +37,9 @@ def choose_familiar(game):
 
 def choose_paladin_vow(game):
     from src.ui_curses import menus as utils
-    from src.core.classes import paladin_vows
+    from src.core.classes import paladin
 
-    choices = list(paladin_vows.PATHS)
+    choices = list(paladin.PATHS)
     choose_dict = {choice: choice for choice in choices}
     popup = utils.PromotionPopupMenu(game, "Select Paladin Vow", "Paladin")
     popup.update_options(choices, choose_dict)
@@ -49,7 +49,7 @@ def choose_paladin_vow(game):
     vow = choices[vow_idx]
     confirm = utils.ConfirmPopupMenu(
         game,
-        f"Swear the Vow of {vow}? {paladin_vows.DESCRIPTIONS[vow]}",
+        f"Swear the Vow of {vow}? {paladin.DESCRIPTIONS[vow]}",
         box_height=10,
     )
     return vow if confirm.navigate_popup() else None
