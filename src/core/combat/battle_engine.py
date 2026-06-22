@@ -145,6 +145,28 @@ class BattleEngine:
 
         self._event_bus = get_event_bus()
 
+    def _is_class_ring_trial_enemy(self) -> bool:
+        """Return whether this fight should use Class Ring trial bookkeeping."""
+        return bool(
+            getattr(self.enemy, "grandmaster_trial_enemy", False)
+            or getattr(self.enemy, "class_ring_trial_enemy", False)
+        )
+
+    def _class_ring_trial_name(self) -> str:
+        return str(getattr(self.enemy, "class_ring_trial_name", "Class Ring trial"))
+
+    def _no_healing_duel_active(self) -> bool:
+        return bool(getattr(self.enemy, "class_ring_no_healing_duel", False))
+
+    def _fail_no_healing_duel_if_healed(self, hp_before: int) -> str:
+        """Fail the Berserker duel when the player restores HP during the bout."""
+        if not self._no_healing_duel_active():
+            return ""
+        if self.player.health.current <= hp_before:
+            return ""
+        self.player.health.current = 0
+        return "The No Healing Duel rejects restored life. You yield the bout.\n"
+
     # ── Lifecycle ────────────────────────────────────────────────────
 
     def start_battle(self) -> tuple[Character, Character]:
@@ -209,6 +231,8 @@ class BattleEngine:
         # effects still consume the current turn when they expire this tick.
         active_at_turn_start, inactive_reason_at_turn_start = self.attacker.check_active()
 
+        hp_before = self.player.health.current if self.attacker == self.player else 0
+
         # Process status effects (poison ticks, bleed, regen, etc.)
         effects_text = self.attacker.effects()
         if effects_text:
@@ -222,6 +246,14 @@ class BattleEngine:
                     result.shield_explosion_damage = dmg
                 except (ValueError, IndexError):
                     pass
+
+        if self.attacker == self.player:
+            duel_text = self._fail_no_healing_duel_if_healed(hp_before)
+            if duel_text:
+                result.effects_text = f"{result.effects_text or ''}{duel_text}"
+                result.died_from_effects = True
+                result.can_act = False
+                return result
 
         # Check if the attacker died from their own effects
         if not self.attacker.is_alive():
@@ -367,6 +399,7 @@ class BattleEngine:
             ActionResult with the message text and status flags.
         """
         result = ActionResult()
+        hp_before = self.player.health.current
 
         if action == "Nothing" or action == "Cancelled":
             result.message = f"{self.attacker.name} does nothing.\n"
@@ -415,6 +448,10 @@ class BattleEngine:
 
         else:
             result.message = f"{self.attacker.name} does nothing.\n"
+
+        duel_text = self._fail_no_healing_duel_if_healed(hp_before)
+        if duel_text:
+            result.message = f"{result.message}{duel_text}"
 
         # Log the action
         self.logger.log_event(
@@ -519,6 +556,8 @@ class BattleEngine:
             outcome.winner = self.player.name
             if getattr(self.enemy, "grandmaster_trial_enemy", False):
                 outcome.message = self._process_grandmaster_trial_victory()
+            elif self._is_class_ring_trial_enemy():
+                outcome.message = self._process_class_ring_trial_victory()
             else:
                 outcome.message = self._process_victory()
             # Check for level up possibility
@@ -528,9 +567,9 @@ class BattleEngine:
             outcome.result = "defeat"
             outcome.winner = self.enemy.name
             outcome.message = f"{self.player.name} was slain by {self.enemy.name}.\n"
-            if getattr(self.enemy, "grandmaster_trial_enemy", False):
+            if self._is_class_ring_trial_enemy():
                 outcome.message = f"{self.player.name} yields the trial bout.\n"
-                self._process_grandmaster_trial_defeat()
+                self._process_class_ring_trial_defeat()
             else:
                 self._process_defeat()
 
@@ -873,8 +912,17 @@ class BattleEngine:
             msg += "\n".join(rank_ups) + "\n"
         return msg
 
-    def _process_grandmaster_trial_defeat(self) -> None:
-        """Handle Secret Master trial defeat without normal death rules."""
+    def _process_class_ring_trial_victory(self) -> str:
+        """Handle legacy Class Ring trial victory without normal combat rewards."""
+        self.player.state = 'normal'
+        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
+            self.player.transform(back=True)
+        self.player.effects(end=True)
+        self.enemy.effects(end=True)
+        return f"You complete the {self._class_ring_trial_name()}.\n"
+
+    def _process_class_ring_trial_defeat(self) -> None:
+        """Handle Class Ring trial defeat without normal death rules."""
         self.player.state = 'normal'
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)

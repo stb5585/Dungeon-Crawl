@@ -4,6 +4,20 @@
 
 ## Recently Changed
 
+### Class Ring Activations
+- [ ] Visit the Barracks as a Berserker with a dormant Class Ring equipped.
+  - Expected: The Barracks menu includes `No Healing Duel`.
+  - Expected: Winning the duel awakens the ring and changes its equipped mod to `Bloodied Crits`.
+- [ ] Visit the Barracks as a Berserker with a dormant Class Ring only in inventory.
+  - Expected: The Barracks menu does not show `No Healing Duel`.
+- [ ] Store the dormant Berserker Class Ring in the Barracks storage locker, then revisit the Barracks.
+  - Expected: The Barracks menu shows `No Healing Duel` even if the ring is not equipped.
+- [ ] Restore HP during the Berserker No Healing Duel through a potion, spell, or regeneration effect.
+  - Expected: The duel immediately fails with no normal death penalty.
+  - Expected: Any consumable used before the failure remains spent.
+- [ ] Lose or flee from the Berserker No Healing Duel.
+  - Expected: The ring remains dormant and the player is not sent through the normal death/resurrection flow.
+
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
   - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.

@@ -4,12 +4,13 @@
 
 Class Ring activation now has two implementation tiers:
 
-- Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`, and
-  `Archdruid`.
+- Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
+  `Archdruid`, and `Berserker`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
-  are implemented for the remaining second-promotion classes. Their full
-  town/quest/trial flows still need individual implementation passes.
+  are implemented for the remaining second-promotion classes. Except for
+  Berserker, their full town/quest/trial flows still need individual
+  implementation passes.
 
 The standard Class Ring acquisition remains the Hooded Figure reward after the
 Red Dragon quest. The ring's second-promotion power is dormant until awakened by
@@ -252,6 +253,12 @@ class.
 - `Berserker`: `No Healing Duel` awakens `Bloodied Crits`. While worn, the
   ring grants +10% crit below 50% HP, or +15% crit and +15% weapon damage below
   25% HP.
+  - Status: playable in the Barracks when a dormant Berserker Class Ring is
+    equipped or stored.
+  - The duel has no normal XP, gold, loot, quest, kill-count, or death penalty
+    rewards/outcomes.
+  - Any player HP restoration during the duel fails the attempt; consumables
+    spent before failure remain spent.
 - `Crusader`: `Vow Trial` awakens `Vow Affirmation`. This depends on the
   future Paladin vow-selection system, then improves that vow's aura and
   softens its mark drawback.

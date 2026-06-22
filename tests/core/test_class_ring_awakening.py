@@ -7,6 +7,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
+from src.core.combat.battle_engine import BattleEngine
 from src.core.classes import class_rings
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
@@ -42,6 +43,34 @@ def test_berserker_bloodied_crits_and_weapon_damage_require_awakening():
     assert player.critical_chance("Weapon") >= dormant_crit + 0.14
     assert player.check_mod("weapon") > dormant_weapon
     assert player.equipment["Ring"].mod == "Bloodied Crits"
+
+
+def test_no_healing_duel_fails_when_player_restores_hp():
+    player, _ring = _player_with_class_ring("Berserker", health=(100, 30))
+    player.change_location(0, 0, 1)
+    player.inventory = {"Health Potion": [items.HealthPotion()]}
+    enemy = SimpleNamespace(
+        name="Trial Champion",
+        health=SimpleNamespace(current=50, max=50),
+        mana=SimpleNamespace(current=0, max=1),
+        effects=lambda end=False: "",
+        is_alive=lambda: True,
+        class_ring_trial_enemy=True,
+        class_ring_trial_name="No Healing Duel",
+        class_ring_no_healing_duel=True,
+    )
+    tile = SimpleNamespace(available_actions=lambda _player: ["Attack", "Use Item"])
+    engine = BattleEngine(player, enemy, tile)
+    engine.attacker = player
+    engine.defender = enemy
+
+    result = engine.execute_action("Use Item", "Health Potion")
+    outcome = engine.end_battle()
+
+    assert "rejects restored life" in result.message
+    assert outcome.result == "defeat"
+    assert player.health.current == 1
+    assert player.in_town() is False
 
 
 def test_dragoon_jump_mod_stays_dormant_until_guard_the_fall():

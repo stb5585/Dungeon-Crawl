@@ -4,7 +4,7 @@ Implements the core barracks logic from town.py adapted for Pygame presenter.
 """
 
 from src.core import enemies, items, map_tiles
-from src.core.classes import grandmaster
+from src.core.classes import class_rings, grandmaster
 from src.core.data.data_loader import get_special_events
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
@@ -70,6 +70,8 @@ class BarracksManager(TownScreenBase):
     def visit_barracks(self):
         """Visit the barracks for quests and storage."""
         barracks_options = ["Quests", "Storage"]
+        if self._berserker_duel_available():
+            barracks_options.append("No Healing Duel")
         if self._grandmaster_hall_available():
             barracks_options.append("Secret Hall")
         barracks_options.append("Leave")
@@ -148,10 +150,17 @@ class BarracksManager(TownScreenBase):
 
             elif choice_label == "Storage":
                 self.manage_storage()
+                if self._berserker_duel_available() and "No Healing Duel" not in barracks_options:
+                    barracks_options.insert(-1, "No Healing Duel")
+                elif not self._berserker_duel_available() and "No Healing Duel" in barracks_options:
+                    barracks_options.remove("No Healing Duel")
                 if self._grandmaster_hall_available() and "Secret Hall" not in barracks_options:
                     barracks_options.insert(-1, "Secret Hall")
                 elif not self._grandmaster_hall_available() and "Secret Hall" in barracks_options:
                     barracks_options.remove("Secret Hall")
+
+            elif choice_label == "No Healing Duel":
+                self.visit_berserker_no_healing_duel(draw_barracks_background)
 
             elif choice_label == "Secret Hall":
                 self.visit_grandmaster_secret_hall(draw_barracks_background)
@@ -160,6 +169,13 @@ class BarracksManager(TownScreenBase):
         return (
             grandmaster.is_grandmaster(self.player_char)
             and grandmaster.ring_visible_for_sergeant(self.player_char)
+        )
+
+    def _berserker_duel_available(self):
+        return (
+            class_rings.class_name(self.player_char) == "Berserker"
+            and class_rings.has_visible_class_ring(self.player_char)
+            and not class_rings.is_awakened(self.player_char, "Berserker")
         )
 
     def _show_message(self, message, background_draw_func=None):
@@ -279,6 +295,66 @@ class BarracksManager(TownScreenBase):
             if not rebind else f"The Class Ring is rebound to {weapon_type} Discipline."
         )
         return True
+
+    def _berserker_duel_enemy(self):
+        level = max(1, int(getattr(getattr(self.player_char, "level", None), "level", 1)))
+        pro_level = max(1, int(getattr(getattr(self.player_char, "level", None), "pro_level", 1)))
+        scale = 1 + (pro_level * 0.20)
+        enemy = enemies.Enemy(
+            name="Scarred Barracks Champion",
+            health=int((95 + level * 10 + pro_level * 28) * scale),
+            mana=0,
+            strength=int((22 + level // 2 + pro_level * 4) * scale),
+            intel=6,
+            wisdom=8,
+            con=int((18 + level // 3 + pro_level * 3) * scale),
+            charisma=10,
+            dex=int((16 + level // 3 + pro_level * 2) * scale),
+            attack=int((24 + level // 2 + pro_level * 4) * scale),
+            defense=int((16 + level // 3 + pro_level * 3) * scale),
+            magic=0,
+            magic_def=int((10 + level // 4) * scale),
+            exp=0,
+        )
+        enemy.gold = 0
+        enemy.inventory = {}
+        enemy.enemy_typ = "Trial"
+        enemy.class_ring_trial_enemy = True
+        enemy.class_ring_trial_name = "No Healing Duel"
+        enemy.class_ring_no_healing_duel = True
+        return enemy
+
+    def _run_berserker_duel(self):
+        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        if combat_manager is None:
+            return False
+
+        self._apply_trial_recovery_floor()
+        tile = GrandmasterTrialTile(0, 0, 0)
+        tile.enemy = None
+        return combat_manager.start_combat(
+            self.player_char,
+            self._berserker_duel_enemy(),
+            tile,
+        )
+
+    def visit_berserker_no_healing_duel(self, background_draw_func=None):
+        self._show_message(
+            "The Sergeant clears the sparring floor. A scarred champion waits with no healer, "
+            "no mercy, and one rule: win without restoring your wounds.",
+            background_draw_func=background_draw_func,
+        )
+
+        if not self._run_berserker_duel():
+            self._show_message("The duel ends. The champion waits for a cleaner victory.")
+            return False
+
+        success, message = self.player_char.awaken_class_ring("Berserker")
+        ring = self.player_char.equipment.get("Ring")
+        if success and getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        self._show_message(message.strip() or "The Class Ring awakens through the No Healing Duel.")
+        return success
 
     def _quest_turned_in(self, quest_name):
         quest_dict = getattr(self.player_char, "quest_dict", {})

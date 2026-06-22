@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.core import items
-from src.core.classes import grandmaster
+from src.core.classes import class_rings, grandmaster
 from src.ui_pygame.gui import barracks
 
 
@@ -203,6 +203,48 @@ def test_grandmaster_hall_binds_after_successful_gauntlet(monkeypatch):
     assert player.grandmaster_discipline["bound_weapon"] == "Sword"
     assert player.equipment["Ring"].mod == "Sword Discipline x2"
     assert any("awakens to Sword Discipline" in message for message in FakePopup.messages)
+
+
+def test_berserker_duel_requires_visible_dormant_class_ring(monkeypatch):
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Berserker")
+    player.class_ring_awakening = class_rings.default_state()
+    player.inventory = {"Class Ring": [items.ClassRing()]}
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+
+    manager = barracks.BarracksManager(presenter, player)
+    assert manager._berserker_duel_available() is False
+
+    player.storage = {"Class Ring": [items.ClassRing()]}
+    assert manager._berserker_duel_available() is True
+
+    player.storage = {}
+    player.equipment["Ring"] = items.ClassRing()
+    assert manager._berserker_duel_available() is True
+
+    player.class_ring_awakening["awakened"]["Berserker"] = True
+    assert manager._berserker_duel_available() is False
+
+
+def test_berserker_duel_awakes_ring_after_successful_bout(monkeypatch):
+    FakePopup.messages = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Berserker")
+    player.class_ring_awakening = class_rings.default_state()
+    player.equipment["Ring"] = items.ClassRing()
+    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(player, class_name, **kwargs)
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
+
+    manager = barracks.BarracksManager(presenter, player)
+    monkeypatch.setattr(manager, "_run_berserker_duel", lambda: True)
+
+    assert manager.visit_berserker_no_healing_duel() is True
+    assert player.class_ring_awakening["awakened"]["Berserker"] is True
+    assert player.equipment["Ring"].mod == "Bloodied Crits"
+    assert any("No Healing Duel" in message for message in FakePopup.messages)
 
 
 def test_manage_storage_store_and_retrieve(monkeypatch):
