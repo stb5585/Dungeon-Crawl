@@ -48,6 +48,62 @@ class ChurchManager(TownScreenBase):
                 "of life is offered so every summoned ally can carry more of your will."
             ),
         },
+        "Templar": {
+            "label": "Relic Defense",
+            "intro": (
+                "A relic is set upon the altar and every candle bends toward it. Stand before "
+                "it, and the Class Ring will learn ordered blessings from your defense."
+            ),
+        },
+        "Master Monk": {
+            "label": "Purity Rite",
+            "intro": (
+                "The priest empties the chapel of weapons and armor. The rite asks whether your "
+                "body and mind are enough for the Class Ring to answer."
+            ),
+        },
+        "Archbishop": {
+            "label": "Miracle Vigil",
+            "intro": (
+                "A night-long vigil is compressed into one breath of prayer. The ring listens "
+                "for the moment where a miracle may choose to intervene."
+            ),
+        },
+        "Troubadour": {
+            "label": "Lost Ballad",
+            "intro": (
+                "An unfinished hymn is placed in your hands. Sing the missing ending, and the "
+                "Class Ring will remember how a song can echo after silence."
+            ),
+        },
+        "Lycan": {
+            "label": "Control Rite",
+            "intro": (
+                "Silver dust marks a careful circle around the altar. The rite does not deny the "
+                "beast; it teaches the ring how choice can guide the frenzy."
+            ),
+        },
+        "Astromancer": {
+            "label": "Star Chart",
+            "intro": (
+                "The chapel ceiling darkens into a field of stars. Trace the chart, and the ring "
+                "will turn each constellation with your casting."
+            ),
+        },
+        "Soulcatcher": {
+            "label": "Ancestral Totem Rite",
+            "intro": (
+                "Old names are spoken over a quiet totem. The ring learns to carry ancestral "
+                "aspects without letting any single spirit own the path."
+            ),
+        },
+        "Beast Master": {
+            "label": "Pack Trial",
+            "intro": (
+                "The priest sets two bowls of spring water side by side. The trial binds recovery "
+                "to the pack, so healing one life can answer in another."
+            ),
+        },
     }
     
     def __init__(self, presenter, player_char):

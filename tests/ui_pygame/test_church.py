@@ -420,6 +420,14 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         ("Shadowcaster", "Umbral Debt", "Debt Cap Trial"),
         ("Knight Enchanter", "Mana Tap+", "Arcane Duel"),
         ("Grand Summoner", "+30% Summons", "Conduit Ritual"),
+        ("Templar", "Ordered Blessings", "Relic Defense"),
+        ("Master Monk", "Martial Master", "Purity Rite"),
+        ("Archbishop", "Divine Intervention", "Miracle Vigil"),
+        ("Troubadour", "Encore", "Lost Ballad"),
+        ("Lycan", "Controlled Frenzy", "Control Rite"),
+        ("Astromancer", "Constellation Cycle", "Star Chart"),
+        ("Soulcatcher", "Aspect Evolution", "Ancestral Totem Rite"),
+        ("Beast Master", "Shared Recovery", "Pack Trial"),
     ):
         player = _make_player()
         player.cls = SimpleNamespace(name=class_name)

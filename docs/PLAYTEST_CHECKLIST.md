@@ -31,6 +31,9 @@
 - [ ] Visit the Church as a Grand Summoner with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes `Conduit Ritual`.
   - Expected: Completing the rite awakens the ring, applies `+30% Summons`, and permanently sacrifices 5% max HP.
+- [ ] Visit the Church as a Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
+  - Expected: The Church menu includes the matching rite: `Relic Defense`, `Purity Rite`, `Miracle Vigil`, `Lost Ballad`, `Control Rite`, `Star Chart`, `Ancestral Totem Rite`, or `Pack Trial`.
+  - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
 - [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.

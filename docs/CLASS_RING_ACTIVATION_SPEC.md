@@ -7,7 +7,8 @@ Class Ring activation now has two implementation tiers:
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
   `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
-  `Ninja`, and `Arcane Trickster`.
+  `Ninja`, `Arcane Trickster`, `Templar`, `Master Monk`, `Archbishop`,
+  `Troubadour`, `Lycan`, `Astromancer`, `Soulcatcher`, and `Beast Master`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
   are implemented for the remaining second-promotion classes. Except for
@@ -319,17 +320,33 @@ class.
 
 - `Templar`: `Relic Defense` awakens `Ordered Blessings`, rotating Regen,
   Defense, and Holy damage blessings through relevant actions.
+  - Status: playable in the Church when a dormant Templar Class Ring is equipped
+    or stored.
 - `Master Monk`: `Purity Rite` awakens `Martial Master`, granting +50% damage
   and armor while unarmed and unarmored.
+  - Status: playable in the Church when a dormant Master Monk Class Ring is
+    equipped or stored.
 - `Archbishop`: `Miracle Vigil` awakens `Divine Intervention`, a once-per-combat
   35% chance to heal 25% max HP on first falling below 50% HP.
+  - Status: playable in the Church when a dormant Archbishop Class Ring is
+    equipped or stored.
 - `Troubadour`: `Lost Ballad` awakens `Encore`, causing expired songs to trigger
   one final weaker effect.
+  - Status: playable in the Church when a dormant Troubadour Class Ring is
+    equipped or stored.
 - `Lycan`: `Control Rite` awakens `Controlled Frenzy`, reducing lock-in
   penalties and improving healing while locked in.
+  - Status: playable in the Church when a dormant Lycan Class Ring is equipped
+    or stored.
 - `Astromancer`: `Star Chart` awakens `Constellation Cycle`, advancing active
   constellations through casting and granting matching bonuses.
+  - Status: playable in the Church when a dormant Astromancer Class Ring is
+    equipped or stored.
 - `Soulcatcher`: `Ancestral Totem Rite` awakens `Aspect Evolution`, improving
   Soul Aspect based on distinct enemy types harvested.
+  - Status: playable in the Church when a dormant Soulcatcher Class Ring is
+    equipped or stored.
 - `Beast Master`: `Pack Trial` awakens `Shared Recovery`, echoing a smaller heal
   to the bonded partner when the hero or companion is healed.
+  - Status: playable in the Church when a dormant Beast Master Class Ring is
+    equipped or stored.
