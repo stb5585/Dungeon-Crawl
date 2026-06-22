@@ -707,6 +707,17 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     assert switch_calls == [(game, "1234")]
     assert "Barrier gone" in manager.messages
 
+    branch_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.CodeEntryPopup", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("code popup should not open")))
+    monkeypatch.setattr(dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Kaelenon returns home"])
+    kaelenon_switch = SimpleNamespace(
+        has_kaelenon_branch=lambda game_arg: True,
+        resolve_kaelenon_branch=lambda game_arg: branch_calls.append(game_arg),
+    )
+    manager._interact_anti_magic_switch(kaelenon_switch)
+    assert branch_calls == [game]
+    assert "Kaelenon returns home" in manager.messages
+
     unobtainium_tile = SimpleNamespace(visited=False)
     monkeypatch.setattr("src.core.items.Unobtainium", lambda: SimpleNamespace(name="Unobtainium"))
     manager._interact_unobtainium_room(unobtainium_tile)

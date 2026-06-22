@@ -4,6 +4,7 @@ Implements the core shop logic from town.py adapted for Pygame presenter.
 """
 
 from src.core import items as items_module
+from src.core.classes import dragoon
 from .shop_screen import ShopScreen
 from .confirmation_popup import ConfirmationPopup
 from .town_base import TownScreenBase
@@ -115,7 +116,10 @@ class ShopManager(TownScreenBase):
             self.player_char,
             quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
         )
-        shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
+        options = ["Buy", "Sell", "Quests", "Leave"]
+        if dragoon.can_craft_draconite_pendant(self.player_char):
+            options.insert(3, "Craft Draconite Pendant")
+        shop_screen.set_options(options)
         
         while True:
             choice = shop_screen.navigate_options()
@@ -131,6 +135,13 @@ class ShopManager(TownScreenBase):
                 self.sell_items()
             elif choice == "Quests":
                 qm.check_and_offer('Jeweler')
+            elif choice == "Craft Draconite Pendant":
+                ok, message = dragoon.craft_draconite_pendant(self.player_char)
+                self.presenter.show_message(message)
+                options = ["Buy", "Sell", "Quests", "Leave"]
+                if dragoon.can_craft_draconite_pendant(self.player_char):
+                    options.insert(3, "Craft Draconite Pendant")
+                shop_screen.set_options(options)
     
     def buy_weapons(self):
         """Buy weapons - choose handedness first, then browse subtype tabs."""

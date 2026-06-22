@@ -4949,6 +4949,9 @@ class JumpEffect(Effect):
         # ── Recover (heal on landing, regardless of hit) ────────────
         if mods.get("Recover"):
             self._apply_recover(actor, messages)
+            from src.core.classes import dragoon
+
+            dragoon.try_restore_kaelenon(actor, target, mods, messages)
 
     # ------------------------------------------------------------------
     # Modification sub-effects
@@ -5032,8 +5035,9 @@ class JumpEffect(Effect):
 
     @staticmethod
     def _apply_recover(actor: Character, messages: list[str]) -> None:
-        hp_recover = int(actor.health.max * 0.05)
-        mp_recover = int(actor.mana.max * 0.05)
+        from src.core.classes import dragoon
+
+        hp_recover, mp_recover = dragoon.recover_amounts(actor)
         actor.health.current = min(
             actor.health.max, actor.health.current + hp_recover,
         )

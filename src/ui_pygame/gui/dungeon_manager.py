@@ -1344,6 +1344,12 @@ class DungeonManager:
         """Handle the Cambion anti-magic terminal."""
         from .confirmation_popup import CodeEntryPopup
 
+        if getattr(switch_tile, "has_kaelenon_branch", lambda _game: False)(self.game):
+            switch_tile.resolve_kaelenon_branch(self.game)
+            for message in map_tiles.pop_cambion_messages(self.player_char):
+                self.add_message(message)
+            return
+
         popup = CodeEntryPopup(
             self.presenter,
             "Anti-Magic Terminal",

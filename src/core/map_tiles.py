@@ -5,6 +5,7 @@ import random
 from textwrap import wrap
 
 from . import companions, enemies, items, town
+from .classes import dragoon
 from .player import DIRECTIONS, REALM_OF_CAMBION_LEVEL, actions_dict
 
 # Feature flag: Set to True to use enhanced combat with action queue
@@ -1188,8 +1189,20 @@ class AntiMagicSwitch(EmptyCavePath):
         self.visited = True
         self.adjacent_visited(game.player_char)
 
+    def has_kaelenon_branch(self, game):
+        return dragoon.has_pending_terminal_branch(game.player_char)
+
+    def resolve_kaelenon_branch(self, game):
+        message = dragoon.resolve_terminal_branch(game.player_char)
+        if message:
+            _queue_cambion_message(game.player_char, message)
+            return True
+        return False
+
     def attempt_disable(self, game, code: str | None):
         player_char = game.player_char
+        if self.resolve_kaelenon_branch(game):
+            return True
         state = _ensure_cambion_state(player_char)
         if not state["anti_magic_active"]:
             _queue_cambion_message(player_char, "The terminal displays: SHIELD OFFLINE. The realm feels less certain without its hum.")

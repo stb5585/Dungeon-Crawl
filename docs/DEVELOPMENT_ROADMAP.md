@@ -432,6 +432,11 @@ Implemented:
    - Added contextual town-menu location details for the Sergeant/Barracks, tavern patrons, shop purveyors, Church priest, Old Warehouse guards, and staffed Warp Point scientists.
 - Bring Him Home presentation hook:
    - Added a post-turn-in Timmy/family scene after the Sergeant receives the completed quest.
+- Dragoon Dragon Quest:
+   - Implemented the Lancer/Dragoon-only Recover Jump alternate Red Dragon resolution: active `Recover` restores Kaelenon's lost humanoid transformation ability, has no low-HP requirement, does not heal the Red Dragon's HP, and resolves the encounter for existing Red Dragon progression.
+   - Added saved Dragoon dragon quest state for Kaelenon restoration, Cambion portal key, Kaelenon's return home, Draconite, and Draconite Pendant crafting.
+   - Extended the Realm of Cambion anti-magic terminal with Kaelenon's portal-key and return-home scenes.
+   - Added `Kaelenon's Portal Key`, `Draconite`, and `Draconite Pendant`; the Jeweler crafts the pendant from Draconite, and the pendant strengthens Jump `Recover` HP/MP restoration.
 - Class Ring activation and new class mechanics:
    - Added `docs/CLASS_RING_ACTIVATION_SPEC.md` covering Grandmaster of Arms, Demonologist, Archdruid, and legacy second-promotion ring directions.
    - Replaced the old monolithic `src/core/classes.py` with the `src/core/classes/` package while preserving public class imports.
@@ -467,11 +472,6 @@ Ready For Spec:
 
 Needs Design Decision:
 
-- Dragoon Dragon Quest:
-   - Quest Trigger: the player must be a Lancer/Dragoon and must have found the Dragon's Tear item, which teaches the player the Recover Jump mod, it must be equipped, and the player must use Jump; this will actually "heal" the Red Dragon, allowing them to transform back into their true self, an elf-like entity named Kaelenon
-   - Objective: It is revealed that they traveled from an alternate realm but got stuck and lost the ability to tranform back over time; after some discussion, they ask the player for help and in return they will grant them a reward; the player must find the entry point to the alternate realm so that Kaelenon can return home
-   - Reward: Draconite, a mythical gemstone taken from the head of a dragon; can be given to the Jeweler in exchange for a <TODO>
-   - Decide the target creature/trial, unlock timing, reward type, and whether the reward modifies Jump, grants equipment, or unlocks Dragoon-specific progression.
 - Remaining legacy Class Ring implementation order:
    - Decide which legacy activation questline should be built first now that Grandmaster of Arms, Demonologist, and Archdruid are implemented.
 - The Liminal Gap implementation order:
@@ -571,7 +571,7 @@ Needs Design Decision:
   - Continue playtesting vow balance, especially mercy victory reward expectations, encounter-rate modifiers, and mark severity.
 - Lancer/Dragoon:
   - Keep Jump marked implemented.
-  - Define Dragon Quest objective and reward before implementation.
+  - Dragoon Dragon Quest is implemented; continue playtesting the Recover Jump Red Dragon route, Realm of Cambion terminal follow-up, Jeweler crafting, and Draconite Pendant balance.
 - Narrative integration:
   - Tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood.
   - Avoid implementing class-progression story beats until the associated quest/spec defines trigger timing, player-facing text, save flags, and whether the beat is optional or required.

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from src.core import items
+from src.core.classes import dragoon
 from src.ui_pygame.gui import shops
 
 
@@ -266,6 +268,32 @@ def test_alchemist_and_jeweler_buy_open_tabbed_browsers(monkeypatch):
     assert buy_calls == ["alchemist", "jewelry"]
     assert FakeShopScreen.instances[0].set_calls == [["Buy", "Sell", "Quests", "Leave"]]
     assert FakeShopScreen.instances[1].set_calls == [["Buy", "Sell", "Quests", "Leave"]]
+
+
+def test_visit_jeweler_crafts_draconite_pendant(monkeypatch):
+    manager = _manager(monkeypatch, level=15)
+    player = manager.player_char
+    player.dragoon_dragon_quest = dragoon.default_state()
+    player.dragoon_dragon_quest["draconite_claimed"] = True
+    player.special_inventory["Draconite"] = [items.Draconite()]
+    messages = []
+    manager.presenter.show_message = messages.append
+
+    FakeShopScreen.instances = []
+    FakeShopScreen.option_sequences = [["Craft Draconite Pendant", "Leave"]]
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
+
+    manager.visit_jeweler()
+
+    assert "Draconite" not in player.special_inventory
+    assert "Draconite Pendant" in player.special_inventory
+    assert player.dragoon_dragon_quest["pendant_crafted"] is True
+    assert any("Draconite Pendant" in message for message in messages)
+    assert FakeShopScreen.instances[0].set_calls[0] == [
+        "Buy", "Sell", "Quests", "Craft Draconite Pendant", "Leave"
+    ]
 
 
 def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):

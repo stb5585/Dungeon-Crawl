@@ -6,6 +6,7 @@ import time
 from textwrap import wrap
 
 from src.core import classes, items
+from src.core.classes import dragoon
 from src.core.town import quest_dict, PATRON_DIALOGUES, RESPONSE_MAP, get_holy_grail_rotation_hints
 from . import menus
 
@@ -746,6 +747,10 @@ def jeweler(game):
     menu = menus.ShopMenu(game, jeweler_message)
     jewelerbox = menus.TextBox(game)
     while True:
+        options = ['Buy', 'Sell', 'Quests', 'Leave']
+        if dragoon.can_craft_draconite_pendant(game.player_char):
+            options.insert(3, 'Craft Draconite Pendant')
+        menu.update_options(options)
         menu.update_itemdict(None)
         jeweler_choice = menu.navigate_options()
         if jeweler_choice == 'Leave':
@@ -765,6 +770,11 @@ def jeweler(game):
                     response = random.choice(random.choice(responses))
                     jewelerbox.print_text_in_rectangle(response)
                     jewelerbox.clear_rectangle()
+                done = True
+            elif jeweler_choice == 'Craft Draconite Pendant':
+                _ok, response = dragoon.craft_draconite_pendant(game.player_char)
+                jewelerbox.print_text_in_rectangle(response)
+                jewelerbox.clear_rectangle()
                 done = True
             else:
                 raise Exception("Something went wrong.")

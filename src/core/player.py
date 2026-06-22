@@ -25,7 +25,7 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
-from .classes import archdruid, class_rings, demonologist, grandmaster, paladin
+from .classes import archdruid, class_rings, demonologist, dragoon, grandmaster, paladin
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
@@ -364,6 +364,7 @@ class Player(Character):
         self.archdruid_attunement = archdruid.default_state()
         self.class_ring_awakening = class_rings.default_state()
         self.paladin_vow = paladin.default_state()
+        self.dragoon_dragon_quest = dragoon.default_state()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -444,6 +445,11 @@ class Player(Character):
         if paladin.path(self):
             paladin.grant_signature_skill(self)
         return self.paladin_vow
+
+    def ensure_dragoon_dragon_quest(self):
+        """Normalize Dragoon dragon quest state for current and legacy saves."""
+        self.dragoon_dragon_quest = dragoon.ensure_state(self)
+        return self.dragoon_dragon_quest
 
     def choose_paladin_vow(self, vow_path):
         """Permanently choose a Paladin vow path."""
@@ -2226,8 +2232,15 @@ class Player(Character):
                 exp_gain = max(0, int(exp_gain * float(self.exp_gain_multiplier())))
             except Exception:
                 pass
-            endcombat_str = (f"{self.name} killed {enemy.name}.\n"
-                             f"{self.name} gained {exp_gain} experience.\n")
+            red_dragon_text = dragoon.red_dragon_victory_text(enemy)
+            if red_dragon_text:
+                endcombat_str = (
+                    f"{red_dragon_text}"
+                    f"{self.name} gained {exp_gain} experience.\n"
+                )
+            else:
+                endcombat_str = (f"{self.name} killed {enemy.name}.\n"
+                                 f"{self.name} gained {exp_gain} experience.\n")
             if summon:
                 summon.effects(end=True)
                 endcombat_str += f"{summon.name} gained {exp_gain} experience.\n"

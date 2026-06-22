@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.core import items
+from src.core.classes import dragoon
 from src.ui_curses import town as curses_town
 
 
@@ -632,6 +634,24 @@ def test_alchemist_and_jeweler_quest_wrappers_show_response(monkeypatch):
 
     assert any("Alchemist help" in str(message) for message in FakeTextBox.messages)
     assert any("Jeweler help" in str(message) for message in FakeTextBox.messages)
+
+
+def test_jeweler_crafts_draconite_pendant(monkeypatch):
+    _install_fake_menus(monkeypatch)
+    FakeShopMenu.option_responses = ["Craft Draconite Pendant", "Leave"]
+    FakeTextBox.messages = []
+    player = _build_player(level=30)
+    player.dragoon_dragon_quest = dragoon.default_state()
+    player.dragoon_dragon_quest["draconite_claimed"] = True
+    player.special_inventory["Draconite"] = [items.Draconite()]
+    game = SimpleNamespace(player_char=player)
+
+    curses_town.jeweler(game)
+
+    assert "Draconite" not in player.special_inventory
+    assert "Draconite Pendant" in player.special_inventory
+    assert player.dragoon_dragon_quest["pendant_crafted"] is True
+    assert any("Draconite Pendant" in str(message) for message in FakeTextBox.messages)
 
 
 def test_church_handles_unavailable_promotion_and_leave(monkeypatch):

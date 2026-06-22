@@ -44,7 +44,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import paladin
+from ..classes import dragoon, paladin
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -861,7 +861,8 @@ class BattleEngine:
             exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
         except Exception:
             pass
-        msg = f"{self.player.name} gained {exp_gain} experience.\n"
+        msg = dragoon.red_dragon_victory_text(self.enemy)
+        msg += f"{self.player.name} gained {exp_gain} experience.\n"
 
         # Handle summon experience
         if self.summon:

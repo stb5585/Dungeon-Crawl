@@ -299,6 +299,9 @@ class.
     equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
     rewards/outcomes.
+  - The Lancer/Dragoon Recover Jump Red Dragon route resolves the Red Dragon
+    quest by restoring Kaelenon's humanoid transformation ability; this remains
+    compatible with standard Class Ring acquisition and `Dragon's Fury` unlock.
 - `Stalwart Defender`: `Siege Trial` awakens `Guard Meter`, which builds under
   defensive pressure and can be spent to reduce major incoming hits.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class

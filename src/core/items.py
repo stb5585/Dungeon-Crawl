@@ -3805,6 +3805,23 @@ class DharmaPendant(Accessory):
         self.weight = 0.2
 
 
+class DraconitePendant(Accessory):
+    """Kaelenon's crafted pendant. Strengthens Jump Recover restoration."""
+
+    def __init__(self):
+        super().__init__(
+            name="Draconite Pendant",
+            description="A pendant cut from Kaelenon's Draconite. It strengthens the Recover Jump modification, "
+                        "restoring more health and mana when the wearer lands.",
+            value=0,
+            rarity=0,
+            mod="Jump Recover+",
+            subtyp="Pendant",
+            unequip=False,
+        )
+        self.weight = 0.1
+
+
 class LevitationPendant(Accessory):
 
     def __init__(self):
@@ -5265,6 +5282,32 @@ class DragonTear(Misc):
                                    "of draconic vitality and regeneration. Extremely rare.",
                          value=0, rarity=0.01, subtyp="Ability")
         self.restricted_classes = ["Lancer", "Dragoon"]
+
+
+class KaelenonPortalKey(Misc):
+    """Quest item used to return Kaelenon home."""
+
+    def __init__(self):
+        super().__init__(
+            name="Kaelenon's Portal Key",
+            description="A glass-dark key printed from the Realm of Cambion terminal for Kaelenon's return home.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
+
+
+class Draconite(Misc):
+    """Quest material left by Kaelenon after returning home."""
+
+    def __init__(self):
+        super().__init__(
+            name="Draconite",
+            description="A red-black shard from Kaelenon's home realm, warm with restored draconic power.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 # items_dict used by shops

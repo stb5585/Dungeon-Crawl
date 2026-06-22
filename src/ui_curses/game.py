@@ -312,8 +312,11 @@ class Game:
         elif isinstance(room, map_tiles.AntiMagicSwitch):
             textbox = menus.TextBox(self)
             room.modify_player(self)
-            code = menus.player_input(self, "Enter 4-digit code: ")
-            room.attempt_disable(self, code)
+            if room.has_kaelenon_branch(self):
+                room.resolve_kaelenon_branch(self)
+            else:
+                code = menus.player_input(self, "Enter 4-digit code: ")
+                room.attempt_disable(self, code)
             for message in map_tiles.pop_cambion_messages(self.player_char):
                 textbox.print_text_in_rectangle(message)
                 textbox.clear_rectangle()

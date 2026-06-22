@@ -56,6 +56,21 @@
 - [ ] Compare Paladin vow aura/mark values before and after equipping an affirmed Crusader Class Ring.
   - Expected: Aura benefits are 50% stronger.
   - Expected: Mark penalties/durations are reduced by 50%, and Mark of Mercy lethal threshold drops from 10% HP to 5% HP.
+- [ ] As a Lancer or Dragoon, unlock and equip the `Recover` Jump modification, then use Jump against the Red Dragon at high HP.
+  - Expected: The encounter resolves without a low-health requirement.
+  - Expected: Messaging says Recover restored Kaelenon's lost transformation ability rather than healing the Red Dragon's HP.
+  - Expected: `Dracarys` and standard Red Dragon progression remain completable, including `Dragon's Fury` Jump unlock.
+- [ ] Try the Red Dragon route as a non-Lancer/Dragoon, without active `Recover`, and against a non-Red-Dragon target.
+  - Expected: Kaelenon restoration does not trigger in any ineligible case.
+- [ ] After restoring Kaelenon, interact with the Realm of Cambion anti-magic terminal.
+  - Expected: The terminal grants `Kaelenon's Portal Key` once without requiring the anti-magic override code.
+- [ ] Return to the Realm of Cambion terminal with `Kaelenon's Portal Key`.
+  - Expected: Kaelenon returns home, `Draconite` is granted once, and later terminal interactions do not duplicate the reward.
+- [ ] Visit the Jeweler with `Draconite`.
+  - Expected: The Jeweler offers `Craft Draconite Pendant`.
+  - Expected: Crafting consumes `Draconite`, grants `Draconite Pendant`, and removes the craft option.
+- [ ] Equip `Draconite Pendant` and use Jump with `Recover`.
+  - Expected: Recover restores more HP and MP than the baseline Recover Jump.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
 - [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
