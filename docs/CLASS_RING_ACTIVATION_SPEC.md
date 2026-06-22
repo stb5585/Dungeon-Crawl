@@ -5,7 +5,7 @@
 Class Ring activation now has two implementation tiers:
 
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
-  `Archdruid`, and `Berserker`.
+  `Archdruid`, `Berserker`, `Dragoon`, and `Stalwart Defender`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
   are implemented for the remaining second-promotion classes. Except for
@@ -264,8 +264,16 @@ class.
   softens its mark drawback.
 - `Dragoon`: `Guard The Fall` awakens the existing `+1 Jump Mod` and adds
   `Meteor Guard`, a two-turn shield equal to 25% of Jump landing damage.
+  - Status: playable in the Barracks when a dormant Dragoon Class Ring is
+    equipped or stored.
+  - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
+    rewards/outcomes.
 - `Stalwart Defender`: `Siege Trial` awakens `Guard Meter`, which builds under
   defensive pressure and can be spent to reduce major incoming hits.
+  - Status: playable in the Barracks when a dormant Stalwart Defender Class
+    Ring is equipped or stored.
+  - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
+    rewards/outcomes.
 
 ### Mage Branch
 

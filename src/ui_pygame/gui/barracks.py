@@ -24,6 +24,57 @@ class GrandmasterTrialTile(map_tiles.MapTile):
 class BarracksManager(TownScreenBase):
     """Manages barracks interactions with pygame presenter."""
 
+    LEGACY_BARRACKS_TRIALS = {
+        "Dragoon": {
+            "label": "Guard The Fall",
+            "enemy_name": "Skybreak Veteran",
+            "intro": (
+                "The Sergeant leads you to the high training platform. A Skybreak Veteran "
+                "tests whether you can land, endure, and keep fighting."
+            ),
+            "failure": "The fall is guarded another day. The veteran waits for your next attempt.",
+            "scale": 1.15,
+            "stats": {
+                "health": 105,
+                "mana": 20,
+                "strength": 23,
+                "intel": 8,
+                "wisdom": 12,
+                "con": 18,
+                "charisma": 10,
+                "dex": 20,
+                "attack": 25,
+                "defense": 16,
+                "magic": 6,
+                "magic_def": 13,
+            },
+        },
+        "Stalwart Defender": {
+            "label": "Siege Trial",
+            "enemy_name": "Ironwall Captain",
+            "intro": (
+                "The old shield line forms around the sparring floor. The Ironwall Captain "
+                "tests whether your guard can hold under siege pressure."
+            ),
+            "failure": "The shield line breaks. The captain resets the Siege Trial.",
+            "scale": 1.20,
+            "stats": {
+                "health": 125,
+                "mana": 10,
+                "strength": 21,
+                "intel": 6,
+                "wisdom": 12,
+                "con": 23,
+                "charisma": 10,
+                "dex": 14,
+                "attack": 22,
+                "defense": 24,
+                "magic": 4,
+                "magic_def": 16,
+            },
+        },
+    }
+
     MILESTONE_STORAGE_REWARDS = (
         (
             "Rookie Mistake",
@@ -72,6 +123,8 @@ class BarracksManager(TownScreenBase):
         barracks_options = ["Quests", "Storage"]
         if self._berserker_duel_available():
             barracks_options.append("No Healing Duel")
+        if self._legacy_barracks_trial_available():
+            barracks_options.append(self._legacy_barracks_trial_label())
         if self._grandmaster_hall_available():
             barracks_options.append("Secret Hall")
         barracks_options.append("Leave")
@@ -154,6 +207,11 @@ class BarracksManager(TownScreenBase):
                     barracks_options.insert(-1, "No Healing Duel")
                 elif not self._berserker_duel_available() and "No Healing Duel" in barracks_options:
                     barracks_options.remove("No Healing Duel")
+                trial_label = self._legacy_barracks_trial_label()
+                if self._legacy_barracks_trial_available() and trial_label not in barracks_options:
+                    barracks_options.insert(-1, trial_label)
+                elif not self._legacy_barracks_trial_available() and trial_label in barracks_options:
+                    barracks_options.remove(trial_label)
                 if self._grandmaster_hall_available() and "Secret Hall" not in barracks_options:
                     barracks_options.insert(-1, "Secret Hall")
                 elif not self._grandmaster_hall_available() and "Secret Hall" in barracks_options:
@@ -161,6 +219,9 @@ class BarracksManager(TownScreenBase):
 
             elif choice_label == "No Healing Duel":
                 self.visit_berserker_no_healing_duel(draw_barracks_background)
+
+            elif choice_label == self._legacy_barracks_trial_label():
+                self.visit_legacy_barracks_class_ring_trial(draw_barracks_background)
 
             elif choice_label == "Secret Hall":
                 self.visit_grandmaster_secret_hall(draw_barracks_background)
@@ -176,6 +237,21 @@ class BarracksManager(TownScreenBase):
             class_rings.class_name(self.player_char) == "Berserker"
             and class_rings.has_visible_class_ring(self.player_char)
             and not class_rings.is_awakened(self.player_char, "Berserker")
+        )
+
+    def _legacy_barracks_trial_config(self):
+        return self.LEGACY_BARRACKS_TRIALS.get(class_rings.class_name(self.player_char))
+
+    def _legacy_barracks_trial_label(self):
+        config = self._legacy_barracks_trial_config()
+        return config["label"] if config else "Class Ring Trial"
+
+    def _legacy_barracks_trial_available(self):
+        class_name = class_rings.class_name(self.player_char)
+        return (
+            class_name in self.LEGACY_BARRACKS_TRIALS
+            and class_rings.has_visible_class_ring(self.player_char)
+            and not class_rings.is_awakened(self.player_char, class_name)
         )
 
     def _show_message(self, message, background_draw_func=None):
@@ -354,6 +430,68 @@ class BarracksManager(TownScreenBase):
         if success and getattr(ring, "name", None) == "Class Ring":
             ring.class_mod(self.player_char)
         self._show_message(message.strip() or "The Class Ring awakens through the No Healing Duel.")
+        return success
+
+    def _legacy_barracks_trial_enemy(self):
+        config = self._legacy_barracks_trial_config()
+        if not config:
+            return None
+        level = max(1, int(getattr(getattr(self.player_char, "level", None), "level", 1)))
+        pro_level = max(1, int(getattr(getattr(self.player_char, "level", None), "pro_level", 1)))
+        scale = float(config.get("scale", 1.0)) * (1 + (pro_level * 0.18))
+        stats = config["stats"]
+        enemy = enemies.Enemy(
+            name=config["enemy_name"],
+            health=int((stats["health"] + level * 9 + pro_level * 24) * scale),
+            mana=int((stats["mana"] + level * 2) * scale),
+            strength=int((stats["strength"] + level // 2 + pro_level * 3) * scale),
+            intel=int((stats["intel"] + level // 4) * scale),
+            wisdom=int((stats["wisdom"] + level // 4) * scale),
+            con=int((stats["con"] + level // 3 + pro_level * 3) * scale),
+            charisma=stats["charisma"],
+            dex=int((stats["dex"] + level // 3 + pro_level * 2) * scale),
+            attack=int((stats["attack"] + level // 2 + pro_level * 3) * scale),
+            defense=int((stats["defense"] + level // 3 + pro_level * 3) * scale),
+            magic=int((stats["magic"] + level // 5) * scale),
+            magic_def=int((stats["magic_def"] + level // 4) * scale),
+            exp=0,
+        )
+        enemy.gold = 0
+        enemy.inventory = {}
+        enemy.enemy_typ = "Trial"
+        enemy.class_ring_trial_enemy = True
+        enemy.class_ring_trial_name = config["label"]
+        return enemy
+
+    def _run_legacy_barracks_trial(self):
+        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        if combat_manager is None:
+            return False
+        enemy = self._legacy_barracks_trial_enemy()
+        if enemy is None:
+            return False
+
+        self._apply_trial_recovery_floor()
+        tile = GrandmasterTrialTile(0, 0, 0)
+        tile.enemy = None
+        return combat_manager.start_combat(self.player_char, enemy, tile)
+
+    def visit_legacy_barracks_class_ring_trial(self, background_draw_func=None):
+        class_name = class_rings.class_name(self.player_char)
+        config = self._legacy_barracks_trial_config()
+        if not config:
+            return False
+
+        self._show_message(config["intro"], background_draw_func=background_draw_func)
+        if not self._run_legacy_barracks_trial():
+            self._show_message(config["failure"])
+            return False
+
+        success, message = self.player_char.awaken_class_ring(class_name)
+        ring = self.player_char.equipment.get("Ring")
+        if success and getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        self._show_message(message.strip() or f"The Class Ring awakens through {config['label']}.")
         return success
 
     def _quest_turned_in(self, quest_name):

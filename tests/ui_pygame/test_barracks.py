@@ -247,6 +247,57 @@ def test_berserker_duel_awakes_ring_after_successful_bout(monkeypatch):
     assert any("No Healing Duel" in message for message in FakePopup.messages)
 
 
+def test_legacy_barracks_trials_require_visible_dormant_class_ring(monkeypatch):
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Dragoon")
+    player.class_ring_awakening = class_rings.default_state()
+    player.inventory = {"Class Ring": [items.ClassRing()]}
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+
+    manager = barracks.BarracksManager(presenter, player)
+    assert manager._legacy_barracks_trial_label() == "Guard The Fall"
+    assert manager._legacy_barracks_trial_available() is False
+
+    player.storage = {"Class Ring": [items.ClassRing()]}
+    assert manager._legacy_barracks_trial_available() is True
+
+    player.storage = {}
+    player.equipment["Ring"] = items.ClassRing()
+    assert manager._legacy_barracks_trial_available() is True
+
+    player.class_ring_awakening["awakened"]["Dragoon"] = True
+    assert manager._legacy_barracks_trial_available() is False
+
+
+def test_dragoon_and_stalwart_trials_awaken_ring_after_success(monkeypatch):
+    FakePopup.messages = []
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
+
+    for class_name, expected_mod, expected_label in (
+        ("Dragoon", "+1 Jump Mod", "Guard The Fall"),
+        ("Stalwart Defender", "Guard Meter", "Siege Trial"),
+    ):
+        player = _make_player()
+        player.cls = SimpleNamespace(name=class_name)
+        player.class_ring_awakening = class_rings.default_state()
+        player.equipment["Ring"] = items.ClassRing()
+        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+            _player,
+            class_name,
+            **kwargs,
+        )
+        manager = barracks.BarracksManager(presenter, player)
+        monkeypatch.setattr(manager, "_run_legacy_barracks_trial", lambda: True)
+
+        assert manager.visit_legacy_barracks_class_ring_trial() is True
+        assert player.class_ring_awakening["awakened"][class_name] is True
+        assert player.equipment["Ring"].mod == expected_mod
+        assert any(expected_label in message for message in FakePopup.messages)
+
+
 def test_manage_storage_store_and_retrieve(monkeypatch):
     FakePopup.messages = []
     FakePopup.calls = []

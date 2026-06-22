@@ -17,6 +17,14 @@
   - Expected: Any consumable used before the failure remains spent.
 - [ ] Lose or flee from the Berserker No Healing Duel.
   - Expected: The ring remains dormant and the player is not sent through the normal death/resurrection flow.
+- [ ] Visit the Barracks as a Dragoon with a dormant Class Ring equipped or stored.
+  - Expected: The Barracks menu includes `Guard The Fall`.
+  - Expected: Winning the trial awakens the ring and changes its equipped mod to `+1 Jump Mod`.
+- [ ] Visit the Barracks as a Stalwart Defender with a dormant Class Ring equipped or stored.
+  - Expected: The Barracks menu includes `Siege Trial`.
+  - Expected: Winning the trial awakens the ring and changes its equipped mod to `Guard Meter`.
+- [ ] Lose or flee from `Guard The Fall` or `Siege Trial`.
+  - Expected: The ring remains dormant and the player is not sent through the normal death/resurrection flow.
 
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
