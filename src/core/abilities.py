@@ -290,6 +290,102 @@ class CallContract(Skill):
         return demonologist.resolve_contract(user, target, intent)
 
 
+class Redeem(Skill):
+    """Vow of Redemption skill that attempts a mercy victory."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Redeem",
+            description="Attempt a mercy victory against a wounded non-boss foe.",
+        )
+        self.subtyp = "Class"
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import paladin_vows
+
+        super().use(user, target, **kwargs)
+        if target is None:
+            return "There is no foe to redeem.\n"
+        return paladin_vows.attempt_redeem(user, target, rng=kwargs.get("rng"))
+
+
+class Challenge(Skill):
+    """Vow of Conquest skill that names a challenged foe."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Challenge",
+            description="Mark the current enemy as your Challenged Foe for 3 turns.",
+        )
+        self.subtyp = "Class"
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import paladin_vows
+
+        super().use(user, target, **kwargs)
+        if target is None:
+            return "There is no foe to challenge.\n"
+        return paladin_vows.start_challenge(user, target)
+
+
+class Interpose(Skill):
+    """Vow of Protection skill that prepares a guarded block."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Interpose",
+            description="Enter a guarded stance for 2 turns and strengthen the next block.",
+        )
+        self.subtyp = "Class"
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import paladin_vows
+
+        super().use(user, target, **kwargs)
+        return paladin_vows.start_interpose(user)
+
+
+class JudgmentRiposte(Skill):
+    """Vow of Retribution skill that prepares a retaliatory strike."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Judgment Riposte",
+            description="Prepare a Holy counterattack against the next enemy attack.",
+        )
+        self.subtyp = "Class"
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import paladin_vows
+
+        super().use(user, target, **kwargs)
+        return paladin_vows.start_riposte(user)
+
+
 class Spell(Ability):
     """
     Child class of Ability that handles spell casting

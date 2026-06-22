@@ -34,6 +34,28 @@
 - [ ] Visit the Church as a Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes the matching rite: `Relic Defense`, `Purity Rite`, `Miracle Vigil`, `Lost Ballad`, `Control Rite`, `Star Chart`, `Ancestral Totem Rite`, or `Pack Trial`.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
+- [ ] Promote a Warrior-line character to Paladin in pygame and curses.
+  - Expected: Promotion requires choosing one permanent vow: `Redemption`, `Conquest`, `Protection`, or `Retribution`.
+  - Expected: Canceling the vow choice cancels promotion.
+  - Expected: Completing promotion grants the matching vow skill: `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`.
+- [ ] Load or create a legacy Paladin/Crusader save with no vow, then visit the Church.
+  - Expected: The Church menu includes `Swear Paladin Vow`.
+  - Expected: Choosing a vow persists it and grants the matching vow skill.
+- [ ] Visit the Church as a Crusader with a dormant Class Ring equipped or stored and a sworn vow.
+  - Expected: The Church menu includes `Vow Trial`.
+  - Expected: Completing the trial awakens the ring, stores the chosen vow, and changes the equipped mod to `Vow Affirmation`.
+- [ ] Visit the Church as a Crusader with a dormant Class Ring but no sworn vow.
+  - Expected: `Vow Trial` does not appear until a vow is sworn.
+- [ ] Test `Redeem` against a wounded non-boss enemy and against a boss/Class Ring trial enemy.
+  - Expected: Eligible mercy victories grant XP and gold, but no item loot, kill credit, bounty credit, or quest progress.
+  - Expected: Boss and Class Ring trial enemies refuse mercy.
+- [ ] Test `Challenge`, `Interpose`, and `Judgment Riposte` in combat.
+  - Expected: Challenge marks one enemy for 3 turns and Conquest Aura can stack after defeating the challenged or bounty target.
+  - Expected: Interpose lasts 2 turns, strengthens the next block, and successful blocks stack Protection Aura.
+  - Expected: Judgment Riposte counters the next enemy attack, and a killing counter doubles Retribution Aura duration.
+- [ ] Compare Paladin vow aura/mark values before and after equipping an affirmed Crusader Class Ring.
+  - Expected: Aura benefits are 50% stronger.
+  - Expected: Mark penalties/durations are reduced by 50%, and Mark of Mercy lethal threshold drops from 10% HP to 5% HP.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
 - [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.

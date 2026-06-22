@@ -449,10 +449,8 @@ Ready For Spec:
 
 - Remaining legacy Class Ring questline implementations:
    - Standard Class Ring acquisition stays implemented as a passive reward for defeating the Red Dragon.
-   - Grandmaster of Arms, Demonologist, Archdruid, Berserker, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master are fully playable activation flows.
+   - Grandmaster of Arms, Demonologist, Archdruid, Berserker, Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master are fully playable activation flows.
    - Existing second-promotion Class Ring directions are documented and have saved awakening state plus mechanics helpers.
-   - Crusader still needs full trigger/location/trial UI, objective flow, reward messaging, and focused regression tests after the Paladin vow-selection system exists.
-   - Crusader remains blocked on the Paladin vow-selection system.
    - Arcane Trickster and Troubadour need their future spell-steal and song systems before their ring effects can be fully event-driven.
 - Main Storyline Plot and The Liminal Gap full design spec:
    - Locked creation premise: Elysia established Seven Principles, each embodied by a Guardian, and all mortal races are equally children of Elysia.
@@ -560,16 +558,17 @@ Implemented:
   - Berserker, Dragoon, and Stalwart Defender now have playable Barracks activation flows.
   - Wizard, Shadowcaster, Knight Enchanter, and Grand Summoner now have playable Church activation rites.
   - Rogue, Seeker, Ninja, and Arcane Trickster now have playable Old Warehouse activation jobs.
-  - Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master now have playable Church activation rites.
-  - Crusader remains blocked on the Paladin vow-selection system.
+  - Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, Beast Master, and Crusader now have playable Church activation rites.
+  - Paladin vow selection now persists from promotion, grants vow-specific skills, and feeds Crusader `Vow Trial` / `Vow Affirmation`.
 
 Needs Design Decision:
 
 - Warrior line:
   - Define Berserker Battle Scars trigger chance, permanent stat pool, caps, and save behavior.
 - Paladin/Crusader:
-  - Define Oathbringer path selection and permanence.
-  - Specify Redemption, Conquest, Retribution, and Protection aura/mark triggers, durations, stacking, boss rules, bounty interactions, and UI.
+  - Implemented permanent Paladin vow selection for Redemption, Conquest, Protection, and Retribution.
+  - Added `Redeem`, `Challenge`, `Interpose`, and `Judgment Riposte`, with saved aura/mark state, deterministic counters, save/load migration, pygame/curses promotion prompts, Church legacy vow selection, and Crusader Vow Trial affirmation.
+  - Continue playtesting vow balance, especially mercy victory reward expectations, encounter-rate modifiers, and mark severity.
 - Lancer/Dragoon:
   - Keep Jump marked implemented.
   - Define Dragon Quest objective and reward before implementation.

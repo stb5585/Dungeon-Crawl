@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.core import companions, items
-from src.core.classes import class_rings, demonologist
+from src.core.classes import class_rings, demonologist, paladin_vows
 from src.ui_pygame.gui import church
 
 
@@ -448,3 +448,33 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         if class_name == "Grand Summoner":
             assert player.health.max == 190
             assert player.health.current == 190
+
+
+def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
+    FakePopup.messages = []
+    presenter = _make_presenter()
+    selections = iter([0, 0])
+    presenter.render_menu = lambda *_args, **_kwargs: next(selections)
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Paladin")
+    player.paladin_vow = paladin_vows.default_state()
+    player.choose_paladin_vow = lambda vow: paladin_vows.choose_vow(player, vow)
+    manager = church.ChurchManager(presenter, player)
+
+    assert manager._legacy_paladin_vow_available() is True
+    assert manager.visit_legacy_paladin_vow_choice() is True
+    assert player.paladin_vow["path"] == "Redemption"
+    assert "Redeem" in player.spellbook["Skills"]
+
+    player.cls = SimpleNamespace(name="Crusader")
+    player.class_ring_awakening = class_rings.default_state()
+    player.equipment = {"Ring": items.ClassRing()}
+    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(player, class_name, **kwargs)
+
+    assert manager._crusader_vow_trial_available() is True
+    assert manager.visit_crusader_vow_trial() is True
+    assert player.equipment["Ring"].mod == "Vow Affirmation"
+    assert player.class_ring_awakening["data"]["Crusader"]["vow"] == "Redemption"

@@ -7,7 +7,7 @@ import os
 
 from src.core import companions
 from src.core.abilities import spell_dict, skill_dict
-from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist
+from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist, paladin_vows
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
@@ -113,6 +113,10 @@ class ChurchManager(TownScreenBase):
     def visit_church(self):
         """Visit the Church of Elysia."""
         church_options = ["Promotion", "Save Game", "Quests"]
+        if self._legacy_paladin_vow_available():
+            church_options.append("Swear Paladin Vow")
+        if self._crusader_vow_trial_available():
+            church_options.append("Vow Trial")
         if self._arcane_class_ring_rite_available():
             church_options.append(self._arcane_class_ring_rite_label())
         if demonologist.is_demonologist(self.player_char):
@@ -151,14 +155,87 @@ class ChurchManager(TownScreenBase):
             elif church_options[choice_idx] == self._arcane_class_ring_rite_label():
                 self.visit_arcane_class_ring_rite()
 
+            elif church_options[choice_idx] == "Swear Paladin Vow":
+                self.visit_legacy_paladin_vow_choice()
+
+            elif church_options[choice_idx] == "Vow Trial":
+                self.visit_crusader_vow_trial()
+
             elif church_options[choice_idx] == "Hidden Crypt":
                 self.visit_hidden_crypt()
 
+            if self._legacy_paladin_vow_available() and "Swear Paladin Vow" not in church_options:
+                church_options.insert(-1, "Swear Paladin Vow")
+            elif not self._legacy_paladin_vow_available() and "Swear Paladin Vow" in church_options:
+                church_options.remove("Swear Paladin Vow")
+            if self._crusader_vow_trial_available() and "Vow Trial" not in church_options:
+                church_options.insert(-1, "Vow Trial")
+            elif not self._crusader_vow_trial_available() and "Vow Trial" in church_options:
+                church_options.remove("Vow Trial")
             rite_label = self._arcane_class_ring_rite_label()
             if self._arcane_class_ring_rite_available() and rite_label not in church_options:
                 church_options.insert(-1, rite_label)
             elif not self._arcane_class_ring_rite_available() and rite_label in church_options:
                 church_options.remove(rite_label)
+
+    def _choose_paladin_vow(self):
+        choices = list(paladin_vows.PATHS)
+        idx = self.presenter.render_menu("Choose Paladin Vow", choices)
+        if idx is None or not (0 <= idx < len(choices)):
+            return None
+        vow = choices[idx]
+        desc = paladin_vows.DESCRIPTIONS[vow]
+        confirm = self.presenter.render_menu(
+            f"Swear the Vow of {vow}?\n\n{desc}",
+            ["Yes", "No"],
+        )
+        return vow if confirm == 0 else None
+
+    def _legacy_paladin_vow_available(self):
+        return paladin_vows.is_paladin_lineage(self.player_char) and not paladin_vows.path(self.player_char)
+
+    def visit_legacy_paladin_vow_choice(self):
+        if not self._legacy_paladin_vow_available():
+            popup = ConfirmationPopup(self.presenter, "No unanswered Paladin vow waits here.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+        vow = self._choose_paladin_vow()
+        if not vow:
+            popup = ConfirmationPopup(self.presenter, "The vow remains unspoken.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+        success, message = self.player_char.choose_paladin_vow(vow)
+        popup = ConfirmationPopup(self.presenter, message.strip(), show_buttons=False)
+        popup.show(**self.popup_show_kwargs())
+        return success
+
+    def _crusader_vow_trial_available(self):
+        return (
+            class_rings.class_name(self.player_char) == "Crusader"
+            and class_rings.has_visible_class_ring(self.player_char)
+            and not class_rings.is_awakened(self.player_char, "Crusader")
+            and bool(paladin_vows.path(self.player_char))
+        )
+
+    def visit_crusader_vow_trial(self):
+        if not self._crusader_vow_trial_available():
+            popup = ConfirmationPopup(self.presenter, "The Vow Trial does not answer yet.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+        vow = paladin_vows.path(self.player_char)
+        popup = ConfirmationPopup(
+            self.presenter,
+            f"The altar asks you to affirm the Vow of {vow}.",
+            show_buttons=False,
+        )
+        popup.show(**self.popup_show_kwargs())
+        success, message = self.player_char.awaken_class_ring("Crusader", vow=vow)
+        ring = self.player_char.equipment.get("Ring")
+        if success and getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        popup = ConfirmationPopup(self.presenter, message.strip(), show_buttons=False)
+        popup.show(**self.popup_show_kwargs())
+        return success
 
     def _arcane_class_ring_rite_config(self):
         return self.ARCANE_CLASS_RING_RITES.get(class_rings.class_name(self.player_char))
@@ -276,6 +353,14 @@ class ChurchManager(TownScreenBase):
             popup.show(**self.popup_show_kwargs())
             return
 
+        chosen_vow = None
+        if chosen_name == "Paladin":
+            chosen_vow = self._choose_paladin_vow()
+            if not chosen_vow:
+                popup = ConfirmationPopup(self.presenter, "Promotion cancelled.", show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
+                return
+
         try:
             self.player_char.cls = chosen_ctor()
             self.player_char.level.pro_level += 1
@@ -332,6 +417,12 @@ class ChurchManager(TownScreenBase):
             if promo_ability_messages:
                 popup = ConfirmationPopup(self.presenter, "\n".join(promo_ability_messages), show_buttons=False)
                 popup.show(**self.popup_show_kwargs())
+
+            if chosen_vow:
+                success, vow_message = self.player_char.choose_paladin_vow(chosen_vow)
+                if success:
+                    popup = ConfirmationPopup(self.presenter, vow_message.strip(), show_buttons=False)
+                    popup.show(**self.popup_show_kwargs())
 
             if chosen_name == "Warlock":
                 fam_options = ["Homunculus", "Fairy", "Mephit", "Jinkin"]

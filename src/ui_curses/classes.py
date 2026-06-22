@@ -35,6 +35,26 @@ def choose_familiar(game):
     return familiar
 
 
+def choose_paladin_vow(game):
+    from src.ui_curses import menus as utils
+    from src.core.classes import paladin_vows
+
+    choices = list(paladin_vows.PATHS)
+    choose_dict = {choice: choice for choice in choices}
+    popup = utils.PromotionPopupMenu(game, "Select Paladin Vow", "Paladin")
+    popup.update_options(choices, choose_dict)
+    vow_idx = popup.navigate_popup()
+    if vow_idx is None or not (0 <= vow_idx < len(choices)):
+        return None
+    vow = choices[vow_idx]
+    confirm = utils.ConfirmPopupMenu(
+        game,
+        f"Swear the Vow of {vow}? {paladin_vows.DESCRIPTIONS[vow]}",
+        box_height=10,
+    )
+    return vow if confirm.navigate_popup() else None
+
+
 def promotion(game):
     from src.ui_curses import menus as utils
     from src.core.abilities import spell_dict, skill_dict
@@ -89,6 +109,12 @@ def promotion(game):
             )
         confirm = utils.ConfirmPopupMenu(game, confirm_str, box_height=9)
         if confirm.navigate_popup():
+            chosen_vow = None
+            if new_class.name == "Paladin":
+                chosen_vow = choose_paladin_vow(game)
+                if not chosen_vow:
+                    promo_str = "If you change your mind, you know where to find us.\n"
+                    break
             promo_str = (
                 f"Congratulations! {game.player_char.name} has been promoted from a {current_class} to a "
                 f"{new_class.name}!\n"
@@ -111,10 +137,9 @@ def promotion(game):
             promoted_player.combat.defense += new_class.def_plus
             promoted_player.combat.magic += new_class.magic_plus
             promoted_player.combat.magic_def += new_class.magic_def_plus
-            promoted_player.equipment["Weapon"] = new_class.equipment["Weapon"]
-            promoted_player.equipment["Armor"] = new_class.equipment["Armor"]
-            promoted_player.equipment["Helmet"] = new_class.equipment["Helmet"]
-            promoted_player.equipment["OffHand"] = new_class.equipment["OffHand"]
+            for slot in ("Weapon", "Armor", "Helmet", "OffHand"):
+                if slot in new_class.equipment:
+                    promoted_player.equipment[slot] = new_class.equipment[slot]
             # Apply ability transition rules for this promotion
             ability_change_msg = apply_promotion_ability_rules(promoted_player, new_class.name)
             promo_str += ability_change_msg
@@ -144,6 +169,10 @@ def promotion(game):
                 promoted_player.spellbook["Skills"][skill_gain.name] = skill_gain
                 if skill_gain.name in ["Transform", "Reveal", "Purity of Body"]:
                     skill_gain.use(promoted_player)
+            if chosen_vow:
+                success, vow_message = promoted_player.choose_paladin_vow(chosen_vow)
+                if success:
+                    promo_str += vow_message
             if new_class.name == "Warlock":
                 promoted_player.familiar = choose_familiar(game)
                 promo_str += (

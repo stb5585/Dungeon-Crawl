@@ -44,6 +44,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
+from ..classes import paladin_vows
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -195,6 +196,8 @@ class BattleEngine:
             boss=self.boss,
         )
 
+        paladin_vows.advance_encounter(self.player)
+        paladin_vows.clear_transient_marks(self.player)
         return self.attacker, self.defender
 
     def battle_continues(self) -> bool:
@@ -265,6 +268,10 @@ class BattleEngine:
             interrupted = self._cancel_interrupted_charging_action()
             if interrupted:
                 result.effects_text = f"{result.effects_text or ''}{interrupted}"
+            if self.attacker == self.player:
+                vow_text = paladin_vows.on_incapacitated(self.player)
+                if vow_text:
+                    result.effects_text = f"{result.effects_text or ''}{vow_text}"
             result.can_act = False
             result.inactive_reason = self._inactive_reason_after_effects(
                 inactive_reason_at_turn_start,
@@ -418,6 +425,9 @@ class BattleEngine:
                 self.flee = True
                 if hasattr(self.player, "record_flee"):
                     self.player.record_flee()
+                vow_text = paladin_vows.on_flee(self.player, success=True)
+                if vow_text:
+                    result.message += vow_text
 
         elif action == "Defend":
             result.message = self._execute_defend()
@@ -523,6 +533,13 @@ class BattleEngine:
                     if special:
                         result.messages.append(special)
 
+            if self.attacker == self.enemy and self.defender == self.player:
+                riposte = paladin_vows.resolve_riposte(self.player, self.enemy)
+                if riposte:
+                    result.messages.append(riposte)
+
+        paladin_vows.tick_turn(self.player)
+        paladin_vows.clear_transient_marks(self.player)
         self.logger.next_turn()
         return result
 
@@ -838,6 +855,7 @@ class BattleEngine:
 
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
+        mercy = bool(getattr(self.enemy, "paladin_mercy_victory", False))
         exp_gain = int(self.enemy.experience)
         try:
             exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
@@ -857,26 +875,38 @@ class BattleEngine:
                     if self.summon.level.level == 10:
                         break
 
-        # Kill tracking
-        if self.enemy.enemy_typ not in self.player.kill_dict:
-            self.player.kill_dict[self.enemy.enemy_typ] = {}
-        if self.enemy.name not in self.player.kill_dict[self.enemy.enemy_typ]:
-            self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] = 0
-        self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] += 1
-        if hasattr(self.player, "record_enemy_defeat"):
-            self.player.record_enemy_defeat()
-        if hasattr(self.player, "refresh_demonologist_contracts"):
-            self.player.refresh_demonologist_contracts()
+        if mercy:
+            msg += self._award_mercy_gold()
+        else:
+            # Kill tracking
+            if self.enemy.enemy_typ not in self.player.kill_dict:
+                self.player.kill_dict[self.enemy.enemy_typ] = {}
+            if self.enemy.name not in self.player.kill_dict[self.enemy.enemy_typ]:
+                self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] = 0
+            self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] += 1
+            if hasattr(self.player, "record_enemy_defeat"):
+                self.player.record_enemy_defeat()
+            if hasattr(self.player, "refresh_demonologist_contracts"):
+                self.player.refresh_demonologist_contracts()
 
-        # Loot
-        loot_msg = self.player.loot(self.enemy, self.tile)
-        if loot_msg:
-            msg += loot_msg
+            vow_text = paladin_vows.on_enemy_defeated(
+                self.player,
+                self.enemy,
+                bounty_target=self._enemy_is_active_bounty(),
+                mercy=False,
+            )
+            if vow_text:
+                msg += vow_text
 
-        # Quest progress
-        quest_msg = self.player.quests(enemy=self.enemy)
-        if quest_msg:
-            msg += quest_msg
+            # Loot
+            loot_msg = self.player.loot(self.enemy, self.tile)
+            if loot_msg:
+                msg += loot_msg
+
+            # Quest progress
+            quest_msg = self.player.quests(enemy=self.enemy)
+            if quest_msg:
+                msg += quest_msg
 
         # Experience and levelling
         self.player.level.exp += exp_gain
@@ -892,6 +922,30 @@ class BattleEngine:
             self.player.award_grandmaster_victory_xp()
 
         return msg
+
+    def _award_mercy_gold(self) -> str:
+        gold = max(0, int(getattr(self.enemy, "gold", 0) or 0))
+        if not gold:
+            return ""
+        try:
+            gold = max(0, int(gold * paladin_vows.redemption_reward_multiplier(self.player)))
+        except Exception:
+            pass
+        self.player.gold += gold
+        return f"{self.enemy.name} offers {gold} gold in restitution.\n"
+
+    def _enemy_is_active_bounty(self) -> bool:
+        try:
+            bounties = self.player.quest_dict.get("Bounty", {})
+            if not isinstance(bounties, dict):
+                return False
+            return self.enemy.name in bounties or any(
+                getattr(data.get("enemy", None), "name", None) == self.enemy.name
+                for data in bounties.values()
+                if isinstance(data, dict)
+            )
+        except Exception:
+            return False
 
     def _process_grandmaster_trial_victory(self) -> str:
         """Handle Secret Master trial victory without normal combat rewards."""

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
 from src.core.combat.battle_engine import BattleEngine
-from src.core.classes import class_rings
+from src.core.classes import class_rings, paladin_vows
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
@@ -115,13 +115,26 @@ def test_grand_summoner_conduit_ritual_sacrifices_hp_and_empowers_summons():
     assert class_rings.summon_multiplier(player) == 1.30
 
 
-def test_crusader_activation_waits_for_paladin_vow_system():
-    player, _ring = _player_with_class_ring("Crusader")
+def test_crusader_activation_requires_and_affirms_paladin_vow():
+    player, ring = _player_with_class_ring("Crusader")
 
     ok, message = player.awaken_class_ring()
 
     assert ok is False
-    assert "Paladin vow system" in message
+    assert "requires a sworn Paladin vow" in message
+
+    player.choose_paladin_vow("Redemption")
+    paladin_vows.trigger_aura(player, "Redemption")
+    dormant_rate = paladin_vows.encounter_rate_multiplier(player)
+
+    ok, message = player.awaken_class_ring()
+    ring.class_mod(player)
+
+    assert ok is True
+    assert "Vow Trial" in message
+    assert ring.mod == "Vow Affirmation"
+    assert player.class_ring_awakening["data"]["Crusader"]["vow"] == "Redemption"
+    assert paladin_vows.encounter_rate_multiplier(player) < dormant_rate
 
 
 def test_archbishop_intervention_and_reset_combat_flags():

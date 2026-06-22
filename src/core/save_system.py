@@ -725,6 +725,7 @@ class PlayerDataSerializer:
             'demonologist_contracts': getattr(player, 'demonologist_contracts', None),
             'archdruid_attunement': getattr(player, 'archdruid_attunement', None),
             'class_ring_awakening': getattr(player, 'class_ring_awakening', None),
+            'paladin_vow': getattr(player, 'paladin_vow', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=getattr(getattr(player, 'level', None), 'level', 1),
@@ -902,6 +903,12 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_class_ring_awakening"):
             player.ensure_class_ring_awakening()
+        player.paladin_vow = data.get(
+            'paladin_vow',
+            getattr(player, 'paladin_vow', None),
+        )
+        if hasattr(player, "ensure_paladin_vow"):
+            player.ensure_paladin_vow()
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=player.level.level,

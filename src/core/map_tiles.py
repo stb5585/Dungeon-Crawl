@@ -607,7 +607,17 @@ class CavePath(MapTile):
 
         extra_roll = min(10, level_diff // 5)
 
-        if all([not random.randint(0, 4 + extra_roll),
+        encounter_roll_max = 4 + extra_roll
+        try:
+            from .classes import paladin_vows
+
+            multiplier = paladin_vows.encounter_rate_multiplier(game.player_char)
+            encounter_slots = max(1, int(round((encounter_roll_max + 1) / multiplier)))
+            encounter_roll_max = max(0, encounter_slots - 1)
+        except Exception:
+            pass
+
+        if all([not random.randint(0, encounter_roll_max),
                 self.enemy is None,
                 game._random_combat]):
             self.enter_combat(game.player_char)

@@ -7,13 +7,11 @@ Class Ring activation now has two implementation tiers:
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
   `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
-  `Ninja`, `Arcane Trickster`, `Templar`, `Master Monk`, `Archbishop`,
+  `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Master Monk`, `Archbishop`,
   `Troubadour`, `Lycan`, `Astromancer`, `Soulcatcher`, and `Beast Master`.
 - Legacy second-promotion foundation: saved awakening state, dormant/awakened
   Class Ring descriptions, activation helpers, and several runtime mechanics
-  are implemented for the remaining second-promotion classes. Except for
-  Berserker, their full town/quest/trial flows still need individual
-  implementation passes.
+  are implemented for the remaining second-promotion classes.
 
 The standard Class Ring acquisition remains the Hooded Figure reward after the
 Red Dragon quest. The ring's second-promotion power is dormant until awakened by
@@ -262,9 +260,39 @@ class.
     rewards/outcomes.
   - Any player HP restoration during the duel fails the attempt; consumables
     spent before failure remain spent.
-- `Crusader`: `Vow Trial` awakens `Vow Affirmation`. This depends on the
-  future Paladin vow-selection system, then improves that vow's aura and
-  softens its mark drawback.
+- `Crusader`: `Vow Trial` awakens `Vow Affirmation`.
+  - Status: playable in the Church when a dormant Crusader Class Ring is
+    equipped or stored and the character has already sworn a Paladin vow.
+  - Promotion to `Paladin` permanently chooses one vow path. Legacy
+    Paladin/Crusader saves with no vow can swear one at the Church.
+  - `Vow Affirmation` records the chosen vow in
+    `class_ring_awakening["data"]["Crusader"]["vow"]`. While the affirmed ring
+    is equipped, aura benefits are multiplied by 1.5 and mark penalties or
+    durations are multiplied by 0.5.
+  - Bosses and Class Ring trial enemies are immune to mercy-victory effects.
+  - `Redemption` grants `Redeem`, which attempts a boss-immune mercy victory.
+    Success grants normal XP and gold, no item loot, and no kill, bounty, or
+    quest credit. `Redemption Aura` lasts 3 encounters: -25% encounter rate,
+    +20% XP/gold, and +10% Redeem chance. `Mark of Perdition` lasts 3
+    encounters: +25% encounter rate and -20% XP/gold.
+  - `Conquest` grants `Challenge`, marking the current enemy for 3 turns with
+    bonus accuracy/damage. Defeating the challenged foe or an active bounty
+    target triggers `Conquest Aura`, lasting 3 encounters and stacking up to 3:
+    each stack grants +5% initiative and +5% weapon/magic damage. Fleeing
+    applies `Mark of the Craven`, persisting until a bounty target is killed:
+    -10% initiative and -10% weapon/magic damage.
+  - `Protection` grants `Interpose`, a 2-turn guarded stance that increases the
+    next block chance and mitigation. A successful block triggers `Protection
+    Aura`, lasting 2 combat turns and stacking up to 5: each stack grants +3%
+    block chance and +5% block mitigation. Becoming stunned, prone, or asleep
+    applies `Mark of Vulnerability`, increasing physical/melee damage taken by
+    20% until incapacitation ends.
+  - `Retribution` grants `Judgment Riposte`, a 2-turn retaliatory stance. The
+    next enemy attack triggers a weapon/Holy counter; if it kills, `Retribution
+    Aura` lasts 6 encounters instead of 3. The aura grants +10% dodge and +15%
+    critical damage. Being disarmed or preparing the stance with no weapon
+    applies `Mark of Mercy`; if HP is below 10%, the next damaging enemy melee
+    hit is lethal. Vow Affirmation lowers this threshold to 5%.
 - `Dragoon`: `Guard The Fall` awakens the existing `+1 Jump Mod` and adds
   `Meteor Guard`, a two-turn shield equal to 25% of Jump landing damage.
   - Status: playable in the Barracks when a dormant Dragoon Class Ring is

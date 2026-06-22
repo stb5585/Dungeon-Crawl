@@ -25,7 +25,7 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
-from .classes import archdruid, class_rings, demonologist, grandmaster
+from .classes import archdruid, class_rings, demonologist, grandmaster, paladin_vows
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
@@ -363,6 +363,7 @@ class Player(Character):
         self.demonologist_contracts = demonologist.default_state()
         self.archdruid_attunement = archdruid.default_state()
         self.class_ring_awakening = class_rings.default_state()
+        self.paladin_vow = paladin_vows.default_state()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -436,6 +437,17 @@ class Player(Character):
         """Normalize legacy Class Ring awakening state for current and legacy saves."""
         self.class_ring_awakening = class_rings.ensure_state(self)
         return self.class_ring_awakening
+
+    def ensure_paladin_vow(self):
+        """Normalize Paladin vow state for current and legacy saves."""
+        self.paladin_vow = paladin_vows.ensure_state(self)
+        if paladin_vows.path(self):
+            paladin_vows.grant_signature_skill(self)
+        return self.paladin_vow
+
+    def choose_paladin_vow(self, vow_path):
+        """Permanently choose a Paladin vow path."""
+        return paladin_vows.choose_vow(self, vow_path)
 
     def awaken_class_ring(self, class_name=None, **kwargs):
         """Complete the current legacy Class Ring awakening helper."""
@@ -524,16 +536,21 @@ class Player(Character):
 
     def exp_gain_multiplier(self) -> float:
         """Race-based experience gain multiplier (used by combat and quests)."""
+        multiplier = 1.0
         try:
             from .constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
             race_name = getattr(getattr(self, "race", None), "name", None)
             if race_name == "Human":
-                return HUMAN_EXP_MULTIPLIER
+                multiplier *= HUMAN_EXP_MULTIPLIER
             if race_name == "Half Giant":
-                return HALF_GIANT_EXP_MULTIPLIER
+                multiplier *= HALF_GIANT_EXP_MULTIPLIER
         except Exception:
             pass
-        return 1.0
+        try:
+            multiplier *= paladin_vows.redemption_reward_multiplier(self)
+        except Exception:
+            pass
+        return multiplier
 
     def minimap(self):
         """
@@ -1256,6 +1273,10 @@ class Player(Character):
                     eff_cha = int(getattr(self.stats, "charisma", 0) * GNOME_GOLD_CHARISMA_MULTIPLIER)
                     bonus_pct = min(0.25, max(0.0, eff_cha * 0.01))  # up to +25%
                     gold = max(0, int(gold * (1.0 + bonus_pct)))
+            except Exception:
+                pass
+            try:
+                gold = max(0, int(gold * paladin_vows.redemption_reward_multiplier(self)))
             except Exception:
                 pass
             loot_message += f"{enemy.name} dropped {gold} gold.\n"
@@ -2341,6 +2362,7 @@ class Player(Character):
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             total_mod *= class_rings.weapon_damage_multiplier(self)
+            total_mod *= paladin_vows.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
@@ -2408,7 +2430,9 @@ class Player(Character):
             astro = class_rings.constellation_bonus(self, typ)
             if astro:
                 class_mod += int((magic_mod + self.combat.magic) * astro)
-            return max(0, magic_mod + class_mod + self.combat.magic)
+            total_magic = magic_mod + class_mod + self.combat.magic
+            total_magic *= paladin_vows.conquest_damage_multiplier(self, enemy)
+            return max(0, int(total_magic))
         if mod == 'magic def':
             # Wisdom is the primary magic-defense stat; charisma provides a secondary
             # willpower component so low-CHA physical builds have a tangible downside.
@@ -2472,7 +2496,8 @@ class Player(Character):
         if mod == "speed":
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
-            return speed_mod
+            speed_mod *= paladin_vows.initiative_multiplier(self)
+            return int(speed_mod)
         return 0
 
     def special_power(self, game):

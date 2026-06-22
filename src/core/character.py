@@ -688,6 +688,12 @@ class Character:
             chance += class_rings.arcane_trickster_dodge_bonus(self)
         except Exception:
             pass
+        try:
+            from .classes import paladin_vows
+
+            chance += paladin_vows.retribution_dodge_bonus(self)
+        except Exception:
+            pass
         # Dwarf Gluttony (in-combat hangover): reduced dodge while active.
         try:
             if self.status_effects.get("Hangover") and self.status_effects["Hangover"].active:
@@ -784,6 +790,13 @@ class Character:
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
             crit_per = random.uniform(1, crits[i])
+            if crit_per > 1:
+                try:
+                    from .classes import paladin_vows
+
+                    crit_per *= paladin_vows.retribution_crit_damage_multiplier(self)
+                except Exception:
+                    pass
             weapon_type = getattr(self.equipment[att], "subtyp", None)
             if weapon_type == "Sword":
                 precision = getattr(self, "grandmaster_technique_stacks", {}).get("Sword Precision", {})
@@ -864,14 +877,24 @@ class Character:
                         damage = max(0, int(damage * HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER))
                 except Exception:
                     pass
-                defender.health.current -= damage
-                weapon_dam_str += self._build_damage_message(
-                    defender, damage, typ, crits[i], att
-                )
-                if hasattr(self, "record_grandmaster_weapon_hit"):
-                    self.record_grandmaster_weapon_hit(weapon_type)
-                weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
-                weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
+                lethal_msg = ""
+                try:
+                    from .classes import paladin_vows
+
+                    lethal_msg = paladin_vows.mercy_lethal_message(defender, damage)
+                except Exception:
+                    pass
+                if lethal_msg:
+                    weapon_dam_str += lethal_msg
+                else:
+                    defender.health.current -= damage
+                    weapon_dam_str += self._build_damage_message(
+                        defender, damage, typ, crits[i], att
+                    )
+                    if hasattr(self, "record_grandmaster_weapon_hit"):
+                        self.record_grandmaster_weapon_hit(weapon_type)
+                    weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
+                    weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
                 # Evasive Guard: build stacks when you get hit; capped at 3.
                 # This encourages "stay in the fight" play without altering race resistances.
                 if "Evasive Guard" in defender.spellbook.get("Skills", {}):
@@ -1046,10 +1069,22 @@ class Character:
         )
         if can_block:
             blk_chance = defender.check_mod('shield', enemy=self) / 100
+            try:
+                from .classes import paladin_vows
+
+                blk_chance += paladin_vows.protection_block_bonus(defender)
+            except Exception:
+                pass
             if blk_chance > random.random():
                 blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage) if damage else 0
                 if 'Shield Block' in defender.spellbook['Skills']:
                     blk_per *= 1.25
+                try:
+                    from .classes import paladin_vows
+
+                    blk_per += paladin_vows.protection_mitigation_bonus(defender)
+                except Exception:
+                    pass
                 if blk_per > 0:
                     blk_per = min(1, blk_per)
                     damage = int(damage * (1 - blk_per))
@@ -1066,6 +1101,12 @@ class Character:
                     if blocked_pct > 0:
                         msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
                                 f"{blocked_pct} percent of the damage.\n")
+                    try:
+                        from .classes import paladin_vows
+
+                        msg += paladin_vows.block_succeeded(defender)
+                    except Exception:
+                        pass
             return damage, msg, False
 
         # Mana Shield
@@ -1166,6 +1207,12 @@ class Character:
         ))
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
+        try:
+            from .classes import paladin_vows
+
+            damage = int(damage * paladin_vows.incoming_damage_multiplier(defender, "Physical"))
+        except Exception:
+            pass
 
         # Bleed makes melee hits more punishing (before defensive stance reductions).
         if (
@@ -1363,6 +1410,12 @@ class Character:
             resist = self.check_mod('resist', enemy=attacker, typ=typ)
         
         final_damage = int(damage * (1 - resist))
+        try:
+            from .classes import paladin_vows
+
+            final_damage = int(final_damage * paladin_vows.incoming_damage_multiplier(self, typ))
+        except Exception:
+            pass
 
         # Magic defense reduction: allow primary stats (WIS/CHA) to matter for
         # survival even on physical builds, by reducing incoming elemental/magic damage.

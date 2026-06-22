@@ -348,10 +348,12 @@ def activate(character: Any, class_name_value: str | None = None, **kwargs: Any)
         return False, f"The {target} Class Ring is already awakened.\n"
 
     if target == "Crusader":
-        vow = kwargs.get("vow") or getattr(character, "paladin_vow", None)
+        from . import paladin_vows
+
+        vow = paladin_vows.normalize_path(kwargs.get("vow")) or paladin_vows.path(character)
         if not vow:
-            return False, "The Vow Trial waits for the Paladin vow system to define the chosen vow.\n"
-        state["data"]["Crusader"]["vow"] = str(vow)
+            return False, "The Vow Trial requires a sworn Paladin vow.\n"
+        state["data"]["Crusader"]["vow"] = vow
 
     if target == "Grand Summoner":
         max_hp = max(1, int(getattr(getattr(character, "health", None), "max", 1) or 1))
