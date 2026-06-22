@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import items
+from src.core.classes import grandmaster
 from src.ui_pygame.gui import barracks
 
 
@@ -56,6 +58,8 @@ def _make_player():
         inventory_calls.append((item.name, num, storage, subtract, rare))
 
     return SimpleNamespace(
+        cls=SimpleNamespace(name="Warrior"),
+        equipment={"Ring": SimpleNamespace(name="No Ring")},
         inventory={},
         storage={},
         special_inventory={},
@@ -157,6 +161,48 @@ def test_milestone_storage_rewards_are_deposited_once(monkeypatch):
     assert len(player.storage["Mana Potion"]) == 2
     assert player.inventory_calls == []
     assert any("milestone supplies" in message for message in FakePopup.messages)
+
+
+def test_grandmaster_hall_requires_equipped_or_stored_class_ring(monkeypatch):
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Grandmaster of Arms")
+    player.inventory = {"Class Ring": [items.ClassRing()]}
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+
+    manager = barracks.BarracksManager(presenter, player)
+    assert manager._grandmaster_hall_available() is False
+
+    player.storage = {"Class Ring": [items.ClassRing()]}
+    assert manager._grandmaster_hall_available() is True
+
+    player.storage = {}
+    player.equipment["Ring"] = items.ClassRing()
+    assert manager._grandmaster_hall_available() is True
+
+
+def test_grandmaster_hall_binds_after_successful_gauntlet(monkeypatch):
+    FakePopup.messages = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Grandmaster of Arms")
+    player.equipment = {
+        "Ring": items.ClassRing(),
+        "Weapon": SimpleNamespace(subtyp="Sword"),
+    }
+    player.grandmaster_discipline = grandmaster.default_state()
+    presenter = _make_presenter()
+    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
+
+    manager = barracks.BarracksManager(presenter, player)
+    monkeypatch.setattr(manager, "_choose_grandmaster_weapon", lambda rebind=False: "Sword")
+    monkeypatch.setattr(manager, "_run_grandmaster_gauntlet", lambda weapon_type, rebind=False: True)
+
+    assert manager.visit_grandmaster_secret_hall() is True
+    assert player.grandmaster_discipline["activated"] is True
+    assert player.grandmaster_discipline["bound_weapon"] == "Sword"
+    assert player.equipment["Ring"].mod == "Sword Discipline x2"
+    assert any("awakens to Sword Discipline" in message for message in FakePopup.messages)
 
 
 def test_manage_storage_store_and_retrieve(monkeypatch):

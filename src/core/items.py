@@ -3406,13 +3406,19 @@ class ClassRing(Accessory):
             return self.description
         
         cls_name = player_char.cls.name
+        from .classes import class_rings
+        if class_rings.is_legacy_class(cls_name):
+            return class_rings.description(player_char)
+
         descriptions = {
             "Berserker": "A ring that grants +15% Critical Hit Chance when worn by a Berserker.",
+            "Grandmaster of Arms": self._grandmaster_description(player_char),
             "Crusader": "A ring that grants +10% Holy damage when worn by a Crusader.",
             "Dragoon": "A ring that unlocks an additional Jump modification slot (max 6) when worn by a Dragoon.",
             "Stalwart Defender": "A ring that reduces damage taken by 10% when worn by a Stalwart Defender.",
             "Wizard": "A ring that increases the chance to trigger Arcane and elemental spell special effects when worn by a Wizard.",
             "Shadowcaster": "A ring that grants Shadow Bolt a special effect that heals the caster based on damage dealt when worn by a Shadowcaster.",
+            "Demonologist": self._demonologist_description(player_char),
             "Knight Enchanter": "A ring that increases Mana Tap effectiveness (turns 10% mana into 20% heal) when worn by a Knight Enchanter.",
             "Grand Summoner": "A ring that increases HP and damage of summoned creatures by 30% when worn by a Grand Summoner.",
             "Rogue": "A ring that grants +2 Luck bonus when worn by a Rogue.",
@@ -3424,21 +3430,107 @@ class ClassRing(Accessory):
             "Archbishop": "A ring that grants a random chance to heal 25% of health when below 50% health when worn by an Archbishop.",
             "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",
             "Lycan": "A ring that grants an attack bonus immediately after transforming when worn by a Lycan.",
+            "Archdruid": self._archdruid_description(player_char),
             "Astromancer": "A ring that boosts the terrain effect of spells when worn by a Astromancer.",
             "Soulcatcher": "A ring that unlocks the Soul Aspect of the Totem ability when worn by a Soulcatcher, granting +20% Weapon damage and +20% Critical damage.",
             "Beast Master": "A ring that increases defense for you and your companion when covering the other when worn by a Beast Master.",
         }
         return descriptions.get(cls_name, self.description)
 
+    def _grandmaster_description(self, player_char):
+        from .classes import grandmaster
+
+        state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+        if not state["activated"]:
+            return (
+                "A dormant ring that waits for a Grandmaster of Arms to awaken it through "
+                "a Secret Master trial."
+            )
+        bound_weapon = state["bound_weapon"] or "chosen weapon"
+        rank = grandmaster.discipline_rank(player_char, bound_weapon)
+        chance = int(grandmaster.proc_chance(player_char, bound_weapon) * 100)
+        accuracy = int(grandmaster.accuracy_bonus(player_char, bound_weapon) * 100)
+        return (
+            f"A ring bound to {bound_weapon} Discipline. While worn, it doubles that discipline's "
+            f"mastery bonus for the Grandmaster of Arms (rank {rank}, +{accuracy}% accuracy, "
+            f"{chance}% technique chance)."
+        )
+
+    def _demonologist_description(self, player_char):
+        from .classes import demonologist
+
+        state = demonologist.normalize_state(getattr(player_char, "demonologist_contracts", None))
+        active = state["active_patron"] or "no active patron"
+        if not state["ring_awakened"]:
+            return (
+                "A dormant ring that can imprison a Demonologist's familiar in the hidden crypt. "
+                f"Contracts are available, but the ring has not empowered them yet ({active})."
+            )
+        familiar = state.get("imprisoned_familiar") or {}
+        echo = familiar.get("race") or familiar.get("spec") or "familiar"
+        return (
+            f"A ring awakened by the imprisoned {echo}. All fiend contracts are empowered, "
+            f"and the active patron is {active}."
+        )
+
+    def _archdruid_description(self, player_char):
+        from .classes import archdruid
+
+        state = archdruid.normalize_state(getattr(player_char, "archdruid_attunement", None))
+        attunement = ", ".join(
+            f"{affinity} {state['attunement'][affinity]}"
+            for affinity in archdruid.AFFINITIES
+        )
+        if not state["grove_unlocked"]:
+            return (
+                "A dormant ring waiting for fourfold balance. "
+                f"Attunement: {attunement}."
+            )
+        if not state["ring_awakened"]:
+            aspects = archdruid.aspect_summary(player_char)
+            return (
+                "A dormant ring listening to the Ancient Grove. "
+                f"Aspects: {aspects}."
+            )
+        bonus = int(archdruid.harmony_bonus(player_char) * 100)
+        return (
+            "A ring awakened through Venom, Stone, Growth, and Storm. "
+            f"Current Harmony Bonus: +{bonus}%."
+        )
+
     def class_mod(self, player_char):
         """Apply class-specific bonuses to the wearer."""
         cls_name = player_char.cls.name
+
+        from .classes import class_rings
+        if class_rings.is_legacy_class(cls_name):
+            player_char.equipment["Ring"].mod = class_rings.ring_mod(player_char)
+            if cls_name == "Soulcatcher" and class_rings.is_awakened(player_char, "Soulcatcher"):
+                try:
+                    totem = player_char.spellbook.get("Skills", {}).get("Totem")
+                    if totem is None:
+                        totem = player_char.spellbook.get("Totem")
+                    if totem is not None:
+                        totem.unlocked_aspects["Soul"] = True
+                except (AttributeError, KeyError):
+                    pass
+            return
         
         # Warrior Branch
         if cls_name == "Berserker":
             # +15% Critical Hit Chance
             if "Crit" not in player_char.equipment["Ring"].mod:
                 player_char.equipment["Ring"].mod = "+15% Crit"
+
+        elif cls_name == "Grandmaster of Arms":
+            from .classes import grandmaster
+
+            state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+            bound_weapon = state["bound_weapon"]
+            if state["activated"] and bound_weapon:
+                player_char.equipment["Ring"].mod = f"{bound_weapon} Discipline x2"
+            else:
+                player_char.equipment["Ring"].mod = "Dormant Discipline"
         
         elif cls_name == "Crusader":
             # +10% Holy damage
@@ -3460,6 +3552,15 @@ class ClassRing(Accessory):
         elif cls_name == "Shadowcaster":
             # Shadow Bolt gains special effect that heals based on damage
             player_char.equipment["Ring"].mod = "Shadow Bolt Heal"
+
+        elif cls_name == "Demonologist":
+            from .classes import demonologist
+
+            state = demonologist.normalize_state(getattr(player_char, "demonologist_contracts", None))
+            if state["ring_awakened"]:
+                player_char.equipment["Ring"].mod = "Empowered Contracts"
+            else:
+                player_char.equipment["Ring"].mod = "Dormant Contract"
         
         elif cls_name == "Knight Enchanter":
             # Increase effectiveness of Mana Tap (10% mana → 20% heal)
@@ -3508,6 +3609,18 @@ class ClassRing(Accessory):
         elif cls_name == "Lycan":
             # Gain attack bonus immediately after transforming
             player_char.equipment["Ring"].mod = "Transform Boost"
+
+        elif cls_name == "Archdruid":
+            from .classes import archdruid
+
+            state = archdruid.normalize_state(getattr(player_char, "archdruid_attunement", None))
+            if state["ring_awakened"]:
+                bonus = int(archdruid.harmony_bonus(player_char) * 100)
+                player_char.equipment["Ring"].mod = f"Harmony +{bonus}%"
+            elif state["grove_unlocked"]:
+                player_char.equipment["Ring"].mod = "Grove Dormant"
+            else:
+                player_char.equipment["Ring"].mod = "Dormant Balance"
         
         elif cls_name == "Astromancer":
             # Boost terrain effect of spells
@@ -5050,6 +5163,58 @@ class GoldenChalice(Misc):
                                                           "that the chalice can grant immense power to those who drink "
                                                           "from it, but it is also cursed with a terrible thirst.",
                          value=0, rarity=0, subtyp="Special")
+
+
+class SerpentVenomHeart(Misc):
+    """Archdruid Venom ritual catalyst."""
+
+    def __init__(self):
+        super().__init__(
+            name="Serpent Venom Heart",
+            description="A pulsing knot of venom that refuses to die.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
+
+
+class HeartstoneShard(Misc):
+    """Archdruid Stone ritual catalyst."""
+
+    def __init__(self):
+        super().__init__(
+            name="Heartstone Shard",
+            description="A mineral fragment that beats once when held still.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
+
+
+class VerdantSeed(Misc):
+    """Archdruid Growth ritual catalyst."""
+
+    def __init__(self):
+        super().__init__(
+            name="Verdant Seed",
+            description="A sleeping seed warm with impossible spring.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
+
+
+class StormglassFeather(Misc):
+    """Archdruid Storm ritual catalyst."""
+
+    def __init__(self):
+        super().__init__(
+            name="Stormglass Feather",
+            description="A translucent feather with lightning trapped along its spine.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 # Ability-related items

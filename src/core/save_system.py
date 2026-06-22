@@ -721,6 +721,10 @@ class PlayerDataSerializer:
             'kill_dict': player.kill_dict,
             'bestiary': getattr(player, 'bestiary', {}),
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
+            'grandmaster_discipline': getattr(player, 'grandmaster_discipline', None),
+            'demonologist_contracts': getattr(player, 'demonologist_contracts', None),
+            'archdruid_attunement': getattr(player, 'archdruid_attunement', None),
+            'class_ring_awakening': getattr(player, 'class_ring_awakening', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=getattr(getattr(player, 'level', None), 'level', 1),
@@ -877,6 +881,27 @@ class PlayerDataSerializer:
         player.kill_dict = data.get('kill_dict', {})
         player.bestiary = data.get('bestiary', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
+        player.grandmaster_discipline = data.get('grandmaster_discipline', getattr(player, 'grandmaster_discipline', None))
+        if hasattr(player, "ensure_grandmaster_discipline"):
+            player.ensure_grandmaster_discipline()
+        player.demonologist_contracts = data.get(
+            'demonologist_contracts',
+            getattr(player, 'demonologist_contracts', None),
+        )
+        if hasattr(player, "ensure_demonologist_contracts"):
+            player.ensure_demonologist_contracts()
+        player.archdruid_attunement = data.get(
+            'archdruid_attunement',
+            getattr(player, 'archdruid_attunement', None),
+        )
+        if hasattr(player, "ensure_archdruid_attunement"):
+            player.ensure_archdruid_attunement()
+        player.class_ring_awakening = data.get(
+            'class_ring_awakening',
+            getattr(player, 'class_ring_awakening', None),
+        )
+        if hasattr(player, "ensure_class_ring_awakening"):
+            player.ensure_class_ring_awakening()
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=player.level.level,

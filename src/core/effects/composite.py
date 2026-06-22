@@ -4905,12 +4905,25 @@ class JumpEffect(Effect):
         )
 
         # ── Main weapon damage ──────────────────────────────────────
+        target_hp_before = target.health.current
         wd_str, hit, actual_crit = actor.weapon_damage(
             target, cover=cover, dmg_mod=dmg_mod, crit=crit,
         )
         messages.append(wd_str)
         result.hit = hit
         result.crit = actual_crit if actual_crit > 1 else None
+        jump_damage = max(0, target_hp_before - target.health.current)
+        if hit and jump_damage > 0:
+            try:
+                from ..classes import class_rings
+
+                shield = class_rings.apply_meteor_guard(actor, jump_damage)
+                if shield:
+                    messages.append(
+                        f"Meteor Guard forms a {shield}-point shield around {actor.name}!\n"
+                    )
+            except Exception:
+                pass
 
         if hit and target.is_alive():
             # ── Quake (stun chance) ─────────────────────────────────

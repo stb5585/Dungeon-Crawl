@@ -14,6 +14,7 @@ import sys
 import pygame
 
 from src.core import enemies
+from src.core.classes import demonologist
 from src.core.combat.battle_engine import BattleEngine
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
@@ -991,6 +992,13 @@ class GUICombatManager:
             if not selected_skill:
                 return None
             choice = selected_skill
+            if selected_skill == "Call Contract":
+                intent = self._select_contract_intent(player_char, enemy)
+                if not intent:
+                    return None
+                skill_obj = player_char.spellbook.get('Skills', {}).get("Call Contract")
+                if skill_obj:
+                    skill_obj.pending_intent = intent
 
         elif action == "Pickup Weapon":
             if not player_char.is_disarmed():
@@ -1263,6 +1271,68 @@ class GUICombatManager:
                         return skills[selected]  # Return skill name
                     
                     # Update scroll to keep selection visible
+                    max_visible = 3
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
+
+    def _select_contract_intent(self, player_char, enemy):
+        """Choose and confirm a Demonologist contract intent."""
+        intents = demonologist.available_intents(player_char)
+        if not intents:
+            self.combat_view.add_combat_message("No active fiend contract is bound.")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_selection_menu("Ask Fiend", intents, selected, scroll_offset)
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(intents)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(intents)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        intent = intents[selected]
+                        quote = demonologist.quote_contract(player_char, enemy, intent)
+                        if not quote.get("ok"):
+                            self.combat_view.add_combat_message(quote.get("reason", "The patron refuses."))
+                            self._pause_with_events(700)
+                            return None
+                        costs = quote["costs"]
+                        lines = [
+                            f"{quote['patron']} demands {costs['gold']} gold.",
+                            f"Misbehavior risk: {int(quote['misbehavior_chance'] * 100)}%",
+                        ]
+                        if costs.get("item"):
+                            lines.append("Additional demand: one potion.")
+                        permanent = costs.get("permanent")
+                        if permanent:
+                            lines.append(f"Additional demand: permanent {permanent['amount']} {permanent['stat']}.")
+                        if not demonologist.can_pay_quote(player_char, quote):
+                            self.combat_view.add_combat_message("You cannot pay that price.")
+                            self._pause_with_events(700)
+                            return None
+                        if self.presenter.render_menu("\n".join(lines), ["Accept", "Refuse"]) == 0:
+                            return intent
+                        return None
+
                     max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected

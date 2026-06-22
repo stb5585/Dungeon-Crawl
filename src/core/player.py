@@ -25,6 +25,7 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
+from .classes import archdruid, class_rings, demonologist, grandmaster
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
@@ -357,6 +358,11 @@ class Player(Character):
         self.kill_dict = {}
         self.bestiary = {}
         self.storage = {}
+        self.grandmaster_discipline = grandmaster.default_state()
+        self._grandmaster_battle_hit_types = set()
+        self.demonologist_contracts = demonologist.default_state()
+        self.archdruid_attunement = archdruid.default_state()
+        self.class_ring_awakening = class_rings.default_state()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -402,6 +408,78 @@ class Player(Character):
             current_level=getattr(getattr(self, "level", None), "level", 1),
         )
         return self.gameplay_stats
+
+    def ensure_grandmaster_discipline(self):
+        """Normalize Grandmaster weapon-discipline state for current and legacy saves."""
+        self.grandmaster_discipline = grandmaster.normalize_state(
+            getattr(self, "grandmaster_discipline", None)
+        )
+        if not isinstance(getattr(self, "_grandmaster_battle_hit_types", None), set):
+            self._grandmaster_battle_hit_types = set()
+        return self.grandmaster_discipline
+
+    def ensure_demonologist_contracts(self):
+        """Normalize Demonologist contract state for current and legacy saves."""
+        self.demonologist_contracts = demonologist.normalize_state(
+            getattr(self, "demonologist_contracts", None)
+        )
+        if demonologist.is_demonologist(self):
+            self.demonologist_contracts["crypt_unlocked"] = True
+        return self.demonologist_contracts
+
+    def ensure_archdruid_attunement(self):
+        """Normalize Archdruid attunement state for current and legacy saves."""
+        self.archdruid_attunement = archdruid.ensure_state(self)
+        return self.archdruid_attunement
+
+    def ensure_class_ring_awakening(self):
+        """Normalize legacy Class Ring awakening state for current and legacy saves."""
+        self.class_ring_awakening = class_rings.ensure_state(self)
+        return self.class_ring_awakening
+
+    def awaken_class_ring(self, class_name=None, **kwargs):
+        """Complete the current legacy Class Ring awakening helper."""
+        return class_rings.activate(self, class_name, **kwargs)
+
+    def refresh_demonologist_contracts(self) -> list[str]:
+        """Unlock fiend contracts from recorded defeated enemies."""
+        self.ensure_demonologist_contracts()
+        return demonologist.refresh_unlocked_contracts(self)
+
+    def record_grandmaster_weapon_hit(self, weapon_type: str | None) -> tuple[int, int]:
+        """Award per-hit discipline XP and remember the weapon type for victory XP."""
+        self.ensure_grandmaster_discipline()
+        before, after = grandmaster.add_discipline_xp(self, weapon_type, grandmaster.HIT_XP)
+        if weapon_type in grandmaster.WEAPON_TYPES:
+            self._grandmaster_battle_hit_types.add(weapon_type)
+        return before, after
+
+    def award_grandmaster_victory_xp(self) -> dict[str, tuple[int, int]]:
+        """Award victory discipline XP to equipped weapon types used in this battle."""
+        self.ensure_grandmaster_discipline()
+        results = {}
+        for weapon_type in sorted(self._grandmaster_battle_hit_types):
+            if weapon_type in grandmaster.WEAPON_TYPES:
+                results[weapon_type] = grandmaster.add_discipline_xp(
+                    self, weapon_type, grandmaster.VICTORY_XP
+                )
+        self._grandmaster_battle_hit_types.clear()
+        return results
+
+    def record_archdruid_status_applied(self, target, status_name: str) -> None:
+        archdruid.record_status_applied(self, target, status_name)
+
+    def record_archdruid_damage_dealt(self, amount: int, damage_type: str) -> None:
+        archdruid.record_damage_dealt(self, amount, damage_type)
+
+    def record_archdruid_damage_taken(self, amount: int, damage_type: str) -> None:
+        archdruid.record_damage_taken(self, amount, damage_type)
+
+    def record_archdruid_healing_done(self, amount: int) -> None:
+        archdruid.record_healing_done(self, amount)
+
+    def record_archdruid_life_drained(self) -> None:
+        archdruid.record_life_drain(self)
 
     def record_step(self, steps=1):
         stats = self.ensure_gameplay_stats()
@@ -1293,6 +1371,14 @@ class Player(Character):
                 unlocked = jump_skill.unlock_boss_modification(enemy.name)
                 if unlocked:
                     loot_message += f"New Jump modification unlocked: {unlocked}.\n"
+
+        catalyst = archdruid.catalyst_for_enemy(self, enemy)
+        if catalyst is not None:
+            catalyst_name, catalyst_cls = catalyst
+            item = catalyst_cls()
+            self.modify_inventory(item, rare=True)
+            archdruid.record_catalyst_obtained(self, catalyst_name)
+            loot_message += f"{enemy.name} dropped a {catalyst_name}.\n"
         return loot_message
 
     def inventory_screen(self, game, inv_popup=None, confirm_popup=None, useitembox=None):
@@ -2254,6 +2340,7 @@ class Player(Character):
                 weapon_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
+            total_mod *= class_rings.weapon_damage_multiplier(self)
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             block_mod = 0
@@ -2295,7 +2382,11 @@ class Player(Character):
             if self.equipment['Ring'] is not None and 'Physical Defense' in self.equipment['Ring'].mod:
                 armor_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
-            return max(0, (armor_mod * int(not ignore)) + class_mod + self.combat.defense)
+            if archdruid.mastery_unlocked(self, "Stone"):
+                class_mod += max(1, int((armor_mod + self.combat.defense) * 0.08))
+            armor_total = ((armor_mod * int(not ignore)) + class_mod + self.combat.defense)
+            armor_total *= class_rings.armor_multiplier(self)
+            return max(0, int(armor_total))
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
             if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
@@ -2308,6 +2399,15 @@ class Player(Character):
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
             if self.cls.name == "Shadowcaster" and self.class_effects["Power Up"].active:
                 class_mod += magic_mod
+            harmony = archdruid.harmony_bonus(self)
+            if harmony:
+                class_mod += int((magic_mod + self.combat.magic) * harmony)
+            trickster = class_rings.arcane_trickster_magic_bonus(self)
+            if trickster:
+                class_mod += int((magic_mod + self.combat.magic) * trickster)
+            astro = class_rings.constellation_bonus(self, typ)
+            if astro:
+                class_mod += int((magic_mod + self.combat.magic) * astro)
             return max(0, magic_mod + class_mod + self.combat.magic)
         if mod == 'magic def':
             # Wisdom is the primary magic-defense stat; charisma provides a secondary
@@ -2324,6 +2424,9 @@ class Player(Character):
             elif self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
                 heal_mod += self.equipment['Weapon'].damage
             heal_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
+            harmony = archdruid.harmony_bonus(self)
+            if harmony:
+                class_mod += int((heal_mod + self.combat.magic) * harmony)
             return max(0, heal_mod + class_mod + self.combat.magic)
         if mod == 'resist':
             res_mod = 0
@@ -2355,6 +2458,10 @@ class Player(Character):
             if self.cls.name == "Astromancer" and self.class_effects["Power Up"].active and \
                     typ in ["Fire", "Water", "Wind", "Earth"]:
                 res_mod += 0.5
+            harmony = archdruid.harmony_bonus(self)
+            if harmony:
+                res_mod += harmony
+            res_mod += class_rings.constellation_bonus(self, typ)
             return res_mod
         if mod == 'luck':
             if self.cls.name == "Rogue" and self.power_up:

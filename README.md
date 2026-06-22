@@ -86,7 +86,7 @@ DIRECTORY STRUCTURE (Updated February 2026):
 ```
 src/
   core/          - Game engine (UI-agnostic logic)
-                   ├── abilities.py, character.py, classes.py
+                   ├── abilities.py, character.py, classes/
                    ├── enemies.py, items.py, player.py, town.py, etc.
                    ├── combat/ (action queue, combat_result, battle_logger)
                    ├── data/ (data_loader, content/*.json)
@@ -133,7 +133,7 @@ CORE GAME FILES (now in src/core/):
 FILE DESCRIPTIONS (Core Game Logic - src/core/):
 - **abilities.py** - Spells and skills for all character classes
 - **character.py** - All characters (players, enemies, companions) with stats and combat logic
-- **classes.py** - Class definitions, promotions, and equipment restrictions
+- **classes/** - Class definitions, promotion rules, equipment restrictions, and class-specific mechanics
 - **companions.py** - Warlock familiars, summon creatures, and class companions
 - **enemies.py** - Enemy definitions, AI action stacks, and special abilities
 - **items.py** - Item system with random generation, special effects, and equipment

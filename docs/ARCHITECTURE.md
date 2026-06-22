@@ -314,7 +314,7 @@ dungeon-crawl/
 │   │   ├── abilities.py
 │   │   ├── battle.py
 │   │   ├── character.py
-│   │   ├── classes.py
+│   │   ├── classes/
 │   │   ├── combat_result.py
 │   │   ├── companions.py
 │   │   ├── enemies.py

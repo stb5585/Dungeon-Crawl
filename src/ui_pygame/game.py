@@ -12,7 +12,7 @@ import sys
 import pygame
 
 from src.core.character import Combat, Level, Resource, Stats
-from src.core.classes import classes_dict
+from src.core.classes import archdruid, classes_dict
 from src.core.data.data_loader import get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
@@ -280,7 +280,10 @@ class PygameGame:
         self.shop_manager = ShopManager(self.presenter, self.player_char)
         self.church_manager = ChurchManager(self.presenter, self.player_char)
         self.inn_manager = InnManager(self.presenter, self.player_char)
-        self.barracks_manager = BarracksManager(self.presenter, self.player_char)
+        try:
+            self.barracks_manager = BarracksManager(self.presenter, self.player_char, game=self)
+        except TypeError:
+            self.barracks_manager = BarracksManager(self.presenter, self.player_char)
         self.dungeon_manager = DungeonManager(self.presenter, self.player_char, self)
 
     def _build_player_character(self, race_name, class_name, name="Hero", sex="Male"):
@@ -609,8 +612,10 @@ class PygameGame:
             "Shops",
             "The Thirsty Dog Tavern",
             "Church of Elysia",
-            "Enter Dungeon",
         ]
+        if archdruid.grove_unlocked(self.player_char):
+            options.append("Ancient Grove")
+        options.append("Enter Dungeon")
 
         # Add Warp Point or Old Warehouse based on player progress
         if getattr(self.player_char, 'warp_point', False):
@@ -670,6 +675,9 @@ class PygameGame:
                 
             elif choice_label == "Church of Elysia":
                 self.visit_church()
+
+            elif choice_label == "Ancient Grove":
+                self.visit_ancient_grove()
 
             elif choice_label == "Enter Dungeon":
                 # Move player to dungeon entrance
@@ -850,6 +858,45 @@ class PygameGame:
         """Visit the Barracks - managed by BarracksManager."""
         self._play_location_music("town")
         self.barracks_manager.visit_barracks()
+
+    def visit_ancient_grove(self):
+        """Visit the Archdruid Ancient Grove."""
+        self._play_location_music("town")
+        if not archdruid.grove_unlocked(self.player_char):
+            popup = ConfirmationPopup(self.presenter, "The path to the Ancient Grove is hidden.", show_buttons=False)
+            popup.show(**self._popup_show_kwargs())
+            return
+
+        while True:
+            state = self.player_char.ensure_archdruid_attunement()
+            options = ["Review Balance"]
+            options.extend(
+                f"{affinity} Ritual"
+                for affinity in archdruid.AFFINITIES
+                if not state["aspects"][affinity]
+            )
+            options.append("Leave")
+            choice = self.presenter.render_menu("Ancient Grove", options)
+            if choice is None or options[choice] == "Leave":
+                return
+            selected = options[choice]
+            if selected == "Review Balance":
+                attunement = ", ".join(
+                    f"{affinity} {state['attunement'][affinity]}"
+                    for affinity in archdruid.AFFINITIES
+                )
+                text = f"Attunement: {attunement}\nAspects: {archdruid.aspect_summary(self.player_char)}"
+                popup = ConfirmationPopup(self.presenter, text, show_buttons=False)
+                popup.show(**self._popup_show_kwargs())
+                continue
+
+            affinity = selected.replace(" Ritual", "")
+            success, message = archdruid.perform_ritual(self.player_char, affinity)
+            ring = self.player_char.equipment.get("Ring")
+            if success and getattr(ring, "name", None) == "Class Ring":
+                ring.class_mod(self.player_char)
+            popup = ConfirmationPopup(self.presenter, message.strip(), show_buttons=False)
+            popup.show(**self._popup_show_kwargs())
     
     def visit_inn(self):
         """Visit the Inn/Tavern - managed by InnManager."""

@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import companions, items
+from src.core.classes import demonologist
 from src.ui_pygame.gui import church
 
 
@@ -351,3 +353,34 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     player.level.pro_level = 1
     manager.handle_promotion()
     assert "Promotion failed:" in FakePopup.messages[-1]
+
+
+def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Demonologist")
+    player.kill_dict = {"Fiend": {"Imp": 1, "Balor": 1}}
+    player.demonologist_contracts = demonologist.default_state()
+    player.ensure_demonologist_contracts = lambda: demonologist.ensure_state(player)
+    player.refresh_demonologist_contracts = lambda: demonologist.refresh_unlocked_contracts(player)
+    player.equipment = {"Ring": items.ClassRing()}
+    familiar = companions.Mephit()
+    familiar.name = "Spark"
+    player.familiar = familiar
+
+    presenter = _make_presenter()
+    selections = iter([1, 1, 2, 2])
+    presenter.render_menu = lambda *_args, **_kwargs: next(selections)
+
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+
+    manager = church.ChurchManager(presenter, player)
+    assert manager.visit_hidden_crypt() is True
+
+    assert player.demonologist_contracts["active_patron"] == "Balor"
+    assert player.demonologist_contracts["ring_awakened"] is True
+    assert player.familiar is None
+    assert any("Balor is now your active contract." in message for message in FakePopup.messages)
+    assert any("Class Ring awakens" in message for message in FakePopup.messages)

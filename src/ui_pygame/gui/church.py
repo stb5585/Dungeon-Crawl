@@ -7,7 +7,7 @@ import os
 
 from src.core import companions
 from src.core.abilities import spell_dict, skill_dict
-from src.core.classes import classes_dict, apply_promotion_ability_rules
+from src.core.classes import classes_dict, apply_promotion_ability_rules, demonologist
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
@@ -25,7 +25,10 @@ class ChurchManager(TownScreenBase):
     
     def visit_church(self):
         """Visit the Church of Elysia."""
-        church_options = ["Promotion", "Save Game", "Quests", "Leave"]
+        church_options = ["Promotion", "Save Game", "Quests"]
+        if demonologist.is_demonologist(self.player_char):
+            church_options.append("Hidden Crypt")
+        church_options.append("Leave")
         
         church_screen = LocationMenuScreen(self.presenter, "Church of Elysia")
         
@@ -37,24 +40,27 @@ class ChurchManager(TownScreenBase):
                 require_key_release=True,
             )
             
-            if choice_idx is None or choice_idx == 3:  # Leave
+            if choice_idx is None or church_options[choice_idx] == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Let the light of Elysia guide you.", show_buttons=False)
                 popup.show(**self.popup_show_kwargs())
                 break
             
-            elif choice_idx == 0:  # Promotion
+            elif church_options[choice_idx] == "Promotion":
                 self.handle_promotion()
             
-            elif choice_idx == 1:  # Save
+            elif church_options[choice_idx] == "Save Game":
                 self.save_game()
             
-            elif choice_idx == 2:  # Quests
+            elif church_options[choice_idx] == "Quests":
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
                     quest_text_renderer=lambda text: church_screen.display_quest_text(text)
                 )
                 qm.check_and_offer('Priest')
+
+            elif church_options[choice_idx] == "Hidden Crypt":
+                self.visit_hidden_crypt()
     
     def handle_promotion(self):
         """Handle class promotion at level 30."""
@@ -241,11 +247,67 @@ class ChurchManager(TownScreenBase):
                 except Exception:
                     pass
 
+            if chosen_name == "Demonologist":
+                self.player_char.ensure_demonologist_contracts()
+                popup = ConfirmationPopup(
+                    self.presenter,
+                    "As you leave the altar, a priest whispers of a sealed crypt below the church.",
+                    show_buttons=False,
+                )
+                popup.show(**self.popup_show_kwargs())
+
             popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
+
+    def visit_hidden_crypt(self):
+        """Manage Demonologist contracts and Class Ring awakening."""
+        if not demonologist.is_demonologist(self.player_char):
+            popup = ConfirmationPopup(self.presenter, "The crypt door is nowhere to be found.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return False
+
+        self.player_char.ensure_demonologist_contracts()
+        unlocked = self.player_char.refresh_demonologist_contracts()
+        state = self.player_char.demonologist_contracts
+        options = ["Review Contracts"]
+        if unlocked:
+            options.append("Bind Patron")
+        if demonologist.ring_can_awaken(self.player_char):
+            options.append("Awaken Class Ring")
+        options.append("Leave")
+
+        while True:
+            choice = self.presenter.render_menu("Hidden Church Crypt", options)
+            if choice is None or options[choice] == "Leave":
+                return True
+
+            if options[choice] == "Review Contracts":
+                if unlocked:
+                    active = state.get("active_patron") or "None"
+                    text = "Unlocked contracts: " + ", ".join(unlocked) + f"\nActive patron: {active}"
+                else:
+                    text = "No fiend has answered your name. Defeat an eligible fiend, then return."
+                popup = ConfirmationPopup(self.presenter, text, show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
+
+            elif options[choice] == "Bind Patron":
+                bind_idx = self.presenter.render_menu("Bind which patron?", unlocked)
+                if bind_idx is not None and 0 <= bind_idx < len(unlocked):
+                    patron = unlocked[bind_idx]
+                    demonologist.bind_patron(self.player_char, patron)
+                    state = self.player_char.demonologist_contracts
+                    popup = ConfirmationPopup(self.presenter, f"{patron} is now your active contract.", show_buttons=False)
+                    popup.show(**self.popup_show_kwargs())
+
+            elif options[choice] == "Awaken Class Ring":
+                success, message = demonologist.awaken_ring(self.player_char)
+                popup = ConfirmationPopup(self.presenter, message.strip(), show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
+                if success:
+                    options = [option for option in options if option != "Awaken Class Ring"]
     
     def save_game(self):
         """Save the game at the church."""

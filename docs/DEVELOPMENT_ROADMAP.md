@@ -410,7 +410,7 @@ Implemented:
 
 #### P4b - Quest And Realm Content
 
-Status: `Active` for decision cleanup, `Ready For Spec` for Class Ring activation and Psychopomp/The Liminal Gap
+Status: `Active` for decision cleanup, `Partially Implemented` for Class Ring activation, `Ready For Spec` for Psychopomp/The Liminal Gap
 
 Implemented:
 
@@ -432,14 +432,23 @@ Implemented:
    - Added contextual town-menu location details for the Sergeant/Barracks, tavern patrons, shop purveyors, Church priest, Old Warehouse guards, and staffed Warp Point scientists.
 - Bring Him Home presentation hook:
    - Added a post-turn-in Timmy/family scene after the Sergeant receives the completed quest.
+- Class Ring activation and new class mechanics:
+   - Added `docs/CLASS_RING_ACTIVATION_SPEC.md` covering Grandmaster of Arms, Demonologist, Archdruid, and legacy second-promotion ring directions.
+   - Replaced the old monolithic `src/core/classes.py` with the `src/core/classes/` package while preserving public class imports.
+   - Implemented Grandmaster of Arms weapon disciplines, Class Ring binding/rebinding, Secret Master Barracks hall, trial combat handling, weapon techniques, save state, and regression coverage.
+   - Implemented Demonologist crypt access, fiend contracts, active patron binding, `Call Contract`, familiar imprisonment, empowered contracts, new fiend patrons/enemies, save state, and regression coverage.
+   - Implemented Archdruid fourfold attunement, Ancient Grove town option, deterministic catalysts, aspect rituals, mastery caps, Harmony Bonus, save state, and regression coverage.
+   - Added legacy second-promotion Class Ring awakening state, dormant/awakened descriptions, activation helpers, and live hooks for the legacy effects that already have safe runtime integration points.
 
 Ready For Spec:
 
-- Class Ring activation questlines:
+- Remaining legacy Class Ring questline implementations:
    - Standard Class Ring acquisition stays implemented as a passive reward for defeating the Red Dragon.
-   - Class Ring activation remains P4b content, but implementation is blocked until at least one second-promotion activation questline has a complete one-page spec.
-   - Each second-promotion activation spec must define: trigger, quest giver/location, objective, reward behavior, UI text, save state, and regression tests.
-   - Write activation specs for: Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Demonologist, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Archdruid, Astromancer, Soulcatcher, and Beast Master.
+   - Grandmaster of Arms, Demonologist, and Archdruid are fully playable activation flows.
+   - Existing second-promotion Class Ring directions are documented and have saved awakening state plus mechanics helpers.
+   - Remaining classes still need full trigger/location/trial UI, objective flow, reward messaging, and focused regression tests: Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Astromancer, Soulcatcher, and Beast Master.
+   - Crusader remains blocked on the Paladin vow-selection system.
+   - Arcane Trickster and Troubadour need their future spell-steal and song systems before their ring effects can be fully event-driven.
 - Main Storyline Plot and The Liminal Gap full design spec:
    - Locked creation premise: Elysia established Seven Principles, each embodied by a Guardian, and all mortal races are equally children of Elysia.
    - Locked story beat: the first confrontation with Vesperion defeats or kills the hero and sends them to The Liminal Gap instead of normal town resurrection.
@@ -460,8 +469,8 @@ Needs Design Decision:
    - Objective: It is revealed that they traveled from an alternate realm but got stuck and lost the ability to tranform back over time; after some discussion, they ask the player for help and in return they will grant them a reward; the player must find the entry point to the alternate realm so that Kaelenon can return home
    - Reward: Draconite, a mythical gemstone taken from the head of a dragon; can be given to the Jeweler in exchange for a <TODO>
    - Decide the target creature/trial, unlock timing, reward type, and whether the reward modifies Jump, grants equipment, or unlocks Dragoon-specific progression.
-- Class Ring activation priority:
-   - Decide which second-promotion class gets the first activation questline spec.
+- Remaining legacy Class Ring implementation order:
+   - Decide which legacy activation questline should be built first now that Grandmaster of Arms, Demonologist, and Archdruid are implemented.
 - The Liminal Gap implementation order:
    - Decide whether Psychopomp/The Liminal Gap should be implemented before or after the remaining P4b questline content.
 - Vesperion/Acolyte/Hooded Figure reveal order:
@@ -523,17 +532,31 @@ Deferred:
 
 #### P4e - Class Mechanics And Progression Kits
 
-Status: `Ready` for small rename, `Needs Design Decision` for mechanics
+Status: `Partially Implemented`, `Needs Design Decision` for remaining mechanics
 
 - Re-design Astromancer ultimate ability `TetraDisaster` after a reference audit across abilities, data, tests, saves, and UI text.
    - Astromancer is a prophet/time mage mix
 
+Implemented:
+
+- Grandmaster of Arms:
+  - Implemented as a second-promotion class in the class package.
+  - Added Weapon Discipline storage, XP gain, rank curve, accuracy/proc scaling, bound Class Ring weapon, weapon techniques, and save migration.
+  - Added Barracks Secret Hall activation/rebinding gauntlets and trial reward/death handling.
+- Demonologist:
+  - Implemented as a second-promotion class in the class package.
+  - Added Church Crypt unlock, fiend contract acquisition from kill history, active patron binding, contract quote/pay/resolve flow, familiar imprisonment, empowered contracts, and save migration.
+  - Added Succubus, Maelephant, and Balor as supported fiend contract enemies.
+- Archdruid:
+  - Implemented as a second-promotion class in the class package.
+  - Added Venom, Stone, Growth, and Storm attunement; Ancient Grove unlock; deterministic catalysts; aspect rituals; mastery caps; Harmony Bonus; and save migration.
+- Class Ring foundation:
+  - Existing second-promotion rings now have dormant/awakened descriptions, saved awakening state, activation helpers, and selected live mechanics hooks.
+  - Remaining legacy classes still need full quest/trial UI flows before their activation paths are complete.
+
 Needs Design Decision:
 
 - Warrior line:
-  - Implement Grandmaster of Arms as a second promotion path.
-  - Define Weapon Discipline storage, XP gain, critical-hit bonus, promotion lockout, and UI display.
-  - Define Grandmaster weapon specialties for Fist, Dagger, Sword, Club, Longsword, Battle Axe, and Hammer.
   - Define Berserker Battle Scars trigger chance, permanent stat pool, caps, and save behavior.
 - Paladin/Crusader:
   - Define Oathbringer path selection and permanence.
@@ -548,7 +571,7 @@ Needs Design Decision:
   - Define Resolve gauge storage, gain rate, decay/reset rules, UI, and effects on Shield Slam, Retaliate, Shield Block, and Last Stand.
 - Mage:
   - Define Elemental Affinity Wheel storage, spell unlock thresholds, Wizard promotion behavior, inverse-element pairs, and radar-chart UI.
-  - Define Demonologist contract acquisition, fiend interactions, corruption/bargain drawbacks, and Shadowcaster overlap.
+  - Define any remaining Demonologist corruption/bargain presentation and Shadowcaster overlap beyond the implemented contract system.
   - Define Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics.
 - Footpad:
   - Define Thief/Rogue, Inquisitor/Seeker, Assassin/Ninja, and Spell Stealer/Arcane Trickster follow-up mechanics.
@@ -613,13 +636,60 @@ Status: `Planned`
    - Weapon name or attack source on weapon-damage events.
    - Ability/item/source metadata where UI and audio layers need presentation-specific behavior.
 
-### P6 - Additional Improvements
+### P6 - Expand Enemies, Items, and Abilities
+
+1. Enemies
+  - Giant: humanoid
+  - Owlbear: monster
+2. Items
+  - Helm of Rostam: replaces Tarnhelm as ultimate medium helmet; Tarnhelm and Tolga "pushed down" and Visored Sallet removed from medium helmets
+  - Acorn, Vine Seed, Fungus Spore, Hemlock Root: reagents for Druid/Archdruid abilities
+3. Abilities
+  - Skills
+    - Offensive
+      - Zephyrstrike: passive; gain speed on a critical attack (Ranger, Rogue)
+    - Defensive
+      - Retaliate: passive; chance to counter attack following a blocked attack (Sentinel)
+      - Defensive Regen: passive; increase effect of Regen heal when in defensive stance (Priest)
+      - Posturing: passive; increases chance to Parry when in defensive stance (Crusader)
+      - Last Stand: increases defense and block amount at the expense of attack (Stalwart Defender)
+    - Stealth
+      - Steal As Well: passive; damaging spells have a chance to steal when hit (Spell Stealer)
+      - Steal Spell: steal a random spell from the target to use against them or save for later (Spell Stealer)
+      - Steal Spell 2: chance to learn spells permanently when stolen (Arcane Trickster)
+      - Poison Dart: fire a poisoned dart at the enemy, dealing damage and infecting the enemy (Archdruid)
+    - Enhance
+      - Third Eye: passive; add intelligence into critical and dodge chance calculations (Arcane Trickster)
+    - Class
+      - Monkey Grip: passive; allows Berserker to equip a 2-handed weapon in the main hand at the expense of accuracy (Berserker)
+      - Monkey Grip 2: passive; allows Berserker to equip a 2-handed weapon in the offhand at the expense of accuracy (Berserker)
+      - Final Assault: upon lethal damage from a melee attack, retaliate against the target with a counterattack; if the target is felled, you stabilize at 1 HP (Berserker)
+      - Paladin - Redemption Path
+        - Redeem: attempt to redeem an enemy; chance of success is affected by charisma and inverse to the enemy's health percentage
+        - Redemption Aura: triggers on successful Redeem; lowers encounter rate but increases experience and gold and chance to redeem next enemy; falls off if an enemy is killed
+        - Mark of Perdition: chance to trigger when a Paladin/Crusader on Redemption path kills an enemy; increases encounter rate and lowers experience and gold; persists until next successful redeem
+      - Paladin - Conquest Path
+        - Conquest Aura: triggers when defeating an enemy that has an active bounty; increases initiative and offensive combat stats; lasts 5 minutes; stacks up to 3 times
+        - Mark of the Craven: triggers when running away from an enemy; decreases initiative and offensive combat stats; persists until successfully killing a bounty target
+      - Paladin - Protection Path
+        - Protection Aura: chance to trigger on a blocked attack; increases block chance and amount and lowers the chance of incapacitation; lasts 2 turns and stacks up to 5 times with each time resetting duration
+        - Mark of Vulnerability: increases melee damage taken; triggers if player is incapacitated; lasts until no longer incapacitated
+      - Paladin - Retribution Path
+        - Retribution Aura: triggers on a successful counterattack, duration is doubled if enemy dies; increases dodge chance and critical damage; lasts 5 minutes
+        - Mark of Mercy: triggers when disarmed or no weapon equipped (e.g. it breaks); if HP drops below 10%, enemy can mercy-kill character; persists until weapon is equipped or picked up
+      - Transform (1-4): change Transform abilities to add each iteration instead of overwriting the previous one (Druid/Lycan)
+      - Nature Attunement follow-up abilities: the core Archdruid attunement/ring system is implemented; future Druid/Archdruid abilities can consume or reference the existing Venom, Stone, Growth, and Storm state.
+  - Spells
+
+### P7 - Additional Improvements
 
 1. Add mouse/cursor support; make menu options clickable
 2. Additional artistic renderings
    - Create additional portrait options for greater customization (i.e. different skin colors, facial features, etc.)
    - Replace certain dungeon sprite renderings: stairs up/down, secret shop
+   - Companions: familiars, beasts (reuse enemy art?), summons, etc.
 3. Increase the border size in the Equipment tab so the selected equipment slot stands out more
+4. Change town from menu-based to dungeon-style first-person navigation
 
 ## Deferred Or Decision-Gated Items
 

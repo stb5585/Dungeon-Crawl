@@ -53,7 +53,7 @@ battle.py        - Combat system (formerly combat.py)
 enemies.py       - Enemy definitions
 abilities.py     - Ability/spell/skill definitions
 items.py         - Item definitions
-classes.py       - Character classes
+classes/         - Character classes, promotion rules, and class mechanics
 races.py         - Character races
 ```
 

@@ -237,22 +237,26 @@ class TestItemConsumables:
         berserker = TestGameState.create_player(class_name="Berserker", race_name="Human")
         berserker.equipment["Ring"] = ring
         ring.class_mod(berserker)
-        assert berserker.equipment["Ring"].mod == "+15% Crit"
-        assert "Berserker" in ring.get_description(berserker)
+        assert berserker.equipment["Ring"].mod == "Dormant Bloodied Crits"
+        assert "No Healing Duel" in ring.get_description(berserker)
 
         rogue = TestGameState.create_player(class_name="Rogue", race_name="Human")
         rogue.equipment["Ring"] = items.ClassRing()
         before = rogue.stats.charisma
         rogue.equipment["Ring"].class_mod(rogue)
-        assert rogue.stats.charisma == before + 2
-        assert rogue.equipment["Ring"].mod == "+2 Luck"
+        assert rogue.stats.charisma == before
+        assert rogue.equipment["Ring"].mod == "Dormant Loaded Dice"
 
         soulcatcher = TestGameState.create_player(class_name="Soulcatcher", race_name="Human")
         soulcatcher.equipment["Ring"] = items.ClassRing()
         soulcatcher.spellbook["Totem"] = SimpleNamespace(unlocked_aspects={"Soul": False})
         soulcatcher.equipment["Ring"].class_mod(soulcatcher)
+        assert soulcatcher.spellbook["Totem"].unlocked_aspects["Soul"] is False
+        assert soulcatcher.equipment["Ring"].mod == "Dormant Aspect Evolution"
+        soulcatcher.awaken_class_ring()
+        soulcatcher.equipment["Ring"].class_mod(soulcatcher)
         assert soulcatcher.spellbook["Totem"].unlocked_aspects["Soul"] is True
-        assert soulcatcher.equipment["Ring"].mod == "Soul Aspect Unlock"
+        assert soulcatcher.equipment["Ring"].mod == "Aspect Evolution"
 
         unknown = TestGameState.create_player(class_name="Warrior", race_name="Human")
         unknown.equipment["Ring"] = items.ClassRing()

@@ -264,6 +264,32 @@ class Skill(Ability):
         return self._reset_result(actor=user, target=target)
 
 
+class CallContract(Skill):
+    """Demonologist class skill for bargaining with the active fiend patron."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Call Contract",
+            description="Call on the active fiend patron and bargain for aid.",
+        )
+        self.subtyp = "Class"
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import demonologist
+
+        super().use(user, target, **kwargs)
+        intent = kwargs.get("intent") or getattr(self, "pending_intent", None) or "Harm"
+        if hasattr(self, "pending_intent"):
+            self.pending_intent = None
+        return demonologist.resolve_contract(user, target, intent)
+
+
 class Spell(Ability):
     """
     Child class of Ability that handles spell casting
@@ -2378,6 +2404,7 @@ skill_dict = {
         "20": Familiar3,
         },
     "Demonologist": {
+        "1": CallContract,
         },
     "Spellblade": {
         "1": EnhanceBlade,

@@ -511,11 +511,16 @@ class BattleEngine:
             outcome.result = "flee"
             outcome.winner = None
             outcome.message = f"{self.player.name} fled from combat.\n"
+            if hasattr(self.player, "_grandmaster_battle_hit_types"):
+                self.player._grandmaster_battle_hit_types.clear()
             self.tile.enemy = None
         elif self.player.is_alive():
             outcome.result = "victory"
             outcome.winner = self.player.name
-            outcome.message = self._process_victory()
+            if getattr(self.enemy, "grandmaster_trial_enemy", False):
+                outcome.message = self._process_grandmaster_trial_victory()
+            else:
+                outcome.message = self._process_victory()
             # Check for level up possibility
             if not self.player.max_level() and self.player.level.exp_to_gain <= 0:
                 outcome.level_up = True
@@ -523,7 +528,11 @@ class BattleEngine:
             outcome.result = "defeat"
             outcome.winner = self.enemy.name
             outcome.message = f"{self.player.name} was slain by {self.enemy.name}.\n"
-            self._process_defeat()
+            if getattr(self.enemy, "grandmaster_trial_enemy", False):
+                outcome.message = f"{self.player.name} yields the trial bout.\n"
+                self._process_grandmaster_trial_defeat()
+            else:
+                self._process_defeat()
 
         # Mark boss tile defeated
         if self.player.is_alive() and self.boss:
@@ -817,6 +826,8 @@ class BattleEngine:
         self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] += 1
         if hasattr(self.player, "record_enemy_defeat"):
             self.player.record_enemy_defeat()
+        if hasattr(self.player, "refresh_demonologist_contracts"):
+            self.player.refresh_demonologist_contracts()
 
         # Loot
         loot_msg = self.player.loot(self.enemy, self.tile)
@@ -838,8 +849,42 @@ class BattleEngine:
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
+        if hasattr(self.player, "award_grandmaster_victory_xp"):
+            self.player.award_grandmaster_victory_xp()
 
         return msg
+
+    def _process_grandmaster_trial_victory(self) -> str:
+        """Handle Secret Master trial victory without normal combat rewards."""
+        rank_ups = []
+        if hasattr(self.player, "award_grandmaster_victory_xp"):
+            for weapon_type, (before, after) in self.player.award_grandmaster_victory_xp().items():
+                if after > before:
+                    rank_ups.append(f"{weapon_type} Discipline reached rank {after}.")
+
+        self.player.state = 'normal'
+        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
+            self.player.transform(back=True)
+        self.player.effects(end=True)
+        self.enemy.effects(end=True)
+
+        msg = "You complete this Secret Master bout.\n"
+        if rank_ups:
+            msg += "\n".join(rank_ups) + "\n"
+        return msg
+
+    def _process_grandmaster_trial_defeat(self) -> None:
+        """Handle Secret Master trial defeat without normal death rules."""
+        self.player.state = 'normal'
+        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
+            self.player.transform(back=True)
+        self.player.effects(end=True)
+        if hasattr(self.player, "_grandmaster_battle_hit_types"):
+            self.player._grandmaster_battle_hit_types.clear()
+        self.player.health.current = max(1, self.player.health.current)
+        self.enemy.effects(end=True)
+        self.enemy.health.current = self.enemy.health.max
+        self.enemy.mana.current = self.enemy.mana.max
 
     def _process_defeat(self) -> None:
         """Handle defeat bookkeeping: reset enemy, player death."""
@@ -847,6 +892,8 @@ class BattleEngine:
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
+        if hasattr(self.player, "_grandmaster_battle_hit_types"):
+            self.player._grandmaster_battle_hit_types.clear()
 
         # Reset enemy for potential re-fight
         self.enemy.effects(end=True)

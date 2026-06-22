@@ -43,7 +43,6 @@ from .constants import (
     WEAPON_CRIT_WEIGHT,
     MAX_CRIT_CHANCE,
 )
-
 POISON_HEALING_MULTIPLIER = 0.70
 BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER = 1.20
 STUN_IMMUNITY_TURNS_AFTER_EXPIRY = 1
@@ -316,10 +315,32 @@ class Character:
     def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
         """Helper to emit damage dealt events."""
         if damage and damage > 0:
+            try:
+                from .classes import class_rings
+
+                reduced_damage = class_rings.reduce_major_hit(target, damage)
+                if reduced_damage < damage:
+                    target.health.current = min(target.health.max, target.health.current + (damage - reduced_damage))
+                    damage = reduced_damage
+            except Exception:
+                pass
             if hasattr(self, "record_damage_dealt"):
                 self.record_damage_dealt(damage)
             if hasattr(target, "record_damage_taken"):
                 target.record_damage_taken(damage)
+            if hasattr(self, "record_archdruid_damage_dealt"):
+                self.record_archdruid_damage_dealt(damage, damage_type)
+            if hasattr(target, "record_archdruid_damage_taken"):
+                target.record_archdruid_damage_taken(damage, damage_type)
+            try:
+                from .classes import class_rings
+
+                class_rings.record_damage_dealt(self, damage, damage_type)
+                class_rings.build_guard_meter(target, damage)
+                class_rings.trigger_umbral_debt(self)
+                class_rings.divine_intervention(target)
+            except Exception:
+                pass
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -336,6 +357,8 @@ class Character:
     
     def _emit_healing_event(self, amount: int, source: str = "Unknown") -> None:
         """Helper to emit healing events."""
+        if amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
+            self.record_archdruid_healing_done(amount)
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -351,6 +374,12 @@ class Character:
     
     def _emit_status_event(self, target: Character, status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
         """Helper to emit status effect events."""
+        if applied:
+            try:
+                from .classes import archdruid
+                archdruid.record_status_applied(self, target, status_name)
+            except Exception:
+                pass
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -376,6 +405,11 @@ class Character:
         """Emit a status tick (damage/heal) event for analytics/tests."""
         if kind == "damage" and amount and amount > 0 and hasattr(target, "record_damage_taken"):
             target.record_damage_taken(amount)
+        if kind == "damage" and amount and amount > 0 and hasattr(target, "record_archdruid_damage_taken"):
+            damage_type = "Poison" if status_name == "Poison" else status_name
+            target.record_archdruid_damage_taken(amount, damage_type)
+        if kind == "healing" and amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
+            self.record_archdruid_healing_done(amount)
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -648,6 +682,12 @@ class Character:
             chance += min(0.15, max(0.0, (dex - 10) / 100))
         if self.cls.name == "Seeker" or (self.cls.name == "Templar" and self.class_effects["Power Up"].active):
             chance += (0.25 * self.power_up)
+        try:
+            from .classes import class_rings
+
+            chance += class_rings.arcane_trickster_dodge_bonus(self)
+        except Exception:
+            pass
         # Dwarf Gluttony (in-combat hangover): reduced dodge while active.
         try:
             if self.status_effects.get("Hangover") and self.status_effects["Hangover"].active:
@@ -675,6 +715,12 @@ class Character:
             crit_chance += float(weapon_crit or 0.0) * WEAPON_CRIT_WEIGHT
         if self.cls.name == "Seeker":
             crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
+        try:
+            from .classes import class_rings
+
+            crit_chance += class_rings.bloodied_crit_bonus(self)
+        except Exception:
+            pass
         
         # Maelstrom Weapon: Add bonus critical chance for consecutive hits
         if "Maelstrom Weapon" in self.spellbook["Skills"]:
@@ -705,6 +751,7 @@ class Character:
         hit(bool): guarantees hit if target doesn't dodge
         """
         from .combat.combat_result import CombatResult, CombatResultGroup
+        from .classes import grandmaster
 
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
@@ -737,6 +784,12 @@ class Character:
             crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
             dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
             crit_per = random.uniform(1, crits[i])
+            weapon_type = getattr(self.equipment[att], "subtyp", None)
+            if weapon_type == "Sword":
+                precision = getattr(self, "grandmaster_technique_stacks", {}).get("Sword Precision", {})
+                stacks = int(precision.get("stacks", 0) or 0)
+                if stacks and crit_per > 1:
+                    crit_per += 0.05 * min(3, stacks)
             # Half Elf racial sin: slightly reduced crit spike potential.
             try:
                 if getattr(getattr(self, "race", None), "name", None) == "Half Elf" and crit_per > 1.0:
@@ -749,6 +802,7 @@ class Character:
             if not hit:
                 dodge = defender.dodge_chance(self) > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
+                hit_per += grandmaster.accuracy_bonus(self, weapon_type)
                 hits[i] = hit_per > random.random()
             else:
                 dodge = False
@@ -814,7 +868,10 @@ class Character:
                 weapon_dam_str += self._build_damage_message(
                     defender, damage, typ, crits[i], att
                 )
+                if hasattr(self, "record_grandmaster_weapon_hit"):
+                    self.record_grandmaster_weapon_hit(weapon_type)
                 weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
+                weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
                 # Evasive Guard: build stacks when you get hit; capped at 3.
                 # This encourages "stay in the fight" play without altering race resistances.
                 if "Evasive Guard" in defender.spellbook.get("Skills", {}):
@@ -1194,6 +1251,8 @@ class Character:
             dam_abs = min(dam_abs, self.health.max - self.health.current)
             self.health.current += dam_abs
             self._emit_healing_event(dam_abs, source="Ninja Life Steal")
+            if hasattr(defender, "record_archdruid_life_drained"):
+                defender.record_archdruid_life_drained()
             msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
 
         # Lycan life steal
@@ -1204,7 +1263,9 @@ class Character:
             self.health.current += dam_abs
             if dam_abs > 0:
                 self._emit_healing_event(dam_abs, source="Lycan Life Steal")
-                msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
+                if hasattr(defender, "record_archdruid_life_drained"):
+                    defender.record_archdruid_life_drained()
+            msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
 
         return msg
 
@@ -1410,6 +1471,7 @@ class Character:
                                 skill.charge_turns = 0
                             if hasattr(skill, "charge_target"):
                                 skill.charge_target = None
+                self.grandmaster_technique_stacks = {}
             else:
                 effect_dict = self.effect_handler(effect=effect)
                 if effect_dict[effect].active:
@@ -1422,7 +1484,11 @@ class Character:
         if end:
             default(end_combat=True)
         else:
+            from .classes import grandmaster
+
             status_text = ""
+            for expired in grandmaster.tick_technique_stacks(self):
+                status_text += f"{self.name}'s {expired} technique fades.\n"
             if self.status_effects["Doom"].active:
                 self.status_effects["Doom"].duration -= 1
                 if not self.status_effects["Doom"].duration:

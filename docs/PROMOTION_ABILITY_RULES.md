@@ -15,7 +15,8 @@ Certain promotions represent a fundamental shift in how a character operates:
 
 ## Implementation
 
-All rules are defined in `classes.py` using the `PROMOTION_ABILITY_RULES` dictionary.
+All rules are defined in `src/core/classes/rules.py` using the
+`PROMOTION_ABILITY_RULES` dictionary.
 
 ### Rule Structure
 
@@ -75,7 +76,7 @@ All rules are defined in `classes.py` using the `PROMOTION_ABILITY_RULES` dictio
 To add a promotion rule for a class that's missing one:
 
 1. **Identify the transition**: What abilities should be lost? Why?
-2. **Add to `PROMOTION_ABILITY_RULES`** in `classes.py`:
+2. **Add to `PROMOTION_ABILITY_RULES`** in `src/core/classes/rules.py`:
 
 ```python
 "NewClassName": {
@@ -94,7 +95,7 @@ To add a promotion rule for a class that's missing one:
 ## Implementation Details
 
 ### Text Version (town.py)
-The `promotion()` function in `classes.py` calls:
+The text promotion flow calls:
 ```python
 ability_change_msg = apply_promotion_ability_rules(promoted_player, new_class.name)
 promo_str += ability_change_msg

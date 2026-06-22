@@ -4107,6 +4107,120 @@ class Archvile(Fiend):
         self.picture = "archvile.txt"
 
 
+class Succubus(Fiend):
+    """Fiend contract patron focused on charm, curses, and draining sustain."""
+
+    def __init__(self):
+        super().__init__(name='Succubus', health=random.randint(330, 430), mana=260, strength=22, intel=34,
+                         wisdom=32, con=30, charisma=48, dex=38, attack=58, defense=50, magic=76,
+                         magic_def=72, exp=random.randint(1080, 1360))
+        self.equipment = {'Weapon': items.DemonClaw(), 'Armor': items.NoArmor(), 'OffHand': items.DemonClaw(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = random.randint(450, 700)
+        self.spellbook = {"Spells": {'Sleep': abilities.Sleep(),
+                                     'Terrify': abilities.Terrify(),
+                                     'Corruption': abilities.Corruption()},
+                          "Skills": {'Health Drain': abilities.HealthDrain(),
+                                     'Mana Drain': abilities.ManaDrain()}}
+        self.resistance['Shadow'] = 0.6
+        self.resistance['Holy'] = -0.5
+        self.status_immunity = ["Death", "Sleep"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.LOW},
+            {"ability": "Sleep", "priority": ActionPriority.NORMAL,
+             "priority_if": {"target_incapacitated": True,
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Health Drain", "priority": ActionPriority.NORMAL},
+            {"ability": "Mana Drain", "priority": ActionPriority.LOW,
+             "priority_if": {"target_has_mana": True,
+                              "priority": ActionPriority.LOW,
+                              "else": ActionPriority.SKIP}},
+        ]
+        self.level.pro_level = 5
+        self.picture = "incubus.txt"
+
+
+class Maelephant(Fiend):
+    """Massive fiend contract patron focused on protection and crushing force."""
+
+    def __init__(self):
+        super().__init__(name='Maelephant', health=random.randint(620, 760), mana=220, strength=48, intel=20,
+                         wisdom=36, con=58, charisma=28, dex=18, attack=96, defense=96, magic=58,
+                         magic_def=82, exp=random.randint(1450, 1780))
+        self.equipment = {'Weapon': items.BattleGauntlet(), 'Armor': items.DemonArmor2(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = random.randint(700, 1100)
+        self.spellbook = {"Spells": {'Shell': abilities.Shell(),
+                                     'Terrify': abilities.Terrify()},
+                          "Skills": {'Crush': abilities.Crush(),
+                                     'Stomp': abilities.Stomp(),
+                                     'Goad': abilities.Goad()}}
+        self.resistance['Physical'] = 0.25
+        self.resistance['Shadow'] = 0.5
+        self.resistance['Holy'] = -0.5
+        self.status_immunity = ["Death", "Stun", "Prone"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Crush", "priority": ActionPriority.NORMAL},
+            {"ability": "Stomp", "priority": ActionPriority.NORMAL},
+            {"ability": "Shell", "priority": ActionPriority.NORMAL,
+             "priority_if": {"self_stat": "Magic Defense",
+                              "priority": ActionPriority.SKIP,
+                              "else": ActionPriority.NORMAL}},
+            {"ability": "Terrify", "priority": ActionPriority.LOW},
+        ]
+        self.level.pro_level = 6
+        self.picture = "behemoth.txt"
+
+
+class Balor(Fiend):
+    """Greater fiend contract patron; reuses the old devil visual direction."""
+
+    def __init__(self):
+        super().__init__(name='Balor', health=2600, mana=650, strength=58, intel=44, wisdom=48,
+                         con=62, charisma=54, dex=36, attack=148, defense=140, magic=132,
+                         magic_def=128, exp=0)
+        self.equipment = {'Weapon': items.DevilBlade(), 'Armor': items.DevilSkin(), 'OffHand': items.DevilBlade(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = 40000
+        self.inventory['Item'] = [items.random_item(7)]
+        self.spellbook = {"Spells": {'Hellfire': abilities.Hellfire(),
+                                     'Corruption': abilities.Corruption(),
+                                     'Terrify': abilities.Terrify(),
+                                     'Regen': abilities.Regen3()},
+                          "Skills": {'Crush': abilities.Crush(),
+                                     'Choose Fate': abilities.ChooseFate(),
+                                     'Parry': abilities.Parry()}}
+        self.resistance = {'Fire': 0.75,
+                           'Ice': 0.25,
+                           'Electric': 0.5,
+                           'Water': 0.25,
+                           'Earth': 0.5,
+                           'Wind': 0.5,
+                           'Shadow': 0.75,
+                           'Holy': -0.5,
+                           "Poison": 1.,
+                           'Physical': 0.5}
+        self.status_immunity = ["Death", "Poison", "Stone"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Hellfire", "priority": ActionPriority.NORMAL},
+            {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Choose Fate", "priority": ActionPriority.LOW},
+            {"ability": "Crush", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.LOW, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]},
+        ]
+        self.level.pro_level = 7
+        self.sight = True
+        self.picture = "devil.txt"
+
+
 class BrainGorger(Aberration):
 
     def __init__(self):

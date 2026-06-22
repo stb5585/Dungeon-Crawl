@@ -3,11 +3,22 @@ Barracks system for GUI - handles quests and storage.
 Implements the core barracks logic from town.py adapted for Pygame presenter.
 """
 
-from src.core import items
+from src.core import enemies, items, map_tiles
+from src.core.classes import grandmaster
 from src.core.data.data_loader import get_special_events
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
 from .town_base import TownScreenBase
+
+
+class GrandmasterTrialTile(map_tiles.MapTile):
+    """Concrete combat tile for Secret Master bouts."""
+
+    def modify_player(self, game):
+        self.visited = True
+
+    def available_actions(self, player_char):
+        return [map_tiles.actions_dict["CharacterMenu"]]
 
 
 class BarracksManager(TownScreenBase):
@@ -51,13 +62,17 @@ class BarracksManager(TownScreenBase):
         ),
     )
     
-    def __init__(self, presenter, player_char):
+    def __init__(self, presenter, player_char, game=None):
         super().__init__(presenter)
         self.player_char = player_char
+        self.game = game
     
     def visit_barracks(self):
         """Visit the barracks for quests and storage."""
-        barracks_options = ["Quests", "Storage", "Leave"]
+        barracks_options = ["Quests", "Storage"]
+        if self._grandmaster_hall_available():
+            barracks_options.append("Secret Hall")
+        barracks_options.append("Leave")
         
         barracks_screen = LocationMenuScreen(self.presenter, "Barracks")
         barracks_screen.options_list = barracks_options
@@ -108,7 +123,12 @@ class BarracksManager(TownScreenBase):
                 require_key_release=True,
             )
             
-            if choice_idx is None or choice_idx == 2:  # Leave
+            if choice_idx is None:
+                choice_label = "Leave"
+            else:
+                choice_label = barracks_options[choice_idx]
+
+            if choice_label == "Leave":
                 popup = ConfirmationPopup(self.presenter, "Take care, soldier.", show_buttons=False)
                 popup.show(
                     background_draw_func=draw_barracks_background,
@@ -117,7 +137,7 @@ class BarracksManager(TownScreenBase):
                 )
                 break
             
-            elif choice_idx == 0:  # Quests
+            elif choice_label == "Quests":
                 from .quest_manager import QuestManager
                 qm = QuestManager(
                     self.presenter, 
@@ -125,9 +145,140 @@ class BarracksManager(TownScreenBase):
                     quest_text_renderer=lambda text: barracks_screen.display_quest_text(text)
                 )
                 qm.check_and_offer('Sergeant')
-            
-            elif choice_idx == 1:  # Storage
+
+            elif choice_label == "Storage":
                 self.manage_storage()
+                if self._grandmaster_hall_available() and "Secret Hall" not in barracks_options:
+                    barracks_options.insert(-1, "Secret Hall")
+                elif not self._grandmaster_hall_available() and "Secret Hall" in barracks_options:
+                    barracks_options.remove("Secret Hall")
+
+            elif choice_label == "Secret Hall":
+                self.visit_grandmaster_secret_hall(draw_barracks_background)
+
+    def _grandmaster_hall_available(self):
+        return (
+            grandmaster.is_grandmaster(self.player_char)
+            and grandmaster.ring_visible_for_sergeant(self.player_char)
+        )
+
+    def _show_message(self, message, background_draw_func=None):
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(
+            background_draw_func=background_draw_func,
+            flush_events=True,
+            require_key_release=True,
+        )
+
+    def _choose_grandmaster_weapon(self, rebind=False):
+        title = "Rebind Discipline" if rebind else "Awaken Discipline"
+        screen = LocationMenuScreen(self.presenter, title)
+        options = list(grandmaster.WEAPON_TYPES) + ["Back"]
+        choice = screen.navigate(
+            options,
+            reset_cursor=True,
+            flush_events=True,
+            require_key_release=True,
+        )
+        if choice is None or options[choice] == "Back":
+            return None
+        return options[choice]
+
+    def _trial_enemy(self, weapon_type, round_number, rebind=False):
+        level = max(1, int(getattr(getattr(self.player_char, "level", None), "level", 1)))
+        pro_level = max(1, int(getattr(getattr(self.player_char, "level", None), "pro_level", 1)))
+        difficulty = 1.25 if rebind else 1.0
+        round_scale = 1 + (round_number * 0.15)
+        scale = difficulty * round_scale
+        enemy = enemies.Enemy(
+            name=f"Secret Master {weapon_type} Adept {round_number}",
+            health=int((80 + level * 8 + pro_level * 25) * scale),
+            mana=int((20 + level * 2) * scale),
+            strength=int((18 + level // 2) * scale),
+            intel=int((10 + level // 4) * scale),
+            wisdom=int((12 + level // 4) * scale),
+            con=int((16 + level // 3) * scale),
+            charisma=10,
+            dex=int((16 + level // 3) * scale),
+            attack=int((20 + level // 2) * scale),
+            defense=int((14 + level // 3) * scale),
+            magic=8,
+            magic_def=int((12 + level // 4) * scale),
+            exp=0,
+        )
+        enemy.gold = 0
+        enemy.inventory = {}
+        enemy.enemy_typ = "Trial"
+        enemy.grandmaster_trial_enemy = True
+        return enemy
+
+    def _apply_trial_recovery_floor(self):
+        self.player_char.health.current = max(
+            self.player_char.health.current,
+            self.player_char.health.max // 2,
+        )
+        self.player_char.mana.current = max(
+            self.player_char.mana.current,
+            self.player_char.mana.max // 2,
+        )
+
+    def _run_grandmaster_gauntlet(self, weapon_type, rebind=False):
+        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        if combat_manager is None:
+            return False
+
+        for round_number in range(1, 4):
+            if grandmaster.get_weapon_type(self.player_char, "Weapon") != weapon_type:
+                self._show_message(
+                    f"The trial requires {weapon_type} in your main hand. The gauntlet resets."
+                )
+                return False
+            self._apply_trial_recovery_floor()
+            tile = GrandmasterTrialTile(0, 0, 0)
+            tile.enemy = None
+            won = combat_manager.start_combat(
+                self.player_char,
+                self._trial_enemy(weapon_type, round_number, rebind=rebind),
+                tile,
+            )
+            if not won:
+                return False
+        return True
+
+    def visit_grandmaster_secret_hall(self, background_draw_func=None):
+        state = grandmaster.normalize_state(getattr(self.player_char, "grandmaster_discipline", None))
+        rebind = bool(state["activated"])
+        intro = (
+            "The Sergeant studies the Class Ring and unlocks a narrow door behind the old banners. "
+            "Master Varric waits in the hidden hall, ready to test the weapon you choose."
+        )
+        if rebind:
+            intro = (
+                "Master Varric nods toward the training floor. The ring can be rebound, but only "
+                "if you prove the new discipline against a harder trial."
+            )
+        self._show_message(intro, background_draw_func=background_draw_func)
+
+        weapon_type = self._choose_grandmaster_weapon(rebind=rebind)
+        if weapon_type is None:
+            return False
+        if grandmaster.get_weapon_type(self.player_char, "Weapon") != weapon_type:
+            self._show_message(f"Equip a {weapon_type} in your main hand before beginning the trial.")
+            return False
+
+        if not self._run_grandmaster_gauntlet(weapon_type, rebind=rebind):
+            self._show_message("The gauntlet resets. Master Varric waits for your next attempt.")
+            return False
+
+        grandmaster.bind_weapon(self.player_char, weapon_type)
+        ring = self.player_char.equipment.get("Ring")
+        if getattr(ring, "name", None) == "Class Ring":
+            ring.class_mod(self.player_char)
+        self._show_message(
+            f"The Class Ring awakens to {weapon_type} Discipline."
+            if not rebind else f"The Class Ring is rebound to {weapon_type} Discipline."
+        )
+        return True
 
     def _quest_turned_in(self, quest_name):
         quest_dict = getattr(self.player_char, "quest_dict", {})
