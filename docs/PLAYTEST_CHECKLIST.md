@@ -128,6 +128,34 @@
 - [ ] Unlock Warp Point while a Footpad-branch Class Ring job is available.
   - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
 
+### Combat Architecture And Balance (P4f)
+- [ ] Run the base-tier canonical balance report.
+  - Command: `./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337`
+  - Expected: The report completes, prints class/enemy win-rate rows, and highlights no command/runtime failure unrelated to combat balance.
+- [ ] Run the first-promotion canonical balance report.
+  - Command: `./.venv/bin/python tools/run_balance_suite.py --tier first --level 20 --iters 30 --seed 1337`
+  - Expected: The report completes with invalid race/class and invalid level pairings skipped clearly rather than crashing.
+- [ ] Run the second-promotion canonical balance report.
+  - Command: `./.venv/bin/python tools/run_balance_suite.py --tier second --level 30 --iters 30 --seed 1337`
+  - Expected: The report completes and provides enough signal to identify extreme win rates, stalls, stomps, or repeated draws.
+- [ ] Run the race delta balance pass.
+  - Command: `./.venv/bin/python tools/run_balance_suite.py --tier all --level 20 --iters 30 --seed 1337 --races Human Elf "Half Elf" "Half Giant" Gnome Dwarf "Half Orc" --delta --baseline-race Human`
+  - Expected: Human is used as the baseline, invalid race/class pairings are skipped, and per-race class deltas are readable.
+- [ ] Generate a compact combat simulator summary payload.
+  - Expected: The payload includes totals, win rates, top abilities, top status effects, and outliers without raw per-battle results.
+- [ ] Export a combat simulator balance report to JSON.
+  - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
+- [ ] Run a focused combat simulator test after analytics changes.
+  - Expected: The quick balance helper returns a report object even when no simulations are configured.
+- [ ] Validate enemy item usage after stealing or otherwise removing a combat consumable.
+  - Expected: The enemy no longer selects the missing item and falls back to another valid action without crashing or duplicating the item.
+- [ ] Inspect start-of-turn status tick defeats.
+  - Expected: Poison, DOT, Bleed, or Doom can defeat the active actor before their action, matching the current P4f spec baseline.
+- [ ] Apply Silence to a character with spells, skills, and summons available.
+  - Expected: Silence suppresses spells, skills, summons, and ability-like actions according to the current `abilities_suppressed()` behavior.
+- [ ] Review the known balance-suite help issue before relying on `--help`.
+  - Expected: The argparse `%` help-string failure is treated as a tooling cleanup item, not as a balance-rule failure.
+
 ### Legacy Class-Kit Mechanics
 - [ ] Win ordinary non-trial combat as a Berserker at 10% HP or lower across repeated attempts.
   - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.
@@ -521,12 +549,6 @@
   - Expected: The staged `underground_spring` SFX is requested once the prompt is accepted.
 - [ ] Unlock/open a dungeon door through Master Key, Master Lockpick, Cryptic Key, or Old Key flow.
   - Expected: The staged `open_door` SFX is requested only when the door actually opens.
-- [ ] Run a focused combat simulator test after analytics changes.
-  - Expected: The quick balance helper returns a report object even when no simulations are configured.
-- [ ] Generate a compact combat simulator summary payload.
-  - Expected: The payload includes totals, win rates, top abilities, top status effects, and outliers without raw per-battle results.
-- [ ] Export a combat simulator balance report to JSON.
-  - Expected: The file includes total battles, win rates, ability usage, status frequency, outliers, and raw results.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.

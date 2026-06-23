@@ -10,6 +10,9 @@ only as historical context.
   completed summaries, active P4/P5/P6/P7 backlog, and deferred decisions.
 - [P4E_CLASS_KIT_SPECS.md](P4E_CLASS_KIT_SPECS.md) - completed P4e class-kit
   foundation scope and deferred one-page deep-kit spec gates.
+- [P4F_COMBAT_BALANCE_SPECS.md](P4F_COMBAT_BALANCE_SPECS.md) - P4f combat
+  architecture and balance spec gates, current behavior decisions, and report
+  plan.
 - [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - manual validation checklist
   for class mechanics, rendering, UI, saves, audio, and content flows.
 - [MAIN_STORYLINE_PLOT_SPEC.md](MAIN_STORYLINE_PLOT_SPEC.md) - Vesperion,

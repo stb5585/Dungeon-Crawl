@@ -652,37 +652,18 @@ Deferred:
 
 #### P4f - Combat Architecture And Balance
 
-Status: `Needs Exploration`
+Status: `Done` for the current combat architecture and balance spec slice. Further gameplay, balance, tooling, and architecture changes remain deferred until a dedicated future spec promotes them.
 
-- Use simulator-backed reports for stat-dump tradeoffs, poison/stun/crit scaling, progression outliers, and PvE tuning.
-- Re-run race-baseline comparisons once class kits are stable.
-- Validate enemy item usage after stealing consumables.
-- Explore ability/menu improvements:
-  - spell/skill ordering by mana cost;
-  - broader spell/skill ordering beyond the current Diviner/Astromancer `Runic Boost` action;
-  - Wind eject effects and reward handling;
-  - Absorb Essence rework;
-  - mana-percentage damage abilities;
-  - Prismatic Rays;
-  - Throw inventory-item ability;
-  - magic-stat success scaling;
-  - status-gated skills;
-  - out-of-combat timed buffs/debuffs;
-  - Monk/Master Monk bare-handed skill support and attack bonuses.
+Current Spec Scope:
 
-Needs Design Decision:
-
-- Decide whether class/race-specific level scaling belongs in P4.
-- Decide whether to convert random rolls to DnD-style dice rolls.
-- Decide whether charisma or another stat should affect experience.
-- Decide whether Silence should affect summons.
-- Decide Nightmare/flying creature land/takeoff behavior.
-- Decide whether status ticks continue after enemy defeat.
-- Decide ignore-vs-defense semantics and shield/reflect resolution order.
-- Decide unlockable races/classes/levels and difficulty-level strategy.
+- P4f combat architecture and balance planning now lives in `docs/P4F_COMBAT_BALANCE_SPECS.md`.
+- The current slice is spec-first and does not change gameplay rules, balance constants, menus, simulator behavior, or combat architecture.
+- Simulator-backed validation questions and manual checks are tracked in `docs/PLAYTEST_CHECKLIST.md`.
+- Current-slice defaults keep random rolls, Silence behavior, status-tick timing, damage-resolution ordering, single-enemy combat, one-action turn flow, and current experience rules unchanged.
 
 Deferred:
 
+- Ability/menu ergonomics, ability reworks, combat semantics, unlock/difficulty strategy, and numeric tuning remain decision-gated until their `docs/P4F_COMBAT_BALANCE_SPECS.md` one-page spec sections are promoted to implementation scope.
 - Defer multi-enemy combat until battle-engine targeting, encounter generation, UI layout, loot/XP allocation, AI, and balance implications are designed.
 - Defer speed-based combat stacks until initiative/action-queue rules, multiple-turn caps, UI messaging, and simulator impact are designed.
 

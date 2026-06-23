@@ -18,6 +18,9 @@ roadmap pass:
 - P4 content and systems expansion is active; completed P4e class-kit scope and
   deferred deep-kit gates are tracked in
   [docs/P4E_CLASS_KIT_SPECS.md](docs/P4E_CLASS_KIT_SPECS.md).
+- P4f combat architecture and balance decisions are specified in
+  [docs/P4F_COMBAT_BALANCE_SPECS.md](docs/P4F_COMBAT_BALANCE_SPECS.md)
+  before gameplay or balance rules change.
 - Older phase/migration docs are retained for historical context, not as the
   current backlog.
 
@@ -93,6 +96,7 @@ Start with [docs/README.md](docs/README.md). The most useful current docs are:
 
 - [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md)
 - [docs/P4E_CLASS_KIT_SPECS.md](docs/P4E_CLASS_KIT_SPECS.md)
+- [docs/P4F_COMBAT_BALANCE_SPECS.md](docs/P4F_COMBAT_BALANCE_SPECS.md)
 - [docs/CLASS_RING_ACTIVATION_SPEC.md](docs/CLASS_RING_ACTIVATION_SPEC.md)
 - [docs/MAIN_STORYLINE_PLOT_SPEC.md](docs/MAIN_STORYLINE_PLOT_SPEC.md)
 - [docs/PLAYTEST_CHECKLIST.md](docs/PLAYTEST_CHECKLIST.md)
@@ -106,7 +110,7 @@ Start with [docs/README.md](docs/README.md). The most useful current docs are:
 ./.venv/bin/python tools/dev_tools.py queue
 ./.venv/bin/python tools/dev_tools.py events
 ./.venv/bin/python tools/dev_tools.py abilities --directory src/core/data/abilities
-./.venv/bin/python tools/run_balance_suite.py --help
+./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
 ```
 
 See [tools/README.md](tools/README.md) for more.
