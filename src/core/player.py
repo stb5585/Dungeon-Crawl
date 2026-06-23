@@ -39,6 +39,7 @@ from .classes import (
 )
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
+from . import main_story
 from .save_system import SaveManager
 
 
@@ -62,6 +63,9 @@ DIRECTIONS = {
 
 
 REALM_OF_CAMBION_LEVEL = 8
+LIMINAL_GAP_LEVEL = 9
+LIMINAL_GAP_ENTRY_POS = (5, 7, LIMINAL_GAP_LEVEL)
+LIMINAL_GAP_ENTRY_FACING = "north"
 RESISTANCE_DISPLAY_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
 BASIC_BESTIARY_ACTIONS = {None, "", "Attack", "Defend", "Nothing", "Use Item", "Pickup Weapon"}
 
@@ -379,6 +383,7 @@ class Player(Character):
         self.bard_song = bard.default_song_state()
         self.lycan_state = lycan.default_state()
         self.wizard_affinity = wizard.default_affinity()
+        self.main_story = main_story.default_state()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -476,6 +481,15 @@ class Player(Character):
     def ensure_wizard_affinity(self):
         self.wizard_affinity = wizard.ensure_affinity(self)
         return self.wizard_affinity
+
+    def ensure_main_story_state(self):
+        """Normalize main-story progression state for current and legacy saves."""
+        self.main_story = main_story.ensure_state(self)
+        return self.main_story
+
+    def can_enter_true_final(self):
+        """Return whether the main-story route has unlocked Vesperion's true final."""
+        return self.ensure_main_story_state().get("true_final_unlocked", False)
 
     def choose_paladin_vow(self, vow_path):
         """Permanently choose a Paladin vow path."""
@@ -698,6 +712,10 @@ class Player(Character):
         if os.path.exists(cambion_path) and REALM_OF_CAMBION_LEVEL not in files_by_level:
             files_by_level[REALM_OF_CAMBION_LEVEL] = {"path": cambion_path, "ext": ".json"}
 
+        liminal_path = map_dir / "map_liminal_gap.txt"
+        if os.path.exists(liminal_path) and LIMINAL_GAP_LEVEL not in files_by_level:
+            files_by_level[LIMINAL_GAP_LEVEL] = {"path": liminal_path, "ext": ".txt"}
+
         for z in sorted(files_by_level):
             map_file = files_by_level[z]["path"]
             ext = files_by_level[z]["ext"]
@@ -804,6 +822,43 @@ class Player(Character):
 
     def in_realm_of_cambion(self):
         return self.location_z == REALM_OF_CAMBION_LEVEL
+
+    def in_liminal_gap(self):
+        return self.location_z == LIMINAL_GAP_LEVEL
+
+    def enter_liminal_gap(self, return_location=None):
+        """Enter the Liminal Gap hub after Vesperion's false-final transition."""
+        story_state = self.ensure_main_story_state()
+        story_state["vesperion_false_final_triggered"] = True
+        story_state["pending_liminal_gap_entry"] = False
+        story_state["liminal_gap_entered"] = True
+
+        if return_location and len(return_location) >= 4:
+            self.liminal_gap_return = tuple(return_location[:4])
+
+        self.location_x, self.location_y, self.location_z = LIMINAL_GAP_ENTRY_POS
+        self.facing = LIMINAL_GAP_ENTRY_FACING
+        self.state = "normal"
+        self.effects(end=True)
+        self.health.current = max(1, self.health.max // 2)
+        self.mana.current = max(0, self.mana.max // 2)
+
+    def enter_liminal_gap_stub(self, return_location):
+        """Compatibility wrapper for the old non-map Liminal stub."""
+        self.enter_liminal_gap(return_location)
+
+    def return_from_liminal_gap(self):
+        """Return from the Liminal Gap after the true-final path unlocks."""
+        story_state = self.ensure_main_story_state()
+        if not story_state.get("true_final_unlocked"):
+            return False
+        if hasattr(self, "liminal_gap_return") and self.liminal_gap_return:
+            self.location_x, self.location_y, self.location_z, self.facing = self.liminal_gap_return
+            self.liminal_gap_return = None
+            story_state["returned_from_liminal_gap"] = True
+            self.state = "normal"
+            return True
+        return False
 
     def town_heal(self):
         self.state = 'normal'

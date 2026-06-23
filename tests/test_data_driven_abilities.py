@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 179
+        assert len(yaml_paths) == 180
 
         loaded_names = []
         for path in yaml_paths:
@@ -4652,7 +4652,7 @@ class TestBatch13SaveSystem:
 
         for name in [
             "Doublecast", "Triplecast", "ChooseFate", "Shapeshift",
-            "TetraDisaster",
+            "TetraDisaster", "VesperionChooseFate",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)

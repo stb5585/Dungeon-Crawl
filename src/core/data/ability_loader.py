@@ -90,6 +90,7 @@ from src.core.effects import (
     BlackjackEffect,
     DoublecastEffect,
     ChooseFateEffect,
+    VesperionChooseFateEffect,
     ShapeshiftEffect,
     TetraDisasterEffect,
     ConsumeItemEffect,
@@ -219,6 +220,7 @@ class EffectFactory:
             'blackjack': EffectFactory._create_blackjack,
             'doublecast': EffectFactory._create_doublecast,
             'choose_fate': EffectFactory._create_choose_fate,
+            'vesperion_choose_fate': EffectFactory._create_vesperion_choose_fate,
             'shapeshift': EffectFactory._create_shapeshift,
             'tetra_disaster': EffectFactory._create_tetra_disaster,
             'consume_item': EffectFactory._create_consume_item,
@@ -887,6 +889,10 @@ class EffectFactory:
         return ChooseFateEffect(
             dmg_mod=data.get('dmg_mod', 1.5),
         )
+
+    @staticmethod
+    def _create_vesperion_choose_fate(data: dict) -> VesperionChooseFateEffect:
+        return VesperionChooseFateEffect()
 
     @staticmethod
     def _create_shapeshift(data: dict) -> ShapeshiftEffect:

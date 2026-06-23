@@ -88,14 +88,439 @@
     },
     "Final Boss": {
         "Text": [
-            "You enter a massive room. A booming voice greets you.",
-            "'Hello again. You have done well to reach me, many have tried and failed.'",
-            "The voice talks to you as if you should recognize them...it must the be hooded figure from the tavern.",
-            "'It would seem our meeting was inevitable but it still doesn't lessen the sorrow I feel,",
-            "knowing that one of us will not leave here alive.'",
-            "You know this is what you were working toward but the threat of death has left you wavering.",
-            "'I give you but one chance to reconsider, after which I will not go easy on you.'"
+            "You enter a massive room where twilight hangs in the air like a second sky.",
+            "A pale star burns above the far altar, bright enough to hurt and cold enough to silence the breath in your chest.",
+            "The figure waiting beneath it is neither fiend nor king.",
+            "'You carried every relic here and still do not understand what they guard,' Vesperion says.",
+            "'Choice made every wound you passed on the way to me. Every grief. Every betrayal. Every brave, doomed hope.'",
+            "The six relics answer in your pack, but their light feels incomplete.",
+            "'If Voluntas is sacred, champion, then choose what its suffering is worth.'"
             ]
+    },
+    "Vesperion False Final": {
+        "Text": [
+            "The Evening Star descends.",
+            "For one impossible breath you see every choice you ever made arranged in a perfect, merciless pattern.",
+            "Vesperion closes his hand, and the pattern breaks.",
+            "'You mistake endurance for freedom,' he says. 'Now witness what choice leaves behind.'"
+            ]
+    },
+    "Liminal Gap Arrival": {
+        "Text": [
+            "You wake on cold stone beneath a sky with no horizon, wounded but alive.",
+            "The Liminal Gap stretches around you: neither dungeon nor afterlife, but a gray sanctuary caught between a last breath and the next choice.",
+            "A hidden guide speaks from somewhere beyond the veil, voice thin with pain.",
+            "'Voluntas is not lost. Not yet. Come to the center, and do not mistake survival for escape.'"
+            ]
+    },
+    "Liminal Gap Blocker": {
+        "Text": [
+            "The final chamber refuses you.",
+            "Twilight gathers along the edge of the door, bright and silent, then hardens into an unseen wall.",
+            "The hidden guide's voice returns: 'Not this way. The wound in Voluntas remains unresolved, and Vesperion is waiting for a choice you cannot yet make.'"
+            ]
+    },
+    "Hooded Figure Liminal Reveal": {
+        "Text": [
+            "The Hooded Figure kneels beside a dim white flame, one hand pressed against a wound that bleeds starlight instead of blood.",
+            "The same presence that haunted your path now looks smaller, older, and terribly tired.",
+            "'Yes,' the figure says. 'I guided you. I frightened you. I withheld more than I should have.'",
+            "'But Vesperion has thrown you where his mercy cannot fully reach. Here, in the Liminal Gap, the forgotten principle still has an echo.'",
+            "'I am not your enemy. Not anymore, if I ever was.'"
+            ]
+    },
+    "Liminal Guide Save": {
+        "Text": [
+            "The Hooded Figure lays a trembling hand over the dim flame.",
+            "Your name briefly appears inside it, written in light that refuses to hold still.",
+            "'This is not safety,' the guide says. 'It is only an anchor. But for now, an anchor is enough.'"
+        ]
+    },
+    "Liminal Clue Review": {
+        "Text": [
+            "The Hooded Figure turns toward the six sealed paths.",
+            "'Voluntas is not a thing I can hand you,' the guide says. 'It is a pattern you must recognize.'",
+            "'Tell me which Guardians have answered, and I will help you hear what their answers mean together.'"
+        ]
+    },
+    "Liminal No Exit": {
+        "Text": [
+            "The torn threshold shivers when you approach, showing the final chamber for less than a heartbeat.",
+            "Then the vision folds shut.",
+            "The Hooded Figure's voice follows softly: 'Vesperion broke the road behind you. The way back must be earned through the Guardians he tried to make the world forget.'"
+            ]
+    },
+    "Triangulus Gate": {
+        "Text": [
+            "Three pale lines form a triangle in the air, each side trembling as if it might become a different shape.",
+            "A voice without a mouth asks, 'What remains when name, body, and memory disagree?'",
+            "The gate of Triangulus waits for the trial of Self."
+            ]
+    },
+    "Triangulus Trial Intro": {
+        "Text": [
+            "The triangle opens without moving.",
+            "Three versions of your shadow step away from you: one wearing your name, one carrying your wounds, and one made from every remembered choice.",
+            "The voice asks again, softer now: 'What proves that you are not merely what happened to you?'"
+            ]
+    },
+    "Triangulus Trial Name": {
+        "Text": [
+            "You speak your name and the path you chose to walk.",
+            "The shadow wearing your name bows, not because a name is enough, but because a chosen name can become a vow.",
+            "The first side of the triangle steadies."
+            ]
+    },
+    "Triangulus Trial Body": {
+        "Text": [
+            "You answer with the body that endured: hunger, wounds, fear, strength, weakness, and every step that still moved forward.",
+            "The wounded shadow places a hand over its heart and becomes your own shape again.",
+            "The second side of the triangle steadies."
+            ]
+    },
+    "Triangulus Trial Memory": {
+        "Text": [
+            "You answer with memory: not perfect, not painless, but yours.",
+            "The shadow of remembered choices opens its hands, and the choices remain choices instead of chains.",
+            "The third side of the triangle steadies."
+            ]
+    },
+    "Triangulus Trial Complete": {
+        "Text": [
+            "The three sides meet and hold.",
+            "A small light appears where they join, neither relic nor command.",
+            "For a moment, you understand the first fragment of Voluntas: selfhood is not assigned. It is chosen, answered, and chosen again."
+            ]
+    },
+    "Quadrata Gate": {
+        "Text": [
+            "Four right angles burn into the stone, perfect and pitiless.",
+            "Every step near the gate feels counted before you take it.",
+            "The gate of Quadrata waits for the trial of Order."
+        ]
+    },
+    "Quadrata Trial Intro": {
+        "Text": [
+            "The square opens into a room of measured paths.",
+            "Every stone waits for a rule, and every rule waits for someone to mistake obedience for meaning.",
+            "A voice asks, 'When order becomes a prison, what gives it purpose?'"
+        ]
+    },
+    "Quadrata Trial Obey": {
+        "Text": [
+            "You walk the pattern exactly as given.",
+            "The room accepts the discipline of restraint, but not as surrender.",
+            "Order steadies when chosen with open eyes."
+        ]
+    },
+    "Quadrata Trial Resist": {
+        "Text": [
+            "You step against the count, and the square shakes around you.",
+            "The walls do not fall. Instead, they make room for dissent.",
+            "Order survives when it can be questioned without breaking."
+        ]
+    },
+    "Quadrata Trial Rewrite": {
+        "Text": [
+            "You trace a new line through the old geometry.",
+            "The rule changes, not into chaos, but into a shape that can shelter more than one path.",
+            "Order becomes strongest when it can be remade by those who live inside it."
+        ]
+    },
+    "Quadrata Trial Complete": {
+        "Text": [
+            "The four angles soften but do not collapse.",
+            "A second light joins the first clue of Voluntas.",
+            "You understand that law without choice is only a cage."
+            ]
+    },
+    "Hexagonum Gate": {
+        "Text": [
+            "A six-sided sign of root, wing, tooth, tide, stone, and breath turns slowly above the path.",
+            "The air smells of rain on soil that has never known a sun.",
+            "The gate of Hexagonum waits for the trial of Nature."
+        ]
+    },
+    "Hexagonum Trial Intro": {
+        "Text": [
+            "The hexagon opens into a living hush.",
+            "Roots cross old bones, water moves under stone, and unseen wings stir the gray air.",
+            "A voice asks, 'When life hungers, shelters, flees, and grows, where does will begin?'"
+        ]
+    },
+    "Hexagonum Trial Root": {
+        "Text": [
+            "You kneel beside the roots and choose to remain.",
+            "The ground accepts patience as a living answer.",
+            "To be natural is not only to move. Sometimes it is to belong."
+        ]
+    },
+    "Hexagonum Trial Fang": {
+        "Text": [
+            "You bare your resolve like a fang.",
+            "The wild dark does not shame survival.",
+            "To be natural is to defend the life that still chooses to live."
+        ]
+    },
+    "Hexagonum Trial River": {
+        "Text": [
+            "You follow the hidden water instead of forcing the stone aside.",
+            "The path bends, and bending becomes motion.",
+            "To be natural is to change without becoming empty."
+        ]
+    },
+    "Hexagonum Trial Complete": {
+        "Text": [
+            "The six signs turn once and settle.",
+            "A third light wakes beside the others.",
+            "You understand that instinct can begin a path, but choice decides what it means."
+            ]
+    },
+    "Luna Gate": {
+        "Text": [
+            "Moonlight gathers in a silver arch, gentle enough to comfort and sharp enough to wound.",
+            "Something beyond it waits with open hands.",
+            "The gate of Luna waits for the trial of Love."
+        ]
+    },
+    "Luna Trial Intro": {
+        "Text": [
+            "The moonlit arch opens on a room where every echo sounds like someone you once failed.",
+            "A fragile light rests between your hands, warm and terribly easy to crush.",
+            "A voice asks, 'What is love when mercy can wound as deeply as cruelty?'"
+        ]
+    },
+    "Luna Trial Protect": {
+        "Text": [
+            "You close your hands around the fragile light and shield it from the cold.",
+            "The moon does not ask whether protection is easy.",
+            "Love becomes a promise to guard what cannot guard itself."
+        ]
+    },
+    "Luna Trial Release": {
+        "Text": [
+            "You open your hands and let the fragile light rise.",
+            "It trembles, then steadies beyond your reach.",
+            "Love becomes trust when holding on would only make a cage."
+        ]
+    },
+    "Luna Trial Share": {
+        "Text": [
+            "You let the fragile light divide between your palms and the waiting dark.",
+            "Neither half fades.",
+            "Love becomes choice when it gives without disappearing."
+        ]
+    },
+    "Luna Trial Complete": {
+        "Text": [
+            "The moonlit arch dims to a gentle silver line.",
+            "A fourth light joins the growing pattern.",
+            "You understand that love without choice is possession, duty, or fear, but not love."
+            ]
+    },
+    "Polaris Gate": {
+        "Text": [
+            "A single fixed star shines above the gate, unmoving while the whole Liminal sky drifts around it.",
+            "For a moment you know exactly where to go, then forget why.",
+            "The gate of Polaris waits for the trial of Guidance."
+        ]
+    },
+    "Polaris Trial Intro": {
+        "Text": [
+            "The fixed star lowers until it hangs at eye level.",
+            "Three paths appear beneath it: one lit, one dark, and one marked by footprints that are not yours.",
+            "A voice asks, 'When guidance points the way, what keeps it from becoming command?'"
+        ]
+    },
+    "Polaris Trial Trust": {
+        "Text": [
+            "You follow the lit path.",
+            "The star does not drag you forward. It simply remains where it promised to be.",
+            "Guidance becomes grace when trust is freely given."
+        ]
+    },
+    "Polaris Trial Question": {
+        "Text": [
+            "You stop beneath the star and ask why.",
+            "The light brightens, not offended by your doubt.",
+            "Guidance becomes wisdom when it can answer a living mind."
+        ]
+    },
+    "Polaris Trial Remember": {
+        "Text": [
+            "You follow the footprints only until memory warns you they are not your own.",
+            "Then you turn by what you have learned.",
+            "Guidance becomes yours when it helps you choose, not vanish."
+        ]
+    },
+    "Polaris Trial Complete": {
+        "Text": [
+            "The fixed star returns to the impossible sky.",
+            "A fifth light appears in the pattern.",
+            "You understand that a guide can show a road, but Voluntas is the step you take yourself."
+            ]
+    },
+    "Infinitas Gate": {
+        "Text": [
+            "The path beyond the gate appears to turn back into itself forever.",
+            "Each echo of your breath arrives a little later than the last.",
+            "The gate of Infinitas waits for the trial of Eternity."
+        ]
+    },
+    "Infinitas Trial Intro": {
+        "Text": [
+            "The path opens and repeats: the same stone, the same breath, the same ache in your bones.",
+            "A thousand versions of you keep walking because stopping feels like failure.",
+            "A voice asks, 'What gives endurance meaning when the struggle has no end?'"
+        ]
+    },
+    "Infinitas Trial Endure": {
+        "Text": [
+            "You keep walking.",
+            "The endless path recognizes courage in persistence.",
+            "Endurance becomes will when each step is chosen again."
+        ]
+    },
+    "Infinitas Trial Break": {
+        "Text": [
+            "You refuse the next repeated step.",
+            "The loop cracks, not because you were stronger than eternity, but because you saw the pattern.",
+            "Endurance becomes will when it can choose a different shape."
+        ]
+    },
+    "Infinitas Trial Rest": {
+        "Text": [
+            "You sit down in the middle of forever.",
+            "The path waits, and waiting does not destroy you.",
+            "Endurance becomes will when rest is chosen instead of stolen."
+        ]
+    },
+    "Infinitas Trial Complete": {
+        "Text": [
+            "The repeated path falls silent.",
+            "A sixth light joins the others, and the pattern nearly speaks.",
+            "You understand that eternity without choice is only repetition."
+        ]
+    },
+    "Voluntas Pattern Complete": {
+        "Text": [
+            "The six lights answer one another across the Liminal Gap.",
+            "Self, Order, Nature, Love, Guidance, and Eternity form a shape with one wound at its center.",
+            "The Hooded Figure whispers, 'Now you can see what history forgot. Go to the empty Seventh Seat.'"
+        ]
+    },
+    "Seventh Seat Sealed": {
+        "Text": [
+            "The empty seat waits in perfect silence.",
+            "Six marks circle it, but some remain dark.",
+            "Whatever belongs here will not answer until every Guardian clue has awakened."
+        ]
+    },
+    "Seventh Seat Reveal": {
+        "Text": [
+            "The empty Seventh Seat does not fill.",
+            "No relic appears. No crown descends. No hidden weapon waits in the gray light.",
+            "Instead, the six awakened clues bend toward the absence and name what was removed.",
+            "Voluntas: the choice that gives every other principle meaning.",
+            "Vesperion once guarded this seat. Then he hollowed it from history because he mistook peace for silence."
+        ]
+    },
+    "Hooded Figure Witness Reveal": {
+        "Text": [
+            "The Hooded Figure lowers their gaze before the empty seat.",
+            "'I am not Voluntas,' they say. 'I am only one of its witnesses, wounded and left behind when Vesperion broke the road.'",
+            "'I preserved enough of the path for one soul to choose it again. That must be you, if you can face every self you did not become.'"
+        ]
+    },
+    "Acolyte Liminal Waiting": {
+        "Text": [
+            "The Acolyte kneels with their face turned away from the empty seat.",
+            "They do not threaten you.",
+            "They only whisper, 'You still think there is something here to find. There is only pain wearing a nobler name.'"
+        ]
+    },
+    "Acolyte Liminal Mirror": {
+        "Text": [
+            "The Acolyte looks up, and for a moment you see the outline of someone who once stood where you stand.",
+            "'I chose until choosing broke me,' they say. 'Vesperion offered mercy. No more wrong turns. No more grief born from my own hand.'",
+            "'At first it felt like peace. Then I understood: a life without choice can no longer wound, but it can no longer love either.'",
+            "They turn back toward the gray light. 'Go on, then. Prove your burden means something.'"
+        ]
+    },
+    "Reflection Locked": {
+        "Text": [
+            "The mirror-dark threshold ripples, but no image holds.",
+            "A thousand possible selves wait beyond it, silent and unfinished.",
+            "The path will not open until Voluntas is remembered and the Acolyte's warning has been faced."
+        ]
+    },
+    "Reflection Prelude": {
+        "Text": [
+            "The threshold becomes a mirror, and the mirror becomes a crowd.",
+            "You see every path not taken: every class you did not become, every mercy withheld or granted, every weapon set down or raised.",
+            "The Reflection does not ask which life was correct.",
+            "It asks whether the life you chose is truly yours."
+        ]
+    },
+    "Reflection Victory": {
+        "Text": [
+            "The possible selves fall quiet.",
+            "They do not vanish in defeat. They bow to the one path that is real because you chose it.",
+            "Voluntas flares in the empty place where command once stood.",
+            "The way back opens."
+        ]
+    },
+    "Reflection Defeat": {
+        "Text": [
+            "The mirror-dark threshold cracks across your vision.",
+            "The possible selves do not condemn you. They simply wait.",
+            "You wake again in the Liminal Gap, wounded but still capable of choosing."
+        ]
+    },
+    "Return From Liminal Gap": {
+        "Text": [
+            "The torn threshold unfolds.",
+            "Beyond it waits the final chamber, not as memory and not as dream.",
+            "The Hooded Figure steadies the dim flame one last time. 'Go back. This time, Vesperion cannot choose for you.'"
+        ]
+    },
+    "True Final Prelude": {
+        "Text": [
+            "The final chamber recognizes you differently now.",
+            "Vesperion turns beneath the Evening Star, and the face behind the busboy's borrowed kindness is no longer hidden.",
+            "'You found the wound I spared the world from naming,' he says.",
+            "'Look at Joffrey. Look at the Waitress. Look at every ruin choice left behind. Tell me again that Voluntas is mercy.'",
+            "The six relics answer, incomplete no longer.",
+            "You step forward with every choice that made you."
+        ]
+    },
+    "Vesperion True Final Victory": {
+        "Text": [
+            "The Evening Star fractures without falling.",
+            "Vesperion reaches for the pattern one last time, but the six awakened principles refuse to close around your will.",
+            "For the first time, his mercy has no command inside it.",
+            "'Then choose,' he whispers, no longer triumphant. 'Choose all of it. Even the pain.'",
+            "The light breaks, and the hollow where Voluntas was erased begins to remember its own name."
+        ]
+    },
+    "The Forsaken Tenet Ending": {
+        "Text": [
+            "The Liminal Gap exhales through the world.",
+            "Self, Order, Nature, Love, Guidance, and Eternity remain, but none of them stand alone anymore.",
+            "Voluntas is not restored as a relic or throne. It returns wherever a soul can answer yes, no, stay, go, forgive, refuse, begin again.",
+            "The grief Vesperion used does not vanish. Joffrey is still gone. The Waitress still suffered. The Acolyte still chose peace until peace became empty.",
+            "But grief is no longer proof that choice should be buried.",
+            "The Hooded Figure watches from the threshold as dawn reaches places twilight tried to keep.",
+            "The Forsaken Tenet is remembered."
+        ]
+    },
+    "The Thirsty Dog Epilogue": {
+        "Text": [
+            "For a moment, memory returns to the tavern where so many choices first tangled.",
+            "The bar is quieter now. One table remains unset, and no busboy comes to clear it.",
+            "No miracle gives Joffrey back to the Waitress, and no ending makes grief harmless.",
+            "But the silence is no longer command. It is a place where the living may choose what to do with love, loss, and morning."
+        ]
     },
     "Relic Room": {
         "Text": [

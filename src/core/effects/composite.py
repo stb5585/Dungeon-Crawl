@@ -3750,6 +3750,117 @@ class ChooseFateEffect(Effect):
             messages.append("Interesting choice...maybe I'll show pity.\n")
 
 
+class VesperionChooseFateEffect(Effect):
+    """Vesperion's phase-aware choice pressure.
+
+    Unlike the legacy Devil version, this effect does not present a taunt or
+    fixed attack menu. It asks the player to choose which consequence of
+    Voluntas they will bear: pain, loss, or control.
+    """
+
+    PHASE_OPTIONS = {
+        1: (
+            ("Bear the Wound", "damage", 0.10, 0, 0, "Hexagonum"),
+            ("Spend the Breath", "resource", 0, 0.22, 0, "Luna"),
+            ("Accept Stillness", "control", 0, 0, 1, "Quadrata"),
+        ),
+        2: (
+            ("Carry the Hurt", "damage", 0.16, 0, 0, "Infinitas"),
+            ("Lose the Voice", "resource", 0, 0.34, 0, "Polaris"),
+            ("Yield the Moment", "control", 0, 0, 2, "Quadrata"),
+        ),
+        3: (
+            ("Suffer and Stand", "damage", 0.22, 0, 0, "Infinitas"),
+            ("Empty the Self", "resource", 0, 0.46, 0, "Luna"),
+            ("Be Written Over", "control", 0, 0, 3, "Triangulus"),
+        ),
+    }
+
+    PHASE_MESSAGES = {
+        1: "Choice made the wound. Choose which mercy remains.",
+        2: "If Voluntas is sacred, choose the shape of its suffering.",
+        3: "Choose, champion. Prove the will you would preserve.",
+    }
+
+    def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
+        messages = result.extra.setdefault("messages", [])
+        use_kw = result.extra.get("use_kwargs", {})
+        selection_callback = use_kw.get("selection_callback")
+        phase = self._phase(actor)
+        options = self.PHASE_OPTIONS[phase]
+        labels = [option[0] for option in options]
+
+        if selection_callback is not None:
+            option_index = selection_callback(self.PHASE_MESSAGES[phase], labels)
+        else:
+            import random as _rng
+            option_index = _rng.randint(0, len(options) - 1)
+        option_index = max(0, min(int(option_index), len(options) - 1))
+
+        label, consequence, damage_fraction, mana_fraction, control_duration, counter_guardian = options[option_index]
+        counter_active = self._guardian_counter_active(target, counter_guardian)
+        result.extra["vesperion_phase"] = phase
+        result.extra["vesperion_choice"] = label
+        result.extra["vesperion_consequence"] = consequence
+        result.extra["vesperion_counter_guardian"] = counter_guardian
+        result.extra["vesperion_counter_active"] = counter_active
+
+        messages.append(f"Vesperion offers a terrible choice: {label}.\n")
+        if counter_active:
+            messages.append(f"{counter_guardian} answers the Evening Star and blunts the consequence.\n")
+        if consequence == "damage":
+            effective_fraction = damage_fraction * (0.35 if counter_active else 1)
+            damage = max(1, int(target.health.max * effective_fraction))
+            target.health.current -= damage
+            result.damage = (result.damage or 0) + damage
+            messages.append(f"{target.name} bears {damage} radiant damage by choice.\n")
+        elif consequence == "resource":
+            effective_fraction = mana_fraction * (0.35 if counter_active else 1)
+            mana_loss = max(0, min(target.mana.current, int(target.mana.max * effective_fraction)))
+            target.mana.current -= mana_loss
+            messages.append(f"{target.name}'s will burns away {mana_loss} MP.\n")
+        elif consequence == "control":
+            if counter_active:
+                control_duration = 0
+            effect = target.status_effects.get("Silence")
+            if control_duration <= 0:
+                messages.append(f"{target.name} keeps hold of choice through the silence.\n")
+            elif effect is not None and "Silence" not in getattr(target, "status_immunity", []):
+                effect.active = True
+                effect.duration = max(getattr(effect, "duration", 0), control_duration)
+                result.effects_applied["Status"].append("Silence")
+                messages.append(f"{target.name}'s voice is sealed by twilight command.\n")
+            else:
+                messages.append(f"{target.name} resists the silence of the Evening Star.\n")
+
+    @staticmethod
+    def _guardian_counter_active(target: Character, guardian: str) -> bool:
+        story_state = getattr(target, "main_story", {})
+        completed = story_state.get("guardian_trials_completed", {}) if isinstance(story_state, dict) else {}
+        return isinstance(completed, dict) and bool(completed.get(guardian))
+
+    def _phase(self, actor: Character) -> int:
+        phase_getter = getattr(actor, "vesperion_phase", None)
+        if callable(phase_getter):
+            try:
+                return max(1, min(int(phase_getter()), 3))
+            except Exception:
+                pass
+        explicit_phase = getattr(actor, "phase", None)
+        if explicit_phase is not None:
+            try:
+                return max(1, min(int(explicit_phase), 3))
+            except Exception:
+                pass
+        if getattr(actor, "health", None) and actor.health.max:
+            hp_pct = actor.health.current / actor.health.max
+            if hp_pct <= 0.33:
+                return 3
+            if hp_pct <= 0.66:
+                return 2
+        return 1
+
+
 class ShapeshiftEffect(Effect):
     """Transform the user into a random creature from their transform list.
 

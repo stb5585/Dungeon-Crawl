@@ -1602,6 +1602,12 @@ class ChooseFate:
         return _load_yaml_ability("choose_fate.yaml", cls_name="ChooseFate")
 
 
+class VesperionChooseFate:
+    """Data-driven (vesperion_choose_fate.yaml) - Vesperion's choice pressure."""
+    def __new__(cls):
+        return _load_yaml_ability("vesperion_choose_fate.yaml", cls_name="VesperionChooseFate")
+
+
 class BreatheFire:
     """Data-driven (breathe_fire.yaml) - stat-based elemental breath."""
     def __new__(cls):

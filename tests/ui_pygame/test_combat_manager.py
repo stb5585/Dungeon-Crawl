@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
+from src.core import enemies, main_story
 from src.ui_pygame.gui import combat_manager
 
 
@@ -188,6 +189,7 @@ def _make_manager(monkeypatch):
 
 
 def _make_player(name="Hero"):
+    story_state = main_story.default_state()
     player = SimpleNamespace(
         name=name,
         health=SimpleNamespace(current=50, max=50),
@@ -196,11 +198,19 @@ def _make_player(name="Hero"):
         inventory={},
         encumbered=False,
         anti_magic_active=False,
+        main_story=story_state,
+        state="fight",
+        location_x=9,
+        location_y=9,
+        location_z=9,
+        facing="south",
     )
     player.in_town = lambda: False
+    player.is_alive = lambda: player.health.current > 0
     player.is_disarmed = lambda: False
     player.abilities_suppressed = lambda: False
     player.effects = lambda end=False: None
+    player.ensure_main_story_state = lambda: player.main_story
     return player
 
 
@@ -208,6 +218,200 @@ def _make_enemy(name="Goblin", hp=(20, 20)):
     enemy = SimpleNamespace(name=name, health=SimpleNamespace(current=hp[0], max=hp[1]))
     enemy.is_alive = lambda: enemy.health.current > 0
     return enemy
+
+
+def _patch_fast_start_combat(monkeypatch, manager):
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda *_args: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    monkeypatch.setattr(manager, "_render_combat_frame", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(manager, "_refresh_combat_background", lambda *_args, **_kwargs: None)
+
+
+class ScriptedEngine:
+    def __init__(self, player, enemy, *, player_turn=True):
+        self.player = player
+        self.enemy = enemy
+        self.player_turn = player_turn
+        self.available_actions = ["Attack"]
+        self.flee = False
+        self.ended = False
+        self.post_turn_calls = 0
+        self.swap_calls = 0
+
+    def start_battle(self):
+        return (self.player if self.player_turn else self.enemy, None)
+
+    def battle_continues(self):
+        return True
+
+    def is_player_turn(self):
+        return self.player_turn
+
+    def post_turn(self):
+        self.post_turn_calls += 1
+        return SimpleNamespace(messages=[])
+
+    def swap_turns(self):
+        self.swap_calls += 1
+
+    def end_battle(self):
+        self.ended = True
+        raise AssertionError("false-final branch must not call normal battle end")
+
+
+def test_vesperion_false_final_triggers_at_hp_threshold_without_battle_end(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    _patch_fast_start_combat(monkeypatch, manager)
+    player = _make_player()
+    enemy = enemies.Vesperion()
+    enemy.health.max = 1000
+    enemy.health.current = 1000
+    engine = ScriptedEngine(player, enemy, player_turn=True)
+    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+
+    def player_turn(_player, target):
+        target.health.current = 700
+        return True
+
+    monkeypatch.setattr(manager, "_player_turn", player_turn)
+
+    assert manager.start_combat(player, enemy, SimpleNamespace()) is False
+    assert engine.ended is False
+    assert player.main_story["vesperion_false_final_triggered"] is True
+    assert player.main_story["pending_liminal_gap_entry"] is True
+
+
+def test_vesperion_false_final_triggers_after_three_enemy_turns(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    _patch_fast_start_combat(monkeypatch, manager)
+    player = _make_player()
+    enemy = enemies.Vesperion()
+    enemy.health.max = 1000
+    enemy.health.current = 1000
+    engine = ScriptedEngine(player, enemy, player_turn=False)
+    enemy_turns = []
+    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(manager, "_enemy_turn", lambda _player, _enemy: enemy_turns.append("turn") or None)
+
+    assert manager.start_combat(player, enemy, SimpleNamespace()) is False
+    assert enemy_turns == ["turn", "turn", "turn"]
+    assert engine.ended is False
+    assert player.main_story["vesperion_false_final_triggered"] is True
+    assert player.main_story["pending_liminal_gap_entry"] is True
+
+
+def test_vesperion_death_before_threshold_uses_false_final_not_defeat(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    _patch_fast_start_combat(monkeypatch, manager)
+    player = _make_player()
+    enemy = enemies.Vesperion()
+    enemy.health.max = 1000
+    enemy.health.current = 1000
+    engine = ScriptedEngine(player, enemy, player_turn=False)
+    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+
+    def enemy_turn(_player, _enemy):
+        _player.health.current = 0
+        return None
+
+    monkeypatch.setattr(manager, "_enemy_turn", enemy_turn)
+
+    assert manager.start_combat(player, enemy, SimpleNamespace()) is False
+    assert engine.ended is False
+    assert player.main_story["vesperion_false_final_triggered"] is True
+    assert player.main_story["pending_liminal_gap_entry"] is True
+
+
+def test_fleeing_vesperion_does_not_set_liminal_flags(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    _patch_fast_start_combat(monkeypatch, manager)
+    player = _make_player()
+    enemy = enemies.Vesperion()
+    engine = ScriptedEngine(player, enemy, player_turn=True)
+    handled = []
+    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(manager, "_player_turn", lambda _player, _enemy: "flee")
+    monkeypatch.setattr(
+        manager,
+        "_handle_combat_end",
+        lambda _player, _enemy, fled: handled.append(fled) or False,
+    )
+
+    assert manager.start_combat(player, enemy, SimpleNamespace()) is False
+    assert handled == [True]
+    assert player.main_story == main_story.default_state()
+
+
+def test_reflection_psychopomp_victory_unlocks_true_final_without_engine_end(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.main_story["voluntas_revealed"] = True
+    enemy = enemies.ReflectionPsychopomp()
+    enemy.health.current = 0
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+    )
+
+    result = manager._handle_combat_end(player, enemy, fled=False)
+
+    assert result is True
+    assert player.main_story["reflection_defeated"] is True
+    assert player.main_story["true_final_unlocked"] is True
+    assert player.state == "normal"
+    assert "The Reflection yields to the self you chose." in manager.combat_view.messages
+    assert manager.combat_view.reset_calls == 1
+
+
+def test_reflection_psychopomp_defeat_returns_to_liminal_hub_without_death(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.health.max = 101
+    player.health.current = 0
+    player.mana.max = 51
+    player.mana.current = 0
+    effect_calls = []
+    player.effects = lambda end=False: effect_calls.append(end)
+    enemy = enemies.ReflectionPsychopomp()
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+    )
+
+    result = manager._handle_combat_end(player, enemy, fled=False)
+
+    assert result is False
+    assert (player.location_x, player.location_y, player.location_z) == combat_manager.LIMINAL_GAP_ENTRY_POS
+    assert player.facing == combat_manager.LIMINAL_GAP_ENTRY_FACING
+    assert player.health.current == 50
+    assert player.mana.current == 25
+    assert player.state == "normal"
+    assert player.main_story["reflection_defeated"] is False
+    assert player.main_story["true_final_unlocked"] is False
+    assert effect_calls == [True]
+    assert "The Reflection breaks your stance and returns you to the Liminal hub." in manager.combat_view.messages
+
+
+def test_vesperion_true_final_victory_completes_story_without_engine_end(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.main_story["true_final_unlocked"] = True
+    enemy = enemies.Vesperion()
+    enemy.health.current = 0
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+    )
+
+    result = manager._handle_combat_end(player, enemy, fled=False)
+
+    assert result is True
+    assert player.main_story["vesperion_true_final_defeated"] is True
+    assert player.main_story["main_story_complete"] is True
+    assert player.state == "normal"
+    assert "Vesperion falls silent. Voluntas remains." in manager.combat_view.messages
+    assert manager.combat_view.reset_calls == 1
 
 
 def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
@@ -1159,6 +1363,31 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     assert manager.combat_view.messages[-1] == "Hero is stunned and cannot act."
     assert manager.combat_view.reload_calls[-1] == enemy
     assert manager.combat_view.flash_calls[-1][0] is True
+
+
+def test_enemy_turn_applies_vesperion_phase_pressure_before_action(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = enemies.Vesperion()
+    player.main_story["guardian_trials_completed"]["Hexagonum"] = True
+    player.main_story["guardian_trials_completed"]["Luna"] = True
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+
+    manager.engine = SimpleNamespace(
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        get_enemy_action=lambda: ("Nothing", None),
+    )
+
+    assert manager._enemy_turn(player, enemy) is None
+
+    assert "Hexagonum answers the attrition of twilight." in manager.combat_view.messages
+    assert "Luna refuses mercy that would become a cage." in manager.combat_view.messages
+    assert manager.combat_view.messages[-1] == "Vesperion does nothing."
+    assert enemy._vesperion_pressure_phases_used == {1}
 
 
 def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypatch):

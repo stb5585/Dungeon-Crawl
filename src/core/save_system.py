@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
-from . import abilities, enemies, items
+from . import abilities, enemies, items, main_story
 from .character import Resource, Stats, Combat, Level
 
 if TYPE_CHECKING:
@@ -739,6 +739,8 @@ class PlayerDataSerializer:
             'bard_song': getattr(player, 'bard_song', None),
             'lycan_state': getattr(player, 'lycan_state', None),
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
+            'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
+            'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=getattr(getattr(player, 'level', None), 'level', 1),
@@ -937,6 +939,15 @@ class PlayerDataSerializer:
         player.wizard_affinity = data.get('wizard_affinity', getattr(player, 'wizard_affinity', None))
         if hasattr(player, "ensure_wizard_affinity"):
             player.ensure_wizard_affinity()
+        player.main_story = data.get('main_story', getattr(player, 'main_story', None))
+        if hasattr(player, "ensure_main_story_state"):
+            player.ensure_main_story_state()
+        liminal_gap_return = data.get('liminal_gap_return', getattr(player, 'liminal_gap_return', None))
+        if isinstance(liminal_gap_return, (list, tuple)) and len(liminal_gap_return) >= 4:
+            liminal_gap_return = tuple(liminal_gap_return[:4])
+        else:
+            liminal_gap_return = None
+        player.liminal_gap_return = liminal_gap_return
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=player.level.level,

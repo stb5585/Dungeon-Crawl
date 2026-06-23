@@ -13,12 +13,12 @@ import sys
 
 import pygame
 
-from src.core import enemies
+from src.core import enemies, main_story
 from src.core.classes import demonologist
 from src.core.combat.battle_engine import BattleEngine
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
-from src.core.player import Player
+from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
 from .combat_view import CombatView
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .level_up import LevelUpScreen
@@ -56,6 +56,8 @@ SLOT_CARD_VALUES = {
     "Q": 12,
     "K": 13,
 }
+VESPERION_FALSE_FINAL_HP_RATIO = 0.70
+VESPERION_FALSE_FINAL_ENEMY_TURNS = 3
 
 
 def _battle_log_slug(value: object) -> str:
@@ -237,6 +239,128 @@ class GUICombatManager:
             return self.logger.export_json_file(Path("debug_logs") / "battles" / filename)
         except Exception:
             return None
+
+    @staticmethod
+    def _is_vesperion_false_final_combat(player_char: Player, enemy: Character) -> bool:
+        """Return whether this combat should use Vesperion's scripted false-final branch."""
+        if not isinstance(enemy, enemies.Vesperion) and getattr(enemy, "name", "") != "Vesperion":
+            return False
+
+        ensure_story = getattr(player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        if not isinstance(story_state, dict):
+            return False
+        return not story_state.get("vesperion_false_final_triggered", False) and not story_state.get(
+            "true_final_unlocked", False
+        )
+
+    @staticmethod
+    def _is_reflection_psychopomp_combat(enemy: Character) -> bool:
+        """Return whether this is the Liminal Reflection/Psychopomp encounter."""
+        return bool(getattr(enemy, "reflection_psychopomp", False)) or getattr(enemy, "name", "") == "Reflection Psychopomp"
+
+    @staticmethod
+    def _is_vesperion_true_final_combat(player_char: Player, enemy: Character) -> bool:
+        """Return whether Vesperion should resolve as the completed true final."""
+        if not isinstance(enemy, enemies.Vesperion) and getattr(enemy, "name", "") != "Vesperion":
+            return False
+        ensure_story = getattr(player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        if not isinstance(story_state, dict):
+            return False
+        return bool(story_state.get("true_final_unlocked")) and not bool(
+            story_state.get("vesperion_true_final_defeated")
+        )
+
+    @staticmethod
+    def _vesperion_false_final_hp_threshold_met(enemy: Character) -> bool:
+        """Return whether Vesperion has crossed the first-confrontation HP threshold."""
+        health = getattr(enemy, "health", None)
+        max_hp = max(1, int(getattr(health, "max", 1) or 1))
+        current_hp = int(getattr(health, "current", max_hp) or 0)
+        return current_hp <= max_hp * VESPERION_FALSE_FINAL_HP_RATIO
+
+    def _handle_vesperion_false_final(self, player_char: Player, enemy: Character) -> bool:
+        """Mark the pending Liminal transition without invoking normal battle-end rewards."""
+        ensure_story = getattr(player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", None)
+        if isinstance(story_state, dict):
+            story_state["vesperion_false_final_triggered"] = True
+            story_state["pending_liminal_gap_entry"] = True
+
+        self.combat_view.add_combat_message(
+            "Vesperion raises the Evening Star. The battle ends before victory can become yours."
+        )
+        self.running = False
+        self.combat_view.reset_combat_log()
+        self._combat_background = None
+        return False
+
+    def _handle_reflection_psychopomp_end(self, player_char: Player, enemy: Character) -> bool:
+        """Resolve Reflection combat without normal rewards or death penalties."""
+        ensure_story = getattr(player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+
+        if player_char.is_alive() and not enemy.is_alive():
+            if isinstance(story_state, dict):
+                story_state["reflection_defeated"] = True
+                if main_story.can_unlock_true_final(story_state):
+                    story_state["true_final_unlocked"] = True
+            player_char.state = "normal"
+            self.combat_view.add_combat_message("The Reflection yields to the self you chose.")
+            self.running = False
+            self.combat_view.reset_combat_log()
+            self._combat_background = None
+            return True
+
+        player_char.state = "normal"
+        try:
+            player_char.effects(end=True)
+        except Exception:
+            pass
+        try:
+            enemy.effects(end=True)
+        except Exception:
+            pass
+        player_char.location_x, player_char.location_y, player_char.location_z = LIMINAL_GAP_ENTRY_POS
+        player_char.facing = LIMINAL_GAP_ENTRY_FACING
+        player_char.health.current = max(1, player_char.health.max // 2)
+        player_char.mana.current = max(0, player_char.mana.max // 2)
+        enemy.health.current = enemy.health.max
+        enemy.mana.current = enemy.mana.max
+        self.combat_view.add_combat_message("The Reflection breaks your stance and returns you to the Liminal hub.")
+        self.running = False
+        self.combat_view.reset_combat_log()
+        self._combat_background = None
+        return False
+
+    def _handle_vesperion_true_final_victory(self, player_char: Player, enemy: Character) -> bool:
+        """Resolve true-final Vesperion victory without normal loot/reward handling."""
+        ensure_story = getattr(player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        if isinstance(story_state, dict):
+            story_state["vesperion_true_final_defeated"] = True
+            story_state["main_story_complete"] = True
+        player_char.state = "normal"
+        self.combat_view.add_combat_message("Vesperion falls silent. Voluntas remains.")
+        self.running = False
+        self.combat_view.reset_combat_log()
+        self._combat_background = None
+        return True
+
+    def _apply_vesperion_phase_pressure(self, player_char: Player, enemy: Character) -> bool:
+        """Apply Vesperion's once-per-phase pressure outside normal action rewards."""
+        pressure = getattr(enemy, "apply_phase_pressure", None)
+        if not callable(pressure):
+            return False
+        message = pressure(player_char)
+        if not message:
+            return False
+        for line in message.strip().split('\n'):
+            if line.strip():
+                self.combat_view.add_combat_message(line)
+        self._flush_result_frame(player_char, enemy)
+        return True
 
     @staticmethod
     def _arm_guarded_input(event, input_armed: bool) -> bool:
@@ -541,6 +665,8 @@ class GUICombatManager:
         
         clock = pygame.time.Clock()
         fled = False
+        vesperion_false_final = self._is_vesperion_false_final_combat(player_char, enemy)
+        vesperion_enemy_turns = 0
         
         # Main combat loop
         while self.running and self.engine.battle_continues() and not player_char.in_town():
@@ -555,8 +681,13 @@ class GUICombatManager:
 
                 # Check if enemy died from special effects (e.g., self-healing that prevents death)
                 if not enemy.is_alive():
+                    if vesperion_false_final:
+                        return self._handle_vesperion_false_final(player_char, enemy)
                     self.combat_view.enemy_dies(enemy)
                     break
+
+                if vesperion_false_final and self._vesperion_false_final_hp_threshold_met(enemy):
+                    return self._handle_vesperion_false_final(player_char, enemy)
                 
                 # Check for Mad Waitress form change (below 10% health)
                 self._check_enemy_form_change(player_char, enemy)
@@ -570,6 +701,15 @@ class GUICombatManager:
                 if enemy_result == "flee":
                     fled = True
                     break
+
+                if vesperion_false_final:
+                    vesperion_enemy_turns += 1
+                    if (
+                        not player_char.is_alive()
+                        or vesperion_enemy_turns >= VESPERION_FALSE_FINAL_ENEMY_TURNS
+                        or self._vesperion_false_final_hp_threshold_met(enemy)
+                    ):
+                        return self._handle_vesperion_false_final(player_char, enemy)
                 
                 # Check if player died
                 if not player_char.is_alive():
@@ -581,11 +721,19 @@ class GUICombatManager:
                 
                 # Check if enemy died (e.g., from self-damaging skills like Widow's Wail)
                 if not enemy.is_alive():
+                    if vesperion_false_final:
+                        return self._handle_vesperion_false_final(player_char, enemy)
                     self.combat_view.enemy_dies(enemy)
                     break
             
             # Advance turn: post-turn processing + swap
             self._post_turn_processing(player_char, enemy)
+            if vesperion_false_final and (
+                not player_char.is_alive()
+                or not enemy.is_alive()
+                or self._vesperion_false_final_hp_threshold_met(enemy)
+            ):
+                return self._handle_vesperion_false_final(player_char, enemy)
             self.engine.swap_turns()
             self._refresh_combat_background(player_char, enemy)
             
@@ -1455,6 +1603,10 @@ class GUICombatManager:
             self._flush_result_frame(player_char, enemy)
             enemy_clock.tick(60)
 
+        self._apply_vesperion_phase_pressure(player_char, enemy)
+        if not player_char.is_alive():
+            return None
+
         # Check for forced actions (charging skills, jump)
         forced = self.engine.get_forced_action()
         if forced:
@@ -1655,6 +1807,23 @@ class GUICombatManager:
         # Sync engine flee state (in case player fled via UI flow)
         if fled:
             self.engine.flee = True
+
+        if self._is_reflection_psychopomp_combat(enemy):
+            if fled:
+                self.combat_view.add_combat_message("You step back from the Reflection.")
+                self.combat_view.reset_combat_log()
+                self._combat_background = None
+                player_char.state = "normal"
+                return False
+            return self._handle_reflection_psychopomp_end(player_char, enemy)
+
+        if (
+            self._is_vesperion_true_final_combat(player_char, enemy)
+            and not fled
+            and player_char.is_alive()
+            and not enemy.is_alive()
+        ):
+            return self._handle_vesperion_true_final_victory(player_char, enemy)
 
         pre_outcome_background = self.screen.copy()
 

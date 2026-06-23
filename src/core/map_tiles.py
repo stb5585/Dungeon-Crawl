@@ -1452,7 +1452,7 @@ class CerberusBossRoom(BossRoom):
 class FinalBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
-        self.enemy = enemies.Devil
+        self.enemy = enemies.Vesperion
 
     def intro_text(self, game):
         if not self.enemy:
@@ -2067,7 +2067,111 @@ class FinalBlocker(SpecialTile):
         if game.player_char.has_relics() and not self.read:
             game.special_event("Final Blocker")
             self.read = True
-            
+
+
+class LiminalGuide(SpecialTile):
+    """The Hooded Figure guide in the Liminal Gap sanctuary."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "The Hooded Figure waits here, wounded but watchful.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
+
+
+class LiminalGuardianGate(SpecialTile):
+    """Blocked placeholder gate for a future Guardian trial."""
+
+    guardian_name = ""
+    liminal_gate_event = ""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += f"The gate of {self.guardian_name} is sealed.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
+
+
+class TriangulusGate(LiminalGuardianGate):
+    guardian_name = "Triangulus"
+    liminal_gate_event = "Triangulus Gate"
+
+
+class QuadrataGate(LiminalGuardianGate):
+    guardian_name = "Quadrata"
+    liminal_gate_event = "Quadrata Gate"
+
+
+class HexagonumGate(LiminalGuardianGate):
+    guardian_name = "Hexagonum"
+    liminal_gate_event = "Hexagonum Gate"
+
+
+class LunaGate(LiminalGuardianGate):
+    guardian_name = "Luna"
+    liminal_gate_event = "Luna Gate"
+
+
+class PolarisGate(LiminalGuardianGate):
+    guardian_name = "Polaris"
+    liminal_gate_event = "Polaris Gate"
+
+
+class InfinitasGate(LiminalGuardianGate):
+    guardian_name = "Infinitas"
+    liminal_gate_event = "Infinitas Gate"
+
+
+class LiminalSeventhSeat(SpecialTile):
+    """The empty Seventh Seat where Voluntas is revealed."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "An empty seat waits where the seventh principle should be.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
+
+
+class LiminalAcolyte(SpecialTile):
+    """The failed hero who serves as Vesperion's tragic mirror."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "A silent Acolyte kneels in the gray light.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
+
+
+class LiminalReflection(SpecialTile):
+    """The Reflection/Psychopomp story gate before returning to life."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "A mirror-dark threshold reflects paths you never walked.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
+
+
+class LiminalExitBlocker(SpecialTile):
+    """Blocked return path from the Liminal Gap hub."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "A torn threshold hangs here, but it will not open.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return None
 
 
 class FinalRoom(SpecialTile):

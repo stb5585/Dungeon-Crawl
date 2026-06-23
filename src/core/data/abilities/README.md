@@ -1,6 +1,6 @@
 # Ability YAML Definitions
 
-This directory contains **179 YAML files** defining every active ability in the game. Each file is loaded at runtime by `ability_loader.py` and instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. The original Python classes in `abilities.py` are thin `__new__` wrappers that delegate to the YAML loader.
+This directory contains **180 YAML files** defining every active ability in the game. Each file is loaded at runtime by `ability_loader.py` and instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. The original Python classes in `abilities.py` are thin `__new__` wrappers that delegate to the YAML loader.
 
 ## Quick Reference — Ability Types
 
@@ -356,7 +356,7 @@ Candidates: Dim Mak, Arcane Blast, Disintegrate, Detonate, ultimates.
 
 ## Notes
 
-- All 179 YAML files are loaded and validated at startup
+- All 180 YAML files are loaded and validated at startup
 - Effect composition allows complex behavior without Python code changes
 - YAML format enables balance tuning without touching source
 - The `DataDrivenSkill` fallback handles types without explicit routing

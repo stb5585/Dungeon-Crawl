@@ -4192,7 +4192,6 @@ class Balor(Fiend):
                                      'Terrify': abilities.Terrify(),
                                      'Regen': abilities.Regen3()},
                           "Skills": {'Crush': abilities.Crush(),
-                                     'Choose Fate': abilities.ChooseFate(),
                                      'Parry': abilities.Parry()}}
         self.resistance = {'Fire': 0.75,
                            'Ice': 0.25,
@@ -4209,7 +4208,6 @@ class Balor(Fiend):
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Hellfire", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
-            {"ability": "Choose Fate", "priority": ActionPriority.LOW},
             {"ability": "Crush", "priority": ActionPriority.NORMAL},
             {"ability": "Regen", "priority": ActionPriority.LOW, "priority_if": [
                 {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
@@ -4219,6 +4217,260 @@ class Balor(Fiend):
         self.level.pro_level = 7
         self.sight = True
         self.picture = "devil.txt"
+
+
+class Vesperion(Humanoid):
+    """Former Guardian of Voluntas; final boss concept built around choice."""
+
+    RELIC_COUNTERS = {
+        "Triangulus": "identity overwrite",
+        "Quadrata": "forced order",
+        "Hexagonum": "attrition pressure",
+        "Luna": "sacrifice manipulation",
+        "Polaris": "misdirection",
+        "Infinitas": "endurance loops",
+    }
+
+    def __init__(self):
+        super().__init__(name='Vesperion', health=3600, mana=1100, strength=52, intel=68, wisdom=72,
+                         con=66, charisma=78, dex=46, attack=150, defense=165, magic=175,
+                         magic_def=170, exp=0)
+        self.enemy_typ = 'Celestial'
+        self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.spellbook = {"Spells": {'Holy III': abilities.Holy3(),
+                                     'Silence': abilities.Silence(),
+                                     'Ruin': abilities.Ruin(),
+                                     'Oblivion': abilities.Oblivion(),
+                                     'Regen': abilities.Regen3()},
+                          "Skills": {'Choose Fate': abilities.VesperionChooseFate()}}
+        self.resistance = {'Fire': 0.25,
+                           'Ice': 0.25,
+                           'Electric': 0.25,
+                           'Water': 0.25,
+                           'Earth': 0.25,
+                           'Wind': 0.25,
+                           'Shadow': 0.5,
+                           'Holy': 0.75,
+                           "Poison": 1.,
+                           'Physical': 0.5}
+        self.status_immunity = ["Death", "Poison", "Stone", "Silence", "Berserk"]
+        self.action_stack = [
+            {"ability": "Choose Fate", "priority": ActionPriority.HIGH},
+            {"ability": "Holy III", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL},
+            {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+            {"ability": "Oblivion", "priority": ActionPriority.LOW},
+            {"ability": "Regen", "priority": ActionPriority.LOW, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 45, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]},
+        ]
+        self.level.pro_level = 99
+        self.sight = True
+        self.picture = "vesperion.txt"
+        self._vesperion_pressure_phases_used: set[int] = set()
+
+    def vesperion_phase(self) -> int:
+        if self.health.max <= 0:
+            return 1
+        hp_pct = self.health.current / self.health.max
+        if hp_pct <= 0.33:
+            return 3
+        if hp_pct <= 0.66:
+            return 2
+        return 1
+
+    def relic_counter_for(self, relic_name: str) -> str | None:
+        return self.RELIC_COUNTERS.get(relic_name)
+
+    def guardian_counter_active(self, target: Character, guardian: str) -> bool:
+        """Return whether a completed Guardian trial can answer Vesperion."""
+        story_state = getattr(target, "main_story", {})
+        completed = story_state.get("guardian_trials_completed", {}) if isinstance(story_state, dict) else {}
+        return isinstance(completed, dict) and bool(completed.get(guardian))
+
+    def apply_phase_pressure(self, target: Character) -> str:
+        """Apply once-per-phase final-battle pressure answered by Guardian trials."""
+        phase = self.vesperion_phase()
+        used = getattr(self, "_vesperion_pressure_phases_used", set())
+        if phase in used:
+            return ""
+        used.add(phase)
+        self._vesperion_pressure_phases_used = used
+
+        messages = [self._phase_pressure_intro(phase)]
+        if phase == 1:
+            messages.extend(self._apply_phase_one_pressure(target))
+        elif phase == 2:
+            messages.extend(self._apply_phase_two_pressure(target))
+        else:
+            messages.extend(self._apply_phase_three_pressure(target))
+        return "\n".join(message for message in messages if message)
+
+    def _phase_pressure_intro(self, phase: int) -> str:
+        if phase == 1:
+            return "Vesperion lowers the Evening Star into a merciful, suffocating hush."
+        if phase == 2:
+            return "Vesperion folds the battlefield into a perfect and pitiless constellation."
+        return "Vesperion reaches for the place where choices become a self."
+
+    def _apply_phase_one_pressure(self, target: Character) -> list[str]:
+        messages: list[str] = []
+        if self.guardian_counter_active(target, "Hexagonum"):
+            messages.append("Hexagonum answers the attrition of twilight.")
+        else:
+            damage = max(1, int(target.health.max * 0.08))
+            target.health.current = max(1, target.health.current - damage)
+            messages.append(f"Twilight attrition burns {target.name} for {damage} HP.")
+
+        if self.guardian_counter_active(target, "Luna"):
+            messages.append("Luna refuses mercy that would become a cage.")
+        else:
+            mana_loss = max(0, min(target.mana.current, int(target.mana.max * 0.08)))
+            target.mana.current -= mana_loss
+            messages.append(f"Mercy without freedom drains {mana_loss} MP.")
+        return messages
+
+    def _apply_phase_two_pressure(self, target: Character) -> list[str]:
+        messages: list[str] = []
+        if self.guardian_counter_active(target, "Quadrata"):
+            messages.append("Quadrata breaks the forced order before it can close.")
+        else:
+            self._apply_status(target, "Silence", 1)
+            messages.append(f"{target.name}'s voice is arranged into silence.")
+
+        if self.guardian_counter_active(target, "Polaris"):
+            messages.append("Polaris fixes true north through the false stars.")
+        else:
+            self._apply_status(target, "Blind", 1)
+            messages.append(f"False stars blur {target.name}'s aim.")
+        return messages
+
+    def _apply_phase_three_pressure(self, target: Character) -> list[str]:
+        messages: list[str] = []
+        if self.guardian_counter_active(target, "Triangulus"):
+            messages.append("Triangulus holds the self against the overwrite.")
+        else:
+            self._apply_status(target, "Silence", 2)
+            messages.append(f"{target.name}'s chosen name nearly vanishes.")
+
+        if self.guardian_counter_active(target, "Infinitas"):
+            messages.append("Infinitas turns the endless loop into another chosen step.")
+        else:
+            damage = max(1, int(target.health.max * 0.10))
+            target.health.current = max(1, target.health.current - damage)
+            messages.append(f"The loop of endurance crushes {target.name} for {damage} HP.")
+        return messages
+
+    @staticmethod
+    def _apply_status(target: Character, status_name: str, duration: int) -> None:
+        if status_name in getattr(target, "status_immunity", []):
+            return
+        effect = target.status_effects.get(status_name)
+        if effect is None:
+            return
+        effect.active = True
+        effect.duration = max(getattr(effect, "duration", 0), duration)
+
+
+class ReflectionPsychopomp(Humanoid):
+    """Liminal self-copy that tests whether the chosen path can hold."""
+
+    def __init__(self):
+        super().__init__(name='Reflection Psychopomp', health=1400, mana=450, strength=42, intel=42, wisdom=42,
+                         con=42, charisma=42, dex=42, attack=105, defense=115, magic=125,
+                         magic_def=120, exp=0)
+        self.enemy_typ = 'Liminal'
+        self.reflection_psychopomp = True
+        self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.spellbook = {"Spells": {'Holy II': abilities.Holy2(),
+                                     'Silence': abilities.Silence(),
+                                     'Ruin': abilities.Ruin()},
+                          "Skills": {}}
+        self.resistance = {'Fire': 0.25,
+                           'Ice': 0.25,
+                           'Electric': 0.25,
+                           'Water': 0.25,
+                           'Earth': 0.25,
+                           'Wind': 0.25,
+                           'Shadow': 0.25,
+                           'Holy': 0.25,
+                           "Poison": 1.,
+                           'Physical': 0.25}
+        self.status_immunity = ["Death", "Poison", "Stone", "Berserk"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Holy II", "priority": ActionPriority.NORMAL},
+            {"ability": "Silence", "priority": ActionPriority.NORMAL},
+            {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+        ]
+        self.level.pro_level = 40
+        self.sight = True
+        self.picture = "vesperion.txt"
+        self.mirrored_path = {
+            "class": None,
+            "profile": "hybrid",
+            "level": 40,
+        }
+
+    def mirror_player(self, player) -> None:
+        """Lightly scale the Reflection from the current player without copying the full build."""
+        level_value = max(1, int(getattr(getattr(player, "level", None), "level", 40) or 40))
+        health_max = max(600, int(getattr(getattr(player, "health", None), "max", 1000) * 0.85))
+        mana_max = max(180, int(getattr(getattr(player, "mana", None), "max", 400) * 0.65))
+        self.health.max = health_max
+        self.health.current = health_max
+        self.mana.max = mana_max
+        self.mana.current = mana_max
+        player_combat = getattr(player, "combat", None)
+        for stat in ("attack", "defense", "magic", "magic_def"):
+            current = int(getattr(self.combat, stat, 0))
+            player_value = getattr(player_combat, stat, getattr(player, stat, current))
+            setattr(self.combat, stat, max(current, int(player_value * 0.75)))
+        self.level.level = level_value
+        self._mirror_path_profile(player, level_value)
+
+    def _mirror_path_profile(self, player, level_value: int) -> None:
+        player_combat = getattr(player, "combat", None)
+        player_stats = getattr(player, "stats", None)
+        attack_score = int(getattr(player_combat, "attack", 0)) + int(getattr(player_stats, "strength", 0))
+        magic_score = (
+            int(getattr(player_combat, "magic", 0))
+            + int(getattr(player_stats, "intel", 0))
+            + int(getattr(player_stats, "wisdom", 0))
+        )
+        class_name = getattr(getattr(player, "cls", None), "name", None)
+        if attack_score >= int(magic_score * 1.2):
+            profile = "martial"
+            self.resistance["Physical"] = max(self.resistance.get("Physical", 0), 0.4)
+            self.action_stack = [
+                {"ability": "Attack", "priority": ActionPriority.HIGH},
+                {"ability": "Silence", "priority": ActionPriority.NORMAL},
+                {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+            ]
+        elif magic_score >= int(attack_score * 1.2):
+            profile = "mystic"
+            self.combat.magic = max(self.combat.magic, int(magic_score * 0.55))
+            self.action_stack = [
+                {"ability": "Holy II", "priority": ActionPriority.HIGH},
+                {"ability": "Ruin", "priority": ActionPriority.HIGH},
+                {"ability": "Silence", "priority": ActionPriority.NORMAL},
+            ]
+        else:
+            profile = "hybrid"
+            self.action_stack = [
+                {"ability": "Attack", "priority": ActionPriority.NORMAL},
+                {"ability": "Holy II", "priority": ActionPriority.NORMAL},
+                {"ability": "Silence", "priority": ActionPriority.NORMAL},
+                {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+            ]
+        self.mirrored_path = {
+            "class": class_name,
+            "profile": profile,
+            "level": level_value,
+        }
 
 
 class BrainGorger(Aberration):

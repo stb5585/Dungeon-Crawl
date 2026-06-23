@@ -11,7 +11,7 @@ import traceback
 
 import pygame
 
-from src.core import items, enemies, companions, map_tiles
+from src.core import items, enemies, companions, main_story, map_tiles
 from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
 from .combat_manager import GUICombatManager
@@ -890,6 +890,18 @@ class DungeonManager:
             self._interact_dead_body(current_tile)
         elif 'FinalRoom' in tile_type:
             self._interact_final_room(current_tile)
+        elif 'LiminalGuide' in tile_type:
+            self._interact_liminal_guide(current_tile)
+        elif 'LiminalSeventhSeat' in tile_type:
+            self._interact_liminal_seventh_seat(current_tile)
+        elif 'LiminalAcolyte' in tile_type:
+            self._interact_liminal_acolyte(current_tile)
+        elif 'LiminalReflection' in tile_type:
+            self._interact_liminal_reflection(current_tile)
+        elif getattr(current_tile, "liminal_gate_event", None):
+            self._interact_liminal_guardian_gate(current_tile)
+        elif 'LiminalExitBlocker' in tile_type:
+            self._interact_liminal_exit_blocker(current_tile)
         elif 'IncubusLair' in tile_type:
             self._interact_incubus_lair(current_tile)
         elif 'GoldenChaliceRoom' in tile_type:
@@ -1431,15 +1443,37 @@ class DungeonManager:
 
     def _interact_final_room(self, final_room_tile):
         """Handle final room interaction - ask if player wants to fight final boss."""
+        ensure_story = getattr(self.player_char, "ensure_main_story_state", None)
+        story_state = ensure_story() if callable(ensure_story) else getattr(self.player_char, "main_story", {})
+        if isinstance(story_state, dict) and story_state.get("main_story_complete"):
+            self._show_special_event_dialogue("The Forsaken Tenet Ending", title="The Forsaken Tenet")
+            self.add_message("The Forsaken Tenet is already remembered.")
+            self._mark_view_dirty()
+            return
+        if isinstance(story_state, dict) and story_state.get("vesperion_false_final_triggered") and not story_state.get(
+            "true_final_unlocked"
+        ):
+            self._show_special_event_dialogue("Liminal Gap Blocker", title="Voluntas")
+            self.add_message("Voluntas remains unresolved. The final chamber will not open yet.")
+            self._mark_view_dirty()
+            return
+        true_final = isinstance(story_state, dict) and story_state.get("true_final_unlocked")
+
         choice = self.presenter.render_menu(
             "You stand before the final chamber.\n\n"
-            "The Devil awaits within.\n\n"
+            "Vesperion awaits within.\n\n"
             "Do you wish to enter and face your destiny?",
             ["Yes, I'm ready", "No, not yet"]
         )
 
         if choice == 0:  # Yes
             self.add_message("You step forward into the final chamber...")
+            return_location = (
+                self.player_char.location_x,
+                self.player_char.location_y,
+                self.player_char.location_z,
+                self.player_char.facing,
+            )
             # Move player north into the final boss room (2 tiles north)
             self.player_char.location_y -= 2
             self._mark_view_dirty()
@@ -1447,18 +1481,19 @@ class DungeonManager:
             # Reveal the surrounding room tiles
             final_room_tile.adjacent_visited(self.player_char)
             
-            # Show the Devil's dialogue
+            # Show Vesperion's dialogue
             special_event_dict = get_special_events()
-            if "Final Boss" in special_event_dict:
-                dialog_lines = special_event_dict["Final Boss"]["Text"]
+            event_name = "True Final Prelude" if true_final and "True Final Prelude" in special_event_dict else "Final Boss"
+            if event_name in special_event_dict:
+                dialog_lines = special_event_dict[event_name]["Text"]
                 dialog_text = " ".join(line.strip() for line in dialog_lines if line is not None).strip()
-                self.presenter.show_message(dialog_text, "The Devil")
+                self.presenter.show_message(dialog_text, "Vesperion")
             
             # Clear event queue to remove any lingering keypresses from dialogs
             pygame.event.clear()
             
-            # Spawn and initiate combat with Devil
-            devil = enemies.Devil()
+            # Spawn and initiate combat with Vesperion
+            vesperion = enemies.Vesperion()
             self.player_char.state = 'fight'
             
             # Update combat manager with current world state
@@ -1468,14 +1503,22 @@ class DungeonManager:
             self._refresh_cached_frame()
             combat_won = self.combat_manager.start_combat(
                 self.player_char,
-                devil,
+                vesperion,
                 final_room_tile
             )
+
+            story_state = ensure_story() if callable(ensure_story) else getattr(self.player_char, "main_story", {})
+            if isinstance(story_state, dict) and story_state.get("pending_liminal_gap_entry"):
+                self._enter_liminal_gap_stub(return_location, vesperion)
+                return
             
             if combat_won:
-                self.add_message("You have defeated the Devil! The dungeon fades away...")
-                self.player_char.quit = True
-                self.running = False
+                if true_final:
+                    self._complete_true_final_sequence()
+                else:
+                    self.add_message("You have defeated Vesperion! The dungeon fades away...")
+                    self.player_char.quit = True
+                    self.running = False
             elif not self.player_char.is_alive():
                 self.add_message("You were defeated... The world fades to black.")
                 self._detach_dungeon_background_provider()
@@ -1492,6 +1535,317 @@ class DungeonManager:
             self.add_message("You step back to prepare yourself...")
             self.player_char.location_y += 1
             self._mark_view_dirty()
+
+    def _complete_true_final_sequence(self):
+        """Play the completed main-story ending after true-final Vesperion victory."""
+        story_state = self.player_char.ensure_main_story_state()
+        story_state["vesperion_true_final_defeated"] = True
+        story_state["main_story_complete"] = True
+        self._show_special_event_dialogue("Vesperion True Final Victory", title="Vesperion")
+        self._show_special_event_dialogue("The Forsaken Tenet Ending", title="The Forsaken Tenet")
+        self._show_special_event_dialogue("The Thirsty Dog Epilogue", title="The Thirsty Dog")
+        self.add_message("Vesperion is defeated. Voluntas endures, and the main story is complete.")
+        self.player_char.quit = True
+        self.player_char.state = "normal"
+        self.running = False
+        self._mark_view_dirty()
+
+    def _enter_liminal_gap_stub(self, return_location, vesperion=None):
+        """Resolve the scripted false-final transition into the Liminal Gap hub."""
+        image_path = self._enemy_dialogue_image_path(vesperion) if vesperion is not None else ""
+        self._show_special_event_dialogue(
+            "Vesperion False Final",
+            title="Vesperion",
+            image_path=image_path,
+        )
+
+        enter_stub = getattr(self.player_char, "enter_liminal_gap_stub", None)
+        if callable(enter_stub):
+            enter_stub(return_location)
+
+        self._show_special_event_dialogue("Liminal Gap Arrival", title="The Liminal Gap")
+        self.add_message("You wake in the Liminal Gap, wounded but alive.")
+        self._cached_view = None
+        self._cached_frame = None
+        self._mark_view_dirty()
+
+    def _interact_liminal_guide(self, guide_tile):
+        """Handle the Hooded Figure's Liminal Gap guide interaction."""
+        story_state = self.player_char.ensure_main_story_state()
+        if not story_state.get("liminal_gap_guide_revealed"):
+            self._show_special_event_dialogue("Hooded Figure Liminal Reveal", title="The Hooded Figure")
+            story_state["liminal_gap_guide_revealed"] = True
+
+        choice = self._popup_menu(
+            "The Hooded Figure",
+            ["Save Game", "Review Guardian Clues", "Leave"],
+            flush_events=True,
+            require_key_release=True,
+        )
+        if choice == 1:
+            self._review_liminal_guardian_clues(story_state)
+            guide_tile.read = True
+            return
+        if choice != 0:
+            self.add_message("The Hooded Figure waits in silence.")
+            return
+
+        self._show_special_event_dialogue("Liminal Guide Save", title="The Hooded Figure")
+        save_game = getattr(self.game, "save_game", None)
+        if callable(save_game):
+            save_game()
+            story_state["liminal_gap_guide_save_used"] = True
+            guide_tile.read = True
+            self.add_message("The Hooded Figure anchors your progress.")
+        else:
+            self.add_message("The Hooded Figure reaches for an anchor that is not there.")
+
+    def _review_liminal_guardian_clues(self, story_state):
+        """Show the Hooded Figure's current summary of awakened Guardian clues."""
+        self._show_special_event_dialogue("Liminal Clue Review", title="The Hooded Figure")
+        story_state["liminal_gap_clues_reviewed"] = True
+        summaries = main_story.guardian_clue_summary(story_state)
+        completed_count = main_story.completed_guardian_count(story_state)
+        self.add_message(f"Guardian clues awakened: {completed_count}/{len(main_story.GUARDIAN_TRIALS)}.")
+        if not summaries:
+            self.add_message("No Guardian clue has awakened yet.")
+            return
+        for summary in summaries:
+            self.add_message(summary)
+
+    def _interact_liminal_guardian_gate(self, gate_tile):
+        """Run or report the selected Guardian trial gate."""
+        guardian_name = getattr(gate_tile, "guardian_name", "Guardian")
+        if guardian_name in main_story.GUARDIAN_TRIALS:
+            self._interact_guardian_trial(gate_tile, guardian_name)
+            return
+
+        event_name = getattr(gate_tile, "liminal_gate_event", "Liminal No Exit")
+        self._show_special_event_dialogue(event_name, title=guardian_name)
+        gate_tile.read = True
+        self.add_message(f"The gate of {guardian_name} remains sealed.")
+
+    def _interact_guardian_trial(self, gate_tile, guardian_name):
+        """Run a lightweight Guardian trial and record its Voluntas clue."""
+        story_state = self.player_char.ensure_main_story_state()
+        completed = story_state["guardian_trials_completed"]
+        if completed.get(guardian_name):
+            self._show_special_event_dialogue(f"{guardian_name} Trial Complete", title=guardian_name)
+            self.add_message(f"The gate of {guardian_name} is quiet. Its trial is complete.")
+            gate_tile.read = True
+            return
+
+        if not story_state.get("liminal_gap_guide_revealed"):
+            event_name = getattr(gate_tile, "liminal_gate_event", f"{guardian_name} Gate")
+            self._show_special_event_dialogue(event_name, title=guardian_name)
+            self.add_message("The gate waits for the Hooded Figure to name the path.")
+            return
+
+        choice = self._popup_menu(
+            guardian_name,
+            ["Begin Trial", "Leave"],
+            flush_events=True,
+            require_key_release=True,
+        )
+        if choice != 0:
+            self.add_message(f"You step back from the gate of {guardian_name}.")
+            return
+
+        story_state["guardian_trials_started"][guardian_name] = True
+        self._show_special_event_dialogue(f"{guardian_name} Trial Intro", title=guardian_name)
+        answer_options = list(main_story.GUARDIAN_TRIAL_CHOICES[guardian_name])
+        answer_choice = self._popup_menu(
+            self._guardian_trial_question(guardian_name),
+            answer_options,
+            flush_events=True,
+            require_key_release=True,
+        )
+        if answer_choice is None:
+            self.add_message(f"The gate of {guardian_name} dims, awaiting a clearer answer.")
+            return
+
+        answer = answer_options[answer_choice]
+        story_state["guardian_trial_choices"][guardian_name] = answer
+        story_state["guardian_trials_completed"][guardian_name] = True
+        story_state["voluntas_clues_found"][guardian_name] = True
+        gate_tile.read = True
+
+        self._show_special_event_dialogue(
+            f"{guardian_name} Trial {answer}",
+            title=guardian_name,
+        )
+        for message in self._apply_guardian_trial_consequence(guardian_name, answer):
+            self.add_message(message)
+        self._show_special_event_dialogue(f"{guardian_name} Trial Complete", title=guardian_name)
+        self.add_message(f"{guardian_name} answers. A clue of Voluntas awakens.")
+        if main_story.can_reveal_voluntas(story_state) and not story_state.get("voluntas_revealed"):
+            self._show_special_event_dialogue("Voluntas Pattern Complete", title="Voluntas")
+            self.add_message("The six clues form a path toward the empty Seventh Seat.")
+
+    def _apply_guardian_trial_consequence(self, guardian_name: str, answer: str) -> list[str]:
+        """Apply a small one-time Liminal trial consequence to the player."""
+        del answer
+        player = self.player_char
+        if guardian_name == "Triangulus":
+            restored = self._restore_resource(player.mana, 0.10)
+            return [f"Triangulus steadies the chosen self, restoring {restored} MP."]
+        if guardian_name == "Quadrata":
+            status_effects = getattr(player, "status_effects", {})
+            defend = status_effects.get("Defend")
+            if defend is not None:
+                defend.active = True
+                defend.duration = max(getattr(defend, "duration", 0), 2)
+                defend.extra = max(getattr(defend, "extra", 0), 0.25)
+            return ["Quadrata sets a chosen order around you."]
+        if guardian_name == "Hexagonum":
+            restored = self._restore_resource(player.health, 0.15, minimum=1)
+            return [f"Hexagonum answers through living endurance, restoring {restored} HP."]
+        if guardian_name == "Luna":
+            hp_restored = self._restore_resource(player.health, 0.08, minimum=1)
+            mp_restored = self._restore_resource(player.mana, 0.08)
+            return [f"Luna returns mercy freely chosen, restoring {hp_restored} HP and {mp_restored} MP."]
+        if guardian_name == "Polaris":
+            status_effects = getattr(player, "status_effects", {})
+            for status_name in ("Blind", "Silence"):
+                effect = status_effects.get(status_name)
+                if effect is not None:
+                    effect.active = False
+                    effect.duration = 0
+            return ["Polaris fixes true north, clearing blindness and silence."]
+        if guardian_name == "Infinitas":
+            hp_restored = self._restore_to_half(player.health, minimum=1)
+            mp_restored = self._restore_to_half(player.mana)
+            return [f"Infinitas makes another step possible, restoring {hp_restored} HP and {mp_restored} MP."]
+        return []
+
+    @staticmethod
+    def _restore_resource(resource, fraction: float, *, minimum: int = 0) -> int:
+        maximum = int(getattr(resource, "max", 0) or 0)
+        before = int(getattr(resource, "current", 0) or 0)
+        amount = max(minimum, int(maximum * fraction)) if maximum else 0
+        resource.current = min(maximum, before + amount)
+        return max(0, int(resource.current) - before)
+
+    @staticmethod
+    def _restore_to_half(resource, *, minimum: int = 0) -> int:
+        maximum = int(getattr(resource, "max", 0) or 0)
+        before = int(getattr(resource, "current", 0) or 0)
+        target = max(minimum, maximum // 2)
+        resource.current = max(before, min(maximum, target))
+        return max(0, int(resource.current) - before)
+
+    @staticmethod
+    def _guardian_trial_question(guardian_name: str) -> str:
+        questions = {
+            "Triangulus": "What proves the self?",
+            "Quadrata": "What should order do?",
+            "Hexagonum": "How does nature answer?",
+            "Luna": "What does love choose?",
+            "Polaris": "How do you follow guidance?",
+            "Infinitas": "How do you face the endless?",
+        }
+        return questions.get(guardian_name, "What do you choose?")
+
+    def _interact_liminal_exit_blocker(self, blocker_tile):
+        """Explain why the player cannot leave the Liminal Gap yet."""
+        story_state = self.player_char.ensure_main_story_state()
+        if story_state.get("true_final_unlocked"):
+            self._show_special_event_dialogue("Return From Liminal Gap", title="The Liminal Gap")
+            returned = False
+            return_from_liminal = getattr(self.player_char, "return_from_liminal_gap", None)
+            if callable(return_from_liminal):
+                returned = bool(return_from_liminal())
+            blocker_tile.read = True
+            self._cached_view = None
+            self._cached_frame = None
+            self._mark_view_dirty()
+            if returned:
+                self.add_message("You return to the final threshold with Voluntas awakened.")
+            else:
+                self.add_message("The path opens, but no return anchor remains.")
+            return
+
+        self._show_special_event_dialogue("Liminal No Exit", title="The Liminal Gap")
+        blocker_tile.read = True
+        self.add_message("There is no way back until the Guardian path is resolved.")
+
+    def _interact_liminal_seventh_seat(self, seat_tile):
+        """Reveal Voluntas after all six Guardian clues are complete."""
+        story_state = self.player_char.ensure_main_story_state()
+        if story_state.get("voluntas_revealed"):
+            self._show_special_event_dialogue("Seventh Seat Reveal", title="Voluntas")
+            self.add_message("The empty Seventh Seat is quiet. Voluntas has already been remembered.")
+            seat_tile.read = True
+            return
+
+        if not main_story.can_reveal_voluntas(story_state):
+            self._show_special_event_dialogue("Seventh Seat Sealed", title="The Seventh Seat")
+            self.add_message("The empty Seventh Seat waits for all six Guardian clues.")
+            return
+
+        self._show_special_event_dialogue("Seventh Seat Reveal", title="Voluntas")
+        self._show_special_event_dialogue("Hooded Figure Witness Reveal", title="The Hooded Figure")
+        story_state["seventh_seat_revealed"] = True
+        story_state["voluntas_revealed"] = True
+        story_state["hooded_figure_witness_revealed"] = True
+        seat_tile.read = True
+        self.add_message("Voluntas is remembered. The Reflection waits beyond the Acolyte.")
+
+    def _interact_liminal_acolyte(self, acolyte_tile):
+        """Show the non-combat Acolyte tragic mirror scene."""
+        story_state = self.player_char.ensure_main_story_state()
+        if not story_state.get("voluntas_revealed"):
+            self._show_special_event_dialogue("Acolyte Liminal Waiting", title="The Acolyte")
+            self.add_message("The Acolyte says nothing while Voluntas remains hidden.")
+            return
+
+        self._show_special_event_dialogue("Acolyte Liminal Mirror", title="The Acolyte")
+        story_state["acolyte_liminal_seen"] = True
+        acolyte_tile.read = True
+        self.add_message("The Acolyte remains behind, emptied by the peace they accepted.")
+
+    def _interact_liminal_reflection(self, reflection_tile):
+        """Start or report the Reflection/Psychopomp encounter."""
+        story_state = self.player_char.ensure_main_story_state()
+        if not story_state.get("voluntas_revealed"):
+            self._show_special_event_dialogue("Reflection Locked", title="Reflection")
+            self.add_message("The Reflection will not form until Voluntas is remembered.")
+            return
+        if not story_state.get("acolyte_liminal_seen"):
+            self._show_special_event_dialogue("Reflection Locked", title="Reflection")
+            self.add_message("The Acolyte's warning must be faced before the Reflection.")
+            return
+        if story_state.get("reflection_defeated"):
+            self._show_special_event_dialogue("Reflection Victory", title="Reflection")
+            self.add_message("The Reflection is still. The way back is open.")
+            reflection_tile.read = True
+            return
+
+        story_state["reflection_attempts"] = int(story_state.get("reflection_attempts", 0)) + 1
+        self._show_special_event_dialogue("Reflection Prelude", title="Reflection")
+        reflection = enemies.ReflectionPsychopomp()
+        mirror_player = getattr(reflection, "mirror_player", None)
+        if callable(mirror_player):
+            mirror_player(self.player_char)
+        self.player_char.state = "fight"
+        self.combat_manager.player_world_dict = self.player_char.world_dict
+        self._refresh_cached_frame()
+        combat_won = self.combat_manager.start_combat(
+            self.player_char,
+            reflection,
+            reflection_tile,
+        )
+        if combat_won:
+            self._show_special_event_dialogue("Reflection Victory", title="Reflection")
+            reflection_tile.read = True
+            self.add_message("The chosen self holds. The way back to Vesperion opens.")
+        else:
+            story_state["reflection_failures"] = int(story_state.get("reflection_failures", 0)) + 1
+            self._show_special_event_dialogue("Reflection Defeat", title="Reflection")
+            self.add_message("The Reflection returns you to the Liminal hub to choose again.")
+        self._cached_view = None
+        self._cached_frame = None
+        self._mark_view_dirty()
 
     def _interact_incubus_lair(self, incubus_tile):
         """Handle Incubus lair interaction - spawn Incubus if quest is active."""
@@ -1619,6 +1973,19 @@ class DungeonManager:
                     messages.append("The way to the final chamber has opened!")
             elif 'FinalRoom' in tile_type:
                 messages.append("The final chamber awaits. (Press O to proceed)")
+            elif 'LiminalGuide' in tile_type:
+                messages.append("The Hooded Figure waits here. (Press O to speak)")
+            elif 'LiminalSeventhSeat' in tile_type:
+                messages.append("The empty Seventh Seat waits here. (Press O to inspect)")
+            elif 'LiminalAcolyte' in tile_type:
+                messages.append("The Acolyte kneels in silence. (Press O to speak)")
+            elif 'LiminalReflection' in tile_type:
+                messages.append("A mirror-dark threshold waits here. (Press O to face it)")
+            elif getattr(current_tile, "liminal_gate_event", None):
+                guardian_name = getattr(current_tile, "guardian_name", "Guardian")
+                messages.append(f"The gate of {guardian_name} is sealed. (Press O to inspect)")
+            elif 'LiminalExitBlocker' in tile_type:
+                messages.append("A torn threshold refuses to open. (Press O to inspect)")
             elif 'Boss' in tile_type or 'Lair' in tile_type:
                 if self._resolve_tile_enemy(current_tile):
                     messages.append("You sense a powerful presence nearby...")

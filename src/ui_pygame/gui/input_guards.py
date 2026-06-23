@@ -21,6 +21,9 @@ def release_guard_allows_input(require_key_release: bool, input_armed: bool) -> 
         return True
     try:
         pygame.event.pump()
+    except pygame.error:
+        pass
+    try:
         return not any(pygame.key.get_pressed())
     except pygame.error:
         return True

@@ -18,7 +18,7 @@ This roadmap tracks the remaining work for **The Forsaken Tenet** after the rece
 - Core project structure is split across `src/core/`, `src/ui_curses/`, and `src/ui_pygame/`.
 - EventBus infrastructure is in place and used by combat, presentation, audio, and diagnostics.
 - Shared battle-engine extraction is complete enough that UI layers are thinner, though UI-specific orchestration remains.
-- Data-driven ability migration is substantially complete with `179` YAML ability definitions.
+- Data-driven ability migration is substantially complete with `180` YAML ability definitions.
 - Pygame dungeon, town, combat, popup, and menu flows are functional, with remaining polish work concentrated in UX consistency and visual presentation.
 - Visual character creation now includes the selected portrait and sex/race/class identity on the naming screen.
 - Large item-render artwork is integrated for selected-item presentation contexts while compact lists continue to use small icons.
@@ -28,8 +28,8 @@ This roadmap tracks the remaining work for **The Forsaken Tenet** after the rece
 
 ### Verified Repo Metrics
 
-- Test files under `tests/`: `99`
-- YAML ability definitions under `src/core/data/abilities/`: `179`
+- Test files under `tests/`: `102`
+- YAML ability definitions under `src/core/data/abilities/`: `180`
 - Event types in `EventType`: `38`
 - Latest full-suite result recorded in prior roadmap notes: `1398` passing tests with `81%` total coverage across `src/`
 
@@ -410,7 +410,7 @@ Implemented:
 
 #### P4b - Quest And Realm Content
 
-Status: `Done` for Class Ring activation and current quest/realm additions, `Ready For Spec` for Psychopomp/The Liminal Gap
+Status: `Closed` for Class Ring activation, current quest/realm additions, Realm of Cambion current scope, Vesperion first-confrontation false-final path, Liminal Gap hub shell, six lightweight Guardian trial story shells, Liminal guide clue review, Guardian trial consequences, Voluntas clue aggregation, Seventh Seat reveal, Acolyte tragic mirror scene, Reflection/Psychopomp Liminal combat shell, Reflection path mirroring, Reflection retry tracking, Liminal return, true-final re-entry, Vesperion `Choose Fate` Guardian counters, Vesperion phase-pressure Guardian counters, true-final victory resolution, ending sequence, tavern epilogue, and main storyline/Vesperion/endgame plot direction. Deferred/future polish now tracks bespoke Guardian trial rooms or mini-bosses, deeper Reflection behavior, final Vesperion balance/presentation polish, broader Waitress/Joffrey/busboy rewrites, and deeper Realm of Cambion expansion.
 
 Implemented:
 
@@ -418,12 +418,14 @@ Implemented:
    - Removed the second generic town-entry completion popup after the event popup.
    - Added a floor marker at the Rookie location using the Dead Soldier item artwork.
    - Changed the post-Rookie encounter to Zombie instead of a random enemy.
-- Realm of Cambion audit:
-   - Documented entry/exit, portal, rotator, anti-magic terminal, and Merzhin win/loss flow in `docs/P4B_REALM_OF_CAMBION_AUDIT.md`.
+- Realm of Cambion current scope:
+   - Completed the current P4b Realm flow: Underground Spring entry/return, configured portal pairs and fallback exit, rotator movement, anti-magic terminal code `2749`, Merzhin victory collapse/exit/tile cleanup, and Merzhin defeat return without normal town death.
+   - Confirmed existing renderer coverage for portal, rotator, active FunhouseTeleporter, and visited FakeWall/Fake Path presentation; no new Cambion special tile class is required until a concrete content beat needs one.
    - Added pygame regression coverage for Merzhin victory and defeat return handling.
 - Realm of Cambion content expansion:
    - Added non-modal flavor messages for portal travel, rotator movement, and anti-magic terminal state.
    - Added Nimue follow-up dialogue after `The Wizard's Folly` is turned in.
+   - Added small post-Merzhin Barkeep, Soldier, and Busboy town reactions using existing late-game patron dialogue.
 - P4b town response content:
    - Added post-fight tavern dialogue variants for Jester and Realm of Cambion progress.
    - Added subtle Busboy and Soldier hints for portal/Cambion aftermath.
@@ -451,27 +453,68 @@ Implemented:
    - Added legacy second-promotion Class Ring awakening state, dormant/awakened descriptions, activation helpers, and live hooks for the legacy class-kit effects.
    - Implemented the full legacy class-kit pass for the ring-backed classes: Berserker Battle Scars, Spell Stealer/Arcane Trickster scroll-based spell theft, Bard/Troubadour songs and Encore, Wizard six-school affinity text/status, Lycan Moon Cycle and Frenzy Lock, Stalwart Defender Resolve, Grand Summoner future summon scaling, and status descriptions for the remaining legacy helpers.
 
-Ready For Spec:
+Specified:
 
-- Main Storyline Plot and The Liminal Gap full design spec:
+- Main Storyline Plot and Vesperion boss concept:
+   - Added `docs/MAIN_STORYLINE_PLOT_SPEC.md`.
+   - Replaced the old Devil-centered final reveal direction with Vesperion, the former Guardian of `Voluntas`.
+   - Locked the Hooded Figure as a hidden Voluntas guide rather than Vesperion.
+   - Locked the busboy as Vesperion in disguise, manipulating the Waitress/Joffrey tragedy to observe the hero.
+   - Locked the Acolyte as a former failed hero who voices Vesperion's mercy-through-control argument narratively without joining the final fight mechanically.
+   - Added an initial distinct Vesperion enemy concept and Vesperion-specific `Choose Fate` path; Balor remains separate and does not use `Choose Fate`.
+- Vesperion false-final to Liminal Gap stub:
+   - Added persistent `main_story` state for Vesperion/Liminal progression and legacy-save defaults.
+   - Added the first Vesperion confrontation scripted transition at 70% HP, after three Vesperion turns, or on player death before that threshold.
+   - Added Liminal Gap recovery that clears temporary combat effects, restores HP/MP to 50%, and preserves spent consumables.
+   - Added a final-room re-entry blocker while `vesperion_false_final_triggered` is true and `true_final_unlocked` is false.
+- Liminal Gap hub shell:
+   - Added a real navigable hub map on the new Liminal Gap level.
+   - Revealed the Hooded Figure as the wounded Liminal guide while reserving the fuller angelic reveal for later.
+   - Added guide-only save access, no-exit blocker messaging, and six named sealed Guardian gates.
+   - Added `main_story` state for guide reveal/save and Guardian trial completion placeholders.
+- Lightweight Guardian trial story shells:
+   - Activated all six Guardian gates as non-combat story-choice trials: Triangulus, Quadrata, Hexagonum, Luna, Polaris, and Infinitas.
+   - Records trial started/completed state, the selected Guardian answer, and a Guardian-specific Voluntas clue placeholder.
+   - Added Hooded Figure clue review for awakened Guardian clues and current Liminal progress.
+   - Added small one-time principle consequences for completed Guardian trials, including resource recovery, defensive order, and clearing misdirection.
+   - Keeps bespoke trial rooms, puzzles, combat variants, and mini-boss encounters reserved for later slices.
+- Main storyline endgame plot chain:
+   - Locked the post-trial route as six Guardian clues, empty Seventh Seat, Voluntas reveal, Acolyte tragic mirror, Reflection/Psychopomp, return from The Liminal Gap, and true Vesperion final.
+   - Defined the six Guardian clue meanings and the Seventh Seat reveal: Voluntas is not a relic or external power, but the act of choosing itself.
+   - Locked the Hooded Figure reveal cadence from wounded Liminal guide to surviving Witness of Voluntas, with fuller angelic nature reserved for a later reveal.
+   - Locked the Acolyte as a non-combat tragic mirror who remains convinced by Vesperion's mercy-through-control argument.
+   - Defined the Reflection/Psychopomp as affirmation of the player's chosen build, class, promotion, relic journey, and Guardian answers rather than a single correct build test.
+   - Defined the true-final busboy/Waitress/Joffrey reframing without erasing the human grief of that tragedy.
+- Main storyline endgame route implementation:
+   - Added route flags for Seventh Seat reveal, Acolyte Liminal scene, Hooded Figure Witness reveal, Liminal return, Reflection defeat, Voluntas reveal, and true-final unlock.
+   - Added Liminal hub story tiles for the empty Seventh Seat, Acolyte tragic mirror, and Reflection/Psychopomp.
+   - Implemented clue aggregation so six completed Guardian clues open the Seventh Seat reveal.
+   - Implemented Voluntas reveal, Hooded Figure Witness reveal, non-combat Acolyte scene, Reflection/Psychopomp route gating, return from The Liminal Gap, and true-final Vesperion prelude.
+   - Replaced the Reflection/Psychopomp story resolution with a no-normal-reward Liminal combat shell that unlocks the true final on victory and returns the player to the Liminal hub on defeat.
+   - Added Reflection path mirroring so the combat shell records the player's class/path profile and shifts martial, mystic, or hybrid action priorities.
+   - Added Reflection attempt/failure tracking in `main_story` for retry-safe presentation and future tuning.
+   - Added Vesperion `Choose Fate` Guardian-counter behavior so completed Guardian trials mitigate or cancel matching Vesperion consequences.
+   - Added Vesperion once-per-phase battlefield pressure answered by all six Guardian trials across the three true-final phases.
+   - Added true-final completion flags for Vesperion's defeat and main story completion.
+   - Added true-final victory handling that bypasses ordinary XP, loot, quest completion, boss-tile defeat, town resurrection, and death-cost routing.
+   - Added ending events for Vesperion's defeat and `The Forsaken Tenet` Voluntas ending.
+   - Added a minimal post-ending tavern epilogue preserving the Waitress/Joffrey grief and acknowledging the Busboy/Vesperion absence without creating a postgame mode.
+   - Added a completed-story final-room guard so the finale cannot restart after `main_story_complete`.
+
+Deferred/Future Polish:
+
+- Main Storyline Plot and The Liminal Gap:
    - Locked creation premise: Elysia established Seven Principles, each embodied by a Guardian, and all mortal races are equally children of Elysia.
    - Locked story beat: the first confrontation with Vesperion defeats or kills the hero and sends them to The Liminal Gap instead of normal town resurrection.
    - Locked objective: explore The Liminal Gap, complete the Six Guardian trials, gather clues, discover Voluntas, identify the secret to defeating a boss-like self-copy Psychopomp, then return to life.
    - Locked trial structure: Guardian trials should vary by principle and may use combat, understanding, sacrifice, exploration, or difficult decisions instead of repeating one boss-battle template.
    - Locked Reflection Battle: the self-copy represents every possible version of the hero and tests whether the player can prove Voluntas through a chosen path.
    - Locked NPC beat: a disfigured being guides and allows saving, then is revealed as an angelic guide who helps the player ultimately oppose Vesperion.
-   - Spec must define: realm layout, clue count/content, Guardian trial roster, mini-boss roster where appropriate, save restrictions, self-copy scaling, fail/retry behavior, Vesperion re-entry, UI messaging, migration behavior, and regression tests.
-   - Spec must also define how the six relics are recontextualized as powerful but incomplete without Voluntas.
-- Realm of Cambion follow-up content:
-   - Current portal, rotator, anti-magic terminal, Merzhin win/loss, and Nimue follow-up beats are implemented.
-   - Add deeper Realm of Cambion content only when a concrete new room, event, reward, or special tile is chosen.
-
-Needs Design Decision:
-
-- The Liminal Gap implementation order:
-   - Decide when Psychopomp/The Liminal Gap should be implemented relative to optional Realm of Cambion expansion and class-kit tuning.
-- Vesperion/Acolyte/Hooded Figure reveal order:
-   - Decide where the player first learns the names `Vesperion` and `Voluntas`, when the Hooded Figure's allegiance becomes clear, and how the Acolyte voices Vesperion's mercy-through-control argument.
+   - Implemented: clue aggregation/reveal thresholds, guide clue review, Guardian trial consequences, Seventh Seat scene, Acolyte Liminal scene, Reflection/Psychopomp combat shell, Reflection victory/defeat routing, Reflection path mirroring, Reflection retry tracking, return-from-Liminal placement, Vesperion re-entry, Vesperion `Choose Fate` Guardian counters, Vesperion phase-pressure counters, true-final victory resolution, ending events, UI messaging, migration behavior, and regression tests.
+   - Deferred: bespoke Guardian trial rooms or mini-boss roster where appropriate, deeper Reflection self-copy behavior, richer final Vesperion phase/audio/visual presentation, balance tuning, and broader Waitress/Joffrey/busboy town-route rewrites.
+- Realm of Cambion:
+   - Current portal, rotator, anti-magic terminal, Merzhin win/loss, Nimue follow-up, movement flavor, and small post-Merzhin town reactions are implemented for P4b.
+   - Defer deeper Realm of Cambion rooms, events, rewards, and special tiles until a concrete content beat is chosen.
 
 Deferred Asset Pass:
 

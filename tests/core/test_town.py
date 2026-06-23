@@ -137,8 +137,11 @@ def test_p4b_content_hooks_load_post_fight_and_storage_flavor():
     tavern_flavor = data_loader.get_tavern_flavor_dialogues()
 
     assert any("Jester fell" in line for line in patrons["Barkeep"][65])
+    assert any("Merzhin's realm collapsed" in line for line in patrons["Barkeep"][65])
     assert any("Cambion" in line for line in patrons["Soldier"][65])
+    assert any("learned how to lie" in line for line in patrons["Soldier"][65])
     assert any("portal room" in line for line in patrons["Busboy"][65])
+    assert any("After Merzhin fell" in line for line in patrons["Busboy"][65])
     assert any("storage lockers" in line for line in tavern_flavor)
 
 

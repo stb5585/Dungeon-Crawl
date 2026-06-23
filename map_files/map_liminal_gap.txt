@@ -1,0 +1,10 @@
+Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall
+Wall	Wall	Wall	Wall	PolarisGate	InfinitasGate	TriangulusGate	Wall	Wall	Wall	Wall
+Wall	Wall	Wall	Wall	EmptyCavePath	LiminalSeventhSeat	EmptyCavePath	Wall	Wall	Wall	Wall
+Wall	Wall	Wall	Wall	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall	Wall	Wall	Wall
+Wall	Wall	HexagonumGate	EmptyCavePath	EmptyCavePath	LiminalGuide	EmptyCavePath	EmptyCavePath	QuadrataGate	Wall	Wall
+Wall	Wall	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	Wall	Wall
+Wall	Wall	LunaGate	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	EmptyCavePath	LiminalExitBlocker	Wall	Wall
+Wall	Wall	Wall	Wall	LiminalAcolyte	EmptyCavePath	EmptyCavePath	Wall	Wall	Wall	Wall
+Wall	Wall	Wall	Wall	Wall	LiminalReflection	Wall	Wall	Wall	Wall	Wall
+Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall	Wall
