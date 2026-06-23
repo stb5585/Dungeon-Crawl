@@ -77,7 +77,6 @@
 ### Diviner And Astromancer Runes
 - [ ] Win combat as a Diviner with Fire, Water, Wind, and Earth natural spells across enemies with neutral resistance, resistance, and weakness to the killing spell's element.
   - Expected: Matching sign runes can drop from natural-spell kills, cap at 3 per sign, and weakness/resistance visibly changes the drop cadence over repeated attempts.
-  - Expected: Ice and Electric spells do not produce runes in this slice.
 - [ ] Use `Runic Boost` as a Diviner with available and unavailable matching runes.
   - Expected: The combat menu includes `Runic Boost` only when at least one boostable natural spell has a matching rune and enough MP.
   - Expected: The selection menu lists only currently boostable natural spells, consumes one matching rune, and casts the selected spell with the fate floor.
@@ -90,6 +89,12 @@
 - [ ] Gain the Astromancer Power Core skill and use `Astral Judgment` on each active sign.
   - Expected: `Astral Judgment` resolves the current sign, applies the matching first-pass rider, and then randomly spins to a new sign.
   - Expected: Kills from `Astral Judgment` do not award runes.
+- [ ] Play through several Diviner combats before Astromancer promotion while spending runes normally.
+  - Expected: Rune drops are frequent enough to make `Runic Boost` visible, but not so frequent that the player sits capped at 3 runes per sign after ordinary play.
+- [ ] Repeat Astromancer natural-spell casts and `Runic Boost` across a long combat.
+  - Expected: The active sign and four-row rune grid remain readable, and sign cycling is understandable without opening a separate help view.
+- [ ] Use the awakened Astromancer Class Ring across active-sign and off-sign rune spends.
+  - Expected: Active-sign boosts feel meaningfully stronger without making off-sign rune spending irrelevant.
 
 ### Shaman And Soulcatcher Nature Totems
 - [ ] Visit Underground Spring, Boulder, Fire Path, and the floor-3 strange-draft passage as Shaman or Soulcatcher.
@@ -98,15 +103,23 @@
 - [ ] Activate Earth, Water, Fire, and Wind Totems after their matching communions.
   - Expected: End-of-player-turn Totem pulses can cast the highest unlocked matching spell at reduced potency without spending extra mana.
   - Expected: Elemental Totem pulses can defeat enemies.
+  - Expected: Pulse cadence feels readable and useful without replacing ordinary spell choices.
 - [ ] Equip a Staff, activate a matching elemental Totem, and cast matching nature spells.
   - Expected: Staff increases Totem pulse frequency and strengthens player-cast matching nature spell damage/healing.
   - Expected: Nonmatching active Totems do not strengthen the spell.
+  - Expected: Staff support makes Totem builds attractive without feeling mandatory for Shaman/Soulcatcher.
 - [ ] Use `Elemental Strike` with each active elemental Totem.
   - Expected: `Elemental Strike` uses the active Totem's element instead of a random element.
 - [ ] Activate Water Totem and receive hostile spell damage.
   - Expected: Water Totem increases Magic Defense, absorbs part of incoming spell damage, and heals for the absorbed amount.
+  - Expected: Water Totem helps in spell-heavy fights without replacing healing and defensive decisions.
 - [ ] Learn `Soul Drain` as Soulcatcher and use it directly and through Soul Totem.
   - Expected: `Soul Drain` deals current-HP percentage damage, cannot kill, and Soul Totem pulses it at reduced potency when Soul aspect is active.
+  - Expected: Soul Drain provides useful pressure without trivializing bosses or long fights.
+- [ ] Open Totem aspect selection and inspect active Totem HUD/status presentation in pygame combat.
+  - Expected: Current aspect, active benefits, and selection state are readable without relying on combat-log memory.
+- [ ] Try to find all four elemental communion locations without reading the map data.
+  - Expected: The locations are discoverable enough for exploration without becoming quest-log objectives.
 - [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
   - Expected: The Old Warehouse guards offer the matching job: `Loaded Game`, `Cartographer's Proof`, `No-Trace Contract`, or `Impossible Theft`.
   - Expected: Completing the job awakens the ring and applies the expected equipped mod.

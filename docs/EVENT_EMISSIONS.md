@@ -1,285 +1,169 @@
-# Event Emissions Implementation - COMPLETE ✅
+# Event Emissions Reference
 
-## Overview
+This document is the current reference for the game's event bus and combat
+event-emission contract. Active priorities and future payload work live in
+[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 
-Event emissions have been fully integrated into the combat system to enable decoupling of game logic from presentation. Events are emitted at key points during combat but **do not break existing functionality** - the game continues to work exactly as before.
+## Contract
 
-**Status**: Production-ready, non-breaking, backward compatible
+- Event emission is non-breaking: gameplay must continue if no subscribers are
+  registered or a subscriber fails.
+- Core mechanics must not depend on presentation subscribers.
+- Events should carry structured payloads only when a consumer needs them.
+- New event payload fields should be added deliberately and covered when they
+  affect UI, audio, diagnostics, analytics, or save-sensitive behavior.
 
-## Implementation Status
+## Core Types
 
-✅ **PHASE 2 COMPLETE** - Event emissions integrated into combat flow
+- `src/core/events/event_bus.py`
+  - `EventType`
+  - `GameEvent`
+  - `CombatEvent`
+  - `EventBus`
+  - `get_event_bus()`
+  - `create_combat_event()`
+- `src/core/combat/combat_result.py`
+  - `CombatResult`
+  - `CombatResultGroup`
 
-### Events Implemented
+## Current Emitters
 
-#### 1. Combat Lifecycle Events
-- **`COMBAT_START`** - Emitted when battle begins
-  - Location: `battle.py` → `execute_battle()`
-  - Data: actor (player), target (enemy), initiative, boss flag
-  
-- **`COMBAT_END`** - Emitted when battle concludes
-  - Location: `battle.py` → `execute_battle()`
-  - Data: actor, target, fled, player_alive, enemy_alive
+- `src/core/combat/battle_engine.py`
+  - combat start/end;
+  - attack, spell, skill, item, defend, and flee action events.
+- `src/core/character.py`
+  - damage, healing, status application/removal/tick, dodge, block, and critical
+    hit helpers.
+- `src/core/abilities.py`, `src/core/data/data_driven_abilities.py`, and
+  `src/core/effects/composite.py`
+  - ability/effect-specific damage, healing, and status event helpers.
+- `src/ui_curses/enhanced_manager.py`
+  - curses enhanced turn start/end events.
 
-#### 2. Turn Events  
-- **`TURN_START`** - Emitted at start of each turn
-  - Location: `combat/enhanced_manager.py` → `process_turn()`
-  - Data: actor, target, turn_number
-  
-- **`TURN_END`** - Emitted at end of each turn
-  - Location: `combat/enhanced_manager.py` → `process_turn()`
-  - Data: actor, target, turn_number
+## Current Consumers
 
-#### 3. Action Events
-- **`ATTACK`** - Emitted when character attacks
-  - Location: `battle.py` → `execute_action()`
-  - Data: actor, target, is_special (true for special attacks)
-  
-- **`SPELL_CAST`** - Emitted when spell is cast
-  - Location: `battle.py` → `execute_action()`
-  - Data: actor, target, spell_name
-  
-- **`SKILL_USE`** - Emitted when skill is used
-  - Location: `battle.py` → `execute_action()`
-  - Data: actor, target, skill_name
-  
-- **`ITEM_USE`** - Emitted when item is used
-  - Location: `battle.py` → `execute_action()`
-  - Data: actor, target, item_name
-  
-- **`FLEE_ATTEMPT`** - Emitted when attempting to flee
-  - Location: `battle.py` → `execute_action()`
-  - Data: actor, target
+- `src/ui_pygame/presentation/pygame_presenter.py`
+  - combat lifecycle, turn, damage, healing, critical, and status presentation.
+- `src/ui_pygame/assets/sound_manager.py`
+  - combat, damage, block, healing, spell, skill, status, death, and level-up
+    audio routing.
+- `src/core/analytics/combat_simulator.py`
+  - combat-stat summaries and simulator reporting.
+- `src/core/combat/battle_logger.py`
+  - structured combat diagnostics and JSON export support.
 
-#### 4. Damage/Healing Events ✅
-- **`DAMAGE_DEALT`** - When damage is applied
-  - Location: `character.py` → `weapon_damage()` method
-  - Location: `abilities.py` → Various spells (BreatheFire, Lucky Coins, Flaming Armor)
-  - Data: damage amount, damage type (Physical, Fire, Drain, etc.), is_critical flag
-  
-- **`HEALING_DONE`** - When healing is applied
-  - Location: `character.py` → Ninja/Lycan life steal in `weapon_damage()`
-  - Location: `abilities.py` → HealingSpell, Heal (self-heal), Life Drain
-  - Data: amount healed, source (spell name, "Ninja Life Steal", etc.)
-  
-- **`CRITICAL_HIT`** - For critical hits
-  - Location: `character.py` → `weapon_damage()` when crit > 1
-  - Data: actor, target, multiplier
-  
-- **`DODGE`** - When attacks are evaded
-  - Location: `character.py` → `weapon_damage()` when defender dodges
-  - Data: actor (defender), target (attacker), damage that was dodged
-  
-- **`BLOCK`** - For blocked damage
-  - Location: `character.py` → `weapon_damage()` shield block mechanic
-  - Data: actor (defender), target (attacker), damage_blocked amount
+## Event Groups
 
-**Implementation**: Damage/healing events emitted throughout combat with complete metadata including damage types, critical flags, and sources. Reflected damage and life steal also emit appropriate events.
+Combat lifecycle:
 
-#### 5. Status Effect Events ✅
-- **`STATUS_APPLIED`** - When status effects are applied
-  - Location: `abilities.py` throughout (10+ applications)
-  - Examples: Stun (Shield Bash, Head Butt, Kidney Punch, Concussion, Devour)
-  - Examples: Blind (Blinding Powder), Sleep, Poison (Poison Blade), Bleed (Mortal Strike)
-  - Examples: Berserk (Enrage), Prone (Trip), DOT (Acid Splash)
-  
-- **`STATUS_REMOVED`** - When status effects are removed
-  - Location: `character.py` → `effects()` method
-  - Triggers: Duration expired, combat end, damage awakening (Sleep), mana depletion (Mana Shield)
-  
-**Implementation**: `_emit_status_event()` helper method in Character class emits events with status name, duration, and source information.
+- `COMBAT_START`
+- `COMBAT_END`
+- `TURN_START`
+- `TURN_END`
+- `ROUND_START`
+- `ROUND_END`
 
-## How It Works
+Actions:
 
-### Non-Breaking Implementation
+- `ATTACK`
+- `SPELL_CAST`
+- `SKILL_USE`
+- `ITEM_USE`
+- `DEFEND`
+- `FLEE_ATTEMPT`
 
-All event emissions use try/except blocks to ensure they never crash the game:
+Damage and recovery:
 
-```python
-try:
-    from .events.event_bus import get_event_bus, create_combat_event, EventType
-    event_bus = get_event_bus()
-    event_bus.emit(create_combat_event(
-        EventType.COMBAT_START,
-        actor=self.player_char,
-        target=self.enemy
-    ))
-except:
-    pass  # Event system not available, continue silently
-```
+- `DAMAGE_DEALT`
+- `DAMAGE_TAKEN`
+- `HEALING_DONE`
+- `CRITICAL_HIT`
+- `MISS`
+- `DODGE`
+- `BLOCK`
 
-This means:
-- Events are emitted **in addition to** existing game logic
-- If event system fails, game continues normally
-- Existing string returns are untouched
-- Save files remain compatible
+Status and stats:
 
-### Event Flow Example
+- `STATUS_APPLIED`
+- `STATUS_REMOVED`
+- `STATUS_TICK`
+- `BUFF_APPLIED`
+- `DEBUFF_APPLIED`
+- `STAT_CHANGE`
+- `HP_CHANGE`
+- `MP_CHANGE`
 
-```
-Combat Start
-  ├─> COMBAT_START event emitted
-  ├─> Turn 1
-  │    ├─> TURN_START event
-  │    ├─> Player attacks
-  │    │    ├─> ATTACK event
-  │    │    └─> DAMAGE_DEALT event (via helper)
-  │    ├─> Enemy casts spell
-  │    │    ├─> SPELL_CAST event
-  │    │    └─> DAMAGE_DEALT event
-  │    └─> TURN_END event
-  ├─> Turn 2...
-  └─> COMBAT_END event
-```
+Character, UI, and world:
+
+- `CHARACTER_DEATH`
+- `LEVEL_UP`
+- `MENU_OPEN`
+- `MENU_CLOSE`
+- `MESSAGE_DISPLAY`
+- `CHOICE_REQUIRED`
+- `MOVE`
+- `INTERACT`
+- `ITEM_PICKUP`
+- `ITEM_DROP`
+- `QUEST_UPDATE`
 
 ## Usage
 
-### Subscribing to Events
-
-Any system can subscribe to combat events:
+Subscribe to an event:
 
 ```python
-from .events.event_bus import get_event_bus, EventType
+from src.core.events.event_bus import EventType, get_event_bus
+
 
 def on_damage(event):
-    print(f"{event.actor.name} dealt {event.data['damage']} damage!")
+    print(f"{event.actor.name} dealt {event.data['damage']} damage")
 
-event_bus = get_event_bus()
-event_bus.subscribe(EventType.DAMAGE_DEALT, on_damage)
+
+get_event_bus().subscribe(EventType.DAMAGE_DEALT, on_damage)
 ```
 
-### Event History
-
-Events are automatically stored for analysis:
+Emit a combat event:
 
 ```python
-# Get all events
-all_events = event_bus.get_history()
+from src.core.events.event_bus import EventType, create_combat_event, get_event_bus
 
-# Get specific event type
-damage_events = event_bus.get_history(EventType.DAMAGE_DEALT)
 
-# Clear history
-event_bus.clear_history()
-```
-
-### Logging Events
-
-Use the built-in console logger for debugging:
-
-```python
-from .events.event_bus import ConsoleEventLogger, get_event_bus
-
-event_bus = get_event_bus()
-logger = ConsoleEventLogger(event_bus)
-
-# Now all events are logged to console
-```
-
-## Next Steps
-
-### 1. Add More Granular Damage Events
-
-Call the helper methods in weapon_damage and spell casting:
-
-```python
-# In character.py weapon_damage()
-self._emit_damage_event(
-    target=defender,
-    damage=final_damage,
-    damage_type="Physical",
-    is_critical=crit > 1
+get_event_bus().emit(
+    create_combat_event(
+        EventType.SPELL_CAST,
+        actor=caster,
+        target=target,
+        spell_name=spell.name,
+    )
 )
 ```
 
-### 2. Status Effect Events
-
-Add emissions when status effects are applied/removed:
+Inspect history:
 
 ```python
-event_bus.emit(create_combat_event(
-    EventType.STATUS_APPLIED,
-    actor=caster,
-    target=target,
-    status_name="Stun",
-    duration=2
-))
+from src.core.events.event_bus import EventType, get_event_bus
+
+
+bus = get_event_bus()
+all_events = bus.get_history()
+damage_events = bus.get_history(EventType.DAMAGE_DEALT)
 ```
 
-### 3. GUI Integration (Phase 3)
+## Current Follow-Up Areas
 
-Create a GUI event subscriber:
+- P5 audio routing needs richer event payloads for weapon identity and attack
+  source metadata before `laser_beam.wav` and similar source-specific sounds can
+  be routed safely.
+- New diagnostics should prefer existing event history and compact summaries
+  before adding parallel reporting state.
+- Keep event-history retention bounded and avoid emitting presentation-only
+  events from core gameplay unless a real consumer needs them.
 
-```python
-class GUIPresenter:
-    def __init__(self, event_bus):
-        event_bus.subscribe(EventType.DAMAGE_DEALT, self.animate_damage)
-        event_bus.subscribe(EventType.SPELL_CAST, self.show_spell_effect)
-    
-    def animate_damage(self, event):
-        # Show damage numbers, screen shake, etc.
-        pass
-```
+## Validation
 
-### 4. Analytics Integration
-
-Collect combat statistics:
-
-```python
-class CombatAnalytics:
-    def __init__(self, event_bus):
-        self.damage_dealt = {}
-        event_bus.subscribe(EventType.DAMAGE_DEALT, self.track_damage)
-    
-    def track_damage(self, event):
-        actor = event.data['actor']
-        damage = event.data['damage']
-        self.damage_dealt[actor] = self.damage_dealt.get(actor, 0) + damage
-```
-
-## Testing
-
-Event emissions can be tested with:
+Use focused tests around the systems being changed. For broad event-regression
+confidence, run:
 
 ```bash
-python3 -c "
-from .events.event_bus import get_event_bus, EventType, ConsoleEventLogger
-from battle import BattleManager
-from combat.enhanced_manager import EnhancedBattleManager
-
-event_bus = get_event_bus()
-logger = ConsoleEventLogger(event_bus)
-
-# Play the game - all events will be logged to console
-"
+./.venv/bin/python -m pytest tests/core tests/integration -q
 ```
-
-## Benefits
-
-1. **Non-breaking** - Game works identically with or without event subscribers
-2. **Future-proof** - GUI can be added without changing combat logic
-3. **Analytics-ready** - Events enable balance testing and statistics
-4. **Debuggable** - ConsoleEventLogger helps track game flow
-5. **Modular** - Different UIs can subscribe to same events
-6. **Testable** - Event history enables automated testing
-
-## Files Modified
-
-- `battle.py` - Combat start/end, action events
-- `combat/enhanced_manager.py` - Turn events, imports
-- `character.py` - Damage/healing event helpers
-- `events/event_bus.py` - Event system (already existed)
-
-## Backward Compatibility
-
-- ✅ All existing save files work
-- ✅ All existing combat logic unchanged
-- ✅ String-based output still generated
-- ✅ Game runs identically with event system disabled
-- ✅ No performance impact (events are optional)
-
----
-
-**Phase 2 Event Emissions: COMPLETE** ✅
-
-Events are now being emitted throughout combat, ready for GUI integration and analytics in Phase 3.

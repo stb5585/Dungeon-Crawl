@@ -1,124 +1,64 @@
 # Documentation Index
 
-## Architecture & Planning
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Long-term 6-phase migration plan from terminal to GUI, monetization strategy
-- **[PHASE_2.md](PHASE_2.md)** - Phase 2 complete reference: Enhanced combat, event emissions, bug fixes ✅
-- **[PRE_PHASE_3_CLEANUP.md](PRE_PHASE_3_CLEANUP.md)** - Project configuration and Phase 3 planning
+Use this index as the front door for project documentation. The active backlog
+and current status live in `DEVELOPMENT_ROADMAP.md`; older phase plans are kept
+only as historical context.
 
-## Implementation Guides
-- **[NEW_SYSTEMS.md](NEW_SYSTEMS.md)** - User guide for new systems (action queue, effects, events, etc.)
-- **[EVENT_EMISSIONS.md](EVENT_EMISSIONS.md)** - Event system implementation details and usage
-- **[PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md)** - Character promotion ability transition rules with extensibility examples
-- **[ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md)** - Current enemy sprite, token, and boss navigation visual layers
+## Active Planning
 
-## Development Notes
-- **[notes.txt](notes.txt)** - Personal TODO list, design questions, and feature ideas (not tracked in git)
-- **[archive/](archive/)** - Archived documentation and past enhancement plans
+- [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - current status,
+  completed summaries, active P4/P5/P6/P7 backlog, and deferred decisions.
+- [P4E_CLASS_KIT_SPECS.md](P4E_CLASS_KIT_SPECS.md) - completed P4e class-kit
+  foundation scope and deferred one-page deep-kit spec gates.
+- [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - manual validation checklist
+  for class mechanics, rendering, UI, saves, audio, and content flows.
+- [MAIN_STORYLINE_PLOT_SPEC.md](MAIN_STORYLINE_PLOT_SPEC.md) - Vesperion,
+  Voluntas, Liminal Gap, Reflection, and true-final story direction.
+- [CLASS_RING_ACTIVATION_SPEC.md](CLASS_RING_ACTIVATION_SPEC.md) - class-ring
+  activation flows and legacy second-promotion mechanics.
 
-## Related Documentation
-- **[../tests/README.md](../tests/README.md)** - Test suite documentation and validation guidance
-- **[../tools/](../tools/)** - Development utilities (dev_tools.py, modify_save.py)
+## Current Implementation References
 
-## Project Structure
+- [DUNGEON_TILE_ART.md](DUNGEON_TILE_ART.md) - dungeon texture manifest,
+  decorative tile authoring, and render-asset rebuild notes.
+- [ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md) - enemy combat sprites,
+  tokens, scale maps, and boss-navigation presentation.
+- [SOUND_SYSTEM.md](SOUND_SYSTEM.md) - pygame audio runtime, SFX/music layout,
+  and placeholder asset workflow.
+- [EVENT_EMISSIONS.md](EVENT_EMISSIONS.md) - current event-bus and combat
+  event-emission reference.
+- [PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md) - promotion
+  spell/skill transition rules.
+- [P3_EFFECTS_AUDIT.md](P3_EFFECTS_AUDIT.md) - final P3 effects migration
+  audit and cleanup status.
 
-### Core Modules
-```
-combat/          - Enhanced combat system (action queue, enhanced manager)
-effects/         - Expanded effect system (20+ composable effect types)
-events/          - Event-driven architecture (event bus, 40+ event types)
-presentation/    - UI abstraction layer (presenter interfaces)
-analytics/       - Combat simulation and balance testing
-data/            - YAML-based ability definitions
-```
+## Historical Or Superseded Notes
 
-## Recent Changes
+These docs preserve useful background but should not be treated as current
+planning sources:
 
-### Phase 3 Status
-- Pygame GUI implementation is active, with the modern Character Menu now used as the standard town and dungeon character screen.
-- Event system integration, combat presentation polish, character sprite generation, transparent enemy combat sprites/tokens, and item artwork/icon presentation are operational.
-- Equipment validation now covers weapon/offhand rules, armor, helmets, accessories, save/load compatibility, shop flows, and pygame/curses UI integration.
+- [archive/ARCHITECTURE.md](archive/ARCHITECTURE.md) - early
+  terminal-to-GUI migration plan.
+- [archive/NEW_SYSTEMS.md](archive/NEW_SYSTEMS.md) - early systems guide with
+  pre-reorg paths.
+- [archive/EFFECTS_INTEGRATION_DESIGN.md](archive/EFFECTS_INTEGRATION_DESIGN.md)
+  - original data-driven abilities/effects design.
+- [archive/COMBAT_SPRITE_ANIMATIONS.md](archive/COMBAT_SPRITE_ANIMATIONS.md),
+  [archive/ANIMATION_IMPLEMENTATION_COMPLETE.md](archive/ANIMATION_IMPLEMENTATION_COMPLETE.md),
+  and [archive/COMBAT_ANIMATIONS_SUMMARY.md](archive/COMBAT_ANIMATIONS_SUMMARY.md)
+  - animation implementation snapshots.
+- [archive/SPRITE_RENDERING_IMPROVEMENTS.md](archive/SPRITE_RENDERING_IMPROVEMENTS.md)
+  and [archive/SPRITE_IMPROVEMENTS_SUMMARY.md](archive/SPRITE_IMPROVEMENTS_SUMMARY.md)
+  - legacy generated-sprite coloring notes.
+- [archive/PRIORITY_ACTION_IMPLEMENTATION.md](archive/PRIORITY_ACTION_IMPLEMENTATION.md)
+  and [archive/PRIORITY_ACTION_WEIGHTING.md](archive/PRIORITY_ACTION_WEIGHTING.md)
+  - enemy priority-action implementation notes.
+- [archive/](archive/) - older archived plans and phase notes.
 
-### Latest Fixes
-- ✅ Modern Character Menu promoted to the standard character screen.
-- ✅ Helmet equipment slot implemented across core gameplay, shops, saves, UI, icons, and item artwork.
-- ✅ Helmet catalog added for Cloth, Light, Medium, and Heavy armor types, including restricted and special-effect helmets.
-- ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
-- ✅ Enemy visual system now uses transparent combat sprites for battlefield, target-panel, boss navigation, and token-derived enemy presentation, with per-enemy combat scale mapping for large creatures.
-- ✅ Per-save Bestiary closure completed with seen/defeated/detailed states, defeated-gated coarse locations, and broad possible-drop labels.
-- ✅ P4d equipment foundation added shared equip eligibility helpers and buy-to-equip shop UX, with Ultimate Helmet acquisition deferred to a dedicated spec.
+## Related Project Docs
 
-### Core Game Files
-```
-game.py          - Main game loop
-player.py        - Player character
-battle.py        - Combat system (formerly combat.py)
-enemies.py       - Enemy definitions
-abilities.py     - Ability/spell/skill definitions
-items.py         - Item definitions
-classes/         - Character classes, promotion rules, and class mechanics
-races.py         - Character races
-```
-
-## Getting Started
-
-### Run the Game
-```bash
-./launch.sh
-# or with virtual environment
-.venv/bin/python game.py
-```
-
-### Run Tests
-```bash
-.venv/bin/python tests/test_integration.py
-.venv/bin/python tests/basic_tests.py
-```
-
-### Use Development Tools
-```bash
-.venv/bin/python tools/dev_tools.py --help
-.venv/bin/python tools/dev_tools.py effects    # Test effect system
-.venv/bin/python tools/dev_tools.py queue      # Test action queue
-.venv/bin/python tools/dev_tools.py events     # Test event system
-.venv/bin/python tools/dev_tools.py abilities  # Test YAML loader
-```
-
-## Configuration
-
-### Enable/Disable Enhanced Combat
-The enhanced combat system is controlled by `USE_ENHANCED_COMBAT` flag (default: `True`) in:
-- `game.py` (line 18)
-- `player.py` (line 19)
-- `map_tiles.py` (line 14)
-
-Set to `False` to use traditional combat system. See `PHASE_2.md` for details.
-
-## Project Status
-
-### ✅ Phase 2 Complete: Enhanced Combat System
-- **EnhancedBattleManager**: Priority-based turn ordering, action queue integration
-- **Event System**: 38 event types with complete coverage (combat, damage, healing, status effects)
-- **Telegraph System**: Seeker/Inquisitor foresight shows specific enemy actions
-- **YAML Abilities**: 8 charging abilities defined with telegraph messages
-- **Enemy Action Stacks**: 9 key enemies populated with ability lists
-- **Bug Fixes**: ManaShield, Sandstorm, Meteor, BreatheFire, potions, mid-turn incapacitation
-- **Backward Compatible**: Feature flags allow toggling enhanced features
-
-**Phase 2 Deliverables**:
-- Status effect event emissions (10+ abilities)
-- Granular damage/healing events (critical hits, dodges, blocks, damage types)
-- Charging abilities YAML (Meteor, Dragon Breath, Dim Mak, Arcane Blast, etc.)
-- Enemy action stacks (Dragons, Behemoth, Assassins, Knights, Disciples, basic enemies)
-
-### Phase 1: Foundation Systems
-- Action queue with 5 priority levels
-- 20+ composable effect types
-- Event bus with 38+ event types
-- Presentation layer abstractions (4 implementations)
-- Combat analytics framework
-- YAML ability loader
-
-### Next: Phase 3 GUI Development
-Use Pygame presenter to visualize combat with event-driven animations.
-
-See `ARCHITECTURE.md` for full roadmap, `PHASE_2.md` for Phase 2 details.
+- [../README.md](../README.md) - project overview, entry points, and common
+  commands.
+- [../tests/README.md](../tests/README.md) - test-suite layout and validation
+  guidance.
+- [../tools/README.md](../tools/README.md) - development and asset tooling.

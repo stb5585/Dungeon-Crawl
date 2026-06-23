@@ -587,7 +587,7 @@ Deferred:
 
 #### P4e - Class Mechanics And Progression Kits
 
-Status: `Partially Implemented`, `Needs Playtest` for full legacy class-kit balance, the new Diviner/Astromancer rune slice, the new Shaman/Soulcatcher Totem slice, and remaining non-legacy class specs
+Status: `Done` for the current class-mechanics foundation and remaining-spec planning slice. Further deep-kit work is deferred until a dedicated future spec promotes it.
 
 Implemented:
 
@@ -638,23 +638,15 @@ Implemented:
   - Added `Soul Drain` as a Soulcatcher level-4 spell and Soul Totem pulse option; it deals nonlethal current-HP percentage damage.
   - The slice remains class-local and per-save through spellbook/Totem/Class Ring state; it does not add account progression, quest-log entries, or broad class-balance work.
 
-Needs Design Decision:
+Current Scope Complete:
 
-- Balance follow-up is tracked in `docs/PLAYTEST_CHECKLIST.md` to keep this roadmap focused on shipped systems and unresolved specs.
-- Narrative integration:
-  - Tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood.
-  - Avoid implementing class-progression story beats until the associated quest/spec defines trigger timing, player-facing text, save flags, and whether the beat is optional or required.
-- Mage:
-  - Define any remaining Demonologist corruption/bargain presentation and Shadowcaster overlap beyond the implemented contract system.
-  - Define deeper Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics beyond the ring hooks.
-- Pathfinder:
-  - Define deeper Druid/Lycan and Ranger/Beast Master mechanics beyond the ring hooks.
-  - Revisit Diviner/Astromancer Ice/Electric support, rune economy tuning, and richer constellation presentation after playtest.
-  - Revisit Shaman/Soulcatcher Totem pulse cadence, Staff build strength, communion placement, and Soul Drain balance after playtest.
+- P4e class-kit foundation scope and deferred deep-kit planning now live in `docs/P4E_CLASS_KIT_SPECS.md`.
+- Balance/tuning validation for Diviner/Astromancer runes, Shaman/Soulcatcher Totems, and ring-hooked legacy effects is tracked in `docs/PLAYTEST_CHECKLIST.md`.
 
 Deferred:
 
-- Do not implement major class kits until each has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
+- Major deep-kit follow-ups remain decision-gated until their `docs/P4E_CLASS_KIT_SPECS.md` one-page spec sections are promoted from deferred planning to implementation scope.
+- Narrative integration should tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood, but story beats remain deferred until their quest/content specs define trigger timing, text, flags, and optional/required status.
 - Keep deep race-passive expansion deferred until the current always-on race identity pass has enough playtest feedback; the "7 sins / 7 virtues" ideas remain design flavor unless promoted by spec.
 - Keep permanent spell alteration, gear rune modification, rune items, account history, and reward/meta-progression out of the current Diviner/Astromancer rune scope.
 
@@ -774,7 +766,7 @@ Status: `Planned`
 - Ultimate helmet acquisition, durability, item identification, usable equipment/accessory actions, armor mobility penalties, equipment naming themes, and random refresher spots are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
 - Persistent statistics history and account-style Bestiary collection remain deferred until profile storage, migration, and privacy/scope rules are specified.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
-- Major class kits are deferred until each kit has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
+- Major class kits are deferred until the matching `docs/P4E_CLASS_KIT_SPECS.md` one-page spec covers triggers, storage, UI, save migration, tests, and balance assumptions.
 - Multi-enemy combat and speed-based combat stacks are deferred until battle-engine, UI, encounter-generation, and balance designs are complete.
 - Laser/bird staged SFX routing is deferred until event payloads or creature-specific hooks are clear enough to avoid brittle name guesses.
 
