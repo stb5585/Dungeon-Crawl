@@ -196,6 +196,9 @@ class BattleEngine:
             boss=self.boss,
         )
 
+        if hasattr(self.player, "record_bestiary_encounter"):
+            self.player.record_bestiary_encounter(self.enemy, getattr(self.enemy, "enemy_typ", None))
+
         paladin.advance_encounter(self.player)
         paladin.clear_transient_marks(self.player)
         return self.attacker, self.defender

@@ -1644,13 +1644,14 @@ class QuestPopupMenu(BasePopupMenu):
 
 
 class BestiaryPopupMenu(BasePopupMenu):
-    """Read-only per-save bestiary sourced from defeated enemy records."""
+    """Read-only per-save bestiary sourced from seen and defeated enemy records."""
 
     _enemy_class_index: dict[str, type[enemies.Enemy]] | None = None
 
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Bestiary")
         self._enemy_cache: dict[str, enemies.Enemy | None] = {}
+        self.summary_text = "Seen: 0 | Defeated: 0 | Detailed: 0"
         self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
         self.list_rect = pygame.Rect(
             self.popup_rect.left + 24,
@@ -1665,9 +1666,40 @@ class BestiaryPopupMenu(BasePopupMenu):
             self.popup_rect.height - 120,
         )
 
+    @staticmethod
+    def _record_details_unlocked(record: dict) -> bool:
+        if not isinstance(record, dict):
+            return False
+        if record.get("details_unlocked") is True:
+            return True
+        detail_keys = {"difficulty_level", "level", "pro_level", "resistances", "known_abilities", "features", "immunities"}
+        return any(key in record for key in detail_keys)
+
     def build_items(self, player_char):
         kill_dict = getattr(player_char, "kill_dict", {}) or {}
-        entries = []
+        bestiary = getattr(player_char, "bestiary", {}) or {}
+        entries_by_name = {}
+
+        if isinstance(bestiary, dict):
+            for enemy_name, record in bestiary.items():
+                if not isinstance(record, dict):
+                    continue
+                display_name = str(record.get("name") or enemy_name or "").strip()
+                if not display_name:
+                    continue
+                try:
+                    seen_count = max(0, int(record.get("seen_count", 0) or 0))
+                except (TypeError, ValueError):
+                    seen_count = 0
+                entries_by_name[display_name] = {
+                    "is_header": False,
+                    "enemy_name": display_name,
+                    "enemy_type": str(record.get("type") or "Unknown"),
+                    "seen_count": seen_count,
+                    "count": 0,
+                    "details_unlocked": self._record_details_unlocked(record),
+                }
+
         for enemy_type, enemies_by_name in kill_dict.items():
             if not isinstance(enemies_by_name, dict):
                 continue
@@ -1678,18 +1710,38 @@ class BestiaryPopupMenu(BasePopupMenu):
                     defeated_count = 0
                 if defeated_count <= 0:
                     continue
-                entries.append(
+                display_name = str(enemy_name)
+                entry = entries_by_name.setdefault(
+                    display_name,
                     {
                         "is_header": False,
-                        "text": f"{enemy_name} x{defeated_count}",
-                        "enemy_name": str(enemy_name),
+                        "enemy_name": display_name,
                         "enemy_type": str(enemy_type),
-                        "count": defeated_count,
-                    }
+                        "seen_count": 0,
+                        "count": 0,
+                        "details_unlocked": False,
+                    },
                 )
+                entry["enemy_type"] = str(entry.get("enemy_type") or enemy_type or "Unknown")
+                if entry["enemy_type"] == "Unknown":
+                    entry["enemy_type"] = str(enemy_type)
+                entry["count"] = defeated_count
+
+        entries = []
+        for entry in entries_by_name.values():
+            defeated_count = int(entry.get("count", 0) or 0)
+            seen_count = int(entry.get("seen_count", 0) or 0)
+            entry["display_seen_count"] = seen_count if seen_count > 0 else max(1 if defeated_count > 0 else 0, defeated_count)
+            entry["text"] = f"{entry['enemy_name']} x{defeated_count}" if defeated_count > 0 else f"{entry['enemy_name']} Seen"
+            entries.append(entry)
+
+        seen_entries = len(entries)
+        defeated_entries = sum(1 for entry in entries if int(entry.get("count", 0) or 0) > 0)
+        detailed_entries = sum(1 for entry in entries if entry.get("details_unlocked"))
+        self.summary_text = f"Seen: {seen_entries} | Defeated: {defeated_entries} | Detailed: {detailed_entries}"
 
         self.items = sorted(entries, key=lambda item: item["enemy_name"]) or [
-            {"is_header": False, "text": "No defeated enemies", "empty": True}
+            {"is_header": False, "text": "No bestiary entries", "empty": True}
         ]
         self.selected_index = 0
         self.scroll_offset = 0
@@ -1704,6 +1756,11 @@ class BestiaryPopupMenu(BasePopupMenu):
         bestiary = getattr(player_char, "bestiary", {}) or {}
         record = bestiary.get(enemy_name, {})
         return record if isinstance(record, dict) else {}
+
+    def draw_popup(self, player_char):
+        super().draw_popup(player_char)
+        summary = self.small_font.render(self.summary_text, True, self.LIGHT_GRAY)
+        self.screen.blit(summary, (self.popup_rect.centerx - summary.get_width() // 2, self.popup_rect.top + 48))
 
     @classmethod
     def _build_enemy_class_index(cls) -> dict[str, type[enemies.Enemy]]:
@@ -1814,11 +1871,12 @@ class BestiaryPopupMenu(BasePopupMenu):
         y = self.details_rect.top + 12
 
         if not isinstance(item, dict) or item.get("empty"):
-            self.screen.blit(self.normal_font.render("No defeated enemies recorded.", True, self.GRAY), (x, y))
+            self.screen.blit(self.normal_font.render("No bestiary entries recorded.", True, self.GRAY), (x, y))
             return
 
         enemy_name = item["enemy_name"]
         observed = self.observed_record(player_char, enemy_name)
+        details_unlocked = self._record_details_unlocked(observed)
         enemy = self.enemy_instance(enemy_name)
         name_text = self.large_font.render(enemy_name, True, self.WHITE)
         self.screen.blit(name_text, (x, y))
@@ -1828,14 +1886,28 @@ class BestiaryPopupMenu(BasePopupMenu):
         y += name_text.get_height() + 10
 
         y = self._draw_detail_line("Name", observed.get("name", enemy_name), x, y)
+        status = "Detailed" if details_unlocked else ("Defeated" if item["count"] > 0 else "Seen")
+        y = self._draw_detail_line("Status", status, x, y)
         difficulty = observed.get("difficulty_level")
         if difficulty is None:
             difficulty = observed.get("pro_level", observed.get("level", "Unknown"))
-        y = self._draw_detail_line("Pro/Difficulty Level", difficulty, x, y)
         y = self._draw_detail_line("Type", observed.get("type", item["enemy_type"]), x, y)
+        y = self._draw_detail_line("Seen", item.get("display_seen_count", item.get("seen_count", 0)), x, y)
         y = self._draw_detail_line("Defeated", item["count"], x, y)
 
-        if not observed:
+        defeated_count = int(item.get("count", 0) or 0)
+        if defeated_count > 0:
+            y += 8
+            locations = enemies.bestiary_location_hints(enemy_name)
+            y = self._draw_detail_section("Locations", locations, x, y, empty_text="Unknown")
+            y += 4
+            drop_rows = enemies.bestiary_drop_hints(
+                enemy,
+                boss=enemies.bestiary_uses_boss_drop_rules(enemy_name),
+            )
+            y = self._draw_detail_section("Possible Drops", drop_rows, x, y, empty_text="None")
+
+        if not details_unlocked:
             y += 8
             self.screen.blit(self.normal_font.render("Details unknown.", True, self.GRAY), (x, y))
             y += self.line_height
@@ -1846,6 +1918,7 @@ class BestiaryPopupMenu(BasePopupMenu):
             return
 
         y += 8
+        y = self._draw_detail_line("Pro/Difficulty Level", difficulty, x, y)
         resistances = observed.get("resistances", {}) or {}
         if isinstance(resistances, dict):
             resistance_rows = [

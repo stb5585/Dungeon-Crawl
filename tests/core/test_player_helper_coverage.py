@@ -77,12 +77,21 @@ class TestPlayerHelperCoverage:
             magic_effects={"Regen": SimpleNamespace(active=False)},
         )
 
+        player.record_bestiary_encounter(enemy)
+        player.record_bestiary_encounter(enemy)
+        seen_record = player.bestiary["Wraith"]
+        assert seen_record["seen_count"] == 2
+        assert seen_record["details_unlocked"] is False
+        assert "resistances" not in seen_record
+
         player.record_bestiary_enemy(enemy)
         player.record_bestiary_ability(enemy, "Attack")
         player.record_bestiary_ability(enemy, "Soul Drain")
 
         record = player.bestiary["Wraith"]
         assert record["type"] == "Undead"
+        assert record["seen_count"] == 2
+        assert record["details_unlocked"] is True
         assert record["difficulty_level"] == 2
         assert record["resistances"] == {"Fire": 0.25, "Holy": -0.5}
         assert record["known_abilities"] == ["Soul Drain"]
@@ -93,6 +102,7 @@ class TestPlayerHelperCoverage:
 
         enemy.status_effects["Blind"].active = False
         player.record_bestiary_enemy(enemy)
+        assert player.bestiary["Wraith"]["seen_count"] == 2
         assert "Blind" in player.bestiary["Wraith"]["features"]
 
     def test_character_menu_dispatches_ui_actions_and_quit_flow(self):

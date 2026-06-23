@@ -235,9 +235,13 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     assert "Goblin" in presenter.large_font.render_calls
     assert draw_calls == ["Goblin"]
     assert "Name: Goblin" in presenter.normal_font.render_calls
-    assert "Pro/Difficulty Level: Unknown" in presenter.normal_font.render_calls
+    assert "Status: Defeated" in presenter.normal_font.render_calls
     assert "Type: Regular" in presenter.normal_font.render_calls
+    assert "Seen: 2" in presenter.normal_font.render_calls
     assert "Defeated: 2" in presenter.normal_font.render_calls
+    assert "Locations" in presenter.normal_font.render_calls
+    assert "Early Dungeon" in presenter.small_font.render_calls
+    assert "Possible Drops" in presenter.normal_font.render_calls
     assert "Details unknown." in presenter.normal_font.render_calls
 
     presenter.normal_font.render_calls.clear()
@@ -255,6 +259,8 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
         "Goblin": {
             "name": "Goblin",
             "type": "Regular",
+            "seen_count": 1,
+            "details_unlocked": True,
             "difficulty_level": 1,
             "resistances": {"Fire": 0.25, "Holy": -0.1},
             "known_abilities": ["Hex"],
@@ -264,6 +270,7 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     }
     popup.draw_details(player)
 
+    assert "Status: Detailed" in presenter.normal_font.render_calls
     assert "Pro/Difficulty Level: 1" in presenter.normal_font.render_calls
     assert "Resistances" in presenter.normal_font.render_calls
     assert "Fire +25%" in presenter.small_font.render_calls
@@ -272,6 +279,109 @@ def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     assert "Immunities: Death" in presenter.normal_font.render_calls
     assert "Features: Sight" in presenter.normal_font.render_calls
     assert not any(text.startswith("HP:") for text in presenter.normal_font.render_calls)
+
+
+def test_bestiary_popup_merges_seen_defeated_and_detailed_entries(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Regular": {"Goblin": 1}},
+        bestiary={
+            "Specter": {
+                "name": "Specter",
+                "type": "Undead",
+                "seen_count": 2,
+                "details_unlocked": False,
+            },
+            "Wraith": {
+                "name": "Wraith",
+                "type": "Undead",
+                "seen_count": 1,
+                "details_unlocked": True,
+                "difficulty_level": 5,
+                "resistances": {},
+                "known_abilities": ["Soul Drain"],
+                "features": [],
+                "immunities": [],
+            },
+        },
+    )
+    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(popup_menus.pygame.draw, "rect", lambda *_args, **_kwargs: None)
+
+    popup.build_items(player)
+
+    assert [popup.item_display_text(item) for item in popup.items] == ["Goblin x1", "Specter Seen", "Wraith Seen"]
+    assert popup.summary_text == "Seen: 3 | Defeated: 1 | Detailed: 1"
+    popup.draw_popup(player)
+    assert "Seen: 3 | Defeated: 1 | Detailed: 1" in presenter.small_font.render_calls
+
+    popup.selected_index = 1
+    popup.draw_details(player)
+    assert "Name: Specter" in presenter.normal_font.render_calls
+    assert "Status: Seen" in presenter.normal_font.render_calls
+    assert "Seen: 2" in presenter.normal_font.render_calls
+    assert "Defeated: 0" in presenter.normal_font.render_calls
+    assert "Details unknown." in presenter.normal_font.render_calls
+    assert "Locations" not in presenter.normal_font.render_calls
+    assert "Possible Drops" not in presenter.normal_font.render_calls
+
+
+def test_bestiary_popup_defeated_entries_show_locations_and_drops(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Slime": {"Green Slime": 1}},
+        bestiary={},
+    )
+    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda *_args, **_kwargs: None)
+
+    popup.build_items(player)
+    popup.draw_details(player)
+
+    assert "Status: Defeated" in presenter.normal_font.render_calls
+    assert "Locations" in presenter.normal_font.render_calls
+    assert "Early Dungeon" in presenter.small_font.render_calls
+    assert "Possible Drops" in presenter.normal_font.render_calls
+    assert "Key (Common)" in presenter.small_font.render_calls
+    assert "Details unknown." in presenter.normal_font.render_calls
+
+
+def test_bestiary_popup_detailed_defeated_entries_keep_mechanics_with_practical_info(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Dragon": {"Red Dragon": 1}},
+        bestiary={
+            "Red Dragon": {
+                "name": "Red Dragon",
+                "type": "Dragon",
+                "seen_count": 1,
+                "details_unlocked": True,
+                "difficulty_level": 8,
+                "resistances": {"Fire": 0.25},
+                "known_abilities": ["Breathe Fire"],
+                "features": [],
+                "immunities": ["Death"],
+            },
+        },
+    )
+    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda *_args, **_kwargs: None)
+
+    popup.build_items(player)
+    popup.draw_details(player)
+
+    assert "Status: Detailed" in presenter.normal_font.render_calls
+    assert "Locations" in presenter.normal_font.render_calls
+    assert "Red Dragon Boss Room" in presenter.small_font.render_calls
+    assert "Possible Drops" in presenter.normal_font.render_calls
+    assert "Dragon's Tear (Very Rare)" in presenter.small_font.render_calls
+    assert "Pro/Difficulty Level: 8" in presenter.normal_font.render_calls
+    assert "Resistances" in presenter.normal_font.render_calls
+    assert "Known Abilities: Breathe Fire" in presenter.normal_font.render_calls
 
 
 def test_bestiary_popup_resolves_mimic_details_and_art_lazily(monkeypatch):
@@ -284,6 +394,8 @@ def test_bestiary_popup_resolves_mimic_details_and_art_lazily(monkeypatch):
             "Mimic": {
                 "name": "Mimic",
                 "type": "Aberration",
+                "seen_count": 1,
+                "details_unlocked": True,
                 "difficulty_level": 2,
                 "resistances": {},
                 "known_abilities": [],

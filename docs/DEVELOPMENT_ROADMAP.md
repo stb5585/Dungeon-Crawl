@@ -524,7 +524,7 @@ Deferred Asset Pass:
 
 #### P4c - Knowledge And Collection Systems
 
-Status: `Partially Implemented`, `Needs Design Decision` for rewards/history
+Status: `Closed` for the current per-save informational Bestiary scope. Account-style rewards/history remain deferred.
 
 Implemented:
 
@@ -535,16 +535,26 @@ Implemented:
   - Displays enemy artwork when the combat sprite manager has art for that enemy.
   - Reveals stable enemy details only when the player had detail visibility while fighting that enemy.
   - Displays stable level/type, defeated count, one-row-per-resistance details, observed abilities, immunities, and special features without volatile enemy stat rolls.
+- Bestiary Plus:
+  - Records seen enemies per save at shared battle start without revealing details.
+  - Keeps detail unlocks tied to combat detail visibility, so current Vision does not retroactively reveal old encounters.
+  - Merges seen-only, defeated-only legacy, and detailed entries in the Character Menu Bestiary.
+  - Adds compact Seen/Defeated/Detailed completion counts and per-entry Seen, Defeated, and Status rows.
+- Bestiary closure polish:
+  - Adds defeated-gated practical information without new save keys.
+  - Shows coarse encounter locations for defeated enemies, including dungeon-level random encounter hints, Funhouse, chest Mimics, fixed boss rooms, Realm of Cambion, Liminal Gap, and final-room encounters.
+  - Shows possible drops using broad labels such as `Guaranteed`, `Common`, `Uncommon`, `Rare`, and `Very Rare`, without exact percentage claims.
+  - Preserves layered reveal rules: seen entries show identity only, defeated entries add practical info, and detail-visible entries add mechanics/abilities/resistances.
 
-Needs Exploration:
+Current Scope Complete:
 
-- Decide whether to expand the Bestiary beyond defeated enemies, such as seen enemies, boss lore, ability lists, drops, or encounter locations.
+- Boss lore and hand-authored encounter notes are not part of this closure slice and can become a later narrative/content pass if desired.
 
-Needs Design Decision:
+Deferred:
 
-- Decide whether Bestiary progress is per-save only or account-style persistent history.
-- Decide whether completion grants achievements, rewards, titles, or remains informational.
-- Decide whether persistent gameplay history, run summaries, or account-style stats are worth adding beyond the current grouped run popup.
+- Account-style persistent history remains out of scope until profile storage and migration rules are specified.
+- Completion rewards, achievements, titles, and gameplay bonuses remain deferred; current Bestiary progress is informational only.
+- Persistent gameplay history, run summaries, or account-style stats remain decision-gated beyond the current grouped run popup.
 
 #### P4d - Equipment And Item Systems
 
@@ -752,7 +762,7 @@ Status: `Planned`
 - Jump and Charge wind-up/impact visuals are deferred until enemy sprite stance adjustments are planned.
 - Warp Point artistic renderings are deferred to a later presentation/art pass.
 - Durability, item identification, and usable equipment/accessory systems are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
-- Persistent statistics history is decision-gated behind whether Bestiary/account-style collection should be per-save or persistent.
+- Persistent statistics history and account-style Bestiary collection remain deferred until profile storage, migration, and privacy/scope rules are specified.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
 - Major class kits are deferred until each kit has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
 - Multi-enemy combat and speed-based combat stacks are deferred until battle-engine, UI, encounter-generation, and balance designs are complete.
@@ -776,6 +786,7 @@ None currently listed.
 - Status icons now use the Astral Shift, Ice Block, Mana Shield, Mirror Image, magic Reflect, Totem melee reflect, and Speed up/down PNG assets.
 - Equipment previews now include resistance changes, color-code stat deltas, and equipment slots surface resistance/immunity bonuses.
 - Bestiary detail reveal is recorded during combat when enemy details are visible; current Vision no longer retroactively unlocks old kills, random enemy combat stats are hidden, and entries show stable level/type/defeat count/resistance/ability/feature details.
+- Bestiary now records seen enemies at battle start, summarizes Seen/Defeated/Detailed progress, and shows defeated-gated coarse locations plus broad possible-drop labels without adding account history or exact odds.
 - Status icons now use the Blind Rage, Burn, Regen, and Maelstrom Weapon PNG assets; counted labels such as `MW5` render stack-count badges over the base artwork.
 - Visible charge telegraphs now use a compact "is charging" combat-log/banner indicator while detailed telegraph text remains available to the combat engine/logger.
 - Bestiary entries are alphabetized by monster name, render resistances one per row under a `Resistances` header, and list immunities separately from features.

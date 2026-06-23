@@ -58,14 +58,9 @@ def _build_random_enemy_override() -> Enemy | None:
 
 
 # Functions
-def random_enemy(level: str) -> Enemy:
-    """
-    Takes the current level a player is on and returns a random enemy
-    """
-    if forced_enemy := _build_random_enemy_override():
-        return forced_enemy
-
-    monsters: dict[str, list[Enemy]] = {
+def random_enemy_catalog() -> dict[str, list[Enemy]]:
+    """Return the random-encounter enemy catalog keyed by dungeon level."""
+    return {
       '0': [GreenSlime(), Goblin(), GiantRat(), Bandit(), Skeleton(), Scarecrow()],
       '1': [GiantCentipede(), GiantHornet(), ElectricBat(), Zombie(), Imp(), GiantSpider(), Quasit(),
           Panther(), TwistedDwarf(), BattleToad(), Satyr()],
@@ -86,6 +81,15 @@ def random_enemy(level: str) -> Enemy:
       '6': [Beholder(), Behemoth(), Lich(), MindFlayer(), Wyvern(), Archvile(), BrainGorger()],
     }
 
+
+def random_enemy(level: str) -> Enemy:
+    """
+    Takes the current level a player is on and returns a random enemy
+    """
+    if forced_enemy := _build_random_enemy_override():
+        return forced_enemy
+
+    monsters = random_enemy_catalog()
     if level not in monsters:
       level = max(monsters, key=int)
 
@@ -94,8 +98,123 @@ def random_enemy(level: str) -> Enemy:
     return random_monster
 
 
+def funhouse_enemy_catalog() -> list[Enemy]:
+    """Return the Funhouse challenge enemy catalog."""
+    return [Puppet(), Harlequin(), Trickster(), Copycat()]
+
+
 def funhouse_enemy() -> Enemy:
-    return random.choice([Puppet(), Harlequin(), Trickster(), Copycat()])
+    return random.choice(funhouse_enemy_catalog())
+
+
+def bestiary_location_hints(enemy_name: str) -> list[str]:
+    """Return coarse location hints for a bestiary entry."""
+    clean_name = str(enemy_name or "").strip()
+    if not clean_name:
+        return []
+
+    locations: set[str] = set()
+    for level, catalog in random_enemy_catalog().items():
+        label = "Early Dungeon" if str(level) == "0" else f"Dungeon Level {level}"
+        if any(getattr(enemy, "name", "") == clean_name for enemy in catalog):
+            locations.add(label)
+
+    if any(getattr(enemy, "name", "") == clean_name for enemy in funhouse_enemy_catalog()):
+        locations.add("Funhouse")
+
+    fixed_locations = {
+        "Mimic": ["Chests", "Funhouse Mimic Chest"],
+        "Fuath": ["Underground Spring"],
+        "Warforged": ["Realm of Cambion Terminal"],
+        "Minotaur": ["Minotaur Boss Room"],
+        "Barghest": ["Barghest Boss Room"],
+        "Pseudodragon": ["Pseudodragon Boss Room"],
+        "Nightmare": ["Nightmare Boss Room"],
+        "Cockatrice": ["Cockatrice Boss Room"],
+        "Wendigo": ["Wendigo Boss Room"],
+        "Iron Golem": ["Iron Golem Boss Room"],
+        "Golem": ["Golem Boss Room"],
+        "Jester": ["Funhouse Boss Room"],
+        "Domingo": ["Domingo Boss Room"],
+        "Red Dragon": ["Red Dragon Boss Room"],
+        "Circe": ["Circe Boss Room"],
+        "Merzhin": ["Realm of Cambion"],
+        "Cerberus": ["Cerberus Boss Room"],
+        "Incubus": ["Incubus Lair"],
+        "Vesperion": ["Final Chamber"],
+        "Reflection Psychopomp": ["Liminal Gap"],
+    }
+    locations.update(fixed_locations.get(clean_name, []))
+    return sorted(locations)
+
+
+def bestiary_uses_boss_drop_rules(enemy_name: str) -> bool:
+    """Return whether the named enemy normally uses boss-room loot rules."""
+    return str(enemy_name or "").strip() in {
+        "Minotaur",
+        "Barghest",
+        "Pseudodragon",
+        "Nightmare",
+        "Cockatrice",
+        "Wendigo",
+        "Iron Golem",
+        "Golem",
+        "Jester",
+        "Domingo",
+        "Red Dragon",
+        "Circe",
+        "Merzhin",
+        "Cerberus",
+        "Vesperion",
+    }
+
+
+def _item_from_drop_entry(drop_entry) -> object | None:
+    try:
+        return drop_entry()
+    except TypeError:
+        return drop_entry
+    except Exception:
+        return None
+
+
+def _bestiary_rarity_label(rarity: float) -> str:
+    try:
+        value = float(rarity)
+    except (TypeError, ValueError):
+        return "Unknown"
+    if value >= 0.75:
+        return "Common"
+    if value >= 0.4:
+        return "Uncommon"
+    if value >= 0.1:
+        return "Rare"
+    return "Very Rare"
+
+
+def bestiary_drop_hints(enemy: Enemy | None, *, boss: bool = False) -> list[str]:
+    """Return possible drop rows using broad rarity labels, not exact odds."""
+    if enemy is None:
+        return []
+    rows: list[str] = []
+    seen: set[str] = set()
+    inventory = getattr(enemy, "inventory", {}) or {}
+    for drop_entry in sum(inventory.values(), []):
+        item = _item_from_drop_entry(drop_entry)
+        if item is None:
+            continue
+        if str(getattr(item, "subtyp", "") or "") == "Quest":
+            continue
+        name = str(getattr(item, "name", "") or "").strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        if boss and str(getattr(item, "subtyp", "") or "") not in {"Special", "Quest", "Ability"}:
+            label = "Guaranteed"
+        else:
+            label = _bestiary_rarity_label(getattr(item, "rarity", None))
+        rows.append(f"{name} ({label})")
+    return rows
 
 
 def _fixed_resistances(**overrides: float) -> dict[str, float]:

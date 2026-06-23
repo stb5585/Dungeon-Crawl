@@ -308,6 +308,26 @@
   - Expected: Cloth armor contributes a spell modifier bonus while non-cloth armor does not.
   - Expected: Future armor with explicit `spell_mod` uses that value instead of the derived cloth armor bonus.
 
+### Bestiary
+- [ ] Open the Character Menu Bestiary before any encounters on a new save.
+  - Expected: The Bestiary shows no entries and does not crash.
+- [ ] Enter combat with an enemy, flee or leave without defeating it, then open the Bestiary.
+  - Expected: The enemy appears as `Seen`, with identity, art, type, and seen count only.
+  - Expected: Locations, Possible Drops, resistances, immunities, features, and known abilities remain hidden.
+- [ ] Defeat a seen enemy without Vision/detail visibility, then reopen the Bestiary.
+  - Expected: Status changes to `Defeated`, defeated count increases, and coarse `Locations` plus `Possible Drops` appear.
+  - Expected: Drop info uses broad labels such as `Common`, `Rare`, or `Very Rare`, not exact percentages.
+  - Expected: Mechanics remain hidden with the detail-unlock hint.
+- [ ] Use Vision, Reveal, Seeker, or Inquisitor sight during a non-boss fight, observe at least one enemy special action, then open the Bestiary.
+  - Expected: Status changes to `Detailed`.
+  - Expected: Resistances, known abilities, immunities, and features appear alongside Locations and Possible Drops after defeat.
+  - Expected: Repeated combat-frame rendering does not inflate Seen count.
+- [ ] Defeat or load a legacy-save defeated enemy with no detailed record.
+  - Expected: The entry still appears from `kill_dict`, shows defeated count, and displays defeated-gated practical info.
+- [ ] Check fixed and special encounters such as Green Slime, Mimic, Red Dragon, Funhouse enemies, and the Realm of Cambion terminal alarm.
+  - Expected: Coarse locations are readable, such as `Early Dungeon`, `Chests`, `Funhouse`, boss-room labels, or realm labels, without exact coordinates.
+  - Expected: Quest-only inactive material drops are not shown as normal possible drops.
+
 ### Shops
 - [x] Buy from blacksmith categories that now use item-list tabs.
   - Expected: Top-level category selection remains in place for Weapons, Shields, Armor, and Helmets.

@@ -142,9 +142,17 @@ def test_player_data_deserialize_marks_killed_boss_tiles_defeated_without_world_
 def test_player_data_serializer_round_trips_bestiary_records():
     player = TestGameState.create_player(name="Scout", class_name="Warrior", race_name="Human", level=12)
     player.bestiary = {
+        "Seen Only": {
+            "name": "Seen Only",
+            "type": "Regular",
+            "seen_count": 3,
+            "details_unlocked": False,
+        },
         "Goblin": {
             "name": "Goblin",
             "type": "Regular",
+            "seen_count": 1,
+            "details_unlocked": True,
             "difficulty_level": 1,
             "resistances": {"Fire": 0.25},
             "known_abilities": ["Hex"],

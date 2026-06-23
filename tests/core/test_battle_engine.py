@@ -139,6 +139,19 @@ def test_start_battle_clears_stale_saved_jump_charge():
     assert player.class_effects["Jump"].active is False
 
 
+def test_start_battle_records_bestiary_encounter():
+    engine, player = _make_engine_with_player_attacking()
+
+    engine.start_battle()
+
+    record = player.bestiary["Goblin"]
+    assert record["name"] == "Goblin"
+    assert record["type"] == "Humanoid"
+    assert record["seen_count"] == 1
+    assert record["details_unlocked"] is False
+    assert "resistances" not in record
+
+
 def test_boss_battle_blocks_enemy_detail_vision():
     engine, player = _make_engine_with_player_attacking()
     player.cls.name = "Seeker"

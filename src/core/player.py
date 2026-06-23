@@ -1868,6 +1868,27 @@ class Player(Character):
     def _format_resistance_preview(value: float) -> str:
         return f"{int(round(float(value) * 100)):+d}%"
 
+    def record_bestiary_encounter(self, enemy, enemy_type: str | None = None) -> None:
+        """Record that an enemy was encountered without revealing combat details."""
+        if enemy is None:
+            return
+        if not isinstance(getattr(self, "bestiary", None), dict):
+            self.bestiary = {}
+
+        enemy_name = str(getattr(enemy, "name", "") or "").strip()
+        if not enemy_name:
+            return
+
+        record = self.bestiary.setdefault(enemy_name, {})
+        record["name"] = enemy_name
+        record["type"] = str(enemy_type or getattr(enemy, "enemy_typ", "") or record.get("type") or "Unknown")
+        try:
+            seen_count = int(record.get("seen_count", 0) or 0)
+        except (TypeError, ValueError):
+            seen_count = 0
+        record["seen_count"] = max(0, seen_count) + 1
+        record.setdefault("details_unlocked", False)
+
     def record_bestiary_enemy(self, enemy, enemy_type: str | None = None) -> None:
         """Store stable enemy details observed while the player has combat insight."""
         if enemy is None:
@@ -1882,6 +1903,11 @@ class Player(Character):
         record = self.bestiary.setdefault(enemy_name, {})
         record["name"] = enemy_name
         record["type"] = str(enemy_type or getattr(enemy, "enemy_typ", "") or "Unknown")
+        record["details_unlocked"] = True
+        try:
+            record["seen_count"] = max(0, int(record.get("seen_count", 0) or 0))
+        except (TypeError, ValueError):
+            record["seen_count"] = 0
 
         level = getattr(enemy, "level", None)
         base_level = getattr(level, "level", None)

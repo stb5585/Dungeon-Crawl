@@ -67,10 +67,42 @@ def test_random_enemy_and_funhouse_enemy_follow_expected_catalog_edges(monkeypat
     monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
     monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[0])
     assert isinstance(enemies.random_enemy("0"), enemies.GreenSlime)
+    assert isinstance(enemies.random_enemy_catalog()["0"][0], enemies.GreenSlime)
 
     monkeypatch.setattr("src.core.enemies.random.choice", lambda seq: seq[-1])
     assert isinstance(enemies.random_enemy("999"), enemies.BrainGorger)
     assert isinstance(enemies.funhouse_enemy(), enemies.Copycat)
+    assert isinstance(enemies.funhouse_enemy_catalog()[-1], enemies.Copycat)
+
+
+def test_bestiary_practical_info_helpers_use_broad_labels():
+    locations = enemies.bestiary_location_hints("Wyvern")
+    assert locations == ["Dungeon Level 5", "Dungeon Level 6"]
+    assert enemies.bestiary_location_hints("Mimic") == ["Chests", "Funhouse Mimic Chest"]
+    assert enemies.bestiary_location_hints("Copycat") == ["Funhouse"]
+
+    enemy = SimpleNamespace(
+        inventory={
+            "drops": [
+                items.HealthPotion,
+                items.DragonTear,
+                items.BirdFat,
+            ]
+        }
+    )
+
+    assert enemies.bestiary_drop_hints(enemy) == [
+        "Health Potion (Common)",
+        "Dragon's Tear (Very Rare)",
+    ]
+
+    boss = SimpleNamespace(inventory={"drops": [items.HealthPotion, items.DragonTear]})
+    assert enemies.bestiary_drop_hints(boss, boss=True) == [
+        "Health Potion (Guaranteed)",
+        "Dragon's Tear (Very Rare)",
+    ]
+    assert enemies.bestiary_uses_boss_drop_rules("Minotaur") is True
+    assert enemies.bestiary_uses_boss_drop_rules("Goblin") is False
 
 
 def test_random_enemy_debug_override_is_explicit_and_clearable(monkeypatch):

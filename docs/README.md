@@ -44,6 +44,7 @@ data/            - YAML-based ability definitions
 - ✅ Helmet catalog added for Cloth, Light, Medium, and Heavy armor types, including restricted and special-effect helmets.
 - ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
 - ✅ Enemy visual system now uses transparent combat sprites for battlefield, target-panel, boss navigation, and token-derived enemy presentation, with per-enemy combat scale mapping for large creatures.
+- ✅ Per-save Bestiary closure completed with seen/defeated/detailed states, defeated-gated coarse locations, and broad possible-drop labels.
 
 ### Core Game Files
 ```
