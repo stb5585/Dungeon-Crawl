@@ -168,6 +168,25 @@ class TestClassEquipmentRestrictions:
         assert rogue.equipment['Weapon'] is not None
         assert mage.equipment['Weapon'] is not None
 
+    def test_can_equip_item_checks_restrictions_without_mutating_equipment(self):
+        """Player.can_equip_item reports eligibility without performing an equip."""
+        warrior = TestGameState.create_player(name="Warrior", class_name="Warrior", race_name="Human")
+        original_equipment = {
+            slot: item.name
+            for slot, item in warrior.equipment.items()
+        }
+
+        assert warrior.can_equip_item(items.Claymore(), "Weapon") is True
+        assert warrior.can_equip_item(items.Rondel(), "OffHand") is False
+        assert warrior.can_equip_item(items.MitreHat(), "Helmet") is False
+        assert warrior.can_equip_item(items.PowerRing()) is True
+        assert warrior.can_equip_item(items.HealthPotion()) is False
+
+        assert {
+            slot: item.name
+            for slot, item in warrior.equipment.items()
+        } == original_equipment
+
 
 class TestOffHandEquipment:
     """Test off-hand equipment handling."""

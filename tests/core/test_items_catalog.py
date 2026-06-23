@@ -247,3 +247,12 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert isinstance(items.remove_equipment("Helmet"), items.NoHelmet)
     assert isinstance(items.remove_equipment("Ring"), items.NoRing)
     assert isinstance(items.remove_equipment("Pendant"), items.NoPendant)
+
+    assert items.equipment_slots_for_item(items.Rapier()) == ["Weapon", "OffHand"]
+    assert items.equipment_slots_for_item(items.Claymore()) == ["Weapon"]
+    assert items.equipment_slots_for_item(items.Buckler()) == ["OffHand"]
+    assert items.equipment_slots_for_item(items.LeatherArmor()) == ["Armor"]
+    assert items.equipment_slots_for_item(items.IronHelm()) == ["Helmet"]
+    assert items.equipment_slots_for_item(items.PowerRing()) == ["Ring"]
+    assert items.equipment_slots_for_item(items.VisionPendant()) == ["Pendant"]
+    assert items.equipment_slots_for_item(items.HealthPotion()) == []

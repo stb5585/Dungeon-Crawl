@@ -352,6 +352,16 @@
   - Expected: The item description includes an `Element: ...` line for any item type with elemental metadata.
   - Expected: Fist weapons such as Indra's Fist show their elemental metadata in the secret-shop description panel.
   - Expected: Resistance-bearing shields and accessories show explicit `Resistance: ...` or `Immunity: ...` lines.
+- [ ] Buy an equipable item from blacksmith, jeweler, and secret-shop equipment categories in pygame and curses.
+  - Expected: After the purchase summary, the shop offers to equip class-eligible equipment immediately.
+  - Expected: Choosing equip uses normal equipment rules and leaves failed equip attempts in inventory.
+  - Expected: Non-equipment purchases such as potions, keys, scrolls, and quest items do not show equip prompts.
+- [ ] Buy one weapon that can be equipped in either hand.
+  - Expected: The equip prompt offers `Main Hand`, `OffHand`, and `Cancel`.
+  - Expected: Choosing either slot equips the purchased weapon there and removes one purchased copy from inventory.
+- [ ] Buy two copies of a dual-wieldable weapon.
+  - Expected: The equip prompt offers `Main Hand`, `OffHand`, `Dual Wield`, and `Cancel`.
+  - Expected: `Dual Wield` equips one copy in each hand and leaves any extra purchased copies in inventory.
 - [ ] Take hits while wearing each ultimate armor reward.
   - Expected: Robes of Merlin can restore mana after incoming weapon hits.
   - Expected: Dragon Hide can scorch attackers with fire retaliation damage.

@@ -904,6 +904,80 @@ def ultimate_armor_repo(game):
     game.player_char.move_south(game)
 
 
+def _fresh_shop_item(item):
+    try:
+        return item.__class__()
+    except TypeError:
+        return item
+
+
+def _equipment_slot_label(slot):
+    return "Main Hand" if slot == "Weapon" else slot
+
+
+def _equip_actions_for_purchase(player_char, item, quantity):
+    slots = items.equipment_slots_for_item(item, player_char)
+    actions = {}
+    if not slots:
+        return actions
+    if getattr(item, "typ", None) == "Weapon":
+        if "Weapon" in slots:
+            actions["Main Hand"] = ("Weapon",)
+        if "OffHand" in slots:
+            actions["OffHand"] = ("OffHand",)
+        if quantity >= 2 and "Weapon" in slots and "OffHand" in slots:
+            actions["Dual Wield"] = ("Weapon", "OffHand")
+        return actions
+    actions["Equip Now"] = (slots[0],)
+    return actions
+
+
+def _purchased_inventory_items(player_char, item, count):
+    return list(getattr(player_char, "inventory", {}).get(item.name, []))[-count:]
+
+
+def _equip_purchased_item(player_char, item, slots):
+    purchased = _purchased_inventory_items(player_char, item, len(slots))
+    if len(purchased) < len(slots):
+        return False
+    equip_method = getattr(player_char, "equip", None)
+    if not callable(equip_method):
+        return False
+    for slot, purchased_item in zip(slots, purchased):
+        if equip_method(slot, purchased_item) is False:
+            return False
+    return True
+
+
+def _offer_equip_after_buy(game, item, quantity, actions=None):
+    actions = actions or _equip_actions_for_purchase(game.player_char, item, quantity)
+    if not actions:
+        return
+    options = list(actions) + ["Cancel"]
+    popup = menus.SelectionPopupMenu(
+        game,
+        f"Equip purchased {item.name} now?",
+        options,
+        box_height=max(8, len(options) + 5),
+    )
+    choice = popup.navigate_popup()
+    if choice is None or choice < 0 or choice >= len(options):
+        return
+    action = options[choice]
+    if action == "Cancel":
+        return
+    slots = actions.get(action)
+    if not slots:
+        return
+    textbox = menus.TextBox(game)
+    if _equip_purchased_item(game.player_char, item, slots):
+        slot_text = " and ".join(_equipment_slot_label(slot) for slot in slots)
+        textbox.print_text_in_rectangle(f"Equipped {item.name} to {slot_text}.")
+    else:
+        textbox.print_text_in_rectangle(f"Could not equip {item.name}. It remains in inventory.")
+    textbox.clear_rectangle()
+
+
 def buy(game, menu, buy_choice, handed=None):
 
     if buy_choice == "Weapon":
@@ -945,8 +1019,14 @@ def buy(game, menu, buy_choice, handed=None):
                 buy_popup = menus.ConfirmPopupMenu(
                     game, f"Are you sure you want to buy {num} {name} for {total_cost} gold?", box_height=8)
                 if buy_popup.navigate_popup():
+                    equip_actions = _equip_actions_for_purchase(game.player_char, item, num)
                     game.player_char.gold -= int(total_cost)
-                    game.player_char.modify_inventory(item, num=num)
+                    if equip_actions:
+                        for _ in range(num):
+                            game.player_char.modify_inventory(_fresh_shop_item(item))
+                        _offer_equip_after_buy(game, item, num, equip_actions)
+                    else:
+                        game.player_char.modify_inventory(item, num=num)
 
 
 def sell(game, menu):

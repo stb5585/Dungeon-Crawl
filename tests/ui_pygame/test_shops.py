@@ -45,17 +45,53 @@ def _make_player(*, level=12, in_town=True, gold=500):
 
     def modify_inventory(item, num=1, subtract=False):
         calls.append((item.name, num, subtract))
+        inventory = player.inventory
+        if subtract:
+            for _ in range(num):
+                inventory[item.name].remove(item)
+                if not inventory[item.name]:
+                    del inventory[item.name]
+            return
+        inventory.setdefault(item.name, [])
+        inventory[item.name].extend([item] * num)
+
+    def equip_check(item, slot):
+        if getattr(item, "typ", None) == "Weapon":
+            if slot == "Weapon":
+                return True
+            return slot == "OffHand" and getattr(item, "off", False)
+        if getattr(item, "typ", None) == "Accessory":
+            return getattr(item, "subtyp", None) == slot
+        return getattr(item, "typ", None) == slot
+
+    equipment = {
+        "Weapon": items.NoWeapon(),
+        "OffHand": items.NoOffHand(),
+        "Armor": items.NoArmor(),
+        "Helmet": items.NoHelmet(),
+        "Ring": items.NoRing(),
+        "Pendant": items.NoPendant(),
+    }
+
+    def equip(slot, item):
+        if not equip_check(item, slot):
+            return False
+        equipment[slot] = item
+        modify_inventory(item, subtract=True)
+        return True
 
     player = SimpleNamespace(
         gold=gold,
         inventory=inventory,
         special_inventory={},
-        equipment={},
+        equipment=equipment,
+        cls=SimpleNamespace(name="Tester", equip_check=equip_check),
         stats=SimpleNamespace(strength=10),
         level=SimpleNamespace(level=level),
         in_town=lambda: in_town,
         player_level=lambda: level,
         modify_inventory=modify_inventory,
+        equip=equip,
         equip_diff=lambda item, slot, buy=False: "",
     )
     player.inventory_calls = calls
@@ -97,6 +133,22 @@ class FakeQuantityPopup:
         if background_draw_func:
             background_draw_func()
         return FakeQuantityPopup.responses.pop(0)
+
+
+class FakeSelectionPopup:
+    responses = []
+    created = []
+
+    def __init__(self, _presenter, _parent_screen, title="Select", header_message=None, options=None):
+        self.title = title
+        self.header_message = header_message
+        self.options = list(options or [])
+        FakeSelectionPopup.created.append((title, header_message, tuple(self.options)))
+
+    def show(self, _player_char, **_kwargs):
+        if FakeSelectionPopup.responses:
+            return ("selection", FakeSelectionPopup.responses.pop(0))
+        return None
 
 
 class FakeShopScreen:
@@ -186,6 +238,8 @@ def _manager(monkeypatch, *, level=12, in_town=True, gold=500):
     FakePopup.calls = []
     FakeQuantityPopup.responses = []
     FakeQuantityPopup.created = []
+    FakeSelectionPopup.responses = []
+    FakeSelectionPopup.created = []
     FakeShopScreen.option_sequences = []
     FakeShopScreen.item_sequences = []
     FakeShopScreen.instances = []
@@ -384,6 +438,55 @@ def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purcha
     assert FakeShopScreen.instances[0].update_calls == [(itemdict, "Buy"), (itemdict, "Buy")]
     assert any("Purchased 2x Potion!" in message for message, _buttons in FakePopup.messages)
     assert any(call.get("flush_events") for call in FakePopup.calls)
+
+
+def test_buy_with_shop_screen_equips_purchased_weapon_to_chosen_slot(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    item = items.Rapier()
+    itemdict = {"Swords": [items.Rapier]}
+
+    FakeShopScreen.item_sequences = [[("Rapier", item, 10, 0), None]]
+    FakeQuantityPopup.responses = [1]
+    FakePopup.responses = [True]
+    FakeSelectionPopup.responses = ["OffHand"]
+
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
+
+    manager._buy_with_shop_screen(itemdict, "Weapons")
+
+    assert manager.player_char.gold == 110
+    assert manager.player_char.equipment["OffHand"].name == "Rapier"
+    assert "Rapier" not in manager.player_char.inventory
+    assert FakeSelectionPopup.created[-1][2] == ("Main Hand", "OffHand", "Cancel")
+    assert any("Equipped Rapier to OffHand." in message for message, _buttons in FakePopup.messages)
+
+
+def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    item = items.Dirk()
+    itemdict = {"Daggers": [items.Dirk]}
+
+    FakeShopScreen.item_sequences = [[("Dirk", item, 10, 0), None]]
+    FakeQuantityPopup.responses = [2]
+    FakePopup.responses = [True]
+    FakeSelectionPopup.responses = ["Dual Wield"]
+
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
+
+    manager._buy_with_shop_screen(itemdict, "Weapons")
+
+    assert manager.player_char.gold == 100
+    assert manager.player_char.equipment["Weapon"].name == "Dirk"
+    assert manager.player_char.equipment["OffHand"].name == "Dirk"
+    assert "Dirk" not in manager.player_char.inventory
+    assert FakeSelectionPopup.created[-1][2] == ("Main Hand", "OffHand", "Dual Wield", "Cancel")
+    assert any("Equipped Dirk to Main Hand and OffHand." in message for message, _buttons in FakePopup.messages)
 
 
 def test_format_item_info_and_item_availability_helpers(monkeypatch):

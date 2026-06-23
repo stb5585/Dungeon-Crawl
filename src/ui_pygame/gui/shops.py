@@ -7,6 +7,7 @@ from src.core import items as items_module
 from src.core.classes import dragoon
 from .shop_screen import ShopScreen
 from .confirmation_popup import ConfirmationPopup
+from .popup_menus import SelectionPopup
 from .town_base import TownScreenBase
 
 
@@ -320,9 +321,15 @@ class ShopManager(TownScreenBase):
             if not confirmed:
                 continue
 
+            equip_actions = self._equip_actions_for_purchase(item, quantity)
+
             # Purchase items
             self.player_char.gold -= total_cost
-            self.player_char.modify_inventory(item, num=quantity)
+            if equip_actions:
+                for _ in range(quantity):
+                    self.player_char.modify_inventory(self._fresh_shop_item(item))
+            else:
+                self.player_char.modify_inventory(item, num=quantity)
 
             # Show transaction summary in popup
             summary_popup = ConfirmationPopup(
@@ -331,9 +338,94 @@ class ShopManager(TownScreenBase):
                 show_buttons=False
             )
             summary_popup.show(background_draw_func=bg_func, flush_events=True, require_key_release=True)
+            if equip_actions:
+                self._offer_equip_after_buy(shop_screen, item, quantity, equip_actions)
             
             # Update item list to reflect new owned count
             shop_screen.update_item_list(itemdict, "Buy")
+
+    @staticmethod
+    def _fresh_shop_item(item):
+        try:
+            return item.__class__()
+        except TypeError:
+            return item
+
+    @staticmethod
+    def _slot_label(slot: str) -> str:
+        return "Main Hand" if slot == "Weapon" else slot
+
+    def _equip_actions_for_purchase(self, item, quantity: int) -> dict[str, tuple[str, ...]]:
+        slots = items_module.equipment_slots_for_item(item, self.player_char)
+        actions: dict[str, tuple[str, ...]] = {}
+        if not slots:
+            return actions
+        if getattr(item, "typ", None) == "Weapon":
+            if "Weapon" in slots:
+                actions["Main Hand"] = ("Weapon",)
+            if "OffHand" in slots:
+                actions["OffHand"] = ("OffHand",)
+            if quantity >= 2 and "Weapon" in slots and "OffHand" in slots:
+                actions["Dual Wield"] = ("Weapon", "OffHand")
+            return actions
+        actions["Equip Now"] = (slots[0],)
+        return actions
+
+    def _purchased_inventory_items(self, item, count: int) -> list:
+        return list(getattr(self.player_char, "inventory", {}).get(item.name, []))[-count:]
+
+    def _equip_purchased_item(self, item, slots: tuple[str, ...]) -> bool:
+        purchased = self._purchased_inventory_items(item, len(slots))
+        if len(purchased) < len(slots):
+            return False
+        for slot, purchased_item in zip(slots, purchased):
+            equip_method = getattr(self.player_char, "equip", None)
+            if not callable(equip_method) or equip_method(slot, purchased_item) is False:
+                return False
+        return True
+
+    def _offer_equip_after_buy(self, shop_screen, item, quantity: int, actions=None) -> None:
+        actions = actions or self._equip_actions_for_purchase(item, quantity)
+        if not actions:
+            return
+        options = list(actions) + ["Cancel"]
+        popup = SelectionPopup(
+            self.presenter,
+            shop_screen,
+            title=f"Equip {item.name}?",
+            header_message=f"Equip one purchased {item.name} now?",
+            options=options,
+        )
+        result = popup.show(self.player_char, flush_events=True, require_key_release=True)
+        if not result or result[0] != "selection":
+            return
+        action = result[1]
+        if action == "Cancel":
+            return
+        slots = actions.get(action)
+        if not slots:
+            return
+        if self._equip_purchased_item(item, slots):
+            slot_text = " and ".join(self._slot_label(slot) for slot in slots)
+            ConfirmationPopup(
+                self.presenter,
+                f"Equipped {item.name} to {slot_text}.",
+                show_buttons=False,
+            ).show(
+                background_draw_func=lambda: shop_screen.draw_all(do_flip=False),
+                flush_events=True,
+                require_key_release=True,
+            )
+        else:
+            ConfirmationPopup(
+                self.presenter,
+                f"Could not equip {item.name}. It remains in inventory.",
+                show_buttons=False,
+            ).show(
+                background_draw_func=lambda: shop_screen.draw_all(do_flip=False),
+                flush_events=True,
+                require_key_release=True,
+            )
 
     def _available_item_groups(self, itemdict):
         """Return item groups that have at least one item available to this player."""

@@ -155,6 +155,34 @@ def remove_equipment(typ: str) -> Item:
     return typ_dict[typ]()
 
 
+def equipment_slots_for_item(item: object, player: object | None = None) -> list[str]:
+    """Return equipment slots that can hold this item, optionally filtered by player rules."""
+    typ = getattr(item, "typ", None)
+    subtyp = getattr(item, "subtyp", None)
+    slots: list[str] = []
+
+    if typ == "Weapon":
+        slots.append("Weapon")
+        if getattr(item, "off", False):
+            slots.append("OffHand")
+    elif typ in {"Armor", "Helmet", "OffHand"}:
+        slots.append(str(typ))
+    elif typ == "Accessory" and subtyp in {"Ring", "Pendant"}:
+        slots.append(str(subtyp))
+
+    if player is None:
+        return slots
+
+    can_equip = getattr(player, "can_equip_item", None)
+    if callable(can_equip):
+        return [slot for slot in slots if can_equip(item, slot)]
+
+    equip_check = getattr(getattr(player, "cls", None), "equip_check", None)
+    if callable(equip_check):
+        return [slot for slot in slots if equip_check(item, slot)]
+    return slots
+
+
 class Item:
     """
     name: name of the item

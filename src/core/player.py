@@ -24,7 +24,7 @@ from .constants import (
 
 import numpy
 
-from . import abilities, enemies
+from . import abilities, enemies, items
 from .classes import (
     archdruid,
     bard,
@@ -1707,6 +1707,23 @@ class Player(Character):
                 #     print(f"Jump modifications deactivated due to equipment change: {', '.join(deactivated)}")
         
         return True
+
+    def can_equip_item(self, item, equip_slot: str | None = None) -> bool:
+        """Return whether this player can equip an item without mutating equipment."""
+        if item is None:
+            return False
+        slots = items.equipment_slots_for_item(item) if equip_slot is None else [equip_slot]
+        if not slots:
+            return False
+        equip_check = getattr(getattr(self, "cls", None), "equip_check", None)
+        if not callable(equip_check):
+            return False
+        for slot in slots:
+            if slot not in {"Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant"}:
+                continue
+            if getattr(item, "subtyp", None) == "None" or equip_check(item, slot):
+                return True
+        return False
 
     def equip_diff(self, item, equip_slot, buy=False):
         """

@@ -45,6 +45,7 @@ data/            - YAML-based ability definitions
 - ✅ Aegis Breastplate renamed to Klivanion, including its ultimate armor reward flow and retaliation effect text.
 - ✅ Enemy visual system now uses transparent combat sprites for battlefield, target-panel, boss navigation, and token-derived enemy presentation, with per-enemy combat scale mapping for large creatures.
 - ✅ Per-save Bestiary closure completed with seen/defeated/detailed states, defeated-gated coarse locations, and broad possible-drop labels.
+- ✅ P4d equipment foundation added shared equip eligibility helpers and buy-to-equip shop UX, with Ultimate Helmet acquisition deferred to a dedicated spec.
 
 ### Core Game Files
 ```

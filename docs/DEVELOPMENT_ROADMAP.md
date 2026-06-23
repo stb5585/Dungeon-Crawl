@@ -558,27 +558,32 @@ Deferred:
 
 #### P4d - Equipment And Item Systems
 
-Status: `Needs Exploration`
+Status: `Done` for the lightweight foundation/UX-validation slice. Heavier item-state systems remain deferred.
 
-- Outline the quest/process for obtaining ultimate helmets.
-- Investigate equip-while-buying UX and whether purchase flow should support selecting equipment slots.
-- Validate already-implemented cloth armor spell modifiers and ultimate armor special effects.
-- Explore elemental armor options, elemental item notes in character/equipment displays, Tome special effects, rarity/shop/drop separation, and random healing/mana refresher spots.
+Implemented:
 
-Needs Design Decision:
+- Added shared equipment eligibility helpers for slot resolution and non-mutating equip checks.
+- Added equip-after-buy prompts to pygame and curses shop purchase flows for blacksmith, jeweler, and secret-shop equipment categories.
+- Multi-copy weapon purchases can equip one copy or dual-wield two eligible copies while leaving remaining purchased copies in inventory.
+- Validated current equipment/item foundations, including cloth armor spell modifiers, elemental and resistance metadata, Tome/offhand details, ultimate armor effects, and enemy consumable-use behavior.
+- Confirmed generated stat-themed equipment names remain display-only and do not replace canonical item names used by inventory, quests, saves, or drops.
 
-- Define durability, repair, broken-item, and shatter/loss rules before implementation.
-- Define item identification economy:
-  - intelligence-based unidentified drop chance;
-  - scroll/shop identification access;
-  - inventory, shop, save, and loot-display behavior.
-- Define usable equipment/accessory behavior, including whether repeated use consumes durability.
-- Define armor speed and mobility penalties by armor weight/class.
-- Decide whether equipment naming themes such as "Rapier of the Wolf" are cosmetic only or mechanical.
+Ultimate Helmet Outline:
+
+- Cloth path: knowledge/ritual-focused acquisition, likely tied to Church or arcane research content.
+- Light path: mobility/precision-focused acquisition, likely tied to Old Warehouse, scouting, or trickster content.
+- Medium path: balanced martial proof, likely tied to Barracks or dungeon challenge content.
+- Heavy path: endurance/guard-focused acquisition, likely tied to fortress, armor forge, or deep-dungeon survival content.
 
 Deferred:
 
-- Do not implement durability or identification until a design spec covers save compatibility, loot generation, shops, UI, combat effects, and regression tests.
+- Ultimate helmet acquisition remains outline-only; implementation is deferred until a dedicated Ultimate Helmet spec defines quest triggers, reward selection, UI text, save flags, class/armor eligibility, and tests.
+- Durability, repair, broken-item, and shatter/loss rules remain deferred until a dedicated spec covers save compatibility, economy, combat, UI, and tests.
+- Item identification remains deferred, including intelligence-based unidentified drop chance, identify scroll/shop access, inventory/shop/save behavior, and loot-display rules.
+- Usable equipment/accessory active abilities remain deferred; equipped items do not gain active-use actions or durability costs in this slice.
+- Armor speed and mobility penalties remain deferred; current weight and encumbrance behavior is unchanged.
+- Equipment naming themes such as "Rapier of the Wolf" remain undecided and deferred.
+- Random healing/mana refresher spots are deferred until dungeon interaction design is clearer.
 
 #### P4e - Class Mechanics And Progression Kits
 
@@ -761,7 +766,7 @@ Status: `Planned`
 - Broader ability visuals are deferred until a future batch is selected; candidates include Reflect/Magic reflection flashes, Stun/Prone hit accents, elemental strike overlays, and other approved combat reads.
 - Jump and Charge wind-up/impact visuals are deferred until enemy sprite stance adjustments are planned.
 - Warp Point artistic renderings are deferred to a later presentation/art pass.
-- Durability, item identification, and usable equipment/accessory systems are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
+- Ultimate helmet acquisition, durability, item identification, usable equipment/accessory actions, armor mobility penalties, equipment naming themes, and random refresher spots are deferred until design specs cover save compatibility, economy, combat, UI, and tests.
 - Persistent statistics history and account-style Bestiary collection remain deferred until profile storage, migration, and privacy/scope rules are specified.
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
 - Major class kits are deferred until each kit has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.

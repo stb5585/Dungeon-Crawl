@@ -43,6 +43,14 @@ def test_item_serializer_falls_back_to_empty_equipment_for_unknown_class():
     assert restored.subtyp == "None"
 
 
+def test_item_serializer_uses_canonical_name_not_cosmetic_theme_name():
+    item = items.PowerRing()
+
+    assert items.stat_themed_item_name(item) == "Mighty Power Ring"
+    assert item.name == "Power Ring"
+    assert ItemSerializer.serialize(item)["name"] == "Power Ring"
+
+
 def test_ability_serializer_supports_class_name_display_name_and_yaml_override():
     heal = abilities.Heal()
     heal._class_name = "HealYaml"

@@ -155,9 +155,20 @@ class FakeShopMenu:
 def _build_player(level=10):
     player = SimpleNamespace()
     player.name = "Ada"
+    def equip_check(item, slot):
+        candidate = item() if isinstance(item, type) else item
+        if getattr(candidate, "typ", None) is None and slot == "Weapon":
+            return True
+        if getattr(candidate, "typ", None) == "Weapon":
+            if slot == "Weapon":
+                return True
+            return slot == "OffHand" and getattr(candidate, "off", False)
+        if getattr(candidate, "typ", None) == "Accessory":
+            return getattr(candidate, "subtyp", None) == slot
+        return getattr(candidate, "typ", None) == slot
     player.cls = SimpleNamespace(
         name="Warrior",
-        equip_check=lambda weapon, slot: weapon.__name__ != "BlockedWeapon",
+        equip_check=equip_check,
     )
     player.level = SimpleNamespace(level=level, pro_level=1, exp=0, exp_to_gain=10)
     player.stats = SimpleNamespace(strength=5, intel=4, wisdom=3, con=6, charisma=7, dex=8)
@@ -167,6 +178,14 @@ def _build_player(level=10):
     player.storage = {}
     player.inventory = {}
     player.special_inventory = {}
+    player.equipment = {
+        "Weapon": items.NoWeapon(),
+        "OffHand": items.NoOffHand(),
+        "Armor": items.NoArmor(),
+        "Helmet": items.NoHelmet(),
+        "Ring": items.NoRing(),
+        "Pendant": items.NoPendant(),
+    }
     player.spellbook = {"Spells": {}, "Skills": {}}
     player.summons = {}
     player.warp_point = False
@@ -229,6 +248,13 @@ def _build_player(level=10):
             target[name].extend([item] * num)
 
     player.modify_inventory = modify_inventory
+    def equip(slot, item):
+        if not player.cls.equip_check(item, slot):
+            return False
+        player.equipment[slot] = item
+        player.modify_inventory(item, subtract=True)
+        return True
+    player.equip = equip
     player.special_power = lambda game: "Power unlocked.\n"
     player.level_up = lambda game, textbox=None, menu=None: setattr(player.level, "exp_to_gain", "MAX")
     player.character_menu = lambda *args, **kwargs: setattr(player, "opened_character_menu", True)
@@ -514,6 +540,33 @@ def test_buy_and_sell_cover_purchase_and_sale_paths(monkeypatch):
     assert curses_town.sell(game, menu) is True
     assert player.gold == 80 + int(0.025 * player.stats.charisma * 20)
     assert any(call[2] is True for call in player.modified)
+
+
+def test_buy_can_equip_purchased_dual_wield_weapons(monkeypatch):
+    _install_fake_menus(monkeypatch)
+    FakeShopMenu.item_responses = ["Dagger  Dirk  10  0", "Go Back"]
+    FakeShopPopup.responses = [2]
+    FakeConfirmPopupMenu.responses = [True]
+    FakeSelectionPopupMenu.responses = [2]
+    FakeTextBox.messages = []
+    player = _build_player()
+    player.gold = 100
+    game = SimpleNamespace(player_char=player)
+    menu = FakeShopMenu(game, "shop")
+
+    monkeypatch.setattr(
+        curses_town.items,
+        "items_dict",
+        {"Weapon": {"1-Handed": {"Dagger": [items.Dirk]}}},
+    )
+
+    assert curses_town.buy(game, menu, "Weapon", handed="1-Handed") is False
+
+    assert player.gold == 80
+    assert player.equipment["Weapon"].name == "Dirk"
+    assert player.equipment["OffHand"].name == "Dirk"
+    assert "Dirk" not in player.inventory
+    assert any("Equipped Dirk to Main Hand and OffHand." in str(message) for message in FakeTextBox.messages)
 
 
 def test_blacksmith_and_secret_shop_cover_leave_and_special_branches(monkeypatch):
