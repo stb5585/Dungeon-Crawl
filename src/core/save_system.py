@@ -78,13 +78,17 @@ class ItemSerializer:
         """Convert item object to data dict."""
         if item is None or not hasattr(item, 'name'):
             return {'name': 'None', 'typ': 'None', 'subtyp': 'None'}
-        
-        return {
+
+        data = {
             'name': item.name,
             'typ': getattr(item, 'typ', 'Unknown'),
             'subtyp': getattr(item, 'subtyp', 'None'),
             'class': item.__class__.__name__,
         }
+        if item.__class__.__name__ == "InscribedSpellScroll":
+            data["spell_class_name"] = getattr(item, "spell_class_name", "MagicMissile")
+            data["charges"] = int(getattr(item, "charges", 1) or 1)
+        return data
     
     @staticmethod
     def deserialize(data: dict[str, Any]):
@@ -111,6 +115,11 @@ class ItemSerializer:
                 item_class = getattr(items, item_class_name)
                 # Don't try to instantiate abstract base classes
                 if item_class_name not in ['Item', 'Weapon', 'OffHand', 'Armor', 'Helmet', 'Accessory']:
+                    if item_class_name == "InscribedSpellScroll":
+                        return item_class(
+                            data.get("spell_class_name", "MagicMissile"),
+                            charges=data.get("charges"),
+                        )
                     return item_class()
             except Exception:
                 pass
@@ -727,6 +736,9 @@ class PlayerDataSerializer:
             'class_ring_awakening': getattr(player, 'class_ring_awakening', None),
             'paladin_vow': getattr(player, 'paladin_vow', None),
             'dragoon_dragon_quest': getattr(player, 'dragoon_dragon_quest', None),
+            'bard_song': getattr(player, 'bard_song', None),
+            'lycan_state': getattr(player, 'lycan_state', None),
+            'wizard_affinity': getattr(player, 'wizard_affinity', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=getattr(getattr(player, 'level', None), 'level', 1),
@@ -916,6 +928,15 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_dragoon_dragon_quest"):
             player.ensure_dragoon_dragon_quest()
+        player.bard_song = data.get('bard_song', getattr(player, 'bard_song', None))
+        if hasattr(player, "ensure_bard_song"):
+            player.ensure_bard_song()
+        player.lycan_state = data.get('lycan_state', getattr(player, 'lycan_state', None))
+        if hasattr(player, "ensure_lycan_state"):
+            player.ensure_lycan_state()
+        player.wizard_affinity = data.get('wizard_affinity', getattr(player, 'wizard_affinity', None))
+        if hasattr(player, "ensure_wizard_affinity"):
+            player.ensure_wizard_affinity()
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=player.level.level,

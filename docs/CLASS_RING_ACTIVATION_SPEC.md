@@ -9,9 +9,10 @@ Class Ring activation now has two implementation tiers:
   `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
   `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Master Monk`, `Archbishop`,
   `Troubadour`, `Lycan`, `Astromancer`, `Soulcatcher`, and `Beast Master`.
-- Legacy second-promotion foundation: saved awakening state, dormant/awakened
-  Class Ring descriptions, activation helpers, and several runtime mechanics
-  are implemented for the remaining second-promotion classes.
+- Legacy second-promotion class-kit pass: supporting class mechanics, saved
+  state, status text, and Class Ring hooks are implemented for the legacy
+  classes listed below. Radar-style Wizard visualization can be added later;
+  the six affinity values are exposed as readable text first.
 
 The standard Class Ring acquisition remains the Hooded Figure reward after the
 Red Dragon quest. The ring's second-promotion power is dormant until awakened by
@@ -244,16 +245,19 @@ awakening state is saved in `class_ring_awakening`.
 The ring must be equipped or placed in Barracks storage for activation helpers.
 Inventory-only rings do not count as visible town recognition.
 
-The listed effects are represented in code as descriptions, saved state, and
-mechanics helpers. Some have live combat hooks already; full quest UI, trial
-encounters, and class-specific town interactions remain to be implemented per
-class.
+Activation questlines, town gates, dormant/awakened ring state, and the class
+mechanics below are implemented. The remaining work in this area is tuning,
+additional visual presentation, and playtest follow-up.
 
 ### Warrior Branch
 
 - `Berserker`: `No Healing Duel` awakens `Bloodied Crits`. While worn, the
   ring grants +10% crit below 50% HP, or +15% crit and +15% weapon damage below
   25% HP.
+  - `Battle Scars`: after a non-trial victory at 10% HP or lower, Berserkers
+    roll a 10% chance to gain 1 scar, capped at 20. Each scar permanently
+    increases max HP by about 1% at the time it is earned and grants +0.5%
+    weapon damage while below 25% HP.
   - Status: playable in the Barracks when a dormant Berserker Class Ring is
     equipped or stored.
   - The duel has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -304,6 +308,9 @@ class.
     compatible with standard Class Ring acquisition and `Dragon's Fury` unlock.
 - `Stalwart Defender`: `Siege Trial` awakens `Guard Meter`, which builds under
   defensive pressure and can be spent to reduce major incoming hits.
+  - `Resolve` / `Guard Meter`: max 100. Defending, blocking, and mitigated
+    physical damage build Resolve. While the awakened ring is equipped, a major
+    incoming hit automatically spends 100 Resolve to reduce that hit by 40%.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -314,6 +321,12 @@ class.
 - `Wizard`: `Four Formulae` awakens `School Streak`. Failed spell riders for
   the same school add +15% rider chance; four stacks guarantee the next
   eligible rider.
+  - `Wizard Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
+    `Electric`, `Earth`, and `Wind`, starting at 50 each. Casting a school
+    raises that school by 5 and lowers its opposite by 5. Opposites are
+    `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`. Matching affinity
+    above 50 gives a modest elemental magic damage bonus. Character and ring
+    status surfaces expose the six values as text.
   - Status: playable in the Church when a dormant Wizard Class Ring is equipped
     or stored.
 - `Shadowcaster`: `Debt Cap Trial` awakens `Umbral Debt`. Shadow damage stores
@@ -325,6 +338,8 @@ class.
     equipped or stored.
 - `Grand Summoner`: `Conduit Ritual` permanently sacrifices 5% max HP and
   awakens +30% HP and damage for current and future summons.
+  - Future summons apply the awakened multiplier when their combat stats are
+    initialized.
   - Status: playable in the Church when a dormant Grand Summoner Class Ring is
     equipped or stored.
 
@@ -344,6 +359,11 @@ class.
     equipped or stored.
 - `Arcane Trickster`: `Impossible Theft` awakens `Spell Steal Buff`, granting
   +20% Magic damage and +10% dodge for 3 turns after a successful spell steal.
+  - `Steal Spell`: available to `Spell Stealer` and `Arcane Trickster`. It
+    requires a concrete `Blank Scroll` from the Alchemist/scroll loot table.
+    On success, the blank is consumed and replaced with a usable stolen-spell
+    scroll that preserves the stolen spell identity and normal scroll targeting
+    rules. Class Ring trial enemies are immune.
   - Status: playable at the Old Warehouse when a dormant Arcane Trickster Class
     Ring is equipped or stored.
 
@@ -363,10 +383,20 @@ class.
     equipped or stored.
 - `Troubadour`: `Lost Ballad` awakens `Encore`, causing expired songs to trigger
   one final weaker effect.
+  - `Bard Songs`: `Bard` and `Troubadour` can perform one active 3-turn song at
+    a time while a musical instrument is equipped in `OffHand`. `Valor` raises
+    weapon and magic damage, `Shelter` reduces incoming damage, and `Renewal`
+    pulses HP/MP recovery. `Troubadour` improves song strength by 50%; awakened
+    `Encore` adds one final 50%-strength pulse or beat when a song expires.
   - Status: playable in the Church when a dormant Troubadour Class Ring is
     equipped or stored.
 - `Lycan`: `Control Rite` awakens `Controlled Frenzy`, reducing lock-in
   penalties and improving healing while locked in.
+  - `Moon Cycle`: dungeon steps advance moon phase every 120 steps through
+    `New`, `Waxing`, `Full`, and `Waning`. While transformed, moon phase
+    affects damage and Frenzy Lock risk. Kills and low HP can trigger Frenzy
+    Lock; Full Moon has the highest risk and longest duration. Awakened
+    `Controlled Frenzy` improves healing received while locked by 25%.
   - Status: playable in the Church when a dormant Lycan Class Ring is equipped
     or stored.
 - `Astromancer`: `Star Chart` awakens `Constellation Cycle`, advancing active

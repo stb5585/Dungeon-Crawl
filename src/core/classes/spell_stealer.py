@@ -1,9 +1,12 @@
-"""SpellStealer class definition."""
+"""SpellStealer class definition and scroll theft helpers."""
 
 from __future__ import annotations
 
+import random
+from typing import Any
+
 from .base import Job
-from .. import items
+from .. import abilities, items
 
 
 class SpellStealer(Job):
@@ -11,7 +14,7 @@ class SpellStealer(Job):
     Promotion: Footpad -> Spell Stealer -> Arcane Trickster
     Pros: Intel and wisdom gain; can use Tomes in offhand and can wear cloth armor
     Cons: Lower dex and no constitution gain; lose access to fist and club weapons
-    Special Mechanic: can steal magic from enemies  TODO
+    Special Mechanic: can steal magic from enemies by inscribing it onto Blank Scrolls.
     """
 
     def __init__(self):
@@ -47,3 +50,41 @@ class SpellStealer(Job):
             },
             pro_level=2,
         )
+
+
+def eligible_spell_classes(target: Any) -> list[type]:
+    if getattr(target, "class_ring_trial_enemy", False):
+        return []
+    spells = getattr(target, "spellbook", {}).get("Spells", {})
+    classes: list[type] = []
+    for spell in spells.values():
+        class_name = getattr(spell, "_class_name", spell.__class__.__name__)
+        if class_name and hasattr(abilities, class_name):
+            ability_cls = getattr(abilities, class_name)
+            classes.append(ability_cls)
+    if getattr(target, "boss", False) or getattr(target, "boss_type", None):
+        return [cls for cls in classes if not cls.__name__.lower().endswith("ultimate")]
+    return classes
+
+
+def steal_spell(user: Any, target: Any, *, rng: Any = random) -> tuple[bool, str]:
+    if getattr(getattr(user, "cls", None), "name", "") not in {"Spell Stealer", "Arcane Trickster"}:
+        return False, f"{user.name} cannot steal spells.\n"
+    blanks = getattr(user, "inventory", {}).get("Blank Scroll", [])
+    if not blanks:
+        return False, f"{user.name} needs a Blank Scroll to steal a spell.\n"
+    spell_classes = eligible_spell_classes(target)
+    if not spell_classes:
+        return False, f"{getattr(target, 'name', 'The target')} has no stealable spell.\n"
+    spell_cls = rng.choice(spell_classes)
+    blank = blanks[0]
+    user.modify_inventory(blank, subtract=True)
+    scroll = items.InscribedSpellScroll(spell_cls.__name__)
+    user.modify_inventory(scroll)
+    try:
+        from . import class_rings
+
+        class_rings.activate_spell_steal_buff(user)
+    except Exception:
+        pass
+    return True, f"{user.name} steals {scroll.spell.name} onto a Blank Scroll.\n"

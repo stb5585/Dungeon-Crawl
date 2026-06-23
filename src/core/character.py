@@ -359,6 +359,16 @@ class Character:
         """Helper to emit healing events."""
         if amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
             self.record_archdruid_healing_done(amount)
+        if amount and amount > 0:
+            try:
+                from .classes import class_rings
+
+                echo = class_rings.shared_recovery_amount(self, amount)
+                familiar = getattr(self, "familiar", None)
+                if echo and familiar is not None and familiar.is_alive():
+                    familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
+            except Exception:
+                pass
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -492,6 +502,12 @@ class Character:
                 mult *= ELF_HEALING_RECEIVED_MULTIPLIER
             elif race_name == "Half Elf":
                 mult *= HALF_ELF_HEALING_RECEIVED_MULTIPLIER
+        except Exception:
+            pass
+        try:
+            from .classes import lycan
+
+            mult *= lycan.healing_multiplier(self)
         except Exception:
             pass
         return mult
@@ -1414,6 +1430,12 @@ class Character:
             from .classes import paladin
 
             final_damage = int(final_damage * paladin.incoming_damage_multiplier(self, typ))
+        except Exception:
+            pass
+        try:
+            from .classes import bard
+
+            final_damage = int(final_damage * (1 - bard.damage_reduction(self)))
         except Exception:
             pass
 

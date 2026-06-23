@@ -183,7 +183,11 @@ def default_state() -> dict[str, Any]:
     return {
         "awakened": {class_name: False for class_name in LEGACY_CLASS_NAMES},
         "data": {
-            "Berserker": {"no_healing_duel_complete": False},
+            "Berserker": {
+                "no_healing_duel_complete": False,
+                "battle_scars": 0,
+                "battle_scar_hp_bonus": 0,
+            },
             "Crusader": {"vow": None},
             "Dragoon": {"meteor_guard_shield": 0, "meteor_guard_turns": 0},
             "Stalwart Defender": {"guard_meter": 0},
@@ -243,6 +247,9 @@ def _normalize_lists(state: dict[str, Any]) -> None:
         str(school): max(0, min(4, int(stacks or 0)))
         for school, stacks in streak.items()
     } if isinstance(streak, dict) else {}
+    berserker = state["data"]["Berserker"]
+    berserker["battle_scars"] = max(0, min(20, int(berserker.get("battle_scars", 0) or 0)))
+    berserker["battle_scar_hp_bonus"] = max(0, int(berserker.get("battle_scar_hp_bonus", 0) or 0))
 
 
 def ensure_state(character: Any) -> dict[str, Any]:
@@ -322,10 +329,26 @@ def _description_extra(character: Any, current: str) -> str:
     if current == "Dragoon" and is_awakened(character, current):
         shield = int(data.get("meteor_guard_shield", 0) or 0)
         return f" Meteor Guard shield: {shield}."
+    if current == "Berserker":
+        scars = int(data.get("battle_scars", 0) or 0)
+        return f" Battle Scars: {scars}/20."
     if current == "Stalwart Defender" and is_awakened(character, current):
         return f" Guard Meter: {int(data.get('guard_meter', 0) or 0)}/100."
+    if current == "Wizard":
+        affinity = getattr(character, "wizard_affinity", {}) or {}
+        if affinity:
+            values = ", ".join(f"{school} {affinity.get(school, 50)}" for school in ("Fire", "Ice", "Water", "Electric", "Earth", "Wind"))
+            return f" Affinity: {values}."
     if current == "Shadowcaster" and is_awakened(character, current):
         return f" Umbral Debt: {int(data.get('debt', 0) or 0)}."
+    if current == "Troubadour":
+        song = getattr(character, "bard_song", {}) or {}
+        if song.get("active"):
+            return f" Active song: {song.get('active')} ({int(song.get('turns', 0) or 0)} turns)."
+    if current == "Lycan":
+        state = getattr(character, "lycan_state", {}) or {}
+        if state:
+            return f" Moon: {state.get('moon_phase', 'New')}; Frenzy Lock: {int(state.get('frenzy_turns', 0) or 0)} turns."
     if current == "Astromancer" and is_awakened(character, current):
         return f" Current constellation: {active_constellation(character)}."
     if current == "Soulcatcher" and is_awakened(character, current):
@@ -382,11 +405,14 @@ def bloodied_crit_bonus(character: Any) -> float:
 
 
 def weapon_damage_multiplier(character: Any) -> float:
+    from . import berserker
+
     multiplier = 1.0
     if is_awakened(character, "Berserker") and has_equipped_class_ring(character):
         hp_max = max(1, int(getattr(character.health, "max", 1) or 1))
         if character.health.current / hp_max < 0.25:
             multiplier += 0.15
+    multiplier += berserker.bloodied_weapon_bonus(character)
     if martial_master_active(character):
         multiplier += 0.50
     return multiplier

@@ -4898,11 +4898,51 @@ class SheetMusic(Misc):
 
 class BlankScroll(Misc):
     """
-    Base scroll item; used by Spell Stealer/Arcane Trickster to store spells for use
+    Blank scroll used by Spell Stealer/Arcane Trickster to store spells.
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
-        super().__init__(name, description, value, rarity, subtyp)
+    def __init__(
+        self,
+        name: str = "Blank Scroll",
+        description: str | None = None,
+        value: int = 2500,
+        rarity: float = 0.45,
+        subtyp: str = "Scroll",
+    ) -> None:
+        super().__init__(
+            name=name,
+            description=description or "\n".join(wrap(
+                    "A prepared scroll with enough receptive ink to hold one stolen spell.",
+                    35,
+                    break_on_hyphens=False,
+                )),
+            value=value,
+            rarity=rarity,
+            subtyp=subtyp,
+        )
+
+
+class InscribedSpellScroll(Scroll):
+    """
+    A stolen-spell scroll that preserves the original spell identity.
+    """
+
+    def __init__(self, spell_class_name: str = "MagicMissile", charges: int | None = None) -> None:
+        super().__init__()
+        self.spell_class_name = spell_class_name
+        spell_cls = getattr(abilities, spell_class_name, abilities.MagicMissile)
+        self.spell = spell_cls()
+        self.name = f"Stolen {self.spell.name} Scroll"
+        self.description = "\n".join(wrap(
+            f"Scroll inscribed with a stolen copy of {self.spell.name}. "
+            "The scroll will be consumed when it is out of charges.",
+            35,
+            break_on_hyphens=False,
+        ))
+        self.value = max(3000, int(getattr(self.spell, "cost", 0) or 0) * 1000)
+        self.rarity = 0.2
+        if charges is not None:
+            self.charges = max(1, int(charges))
 
 
 # Enemy quest items
@@ -5360,7 +5400,7 @@ items_dict = {
         'Status': [Antidote, EyeDrop, EchoScreen, Bandage, PhoenixDown]},
     'Misc': {
         'Key': [Key, OldKey],
-        'Scroll': [BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
+        'Scroll': [BlankScroll, BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
                    EarthScroll, WindScroll, ShadowScroll, HolyScroll, CleanseScroll, BoostScroll,
                    ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll],
         'Reagents': []}

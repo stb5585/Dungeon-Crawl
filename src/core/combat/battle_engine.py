@@ -44,7 +44,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import dragoon, paladin
+from ..classes import bard, berserker, class_rings, dragoon, lycan, paladin, wizard
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -249,6 +249,14 @@ class BattleEngine:
                     result.shield_explosion_damage = dmg
                 except (ValueError, IndexError):
                     pass
+
+        if self.attacker == self.player:
+            song_text = bard.tick_song(self.player)
+            if song_text:
+                result.effects_text = f"{result.effects_text or ''}{song_text}"
+            frenzy_text = lycan.tick_frenzy(self.player)
+            if frenzy_text:
+                result.effects_text = f"{result.effects_text or ''}{frenzy_text}"
 
         if self.attacker == self.player:
             duel_text = self._fail_no_healing_duel_if_healed(hp_before)
@@ -539,6 +547,12 @@ class BattleEngine:
                     result.messages.append(riposte)
 
         paladin.tick_turn(self.player)
+        if self.defender == self.player and self.player.is_alive():
+            hp_max = max(1, int(self.player.health.max or 1))
+            if self.player.health.current / hp_max <= 0.25:
+                triggered, frenzy_msg = lycan.maybe_trigger_frenzy(self.player, reason="low_hp")
+                if triggered:
+                    result.messages.append(frenzy_msg)
         paladin.clear_transient_marks(self.player)
         self.logger.next_turn()
         return result
@@ -676,7 +690,10 @@ class BattleEngine:
             actor=self.attacker,
             target=self.defender,
         ))
-        return self.attacker.enter_defensive_stance(duration=1, source="Defend")
+        message = self.attacker.enter_defensive_stance(duration=1, source="Defend")
+        if self.attacker == self.player:
+            class_rings.build_guard_meter(self.player, 25)
+        return message
 
     def _execute_spell(self, choice: str | None) -> str:
         """Cast a spell. Handles silence check."""
@@ -700,6 +717,10 @@ class BattleEngine:
 
         message = f"{self.attacker.name} casts {choice}.\n"
         message += str(spell.cast(self.attacker, target=self.defender))
+        if self.attacker == self.player:
+            wizard.record_cast(self.player, wizard.school_from_ability(spell))
+            if getattr(getattr(self.player, "cls", None), "name", "") == "Astromancer":
+                class_rings.advance_constellation(self.player)
         return message
 
     def _execute_skill(
@@ -898,6 +919,14 @@ class BattleEngine:
             )
             if vow_text:
                 msg += vow_text
+
+            _scar_gained, scar_text = berserker.record_battle_scar(self.player)
+            if scar_text:
+                msg += scar_text
+            class_rings.record_soul_harvest(self.player, getattr(self.enemy, "enemy_typ", None))
+            frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(self.player, reason="kill")
+            if frenzy_triggered:
+                msg += frenzy_text
 
             # Loot
             loot_msg = self.player.loot(self.enemy, self.tile)

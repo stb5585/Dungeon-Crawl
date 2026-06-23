@@ -28,7 +28,7 @@ This roadmap tracks the remaining work for **The Forsaken Tenet** after the rece
 
 ### Verified Repo Metrics
 
-- Test files under `tests/`: `81`
+- Test files under `tests/`: `99`
 - YAML ability definitions under `src/core/data/abilities/`: `179`
 - Event types in `EventType`: `38`
 - Latest full-suite result recorded in prior roadmap notes: `1398` passing tests with `81%` total coverage across `src/`
@@ -410,7 +410,7 @@ Implemented:
 
 #### P4b - Quest And Realm Content
 
-Status: `Active` for decision cleanup, `Partially Implemented` for Class Ring activation, `Ready For Spec` for Psychopomp/The Liminal Gap
+Status: `Done` for Class Ring activation and current quest/realm additions, `Ready For Spec` for Psychopomp/The Liminal Gap
 
 Implemented:
 
@@ -448,15 +448,11 @@ Implemented:
    - Implemented Wizard Four Formulae, Shadowcaster Debt Cap Trial, Knight Enchanter Arcane Duel, and Grand Summoner Conduit Ritual activations through the Church, including visible-ring gating, ring awakening, Grand Summoner HP sacrifice, and regression coverage.
    - Implemented Rogue Loaded Game, Seeker Cartographer's Proof, Ninja No-Trace Contract, and Arcane Trickster Impossible Theft activations through the Old Warehouse, including visible-ring gating, late-game Old Warehouse access alongside Warp Point, ring awakening, and regression coverage.
    - Implemented Templar Relic Defense, Master Monk Purity Rite, Archbishop Miracle Vigil, Troubadour Lost Ballad, Lycan Control Rite, Astromancer Star Chart, Soulcatcher Ancestral Totem Rite, and Beast Master Pack Trial activations through the Church, including visible-ring gating, ring awakening, and regression coverage.
-   - Added legacy second-promotion Class Ring awakening state, dormant/awakened descriptions, activation helpers, and live hooks for the legacy effects that already have safe runtime integration points.
+   - Added legacy second-promotion Class Ring awakening state, dormant/awakened descriptions, activation helpers, and live hooks for the legacy class-kit effects.
+   - Implemented the full legacy class-kit pass for the ring-backed classes: Berserker Battle Scars, Spell Stealer/Arcane Trickster scroll-based spell theft, Bard/Troubadour songs and Encore, Wizard six-school affinity text/status, Lycan Moon Cycle and Frenzy Lock, Stalwart Defender Resolve, Grand Summoner future summon scaling, and status descriptions for the remaining legacy helpers.
 
 Ready For Spec:
 
-- Remaining legacy Class Ring questline implementations:
-   - Standard Class Ring acquisition stays implemented as a passive reward for defeating the Red Dragon.
-   - Grandmaster of Arms, Demonologist, Archdruid, Berserker, Crusader, Dragoon, Stalwart Defender, Wizard, Shadowcaster, Knight Enchanter, Grand Summoner, Rogue, Seeker, Ninja, Arcane Trickster, Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, and Beast Master are fully playable activation flows.
-   - Existing second-promotion Class Ring directions are documented and have saved awakening state plus mechanics helpers.
-   - Arcane Trickster and Troubadour need their future spell-steal and song systems before their ring effects can be fully event-driven.
 - Main Storyline Plot and The Liminal Gap full design spec:
    - Locked creation premise: Elysia established Seven Principles, each embodied by a Guardian, and all mortal races are equally children of Elysia.
    - Locked story beat: the first confrontation with Vesperion defeats or kills the hero and sends them to The Liminal Gap instead of normal town resurrection.
@@ -472,10 +468,8 @@ Ready For Spec:
 
 Needs Design Decision:
 
-- Remaining legacy Class Ring implementation order:
-   - Decide which legacy activation questline should be built first now that Grandmaster of Arms, Demonologist, and Archdruid are implemented.
 - The Liminal Gap implementation order:
-   - Decide whether Psychopomp/The Liminal Gap should be implemented before or after the remaining P4b questline content.
+   - Decide when Psychopomp/The Liminal Gap should be implemented relative to optional Realm of Cambion expansion and class-kit tuning.
 - Vesperion/Acolyte/Hooded Figure reveal order:
    - Decide where the player first learns the names `Vesperion` and `Voluntas`, when the Hooded Figure's allegiance becomes clear, and how the Acolyte voices Vesperion's mercy-through-control argument.
 
@@ -535,7 +529,7 @@ Deferred:
 
 #### P4e - Class Mechanics And Progression Kits
 
-Status: `Partially Implemented`, `Needs Design Decision` for remaining mechanics
+Status: `Partially Implemented`, `Needs Playtest` for full legacy class-kit balance and remaining non-legacy class specs
 
 - Re-design Astromancer ultimate ability `TetraDisaster` after a reference audit across abilities, data, tests, saves, and UI text.
    - Astromancer is a prophet/time mage mix
@@ -554,39 +548,45 @@ Implemented:
   - Implemented as a second-promotion class in the class package.
   - Added Venom, Stone, Growth, and Storm attunement; Ancient Grove unlock; deterministic catalysts; aspect rituals; mastery caps; Harmony Bonus; and save migration.
 - Class Ring foundation:
-   - Existing second-promotion rings now have dormant/awakened descriptions, saved awakening state, activation helpers, and selected live mechanics hooks.
+   - Existing second-promotion rings now have dormant/awakened descriptions, saved awakening state, activation helpers, and live class-kit mechanics hooks.
   - Berserker, Dragoon, and Stalwart Defender now have playable Barracks activation flows.
   - Wizard, Shadowcaster, Knight Enchanter, and Grand Summoner now have playable Church activation rites.
   - Rogue, Seeker, Ninja, and Arcane Trickster now have playable Old Warehouse activation jobs.
   - Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, Beast Master, and Crusader now have playable Church activation rites.
   - Paladin vow selection now persists from promotion, grants vow-specific skills, and feeds Crusader `Vow Trial` / `Vow Affirmation`.
-
-Needs Design Decision:
-
-- Warrior line:
-  - Define Berserker Battle Scars trigger chance, permanent stat pool, caps, and save behavior.
+- Legacy full class-kit pass:
+  - Berserker Battle Scars now roll after non-trial low-HP victories, cap at 20, raise max HP, and add bloodied weapon damage.
+  - Spell Stealer/Arcane Trickster `Steal Spell` now requires `Blank Scroll`, consumes it, and creates usable stolen-spell scrolls; Class Ring trial enemies are immune.
+  - Bard/Troubadour now have active `Valor`, `Shelter`, and `Renewal` songs requiring a musical instrument; Troubadour strengthens songs and awakened `Encore` adds the final weaker beat.
+  - Wizard now tracks a six-school affinity hex with `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind` opposites, including status text.
+  - Lycan now tracks dungeon-step Moon Cycle and Frenzy Lock state with Controlled Frenzy healing support.
+  - Stalwart Defender `Resolve` / `Guard Meter`, Grand Summoner future summon scaling, Soulcatcher harvest tracking, Beast Master shared recovery, and class status text are wired through existing runtime hooks.
 - Paladin/Crusader:
   - Implemented permanent Paladin vow selection for Redemption, Conquest, Protection, and Retribution.
   - Added `Redeem`, `Challenge`, `Interpose`, and `Judgment Riposte`, with saved aura/mark state, deterministic counters, save/load migration, pygame/curses promotion prompts, Church legacy vow selection, and Crusader Vow Trial affirmation.
-  - Continue playtesting vow balance, especially mercy victory reward expectations, encounter-rate modifiers, and mark severity.
 - Lancer/Dragoon:
-  - Keep Jump marked implemented.
-  - Dragoon Dragon Quest is implemented; continue playtesting the Recover Jump Red Dragon route, Realm of Cambion terminal follow-up, Jeweler crafting, and Draconite Pendant balance.
+  - Jump remains implemented.
+  - Dragoon Dragon Quest is implemented through the Recover Jump Red Dragon route, Realm of Cambion terminal follow-up, Jeweler crafting, and Draconite Pendant reward.
+
+Needs Design Decision And Playtest Follow-Up:
+
+- Legacy class-kit balance:
+  - Playtest Berserker Battle Scars gain rate, low-HP risk/reward, and late-game HP/damage scaling.
+  - Playtest scroll economy for `Blank Scroll`, stolen scroll charge/value behavior, and boss spell-steal limits.
+  - Playtest Bard/Troubadour song strength, Renewal sustain, and Encore usefulness.
+  - Playtest Wizard affinity gain/pull rates and whether radar visualization is worth adding beyond text status.
+  - Playtest Lycan Moon Cycle cadence, Frenzy Lock risk/duration, and Controlled Frenzy healing balance.
+  - Playtest Stalwart Resolve gain/spend rate and how Shield Slam, Retaliate, Shield Block, and Last Stand should deepen the meter later.
+- Balance follow-up:
+  - Continue playtesting Paladin vow balance, Dragoon Dragon Quest reward balance, mercy victory reward expectations, encounter-rate modifiers, and mark severity.
 - Narrative integration:
   - Tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood.
   - Avoid implementing class-progression story beats until the associated quest/spec defines trigger timing, player-facing text, save flags, and whether the beat is optional or required.
-- Sentinel/Stalwart Defender:
-  - Define Resolve gauge storage, gain rate, decay/reset rules, UI, and effects on Shield Slam, Retaliate, Shield Block, and Last Stand.
 - Mage:
-  - Define Elemental Affinity Wheel storage, spell unlock thresholds, Wizard promotion behavior, inverse-element pairs, and radar-chart UI.
   - Define any remaining Demonologist corruption/bargain presentation and Shadowcaster overlap beyond the implemented contract system.
-  - Define Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics.
-- Footpad:
-  - Define Thief/Rogue, Inquisitor/Seeker, Assassin/Ninja, and Spell Stealer/Arcane Trickster follow-up mechanics.
-- Healer:
-  - Define Cleric/Templar, Priest/Archbishop, Monk/Master Monk Sound Body and Mind, and Bard/Troubadour mechanics.
+  - Define deeper Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics beyond the ring hooks.
 - Pathfinder:
-  - Define Druid/Lycan and Ranger/Beast Master follow-up mechanics.
+  - Define deeper Druid/Lycan and Ranger/Beast Master mechanics beyond the ring hooks.
   - Define Astromancer Runic Alterations drop rules, rune inventory, gear/spell modification, replacement/loss rules, UI, and save behavior.
   - Define Shaman/Soulcatcher rank-1 elemental spell unlock quests, Staff incentives, and Magic Defense/absorption Totem behavior.
 
@@ -673,18 +673,21 @@ Status: `Planned`
       - Monkey Grip 2: passive; allows Berserker to equip a 2-handed weapon in the offhand at the expense of accuracy (Berserker)
       - Final Assault: upon lethal damage from a melee attack, retaliate against the target with a counterattack; if the target is felled, you stabilize at 1 HP (Berserker)
       - Paladin - Redemption Path
-        - Redeem: attempt to redeem an enemy; chance of success is affected by charisma and inverse to the enemy's health percentage
-        - Redemption Aura: triggers on successful Redeem; lowers encounter rate but increases experience and gold and chance to redeem next enemy; falls off if an enemy is killed
-        - Mark of Perdition: chance to trigger when a Paladin/Crusader on Redemption path kills an enemy; increases encounter rate and lowers experience and gold; persists until next successful redeem
+        - Implemented: `Redeem` attempts a boss-immune mercy victory using Charisma/Wisdom, enemy missing HP, and aura bonus.
+        - Implemented: `Redemption Aura` lasts 3 encounters, lowers encounter rate, increases experience/gold, and improves Redeem chance.
+        - Implemented: `Mark of Perdition` lasts 3 encounters, increasing encounter rate and reducing experience/gold after Redemption vow-breaking kills.
       - Paladin - Conquest Path
-        - Conquest Aura: triggers when defeating an enemy that has an active bounty; increases initiative and offensive combat stats; lasts 5 minutes; stacks up to 3 times
-        - Mark of the Craven: triggers when running away from an enemy; decreases initiative and offensive combat stats; persists until successfully killing a bounty target
+        - Implemented: `Challenge` marks one foe for 3 turns and grants bonus accuracy/damage against that foe.
+        - Implemented: `Conquest Aura` lasts 3 encounters, stacks up to 3, and grants initiative plus weapon/magic damage.
+        - Implemented: `Mark of the Craven` persists until killing a bounty target and reduces initiative plus weapon/magic damage.
       - Paladin - Protection Path
-        - Protection Aura: chance to trigger on a blocked attack; increases block chance and amount and lowers the chance of incapacitation; lasts 2 turns and stacks up to 5 times with each time resetting duration
-        - Mark of Vulnerability: increases melee damage taken; triggers if player is incapacitated; lasts until no longer incapacitated
+        - Implemented: `Interpose` enters a 2-turn guarded stance, improving the next weapon-hit block.
+        - Implemented: `Protection Aura` lasts 2 combat turns, stacks up to 5, and improves block chance/mitigation.
+        - Implemented: `Mark of Vulnerability` lasts until incapacitation ends and increases physical/melee damage taken.
       - Paladin - Retribution Path
-        - Retribution Aura: triggers on a successful counterattack, duration is doubled if enemy dies; increases dodge chance and critical damage; lasts 5 minutes
-        - Mark of Mercy: triggers when disarmed or no weapon equipped (e.g. it breaks); if HP drops below 10%, enemy can mercy-kill character; persists until weapon is equipped or picked up
+        - Implemented: `Judgment Riposte` enters a 2-turn retaliatory stance that counters an enemy attack with weapon/Holy damage.
+        - Implemented: `Retribution Aura` lasts 3 encounters, or 6 if the riposte kills, and improves dodge plus critical damage.
+        - Implemented: `Mark of Mercy` persists until a weapon is equipped/picked up; Vow Affirmation lowers its lethal threshold from 10% HP to 5%.
       - Transform (1-4): change Transform abilities to add each iteration instead of overwriting the previous one (Druid/Lycan)
       - Nature Attunement follow-up abilities: the core Archdruid attunement/ring system is implemented; future Druid/Archdruid abilities can consume or reference the existing Venom, Stone, Growth, and Storm state.
   - Spells

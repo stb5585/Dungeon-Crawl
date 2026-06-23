@@ -217,6 +217,17 @@ class Summons(Character):
         self.stats = Stats(*stats[2:])
         combat_stats = [int(x * stat_adj) for x in self.start_combat]
         self.combat = Combat(*combat_stats)
+        try:
+            from .classes import class_rings
+
+            multiplier = class_rings.summon_multiplier(player_char)
+            if multiplier != 1.0:
+                self.health.max = max(1, int(self.health.max * multiplier))
+                self.health.current = self.health.max
+                self.combat.attack = int(self.combat.attack * multiplier)
+                self.combat.magic = int(self.combat.magic * multiplier)
+        except Exception:
+            pass
 
     def level_up(self, player_char: Character) -> str:
         self.level.level += 1

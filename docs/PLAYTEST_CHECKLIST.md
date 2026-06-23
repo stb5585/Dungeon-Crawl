@@ -81,6 +81,47 @@
 - [ ] Unlock Warp Point while a Footpad-branch Class Ring job is available.
   - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
 
+### Legacy Class-Kit Mechanics
+- [ ] Win ordinary non-trial combat as a Berserker at 10% HP or lower across repeated attempts.
+  - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.
+  - Expected: Below 25% HP, weapon damage increases from scars and stacks with awakened `Bloodied Crits`.
+- [ ] Visit the Alchemist and scroll loot sources after the `Blank Scroll` addition.
+  - Expected: `Blank Scroll` can be acquired as a concrete scroll item and round-trips through save/load.
+- [ ] Use `Steal Spell` as a Spell Stealer or Arcane Trickster with and without a `Blank Scroll`.
+  - Expected: Without a blank scroll, the skill fails clearly.
+  - Expected: On success, one `Blank Scroll` is consumed and a usable `Stolen <Spell> Scroll` appears in inventory.
+  - Expected: Class Ring trial enemies cannot have spells stolen.
+- [ ] Use a stolen-spell scroll in combat.
+  - Expected: It follows normal scroll target rules, charges decrement, and the saved stolen spell identity persists after save/load.
+- [ ] Complete `Impossible Theft`, then successfully steal a spell as Arcane Trickster with the awakened ring equipped.
+  - Expected: `Spell Steal Buff` grants the temporary magic damage and dodge bonuses for 3 turns.
+- [ ] Use `Song of Valor`, `Song of Shelter`, and `Song of Renewal` as Bard/Troubadour.
+  - Expected: Songs require an equipped musical instrument in `OffHand`.
+  - Expected: Only one song is active at a time, lasts 3 turns, and appears in character/ring status text.
+  - Expected: Valor increases weapon/magic damage, Shelter reduces incoming damage, and Renewal pulses HP/MP recovery.
+- [ ] Awaken Troubadour `Encore`, then let each song expire.
+  - Expected: Troubadour song strength is higher than Bard baseline.
+  - Expected: Encore adds one final weaker pulse or beat when a song expires.
+- [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Wizard.
+  - Expected: Casting one school raises that affinity and lowers its opposite: Fire/Ice, Water/Electric, Earth/Wind.
+  - Expected: Character/ring status text shows all six values.
+  - Expected: Higher matching affinity modestly improves matching elemental spell damage.
+- [ ] Walk dungeon steps as Lycan.
+  - Expected: Moon phase advances every 120 dungeon steps through New, Waxing, Full, and Waning.
+  - Expected: Moon phase and Frenzy Lock state appear in character/ring status text.
+- [ ] Fight while transformed as Lycan across moon phases.
+  - Expected: Kills or low HP can trigger Frenzy Lock, with Full Moon feeling riskiest.
+  - Expected: Awakened `Controlled Frenzy` improves healing received while locked.
+- [ ] Use Defend and take physical pressure as Stalwart Defender with awakened ring.
+  - Expected: Resolve/Guard Meter builds to 100 and appears in status text.
+  - Expected: A major incoming hit spends 100 Resolve to reduce damage by 40%.
+- [ ] Summon creatures before and after awakening Grand Summoner `Conduit Ritual`.
+  - Expected: Future summons initialize with the awakened +30% HP and attack/magic scaling.
+- [ ] Fight as Soulcatcher and defeat distinct enemy types with awakened ring.
+  - Expected: Distinct harvested type count increases and appears in status text.
+- [ ] Heal a Beast Master with awakened `Shared Recovery` while a familiar/companion is present.
+  - Expected: The companion receives a 25% echo of actual healing without recursive extra healing.
+
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
   - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.

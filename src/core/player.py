@@ -25,7 +25,18 @@ from .constants import (
 import numpy
 
 from . import abilities, enemies
-from .classes import archdruid, class_rings, demonologist, dragoon, grandmaster, paladin
+from .classes import (
+    archdruid,
+    bard,
+    berserker,
+    class_rings,
+    demonologist,
+    dragoon,
+    grandmaster,
+    lycan,
+    paladin,
+    wizard,
+)
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
 from .items import remove_equipment
 from .save_system import SaveManager
@@ -365,6 +376,9 @@ class Player(Character):
         self.class_ring_awakening = class_rings.default_state()
         self.paladin_vow = paladin.default_state()
         self.dragoon_dragon_quest = dragoon.default_state()
+        self.bard_song = bard.default_song_state()
+        self.lycan_state = lycan.default_state()
+        self.wizard_affinity = wizard.default_affinity()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -451,6 +465,18 @@ class Player(Character):
         self.dragoon_dragon_quest = dragoon.ensure_state(self)
         return self.dragoon_dragon_quest
 
+    def ensure_bard_song(self):
+        self.bard_song = bard.ensure_song_state(self)
+        return self.bard_song
+
+    def ensure_lycan_state(self):
+        self.lycan_state = lycan.ensure_state(self)
+        return self.lycan_state
+
+    def ensure_wizard_affinity(self):
+        self.wizard_affinity = wizard.ensure_affinity(self)
+        return self.wizard_affinity
+
     def choose_paladin_vow(self, vow_path):
         """Permanently choose a Paladin vow path."""
         return paladin.choose_vow(self, vow_path)
@@ -501,7 +527,9 @@ class Player(Character):
 
     def record_step(self, steps=1):
         stats = self.ensure_gameplay_stats()
-        stats["steps_taken"] += max(0, int(steps))
+        step_count = max(0, int(steps))
+        stats["steps_taken"] += step_count
+        lycan.record_steps(self, step_count)
 
     def record_stairs_used(self, count=1):
         stats = self.ensure_gameplay_stats()
@@ -971,7 +999,40 @@ class Player(Character):
                 status_message += f"{'Sin:':13} {sin.name}\n"
         except Exception:
             pass
+        status_message += self._class_kit_status_str()
         return status_message
+
+    def _class_kit_status_str(self):
+        lines = []
+        cls_name = getattr(getattr(self, "cls", None), "name", "")
+        if cls_name == "Berserker":
+            scars = class_rings.ensure_state(self)["data"]["Berserker"].get("battle_scars", 0)
+            lines.append(f"{'Battle Scars:':13} {int(scars)}/20")
+        if cls_name in {"Bard", "Troubadour"}:
+            song = bard.ensure_song_state(self)
+            active = song.get("active") or "None"
+            lines.append(f"{'Song:':13} {active} ({int(song.get('turns', 0) or 0)} turns)")
+        if cls_name == "Wizard":
+            affinity = wizard.ensure_affinity(self)
+            values = " ".join(f"{school[:3]}:{affinity[school]}" for school in wizard.AFFINITY_SCHOOLS)
+            lines.append(f"{'Affinity:':13} {values}")
+        if cls_name == "Lycan":
+            state = lycan.ensure_state(self)
+            lines.append(f"{'Moon:':13} {state['moon_phase']} ({state['moon_steps']}/{lycan.STEPS_PER_PHASE})")
+            if state["frenzy_turns"]:
+                lines.append(f"{'Frenzy Lock:':13} {state['frenzy_turns']} turns")
+        if cls_name == "Stalwart Defender":
+            guard = class_rings.ensure_state(self)["data"]["Stalwart Defender"].get("guard_meter", 0)
+            lines.append(f"{'Resolve:':13} {int(guard)}/100")
+        if cls_name == "Shadowcaster":
+            debt = class_rings.ensure_state(self)["data"]["Shadowcaster"].get("debt", 0)
+            lines.append(f"{'Umbral Debt:':13} {int(debt)}")
+        if cls_name == "Astromancer":
+            lines.append(f"{'Constellation:':13} {class_rings.active_constellation(self)}")
+        if cls_name == "Soulcatcher":
+            harvested = class_rings.ensure_state(self)["data"]["Soulcatcher"].get("harvested_types", [])
+            lines.append(f"{'Soul Types:':13} {len(harvested)}")
+        return "".join(f"{line}\n" for line in lines)
 
     def combat_str(self):
         combat_message = ""
@@ -2256,6 +2317,17 @@ class Player(Character):
             if enemy.name not in self.kill_dict[enemy.enemy_typ]:
                 self.kill_dict[enemy.enemy_typ][enemy.name] = 0
             self.kill_dict[enemy.enemy_typ][enemy.name] += 1
+            if hasattr(self, "record_enemy_defeat"):
+                self.record_enemy_defeat()
+            if hasattr(self, "refresh_demonologist_contracts"):
+                self.refresh_demonologist_contracts()
+            class_rings.record_soul_harvest(self, getattr(enemy, "enemy_typ", None))
+            _scar_gained, scar_text = berserker.record_battle_scar(self)
+            if scar_text:
+                endcombat_str += scar_text
+            frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(self, reason="kill")
+            if frenzy_triggered:
+                endcombat_str += frenzy_text
             endcombat_str += self.loot(enemy, tile)
             endcombat_str += self.quests(enemy=enemy)
             if textbox:
@@ -2375,6 +2447,8 @@ class Player(Character):
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             total_mod *= class_rings.weapon_damage_multiplier(self)
+            total_mod *= 1 + bard.damage_bonus(self)
+            total_mod *= 1 + lycan.phase_damage_bonus(self) + lycan.frenzy_damage_bonus(self)
             total_mod *= paladin.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
@@ -2443,6 +2517,12 @@ class Player(Character):
             astro = class_rings.constellation_bonus(self, typ)
             if astro:
                 class_mod += int((magic_mod + self.combat.magic) * astro)
+            affinity = wizard.affinity_damage_bonus(self, typ)
+            if affinity:
+                class_mod += int((magic_mod + self.combat.magic) * affinity)
+            song = bard.damage_bonus(self)
+            if song:
+                class_mod += int((magic_mod + self.combat.magic) * song)
             total_magic = magic_mod + class_mod + self.combat.magic
             total_magic *= paladin.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_magic))

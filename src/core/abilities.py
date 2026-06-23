@@ -601,6 +601,81 @@ class ShieldBlock(Defensive):
         self.passive = True
 
 
+class StealSpell(Class):
+    """Steal an enemy spell onto a Blank Scroll."""
+
+    def __init__(self):
+        super().__init__(
+            name="Steal Spell",
+            description="Inscribes one of the target's spells onto a Blank Scroll.",
+        )
+        self.cost = 0
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import spell_stealer
+
+        if target is None:
+            return "There is no spell to steal.\n"
+        _success, message = spell_stealer.steal_spell(user, target)
+        return message
+
+
+class SongValor(Class):
+    """Begin Song of Valor."""
+
+    def __init__(self):
+        super().__init__(
+            name="Song of Valor",
+            description="Perform a 3-turn song that raises weapon and magic damage.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import bard
+
+        _success, message = bard.start_song(user, "Valor")
+        return message
+
+
+class SongShelter(Class):
+    """Begin Song of Shelter."""
+
+    def __init__(self):
+        super().__init__(
+            name="Song of Shelter",
+            description="Perform a 3-turn song that reduces incoming damage.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import bard
+
+        _success, message = bard.start_song(user, "Shelter")
+        return message
+
+
+class SongRenewal(Class):
+    """Begin Song of Renewal."""
+
+    def __init__(self):
+        super().__init__(
+            name="Song of Renewal",
+            description="Perform a 3-turn song that restores HP and MP each turn.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import bard
+
+        _success, message = bard.start_song(user, "Renewal")
+        return message
+
+
 class Parry(Defensive):
     """
     Passive ability; chance to counterattack if an attack is successfully dodged
@@ -2573,9 +2648,12 @@ skill_dict = {
         "25": FlurryBlades,
         },
     "Spell Stealer": {
+        "1": StealSpell,
         "18": ImbueWeapon,
         },
-    "Arcane Trickster": {},
+    "Arcane Trickster": {
+        "1": StealSpell,
+        },
     "Healer": {},
     "Cleric": {
         "6": ShieldSlam,
@@ -2610,8 +2688,16 @@ skill_dict = {
         "10": TripleStrike,
         "15": PurityBody2,
         },
-    "Bard": {},
-    "Troubadour": {},
+    "Bard": {
+        "1": SongValor,
+        "2": SongShelter,
+        "3": SongRenewal,
+        },
+    "Troubadour": {
+        "1": SongValor,
+        "2": SongShelter,
+        "3": SongRenewal,
+        },
     "Pathfinder": {},
     "Druid": {
         "2": Transform,
