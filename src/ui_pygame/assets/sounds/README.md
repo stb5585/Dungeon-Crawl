@@ -25,6 +25,8 @@ This directory contains sound effects for The Forsaken Tenet.
 - `spell_fire.wav` - Fire spell
 - `spell_ice.wav` - Ice/frost spell  
 - `new_sounds/ice_spell.wav` - Staged ice/frost spell and skill effect
+- `new_sounds/laser_beam.wav` - Staged Laser weapon-damage effect
+- `new_sounds/bird_attack_sound.wav` - Staged Screech/lightning-bird call effect
 - `spell_lightning.wav` - Lightning/shock spell
 - `spell_heal.wav` - Healing spell
 - `spell_buff.wav` - Buff spell

@@ -130,6 +130,7 @@ def test_sound_manager_initializes_mixer_and_subscribes_to_bus(tmp_path, fake_mi
     ]
     assert state["channels"] == [16]
     assert EventType.COMBAT_START in bus._subscribers
+    assert EventType.ITEM_USE in bus._subscribers
     assert EventType.LEVEL_UP in bus._subscribers
 
 
@@ -166,6 +167,8 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     (assets_dir / "sounds" / "new_sounds").mkdir()
     (assets_dir / "sounds" / "new_sounds" / "spring.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "distorted_scream.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "new_sounds" / "bird_attack_sound.wav").write_bytes(b"wav")
+    (assets_dir / "sounds" / "new_sounds" / "laser_beam.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "mortal_strike.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "ice_spell.wav").write_bytes(b"wav")
     (assets_dir / "sounds" / "new_sounds" / "shield_block_metal_weapon.wav").write_bytes(b"wav")
@@ -306,9 +309,11 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert default_diagnostics["music"]["town"]["available"] is True
     assert default_diagnostics["music"]["combat_final"]["available"] is False
     default_summary = manager.summarize_default_audio_assets()
-    assert default_summary["sfx_available"] == 8
+    assert default_summary["sfx_available"] == 10
     assert default_summary["music_available"] == 2
     assert "hit" in default_summary["sfx_available_names"]
+    assert "laser_beam" in default_summary["sfx_available_names"]
+    assert "bird_attack_sound" in default_summary["sfx_available_names"]
     assert "distorted_scream" in default_summary["sfx_available_names"]
     assert "mortal_strike" in default_summary["sfx_available_names"]
     assert "ice_spell" in default_summary["sfx_available_names"]
@@ -509,6 +514,8 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"fled": True}))
     manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={}))
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"crit": True, "damage": 1}))
+    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"is_critical": True, "damage": 1}))
+    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"weapon_name": "Laser", "damage": 10}))
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 80}))
     manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 10}))
     manager._on_block(GameEvent(type=EventType.BLOCK, timestamp=0, data={"damage_blocked": 25}))
@@ -524,7 +531,11 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Healing Waltz"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Mortal Strike"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Screech"}))
+    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Howl"}))
     manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Backflip"}))
+    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Fire Scroll"}))
+    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_subtype": "Elixir"}))
+    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Mystery Token"}))
     manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Poison"}))
     manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Freeze"}))
     manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Burn"}))
@@ -539,6 +550,8 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
         ("flee", None, 0),
         ("defeat", None, 0),
         ("critical_hit", 1.0, 0),
+        ("critical_hit", 1.0, 0),
+        ("laser_beam", None, 0),
         ("heavy_hit", None, 0),
         ("hit", None, 0),
         ("shield_block_metal_weapon", None, 0),
@@ -553,8 +566,11 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
         ("spell_lightning", None, 0),
         ("spell_heal", None, 0),
         ("mortal_strike", None, 0),
+        ("bird_attack_sound", None, 0),
         ("distorted_scream", None, 0),
         ("spell_cast", None, 0),
+        ("spell_cast", None, 0),
+        ("heal", None, 0),
         ("poison", None, 0),
         ("stun", None, 0),
         ("burn", None, 0),

@@ -403,6 +403,8 @@ class TestGameplayStatistics:
         assert legacy_restored.sex == "Male"
 
     def test_damage_event_updates_high_water_marks(self):
+        from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus
+
         attacker = TestGameState.create_player(
             name="Attacker",
             class_name="Warrior",
@@ -415,11 +417,51 @@ class TestGameplayStatistics:
             race_name="Human",
             level=9,
         )
+        reset_event_bus()
+        captured = []
+        get_event_bus().subscribe(EventType.DAMAGE_DEALT, lambda event: captured.append(event))
 
         attacker._emit_damage_event(defender, 37, damage_type="Physical", is_critical=False)
 
         assert attacker.gameplay_stats["highest_damage_dealt"] == 37
         assert defender.gameplay_stats["highest_damage_taken"] == 37
+        assert captured[-1].data["source"] == "Unknown"
+        assert captured[-1].data["crit"] is False
+
+    def test_weapon_damage_events_include_audio_routing_metadata(self, monkeypatch):
+        import src.core.character as character_mod
+        from src.core import items
+        from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus
+
+        attacker = TestGameState.create_player(
+            name="LaserBot",
+            class_name="Warrior",
+            race_name="Human",
+            level=9,
+        )
+        defender = TestGameState.create_player(
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=9,
+        )
+        attacker.equipment["Weapon"] = items.Laser()
+        defender.equipment["OffHand"] = items.NoOffHand()
+        monkeypatch.setattr(character_mod.random, "uniform", lambda _a, _b: 1.0)
+        monkeypatch.setattr(character_mod.random, "random", lambda: 1.0)
+        monkeypatch.setattr(attacker, "critical_chance", lambda _att: 0.0)
+        reset_event_bus()
+        captured = []
+        get_event_bus().subscribe(EventType.DAMAGE_DEALT, lambda event: captured.append(event))
+
+        attacker.weapon_damage(defender, hit=True, use_offhand=False)
+
+        payload = captured[-1].data
+        assert payload["source"] == "weapon_damage"
+        assert payload["attack_source"] == "natural_weapon"
+        assert payload["weapon_name"] == "Laser"
+        assert payload["weapon_slot"] == "Weapon"
+        assert payload["weapon_type"] == "Natural"
 
 
 class TestPlayerUtilityBehaviors:

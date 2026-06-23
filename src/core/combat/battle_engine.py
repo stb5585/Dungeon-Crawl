@@ -674,6 +674,11 @@ class BattleEngine:
             actor=self.attacker,
             target=self.defender,
             is_special=False,
+            source="weapon_damage",
+            attack_source="weapon",
+            weapon_name=getattr(self.attacker.equipment.get("Weapon"), "name", None),
+            weapon_slot="Weapon",
+            weapon_type=getattr(self.attacker.equipment.get("Weapon"), "subtyp", None),
         ))
 
         # Roll for special attack
@@ -687,6 +692,8 @@ class BattleEngine:
                     actor=self.attacker,
                     target=self.defender,
                     is_special=True,
+                    source="special_attack",
+                    attack_source="special_attack",
                 ))
                 return result
             except NotImplementedError:
@@ -735,6 +742,8 @@ class BattleEngine:
             actor=self.attacker,
             target=self.defender,
             spell_name=choice,
+            ability_name=choice,
+            source="spell",
         ))
 
         message = f"{self.attacker.name} casts {choice}.\n"
@@ -832,6 +841,8 @@ class BattleEngine:
             actor=self.attacker,
             target=self.defender,
             skill_name=skill.name,
+            ability_name=skill.name,
+            source="skill",
         ))
 
         message = f"{self.attacker.name} uses {skill.name}.\n"
@@ -902,6 +913,9 @@ class BattleEngine:
             actor=self.attacker,
             target=target,
             item_name=itm.name,
+            item_type=getattr(itm, "typ", ""),
+            item_subtype=getattr(itm, "subtyp", ""),
+            source="item",
         ))
 
         return str(itm.use(self.attacker, target=target))

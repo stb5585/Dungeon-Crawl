@@ -45,8 +45,8 @@ event-emission contract. Active priorities and future payload work live in
 - `src/ui_pygame/presentation/pygame_presenter.py`
   - combat lifecycle, turn, damage, healing, critical, and status presentation.
 - `src/ui_pygame/assets/sound_manager.py`
-  - combat, damage, block, healing, spell, skill, status, death, and level-up
-    audio routing.
+  - combat, damage, block, healing, spell, skill, item, status, death, and
+    level-up audio routing.
 - `src/core/analytics/combat_simulator.py`
   - combat-stat summaries and simulator reporting.
 - `src/core/combat/battle_logger.py`
@@ -151,9 +151,12 @@ damage_events = bus.get_history(EventType.DAMAGE_DEALT)
 
 ## Current Follow-Up Areas
 
-- P5 audio routing needs richer event payloads for weapon identity and attack
-  source metadata before `laser_beam.wav` and similar source-specific sounds can
-  be routed safely.
+- P5 audio routing now has weapon identity and attack-source metadata for
+  source-specific weapon sounds such as `laser_beam.wav`.
+- Item-use events expose item type/subtype metadata for scroll and recovery-item
+  audio routing.
+- Future source-specific audio should add payload fields only when the emitting
+  gameplay layer has a stable source to expose.
 - New diagnostics should prefer existing event history and compact summaries
   before adding parallel reporting state.
 - Keep event-history retention bounded and avoid emitting presentation-only

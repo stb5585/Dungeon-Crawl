@@ -669,16 +669,15 @@ Deferred:
 
 ### P5 - Audio Content Completion
 
-Status: `Planned`
+Status: `Completed` for non-asset routing/payload work; final SFX and music replacement is deferred to an asset-content pass.
 
-1. Replace remaining placeholder SFX with final assets.
-2. Add final music assets for menu, town, shops, church, inn, dungeon, normal combat, boss combat, and final combat.
-3. Route remaining staged assets only when the runtime hook is clear.
-   - `laser_beam.wav`: needs weapon/damage event payloads that expose weapon identity before it can be routed safely.
-   - bird-call asset: decide whether it should replace or supplement the current scream/howl/nightmare routing for Screech/lightning-bird content.
-4. Add event-payload enrichment for future audio routing.
-   - Weapon name or attack source on weapon-damage events.
-   - Ability/item/source metadata where UI and audio layers need presentation-specific behavior.
+1. Completed non-asset routing/payload readiness:
+   - Weapon-damage events now expose weapon identity and attack source metadata for source-specific SFX.
+   - Spell, skill, and item action events include stable source/ability/item metadata for UI and audio consumers.
+   - `laser_beam.wav` is routed from Laser weapon damage metadata.
+   - `bird_attack_sound.wav` is routed for `Screech`, supplementing the existing scream/howl/nightmare route rather than replacing it globally.
+   - Scroll item use routes to cast audio, while potion/elixir item use routes to the existing recovery cue.
+2. Continue adding event-payload enrichment only when a concrete UI, audio, diagnostics, or analytics consumer needs it.
 
 ### P6 - Expand Enemies, Items, and Abilities
 
@@ -749,7 +748,8 @@ Status: `Planned`
 - Deep race-passive expansion is deferred until the current always-on identity pass has enough playtest feedback.
 - Major class kits are deferred until the matching `docs/P4E_CLASS_KIT_SPECS.md` one-page spec covers triggers, storage, UI, save migration, tests, and balance assumptions.
 - Multi-enemy combat and speed-based combat stacks are deferred until battle-engine, UI, encounter-generation, and balance designs are complete.
-- Laser/bird staged SFX routing is deferred until event payloads or creature-specific hooks are clear enough to avoid brittle name guesses.
+- Additional source-specific SFX routing beyond the current laser and bird routes is deferred until event payloads or creature-specific hooks are clear enough to avoid brittle name guesses.
+- Final SFX replacement and final music for menu, town, shops, church, inn, dungeon, normal combat, boss combat, and final combat are deferred until the asset-content pass.
 
 ## Found Bugfixes
 

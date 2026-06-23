@@ -553,6 +553,7 @@ class TestBattleEngineBasics:
 
         class DummyScroll:
             name = "Fire Scroll"
+            typ = "Misc"
             subtyp = "Scroll"
             spell = SimpleNamespace(subtyp="Attack")
 
@@ -561,10 +562,23 @@ class TestBattleEngineBasics:
                 return f"{user.name} uses scroll on {target.name}.\n"
 
         player.inventory["Fire Scroll"] = [DummyScroll()]
+        from src.core.events.event_bus import EventType, get_event_bus
 
-        result = engine.execute_action("Use Item", "Fire Scroll")
+        item_events = []
+        event_bus = get_event_bus()
+        handler = lambda event: item_events.append(event)
+        event_bus.subscribe(EventType.ITEM_USE, handler)
+
+        try:
+            result = engine.execute_action("Use Item", "Fire Scroll")
+        finally:
+            event_bus.unsubscribe(EventType.ITEM_USE, handler)
         assert "uses scroll on Goblin" in result.message
         assert target_names == ["Goblin"]
+        assert item_events[-1].data["item_name"] == "Fire Scroll"
+        assert item_events[-1].data["item_type"] == "Misc"
+        assert item_events[-1].data["item_subtype"] == "Scroll"
+        assert item_events[-1].data["source"] == "item"
 
     def test_execute_transform_and_unknown_action_fallback(self, monkeypatch):
         engine, player, enemy, _tile = self._make_engine()

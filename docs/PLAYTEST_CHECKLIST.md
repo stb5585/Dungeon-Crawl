@@ -545,6 +545,15 @@
   - Expected: The staged `mortal_strike` SFX is requested instead of the generic spell-cast sound.
 - [ ] Trigger a shield block in combat.
   - Expected: The staged `shield_block_metal_weapon` SFX is requested for the block event.
+- [ ] Trigger Laser weapon damage in combat.
+  - Expected: The weapon-damage event includes Laser weapon/source metadata.
+  - Expected: The staged `laser_beam` SFX is requested instead of generic hit/heavy-hit routing.
+- [ ] Trigger Screech from a bird/lightning-bird style enemy or summon.
+  - Expected: The staged `bird_attack_sound` SFX is requested for Screech.
+  - Expected: Howl/nightmare-style skills still use the existing distorted-scream route.
+- [ ] Use a scroll, a health/mana potion, and an elixir in combat.
+  - Expected: `ITEM_USE` events include item name, type, subtype, and source metadata.
+  - Expected: Scrolls request cast audio, while potions and elixirs request the recovery cue.
 - [ ] Accept the underground spring interaction prompt.
   - Expected: The staged `underground_spring` SFX is requested once the prompt is accepted.
 - [ ] Unlock/open a dungeon door through Master Key, Master Lockpick, Cryptic Key, or Old Key flow.

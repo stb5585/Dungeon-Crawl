@@ -312,7 +312,21 @@ class Character:
     def abilities_suppressed(self) -> bool:
         return bool(self.status_effects["Silence"].active or getattr(self, "anti_magic_active", False))
     
-    def _emit_damage_event(self, target: Character, damage: int, damage_type: str = "Physical", is_critical: bool = False) -> None:
+    def _emit_damage_event(
+        self,
+        target: Character,
+        damage: int,
+        damage_type: str = "Physical",
+        is_critical: bool = False,
+        *,
+        source: str = "Unknown",
+        attack_source: str | None = None,
+        weapon_name: str | None = None,
+        weapon_slot: str | None = None,
+        weapon_type: str | None = None,
+        ability_name: str | None = None,
+        item_name: str | None = None,
+    ) -> None:
         """Helper to emit damage dealt events."""
         if damage and damage > 0:
             try:
@@ -344,13 +358,27 @@ class Character:
         try:
             from .events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
+            event_data = {
+                "damage": damage,
+                "damage_type": damage_type,
+                "is_critical": is_critical,
+                "crit": is_critical,
+                "source": source,
+            }
+            optional_payload = {
+                "attack_source": attack_source,
+                "weapon_name": weapon_name,
+                "weapon_slot": weapon_slot,
+                "weapon_type": weapon_type,
+                "ability_name": ability_name,
+                "item_name": item_name,
+            }
+            event_data.update({key: value for key, value in optional_payload.items() if value})
             event_bus.emit(create_combat_event(
                 EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
                 actor=self,
                 target=target,
-                damage=damage,
-                damage_type=damage_type,
-                is_critical=is_critical
+                **event_data,
             ))
         except Exception:
             pass
@@ -1056,6 +1084,24 @@ class Character:
         except Exception:
             pass
 
+    def _weapon_event_metadata(self, slot: str) -> dict[str, str]:
+        """Return presentation/audio metadata for the equipped attack source."""
+        weapon = self.equipment.get(slot)
+        if weapon is None:
+            return {
+                "source": "weapon_damage",
+                "attack_source": "weapon",
+                "weapon_slot": slot,
+            }
+        weapon_type = str(getattr(weapon, "subtyp", "") or "")
+        return {
+            "source": "weapon_damage",
+            "attack_source": "natural_weapon" if weapon_type == "Natural" else "weapon",
+            "weapon_name": str(getattr(weapon, "name", "") or ""),
+            "weapon_slot": slot,
+            "weapon_type": weapon_type,
+        }
+
     def _apply_absorption(
         self, defender: Character, damage: int, raw_dmg: int,
         crit_per: float, att: str, cover: bool, crit: int
@@ -1109,7 +1155,8 @@ class Character:
                         event_bus = get_event_bus()
                         event_bus.emit(create_combat_event(
                             EventType.BLOCK, actor=defender, target=self,
-                            damage_blocked=int(raw_dmg * crit_per * blk_per)
+                            damage_blocked=int(raw_dmg * crit_per * blk_per),
+                            **self._weapon_event_metadata(att),
                         ))
                     except Exception:
                         pass
@@ -1297,7 +1344,13 @@ class Character:
         damage_type = "Physical"
         if self.equipment[att].element:
             damage_type = self.equipment[att].element
-        self._emit_damage_event(defender, damage, damage_type=damage_type, is_critical=(crit > 1))
+        self._emit_damage_event(
+            defender,
+            damage,
+            damage_type=damage_type,
+            is_critical=(crit > 1),
+            **self._weapon_event_metadata(att),
+        )
 
         # Sleep wakeup
         if defender.status_effects["Sleep"].active and \

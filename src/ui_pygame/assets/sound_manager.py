@@ -24,6 +24,7 @@ DEFAULT_SFX_NAMES = (
     "critical_hit",
     "heavy_hit",
     "hit",
+    "laser_beam",
     "heal",
     "spell_fire",
     "spell_ice",
@@ -32,6 +33,7 @@ DEFAULT_SFX_NAMES = (
     "spell_heal",
     "spell_cast",
     "distorted_scream",
+    "bird_attack_sound",
     "mortal_strike",
     "shield_block_metal_weapon",
     "underground_spring",
@@ -144,6 +146,7 @@ class SoundManager:
         self.event_bus.subscribe(EventType.HEALING_DONE, self._on_healing)
         self.event_bus.subscribe(EventType.SPELL_CAST, self._on_spell_cast)
         self.event_bus.subscribe(EventType.SKILL_USE, self._on_skill_use)
+        self.event_bus.subscribe(EventType.ITEM_USE, self._on_item_use)
         self.event_bus.subscribe(EventType.STATUS_APPLIED, self._on_status_applied)
         self.event_bus.subscribe(EventType.CHARACTER_DEATH, self._on_death)
         self.event_bus.subscribe(EventType.LEVEL_UP, self._on_level_up)
@@ -175,7 +178,13 @@ class SoundManager:
 
     def _on_damage_dealt(self, event):
         """Handle damage dealt event."""
-        is_crit = event.data.get('crit', False)
+        weapon_name = str(event.data.get("weapon_name", "") or "").lower()
+        attack_source = str(event.data.get("attack_source", "") or "").lower()
+        if "laser" in weapon_name or attack_source == "laser":
+            self.play_sfx("laser_beam")
+            return
+
+        is_crit = event.data.get('crit', event.data.get("is_critical", False))
         damage = event.data.get('damage', 0)
         
         if is_crit:
@@ -212,22 +221,38 @@ class SoundManager:
     def _on_skill_use(self, event):
         """Handle skill use event."""
         skill_name = event.data.get('skill_name', event.data.get('ability_name', ''))
+        skill_name_lower = skill_name.lower()
         
         # Map skills to sound effects
-        if 'fire' in skill_name.lower():
+        if 'fire' in skill_name_lower:
             self.play_sfx("spell_fire")
-        elif 'ice' in skill_name.lower() or 'frost' in skill_name.lower():
+        elif 'ice' in skill_name_lower or 'frost' in skill_name_lower:
             self.play_sfx("ice_spell")
-        elif 'lightning' in skill_name.lower() or 'shock' in skill_name.lower():
+        elif 'lightning' in skill_name_lower or 'shock' in skill_name_lower:
             self.play_sfx("spell_lightning")
-        elif 'heal' in skill_name.lower():
+        elif 'heal' in skill_name_lower:
             self.play_sfx("spell_heal")
-        elif 'mortal strike' in skill_name.lower():
+        elif 'mortal strike' in skill_name_lower:
             self.play_sfx("mortal_strike")
-        elif any(keyword in skill_name.lower() for keyword in ("howl", "screech", "nightmare")):
+        elif "screech" in skill_name_lower:
+            self.play_sfx("bird_attack_sound")
+        elif any(keyword in skill_name_lower for keyword in ("howl", "nightmare")):
             self.play_sfx("distorted_scream")
         else:
             self.play_sfx("spell_cast")
+
+    def _on_item_use(self, event):
+        """Handle item use event."""
+        item_name = str(event.data.get("item_name", "") or "").lower()
+        item_subtype = str(event.data.get("item_subtype", "") or "").lower()
+
+        if item_subtype == "scroll" or "scroll" in item_name:
+            self.play_sfx("spell_cast")
+        elif item_subtype in {"health", "mana", "elixir", "both"} or any(
+            keyword in item_name
+            for keyword in ("potion", "elixir", "megalixir")
+        ):
+            self.play_sfx("heal")
 
     def _on_status_applied(self, event):
         """Handle status effect applied event."""

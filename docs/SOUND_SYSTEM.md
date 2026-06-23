@@ -20,9 +20,11 @@ The sound manager subscribes to combat and game events:
 - `COMBAT_START` - Combat begins sound
 - `COMBAT_END` - Victory/defeat/flee sounds
 - `DAMAGE_DEALT` - Hit sounds (normal/heavy/critical)
+- `BLOCK` - Shield/block impact sounds
 - `HEALING_DONE` - Healing sound
 - `SPELL_CAST` - Spell casting sounds (fire/ice/lightning/etc.)
 - `SKILL_USE` - Skill usage sounds
+- `ITEM_USE` - Scroll and recovery-item sounds
 - `STATUS_APPLIED` - Status effect sounds (poison/stun/burn)
 - `CHARACTER_DEATH` - Death sounds (player/enemy)
 - `LEVEL_UP` - Level up fanfare
@@ -124,6 +126,23 @@ sound_manager.play_music("boss_battle", fade_ms=2000)
 elif 'explosion' in spell_name.lower():
     self.play_sfx("spell_explosion")
 ```
+
+### Source-Specific Routing
+
+Prefer event payload fields over broad name guessing when routing a sound to a
+specific source. Weapon-damage events can expose `weapon_name`, `weapon_slot`,
+`weapon_type`, `attack_source`, and `source`; action events can expose
+`ability_name`, `spell_name`, `skill_name`, `item_name`, `item_type`, or
+`item_subtype`.
+
+Current source-specific staged routes include:
+
+- `laser_beam.wav` for Laser weapon damage.
+- `bird_attack_sound.wav` for `Screech`.
+- `spell_cast` for scroll item use, and `heal` for potion/elixir item use.
+- `shield_block_metal_weapon.wav` for block events.
+- `ice_spell.wav`, `distorted_scream.wav`, `mortal_strike.wav`,
+  `underground_spring.wav`, and `open_door.wav` through existing runtime hooks.
 
 ## Development Without Sound Files
 
