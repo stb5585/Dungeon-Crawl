@@ -1166,6 +1166,10 @@ class DungeonManager:
 
     def _interact_boulder(self, boulder_tile):
         """Handle boulder interaction - can find Excaliper sword."""
+        communion = map_tiles.nature_communion_text(self.player_char, "Earth")
+        if communion:
+            self.add_message(communion.strip())
+
         progress = map_tiles.get_chalice_progress(self.player_char)
         map_ready = bool(progress and progress.get("Hooded") and not progress.get("Map"))
         has_excaliper = "Excaliper" in self.player_char.special_inventory
@@ -1217,6 +1221,9 @@ class DungeonManager:
         ):
             return
         self._play_sfx("underground_spring")
+        communion = map_tiles.nature_communion_text(self.player_char, "Water")
+        if communion:
+            self.add_message(communion.strip())
 
         # Check for Naivete quest
         if "Naivete" in self.player_char.quest_dict.get("Side", {}):

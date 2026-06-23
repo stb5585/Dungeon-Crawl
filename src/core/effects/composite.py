@@ -3564,6 +3564,31 @@ class ElementalStrikeEffect(Effect):
         if target is not None and not target.is_alive():
             return
 
+        forced_spell = None
+        try:
+            from src.core.classes import nature_totems
+
+            aspect = nature_totems.active_totem_aspect(actor)
+            if aspect in nature_totems.ELEMENTAL_ASPECTS:
+                forced_name = nature_totems.highest_unlocked_spell_name(actor, aspect)
+                forced_spell = actor.spellbook.get("Spells", {}).get(forced_name)
+        except Exception:
+            forced_spell = None
+
+        if forced_spell is not None:
+            spell = forced_spell
+            cover = result.extra.get("use_kwargs", {}).get("cover", False)
+            messages.append(
+                f"The enemy is struck by the elemental force of "
+                f"{spell.subtyp}.\n"
+            )
+            spell.cast(actor, target=target, special=True, cover=cover)
+
+            crit = result.extra.get("last_crit", 1)
+            if crit > 1 and target is not None and target.is_alive():
+                spell.cast(actor, target=target, special=True, cover=cover)
+            return
+
         # Build list of available elemental spells from actor's spellbook
         from src.core import abilities as _abilities
         cast_list = []
@@ -3627,7 +3652,7 @@ class BlackjackEffect(Effect):
 
 
 # ======================================================================
-# Batch 13 Effects - Doublecast / ChooseFate / Shapeshift / TetraDisaster
+# Batch 13 Effects - Doublecast / ChooseFate / Shapeshift / AstralJudgment
 # ======================================================================
 
 
@@ -3925,43 +3950,89 @@ class ShapeshiftEffect(Effect):
         )
 
 
-class TetraDisasterEffect(Effect):
-    """Cast all elemental spells from the user's spellbook and activate Power Up.
+class AstralJudgmentEffect(Effect):
+    """Resolve the active Astromancer sign, apply its rider, then spin signs."""
 
-    Iterates the user's Spells section for spells whose ``subtyp`` matches
-    one of the configured elements, casts each with ``special=True``
-    (no mana cost), then activates the Astromancer's Power Up for elemental
-    resistance.
-
-    Parameters (YAML):
-        elements (list[str]): Element subtypes to match (default Fire/Water/Wind/Earth).
-        power_up_duration (int): Duration of the Power Up buff (default 5).
-    """
-
-    def __init__(self, elements: list[str] | None = None,
-                 power_up_duration: int = 5):
+    def __init__(self, damage_mod: float = 3.0, rider_duration: int = 2):
         super().__init__()
-        self.elements = elements or ["Fire", "Water", "Wind", "Earth"]
-        self.power_up_duration = power_up_duration
+        self.damage_mod = damage_mod
+        self.rider_duration = rider_duration
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
+        import random as _rng
+        from src.core.classes import astromancer
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
+
         messages = result.extra.setdefault("messages", [])
-        cover = result.extra.get("cover", False)
+        sign = astromancer.active_constellation(actor)
+        element = astromancer.SIGN_TO_ELEMENT.get(sign, "Non-elemental")
+        messages.append(f"{actor.name} calls {sign}'s Astral Judgment.\n")
 
-        for spell in list(actor.spellbook.get("Spells", {}).values()):
-            if hasattr(spell, "subtyp") and spell.subtyp in self.elements:
-                try:
-                    cast_msg = spell.cast(
-                        actor, target=target, cover=cover, special=True,
-                    )
-                    messages.append(str(cast_msg))
-                except Exception:
-                    pass
+        base = int(actor.stats.intel * self.damage_mod)
+        variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
+        if sign == "Ember":
+            floor = DAMAGE_VARIANCE_LOW + ((DAMAGE_VARIANCE_HIGH - DAMAGE_VARIANCE_LOW) * 0.75)
+            variance = max(variance, floor)
+        damage = int(base * variance)
+        hit, def_msg, damage = target.handle_defenses(actor, damage, typ="Magic")
+        if def_msg:
+            messages.append(def_msg)
+        if hit:
+            _, red_msg, damage = target.damage_reduction(damage, actor, typ=element)
+            if red_msg:
+                messages.append(red_msg)
+            if damage > 0:
+                target.health.current -= damage
+                result.damage = (result.damage or 0) + damage
+                result.hit = True
+                actor._emit_damage_event(target, damage, damage_type=element, is_critical=False)
+                messages.append(f"{target.name} takes {damage} {element} damage.\n")
+            else:
+                messages.append("The judgment was ineffective and does no damage.\n")
+        else:
+            messages.append(f"The judgment misses {target.name}.\n")
 
-        # Activate Power Up for elemental resistance
-        if hasattr(actor, "class_effects") and "Power Up" in actor.class_effects:
-            actor.class_effects["Power Up"].active = True
-            actor.class_effects["Power Up"].duration = self.power_up_duration
+        if sign == "Tide":
+            heal = max(1, int(actor.health.max * 0.20))
+            before = actor.health.current
+            actor.health.current = min(actor.health.max, actor.health.current + heal)
+            healed = actor.health.current - before
+            actor.stat_effects["Magic Defense"].active = True
+            actor.stat_effects["Magic Defense"].duration = max(
+                self.rider_duration,
+                actor.stat_effects["Magic Defense"].duration,
+            )
+            actor.stat_effects["Magic Defense"].extra = max(
+                actor.stat_effects["Magic Defense"].extra,
+                max(1, actor.stats.wisdom // 2),
+            )
+            messages.append(f"Tide wards {actor.name}, restoring {healed} health.\n")
+        elif sign == "Gale":
+            actor.stat_effects["Speed"].active = True
+            actor.stat_effects["Speed"].duration = max(
+                self.rider_duration,
+                actor.stat_effects["Speed"].duration,
+            )
+            actor.stat_effects["Speed"].extra = max(
+                actor.stat_effects["Speed"].extra,
+                max(1, actor.stats.dex // 2),
+            )
+            messages.append(f"Gale bends the next exchanges around {actor.name}.\n")
+        elif sign == "Stone":
+            for stat_name in ("Defense", "Magic Defense"):
+                target.stat_effects[stat_name].active = True
+                target.stat_effects[stat_name].duration = max(
+                    self.rider_duration,
+                    target.stat_effects[stat_name].duration,
+                )
+                target.stat_effects[stat_name].extra = min(
+                    target.stat_effects[stat_name].extra,
+                    -max(1, actor.stats.intel // 3),
+                )
+            messages.append(f"Stone fractures {target.name}'s defenses.\n")
+
+        next_sign = astromancer.spin_constellation(actor)
+        messages.append(f"The constellation wheel turns to {next_sign}.\n")
 
 
 # ======================================================================
@@ -4712,8 +4783,10 @@ class TotemEffect(Effect):
             "cost": 14,
             "attack_bonus": 0.0,
             "defense_bonus": 0.0,
-            "secondary": "healing",
-            "description": "+50% healing effectiveness. Cleanses negative status effects.",
+            "magic_defense_bonus": 0.20,
+            "absorb_fraction": 0.25,
+            "secondary": "water_ward",
+            "description": "+50% healing effectiveness. Cleanses negative status effects and wards against spell damage.",
         },
         "Fire": {
             "cost": 16,
@@ -4780,6 +4853,8 @@ class TotemEffect(Effect):
             "attack_bonus": aspect["attack_bonus"],
             "defense_bonus": aspect["defense_bonus"],
             "secondary": aspect["secondary"],
+            "magic_defense_bonus": aspect.get("magic_defense_bonus", 0.0),
+            "absorb_fraction": aspect.get("absorb_fraction", 0.0),
         }
 
         messages.append(
@@ -4802,6 +4877,7 @@ class TotemEffect(Effect):
         secondary_descriptions = {
             "reflect": "Attacks against you are reflected back at the attacker.\n",
             "healing": "Healing spells and effects are significantly more effective.\n",
+            "water_ward": "Healing is strengthened and hostile spellwork flows into restoration.\n",
             "elemental": "Your attacks burn with primal fire.\n",
             "speed": "Your reflexes and precision are heightened, granting increased dodge and critical strike chance.\n",
             "crit_damage": "The captured essence of fallen foes empowers your weapon with devastating critical strikes.\n",
@@ -4822,6 +4898,37 @@ class TotemEffect(Effect):
             )
         except (AttributeError, Exception):
             pass
+
+
+class SoulDrainEffect(Effect):
+    """Deal nonlethal current-HP percentage damage."""
+
+    def __init__(self, fraction: float = 0.10, **_kw):
+        super().__init__()
+        self.fraction = fraction
+
+    def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
+        messages = result.extra.setdefault("messages", [])
+        if target is None or not target.is_alive():
+            return
+        potency = 1.0
+        try:
+            potency = max(0.0, float(getattr(actor, "_totem_pulse_potency", 1.0)))
+        except (TypeError, ValueError):
+            pass
+        if target.health.current <= 1:
+            messages.append(f"{target.name}'s soul clings to a final thread.\n")
+            return
+        damage = max(1, int(target.health.current * self.fraction * potency))
+        damage = min(damage, target.health.current - 1)
+        target.health.current -= damage
+        result.damage = damage
+        result.hit = True
+        try:
+            actor._emit_damage_event(target, damage, damage_type="Soul", is_critical=False)
+        except Exception:
+            pass
+        messages.append(f"{actor.name} drains {damage} hit points from {target.name}'s soul.\n")
 
 
 class ChargeEffect(Effect):

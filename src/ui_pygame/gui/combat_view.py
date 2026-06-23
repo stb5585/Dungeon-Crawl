@@ -11,6 +11,7 @@ import sys
 
 import pygame
 
+from src.core.classes import astromancer
 from src.ui_pygame.assets.enemy_combat_sprite_manager import (
     EnemyCombatSpriteManager,
     get_enemy_combat_sprite_manager,
@@ -1486,10 +1487,25 @@ class CombatView:
         mp_surf = font.render(mp_text, True, self.colors['mp_bar'])
         self.screen.blit(mp_surf, (x, y + 30))
 
+        if astromancer.has_rune_system(player_char):
+            rune_y = y + 56
+            if astromancer.is_astromancer(player_char):
+                sign_text = f"Sign: {astromancer.active_constellation(player_char)}"
+                sign_surf = small_font.render(sign_text, True, self.colors.get("gold", (232, 196, 92)))
+                self.screen.blit(sign_surf, (x, rune_y))
+                rune_y += 16
+            for line in astromancer.rune_grid_lines(player_char):
+                rune_surf = small_font.render(line, True, self.colors.get("text", (230, 230, 230)))
+                self.screen.blit(rune_surf, (x, rune_y))
+                rune_y += 14
+
         # Status icons
         icons = self._collect_status_icons(player_char)
         if icons:
-            self._render_status_icons(icons, x, y + 60, max_width=260)
+            icon_y = y + 60
+            if astromancer.has_rune_system(player_char):
+                icon_y += 66 if astromancer.is_astromancer(player_char) else 50
+            self._render_status_icons(icons, x, icon_y, max_width=260)
         self._last_player_target_rect = pygame.Rect(x - 8, y - 10, 248, 104)
         self._render_ability_status_visuals(player_char, "player")
 

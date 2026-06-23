@@ -1400,6 +1400,15 @@ class Character:
             )
             message += shield_message
             hit = not fully_absorbed
+
+        if hit and typ == "Magic":
+            try:
+                from src.core.classes import nature_totems
+
+                damage, ward_message = nature_totems.water_ward_absorb(self, damage)
+                message += ward_message
+            except Exception:
+                pass
         
         return (hit, message, damage)
 
@@ -1831,7 +1840,15 @@ class Character:
             if self.turtle:
                 class_mod += 99
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
-            return max(0, m_def_mod + class_mod + self.combat.magic_def)
+            total_magic_def = m_def_mod + class_mod + self.combat.magic_def
+            try:
+                from src.core.classes import nature_totems
+
+                if nature_totems.active_totem_aspect(self) == "Water":
+                    total_magic_def = int(total_magic_def * (1 + nature_totems.WATER_WARD_MAGIC_DEFENSE_BONUS))
+            except Exception:
+                pass
+            return max(0, total_magic_def)
         if mod == 'heal':
             heal_mod = self.stats.wisdom * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':

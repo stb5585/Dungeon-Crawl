@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.core.classes import astromancer
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.battle_logger import BattleLogger
 
@@ -249,6 +250,18 @@ class BattleManager:
             action = self.battle_ui.navigate_menu()
             if action in ["Cast Spell", "Use Skill", "Use Item"]:
                 self.battle_popup.update_options(action, tile=self.tile)
+                choice = self.battle_popup.navigate_popup().split('  ')[0]
+            elif action == "Runic Boost":
+                options = []
+                for spell_name in astromancer.boostable_spells(self.player_char):
+                    spell = self.player_char.spellbook["Spells"][spell_name]
+                    sign = astromancer.sign_for_spell(spell) or "Rune"
+                    options.append(f"{spell_name}  {sign}")
+                if not options:
+                    self.print_text("No rune-boostable spells are ready.\n")
+                    continue
+                options.append("Go Back")
+                self.battle_popup.update_options("Runic Boost", options=options)
                 choice = self.battle_popup.navigate_popup().split('  ')[0]
             elif action == "Summon":
                 self.battle_popup.update_options(

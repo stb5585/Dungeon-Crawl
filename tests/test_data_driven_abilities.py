@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 180
+        assert len(yaml_paths) == 181
 
         loaded_names = []
         for path in yaml_paths:
@@ -4311,7 +4311,7 @@ class TestBatch12SaveSystem:
 
 
 # =====================================================================
-# Batch 13 - Doublecast, Triplecast, ChooseFate, Shapeshift, TetraDisaster
+# Batch 13 - Doublecast, Triplecast, ChooseFate, Shapeshift, AstralJudgment
 # =====================================================================
 
 
@@ -4323,7 +4323,7 @@ class TestBatch13YAMLLoading:
         ("triplecast.yaml", "Triplecast", 20),
         ("choose_fate.yaml", "Choose Fate", 0),
         ("shapeshift.yaml", "Shapeshift", 0),
-        ("tetra_disaster.yaml", "Tetra-Disaster", 20),
+        ("astral_judgment.yaml", "Astral Judgment", 20),
     ]
 
     def test_all_yaml_files_load(self):
@@ -4579,15 +4579,15 @@ class TestBatch13Shapeshift:
         assert user.mana.current == mana_before
 
 
-class TestBatch13TetraDisaster:
-    """TetraDisaster - cast all 4 elements + Power Up."""
+class TestBatch13AstralJudgment:
+    """AstralJudgment - active-sign judgment + constellation spin."""
 
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
         from src.core import abilities
         user = TestGameState.create_player(
-            name="Astromancer", class_name="Wizard", race_name="Human",
+            name="Astromancer", class_name="Astromancer", race_name="Human",
             level=30, health=(300, 300), mana=(300, 300),
             stats={"strength": 10, "intel": 30, "wisdom": 20,
                    "con": 12, "charisma": 10, "dex": 10},
@@ -4609,38 +4609,40 @@ class TestBatch13TetraDisaster:
         )
         return user, target
 
-    def test_tetra_disaster_deducts_mana(self):
+    def test_astral_judgment_deducts_mana(self):
         from src.core import abilities
         user, target = self._make_combatants()
         mana_before = user.mana.current
-        abilities.TetraDisaster().use(user, target)
-        # TetraDisaster costs 20 (sub-spells use special=True so no extra mana)
+        abilities.AstralJudgment().use(user, target)
         assert user.mana.current <= mana_before - 20
 
-    def test_tetra_disaster_activates_power_up(self):
+    def test_astral_judgment_resolves_sign_and_spins_constellation(self, monkeypatch):
         from src.core import abilities
+        from src.core.classes import astromancer
         user, target = self._make_combatants()
-        abilities.TetraDisaster().use(user, target)
-        assert user.class_effects["Power Up"].active is True
-        assert user.class_effects["Power Up"].duration == 5
+        monkeypatch.setattr("src.core.classes.astromancer.random.choice", lambda choices: 1)
+        abilities.AstralJudgment().use(user, target)
+        assert target.health.current < 800
+        assert astromancer.active_constellation(user) == "Tide"
 
-    def test_tetra_disaster_blocked_by_ice_block(self):
+    def test_astral_judgment_blocked_by_ice_block(self):
         from src.core import abilities
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
-        result = abilities.TetraDisaster().use(user, target)
+        result = abilities.AstralJudgment().use(user, target)
         assert "no effect" in result.lower()
 
-    def test_tetra_disaster_casts_elemental_spells(self):
+    def test_astral_judgment_tide_heals_and_wards(self, monkeypatch):
         from src.core import abilities
-        damaged = False
-        for _ in range(20):
-            user, target = self._make_combatants()
-            abilities.TetraDisaster().use(user, target)
-            if target.health.current < 800:
-                damaged = True
-                break
-        assert damaged, "TetraDisaster should cast elemental spells that deal damage"
+        from src.core.classes import astromancer
+        user, target = self._make_combatants()
+        user.health.current = 200
+        user.astromancer_state["active_constellation_index"] = 1
+        monkeypatch.setattr("src.core.classes.astromancer.random.choice", lambda choices: 2)
+        abilities.AstralJudgment().use(user, target)
+        assert user.health.current > 200
+        assert user.stat_effects["Magic Defense"].active is True
+        assert astromancer.active_constellation(user) == "Gale"
 
 
 class TestBatch13SaveSystem:
@@ -4652,7 +4654,7 @@ class TestBatch13SaveSystem:
 
         for name in [
             "Doublecast", "Triplecast", "ChooseFate", "Shapeshift",
-            "TetraDisaster", "VesperionChooseFate",
+            "AstralJudgment", "VesperionChooseFate",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)

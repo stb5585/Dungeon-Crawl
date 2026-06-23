@@ -1,0 +1,13 @@
+name: Astral Judgment
+description: >-
+  Call judgment from the active constellation, bending fate through one
+  natural sign before the stars wheel onward.
+type: Skill
+subtype: Power Up
+cost: 20
+weapon: false
+ice_block_check: true
+effects:
+  - type: astral_judgment
+    damage_mod: 3.0
+    rider_duration: 2

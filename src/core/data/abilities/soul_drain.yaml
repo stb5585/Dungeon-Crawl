@@ -1,0 +1,10 @@
+name: Soul Drain
+type: CustomSpell
+subtype: Soul
+description: >-
+  Drain a fragment of the enemy's soul, dealing a small portion of its current
+  health without killing it.
+cost: 18
+effects:
+  - type: soul_drain
+    fraction: 0.10

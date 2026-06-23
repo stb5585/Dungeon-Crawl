@@ -587,10 +587,7 @@ Deferred:
 
 #### P4e - Class Mechanics And Progression Kits
 
-Status: `Partially Implemented`, `Needs Playtest` for full legacy class-kit balance and remaining non-legacy class specs
-
-- Re-design Astromancer ultimate ability `TetraDisaster` after a reference audit across abilities, data, tests, saves, and UI text.
-   - Astromancer is a prophet/time mage mix
+Status: `Partially Implemented`, `Needs Playtest` for full legacy class-kit balance, the new Diviner/Astromancer rune slice, the new Shaman/Soulcatcher Totem slice, and remaining non-legacy class specs
 
 Implemented:
 
@@ -625,18 +622,25 @@ Implemented:
 - Lancer/Dragoon:
   - Jump remains implemented.
   - Dragoon Dragon Quest is implemented through the Recover Jump Red Dragon route, Realm of Cambion terminal follow-up, Jeweler crafting, and Draconite Pendant reward.
+- Diviner/Astromancer rune foundation:
+  - Implemented per-save `astromancer_state` with four sign rune counts capped at 3 and an Astromancer active constellation index.
+  - Added `Runic Boost` for Diviner and Astromancer as a combat action that spends a matching natural-spell rune, empowers the selected spell with a fate floor, and leaves no permanent spell or gear mutation.
+  - Rune drops now come from natural-spell kills: 25% base chance, Astromancer +25 percentage points when the kill matches the active sign, and multiplicative enemy resistance/weakness scaling.
+  - Astromancer natural spell casts advance the `Constellation Cycle`; Runic Boost counts as a natural spell cast.
+  - Implemented `Astral Judgment` with a hard cutover in ability data, tests, UI text, and save serialization. The ultimate resolves the current sign, applies a first-pass fate rider, then spins to a random next sign.
+  - Pygame and curses combat views now show the current constellation and a compact four-sign rune grid.
+  - Astromancer Class Ring text now describes active-sign fate/rune strengthening instead of stale terrain effects; the awakened equipped ring upgrades active-sign Runic Boost from a 75% floor to a 100% floor.
+- Shaman/Soulcatcher nature Totem foundation:
+  - Added one-time elemental communions for Shaman/Soulcatcher at Underground Spring, Boulder, Fire Path, and a floor-3 strange-draft passage.
+  - Communions unlock `Tsunami`, `Earthquake`, `Fireball`, and `Tornado` for both player casting and matching active Totem pulses without new save keys.
+  - Active Totems can pulse the highest unlocked matching aspect spell at reduced potency; Staffs improve pulse chance and strengthen player-cast matching nature damage/healing when the matching Totem is active.
+  - Water Totem now adds Magic Defense and partial spell-damage absorption into healing.
+  - Added `Soul Drain` as a Soulcatcher level-4 spell and Soul Totem pulse option; it deals nonlethal current-HP percentage damage.
+  - The slice remains class-local and per-save through spellbook/Totem/Class Ring state; it does not add account progression, quest-log entries, or broad class-balance work.
 
-Needs Design Decision And Playtest Follow-Up:
+Needs Design Decision:
 
-- Legacy class-kit balance:
-  - Playtest Berserker Battle Scars gain rate, low-HP risk/reward, and late-game HP/damage scaling.
-  - Playtest scroll economy for `Blank Scroll`, stolen scroll charge/value behavior, and boss spell-steal limits.
-  - Playtest Bard/Troubadour song strength, Renewal sustain, and Encore usefulness.
-  - Playtest Wizard affinity gain/pull rates and whether radar visualization is worth adding beyond text status.
-  - Playtest Lycan Moon Cycle cadence, Frenzy Lock risk/duration, and Controlled Frenzy healing balance.
-  - Playtest Stalwart Resolve gain/spend rate and how Shield Slam, Retaliate, Shield Block, and Last Stand should deepen the meter later.
-- Balance follow-up:
-  - Continue playtesting Paladin vow balance, Dragoon Dragon Quest reward balance, mercy victory reward expectations, encounter-rate modifiers, and mark severity.
+- Balance follow-up is tracked in `docs/PLAYTEST_CHECKLIST.md` to keep this roadmap focused on shipped systems and unresolved specs.
 - Narrative integration:
   - Tie second-promotion identity, Class Ring activation, and major class-kit choices back to Voluntas as expressions of chosen selfhood.
   - Avoid implementing class-progression story beats until the associated quest/spec defines trigger timing, player-facing text, save flags, and whether the beat is optional or required.
@@ -645,13 +649,14 @@ Needs Design Decision And Playtest Follow-Up:
   - Define deeper Spellblade/Knight Enchanter and Summoner/Grand Summoner mechanics beyond the ring hooks.
 - Pathfinder:
   - Define deeper Druid/Lycan and Ranger/Beast Master mechanics beyond the ring hooks.
-  - Define Astromancer Runic Alterations drop rules, rune inventory, gear/spell modification, replacement/loss rules, UI, and save behavior.
-  - Define Shaman/Soulcatcher rank-1 elemental spell unlock quests, Staff incentives, and Magic Defense/absorption Totem behavior.
+  - Revisit Diviner/Astromancer Ice/Electric support, rune economy tuning, and richer constellation presentation after playtest.
+  - Revisit Shaman/Soulcatcher Totem pulse cadence, Staff build strength, communion placement, and Soul Drain balance after playtest.
 
 Deferred:
 
 - Do not implement major class kits until each has a one-page spec covering triggers, storage, UI, save migration, tests, and balance assumptions.
 - Keep deep race-passive expansion deferred until the current always-on race identity pass has enough playtest feedback; the "7 sins / 7 virtues" ideas remain design flavor unless promoted by spec.
+- Keep permanent spell alteration, gear rune modification, rune items, account history, and reward/meta-progression out of the current Diviner/Astromancer rune scope.
 
 #### P4f - Combat Architecture And Balance
 
@@ -662,7 +667,7 @@ Status: `Needs Exploration`
 - Validate enemy item usage after stealing consumables.
 - Explore ability/menu improvements:
   - spell/skill ordering by mana cost;
-  - Diviner/Astromancer specialty-first spell casting;
+  - broader spell/skill ordering beyond the current Diviner/Astromancer `Runic Boost` action;
   - Wind eject effects and reward handling;
   - Absorb Essence rework;
   - mana-percentage damage abilities;

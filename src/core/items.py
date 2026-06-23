@@ -3459,7 +3459,7 @@ class ClassRing(Accessory):
             "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",
             "Lycan": "A ring that grants an attack bonus immediately after transforming when worn by a Lycan.",
             "Archdruid": self._archdruid_description(player_char),
-            "Astromancer": "A ring that boosts the terrain effect of spells when worn by a Astromancer.",
+            "Astromancer": "A ring that strengthens active-sign fate and rune boosts when worn by an Astromancer.",
             "Soulcatcher": "A ring that unlocks the Soul Aspect of the Totem ability when worn by a Soulcatcher, granting +20% Weapon damage and +20% Critical damage.",
             "Beast Master": "A ring that increases defense for you and your companion when covering the other when worn by a Beast Master.",
         }

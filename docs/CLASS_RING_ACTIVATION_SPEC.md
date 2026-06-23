@@ -399,12 +399,25 @@ additional visual presentation, and playtest follow-up.
     `Controlled Frenzy` improves healing received while locked by 25%.
   - Status: playable in the Church when a dormant Lycan Class Ring is equipped
     or stored.
-- `Astromancer`: `Star Chart` awakens `Constellation Cycle`, advancing active
-  constellations through casting and granting matching bonuses.
+- `Astromancer`: `Star Chart` awakens `Constellation Cycle`, strengthening
+  active-sign Runic Boost fate floors while the Class Ring is equipped.
+  Astromancer natural spell casts advance the active constellation, and the
+  baseline Diviner/Astromancer rune system remains per-save spell empowerment
+  rather than gear modification.
   - Status: playable in the Church when a dormant Astromancer Class Ring is
     equipped or stored.
 - `Soulcatcher`: `Ancestral Totem Rite` awakens `Aspect Evolution`, improving
   Soul Aspect based on distinct enemy types harvested.
+  - `Nature Totems`: Shaman and Soulcatcher can bind one-time elemental
+    communions at Underground Spring, Boulder, Fire Path, and the floor-3
+    strange-draft passage to unlock `Tsunami`, `Earthquake`, `Fireball`, and
+    `Tornado`. Active elemental Totems can pulse the highest unlocked matching
+    spell at reduced potency, Staffs improve pulse cadence and matching
+    player-cast nature spells, and Water Totem adds Magic Defense plus partial
+    spell absorption into healing.
+  - `Soul Drain`: Soulcatcher learns this level-4 spell as nonlethal
+    current-HP damage; Soul Totem can pulse it when Soul Aspect is active and
+    the spell is known.
   - Status: playable in the Church when a dormant Soulcatcher Class Ring is
     equipped or stored.
 - `Beast Master`: `Pack Trial` awakens `Shared Recovery`, echoing a smaller heal

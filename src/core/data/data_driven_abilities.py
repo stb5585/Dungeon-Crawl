@@ -50,6 +50,27 @@ def _get_status_spell_class():
     return StatusSpell
 
 
+def _fate_floor(actor: Character) -> float:
+    try:
+        return max(0.0, min(1.0, float(getattr(actor, "_runic_boost_floor", 0.0) or 0.0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _floor_uniform(actor: Character, value: float, low: float, high: float) -> float:
+    floor = _fate_floor(actor)
+    if floor <= 0:
+        return value
+    return max(value, low + ((high - low) * floor))
+
+
+def _floor_int(actor: Character, value: int, low: int, high: int) -> int:
+    floor = _fate_floor(actor)
+    if floor <= 0:
+        return value
+    return max(value, int(low + ((high - low) * floor)))
+
+
 class DataDrivenSpell(Spell):
     """
     A spell whose behavior is defined by composed Effect objects + YAML config.
@@ -154,7 +175,7 @@ class DataDrivenSpell(Spell):
         crit = 1
         if not random.randint(0, self.crit):
             crit = 2
-        crit_per = random.uniform(1, crit)
+        crit_per = _floor_uniform(caster, random.uniform(1, crit), 1, crit)
         result.crit = crit_per if crit > 1 else None
 
         # ── 6. Base damage ──────────────────────────────────────────
@@ -188,23 +209,52 @@ class DataDrivenSpell(Spell):
                 )
             else:
                 # ── 9. Variance ─────────────────────────────────────
-                variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
+                variance = _floor_uniform(
+                    caster,
+                    random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH),
+                    DAMAGE_VARIANCE_LOW,
+                    DAMAGE_VARIANCE_HIGH,
+                )
                 damage = int(damage * variance)
+                try:
+                    from src.core.classes import nature_totems
+
+                    damage = int(damage * nature_totems.spell_output_multiplier(caster, self))
+                except Exception:
+                    pass
 
                 if damage <= 0:
                     msg += "The spell was ineffective and does no damage.\n"
                     damage = 0
-                elif random.randint(0, target.stats.con // 2) > random.randint(
-                    (caster.stats.intel * crit) // 2,
-                    (caster.stats.intel * crit),
-                ):
+                else:
+                    target_roll = random.randint(0, target.stats.con // 2)
+                    caster_lo = (caster.stats.intel * crit) // 2
+                    caster_hi = (caster.stats.intel * crit)
+                    caster_roll = _floor_int(
+                        caster,
+                        random.randint(caster_lo, caster_hi),
+                        caster_lo,
+                        caster_hi,
+                    )
+                    resisted = target_roll > caster_roll
+                    if resisted:
                     # ── 10. CON save → half damage ──────────────────
-                    damage //= 2
-                    if damage > 0:
-                        msg += (
-                            f"{target.name} shrugs off the spell and only "
-                            f"receives half of the damage.\n"
-                        )
+                        damage //= 2
+                        if damage > 0:
+                            msg += (
+                                f"{target.name} shrugs off the spell and only "
+                                f"receives half of the damage.\n"
+                            )
+                            damage_msg = (
+                                f"{caster.name} damages {target.name} "
+                                f"for {damage} hit points"
+                            )
+                            if crit > 1:
+                                damage_msg += " (Critical hit!)"
+                            msg += damage_msg + ".\n"
+                        else:
+                            msg += "The spell was ineffective and does no damage.\n"
+                    else:
                         damage_msg = (
                             f"{caster.name} damages {target.name} "
                             f"for {damage} hit points"
@@ -212,16 +262,6 @@ class DataDrivenSpell(Spell):
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
                         msg += damage_msg + ".\n"
-                    else:
-                        msg += "The spell was ineffective and does no damage.\n"
-                else:
-                    damage_msg = (
-                        f"{caster.name} damages {target.name} "
-                        f"for {damage} hit points"
-                    )
-                    if crit > 1:
-                        damage_msg += " (Critical hit!)"
-                    msg += damage_msg + ".\n"
 
                 # ── 11. Apply damage ────────────────────────────────
                 target.health.current -= damage
@@ -792,6 +832,20 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         self.rank = rank
         self._effects: list[Effect] = effects or []
         self._instant_heal = instant_heal
+
+    def _apply_instant_healing(
+        self,
+        caster: Character,
+        target: Character,
+        heal: int,
+    ) -> int:
+        try:
+            from src.core.classes import nature_totems
+
+            heal = int(heal * nature_totems.spell_output_multiplier(caster, self.name))
+        except Exception:
+            pass
+        return super()._apply_instant_healing(caster, target, heal)
 
     # -- HoT helper (Regen pattern) ------------------------------------
     def hot(self, target: Character, heal: int) -> None:

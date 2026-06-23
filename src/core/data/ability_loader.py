@@ -92,11 +92,12 @@ from src.core.effects import (
     ChooseFateEffect,
     VesperionChooseFateEffect,
     ShapeshiftEffect,
-    TetraDisasterEffect,
+    AstralJudgmentEffect,
     ConsumeItemEffect,
     DestroyMetalEffect,
     SlotMachineEffect,
     TotemEffect,
+    SoulDrainEffect,
     ChargeEffect,
     CrushingBlowEffect,
     ArcaneBlastEffect,
@@ -222,11 +223,12 @@ class EffectFactory:
             'choose_fate': EffectFactory._create_choose_fate,
             'vesperion_choose_fate': EffectFactory._create_vesperion_choose_fate,
             'shapeshift': EffectFactory._create_shapeshift,
-            'tetra_disaster': EffectFactory._create_tetra_disaster,
+            'astral_judgment': EffectFactory._create_astral_judgment,
             'consume_item': EffectFactory._create_consume_item,
             'destroy_metal': EffectFactory._create_destroy_metal,
             'slot_machine': EffectFactory._create_slot_machine,
             'totem': EffectFactory._create_totem,
+            'soul_drain': EffectFactory._create_soul_drain,
             'charge_execute': EffectFactory._create_charge_execute,
             'crushing_blow': EffectFactory._create_crushing_blow,
             'arcane_blast': EffectFactory._create_arcane_blast,
@@ -902,10 +904,10 @@ class EffectFactory:
         )
 
     @staticmethod
-    def _create_tetra_disaster(data: dict) -> TetraDisasterEffect:
-        return TetraDisasterEffect(
-            elements=data.get('elements', ["Fire", "Water", "Wind", "Earth"]),
-            power_up_duration=data.get('power_up_duration', 5),
+    def _create_astral_judgment(data: dict) -> AstralJudgmentEffect:
+        return AstralJudgmentEffect(
+            damage_mod=data.get('damage_mod', 3.0),
+            rider_duration=data.get('rider_duration', 2),
         )
 
     @staticmethod
@@ -928,6 +930,12 @@ class EffectFactory:
             aspects=data.get('aspects'),
             unlock_requirements=data.get('unlock_requirements'),
             duration_base=data.get('duration_base', 5),
+        )
+
+    @staticmethod
+    def _create_soul_drain(data: dict) -> SoulDrainEffect:
+        return SoulDrainEffect(
+            fraction=data.get('fraction', 0.10),
         )
 
     @staticmethod

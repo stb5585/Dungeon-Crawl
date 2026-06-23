@@ -44,7 +44,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import bard, berserker, class_rings, dragoon, lycan, paladin, wizard
+from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, paladin, wizard
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -142,7 +142,7 @@ class BattleEngine:
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)
 
         # Available actions refreshed each turn
-        self.available_actions: list = tile.available_actions(player)
+        self.available_actions: list = self._available_actions()
 
         self._event_bus = get_event_bus()
 
@@ -158,6 +158,13 @@ class BattleEngine:
 
     def _no_healing_duel_active(self) -> bool:
         return bool(getattr(self.enemy, "class_ring_no_healing_duel", False))
+
+    def _available_actions(self) -> list:
+        actions = list(self.tile.available_actions(self.player))
+        if astromancer.boostable_spells(self.player) and "Runic Boost" not in actions:
+            insert_at = actions.index("Cast Spell") + 1 if "Cast Spell" in actions else len(actions)
+            actions.insert(insert_at, "Runic Boost")
+        return actions
 
     def _fail_no_healing_duel_if_healed(self, hp_before: int) -> str:
         """Fail the Berserker duel when the player restores HP during the bout."""
@@ -446,6 +453,9 @@ class BattleEngine:
         elif action == "Cast Spell":
             result.message = self._execute_spell(choice)
 
+        elif action == "Runic Boost":
+            result.message = self._execute_runic_boost(choice)
+
         elif action == "Use Skill":
             result.message = self._execute_skill(choice, slot_machine_callback)
 
@@ -512,7 +522,16 @@ class BattleEngine:
                 )
 
             # Refresh available actions
-            self.available_actions = self.tile.available_actions(self.player)
+            self.available_actions = self._available_actions()
+
+            if (
+                self.attacker == self.player
+                and self.defender == self.enemy
+                and self.defender.is_alive()
+            ):
+                pulse_msg = nature_totems.resolve_totem_pulse(self.player, self.enemy)
+                if pulse_msg:
+                    result.messages.append(pulse_msg)
 
             # Manage summon state
             if self.summon_active:
@@ -722,8 +741,61 @@ class BattleEngine:
         message += str(spell.cast(self.attacker, target=self.defender))
         if self.attacker == self.player:
             wizard.record_cast(self.player, wizard.school_from_ability(spell))
-            if getattr(getattr(self.player, "cls", None), "name", "") == "Astromancer":
-                class_rings.advance_constellation(self.player)
+            if not self.defender.is_alive():
+                message += self._record_player_natural_spell_kill(spell)
+            if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(spell):
+                astromancer.advance_constellation(self.player)
+        return message
+
+    def _record_player_natural_spell_kill(self, spell: object) -> str:
+        if not astromancer.has_rune_system(self.player):
+            return ""
+        gained, sign, _chance = astromancer.maybe_award_rune(self.player, self.enemy, spell)
+        if gained and sign:
+            return f"{self.player.name} claims an {sign} rune.\n"
+        return ""
+
+    def _execute_runic_boost(self, choice: str | None) -> str:
+        """Spend a rune to empower and cast a matching natural spell."""
+        if self.attacker.abilities_suppressed():
+            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            return f"{self.attacker.name} cannot cast spells because of {reason}!\n"
+
+        if self.attacker != self.player or not astromancer.has_rune_system(self.player):
+            return f"{self.attacker.name} cannot shape runes.\n"
+
+        if not choice or choice not in self.player.spellbook.get("Spells", {}):
+            return f"{self.player.name} fumbles the rune pattern.\n"
+
+        spell = self.player.spellbook["Spells"][choice]
+        sign = astromancer.sign_for_spell(spell)
+        if not sign:
+            return f"{choice} cannot be empowered by the current rune lore.\n"
+        if self.player.mana.current < spell.cost:
+            return f"{self.player.name} does not have enough mana to cast {choice}!\n"
+        if not astromancer.consume_rune(self.player, sign):
+            return f"{self.player.name} has no {sign} runes.\n"
+
+        floor = astromancer.runic_boost_floor(self.player, sign)
+        prior_floor = getattr(self.player, "_runic_boost_floor", None)
+        self.player._runic_boost_floor = floor
+        try:
+            message = f"{self.player.name} spends one {sign} rune to boost {choice}.\n"
+            message += str(spell.cast(self.player, target=self.defender))
+        finally:
+            if prior_floor is None:
+                try:
+                    delattr(self.player, "_runic_boost_floor")
+                except AttributeError:
+                    pass
+            else:
+                self.player._runic_boost_floor = prior_floor
+
+        wizard.record_cast(self.player, wizard.school_from_ability(spell))
+        if not self.defender.is_alive():
+            message += self._record_player_natural_spell_kill(spell)
+        if astromancer.is_astromancer(self.player):
+            astromancer.advance_constellation(self.player)
         return message
 
     def _execute_skill(

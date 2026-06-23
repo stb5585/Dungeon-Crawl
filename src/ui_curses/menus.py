@@ -11,6 +11,7 @@ from src.core.save_system import SaveManager
 from src.core.character import scaled_decay_function
 from src.core import map_tiles
 from src.core import items as items_module
+from src.core.classes import astromancer
 
 
 # functions
@@ -701,12 +702,25 @@ class CombatMenu:
         self.char_win.addstr(5, (self.width // 4) - (len(mana_bar) // 2), mana_bar)
         self.char_win.addstr(6, (self.width // 4) - (len(mana_text) // 2), mana_text)
 
+        status_row = 8
+        if astromancer.has_rune_system(char):
+            max_width = (self.width // 2) - 4
+            rune_parts = []
+            if astromancer.is_astromancer(char):
+                rune_parts.append(f"Sign {astromancer.active_constellation(char)}")
+            rune_parts.extend(astromancer.rune_grid_lines(char))
+            rune_text = " | ".join(rune_parts)
+            if len(rune_text) > max_width:
+                rune_text = rune_text[:max_width - 3] + "..."
+            self.char_win.addstr(8, (self.width // 4) - (len(rune_text) // 2), rune_text)
+            status_row = 9
+
         status_text = self._format_status_icons(char)
         if status_text:
             max_width = (self.width // 2) - 4
             if len(status_text) > max_width:
                 status_text = status_text[:max_width - 3] + "..."
-            self.char_win.addstr(8, (self.width // 4) - (len(status_text) // 2), status_text)
+            self.char_win.addstr(status_row, (self.width // 4) - (len(status_text) // 2), status_text)
         self.char_win.box()
 
     def draw_options(self, options):

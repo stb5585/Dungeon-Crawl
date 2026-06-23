@@ -1413,10 +1413,10 @@ class LunarFrenzy(PowerUp):
         self.passive = True
 
 
-class TetraDisaster:
-    """Data-driven (tetra_disaster.yaml) - cast all 4 elemental spells + Power Up."""
+class AstralJudgment:
+    """Data-driven (astral_judgment.yaml) - active-sign fate judgment."""
     def __new__(cls):
-        return _load_yaml_ability("tetra_disaster.yaml", cls_name="TetraDisaster")
+        return _load_yaml_ability("astral_judgment.yaml", cls_name="AstralJudgment")
 
 
 class SoulHarvest(PowerUp):
@@ -2262,6 +2262,12 @@ class Desoul:
         return _load_yaml_ability("desoul.yaml", cls_name="Desoul")
 
 
+class SoulDrain:
+    """Soul spell — data-driven (soul_drain.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("soul_drain.yaml", cls_name="SoulDrain")
+
+
 class Petrify:
     """Death spell — data-driven (petrify.yaml)"""
     def __new__(cls):
@@ -2902,6 +2908,7 @@ spell_dict = {
         "16": AstralShift,
         },
     "Soulcatcher": {
+        "4": SoulDrain,
         "6": Dispel,
         "12": Desoul,
         },

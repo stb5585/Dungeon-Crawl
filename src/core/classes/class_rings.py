@@ -157,8 +157,8 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "activation": "Star Chart",
         "mod": "Constellation Cycle",
         "description": (
-            "casting advances the active constellation; matching spells gain "
-            "stronger bonuses"
+            "casting advances the active constellation; active-sign runes bend "
+            "spell fate more strongly"
         ),
     },
     "Soulcatcher": {
@@ -617,31 +617,21 @@ def controlled_frenzy_healing_multiplier(character: Any) -> float:
 
 
 def active_constellation(character: Any) -> str:
-    state = ensure_state(character)
-    index = int(state["data"]["Astromancer"].get("constellation_index", 0) or 0)
-    return CONSTELLATIONS[index % len(CONSTELLATIONS)]
+    from . import astromancer
+
+    return astromancer.active_constellation(character)
 
 
 def advance_constellation(character: Any) -> str:
-    state = ensure_state(character)
-    index = int(state["data"]["Astromancer"].get("constellation_index", 0) or 0) + 1
-    state["data"]["Astromancer"]["constellation_index"] = index % len(CONSTELLATIONS)
-    return active_constellation(character)
+    from . import astromancer
+
+    return astromancer.advance_constellation(character)
 
 
 def constellation_bonus(character: Any, damage_type: str | None = None) -> float:
-    if not (is_awakened(character, "Astromancer") and has_equipped_class_ring(character)):
-        return 0.0
-    mapping = {
-        "Ember": {"Fire"},
-        "Tide": {"Water", "Ice"},
-        "Gale": {"Wind", "Electric"},
-        "Stone": {"Earth", "Physical"},
-    }
-    current = active_constellation(character)
-    if damage_type is None or damage_type in mapping[current]:
-        return 0.15
-    return 0.05
+    from . import astromancer
+
+    return astromancer.constellation_bonus(character, damage_type)
 
 
 def record_soul_harvest(character: Any, enemy_type: str | None) -> None:

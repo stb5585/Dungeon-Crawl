@@ -35,6 +35,7 @@ from .classes import (
     grandmaster,
     lycan,
     paladin,
+    astromancer,
     wizard,
 )
 from .character import Character, armor_resistance_modifier, armor_spell_modifier
@@ -378,6 +379,7 @@ class Player(Character):
         self.demonologist_contracts = demonologist.default_state()
         self.archdruid_attunement = archdruid.default_state()
         self.class_ring_awakening = class_rings.default_state()
+        self.astromancer_state = astromancer.default_state()
         self.paladin_vow = paladin.default_state()
         self.dragoon_dragon_quest = dragoon.default_state()
         self.bard_song = bard.default_song_state()
@@ -457,6 +459,11 @@ class Player(Character):
         """Normalize legacy Class Ring awakening state for current and legacy saves."""
         self.class_ring_awakening = class_rings.ensure_state(self)
         return self.class_ring_awakening
+
+    def ensure_astromancer_state(self):
+        """Normalize Diviner/Astromancer rune state for current and legacy saves."""
+        self.astromancer_state = astromancer.ensure_state(self)
+        return self.astromancer_state
 
     def ensure_paladin_vow(self):
         """Normalize Paladin vow state for current and legacy saves."""
@@ -731,6 +738,10 @@ class Player(Character):
                     tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
                     tile = getattr(map_tiles, tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
+
+        wind_pos = getattr(map_tiles, "WIND_COMMUNION_POS", None)
+        if wind_pos and wind_pos in world_dict:
+            world_dict[wind_pos] = map_tiles.StrangeDraftTile(*wind_pos)
 
         self.world_dict = world_dict
 
@@ -1082,8 +1093,11 @@ class Player(Character):
         if cls_name == "Shadowcaster":
             debt = class_rings.ensure_state(self)["data"]["Shadowcaster"].get("debt", 0)
             lines.append(f"{'Umbral Debt:':13} {int(debt)}")
+        if cls_name in {"Diviner", "Astromancer"}:
+            self.ensure_astromancer_state()
+            lines.append(f"{'Runes:':13} {astromancer.rune_status_summary(self)}")
         if cls_name == "Astromancer":
-            lines.append(f"{'Constellation:':13} {class_rings.active_constellation(self)}")
+            lines.append(f"{'Constellation:':13} {astromancer.active_constellation(self)}")
         if cls_name == "Soulcatcher":
             harvested = class_rings.ensure_state(self)["data"]["Soulcatcher"].get("harvested_types", [])
             lines.append(f"{'Soul Types:':13} {len(harvested)}")
@@ -2631,7 +2645,15 @@ class Player(Character):
             if self.equipment['Pendant'] is not None and "Magic Defense" in self.equipment['Pendant'].mod:
                 m_def_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
-            return max(0, m_def_mod + class_mod + self.combat.magic_def)
+            total_magic_def = m_def_mod + class_mod + self.combat.magic_def
+            try:
+                from .classes import nature_totems
+
+                if nature_totems.active_totem_aspect(self) == "Water":
+                    total_magic_def = int(total_magic_def * (1 + nature_totems.WATER_WARD_MAGIC_DEFENSE_BONUS))
+            except Exception:
+                pass
+            return max(0, total_magic_def)
         if mod == 'heal':
             heal_mod = self.stats.wisdom * self.level.pro_level
             if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
@@ -2726,8 +2748,7 @@ class Player(Character):
             Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
                 damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
                 will be unable to transform back until after the battle
-            Astromancer - Tetra-Disaster: unleash a powerful attack consisting of all 4 elements; this will also increase resistance
-                of caster to the 4 elements by 50%
+            Astromancer - Astral Judgment: call the current constellation's judgment, then spin the cycle
             Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
                 that enemy type
             Beast Master - Pack Bond (passive): The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect.
@@ -2749,7 +2770,7 @@ class Player(Character):
                     "Master Monk": abilities.DimMak,
                     "Troubadour": abilities.SongInspiration,
                     "Lycan": abilities.LunarFrenzy,
-                    "Astromancer": abilities.TetraDisaster,
+                    "Astromancer": abilities.AstralJudgment,
                     "Soulcatcher": abilities.SoulHarvest,
                     "Beast Master": abilities.PackBond
             }

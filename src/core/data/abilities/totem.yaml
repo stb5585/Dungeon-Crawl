@@ -1,7 +1,8 @@
 name: Totem
 description: >-
   Summon a totem channeling a sacred aspect. Choose Earth for defense,
-  Water for healing, Fire for offense, Wind for mobility, or Soul for weapon mastery.
+  Water for healing and warding, Fire for offense, Wind for mobility, or Soul
+  for weapon mastery. Active totems can pulse learned aspect spells.
   Only one aspect active at a time.
 type: Skill
 subtype: Class

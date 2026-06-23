@@ -14,7 +14,7 @@ import sys
 import pygame
 
 from src.core import enemies, main_story
-from src.core.classes import demonologist
+from src.core.classes import astromancer, demonologist
 from src.core.combat.battle_engine import BattleEngine
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
@@ -1129,6 +1129,18 @@ class GUICombatManager:
                 return None
             choice = selected_spell
 
+        elif action == "Runic Boost":
+            if player_char.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                self.combat_view.add_combat_message(
+                    f"{player_char.name} cannot cast spells because of {reason}!"
+                )
+                return None
+            selected_spell = self._select_runic_boost_spell(player_char, enemy)
+            if not selected_spell:
+                return None
+            choice = selected_spell
+
         elif action == "Skills":
             if player_char.abilities_suppressed():
                 reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
@@ -1419,6 +1431,56 @@ class GUICombatManager:
                         return skills[selected]  # Return skill name
                     
                     # Update scroll to keep selection visible
+                    max_visible = 3
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
+
+    def _select_runic_boost_spell(self, player_char, enemy):
+        """Show Runic Boost spell selection and return selected spell name."""
+        spells = astromancer.boostable_spells(player_char)
+        if not spells:
+            self.combat_view.add_combat_message("No rune-boostable spells are ready!")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            spell_options = []
+            for spell_name in spells:
+                spell = player_char.spellbook["Spells"][spell_name]
+                sign = astromancer.sign_for_spell(spell) or "Rune"
+                spell_options.append(f"{sign}: {spell_name} (MP: {spell.cost})")
+
+            self._render_selection_menu("Runic Boost", spell_options, selected, scroll_offset)
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(spells)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(spells)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(spells) - 1, selected + 10)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return spells[selected]
+
                     max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected

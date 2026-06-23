@@ -291,6 +291,29 @@ def test_combat_popup_and_helpers(monkeypatch):
     assert ("RFL", True) in icons
     assert all(label != "JMP" for label, _positive in icons)
 
+    rune_character = SimpleNamespace(
+        name="Star",
+        cls=SimpleNamespace(name="Astromancer"),
+        health=SimpleNamespace(current=10, max=12),
+        mana=SimpleNamespace(current=5, max=8),
+        astromancer_state={
+            "active_constellation_index": 0,
+            "runes": {"Ember": 2, "Tide": 0, "Gale": 1, "Stone": 0},
+        },
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    combat_menu.draw_char(rune_character)
+    rendered_text = [
+        call[1][2]
+        for call in combat_menu.char_win.calls
+        if call[0] == "addstr" and len(call[1]) >= 3
+    ]
+    assert any("Sign Ember" in text and "Ember: **." in text for text in rendered_text)
+
 
 def test_quest_list_and_text_box_helpers(monkeypatch):
     monkeypatch.setattr(curses_menus.curses, "newwin", _fake_newwin_factory([]))

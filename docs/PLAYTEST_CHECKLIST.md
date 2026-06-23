@@ -73,6 +73,40 @@
   - Expected: Recover restores more HP and MP than the baseline Recover Jump.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
+
+### Diviner And Astromancer Runes
+- [ ] Win combat as a Diviner with Fire, Water, Wind, and Earth natural spells across enemies with neutral resistance, resistance, and weakness to the killing spell's element.
+  - Expected: Matching sign runes can drop from natural-spell kills, cap at 3 per sign, and weakness/resistance visibly changes the drop cadence over repeated attempts.
+  - Expected: Ice and Electric spells do not produce runes in this slice.
+- [ ] Use `Runic Boost` as a Diviner with available and unavailable matching runes.
+  - Expected: The combat menu includes `Runic Boost` only when at least one boostable natural spell has a matching rune and enough MP.
+  - Expected: The selection menu lists only currently boostable natural spells, consumes one matching rune, and casts the selected spell with the fate floor.
+- [ ] Repeat `Runic Boost` as an Astromancer while casting normal natural spells between uses.
+  - Expected: Every natural spell cast, including Runic Boost, advances the visible constellation cycle.
+  - Expected: Pygame and curses combat views show the current sign and four compact rune rows.
+- [ ] Awaken and equip the Astromancer Class Ring, then use `Runic Boost` with a spell matching the active sign.
+  - Expected: Active-sign Runic Boost uses the 100% fate floor only while the awakened Class Ring is equipped.
+  - Expected: Unequipping the ring leaves rune drops and the cycle available but returns Runic Boost to the baseline 75% floor.
+- [ ] Gain the Astromancer Power Core skill and use `Astral Judgment` on each active sign.
+  - Expected: `Astral Judgment` resolves the current sign, applies the matching first-pass rider, and then randomly spins to a new sign.
+  - Expected: Kills from `Astral Judgment` do not award runes.
+
+### Shaman And Soulcatcher Nature Totems
+- [ ] Visit Underground Spring, Boulder, Fire Path, and the floor-3 strange-draft passage as Shaman or Soulcatcher.
+  - Expected: The player learns `Tsunami`, `Earthquake`, `Fireball`, and `Tornado` respectively, with repeat visits reporting the communion as already bound.
+  - Expected: Non-Shaman/Soulcatcher classes receive flavor or navigation text but do not learn the spells.
+- [ ] Activate Earth, Water, Fire, and Wind Totems after their matching communions.
+  - Expected: End-of-player-turn Totem pulses can cast the highest unlocked matching spell at reduced potency without spending extra mana.
+  - Expected: Elemental Totem pulses can defeat enemies.
+- [ ] Equip a Staff, activate a matching elemental Totem, and cast matching nature spells.
+  - Expected: Staff increases Totem pulse frequency and strengthens player-cast matching nature spell damage/healing.
+  - Expected: Nonmatching active Totems do not strengthen the spell.
+- [ ] Use `Elemental Strike` with each active elemental Totem.
+  - Expected: `Elemental Strike` uses the active Totem's element instead of a random element.
+- [ ] Activate Water Totem and receive hostile spell damage.
+  - Expected: Water Totem increases Magic Defense, absorbs part of incoming spell damage, and heals for the absorbed amount.
+- [ ] Learn `Soul Drain` as Soulcatcher and use it directly and through Soul Totem.
+  - Expected: `Soul Drain` deals current-HP percentage damage, cannot kill, and Soul Totem pulses it at reduced potency when Soul aspect is active.
 - [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
   - Expected: The Old Warehouse guards offer the matching job: `Loaded Game`, `Cartographer's Proof`, `No-Trace Contract`, or `Impossible Theft`.
   - Expected: Completing the job awakens the ring and applies the expected equipped mod.

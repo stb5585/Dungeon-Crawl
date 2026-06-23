@@ -29,6 +29,7 @@ CHALICE_PROGRESS_KEY = "Chalice Progress"
 CHALICE_ADVENTURER_POS = (12, 14, 3)
 CHALICE_LOCATION_POS = (2, 17, 6)
 UNDERGROUND_SPRING_POS = (4, 9, 3)
+WIND_COMMUNION_POS = (5, 5, 3)
 REALM_OF_CAMBION_ENTRY_POS = (1, 28, REALM_OF_CAMBION_LEVEL)
 CAMBION_SWITCH_CODE = "2749"
 CAMBION_SWITCH_POS = (12, 28, REALM_OF_CAMBION_LEVEL)
@@ -140,6 +141,13 @@ def reveal_chalice_map_on_inspect(player_char, item) -> bool:
 
     sync_chalice_map_description(player_char)
     return revealed_now
+
+
+def nature_communion_text(player_char, aspect: str) -> str:
+    from .classes import nature_totems
+
+    _unlocked, message = nature_totems.unlock_communion(player_char, aspect)
+    return message
 
 
 def chalice_map_preview_text(player_char) -> str:
@@ -690,6 +698,18 @@ class BrokenGearTile(DecorativeCavePath):
     description = "Broken equipment lies scattered here, too ruined to use for now."
 
 
+class StrangeDraftTile(EmptyCavePath):
+    """Floor 3 wind communion hallway for Shaman/Soulcatcher."""
+
+    def intro_text(self, game):
+        intro_str = super().intro_text(game)
+        intro_str += "A strange draft threads through this passage without any visible source.\n"
+        return intro_str
+
+    def special_text(self, game):
+        return nature_communion_text(game.player_char, "Wind")
+
+
 class CavePath0(CavePath):
 
     def modify_player(self, game, textbox=None, popup_class=None):
@@ -903,6 +923,9 @@ class FirePathSpecial(FirePath):
     Cacus summon can be obtained by Summoner class once Vulcan's Hammer is obtained
     """
 
+    def special_text(self, game):
+        return nature_communion_text(game.player_char, "Fire")
+
     def modify_player(self, game, textbox=None):
         if "Vulcan's Hammer" in game.player_char.special_inventory:
             game.special_event("Cacus")
@@ -940,6 +963,9 @@ class UndergroundSpring(SpecialTile):
         """
         self.visited = True
         player_char = game.player_char
+        water_message = nature_communion_text(player_char, "Water")
+        if water_message and textbox:
+            textbox.print_text_in_rectangle(water_message)
         # UI hook: confirm with player about drinking from spring
         # UI hook: show quest completion message for Naivete
         if "Naivete" in player_char.quest_dict["Side"] and \
@@ -1054,6 +1080,7 @@ class Boulder(SpecialTile):
         pass
 
     def special_text(self, game):
+        earth_message = nature_communion_text(game.player_char, "Earth")
         if game.player_char.world_dict[(4, 9, 3)].drink and not self.read:
             game.special_event("Boulder")
             game.player_char.modify_inventory(items.Excaliper(), rare=True)
@@ -1068,6 +1095,7 @@ class Boulder(SpecialTile):
                 progress["Map"] = True
                 sync_chalice_map_description(game.player_char)
                 quest_data["Help Text"] = "Bring the map to the Sergeant at the barracks for help deciphering it."
+        return earth_message
 
 
 class Portal(EmptyCavePath):

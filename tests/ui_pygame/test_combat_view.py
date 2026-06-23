@@ -554,7 +554,7 @@ def test_render_helpers_cover_icons_player_status_and_logs(monkeypatch):
     font_small = RecordingFont()
     font_medium = RecordingFont()
     font_large = RecordingFont()
-    fonts = [
+    all_fonts = [
         font_small,
         font_medium,
         font_large,
@@ -566,6 +566,7 @@ def test_render_helpers_cover_icons_player_status_and_logs(monkeypatch):
         RecordingFont(),
         RecordingFont(),
     ]
+    fonts = list(all_fonts)
 
     monkeypatch.setattr(
         "src.ui_pygame.gui.combat_view.pygame.font.Font",
@@ -584,6 +585,17 @@ def test_render_helpers_cover_icons_player_status_and_logs(monkeypatch):
     combined = font_medium.render_calls + font_large.render_calls
     assert any(text.startswith("HP:") for text in combined)
     assert any("ENCUMBERED" in text for text in combined)
+
+    rune_player = _make_character()
+    rune_player.cls.name = "Astromancer"
+    rune_player.astromancer_state = {
+        "active_constellation_index": 0,
+        "runes": {"Ember": 2, "Tide": 0, "Gale": 1, "Stone": 0},
+    }
+    view._render_player_status(rune_player)
+    rune_calls = [text for font in all_fonts for text in font.render_calls]
+    assert "Sign: Ember" in rune_calls
+    assert "Ember: **." in rune_calls
 
     view.combat_log = ["Line one", "Line two\nLine three"]
     view._render_combat_log()
