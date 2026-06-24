@@ -1,0 +1,19 @@
+name: Abyssal Covenant
+type: Skill
+subtype: Power Up
+description: >-
+  Consume a large portion of HP; in exchange for several turns gain massive
+  spell power, increased corruption, and all contract bonuses doubled.
+cost: 0
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    extra_mode: sacrifice_health
+    sacrifice_pct: 0.5
+    sacrifice_divisor: 2
+    sacrifice_minimum: 10
+    message: >-
+      {actor} sacrifices health to form an Abyssal Covenant. For 5 rounds, they
+      gain massive spell power, increased corruption, and all contract bonuses
+      are doubled.

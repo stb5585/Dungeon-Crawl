@@ -6,7 +6,7 @@ Implements the core church logic from town.py adapted for Pygame presenter.
 import os
 
 from src.core import companions
-from src.core.abilities import spell_dict, skill_dict
+from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
 from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist, paladin
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
@@ -396,16 +396,16 @@ class ChurchManager(TownScreenBase):
 
             # Grant level 1 abilities for the new class
             promo_ability_messages = []
-            if str(self.player_char.level.level) in spell_dict.get(chosen_name, {}):
-                spell_gain = spell_dict[chosen_name][str(self.player_char.level.level)]()
+            for spell_cls in ability_classes_for_level(spell_dict, chosen_name, self.player_char.level.level):
+                spell_gain = spell_cls()
                 if spell_gain.name in self.player_char.spellbook["Spells"]:
                     promo_ability_messages.append(f"{spell_gain.name} goes up a level.")
                 else:
                     promo_ability_messages.append(f"You have gained the spell {spell_gain.name}.")
                 self.player_char.spellbook["Spells"][spell_gain.name] = spell_gain
             
-            if str(self.player_char.level.level) in skill_dict.get(chosen_name, {}):
-                skill_gain = skill_dict[chosen_name][str(self.player_char.level.level)]()
+            for skill_cls in ability_classes_for_level(skill_dict, chosen_name, self.player_char.level.level):
+                skill_gain = skill_cls()
                 if skill_gain.name in self.player_char.spellbook["Skills"]:
                     promo_ability_messages.append(f"{skill_gain.name} goes up a level.")
                 else:

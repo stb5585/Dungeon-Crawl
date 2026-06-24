@@ -1,0 +1,12 @@
+name: Trickster's Gambit
+type: Skill
+subtype: Power Up
+description: >-
+  For several turns, stolen spells cost no mana and have a chance not to be
+  consumed when cast. Each successful cast increases critical chance and dodge.
+cost: 24
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    extra_mode: tricksters_gambit

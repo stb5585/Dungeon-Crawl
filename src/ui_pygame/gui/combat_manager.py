@@ -1141,6 +1141,12 @@ class GUICombatManager:
                 return None
             choice = selected_spell
 
+        elif action == "Steal As Well":
+            selected_spell = self._select_steal_as_well_spell(player_char, enemy)
+            if not selected_spell:
+                return None
+            choice = selected_spell
+
         elif action == "Skills":
             if player_char.abilities_suppressed():
                 reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
@@ -1328,8 +1334,11 @@ class GUICombatManager:
     def _select_spell(self, player_char, enemy):
         """Show spell selection menu and return selected spell name."""
         # Filter out passive spells
-        spells = [name for name, spell in player_char.spellbook['Spells'].items() 
-                  if not getattr(spell, 'passive', False)]
+        spells = [
+            name for name, spell in player_char.spellbook['Spells'].items()
+            if not getattr(spell, 'passive', False)
+            and (getattr(spell, "subtyp", None) != "Movement" or name == "Volitation")
+        ]
         
         if not spells:
             self.combat_view.add_combat_message("No spells learned!")
@@ -1480,6 +1489,59 @@ class GUICombatManager:
                         selected = min(len(spells) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                         return spells[selected]
+
+                    max_visible = 3
+                    if selected < scroll_offset:
+                        scroll_offset = selected
+                    elif selected >= scroll_offset + max_visible:
+                        scroll_offset = selected - max_visible + 1
+
+    def _select_steal_as_well_spell(self, player_char, enemy):
+        """Show Steal As Well spell/scroll selection and return the selected name."""
+        from src.core import items as core_items
+
+        options = [
+            name for name, spell in player_char.spellbook["Spells"].items()
+            if spell.subtyp not in {"Support", "Movement"} and spell.cost <= player_char.mana.current
+        ]
+        options.extend(
+            item_name for item_name, item_list in player_char.inventory.items()
+            if item_list and isinstance(item_list[0], core_items.InscribedSpellScroll)
+        )
+        if not options:
+            self.combat_view.add_combat_message("No spell theft options are ready!")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_selection_menu("Steal As Well", options, selected, scroll_offset)
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(options)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(options)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(options) - 1, selected + 10)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return options[selected]
 
                     max_visible = 3
                     if selected < scroll_offset:

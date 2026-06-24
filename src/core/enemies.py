@@ -67,13 +67,13 @@ def random_enemy_catalog() -> dict[str, list[Enemy]]:
       '2': [Panther(), TwistedDwarf(), BattleToad(), Satyr(), Gnoll(), GiantOwl(), Orc(), Vampire(),
           VampireBat(), Direwolf(), RedSlime(), GiantSnake(), GiantScorpion(), Warrior(), Harpy(), Naga(),
           Wererat(), Xorn(), SteelPredator()],
-      '3': [Clannfear(), Ghoul(), Troll(), Direbear(), EvilCrusader(), Ogre(), BlackSlime(), GoldenEagle(),
-          PitViper(), Alligator(), Disciple(), Werewolf(), Antlion(), InvisibleStalker(), NightHag(),
-          Treant(), Ankheg()],
-      '4': [Antlion(), InvisibleStalker(), NightHag(), BrownSlime(), Troll(), Gargoyle(), Conjurer(),
-          Chimera(), Dragonkin(), Griffin(), DrowAssassin(), Cyborg(), DarkKnight(), FireMyrmidon(),
-          IceMyrmidon(), StormMyrmidon(), WaterMyrmidon(), EarthMyrmidon(), WindMyrmidon(),
-          DisplacerBeast()],
+      '3': [Clannfear(), Ghoul(), Troll(), Direbear(), Giant(), Owlbear(), EvilCrusader(), Ogre(),
+          BlackSlime(), GoldenEagle(), PitViper(), Alligator(), Disciple(), Werewolf(), Antlion(),
+          InvisibleStalker(), NightHag(), Treant(), Ankheg()],
+      '4': [Antlion(), InvisibleStalker(), NightHag(), BrownSlime(), Troll(), Giant(), Owlbear(),
+          Gargoyle(), Conjurer(), Chimera(), Dragonkin(), Griffin(), DrowAssassin(), Cyborg(),
+          DarkKnight(), FireMyrmidon(), IceMyrmidon(), StormMyrmidon(), WaterMyrmidon(),
+          EarthMyrmidon(), WindMyrmidon(), DisplacerBeast()],
       '5': [FireMyrmidon(), IceMyrmidon(), StormMyrmidon(), WaterMyrmidon(), EarthMyrmidon(), WindMyrmidon(),
           DisplacerBeast(), ShadowSerpent(), Aboleth(), Beholder(), Behemoth(), Basilisk(),
           Hydra(), Lich(), MindFlayer(), Sandworm(), Warforged(), Wyrm(), Wyvern(), Archvile(),
@@ -2275,6 +2275,58 @@ class Direbear2(Direbear):
         self.combat = Combat(0, 0, 0, 0)
 
 
+class Giant(Humanoid):
+
+    def __init__(self):
+        super().__init__(name='Giant', health=random.randint(62, 82), mana=20, strength=30, intel=8, wisdom=10,
+                         con=28, charisma=12, dex=12, attack=30, defense=30, magic=12, magic_def=20,
+                         exp=random.randint(235, 325))
+        self.equipment = {'Weapon': items.SpikeMaul(), 'Armor': items.Cuirboulli(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = random.randint(55, 85)
+        self.spellbook = {"Spells": {},
+                          "Skills": {'Stomp': abilities.Stomp(),
+                                     'Charge': abilities.Charge()}}
+        self.resistance['Physical'] = 0.25
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Stomp", "priority": ActionPriority.NORMAL},
+            {"ability": "Charge", "priority": ActionPriority.NORMAL}
+        ]
+        self.level.pro_level = 3
+        self.picture = "giant.txt"
+
+
+class Owlbear(Monster):
+
+    def __init__(self):
+        super().__init__(name='Owlbear', health=random.randint(58, 76), mana=75, strength=23, intel=18, wisdom=22,
+                         con=24, charisma=12, dex=16, attack=26, defense=29, magic=34, magic_def=32,
+                         exp=random.randint(240, 335))
+        self.equipment = {'Weapon': items.Claw2(), 'Armor': items.AnimalHide(), 'OffHand': items.Claw2(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.gold = random.randint(45, 70)
+        self.inventory['Feather'] = [items.Feather]
+        self.inventory['Leather'] = [items.Leather]
+        self.spellbook = {"Spells": {"Shock": abilities.Shock(),
+                                     "Wind Speed": abilities.WindSpeed(),
+                                     "Regen": abilities.Regen()},
+                          "Skills": {}}
+        self.resistance['Electric'] = 0.25
+        self.resistance['Wind'] = 0.25
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Shock", "priority": ActionPriority.NORMAL},
+            {"ability": "Wind Speed", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
+                {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
+                {"condition": "self_status", "value": "Regen", "priority": ActionPriority.LOW}
+            ]}
+        ]
+        self.level.pro_level = 3
+        self.picture = "owlbear.txt"
+
+
 class Ghoul(Undead):
 
     def __init__(self):
@@ -2357,6 +2409,7 @@ class BlackSlime(Slime):
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(30, 180)
+        self.inventory['Fungus Spore'] = [items.FungusSpore]
         self.spellbook = {'Spells': {'Shadow Bolt': abilities.ShadowBolt(),
                                      'Corruption': abilities.Corruption(),
                                      'Stupefy': abilities.Stupefy()},
@@ -2604,6 +2657,7 @@ class NightHag(Fey):
         self.equipment = {'Weapon': items.Kris(), 'Armor': items.SilverCloak(), 'OffHand': items.InfernalGrimoire(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(70, 99)
+        self.inventory['Hemlock Root'] = [items.HemlockRoot]
         self.spellbook = {"Spells": {"Sleep": abilities.Sleep(),
                                      'Enfeeble': abilities.Enfeeble(),
                                      'Magic Missile': abilities.MagicMissile()},
@@ -2670,6 +2724,8 @@ class Treant(Fey):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(60, 85)
         self.inventory['Cursed Hops'] = [items.CursedHops]
+        self.inventory['Acorn'] = [items.Acorn]
+        self.inventory['Vine Seed'] = [items.VineSeed]
         self.spellbook = {"Spells": {"Regen": abilities.Regen()},
                           "Skills": {'Crushing Blow': abilities.CrushingBlow(),
                                      'Throw Rock': abilities.ThrowRock()}}
@@ -2825,6 +2881,7 @@ class BrownSlime(Slime):
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(150, 280)
+        self.inventory['Fungus Spore'] = [items.FungusSpore]
         self.spellbook = {'Spells': {'Mudslide': abilities.Mudslide(),
                                      'Enfeeble': abilities.Enfeeble()},
                           'Skills': {}}
@@ -3942,7 +3999,7 @@ class Lich(Undead):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(400, 530)
         self.inventory["Phylactery"] = [items.Phylactery]
-        self.spellbook = {"Spells": {'Ice Blizzard': abilities.IceBlizzard(),
+        self.spellbook = {"Spells": {'Blizzard': abilities.IceBlizzard(),
                                      'Desoul': abilities.Desoul(),
                                      'Terrify': abilities.Terrify(),
                                      "Ice Block": abilities.IceBlock(),
@@ -3953,7 +4010,7 @@ class Lich(Undead):
         self.single_use_abilities = {"Ice Block"}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Ice Blizzard", "priority": ActionPriority.NORMAL},
+            {"ability": "Blizzard", "priority": ActionPriority.NORMAL},
             {"ability": "Desoul", "priority": ActionPriority.NORMAL},
             {"ability": "Health/Mana Drain", "priority": ActionPriority.NORMAL,
              "priority_if": {"target_has_mana": True,
@@ -3986,12 +4043,14 @@ class Basilisk(Monster):
         self.gold = random.randint(380, 520)
         self.spellbook = {"Spells": {'Petrify': abilities.Petrify(),
                                      'Poison Breath': abilities.PoisonBreath()},
-                          "Skills": {'Slam': abilities.Slam()}}
+                          "Skills": {'Slam': abilities.Slam(),
+                                     'Bad Breath': abilities.BadBreath()}}
         self.resistance["Poison"] = 0.75
         self.status_immunity = ["Death", "Poison", "Stone"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Slam", "priority": ActionPriority.NORMAL},
+            {"ability": "Bad Breath", "priority": ActionPriority.LOW},
             {"ability": "Petrify", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Breath", "priority": ActionPriority.NORMAL}
         ]

@@ -57,7 +57,7 @@ def choose_paladin_vow(game):
 
 def promotion(game):
     from src.ui_curses import menus as utils
-    from src.core.abilities import spell_dict, skill_dict
+    from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
     from src.core.classes import apply_promotion_ability_rules, classes_dict
     from src.core import companions
 
@@ -143,25 +143,19 @@ def promotion(game):
             # Apply ability transition rules for this promotion
             ability_change_msg = apply_promotion_ability_rules(promoted_player, new_class.name)
             promo_str += ability_change_msg
-            if (
-                str(promoted_player.level.level)
-                in spell_dict[promoted_player.cls.name]
+            for spell_cls in ability_classes_for_level(
+                spell_dict, promoted_player.cls.name, promoted_player.level.level
             ):
-                spell_gain = spell_dict[promoted_player.cls.name][
-                    str(promoted_player.level.level)
-                ]()
+                spell_gain = spell_cls()
                 if spell_gain.name in promoted_player.spellbook["Spells"]:
                     promo_str += f"{spell_gain.name} goes up a level.\n"
                 else:
                     promo_str += f"You have gained the spell {spell_gain.name}.\n"
                 promoted_player.spellbook["Spells"][spell_gain.name] = spell_gain
-            if (
-                str(promoted_player.level.level)
-                in skill_dict[promoted_player.cls.name]
+            for skill_cls in ability_classes_for_level(
+                skill_dict, promoted_player.cls.name, promoted_player.level.level
             ):
-                skill_gain = skill_dict[promoted_player.cls.name][
-                    str(promoted_player.level.level)
-                ]()
+                skill_gain = skill_cls()
                 if skill_gain.name in promoted_player.spellbook["Skills"]:
                     promo_str += f"{skill_gain.name} goes up a level.\n"
                 else:

@@ -34,6 +34,7 @@ from .classes import (
     dragoon,
     grandmaster,
     lycan,
+    ability_mechanics,
     paladin,
     astromancer,
     wizard,
@@ -89,6 +90,9 @@ GAMEPLAY_STATS_DEFAULTS = {
 def _upgrade_source_name(ability_cls) -> str | None:
     """Return the inherited ability name for upgrade detection, if available."""
     try:
+        explicit = getattr(ability_cls, "replaces", None)
+        if explicit:
+            return explicit
         bases = getattr(ability_cls, "__mro__", ())
         if len(bases) < 2:
             return None
@@ -383,6 +387,8 @@ class Player(Character):
         self.paladin_vow = paladin.default_state()
         self.dragoon_dragon_quest = dragoon.default_state()
         self.bard_song = bard.default_song_state()
+        self.tamed_companion = ability_mechanics.default_tamed_companion()
+        self.temporary_exploration_effects = ability_mechanics.default_exploration_effects()
         self.lycan_state = lycan.default_state()
         self.wizard_affinity = wizard.default_affinity()
         self.main_story = main_story.default_state()
@@ -481,6 +487,22 @@ class Player(Character):
         self.bard_song = bard.ensure_song_state(self)
         return self.bard_song
 
+    def ensure_tamed_companion(self):
+        self.tamed_companion = ability_mechanics.normalize_tamed_companion(
+            getattr(self, "tamed_companion", None)
+        )
+        try:
+            from . import companions
+
+            self.familiar = companions.tamed_companion_from_state(self.tamed_companion)
+        except Exception:
+            pass
+        return self.tamed_companion
+
+    def ensure_temporary_exploration_effects(self):
+        self.temporary_exploration_effects = ability_mechanics.ensure_exploration_effects(self)
+        return self.temporary_exploration_effects
+
     def ensure_lycan_state(self):
         self.lycan_state = lycan.ensure_state(self)
         return self.lycan_state
@@ -551,6 +573,8 @@ class Player(Character):
         step_count = max(0, int(steps))
         stats["steps_taken"] += step_count
         lycan.record_steps(self, step_count)
+        bard.tick_exploration_song(self, step_count)
+        ability_mechanics.tick_exploration_effects(self, step_count)
 
     def record_stairs_used(self, count=1):
         stats = self.ensure_gameplay_stats()
@@ -763,6 +787,8 @@ class Player(Character):
             any([x.is_alive() for x in self.summons.values()]) and \
                 not self.abilities_suppressed():
             action_list.insert(1, "Summon")
+        if "Steal As Well" in self.spellbook["Skills"] and not self.abilities_suppressed():
+            action_list.insert(1, "Steal As Well")
         # Note: Totem was previously duplicated here for Shaman/Soulcatcher
         # It's already accessible via the Skills submenu, so no need for separate action
         return action_list
@@ -1211,8 +1237,7 @@ class Player(Character):
             level_str += f"You have gained {magic_gain} magic.\n"
         if magic_def_gain > 0:
             level_str += f"You have gained {magic_def_gain} magic defense.\n"
-        if str(self.level.level) in abilities.spell_dict[self.cls.name]:
-            spell = abilities.spell_dict[self.cls.name][str(self.level.level)]
+        for spell in abilities.ability_classes_for_level(abilities.spell_dict, self.cls.name, self.level.level):
             spell_gain = spell()
             spell_name = spell_gain.name
             if spell_name in self.spellbook['Spells']:
@@ -1225,8 +1250,7 @@ class Player(Character):
                 else:
                     level_str += f"You have gained the ability to cast {spell_name}.\n"
             self.spellbook['Spells'][spell_name] = spell_gain
-        if str(self.level.level) in abilities.skill_dict[self.cls.name]:
-            skill = abilities.skill_dict[self.cls.name][str(self.level.level)]
+        for skill in abilities.ability_classes_for_level(abilities.skill_dict, self.cls.name, self.level.level):
             skill_gain = skill()
             skill_name = skill_gain.name
             if skill_name in self.spellbook['Skills']:
@@ -1415,6 +1439,8 @@ class Player(Character):
                 gold = max(0, int(gold * paladin.redemption_reward_multiplier(self)))
             except Exception:
                 pass
+            if getattr(enemy, "_pious_bounty_gold", False):
+                gold *= 10
             loot_message += f"{enemy.name} dropped {gold} gold.\n"
             self.gold += gold
         for i, item_typ in enumerate(items):
@@ -1485,6 +1511,7 @@ class Player(Character):
                 rare[i] = True
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
+                chance *= bard.loot_drop_multiplier(self)
                 if item.rarity > (random.random() / chance):
                         try:
                             summon, name = item.subtyp.split(" - ")
@@ -1669,10 +1696,11 @@ class Player(Character):
         # Handle two-handed weapon conflicts with offhand items
         if equip_slot == "Weapon":
             if item.handed == 2:
-                # Lancer/Dragoon can use 2H polearms with shields
-                can_keep_offhand = (self.cls.name in ["Lancer", "Dragoon"] and 
-                                   item.subtyp == 'Polearm' and 
-                                   self.equipment["OffHand"].subtyp == 'Shield')
+                can_keep_offhand = ability_mechanics.can_keep_polearm_shield(
+                    self, item, self.equipment["OffHand"]
+                ) or ability_mechanics.can_keep_berserker_heavy_offhand(
+                    self, item, self.equipment["OffHand"]
+                )
                 
                 if not can_keep_offhand:
                     if self.equipment["OffHand"].subtyp != 'None' and not check:
@@ -1682,10 +1710,11 @@ class Player(Character):
         
         if equip_slot == "OffHand":
             if self.equipment["Weapon"].handed == 2:
-                # Lancer/Dragoon can use 2H polearms with shields
-                can_keep_weapon = (self.cls.name in ["Lancer", "Dragoon"] and 
-                                  self.equipment["Weapon"].subtyp == 'Polearm' and 
-                                  item.subtyp == 'Shield')
+                can_keep_weapon = ability_mechanics.can_keep_polearm_shield(
+                    self, self.equipment["Weapon"], item
+                ) or ability_mechanics.can_keep_berserker_heavy_offhand(
+                    self, self.equipment["Weapon"], item
+                )
                 
                 if not can_keep_weapon:
                     if self.equipment["Weapon"].subtyp != 'None' and not check:
@@ -1798,9 +1827,11 @@ class Player(Character):
 
             # Handle two-handed weapon conflicts with offhand items (preview only)
             if equip_slot == "Weapon" and item.handed == 2:
-                can_keep_offhand = (self.cls.name in ["Lancer", "Dragoon"] and
-                                    item.subtyp == 'Polearm' and
-                                    self.equipment["OffHand"].subtyp == 'Shield')
+                can_keep_offhand = ability_mechanics.can_keep_polearm_shield(
+                    self, item, self.equipment["OffHand"]
+                ) or ability_mechanics.can_keep_berserker_heavy_offhand(
+                    self, item, self.equipment["OffHand"]
+                )
                 if not can_keep_offhand:
                     self.equipment["OffHand"] = remove_equipment("OffHand")
 
@@ -2024,7 +2055,13 @@ class Player(Character):
         except Exception:
             pass
 
-        if getattr(self.world_dict.get((new_x, new_y, self.location_z), {}), "enter"):
+        target_tile = self.world_dict.get((new_x, new_y, self.location_z), {})
+        can_enter_wall = (
+            getattr(self, "enter_wall", False)
+            and "Wall" in target_tile.__class__.__name__
+            and "Boundary" not in target_tile.__class__.__name__
+        )
+        if getattr(target_tile, "enter", False) or can_enter_wall:
             self.location_x, self.location_y = new_x, new_y
             self.record_step()
             if getattr(self, "dwarf_hangover_steps", 0) > 0:
@@ -2333,6 +2370,10 @@ class Player(Character):
                     elif special.typ == 'Spell':
                         familiar_str += f"{self.familiar.name} casts {special.name}.\n"
                         familiar_str += special.cast(self, target=target, fam=True)
+                if self.familiar.spec == "Tamed":
+                    familiar_str += f"{self.familiar.name} attacks {target.name}.\n"
+                    attack_str, _hit, _crit = self.familiar.weapon_damage(target, dmg_mod=0.75)
+                    familiar_str += attack_str
         return familiar_str
 
     def transform(self, back=False):
@@ -2535,6 +2576,7 @@ class Player(Character):
         if self.cls.name == "Soulcatcher" and self.power_up:
             if enemy and getattr(enemy, "enemy_typ", None) in self.kill_dict:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
+        class_mod += ability_mechanics.favored_enemy_bonus(self, enemy)
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             if 'Monk' in self.cls.name:
@@ -2559,7 +2601,14 @@ class Player(Character):
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             total_mod *= class_rings.weapon_damage_multiplier(self)
+            total_mod *= ability_mechanics.polearm_damage_multiplier(self)
+            total_mod *= ability_mechanics.monkey_grip_damage_multiplier(self, "Weapon")
+            total_mod *= 1 + ability_mechanics.drunken_brawler_damage_bonus(self)
+            total_mod *= ability_mechanics.last_stand_attack_multiplier(self)
             total_mod *= 1 + bard.damage_bonus(self)
+            total_mod *= ability_mechanics.arsenal_mastery_weapon_multiplier(self)
+            total_mod *= ability_mechanics.pack_bond_multiplier(self)
+            total_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             total_mod *= 1 + lycan.phase_damage_bonus(self) + lycan.frenzy_damage_bonus(self)
             total_mod *= paladin.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_mod * (1 + berserk_per)))
@@ -2569,6 +2618,8 @@ class Player(Character):
                 block_mod = round(self.equipment['OffHand'].mod * 100)
             if self.equipment['Ring'] and self.equipment['Ring'].mod == "Block":
                 block_mod += 25
+            block_mod += ability_mechanics.last_stand_block_bonus(self)
+            block_mod += ability_mechanics.shield_mastery_block_bonus(self)
             return max(0, block_mod)
         if mod == 'offhand':
             if 'Monk' in self.cls.name:
@@ -2582,7 +2633,11 @@ class Player(Character):
                 if self.equipment['Ring'] is not None and 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-                return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
+                total_offhand = (off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)
+                total_offhand *= ability_mechanics.monkey_grip_damage_multiplier(self, "OffHand")
+                total_offhand *= ability_mechanics.arsenal_mastery_weapon_multiplier(self)
+                total_offhand *= ability_mechanics.pack_bond_multiplier(self)
+                return max(0, int(total_offhand))
             except AttributeError:
                 return 0
         if mod == 'armor':
@@ -2603,10 +2658,16 @@ class Player(Character):
             if self.equipment['Ring'] is not None and 'Physical Defense' in self.equipment['Ring'].mod:
                 armor_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
+            class_mod += ability_mechanics.last_stand_defense_bonus(self)
             if archdruid.mastery_unlocked(self, "Stone"):
                 class_mod += max(1, int((armor_mod + self.combat.defense) * 0.08))
             armor_total = ((armor_mod * int(not ignore)) + class_mod + self.combat.defense)
             armor_total *= class_rings.armor_multiplier(self)
+            armor_total *= ability_mechanics.primal_ascendance_multiplier(self, "Stone")
+            armor_total *= ability_mechanics.pack_bond_multiplier(self)
+            armor_total *= 1 + ability_mechanics.melody_inspiration_bonus(self)
+            if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
+                armor_total *= 1.75
             return max(0, int(armor_total))
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
@@ -2626,6 +2687,12 @@ class Player(Character):
             trickster = class_rings.arcane_trickster_magic_bonus(self)
             if trickster:
                 class_mod += int((magic_mod + self.combat.magic) * trickster)
+            gambit = ability_mechanics.tricksters_gambit_magic_bonus(self)
+            if gambit:
+                class_mod += int((magic_mod + self.combat.magic) * gambit)
+            abyssal = ability_mechanics.abyssal_covenant_magic_bonus(self)
+            if abyssal:
+                class_mod += int((magic_mod + self.combat.magic) * abyssal)
             astro = class_rings.constellation_bonus(self, typ)
             if astro:
                 class_mod += int((magic_mod + self.combat.magic) * astro)
@@ -2636,6 +2703,11 @@ class Player(Character):
             if song:
                 class_mod += int((magic_mod + self.combat.magic) * song)
             total_magic = magic_mod + class_mod + self.combat.magic
+            if typ in {"Poison", "Venom"}:
+                total_magic = int(total_magic * ability_mechanics.primal_ascendance_multiplier(self, "Venom"))
+            elif typ in {"Electric", "Wind", "Water"}:
+                total_magic = int(total_magic * ability_mechanics.primal_ascendance_multiplier(self, "Storm"))
+            total_magic = int(total_magic * (1 + ability_mechanics.melody_inspiration_bonus(self)))
             total_magic *= paladin.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_magic))
         if mod == 'magic def':
@@ -2653,6 +2725,10 @@ class Player(Character):
                     total_magic_def = int(total_magic_def * (1 + nature_totems.WATER_WARD_MAGIC_DEFENSE_BONUS))
             except Exception:
                 pass
+            total_magic_def = int(total_magic_def * ability_mechanics.primal_ascendance_multiplier(self, "Stone"))
+            total_magic_def = int(total_magic_def * (1 + ability_mechanics.melody_inspiration_bonus(self)))
+            if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
+                total_magic_def = int(total_magic_def * 1.75)
             return max(0, total_magic_def)
         if mod == 'heal':
             heal_mod = self.stats.wisdom * self.level.pro_level
@@ -2664,18 +2740,28 @@ class Player(Character):
             harmony = archdruid.harmony_bonus(self)
             if harmony:
                 class_mod += int((heal_mod + self.combat.magic) * harmony)
-            return max(0, heal_mod + class_mod + self.combat.magic)
+            total_heal = heal_mod + class_mod + self.combat.magic
+            total_heal = int(total_heal * ability_mechanics.primal_ascendance_multiplier(self, "Growth"))
+            return max(0, total_heal)
         if mod == 'resist':
             res_mod = 0
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
                 res_mod -= 1
             if typ in self.resistance:
                 res_mod = self.resistance[typ]
+            resist_effect = self.magic_effects.get(f"Resist {typ}")
+            if resist_effect is not None and resist_effect.active:
+                try:
+                    res_mod += float(resist_effect.extra or 0)
+                except (TypeError, ValueError):
+                    pass
             if self.flying:
                 if typ == 'Earth':
                     res_mod = 1
                 elif typ == 'Wind':
                     res_mod = -0.25
+            if typ == "Fire" and self.magic_effects.get("Stone Skin") and self.magic_effects["Stone Skin"].active:
+                res_mod += 0.5
             if self.cls.name in ['Warlock', 'Shadowcaster']:
                 if self.familiar and self.familiar.spec == 'Mephit' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = 0.25 * random.randint(1, max(1, self.stats.charisma // 10))
@@ -2698,6 +2784,8 @@ class Player(Character):
             harmony = archdruid.harmony_bonus(self)
             if harmony:
                 res_mod += harmony
+            if typ == "Fire":
+                res_mod += ability_mechanics.primal_ascendance_multiplier(self, "Stone") - 1.0
             res_mod += class_rings.constellation_bonus(self, typ)
             return res_mod
         if mod == 'luck':
@@ -2710,6 +2798,7 @@ class Player(Character):
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
             speed_mod *= paladin.initiative_multiplier(self)
+            speed_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             return int(speed_mod)
         return 0
 
@@ -2721,54 +2810,67 @@ class Player(Character):
             Berserker - Blood Rage(passive): attack increases as health decreases; if below 30% health, bonus to defense
             Crusader - Divine Aegis: create shell that absorbs damage and increases healing; if the shield survives
                 the full duration, it will explode and deal holy damage to the enemy
-            Dragoon - Dragon's Fury(passive): attack and defense double for each successive hit; a miss resets this buff
-            Stalwart Defender - 
+            Dragoon - Draconic Onslaught(passive): attack and defense double for each successive hit; a miss resets this buff
+            Stalwart Defender - Shield Mastery(passive): increase chance to block melee and spells, with a chance to deflect/reflect
             Wizard - Spell Mastery(passive): automatically triggers when no spells can be cast due to low mana; all spells
                 become free for a short time and mana regens based on damage dealt
             Shadowcaster - Veil of Shadows(passive): become one with the darkness, making the player invisible to most enemies
                 and making them harder to hit; increases damage of initial attack if first
+            Demonologist - Abyssal Covenant: sacrifice health to empower spell damage and fiend contract scaling.
             Knight Enchanter - Arcane Blast: blast the enemy with a powerful attack, draining all remaining mana points; mana
                 will regen in full over the next 4 turns (25% per turn)
-            Summoner - Eternal Conduit (passive): The Summoner's bond with their summons is so strong that they gain a portion of all healing and buffs their summons receive, and their summons gain a portion of all healing and buffs the Summoner receives.
+            Grand Summoner - Eternal Conduit (passive): The Summoner's bond with their summons is so strong that they gain a
+                portion of all healing and buffs their summons receive, and their summons gain a portion of all healing and
+                buffs the Summoner receives.
             Rogue - Stroke of Luck(passive): the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, including
                 dodge and critical chance
-            Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as 
+            Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as
                 well as chance to dodge/parry attacks
             Ninja - Blade of Fatalities: sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing
                 damage dealt and absorbing it into the user
-            Arcane Trickster - 
+            Arcane Trickster - Trickster's Gambit: stolen-magic momentum improves magic, critical chance, and dodge.
             Templar - Holy Retribution: a radiant shield envelopes the Templar, reflecting damage back at the attacker; while
                 the shield is active, attack damage and chance to dodge/parry increase
-            Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and 
+            Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and
                 holy damage for duration
-            Master Monk - Dim Mak: unleash a powerful attack that deals heavy damage and can either stun or in some cases 
+            Master Monk - Dim Mak: unleash a powerful attack that deals heavy damage and can either stun or in some cases
                 kill the target; if the target is killed, the user will absorb the enemy's essence and will be regenerated by
                 its max health and mana
-            Troubadour - Song of Inspiration (passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats and occasionally removing negative status effects at the start of combat.
+            Troubadour - Melody of Inspiration (passive): The Troubadour's presence inspires allies and self, granting a small
+                bonus to all stats and occasionally removing negative status effects at the start of combat.
+            Archdruid - Primal Ascendance: temporarily gain bonuses from Growth, Venom, Storm, and Stone.
             Lycan - Lunar Frenzy(passive): the longer the Lycan is transformed, the further into madness they fall, increasing
-                damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they 
+                damage and regenerating health on critical hits; if the Lycan stays transformed for longer than 5 turns, they
                 will be unable to transform back until after the battle
             Astromancer - Astral Judgment: call the current constellation's judgment, then spin the cycle
             Soulcatcher - Soul Harvest(passive): each enemy killed of a particular type will increase attack damage against
                 that enemy type
-            Beast Master - Pack Bond (passive): The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect.
+            Beast Master - Pack Bond (passive): The Beast Master and their animal companion(s) share a deep bond, granting
+                increased damage and defense when fighting alongside a companion. Occasionally, the companion will intercept
+                attacks or provide a healing effect.
             """
 
             powerup_dict = {
                     "Berserker": abilities.BloodRage,
+                    "Grandmaster of Arms": abilities.ArsenalMastery,
                     "Crusader": abilities.DivineAegis,
-                    "Dragoon": abilities.DragonsFury,
+                    "Dragoon": abilities.DraconicOnslaught,
+                    "Stalwart Defender": abilities.ShieldMastery,
                     "Wizard": abilities.SpellMastery,
                     "Shadowcaster": abilities.VeilShadows,
+                    "Demonologist": abilities.AbyssalCovenant,
                     "Knight Enchanter": abilities.ArcaneBlast,
                     "Summoner": abilities.EternalConduit,
+                    "Grand Summoner": abilities.EternalConduit,
                     "Rogue": abilities.StrokeLuck,
                     "Seeker": abilities.EyesUnseen,
                     "Ninja": abilities.BladeFatalities,
+                    "Arcane Trickster": abilities.TrickstersGambit,
                     "Templar": abilities.HolyRetribution,
                     "Archbishop": abilities.GreatGospel,
                     "Master Monk": abilities.DimMak,
-                    "Troubadour": abilities.SongInspiration,
+                    "Troubadour": abilities.MelodyInspiration,
+                    "Archdruid": abilities.PrimalAscendance,
                     "Lycan": abilities.LunarFrenzy,
                     "Astromancer": abilities.AstralJudgment,
                     "Soulcatcher": abilities.SoulHarvest,

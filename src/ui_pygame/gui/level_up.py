@@ -14,6 +14,9 @@ from .stat_selection_popup import StatSelectionPopup
 def _upgrade_source_name(ability_cls) -> str | None:
     """Return the inherited ability name for upgrade detection, if available."""
     try:
+        explicit = getattr(ability_cls, "replaces", None)
+        if explicit:
+            return explicit
         bases = getattr(ability_cls, "__mro__", ())
         if len(bases) < 2:
             return None
@@ -122,8 +125,9 @@ class LevelUpScreen:
         skill_upgrades = []
         
         # Check for new spell
-        if str(player_char.level.level) in abilities.spell_dict.get(player_char.cls.name, {}):
-            spell = abilities.spell_dict[player_char.cls.name][str(player_char.level.level)]
+        for spell in abilities.ability_classes_for_level(
+            abilities.spell_dict, player_char.cls.name, player_char.level.level
+        ):
             spell_gain = spell()
             spell_name = spell_gain.name
             
@@ -140,8 +144,9 @@ class LevelUpScreen:
             player_char.spellbook['Spells'][spell_name] = spell_gain
         
         # Check for new skill
-        if str(player_char.level.level) in abilities.skill_dict.get(player_char.cls.name, {}):
-            skill = abilities.skill_dict[player_char.cls.name][str(player_char.level.level)]
+        for skill in abilities.ability_classes_for_level(
+            abilities.skill_dict, player_char.cls.name, player_char.level.level
+        ):
             skill_gain = skill()
             skill_name = skill_gain.name
             
@@ -169,7 +174,7 @@ class LevelUpScreen:
             elif skill_name == 'Familiar' and hasattr(player_char, 'familiar'):
                 familiar_msg = player_char.familiar.level_up()
                 new_abilities.append(f"Familiar: {familiar_msg}")
-            elif skill_name in ["Transform", "Purity of Body"]:
+            elif skill_name in ["Transform", "Reveal", "Purity of Body"]:
                 effect_msg = skill_gain.use(player_char)
                 new_abilities.append(effect_msg)
         

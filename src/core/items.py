@@ -2414,8 +2414,8 @@ class Tolga(Helmet):
 
     def __init__(self):
         super().__init__(name="Tolga", description="A heavy medium helm with reinforced bands and a high nasal guard.",
-                         value=55000, rarity=0.2, armor=13, subtyp='Medium', unequip=False)
-        self.weight = 11
+                         value=22000, rarity=0.4, armor=10, subtyp='Medium', unequip=False)
+        self.weight = 6
 
 
 class Tarnhelm(Helmet):
@@ -2423,8 +2423,19 @@ class Tarnhelm(Helmet):
     def __init__(self):
         super().__init__(name="Tarnhelm", description="A mythic helm that bends sight around its wearer and grants "
                                                      "invisibility.",
+                         value=55000, rarity=0.2, armor=13, subtyp='Medium', unequip=False)
+        self.weight = 11
+        self.special = True
+
+
+class HelmOfRostam(Helmet):
+
+    def __init__(self):
+        super().__init__(name="Helm of Rostam", description="A heroic medium helm whose crest steadies the wearer "
+                                                            "against panic and stunning blows.",
                          value=0, rarity=0, armor=19, subtyp='Medium', unequip=False)
         self.weight = 8
+        self.mod = "Status-Berserk Status-Stun"
         self.special = True
 
 
@@ -4922,6 +4933,66 @@ class SheetMusic(Misc):
 
     def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         super().__init__(name, description, value, rarity, subtyp)
+        self.song_name = name.replace("Sheet Music: ", "")
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        tile: Any = None,
+    ) -> str:
+        from .classes import bard
+
+        success, message = bard.start_song(user, self.song_name, target=target)
+        if success:
+            user.modify_inventory(self, subtract=True)
+            message += f"The sheet music for {self.song_name} is spent.\n"
+        return message
+
+
+class BattleHymnSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Battle Hymn", "A martial hymn for battle.", 2500, 0.35, "Scroll")
+
+
+class RampartsOdeSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Ode to the Ramparts", "A protective ode.", 2500, 0.35, "Scroll")
+
+
+class DysfunctionSymphonySheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Symphony of Disfunction", "A discordant enemy-breaking score.", 2500, 0.35, "Scroll")
+
+
+class LowDefenseRhapsodySheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Low-defense-ian Rhapsody", "A tune that lowers defenses.", 2500, 0.35, "Scroll")
+
+
+class SlowRideSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Slow Ride", "A dragging song.", 2500, 0.35, "Scroll")
+
+
+class BonesThugsHarmonySheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Bones, Thugs, and Harmony", "A graveyard harmony.", 2500, 0.35, "Scroll")
+
+
+class ScoresAndScoresScoreSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Scores and Scores Score", "A score about scoring.", 2500, 0.35, "Scroll")
+
+
+class GoldTriggerSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Gold Trigger", "A glittering trigger phrase.", 2500, 0.35, "Scroll")
+
+
+class ChorusTimeSheet(SheetMusic):
+    def __init__(self):
+        super().__init__("Sheet Music: Chorus Time", "A looping chorus.", 2500, 0.35, "Scroll")
 
 
 class BlankScroll(Misc):
@@ -5054,6 +5125,34 @@ class ElementalMote(Misc):
     def __init__(self):
         super().__init__(name="Elemental Mote", description="The elemental core of a Myrmidon.",
                          value=0, rarity=1, subtyp="Quest")
+
+
+class Acorn(Misc):
+
+    def __init__(self):
+        super().__init__(name="Acorn", description="A hardy oak seed prized by druids for growth rites.",
+                         value=25, rarity=0.5, subtyp="Reagent")
+
+
+class VineSeed(Misc):
+
+    def __init__(self):
+        super().__init__(name="Vine Seed", description="A coiled seed that hums with grasping green life.",
+                         value=25, rarity=0.5, subtyp="Reagent")
+
+
+class FungusSpore(Misc):
+
+    def __init__(self):
+        super().__init__(name="Fungus Spore", description="A powdery spore bundle useful in poison and decay rites.",
+                         value=25, rarity=0.5, subtyp="Reagent")
+
+
+class HemlockRoot(Misc):
+
+    def __init__(self):
+        super().__init__(name="Hemlock Root", description="A bitter root gathered for dangerous druidic mixtures.",
+                         value=25, rarity=0.5, subtyp="Reagent")
 
 
 class PowerCore(Misc):
@@ -5408,7 +5507,7 @@ items_dict = {
         'Cloth': [ClothCap, Jaapi, Turban, WitchHat, EnchantedHood, MitreHat, Circlet,
                   CohuleenDruith, AriadnesDiadem],
         'Light': [LeatherCap, PithHelmet, WarMask, ArmingCap, Katapu, Somen, DemonCowl],
-        'Medium': [ScaleHelm, ChainCoif, KulahKhud, Cervelliere, VisoredSallet, Tolga, Tarnhelm],
+        'Medium': [ScaleHelm, ChainCoif, KulahKhud, Cervelliere, Tolga, Tarnhelm, HelmOfRostam],
         'Heavy': [IronHelm, KettleHelm, Barbute, GreatHelm, PlateHelm, CloseHelm, Kabuto]},
     'Accessory': {
         'Ring': [IronRing, PowerRing, AccuracyRing, BarrierRing, SteelRing, MightRing, EvasionRing,
@@ -5430,7 +5529,10 @@ items_dict = {
         'Key': [Key, OldKey],
         'Scroll': [BlankScroll, BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
                    EarthScroll, WindScroll, ShadowScroll, HolyScroll, CleanseScroll, BoostScroll,
-                   ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll],
+                   ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll,
+                   BattleHymnSheet, RampartsOdeSheet, DysfunctionSymphonySheet,
+                   LowDefenseRhapsodySheet, SlowRideSheet, BonesThugsHarmonySheet,
+                   ScoresAndScoresScoreSheet, GoldTriggerSheet, ChorusTimeSheet],
         'Reagents': []}
 }
 

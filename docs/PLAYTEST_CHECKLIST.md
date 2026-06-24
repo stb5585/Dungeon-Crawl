@@ -156,6 +156,36 @@
 - [ ] Review the known balance-suite help issue before relying on `--help`.
   - Expected: The argparse `%` help-string failure is treated as a tooling cleanup item, not as a balance-rule failure.
 
+### P6 Content And Ability Mechanics
+- [ ] Encounter `Giant` and `Owlbear` on dungeon levels 3 and 4.
+  - Expected: Giant reads as a Humanoid bruiser with `Stomp` and `Charge`.
+  - Expected: Owlbear reads as a Monster with physical pressure, `Shock`, `Wind Speed`, and below-half `Regen` preference.
+- [ ] Equip `Tarnhelm` and `Helm of Rostam` in separate medium-helmet tests.
+  - Expected: Tarnhelm still grants and removes invisibility on equip/unequip.
+  - Expected: Helm of Rostam does not grant invisibility and blocks Berserk/Stun while equipped.
+- [ ] Collect and use `Acorn`, `Vine Seed`, `Fungus Spore`, and `Hemlock Root`.
+  - Expected: Reagents appear as visible inventory items from their themed drop sources.
+  - Expected: `Plant Seeds` offers eligible reagent choices and applies the matching seed effect.
+  - Expected: `Vile Potion` consumes Hemlock Root and Fungus Spore, costs user HP, and deals poison pressure.
+- [ ] Use Growth-mastery `Tree of Life`.
+  - Expected: The user transforms into an oak form for 3 turns, cannot attack, gains defense/status protection, and heals each turn.
+- [ ] Exercise P6 passive hooks in ordinary combat.
+  - Expected: Zephyrstrike, Retaliate, Defensive Regen, Posturing, Third Eye, Pious Bounty, Final Assault, Last Stand, and polearm/Monkey Grip penalties or bonuses match their class descriptions.
+- [ ] Use Ranger `Tame` and `Favored Enemy`.
+  - Expected: Tame works only on eligible wounded Animal enemies, saves one compact companion, and replaces the prior companion clearly.
+  - Expected: Favored Enemy uses kill history and applies bonuses against the most-killed enemy type.
+- [ ] Use `Steal As Well` and `Steal Spell 2`.
+  - Expected: Steal As Well lets Spell Stealer cast a damaging spell and then attempts item theft only on damaging results.
+  - Expected: Steal Spell 2 can permanently learn an eligible enemy spell without consuming a Blank Scroll.
+- [ ] Validate Astromancer time spells and exploration effects.
+  - Expected: Foretell reveals the next enemy action, Twist Fate guarantees the next action success, Rewind restores the prior selection-phase snapshot, and Wormhole resolves a delayed spell.
+  - Expected: Volitation, Enter Wall, and Invisibility persist through temporary exploration-effect state and expire cleanly.
+- [ ] Compose and use advanced Bard/Troubadour sheet music.
+  - Expected: Sheet music is one-use, requires the intended instrument/composition condition, and starts the matching combat or exploration song effect.
+  - Expected: Battle Hymn berserks combatants, Ode to the Ramparts boosts defenses, exploration debuff songs affect enemies while active, encounter/loot songs apply their route hooks, and Chorus Time can consume enemy turns.
+- [ ] Use current second-promotion power-up hooks.
+  - Expected: Trickster's Gambit, Primal Ascendance, Abyssal Covenant, Arsenal Mastery, Shield Mastery, Eternal Conduit, Melody of Inspiration, and Pack Bond produce visible gameplay/status changes without stale placeholder messages.
+
 ### Legacy Class-Kit Mechanics
 - [ ] Win ordinary non-trial combat as a Berserker at 10% HP or lower across repeated attempts.
   - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.

@@ -1,0 +1,8 @@
+name: Windswept
+type: Spell
+subtype: Wind
+description: >-
+  Launch the target upward on a mighty gust; enemies may be ejected from combat.
+cost: 15
+target_self: false
+effects: []

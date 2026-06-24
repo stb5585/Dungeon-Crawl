@@ -248,7 +248,7 @@ class BattleManager:
         while True:
             choice = False
             action = self.battle_ui.navigate_menu()
-            if action in ["Cast Spell", "Use Skill", "Use Item"]:
+            if action in ["Cast Spell", "Use Skill", "Use Item", "Steal As Well"]:
                 self.battle_popup.update_options(action, tile=self.tile)
                 choice = self.battle_popup.navigate_popup().split('  ')[0]
             elif action == "Runic Boost":

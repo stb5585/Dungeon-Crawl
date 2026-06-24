@@ -201,7 +201,7 @@ finds the Ancient Grove, and completes all four aspect rituals.
   hard-control pressure such as Prone or Stun lands. Mastery grants Stone
   immunity and a modest physical defense benefit.
 - `Growth`: gains attunement from healing done; loses attunement when life is
-  drained. Mastery unlocks the Tree of Life state for future ability work.
+  drained. Mastery unlocks the Tree of Life oak-form ability.
 - `Storm`: gains attunement from Electric and Wind damage dealt; loses
   attunement from Berserk or Silence. Mastery grants Lightning Rod, converting
   part of Electric/Wind damage taken into mana.

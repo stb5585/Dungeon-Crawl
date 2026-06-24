@@ -1,0 +1,9 @@
+name: Bolt
+type: Spell
+subtype: Electric
+description: >-
+  Call down a focused storm bolt of natural lightning.
+cost: 18
+damage_mod: 1.45
+crit: 5
+school: Nature

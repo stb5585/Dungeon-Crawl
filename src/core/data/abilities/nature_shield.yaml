@@ -1,0 +1,9 @@
+name: Nature Shield
+type: Support
+subtype: Support
+description: >-
+  Conjure life-orbs that intercept attack spells, exploding into healing.
+cost: 28
+target_self: true
+message: "Three living orbs circle {target}."
+effects: []

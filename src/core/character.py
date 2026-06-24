@@ -258,6 +258,7 @@ class Character:
                                           "Stun": StatusEffect(False, 0),
                                           "Defend": StatusEffect(False, 0, 0),
                                           "Steal Success": StatusEffect(False, 0),
+                                          "Peaceful": StatusEffect(False, 0),
                                           "Shapeshifted": StatusEffect(False, 0)}
         self.physical_effects: EffectMap = {"Bleed": StatusEffect(False, 0, 0),
                                             "Disarm": StatusEffect(False, 0),
@@ -279,10 +280,15 @@ class Character:
                                          "Resist Water": StatusEffect(False, 0, 0),
                                          "Resist Earth": StatusEffect(False, 0, 0),
                                          "Resist Wind": StatusEffect(False, 0, 0),
+                                         "Stone Skin": StatusEffect(False, 0),
+                                         "Nature Shield": StatusEffect(False, 0, 0),
+                                         "Tree of Life": StatusEffect(False, 0),
                                          "Totem": StatusEffect(False, 0),
                                          "Astral Shift": StatusEffect(False, 0)}
         self.class_effects: EffectMap = {"Jump": StatusEffect(False, 0),
-                                         "Power Up": StatusEffect(False, 0, 0)}
+                                         "Power Up": StatusEffect(False, 0, 0),
+                                         "Drunken Brawler": StatusEffect(False, 0, 0),
+                                         "Last Stand": StatusEffect(False, 0, 0)}
         self.status_immunity: list[str] = []
         self.resistance: dict[str, float] = {'Fire': 0.,
                                              'Ice': 0.,
@@ -300,6 +306,7 @@ class Character:
         self.sight = False
         self.turtle = False
         self.tunnel = False
+        self.enter_wall = False
 
         # Defensive stance settings
         self.defensive_stance_reduction = 0.25
@@ -395,6 +402,17 @@ class Character:
                 familiar = getattr(self, "familiar", None)
                 if echo and familiar is not None and familiar.is_alive():
                     familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
+            except Exception:
+                pass
+            try:
+                if getattr(self, "power_up", False) and "Eternal Conduit" in getattr(self, "spellbook", {}).get("Skills", {}):
+                    echo = max(1, int(amount * 0.25))
+                    for summon in getattr(self, "summons", {}).values():
+                        if summon.is_alive():
+                            summon.health.current = min(summon.health.max, summon.health.current + echo)
+                    familiar = getattr(self, "familiar", None)
+                    if familiar is not None and familiar.is_alive():
+                        familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
             except Exception:
                 pass
         try:
@@ -579,6 +597,8 @@ class Character:
         stun = self.status_effects.get("Stun")
         if stun is None:
             return False
+        if self.has_status_protection("Stun"):
+            return False
         if stun.active:
             return False
         if stun.extra > 0:
@@ -595,6 +615,32 @@ class Character:
         except Exception:
             pass
         return True
+
+    def has_status_protection(self, status_name: str) -> bool:
+        """Return whether innate immunity or equipped item mods block a status."""
+        normalized = str(status_name or "").strip()
+        if not normalized:
+            return False
+        if normalized in getattr(self, "status_immunity", []):
+            return True
+        if "Status-All" in getattr(self, "status_immunity", []):
+            return True
+        if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
+            return True
+        if normalized == "Berserk" and self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
+            return True
+
+        equipment = getattr(self, "equipment", {}) or {}
+        for item in equipment.values():
+            mod = str(getattr(item, "mod", "") or "")
+            tokens = {
+                token.strip()
+                for token in mod.replace(",", " ").replace(";", " ").split()
+                if token.strip()
+            }
+            if "Status-All" in tokens or f"Status-{normalized}" in tokens:
+                return True
+        return False
 
     def stun_contest_success(
         self,
@@ -677,6 +723,8 @@ class Character:
             hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
             hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects['Berserk'].active))
             hit_mod *= 1 - (BLIND_RAGE_HIT_PENALTY * (self.status_effects["Blind Rage"].active))
+            if self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
+                hit_mod += 0.10
         hit_mod += PRO_LEVEL_HIT_MODIFIER * (self.level.pro_level - defender.level.pro_level)
         invis_pen = INVISIBLE_ACCURACY_PENALTY
         try:
@@ -696,8 +744,11 @@ class Character:
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
+        from .classes import ability_mechanics
+
         a_stat = attacker.check_mod("speed", enemy=self)
         d_stat = self.check_mod("speed", enemy=attacker)
+        d_stat += int(getattr(self.stats, "intel", 0)) if ability_mechanics.has_skill(self, "Third Eye") else 0
         if spell:
             a_stat = attacker.stats.intel
             # Spells are avoided via mental defense; low CHA/WIS should matter.
@@ -732,6 +783,7 @@ class Character:
             chance += class_rings.arcane_trickster_dodge_bonus(self)
         except Exception:
             pass
+        chance += ability_mechanics.tricksters_gambit_dodge_bonus(self)
         try:
             from .classes import paladin
 
@@ -752,9 +804,12 @@ class Character:
                         chance *= GNOME_ENCUMBERED_DODGE_MULTIPLIER
                 except Exception:
                     pass
+        chance += ability_mechanics.third_eye_dodge_bonus(self)
         return min(MAX_DODGE_CHANCE, chance)
     
     def critical_chance(self, att: str) -> float:
+        from .classes import ability_mechanics
+
         base_crit = BASE_CRIT_PER_POINT * (
             self.check_mod("speed") + self.check_mod("luck", luck_factor=10)
         )
@@ -778,6 +833,9 @@ class Character:
             maelstrom_hits = int(getattr(self, "maelstrom_hits", 0) or 0)
             maelstrom_bonus = maelstrom_hits * MAELSTROM_CRIT_PER_HIT
             crit_chance += maelstrom_bonus
+        crit_chance += ability_mechanics.third_eye_crit_bonus(self)
+        crit_chance += ability_mechanics.drunken_brawler_crit_bonus(self)
+        crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
         
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
@@ -801,10 +859,13 @@ class Character:
         hit(bool): guarantees hit if target doesn't dodge
         """
         from .combat.combat_result import CombatResult, CombatResultGroup
-        from .classes import grandmaster
+        from .classes import grandmaster, ability_mechanics
 
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
+        if getattr(self, "_twist_fate_success", False):
+            hit = True
+            self._twist_fate_success = False
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
         attacks = ['Weapon']
@@ -860,6 +921,8 @@ class Character:
                 dodge = defender.dodge_chance(self) > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
                 hit_per += grandmaster.accuracy_bonus(self, weapon_type)
+                hit_per += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
+                hit_per += ability_mechanics.monkey_grip_accuracy_modifier(self, att)
                 hits[i] = hit_per > random.random()
             else:
                 dodge = False
@@ -893,6 +956,7 @@ class Character:
             if crits[i] > 1:
                 self._emit_crit_event(defender, crits[i])
                 self._reset_maelstrom()
+                weapon_dam_str += ability_mechanics.trigger_zephyrstrike(self)
 
             # --- Phase 4: Absorption layers (cover, block, shields, reflect) ---
             damage, msg, absorbed = self._apply_absorption(
@@ -931,6 +995,12 @@ class Character:
                 if lethal_msg:
                     weapon_dam_str += lethal_msg
                 else:
+                    final_msg, stabilized = ability_mechanics.final_assault_response(defender, self, damage)
+                    if final_msg:
+                        weapon_dam_str += final_msg
+                    if stabilized:
+                        hits[i] = True
+                        continue
                     defender.health.current -= damage
                     weapon_dam_str += self._build_damage_message(
                         defender, damage, typ, crits[i], att
@@ -1005,10 +1075,13 @@ class Character:
                 0, int(getattr(defender, "evasive_guard_stacks", 0) or 0) - 1
             )
         if 'Parry' in defender.spellbook['Skills']:
+            from .classes import ability_mechanics
+
             # Parry counter-attack chance scales with defender DEX.
             # This makes high-DEX archetypes more resilient without changing race resistances.
             dex = int(getattr(defender.stats, "dex", 10))
             parry_chance = max(0.10, min(0.85, 0.25 + (dex - 10) * 0.03))
+            parry_chance = min(0.95, parry_chance + ability_mechanics.posturing_parry_bonus(defender))
             if random.random() < parry_chance:
                 msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
                 counter_str, _, _ = defender.weapon_damage(self)
@@ -1114,6 +1187,7 @@ class Character:
         """
         msg = ""
         absorbed = False
+        from .classes import ability_mechanics
 
         if cover:
             msg += (f"{defender.familiar.name} steps in front of the attack, "
@@ -1164,6 +1238,7 @@ class Character:
                     if blocked_pct > 0:
                         msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
                                 f"{blocked_pct} percent of the damage.\n")
+                    msg += ability_mechanics.retaliate_after_block(defender, self)
                     try:
                         from .classes import paladin
 
@@ -1297,6 +1372,11 @@ class Character:
             reduced = max(1, int(damage * defensive_reduction))
             damage = max(0, damage - reduced)
             msg += f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
+
+        if defender.magic_effects.get("Stone Skin") and defender.magic_effects["Stone Skin"].active and damage > 0:
+            reduced = max(1, int(damage * 0.35))
+            damage = max(0, damage - reduced)
+            msg += f"{defender.name}'s stone skin absorbs {reduced} damage.\n"
 
         # Astral Shift (25%)
         if defender.magic_effects["Astral Shift"].active and damage > 0:
@@ -1482,6 +1562,17 @@ class Character:
         Returns:
             tuple: (hit: bool, message: str, final_damage: int)
         """
+        if typ != "Physical" and damage > 0:
+            try:
+                from .classes import ability_mechanics
+
+                if ability_mechanics.spend_nature_shield_orb(self):
+                    healing = max(1, int(damage * 0.5))
+                    self.health.current = min(self.health.max, self.health.current + healing)
+                    return False, f"A Nature Shield orb intercepts the spell and heals {self.name} for {healing}.\n", 0
+            except Exception:
+                pass
+
         # Apply basic resistance only if typ is a valid resistance type
         resist = 0
         if typ in self.resistance:
@@ -1576,6 +1667,7 @@ class Character:
         """
         Silence, Blind, and Disarm can be indefinite unless cured (duration=-1)
         """
+        from .classes import ability_mechanics
 
         effect_dicts = [self.status_effects,
                         self.physical_effects,
@@ -1761,7 +1853,17 @@ class Character:
                 if not self.status_effects["Berserk"].duration:
                     status_text += f"{self.name} has regained their composure.\n"
                     default(effect="Berserk")
+            if self.status_effects["Peaceful"].active:
+                self.status_effects["Peaceful"].duration -= 1
+                if not self.status_effects["Peaceful"].duration:
+                    status_text += f"{self.name}'s peaceful focus fades.\n"
+                    default(effect="Peaceful")
             if self.status_effects["Defend"].active:
+                if ability_mechanics.has_skill(self, "Defensive Regen") and self.health.current < self.health.max:
+                    heal = max(1, int(self.health.max * 0.05))
+                    heal = min(heal, self.health.max - self.health.current)
+                    self.health.current += heal
+                    status_text += f"{self.name}'s defensive focus restores {heal} health.\n"
                 self.status_effects["Defend"].duration -= 1
                 if not self.status_effects["Defend"].duration:
                     status_text += f"{self.name} lowers their guard.\n"
@@ -1775,6 +1877,34 @@ class Character:
                 if not self.magic_effects["Reflect"].duration:
                     status_text += f"{self.name} is no longer reflecting magic.\n"
                     default(effect="Reflect")
+            for element in ["Fire", "Ice", "Electric", "Water", "Earth", "Wind"]:
+                effect_name = f"Resist {element}"
+                if self.magic_effects[effect_name].active:
+                    self.magic_effects[effect_name].duration -= 1
+                    if not self.magic_effects[effect_name].duration:
+                        status_text += f"{self.name}'s {element.lower()} resistance fades.\n"
+                        default(effect=effect_name)
+            if self.magic_effects["Stone Skin"].active:
+                self.magic_effects["Stone Skin"].duration -= 1
+                if not self.magic_effects["Stone Skin"].duration:
+                    status_text += f"{self.name}'s stone skin crumbles away.\n"
+                    default(effect="Stone Skin")
+            if self.magic_effects["Nature Shield"].active:
+                self.magic_effects["Nature Shield"].duration -= 1
+                if self.magic_effects["Nature Shield"].extra <= 0 or not self.magic_effects["Nature Shield"].duration:
+                    status_text += f"{self.name}'s nature shield fades.\n"
+                    default(effect="Nature Shield")
+            if self.magic_effects["Tree of Life"].active:
+                heal = max(1, int(self.health.max * 0.33))
+                heal = min(heal, self.health.max - self.health.current)
+                self.health.current += heal
+                status_text += f"Tree of Life restores {heal} health to {self.name}.\n"
+                if heal > 0:
+                    self._emit_status_tick_event(self, "Tree of Life", heal, "healing", source="Tree of Life")
+                self.magic_effects["Tree of Life"].duration -= 1
+                if not self.magic_effects["Tree of Life"].duration:
+                    status_text += f"{self.name} returns from the Tree of Life.\n"
+                    default(effect="Tree of Life")
             if self.magic_effects["Totem"].active:
                 self.magic_effects["Totem"].duration -= 1
                 if not self.magic_effects["Totem"].duration:
@@ -1914,6 +2044,12 @@ class Character:
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
                 return -0.25
             res_mod = self.resistance.get(typ, 0)
+            resist_effect = self.magic_effects.get(f"Resist {typ}")
+            if resist_effect is not None and resist_effect.active:
+                try:
+                    res_mod += float(resist_effect.extra or 0)
+                except (TypeError, ValueError):
+                    pass
             res_mod += armor_resistance_modifier(self.equipment.get("Armor"), typ)
             res_mod += armor_resistance_modifier(self.equipment.get("Helmet"), typ)
             if self.flying:
@@ -1921,6 +2057,8 @@ class Character:
                     res_mod = 1
                 elif typ == 'Wind':
                     res_mod = -0.25
+            if typ == "Fire" and self.magic_effects.get("Stone Skin") and self.magic_effects["Stone Skin"].active:
+                res_mod += 0.5
             return res_mod
         if mod == 'luck':
             # "Luck" also acts as a general-purpose saving-throw modifier in many effects.

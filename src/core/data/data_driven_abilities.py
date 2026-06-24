@@ -716,11 +716,7 @@ class DataDrivenStatusSkill(Skill):
 
         # Immunity check (for status_effects only)
         if not self._physical:
-            if any([
-                self._status_name in getattr(target, "status_immunity", []),
-                f"Status-{self._status_name}" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]):
+            if target.has_status_protection(self._status_name):
                 return prefix + self._messages.get("immune", "").format(**fmt)
 
         # Already active check — either skip or extend

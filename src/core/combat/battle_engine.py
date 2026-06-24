@@ -43,8 +43,9 @@ from typing import TYPE_CHECKING
 from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
+from .. import items
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, paladin, wizard
+from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, ability_mechanics, paladin, wizard
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -140,6 +141,7 @@ class BattleEngine:
 
         # Track charging abilities across turns
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)
+        self.delayed_spells: list[dict[str, Any]] = []
 
         # Available actions refreshed each turn
         self.available_actions: list = self._available_actions()
@@ -186,6 +188,10 @@ class BattleEngine:
         """
         self._clear_stale_charging_actions(self.player)
         self._clear_stale_charging_actions(self.enemy)
+        self.player._final_assault_used = False
+        self.player._last_stand_used = False
+        self.player._foretell_snapshot = None
+        self.player._rewind_snapshot = None
         self.attacker, self.defender = determine_initiative(self.player, self.enemy)
 
         self._event_bus.emit(create_combat_event(
@@ -208,6 +214,9 @@ class BattleEngine:
 
         paladin.advance_encounter(self.player)
         paladin.clear_transient_marks(self.player)
+        debuff_text = bard.apply_enemy_opening_debuffs(self.player, self.enemy)
+        if debuff_text:
+            self.logger.log_event("Bard Song", self.player, target=self.enemy, outcome=debuff_text)
         return self.attacker, self.defender
 
     def battle_continues(self) -> bool:
@@ -281,6 +290,15 @@ class BattleEngine:
             result.died_from_effects = True
             result.can_act = False
             return result
+
+        if self.attacker == self.enemy and bard.active_song(self.player) == "Chorus Time":
+            performer_stat = int(getattr(self.player.stats, "charisma", 0)) + int(getattr(self.player.stats, "intel", 0)) // 2
+            enemy_con = max(1, int(getattr(self.enemy.stats, "con", 1) or 1))
+            if random.randint(1, max(2, performer_stat)) > random.randint(1, enemy_con * 2):
+                result.effects_text = f"{result.effects_text or ''}{self.enemy.name} is dumbfounded by Chorus Time and loses the turn.\n"
+                result.can_act = False
+                result.inactive_reason = "Dumbfounded by Chorus Time."
+                return result
 
         if not active_at_turn_start:
             interrupted = self._cancel_interrupted_charging_action()
@@ -425,9 +443,19 @@ class BattleEngine:
         """
         result = ActionResult()
         hp_before = self.player.health.current
+        if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
+            ability_mechanics.store_rewind_snapshot(self)
 
         if action == "Nothing" or action == "Cancelled":
             result.message = f"{self.attacker.name} does nothing.\n"
+            return result
+
+        if (
+            action == "Attack"
+            and getattr(self.attacker, "magic_effects", {}).get("Tree of Life")
+            and self.attacker.magic_effects["Tree of Life"].active
+        ):
+            result.message = f"{self.attacker.name} is rooted as the Tree of Life and cannot attack.\n"
             return result
 
         elif action == "Attack":
@@ -455,6 +483,9 @@ class BattleEngine:
 
         elif action == "Runic Boost":
             result.message = self._execute_runic_boost(choice)
+
+        elif action == "Steal As Well":
+            result.message = self._execute_steal_as_well(choice)
 
         elif action == "Use Skill":
             result.message = self._execute_skill(choice, slot_machine_callback)
@@ -504,6 +535,24 @@ class BattleEngine:
             )
         return familiar_text or ""
 
+    def _tick_delayed_spells(self) -> list[str]:
+        messages: list[str] = []
+        remaining: list[dict[str, Any]] = []
+        for entry in self.delayed_spells:
+            entry["turns"] = int(entry.get("turns", 0) or 0) - 1
+            if entry["turns"] > 0:
+                remaining.append(entry)
+                continue
+            caster = entry.get("caster")
+            spell = entry.get("spell")
+            if caster is None or spell is None:
+                continue
+            target = self.enemy if self.enemy.is_alive() else self.defender
+            messages.append(f"{getattr(spell, 'name', 'A delayed spell')} emerges from the wormhole.\n")
+            messages.append(str(spell.cast(caster, target=target, battle_engine=self)))
+        self.delayed_spells = remaining
+        return messages
+
     def post_turn(self) -> PostTurnResult:
         """
         Process end-of-turn logic: special effects, summon state, resurrection.
@@ -520,6 +569,10 @@ class BattleEngine:
                 self.logger.log_event(
                     "Special Effect", self.defender, target=self.attacker, outcome=special
                 )
+
+            delayed_messages = self._tick_delayed_spells()
+            if delayed_messages:
+                result.messages.extend(delayed_messages)
 
             # Refresh available actions
             self.available_actions = self._available_actions()
@@ -746,9 +799,17 @@ class BattleEngine:
             source="spell",
         ))
 
+        defender_was_alive = self.defender.is_alive()
         message = f"{self.attacker.name} casts {choice}.\n"
-        message += str(spell.cast(self.attacker, target=self.defender))
+        message += str(spell.cast(self.attacker, target=self.defender, battle_engine=self))
         if self.attacker == self.player:
+            if (
+                choice in {"Turn Undead", "TurnUndead", "Turn Undead 2", "TurnUndead2"}
+                and defender_was_alive
+                and not self.defender.is_alive()
+                and "Pious Bounty" in self.player.spellbook.get("Skills", {})
+            ):
+                self.defender._pious_bounty_gold = True
             wizard.record_cast(self.player, wizard.school_from_ability(spell))
             if not self.defender.is_alive():
                 message += self._record_player_natural_spell_kill(spell)
@@ -805,6 +866,40 @@ class BattleEngine:
             message += self._record_player_natural_spell_kill(spell)
         if astromancer.is_astromancer(self.player):
             astromancer.advance_constellation(self.player)
+        return message
+
+    def _execute_steal_as_well(self, choice: str | None) -> str:
+        """Cast a selected spell or stolen-spell scroll, then steal if damage lands."""
+        if self.attacker != self.player:
+            return f"{self.attacker.name} cannot use Steal As Well.\n"
+        if self.attacker.abilities_suppressed():
+            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            return f"{self.attacker.name} cannot use Steal As Well because of {reason}!\n"
+        if not choice:
+            return f"{self.attacker.name} fumbles the spell theft.\n"
+
+        from .. import abilities, items
+
+        message = f"{self.attacker.name} weaves theft into {choice}.\n"
+        before_hp = self.defender.health.current
+        if choice in self.attacker.spellbook.get("Spells", {}):
+            spell = self.attacker.spellbook["Spells"][choice]
+            if self.attacker.mana.current < getattr(spell, "cost", 0):
+                return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
+            message += str(spell.cast(self.attacker, target=self.defender, battle_engine=self))
+        elif choice in self.attacker.inventory and self.attacker.inventory[choice]:
+            scroll = self.attacker.inventory[choice][0]
+            if not isinstance(scroll, items.InscribedSpellScroll):
+                return f"{choice} is not a stolen spell scroll.\n"
+            message += str(scroll.use(self.attacker, target=self.defender))
+        else:
+            return f"{self.attacker.name} cannot find {choice}.\n"
+
+        if before_hp > self.defender.health.current:
+            steal_skill = self.attacker.spellbook.get("Skills", {}).get("Steal") or abilities.Steal()
+            message += str(steal_skill.use(self.attacker, target=self.defender))
+        else:
+            message += "The spell fails to open a path for theft.\n"
         return message
 
     def _execute_skill(
@@ -904,7 +999,7 @@ class BattleEngine:
         if isinstance(itm, type):
             itm = itm()
         target = self.attacker
-        if itm.subtyp == "Scroll":
+        if itm.subtyp == "Scroll" and hasattr(itm, "spell"):
             if itm.spell.subtyp != "Support":
                 target = self.defender
 
@@ -918,7 +1013,10 @@ class BattleEngine:
             source="item",
         ))
 
-        return str(itm.use(self.attacker, target=target))
+        message = str(itm.use(self.attacker, target=target))
+        if isinstance(itm, items.Potion):
+            message += ability_mechanics.trigger_drunken_brawler(self.attacker)
+        return message
 
     def _execute_summon(self, choice: str | None) -> tuple[str, bool, Character | None]:
         """Summon a companion. Returns (message, success, summon_character)."""
@@ -1018,9 +1116,12 @@ class BattleEngine:
                 msg += frenzy_text
 
             # Loot
-            loot_msg = self.player.loot(self.enemy, self.tile)
-            if loot_msg:
-                msg += loot_msg
+            if getattr(self.enemy, "windswept_ejected", False):
+                msg += f"{self.enemy.name} is too far away to loot.\n"
+            else:
+                loot_msg = self.player.loot(self.enemy, self.tile)
+                if loot_msg:
+                    msg += loot_msg
 
             # Quest progress
             quest_msg = self.player.quests(enemy=self.enemy)

@@ -9,6 +9,9 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import items
 from src.core.character import armor_resistance_modifier
+from src.core.combat.combat_result import CombatResult
+from src.core.effects.composite import StatusApplyEffect
+from tests.test_framework import TestGameState
 
 
 _BASE_ITEM_CLASSES = {
@@ -118,9 +121,9 @@ def test_helmet_catalog_matches_equipment_table():
         "Chain Coif",
         "Kulah Khud",
         "Cervelliere",
-        "Visored Sallet",
         "Tolga",
         "Tarnhelm",
+        "Helm of Rostam",
     ]
     assert helmet_names["Heavy"] == [
         "Iron Helm",
@@ -138,6 +141,44 @@ def test_helmet_catalog_matches_equipment_table():
     assert circlet.restricted_against == ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
     assert items.CohuleenDruith().resist_mod == 0.5
     assert items.DemonCowl().element == "Death"
+    assert items.VisoredSallet().name == "Visored Sallet"
+    assert items.Tolga().armor == 10
+    assert items.Tarnhelm().armor == 13
+    assert items.HelmOfRostam().armor == 19
+
+
+def test_reagents_are_visible_misc_items():
+    reagent_names = [
+        items.Acorn().name,
+        items.VineSeed().name,
+        items.FungusSpore().name,
+        items.HemlockRoot().name,
+    ]
+
+    assert reagent_names == ["Acorn", "Vine Seed", "Fungus Spore", "Hemlock Root"]
+    for reagent in (items.Acorn(), items.VineSeed(), items.FungusSpore(), items.HemlockRoot()):
+        assert reagent.typ == "Misc"
+        assert reagent.subtyp == "Reagent"
+        assert reagent.rarity == 0.5
+        assert "Sub-type: Reagent" in str(reagent)
+
+
+def test_helm_of_rostam_blocks_berserk_and_stun_without_invisibility():
+    actor = TestGameState.create_player(name="Caster", class_name="Sorcerer", race_name="Human")
+    target = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
+    target.equipment["Helmet"] = items.HelmOfRostam()
+
+    assert target.invisible is False
+    assert target.has_status_protection("Berserk") is True
+    assert target.has_status_protection("Stun") is True
+    assert target.has_status_protection("Sleep") is False
+    assert target.apply_stun(2, source="test", applier=actor) is False
+
+    result = CombatResult(action="Berserk Test", actor=actor, target=target)
+    StatusApplyEffect("Berserk", duration=2).apply(actor, target, result)
+
+    assert target.status_effects["Berserk"].active is False
+    assert result.extra["status_immune"] == "Berserk"
 
 
 def test_item_metadata_lines_include_elements_and_resistance_mods():

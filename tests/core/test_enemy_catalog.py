@@ -145,6 +145,47 @@ def test_random_enemy_debug_override_can_come_from_environment(monkeypatch):
         monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
 
 
+def test_giant_and_owlbear_are_midgame_catalog_enemies():
+    catalog = enemies.random_enemy_catalog()
+
+    assert any(isinstance(enemy, enemies.Giant) for enemy in catalog["3"])
+    assert any(isinstance(enemy, enemies.Giant) for enemy in catalog["4"])
+    assert any(isinstance(enemy, enemies.Owlbear) for enemy in catalog["3"])
+    assert any(isinstance(enemy, enemies.Owlbear) for enemy in catalog["4"])
+
+    giant = enemies.Giant()
+    assert giant.enemy_typ == "Humanoid"
+    assert giant.level.pro_level == 3
+    assert set(giant.spellbook["Skills"]) == {"Stomp", "Charge"}
+    assert giant.inventory == {}
+    assert [entry["ability"] for entry in giant.action_stack] == ["Attack", "Stomp", "Charge"]
+
+    owlbear = enemies.Owlbear()
+    assert owlbear.enemy_typ == "Monster"
+    assert owlbear.level.pro_level == 3
+    assert set(owlbear.spellbook["Spells"]) == {"Shock", "Wind Speed", "Regen"}
+    assert owlbear.inventory["Feather"] == [items.Feather]
+    assert owlbear.inventory["Leather"] == [items.Leather]
+    regen_entry = next(entry for entry in owlbear.action_stack if entry["ability"] == "Regen")
+    assert regen_entry["priority_if"] == [
+        {"condition": "self_hp_pct_lt", "value": 50, "priority": enemies.ActionPriority.HIGH},
+        {"condition": "self_status", "value": "Regen", "priority": enemies.ActionPriority.LOW},
+    ]
+
+
+def test_reagent_drop_sources_are_themed():
+    treant = enemies.Treant()
+    black_slime = enemies.BlackSlime()
+    brown_slime = enemies.BrownSlime()
+    night_hag = enemies.NightHag()
+
+    assert treant.inventory["Acorn"] == [items.Acorn]
+    assert treant.inventory["Vine Seed"] == [items.VineSeed]
+    assert black_slime.inventory["Fungus Spore"] == [items.FungusSpore]
+    assert brown_slime.inventory["Fungus Spore"] == [items.FungusSpore]
+    assert night_hag.inventory["Hemlock Root"] == [items.HemlockRoot]
+
+
 def test_enemy_options_short_circuit_for_berserk_turtle_and_ice_block():
     target = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
 

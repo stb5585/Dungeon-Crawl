@@ -1,0 +1,10 @@
+name: Ball Lightning
+type: Spell
+subtype: Electric
+description: >-
+  Conjure a crackling ball of electricity that repeatedly zaps the target.
+cost: 34
+damage_mod: 0.65
+crit: 1
+school: Nature
+effects: []

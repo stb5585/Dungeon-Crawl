@@ -19,6 +19,9 @@ class StatusEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         """Apply the status effect to the target character."""
+        if target.has_status_protection(self.name):
+            result.extra["status_immune"] = self.name
+            return
         if self.name in target.status_effects:
             target.status_effects[self.name].active = True
             target.status_effects[self.name].duration = self.duration

@@ -7,7 +7,7 @@ only as historical context.
 ## Active Planning
 
 - [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - current status,
-  completed summaries, active P4/P5/P6/P7 backlog, and deferred decisions.
+  completed summaries, active P7 backlog, and deferred decisions.
 - [P4E_CLASS_KIT_SPECS.md](P4E_CLASS_KIT_SPECS.md) - completed P4e class-kit
   foundation scope and deferred one-page deep-kit spec gates.
 - [P4F_COMBAT_BALANCE_SPECS.md](P4F_COMBAT_BALANCE_SPECS.md) - P4f combat

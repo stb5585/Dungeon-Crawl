@@ -653,6 +653,8 @@ class TestPlayerProgressionAndMenus:
         assert player.invisible is True
         player.equip("Helmet", items.NoHelmet())
         assert player.invisible is False
+        player.equip("Helmet", items.HelmOfRostam())
+        assert player.invisible is False
 
         player.equip("Pendant", SimpleNamespace(name="Levitation Necklace", subtyp="Pendant", handed=0))
         assert player.flying is True

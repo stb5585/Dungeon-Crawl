@@ -22,6 +22,67 @@ class Familiar(Character):
         raise NotImplementedError
 
 
+class TamedCompanion(Familiar):
+    """A persistent animal companion created by the Ranger Tame skill."""
+
+    def __init__(self, enemy) -> None:
+        super().__init__(
+            name=getattr(enemy, "name", "Tamed Companion"),
+            health=Resource(
+                max(1, int(getattr(enemy.health, "max", 20) * 0.75)),
+                max(1, int(getattr(enemy.health, "max", 20) * 0.75)),
+            ),
+            mana=Resource(
+                max(0, int(getattr(enemy.mana, "max", 0) * 0.5)),
+                max(0, int(getattr(enemy.mana, "max", 0) * 0.5)),
+            ),
+            stats=Stats(
+                strength=max(1, int(getattr(enemy.stats, "strength", 5) * 0.75)),
+                intel=max(1, int(getattr(enemy.stats, "intel", 5) * 0.5)),
+                wisdom=max(1, int(getattr(enemy.stats, "wisdom", 5) * 0.5)),
+                con=max(1, int(getattr(enemy.stats, "con", 5) * 0.75)),
+                charisma=max(1, int(getattr(enemy.stats, "charisma", 5) * 0.5)),
+                dex=max(1, int(getattr(enemy.stats, "dex", 5) * 0.75)),
+            ),
+            combat=Combat(
+                attack=max(1, int(getattr(enemy.combat, "attack", 5) * 0.75)),
+                defense=max(1, int(getattr(enemy.combat, "defense", 5) * 0.75)),
+                magic=max(1, int(getattr(enemy.combat, "magic", 5) * 0.5)),
+                magic_def=max(1, int(getattr(enemy.combat, "magic_def", 5) * 0.5)),
+            ),
+        )
+        self.race = getattr(enemy, "name", "Animal")
+        self.enemy_class = enemy.__class__.__name__
+        self.enemy_typ = getattr(enemy, "enemy_typ", "Animal")
+        self.spec = "Tamed"
+        self.cls = "Familiar"
+        self.spellbook = {"Spells": {}, "Skills": {}}
+        self.equipment = getattr(enemy, "equipment", self.equipment)
+
+    def inspect(self) -> str:
+        return f"{self.name} is a tamed animal companion bonded to its ranger."
+
+
+def tamed_companion_from_state(state):
+    """Rebuild a tamed companion from compact save state."""
+    from .classes import ability_mechanics
+    from . import enemies
+
+    normalized = ability_mechanics.normalize_tamed_companion(state)
+    if not normalized["active"] or not normalized["enemy_class"]:
+        return None
+    enemy_cls = getattr(enemies, normalized["enemy_class"], None)
+    if enemy_cls is None:
+        return None
+    try:
+        enemy = enemy_cls()
+    except TypeError:
+        enemy = enemy_cls(normalized.get("level", 1))
+    companion = TamedCompanion(enemy)
+    companion.name = normalized.get("name") or companion.name
+    return companion
+
+
 class Homunculus(Familiar):
     """
     Familiar - cast helpful defensive abilities; abilities upgrade when the familiar upgrades
@@ -364,7 +425,7 @@ class Agloolik(Summons):
     Level 7
     - True Piercing Strike
     Level 9
-    - Ice Blizzard
+    - Blizzard
     Level 10
     - Absolute Zero
     """

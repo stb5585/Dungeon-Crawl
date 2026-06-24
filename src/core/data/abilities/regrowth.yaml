@@ -1,0 +1,10 @@
+name: Regrowth
+type: Heal
+subtype: Heal
+description: >-
+  Conjure leaves from the tree of life that heal the user over time.
+cost: 8
+heal: 0.25
+crit: 5
+turns: 3
+instant_heal: true

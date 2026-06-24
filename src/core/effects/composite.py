@@ -289,15 +289,7 @@ class StatusApplyEffect(Effect):
             return
 
         # Check immunities
-        if any([
-            self.status_name in getattr(target, 'status_immunity', []),
-            f"Status-{self.status_name}" in getattr(
-                target.equipment.get("Pendant", None), 'mod', ''
-            ) if hasattr(target, 'equipment') and target.equipment.get("Pendant") else False,
-            "Status-All" in getattr(
-                target.equipment.get("Pendant", None), 'mod', ''
-            ) if hasattr(target, 'equipment') and target.equipment.get("Pendant") else False,
-        ]):
+        if target.has_status_protection(self.status_name):
             result.extra["status_immune"] = self.status_name
             return
 
@@ -599,15 +591,7 @@ class DynamicStatusDotEffect(Effect):
         import random
 
         # Check immunities
-        if any([
-            self.status_name in getattr(target, 'status_immunity', []),
-            f"Status-{self.status_name}" in getattr(
-                target.equipment.get("Pendant", None), 'mod', ''
-            ) if hasattr(target, 'equipment') and target.equipment.get("Pendant") else False,
-            "Status-All" in getattr(
-                target.equipment.get("Pendant", None), 'mod', ''
-            ) if hasattr(target, 'equipment') and target.equipment.get("Pendant") else False,
-        ]):
+        if target.has_status_protection(self.status_name):
             return
 
         # Compute duration

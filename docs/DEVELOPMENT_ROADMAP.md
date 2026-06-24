@@ -167,7 +167,7 @@ Completed in the June 2026 P0 pass:
    - Audio diagnostics and location/combat music routing.
 3. Updated roadmap and playtest checklist entries for the completed P0 pass.
 
-Next active priority: `P4 - Content And Systems Expansion`.
+Next active priority: `P7 - Additional Improvements`.
 
 ### P1 - Pygame UX Polish
 
@@ -262,8 +262,9 @@ Status: `Done`
 
 P3 closure note: the remaining work after the final audit is future content or
 opportunistic refactoring. There are no explicit `pytest.mark.skip` or `xfail`
-tests left in the focused test tree search, and passive Power Up placeholders
-remain P4 content work rather than P3 blockers.
+tests left in the focused test tree search. The former passive Power Up
+placeholder work has moved out of P3 and the current class-ring/class-power
+hooks are tracked with later content slices.
 
 1. Continue effects-system integration beyond the migration.
    - Replace older inline combat logic in legacy ability code with composable effects where practical.
@@ -295,7 +296,7 @@ remain P4 content work rather than P3 blockers.
    - 2026-06-16: Corrected composite Mana Shield/Crusader shield helper calls for weapon-spell follow-ups and
      related custom effects so they use the shared attacker/defender absorption helpers consistently.
    - 2026-06-16: Routed passive placeholder power-up hooks through the shared result reset helper so their
-     interim `CombatResult` contracts do not leak stale reusable state.
+     interim `CombatResult` contracts did not leak stale reusable state before later content mechanics filled them in.
    - 2026-06-16: Replaced the hidden `random_enemy()` debug override with explicit
      `set_random_enemy_override()` / `clear_random_enemy_override()` helpers for ability playtesting.
    - 2026-06-16: Wired `DUNGEON_FORCE_ENEMY` into the random enemy override path so debug launchers can force
@@ -314,8 +315,8 @@ remain P4 content work rather than P3 blockers.
      - 2026-06-16: Added legacy/YAML ice comparison coverage for extra-damage presentation and state.
      - 2026-06-16: Added legacy/YAML heal coverage for capped healing and healing-received modifiers.
      - 2026-06-16: Added YAML `cast_out()` heal coverage for capped actual-healing reporting.
-     - 2026-06-16: Added result lifecycle coverage for passive placeholder power-up hooks while their final
-       gameplay effects remain future content work.
+     - 2026-06-16: Added result lifecycle coverage for passive placeholder power-up hooks before later content
+       mechanics filled in the active effects.
    - Status-effect interaction scenarios.
      - 2026-06-16: Added focused coverage for effect-driven Stun versus post-stun immunity.
      - 2026-06-16: Added turn-tick ordering coverage for Poison, burn DOT, Bleed, and Regen cleanup.
@@ -369,12 +370,14 @@ remain P4 content work rather than P3 blockers.
 4. Remove easy skips or placeholder tests where missing functionality is now small enough to implement.
    - 2026-06-16: Audited the test tree for explicit `pytest.mark.skip` / `xfail` usage; no actionable skipped
      tests remain in the focused search.
-   - 2026-06-16: Deferred passive Power Up final gameplay effects and item/content TODOs to P4 because they are
+   - 2026-06-16: Deferred passive Power Up final gameplay effects out of P3 because they are
      feature/content work rather than missing P3 refactoring coverage.
 
 ### P4 - Content And Systems Expansion
 
-Status: `Active`
+Status: `Done` for the current P4 content and systems tracks. Further deep-kit,
+combat-architecture, and item/equipment expansions remain deferred to their
+named specs or future backlog items.
 
 P4 is split into smaller tracks so low-risk content and polish can move while larger systems remain explicitly decision-gated. Status labels:
 
@@ -681,53 +684,187 @@ Status: `Completed` for non-asset routing/payload work; final SFX and music repl
 
 ### P6 - Expand Enemies, Items, and Abilities
 
-1. Enemies
-  - Giant: humanoid
-  - Owlbear: monster
-2. Items
-  - Helm of Rostam: replaces Tarnhelm as ultimate medium helmet; Tarnhelm and Tolga "pushed down" and Visored Sallet removed from medium helmets
-  - Acorn, Vine Seed, Fungus Spore, Hemlock Root: reagents for Druid/Archdruid abilities
-3. Abilities
-  - Skills
-    - Offensive
-      - Zephyrstrike: passive; gain speed on a critical attack (Ranger, Rogue)
-    - Defensive
-      - Retaliate: passive; chance to counter attack following a blocked attack (Sentinel)
-      - Defensive Regen: passive; increase effect of Regen heal when in defensive stance (Priest)
-      - Posturing: passive; increases chance to Parry when in defensive stance (Crusader)
-      - Last Stand: increases defense and block amount at the expense of attack (Stalwart Defender)
-    - Stealth
-      - Steal As Well: passive; damaging spells have a chance to steal when hit (Spell Stealer)
-      - Steal Spell: steal a random spell from the target to use against them or save for later (Spell Stealer)
-      - Steal Spell 2: chance to learn spells permanently when stolen (Arcane Trickster)
-      - Poison Dart: fire a poisoned dart at the enemy, dealing damage and infecting the enemy (Archdruid)
-    - Enhance
-      - Third Eye: passive; add intelligence into critical and dodge chance calculations (Arcane Trickster)
-    - Class
-      - Monkey Grip: passive; allows Berserker to equip a 2-handed weapon in the main hand at the expense of accuracy (Berserker)
-      - Monkey Grip 2: passive; allows Berserker to equip a 2-handed weapon in the offhand at the expense of accuracy (Berserker)
-      - Final Assault: upon lethal damage from a melee attack, retaliate against the target with a counterattack; if the target is felled, you stabilize at 1 HP (Berserker)
-      - Paladin - Redemption Path
-        - Implemented: `Redeem` attempts a boss-immune mercy victory using Charisma/Wisdom, enemy missing HP, and aura bonus.
-        - Implemented: `Redemption Aura` lasts 3 encounters, lowers encounter rate, increases experience/gold, and improves Redeem chance.
-        - Implemented: `Mark of Perdition` lasts 3 encounters, increasing encounter rate and reducing experience/gold after Redemption vow-breaking kills.
-      - Paladin - Conquest Path
-        - Implemented: `Challenge` marks one foe for 3 turns and grants bonus accuracy/damage against that foe.
-        - Implemented: `Conquest Aura` lasts 3 encounters, stacks up to 3, and grants initiative plus weapon/magic damage.
-        - Implemented: `Mark of the Craven` persists until killing a bounty target and reduces initiative plus weapon/magic damage.
-      - Paladin - Protection Path
-        - Implemented: `Interpose` enters a 2-turn guarded stance, improving the next weapon-hit block.
-        - Implemented: `Protection Aura` lasts 2 combat turns, stacks up to 5, and improves block chance/mitigation.
-        - Implemented: `Mark of Vulnerability` lasts until incapacitation ends and increases physical/melee damage taken.
-      - Paladin - Retribution Path
-        - Implemented: `Judgment Riposte` enters a 2-turn retaliatory stance that counters an enemy attack with weapon/Holy damage.
-        - Implemented: `Retribution Aura` lasts 3 encounters, or 6 if the riposte kills, and improves dodge plus critical damage.
-        - Implemented: `Mark of Mercy` persists until a weapon is equipped/picked up; Vow Affirmation lowers its lethal threshold from 10% HP to 5%.
-      - Transform (1-4): change Transform abilities to add each iteration instead of overwriting the previous one (Druid/Lycan)
-      - Nature Attunement follow-up abilities: the core Archdruid attunement/ring system is implemented; future Druid/Archdruid abilities can consume or reference the existing Venom, Stone, Growth, and Storm state.
-  - Spells
+Status: `Completed` for the current P6 enemies/items/assets and ability
+mechanics slices. Additional enemies/items, deeper class-kit expansions,
+numeric balance passes, and broader encounter-system changes are deferred until
+the matching subsection below has a completed one-page decision block or a
+future roadmap slice promotes them.
+
+Completed enemy/item/asset slice:
+
+- Added `Giant` as a level 3/4 Humanoid club bruiser using `Stomp` and `Charge`.
+- Added `Owlbear` as a level 3/4 Monster Storm/Growth caster using `Shock`,
+  `Wind Speed`, and `Regen`.
+- Added `Helm of Rostam` as the ultimate medium helmet with Berserk/Stun
+  protection, while Tarnhelm keeps invisibility lower in the medium progression.
+- Shifted medium helmet progression to `Scale Helm`, `Chain Coif`,
+  `Kulah Khud`, `Cervelliere`, `Tolga`, `Tarnhelm`, and `Helm of Rostam`;
+  `Visored Sallet` remains instantiable for legacy compatibility but is no
+  longer in the medium helmet catalog.
+- Added visible reagent items: `Acorn`, `Vine Seed`, `Fungus Spore`, and
+  `Hemlock Root`, with initial themed monster-drop sources.
+- Added a reusable status-protection helper so equipped items can block exact
+  status tokens such as `Status-Berserk` and `Status-Stun`.
+- Added approved combat/item artwork for `Giant`, `Owlbear`, `Helm of Rostam`,
+  and the visible reagent items, with pygame sprite/icon/render maps wired.
+
+Completed ability foundation slice:
+
+- Added passive ability entries and class grants for `Zephyrstrike`,
+  `Retaliate`, `Defensive Regen`, `Posturing`, `Third Eye`, and
+  `Pious Bounty`, with current passive hooks implemented for their first-pass
+  combat/economy effects.
+- Added data-driven ability entries for straightforward existing-effect spells:
+  `Poison Dart`, `Bolt`, `Ball Lightning`, `Stone Skin`, `Calming Breeze`,
+  `Windswept`, `Regrowth`, `Nature Shield`, and `Haste`.
+- Added the first Druid/Archdruid nature spell line using existing damage,
+  poison, healing, cleanse, speed, defense, and magic-defense effect
+  primitives.
+
+Completed ability mechanics slice:
+
+- Added Berserker `Monkey Grip`, `Monkey Grip 2`, and `Final Assault`; Lancer
+  `Polearm Proficiency`; Dragoon `Polearm Excellence`; Stalwart Defender `Last
+  Stand`; and Monk/Master Monk martial strikes. Polearm Mastery exists as the
+  future quest/item-unlock bonus hook.
+- Added Ranger `Tame` and `Favored Enemy`, including Animal-only persistent
+  tamed companions with compact save state.
+- Added Spell Stealer `Steal As Well` combat action support and Arcane
+  Trickster `Steal Spell 2` permanent stolen-spell learning.
+- Added reagent-choice `Plant Seeds`, Growth-mastery `Tree of Life`, and
+  reagent-consuming `Vile Potion`.
+- Added Diviner `Haste`; Astromancer time spells (`Foretell`, `Twist Fate`,
+  `Rewind`, `Wormhole`); Seeker-only `Enter Wall`; Wizard/Seeker
+  `Volitation`; and `Invisibility` for Seeker, Shadowcaster, and Assassin.
+- Added all-owned-summon `Heal Summon`/`Raise Summon`, elemental resistance
+  spells, one-use composed sheet music for advanced Bard/Troubadour songs,
+  `Corruption 2`, `Nightmare`, and enemy-only `Bad Breath`.
+- Completed current class power-up hooks for Trickster's Gambit, Primal
+  Ascendance, Abyssal Covenant, Arsenal Mastery, Shield Mastery, Eternal
+  Conduit, Melody of Inspiration, and Pack Bond.
+- Updated Bard/Troubadour sheet music effects: `Battle Hymn`, `Ode to the
+  Ramparts`, exploration debuff songs, encounter/loot modifier songs, and
+  `Chorus Time` now use their current one-use composition behavior.
+
+#### Review Baseline
+
+- Grandmaster of Arms weapon discipline and Class Ring work is implemented:
+  discipline storage, XP/rank progression, binding/rebinding, Barracks trials,
+  weapon techniques, and save migration are current shipped behavior.
+- Spell Stealer/Arcane Trickster theft is implemented: base `Steal Spell`
+  requires a `Blank Scroll` and creates a usable stolen-spell scroll, `Steal As
+  Well` lets Spell Stealer weave theft into damaging spell casts, and Arcane
+  Trickster `Steal Spell 2` can permanently learn a stealable enemy spell.
+- Paladin vow paths are implemented and are not active P6 work: Redemption,
+  Conquest, Protection, and Retribution each have vows, skills, auras, marks,
+  persistence, and Crusader trial hooks.
+- Archdruid attunement and Class Ring foundation is implemented. Current
+  reagent abilities build on the visible reagent items; deeper nature systems
+  should continue using the Venom, Stone, Growth, and Storm state rather than
+  adding parallel attunement storage.
+- Bard/Troubadour already have playable `Valor`, `Shelter`, and `Renewal` song
+  foundations, plus composed one-use sheet music for advanced songs. Permanent
+  song learning, Maestro-style progression, and repeated-use quest hooks remain
+  deferred.
+- Ranger `Tame` now supports Animal-only persistent companions with compact
+  save state. Monster taming, richer companion commands, and broader Beast
+  Master companion progression remain deferred.
+- `Giant` and `Owlbear` are now current exact enemy classes in the level 3/4
+  encounter catalog.
+- Medium helmets now include `Tolga`, `Tarnhelm`, and `Helm of Rostam` at the
+  high end. Tarnhelm invisibility behavior is current and tested, and Visored
+  Sallet remains instantiable for legacy saves.
+
+#### Current-Slice Decisions
+
+- The completed P6 save fields, UI surfaces, and mechanics are authoritative
+  for this slice. Future P6-adjacent mechanics should use a new decision block
+  or a later roadmap slice.
+- Existing Grandmaster, Paladin, Archdruid, Bard/Troubadour, and Spell Stealer
+  foundations are authoritative and should be extended rather than replaced.
+- Current song-driven encounter, difficulty, and loot hooks are first-pass
+  effects. Broader multi-enemy support and encounter-generation balance changes
+  remain gated behind combat/encounter specs.
+
+#### Enemy Content Spec Gates
+
+Before implementing any additional P6 enemy, write a one-page decision block
+covering enemy type/category, tier placement, stat budget relative to nearby
+enemies, action stack, XP/gold/loot, resistances, Bestiary details, combat
+sprite/token needs, and focused tests.
+
+- Current P6 enemies: `Giant` (`Humanoid`) and `Owlbear` (`Monster`) are
+  implemented in levels 3 and 4.
+
+#### Item Content Spec Gates
+
+Before implementing additional P6 item content, write a one-page decision block
+covering catalog placement, rarity, shop/drop/crafting source, item subtype,
+icon/render mapping, save migration/name compatibility, tests, and whether each
+item is inert reagent-only or actively usable.
+
+- Current P6 items: `Helm of Rostam`, `Acorn`, `Vine Seed`, `Fungus Spore`,
+  and `Hemlock Root` are implemented. `Plant Seeds` and `Vile Potion` use these
+  visible inventory items; `Tree of Life` is a Growth-mastery form rather than
+  a reagent spell. Random collectible tiles and secret apothecary/druid shop
+  access remain deferred.
+
+#### Ability Spec Gates
+
+Completed P6 abilities can now be tuned through normal playtest once they are
+learnable. Additional P6 ability work remains gated until a one-page spec
+defines trigger and class eligibility, storage/save migration needs, combat and
+out-of-combat behavior, UI/menu/status text surfaces, event/audio/logging needs
+if applicable, balance assumptions, regression tests, and manual playtest
+checks.
+
+- Completed low-decision foundations: `Zephyrstrike`, `Retaliate`,
+  `Defensive Regen`, `Posturing`, `Third Eye`, `Pious Bounty`, `Poison Dart`,
+  `Bolt`, `Ball Lightning`, `Stone Skin`, `Calming Breeze`, `Windswept`,
+  `Regrowth`, `Nature Shield`, and `Haste`.
+- Completed mechanics: `Monkey Grip`, `Monkey Grip 2`, `Final Assault`, `Last
+  Stand`, polearm proficiency/excellence with a deferred Polearm Mastery unlock
+  hook, Monk/Master Monk martial strikes, `Steal As Well`, `Steal Spell 2`,
+  `Tame`, `Favored Enemy`, `Plant Seeds`, `Tree of Life`, `Vile Potion`,
+  `Foretell`, `Twist Fate`, `Wormhole`, `Rewind`, `Volitation`, `Enter Wall`,
+  `Invisibility`, `Heal Summon`, `Raise Summon`, elemental resist spells,
+  advanced one-use sheet music songs, `Corruption 2`, `Nightmare`, and
+  enemy-only `Bad Breath`.
+- Deferred Monk follow-up: combo chains, chained input timing, combo UI, and
+  longer martial identity progression remain future spec work.
+- Deferred Bard/Troubadour follow-up: permanent song learning, Maestro or
+  repeated-use progression, sheet-music economy expansion, and quest-locked
+  composition remain future spec work.
+- Deferred Beast Master follow-up: monster taming, companion command menus,
+  companion progression, companion visuals, and balance rules for stronger
+  species remain future spec work.
+- Deferred tuning follow-up: numeric pass on Final Assault, Last Stand, Tame
+  odds, Favored Enemy scaling, Rewind snapshot scope, resist durations,
+  one-use song strength, dark-spell pressure, and Bad Breath AI priority should
+  wait for playtest or simulator reports.
+- Deferred class-power follow-up: additional second-promotion power-up effects,
+  if any are added beyond the current hooks, need class-by-class specs that
+  confirm persistence, class-ring interactions, UI text, balance, and tests.
+
+#### Deferred Or Stale Entries
+
+- Grandmaster weapon-discipline work is implemented; only missing lower-tier
+  Weapon Master follow-ups or additional weapon techniques remain deferred.
+- Base `Steal Spell`, `Steal As Well`, and `Steal Spell 2` permanent learning
+  are implemented; future theft tuning or broader theft identity remains
+  deferred.
+- Paladin vow bullets are baseline shipped behavior, not active P6 work.
+- `Transform (1-4)` and `Eclipse` remain deferred to the P4e Druid/Lycan and
+  Shadowcaster deep-kit spec gates.
+- `Frozen Armor` remains deferred until Sorcerer/Ice passive behavior has a
+  one-page spec covering trigger timing, duration, resistance stacking, UI text,
+  and tests.
+- `Tree of Life` is no longer a reagent-consuming spell; Growth mastery owns
+  the oak-form benefit, while `Acorn` remains a `Plant Seeds` reagent.
 
 ### P7 - Additional Improvements
+
+Status: `Active`
 
 1. Add mouse/cursor support; make menu options clickable
 2. Additional artistic renderings
@@ -736,6 +873,8 @@ Status: `Completed` for non-asset routing/payload work; final SFX and music repl
    - Companions: familiars, beasts (reuse enemy art?), summons, etc.
 3. Increase the border size in the Equipment tab so the selected equipment slot stands out more
 4. Change town from menu-based to dungeon-style first-person navigation
+5. Class-specific mechanics
+  - Monk/Master Monk: add legs for additional melee attacks with their own attack/crit/accuracy
 
 ## Deferred Or Decision-Gated Items
 
@@ -757,7 +896,8 @@ None currently listed.
 
 ## Additional UX Improvements
 
-None currently listed.
+- Add location to dungeon view
+- Add ability to look at enlarged minimap
 
 ## Resolved Archive
 

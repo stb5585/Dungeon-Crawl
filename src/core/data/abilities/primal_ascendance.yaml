@@ -1,0 +1,12 @@
+name: Primal Ascendance
+type: Skill
+subtype: Power Up
+description: >-
+  For several turns, gain bonuses from all Nature Aspects;
+  increased healing (Growth), increased poison effectiveness (Venom),
+  increased spell power (Storm), increased defense (Stone)
+cost: 38
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5

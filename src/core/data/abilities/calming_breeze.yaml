@@ -1,0 +1,8 @@
+name: Calming Breeze
+type: Support
+subtype: Support
+description: >-
+  Conjure a gentle breeze that grants Peaceful focus, protecting against Berserk.
+cost: 18
+target_self: true
+effects: []

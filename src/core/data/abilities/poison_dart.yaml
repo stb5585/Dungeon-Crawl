@@ -1,0 +1,15 @@
+name: Poison Dart
+type: Spell
+subtype: Poison
+description: >-
+  Shape a thorn into a venomous dart and send it into the enemy.
+cost: 8
+damage_mod: 1.15
+crit: 6
+school: Nature
+effects:
+  - type: dynamic_status_dot
+    status_name: Poison
+    duration: 3
+    damage_lo_fraction: 0.20
+    damage_hi_fraction: 0.35

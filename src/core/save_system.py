@@ -738,6 +738,8 @@ class PlayerDataSerializer:
             'paladin_vow': getattr(player, 'paladin_vow', None),
             'dragoon_dragon_quest': getattr(player, 'dragoon_dragon_quest', None),
             'bard_song': getattr(player, 'bard_song', None),
+            'tamed_companion': getattr(player, 'tamed_companion', None),
+            'temporary_exploration_effects': getattr(player, 'temporary_exploration_effects', None),
             'lycan_state': getattr(player, 'lycan_state', None),
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
             'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
@@ -940,6 +942,15 @@ class PlayerDataSerializer:
         player.bard_song = data.get('bard_song', getattr(player, 'bard_song', None))
         if hasattr(player, "ensure_bard_song"):
             player.ensure_bard_song()
+        player.tamed_companion = data.get('tamed_companion', getattr(player, 'tamed_companion', None))
+        if hasattr(player, "ensure_tamed_companion"):
+            player.ensure_tamed_companion()
+        player.temporary_exploration_effects = data.get(
+            'temporary_exploration_effects',
+            getattr(player, 'temporary_exploration_effects', None),
+        )
+        if hasattr(player, "ensure_temporary_exploration_effects"):
+            player.ensure_temporary_exploration_effects()
         player.lycan_state = data.get('lycan_state', getattr(player, 'lycan_state', None))
         if hasattr(player, "ensure_lycan_state"):
             player.ensure_lycan_state()

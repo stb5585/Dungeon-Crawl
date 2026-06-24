@@ -335,7 +335,7 @@ class TestYAMLLoading:
         ("volcano.yaml", "Fire"),
         ("ice_lance.yaml", "Ice"),
         ("icicle.yaml", "Ice"),
-        ("ice_blizzard.yaml", "Ice"),
+        ("blizzard.yaml", "Ice"),
         ("shock.yaml", "Electric"),
         ("lightning.yaml", "Electric"),
         ("electrocution.yaml", "Electric"),
@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 181
+        assert len(yaml_paths) == 190
 
         loaded_names = []
         for path in yaml_paths:
@@ -1196,6 +1196,7 @@ class TestBatch2YAMLLoading:
         ("regen_2.yaml", "Regen", 18, 0.3),
         ("regen_3.yaml", "Regen", 30, 0.4),
         ("hydration.yaml", "Hydration", 16, 0.3),
+        ("regrowth.yaml", "Regrowth", 24, 0.35),
     ]
 
     @pytest.mark.parametrize("filename,name,cost,heal", HEAL_YAMLS)
@@ -1219,6 +1220,10 @@ class TestBatch2YAMLLoading:
         ("divine_protection.yaml", "Divine Protection", 12),
         ("ice_block.yaml", "Ice Block", 30),
         ("wind_speed.yaml", "Wind Speed", 12),
+        ("haste.yaml", "Haste", 24),
+        ("stone_skin.yaml", "Stone Skin", 21),
+        ("calming_breeze.yaml", "Calming Breeze", 18),
+        ("nature_shield.yaml", "Nature Shield", 28),
         ("mirror_image.yaml", "Mirror Image", 8),
         ("mirror_image_2.yaml", "Mirror Image", 20),
         ("astral_shift.yaml", "Astral Shift", 18),
@@ -1669,10 +1674,13 @@ class TestBatch3YAMLLoading:
         ("volcano.yaml", "Volcano", 24),
         ("ice_lance.yaml", "Ice Lance", 4),
         ("icicle.yaml", "Icicle", 9),
-        ("ice_blizzard.yaml", "Ice Blizzard", 18),
+        ("blizzard.yaml", "Blizzard", 18),
         ("shock.yaml", "Shock", 6),
         ("lightning.yaml", "Lightning", 15),
         ("electrocution.yaml", "Electrocution", 25),
+        ("bolt.yaml", "Bolt", 18),
+        ("ball_lightning.yaml", "Ball Lightning", 34),
+        ("poison_dart.yaml", "Poison Dart", 8),
         ("meteor.yaml", "Meteor", 0),
     ])
     def test_load_elemental_spell(self, filename, expected_name, expected_cost):
@@ -9052,7 +9060,7 @@ class TestCataclysmEffect:
         fireball = abilities.Fireball()
         iceblizzard = abilities.IceBlizzard()
         user.spellbook["Spells"]["Fireball"] = fireball
-        user.spellbook["Spells"]["Ice Blizzard"] = iceblizzard
+        user.spellbook["Spells"]["Blizzard"] = iceblizzard
         result = CombatResult(action="Cataclysm", actor=user, target=target)
         effect = CataclysmEffect(spell_count=2, breath_multiplier=2.0)
         effect.apply(user, target, result)
@@ -9072,3 +9080,114 @@ class TestCompanionUltimateEffectFactory:
         from src.core.data.ability_loader import EffectFactory
         effect = EffectFactory.create({"type": effect_type})
         assert effect is not None
+
+
+class TestClassAbilityMechanicsSlice:
+    """Class ability mechanics are real, loadable, and class-granted."""
+
+    @pytest.mark.parametrize("class_name,expected_name,passive", [
+        ("Zephyrstrike", "Zephyrstrike", True),
+        ("Retaliate", "Retaliate", True),
+        ("DefensiveRegen", "Defensive Regen", True),
+        ("Posturing", "Posturing", True),
+        ("ThirdEye", "Third Eye", True),
+        ("PiousBounty", "Pious Bounty", True),
+        ("PoisonDart", "Poison Dart", False),
+        ("Bolt", "Bolt", False),
+        ("BallLightning", "Ball Lightning", False),
+        ("StoneSkin", "Stone Skin", False),
+        ("CalmingBreeze", "Calming Breeze", False),
+        ("Windswept", "Windswept", False),
+        ("Regrowth", "Regrowth", False),
+        ("NatureShield", "Nature Shield", False),
+        ("Haste", "Haste", False),
+    ])
+    def test_class_ability_factories(self, class_name, expected_name, passive):
+        from src.core import abilities
+
+        ability = getattr(abilities, class_name)()
+
+        assert ability.name == expected_name
+        assert getattr(ability, "passive", False) is passive
+
+    def test_class_grants_are_registered(self):
+        from src.core import abilities
+
+        assert abilities.skill_dict["Lancer"]["1"] == [abilities.Jump, abilities.PolearmProficiency]
+        assert abilities.skill_dict["Lancer"]["12"] is abilities.Zephyrstrike
+        assert abilities.skill_dict["Dragoon"]["1"] is abilities.PolearmExcellence
+        assert abilities.skill_dict["Sentinel"]["9"] is abilities.Retaliate
+        assert abilities.skill_dict["Crusader"]["1"] is abilities.Posturing
+        assert abilities.skill_dict["Stalwart Defender"]["18"] is abilities.LastStand
+        assert abilities.skill_dict["Seeker"]["5"] is abilities.ThirdEye
+        assert "Third Eye" not in [skill().name for skill in abilities.skill_dict["Inquisitor"].values()]
+        assert "Pious Bounty" not in [skill().name for skill in abilities.skill_dict["Priest"].values()]
+        assert abilities.skill_dict["Cleric"]["24"] is abilities.PiousBounty
+        assert abilities.skill_dict["Templar"]["1"] is abilities.Parry
+        assert list(abilities.skill_dict["Bard"].values()) == [
+            abilities.SongValor,
+            abilities.SongShelter,
+            abilities.SongRenewal,
+        ]
+        assert abilities.skill_dict["Troubadour"] == {}
+        assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Sorcerer"].values())
+        assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Wizard"].values())
+        assert abilities.spell_dict["Diviner"]["8"] is abilities.Haste
+        assert "Steal As Well" not in [skill().name for skill in abilities.skill_dict["Arcane Trickster"].values()]
+        assert abilities.skill_dict["Spell Stealer"]["12"] is abilities.StealAsWell
+        assert abilities.skill_dict["Ranger"]["1"] is abilities.Tame
+        assert abilities.skill_dict["Ranger"]["10"] is abilities.FavoredEnemy
+        assert abilities.skill_dict["Beast Master"] == {
+            "5": abilities.Cover,
+            "7": abilities.Zephyrstrike,
+        }
+        assert abilities.spell_dict["Shadowcaster"]["16"] is abilities.Nightmare
+        assert "Nightmare" not in [spell().name for spell in abilities.spell_dict["Demonologist"].values()]
+
+    def test_archdruid_nature_spell_line_is_registered(self):
+        from src.core import abilities
+
+        assert abilities.skill_dict["Archdruid"] == {}
+        assert list(abilities.spell_dict["Druid"].values()) == [
+            abilities.PoisonDart,
+            abilities.StoneSkin,
+            abilities.Regrowth,
+            abilities.CalmingBreeze,
+        ]
+        assert list(abilities.spell_dict["Archdruid"].values()) == [
+            abilities.PlantSeeds,
+            abilities.Bolt,
+            abilities.Windswept,
+            abilities.NatureShield,
+            abilities.BallLightning,
+            abilities.VilePotion,
+        ]
+
+    def test_simple_support_spells_apply_existing_effects(self):
+        from src.core import abilities
+        from tests.test_framework import TestGameState
+
+        caster = TestGameState.create_player(
+            name="Archdruid",
+            class_name="Archdruid",
+            race_name="Human",
+            level=30,
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 24, "wisdom": 30, "con": 10, "charisma": 10, "dex": 12},
+        )
+        caster.combat.defense = 20
+        caster.combat.magic = 30
+        caster.combat.magic_def = 18
+        caster.status_effects["Poison"].active = True
+        caster.status_effects["Poison"].duration = 3
+
+        abilities.StoneSkin().cast(caster, caster)
+        abilities.Windswept().cast(caster, caster)
+        abilities.NatureShield().cast(caster, caster)
+        abilities.CalmingBreeze().cast(caster, caster)
+
+        assert caster.magic_effects["Stone Skin"].active is True
+        assert caster.flying is True
+        assert caster.magic_effects["Nature Shield"].active is True
+        assert caster.magic_effects["Nature Shield"].extra == 3
+        assert caster.status_effects["Peaceful"].active is True

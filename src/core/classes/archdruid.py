@@ -203,6 +203,15 @@ def apply_mastery_perks(character: Any) -> None:
         immunities.append("Poison")
     if state["aspects"]["Stone"] and state["attunement"]["Stone"] >= MASTERY_THRESHOLD and "Stone" not in immunities:
         immunities.append("Stone")
+    if state["aspects"]["Growth"] and state["attunement"]["Growth"] >= MASTERY_THRESHOLD:
+        try:
+            from .. import abilities
+
+            spellbook = getattr(character, "spellbook", {}).setdefault("Spells", {})
+            if "Tree of Life" not in spellbook:
+                spellbook["Tree of Life"] = abilities.TreeOfLife()
+        except Exception:
+            pass
 
 
 def record_status_applied(actor: Any, target: Any, status_name: str) -> None:

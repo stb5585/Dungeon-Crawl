@@ -1,0 +1,18 @@
+name: Stone Skin
+type: Support
+subtype: Support
+description: >-
+  Harden your skin like weathered stone, increasing defense for several turns.
+cost: 21
+target_self: true
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: Defense
+    source: target_combat
+    source_stat: defense
+    lo_divisor: 4
+    hi_divisor: 2
+    duration_stat: wisdom
+    duration_divisor: 8
+    duration_min: 4
+    apply_to_caster: true

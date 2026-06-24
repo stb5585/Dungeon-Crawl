@@ -1453,7 +1453,7 @@ class CombatPopupMenu(PopupMenu):
             self.options_list = options
         if action == "Cast Spell":
             for entry in self.game.player_char.spellbook['Spells']:
-                if self.game.player_char.spellbook['Spells'][entry].subtyp == "Movement":
+                if self.game.player_char.spellbook['Spells'][entry].subtyp == "Movement" and entry not in {"Volitation"}:
                     continue
                 if self.game.player_char.spellbook['Spells'][entry].cost <= self.game.player_char.mana.current:
                     self.options_list.append(
@@ -1491,6 +1491,15 @@ class CombatPopupMenu(PopupMenu):
                     self.options_list.append(
                         f"{str(item_list[0].name)}  {str(len(item_list))}"
                         )
+        elif action == "Steal As Well":
+            from src.core import items as core_items
+
+            for entry, spell in self.game.player_char.spellbook["Spells"].items():
+                if spell.subtyp not in {"Support", "Movement"} and spell.cost <= self.game.player_char.mana.current:
+                    self.options_list.append(f"{entry}  {spell.cost}")
+            for item_name, item_list in self.game.player_char.inventory.items():
+                if item_list and isinstance(item_list[0], core_items.InscribedSpellScroll):
+                    self.options_list.append(f"{item_name}  {len(item_list)}")
         self.options_list.append('Go Back')
         self.header_message = action
 

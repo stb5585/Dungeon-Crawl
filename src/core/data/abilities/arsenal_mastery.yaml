@@ -1,0 +1,10 @@
+name: Arsenal Mastery
+type: Skill
+subtype: Power Up
+description: >-
+  For several turns, gain the passive bonuses of every weapon type you've mastered
+cost: 30
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5

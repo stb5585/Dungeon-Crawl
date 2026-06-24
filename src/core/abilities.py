@@ -585,6 +585,159 @@ class Charge(Offensive):
         return _load_yaml_ability("charge.yaml", cls_name="Charge")
 
 
+class _PassiveSkill(Class):
+    def __init__(self, name: str, description: str) -> None:
+        super().__init__(name=name, description=description)
+        self.passive = True
+        self.cost = 0
+
+
+class MonkeyGrip(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Monkey Grip",
+            "Your two-handed dual wielding becomes steadier, reducing its accuracy and damage penalties.",
+        )
+
+
+class MonkeyGrip2(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Monkey Grip 2",
+            "Your two-handed dual wielding is fully stabilized, removing its accuracy and damage penalties.",
+        )
+
+
+class PolearmProficiency(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Polearm Proficiency",
+            "You can wield a two-handed polearm with a shield, but your accuracy and damage suffer.",
+        )
+
+
+class PolearmExcellence(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Polearm Excellence",
+            "You can wield a two-handed polearm with a shield without accuracy or damage penalties.",
+        )
+
+
+class PolearmMastery(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Polearm Mastery",
+            "Your one-handed polearm technique grants bonus accuracy and damage.",
+        )
+
+
+class FavoredEnemy(_PassiveSkill):
+    def __init__(self):
+        super().__init__("Favored Enemy", "You fight your most hunted enemy type with practiced precision.")
+
+
+class FinalAssault(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Final Assault",
+            "When a melee blow would kill you, counterattack; if the attacker falls, stabilize at 1 HP.",
+        )
+
+
+class LastStand(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Last Stand",
+            "Increase defense and block strength at the expense of attack power.",
+        )
+
+
+class _MartialStrike(MartialArts):
+    status_name: str | None = None
+    damage_mod: float = 1.0
+
+    def __init__(self, name: str, description: str, cost: int = 8):
+        super().__init__(name=name, description=description, weapon=True)
+        self.cost = cost
+
+    def _has_martial_weapon(self, user: Character) -> bool:
+        return any(
+            getattr(user.equipment.get(slot), "subtyp", None) in {"Fist", "None"}
+            for slot in ("Weapon", "OffHand")
+        )
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().use(user, target, **kwargs)
+        if target is None:
+            return "There is no target.\n"
+        if not self._has_martial_weapon(user):
+            return f"{user.name} needs a free hand or fist weapon to use {self.name}.\n"
+        user.mana.current -= self.cost
+        msg, hit, _crit = user.weapon_damage(target, dmg_mod=self.damage_mod, use_offhand=False)
+        if hit and self.status_name and target.is_alive() and not target.has_status_protection(self.status_name):
+            effect_dict = target.effect_handler(self.status_name)
+            effect_dict[self.status_name].active = True
+            effect_dict[self.status_name].duration = max(effect_dict[self.status_name].duration, 2)
+            msg += f"{target.name} is affected by {self.status_name.lower()}.\n"
+        return msg
+
+
+class Uppercut(_MartialStrike):
+    damage_mod = 1.25
+    def __init__(self): super().__init__("Uppercut", "A rising martial strike that deals increased damage.", 8)
+
+
+class Headbutt(_MartialStrike):
+    status_name = "Stun"
+    damage_mod = 1.0
+    def __init__(self): super().__init__("Headbutt", "A close strike that can stun.", 6)
+
+
+class DrunkenBrawler(_PassiveSkill):
+    def __init__(self):
+        super().__init__(
+            "Drunken Brawler",
+            "After using a potion, your next turn gains bonus damage and critical chance.",
+        )
+
+
+class Hyakuretsukyaku(_MartialStrike):
+    def __init__(self): super().__init__("Hyakuretsukyaku", "A rushing flurry of kicks.", 14)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        MartialArts.use(self, user, target, **kwargs)
+        if target is None:
+            return "There is no target.\n"
+        if not self._has_martial_weapon(user):
+            return f"{user.name} needs a free hand or fist weapon to use {self.name}.\n"
+        user.mana.current -= self.cost
+        msg = ""
+        for _ in range(4):
+            hit_msg, _hit, _crit = user.weapon_damage(target, dmg_mod=0.45, use_offhand=False)
+            msg += hit_msg
+            if not target.is_alive():
+                break
+        return msg
+
+
+class SpinningBackElbow(_MartialStrike):
+    status_name = "Blind"
+    damage_mod = 1.2
+    def __init__(self): super().__init__("Spinning Back Elbow", "A turning blow that can blind.", 10)
+
+
+class Suplex(_MartialStrike):
+    status_name = "Prone"
+    damage_mod = 1.35
+    def __init__(self): super().__init__("Suplex", "A crushing throw that can knock the target prone.", 12)
+
+
+class Hadouken(_MartialStrike):
+    damage_mod = 1.4
+    def __init__(self): super().__init__("Hadouken", "A focused chi strike delivered at range.", 16)
+
+
 # Defensive skills
 class ShieldBlock(Defensive):
     """
@@ -609,7 +762,7 @@ class StealSpell(Class):
             name="Steal Spell",
             description="Inscribes one of the target's spells onto a Blank Scroll.",
         )
-        self.cost = 0
+        self.cost = 8
 
     def use(
         self,
@@ -623,6 +776,53 @@ class StealSpell(Class):
             return "There is no spell to steal.\n"
         _success, message = spell_stealer.steal_spell(user, target)
         return message
+
+
+class StealSpell2(Class):
+    """Chance to permanently learn one stealable enemy spell."""
+
+    def __init__(self):
+        super().__init__(
+            name="Steal Spell 2",
+            description="Attempt to permanently learn one of the target's stealable spells.",
+        )
+        self.cost = 22
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import spell_stealer
+
+        super().use(user, target, **kwargs)
+        if target is None:
+            return "There is no spell to steal.\n"
+        spell_classes = spell_stealer.eligible_spell_classes(target)
+        spell_classes = [
+            spell_cls for spell_cls in spell_classes
+            if spell_cls().name not in user.spellbook.get("Spells", {})
+        ]
+        if not spell_classes:
+            return f"{target.name} has no new spell to learn.\n"
+        user.mana.current -= self.cost
+        chance = min(0.75, 0.20 + ((user.stats.intel + user.stats.dex) * 0.01))
+        if random.random() > chance:
+            return f"{user.name} fails to bind the stolen spell.\n"
+        spell_cls = random.choice(spell_classes)
+        spell = spell_cls()
+        user.spellbook["Spells"][spell.name] = spell
+        return f"{user.name} permanently learns {spell.name}.\n"
+
+
+class StealAsWell(Class):
+    """Marker skill used by the Steal As Well combat action."""
+
+    def __init__(self):
+        super().__init__(
+            name="Steal As Well",
+            description="Cast an attack spell and attempt to steal after it lands.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        return "Choose Steal As Well from the combat action menu to weave theft into a spell.\n"
 
 
 class SongValor(Class):
@@ -674,6 +874,66 @@ class SongRenewal(Class):
 
         _success, message = bard.start_song(user, "Renewal")
         return message
+
+
+class _ComposeSong(Class):
+    sheet_cls_name = ""
+
+    def __init__(self, name: str, sheet_cls_name: str):
+        song_name = name.removeprefix("Compose ")
+        super().__init__(
+            name=name,
+            description=f"Compose {song_name} into one-use sheet music from the character menu.",
+        )
+        self.cost = 0
+        self.song_name = song_name
+        self.sheet_cls_name = sheet_cls_name
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import bard
+
+        _success, message = bard.compose_sheet_music(user, self.song_name)
+        return message
+
+    def use_out(self, game_or_user) -> str:
+        user = getattr(game_or_user, "player_char", game_or_user)
+        return self.use(user)
+
+
+class ComposeBattleHymn(_ComposeSong):
+    def __init__(self): super().__init__("Compose Battle Hymn", "BattleHymnSheet")
+
+
+class ComposeOdeToTheRamparts(_ComposeSong):
+    def __init__(self): super().__init__("Compose Ode to the Ramparts", "RampartsOdeSheet")
+
+
+class ComposeSymphonyOfDisfunction(_ComposeSong):
+    def __init__(self): super().__init__("Compose Symphony of Disfunction", "DysfunctionSymphonySheet")
+
+
+class ComposeLowDefenseRhapsody(_ComposeSong):
+    def __init__(self): super().__init__("Compose Low-defense-ian Rhapsody", "LowDefenseRhapsodySheet")
+
+
+class ComposeSlowRide(_ComposeSong):
+    def __init__(self): super().__init__("Compose Slow Ride", "SlowRideSheet")
+
+
+class ComposeBonesThugsHarmony(_ComposeSong):
+    def __init__(self): super().__init__("Compose Bones, Thugs, and Harmony", "BonesThugsHarmonySheet")
+
+
+class ComposeScoresAndScoresScore(_ComposeSong):
+    def __init__(self): super().__init__("Compose Scores and Scores Score", "ScoresAndScoresScoreSheet")
+
+
+class ComposeGoldTrigger(_ComposeSong):
+    def __init__(self): super().__init__("Compose Gold Trigger", "GoldTriggerSheet")
+
+
+class ComposeChorusTime(_ComposeSong):
+    def __init__(self): super().__init__("Compose Chorus Time", "ChorusTimeSheet")
 
 
 class Parry(Defensive):
@@ -1023,6 +1283,58 @@ class MaelstromWeapon(Class):
         self.max_hits = 6  # Max bonus of 30%
 
 
+class Zephyrstrike(Offensive):
+    """
+    Passive martial timing; future tuning may hook this into wind/polearm crits.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Zephyrstrike",
+            description="You strike with the timing of a sudden gale.",
+        )
+        self.passive = True
+
+
+class Retaliate(Defensive):
+    """
+    Passive counter-stance marker for Sentinel follow-up tuning.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Retaliate",
+            description="Your skill with a shield makes quick responses your forte.",
+        )
+        self.passive = True
+
+
+class DefensiveRegen(Defensive):
+    """
+    Passive endurance marker for defensive regeneration follow-up tuning.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Defensive Regen",
+            description="You recover best when holding a defensive line.",
+        )
+        self.passive = True
+
+
+class Posturing(Defensive):
+    """
+    Passive guard-presence marker for Crusader follow-up tuning.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Posturing",
+            description="You know how to present an impossible target.",
+        )
+        self.passive = True
+
+
 class Familiar(Class):
     """
     Summon a familiar, a magic creature that serves as both a pet and a helper.
@@ -1078,7 +1390,48 @@ class Tame(Class):
             description="Attempt to bring a wild beast over to your side. You cannot "
             "perform any actions while channeling this ability.",
         )
-        self.passive = True
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().use(user, target, **kwargs)
+        user.mana.current -= self.cost
+        return ability_mechanics.attempt_tame(user, target, rng=kwargs.get("rng", random))
+
+
+class HealSummon(Class):
+    def __init__(self):
+        super().__init__("Heal Summon", "Restore HP and MP to all owned summons.")
+        self.cost = 18
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().use(user, target, **kwargs)
+        user.mana.current -= self.cost
+        return ability_mechanics.heal_all_summons(user)
+
+    def use_out(self, game_or_user) -> str:
+        user = getattr(game_or_user, "player_char", game_or_user)
+        return self.use(user)
+
+
+class RaiseSummon(Class):
+    def __init__(self):
+        super().__init__("Raise Summon", "Revive all fallen owned summons.")
+        self.cost = 30
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().use(user, target, **kwargs)
+        user.mana.current -= self.cost
+        return ability_mechanics.raise_all_summons(user)
+
+    def use_out(self, game_or_user) -> str:
+        user = getattr(game_or_user, "player_char", game_or_user)
+        return self.use(user)
 
 
 class AbsorbEssence(Class):
@@ -1139,6 +1492,19 @@ class KeenEye(Truth):
         self.passive = True
 
 
+class ThirdEye(Truth):
+    """
+    Passive insight marker for future Seeker/Inquisitor perception tuning.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Third Eye",
+            description="You sense threats and hidden truths before they fully reveal themselves.",
+        )
+        self.passive = True
+
+
 class Cartography(Truth):
     """
     Reveals minimap to Seeker, regardless of whether they have visited an area
@@ -1190,6 +1556,19 @@ class Evasion(MartialArts):
         self.passive = True
 
 
+class PiousBounty(Class):
+    """
+    Passive divine-reward marker for future Healer-line bounty tuning.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Pious Bounty",
+            description="Your devotion draws extra providence from righteous victories.",
+        )
+        self.passive = True
+
+
 # Luck
 class GoldToss:
     """Data-driven (gold_toss.yaml) - gold-based unblockable damage."""
@@ -1226,13 +1605,19 @@ class BloodRage(PowerUp):
         self.passive = True
 
 
-class DivineAegis:
+class ArsenalMastery(PowerUp):
+    """Skill — data-driven (arsenal_mastery.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("arsenal_mastery.yaml", cls_name="ArsenalMastery")
+
+
+class DivineAegis(PowerUp):
     """Skill — data-driven (divine_aegis.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("divine_aegis.yaml", cls_name="DivineAegis")
 
 
-class DragonsFury(PowerUp):
+class DraconicOnslaught(PowerUp):
     """
     Dragoon Power Up
     attack and defense double for each successive hit; a miss resets this buff
@@ -1240,10 +1625,25 @@ class DragonsFury(PowerUp):
 
     def __init__(self):
         super().__init__(
-            name="Dragon's Fury",
+            name="Draconic Onslaught",
             description="The power up unleashed the dragon within, a power that "
             "continues to grow. With each successive hit, your attack "
             "and defense increase. A miss will reset this buff.",
+        )
+        self.passive = True
+
+
+class ShieldMastery(PowerUp):
+    """
+    Stalwart Defender Power Up
+    increase chance to block melee and spells, with a chance to reflect
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Shield Mastery",
+            description="The Stalwart Defender is so skilled with a shield that they gain "
+            "a bonus chance to block melee and spells, with a chance to reflect the spell back.",
         )
         self.passive = True
 
@@ -1283,6 +1683,12 @@ class VeilShadows(PowerUp):
             " at the beginning of battle if they have initiative.",
         )
         self.passive = True
+
+
+class AbyssalCovenant(PowerUp):
+    """Skill — data-driven (abyssal_covenant.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("abyssal_covenant.yaml", cls_name="AbyssalCovenant")
 
 
 class ArcaneBlast(PowerUp):
@@ -1348,38 +1754,44 @@ class EyesUnseen(PowerUp):
         self.passive = True
 
 
-class BladeFatalities:
+class BladeFatalities(PowerUp):
     """Skill — data-driven (blade_fatalities.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("blade_fatalities.yaml", cls_name="BladeFatalities")
 
 
-class HolyRetribution:
+class TrickstersGambit(PowerUp):
+    """Skill — data-driven (tricksters_gambit.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("tricksters_gambit.yaml", cls_name="TrickstersGambit")
+
+
+class HolyRetribution(PowerUp):
     """Skill — data-driven (holy_retribution.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("holy_retribution.yaml", cls_name="HolyRetribution")
 
 
-class GreatGospel:
+class GreatGospel(PowerUp):
     """Skill — data-driven (great_gospel.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("great_gospel.yaml", cls_name="GreatGospel")
 
 
-class DimMak:
+class DimMak(PowerUp):
     """Data-driven (dim_mak.yaml) - weapon + kill/stun + absorb."""
     def __new__(cls):
         return _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
 
 
-class SongInspiration(PowerUp):
+class MelodyInspiration(PowerUp):
     """
-    Song of Inspiration (Passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats
+    Melody of Inspiration (Passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats
     and occasionally removing negative status effects at the start of combat.
     """
     def __init__(self):
         super().__init__(
-            name="Song of Inspiration",
+            name="Melody of Inspiration",
             description="The Troubadour's presence inspires allies and self, granting "
             "a small bonus to all stats and occasionally removing negative status "
             "effects at the start of combat.",
@@ -1389,6 +1801,24 @@ class SongInspiration(PowerUp):
     def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
         result = self._reset_result(actor=user)
         result.extra["effect"] = "stat_bonus_and_status_removal"
+        return result
+
+
+class PrimalAscendance(PowerUp):
+    """
+    Primal Ascendance (Passive): The Archdruid becomes a living embodiment of nature.
+    """
+    def __init__(self):
+        super().__init__(
+            name="Primal Ascendance",
+            description="For several turns, gain bonuses from all Nature Aspects;"
+            "increased healing (Growth), increased poison effectiveness (Venom),"
+            "increased spell power (Storm), increased defense (Stone).",
+        )
+        self.passive = True
+
+    def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
+        result = self._reset_result(actor=user)
         return result
 
 
@@ -1413,7 +1843,7 @@ class LunarFrenzy(PowerUp):
         self.passive = True
 
 
-class AstralJudgment:
+class AstralJudgment(PowerUp):
     """Data-driven (astral_judgment.yaml) - active-sign fate judgment."""
     def __new__(cls):
         return _load_yaml_ability("astral_judgment.yaml", cls_name="AstralJudgment")
@@ -1963,6 +2393,405 @@ class IllusionSpell(Spell):
         self.subtyp = "Illusion"
 
 
+def _inventory_count(character: Character, item_name: str) -> int:
+    return len(getattr(character, "inventory", {}).get(item_name, []) or [])
+
+
+def _consume_inventory_item(character: Character, item_name: str) -> bool:
+    stack = getattr(character, "inventory", {}).get(item_name, [])
+    if not stack:
+        return False
+    character.modify_inventory(stack[0], subtract=True)
+    return True
+
+
+def _simple_spell_damage(caster: Character, target: Character, *, dmg_mod: float, typ: str) -> tuple[str, int]:
+    if target is None:
+        return "There is no target.\n", 0
+    if target.magic_effects["Ice Block"].active or target.tunnel:
+        return "It has no effect.\n", 0
+    guaranteed = bool(getattr(caster, "_twist_fate_success", False))
+    if guaranteed:
+        caster._twist_fate_success = False
+    if not guaranteed and target.dodge_chance(caster, spell=True) > random.random():
+        return f"{target.name} dodged the spell and was unhurt.\n", 0
+    spell_mod = caster.check_mod("magic", enemy=target)
+    damage = max(1, int(spell_mod * dmg_mod))
+    hit, msg, damage = target.damage_reduction(damage, caster, typ=typ)
+    if not hit:
+        return msg, 0
+    variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
+    damage = max(0, int(damage * variance))
+    target.health.current -= damage
+    return msg + f"{caster.name} damages {target.name} for {damage} hit points.\n", damage
+
+
+class _ReagentSpell(Spell):
+    required_items: tuple[str, ...] = ()
+
+    def _consume_reagents(self, user: Character) -> str | None:
+        missing = [item for item in self.required_items if _inventory_count(user, item) <= 0]
+        if missing:
+            return f"{user.name} needs {', '.join(missing)} to cast {self.name}.\n"
+        for item in self.required_items:
+            _consume_inventory_item(user, item)
+        return None
+
+    def _consume_reagent(self, user: Character, item_name: str) -> str | None:
+        if _inventory_count(user, item_name) <= 0:
+            return f"{user.name} needs {item_name} to cast {self.name}.\n"
+        _consume_inventory_item(user, item_name)
+        return None
+
+
+class PlantSeeds(_ReagentSpell):
+    reagent_effects = ("Acorn", "Vine Seed", "Fungus Spore")
+
+    def __init__(self):
+        super().__init__(
+            "Plant Seeds",
+            "Spread seeds of life around the battlefield; each seed changes the growth.",
+            school="Nature",
+        )
+        self.cost = 0
+        self.subtyp = "Earth"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target, **kwargs)
+        user.mana.current -= self.cost
+        if target is None:
+            return "The seeds find no soil.\n"
+        selected = kwargs.get("reagent") or kwargs.get("seed")
+        if selected is None:
+            selected = next((name for name in self.reagent_effects if _inventory_count(user, name) > 0), None)
+        if selected not in self.reagent_effects:
+            return f"{selected or 'That reagent'} cannot be planted with Plant Seeds.\n"
+        failed = self._consume_reagent(user, selected)
+        if failed:
+            return failed
+
+        if selected == "Acorn":
+            msg, damage = _simple_spell_damage(user, target, dmg_mod=1.15, typ="Earth")
+            if damage > 0 and not target.has_status_protection("Stun"):
+                target.apply_stun(1, source="Plant Seeds", applier=user)
+                msg += f"A mighty oak bashes {target.name} senseless.\n"
+            return msg or f"A mighty oak erupts beneath {target.name}.\n"
+
+        if selected == "Vine Seed":
+            target.physical_effects["Prone"].active = True
+            target.physical_effects["Prone"].duration = max(target.physical_effects["Prone"].duration, 3)
+            return f"Fast-growing vines strangle {target.name}, restricting movement.\n"
+
+        if target.has_status_protection("Poison"):
+            return f"Deadly mushroom caps bloom, but {target.name} resists the poison.\n"
+        target.status_effects["Poison"].active = True
+        target.status_effects["Poison"].duration = max(target.status_effects["Poison"].duration, 4)
+        target.status_effects["Poison"].extra = max(int(target.status_effects["Poison"].extra or 0), max(1, user.check_mod("magic", enemy=target) // 4))
+        return f"Deadly mushroom caps bloom around {target.name}, spreading poison.\n"
+
+
+class TreeOfLife(Spell):
+    def __init__(self):
+        super().__init__(
+            "Tree of Life",
+            "Transform into a giant oak tree for 3 turns, becoming a living bastion.",
+            school="Nature",
+        )
+        self.cost = 28
+        self.subtyp = "Support"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import archdruid
+
+        super().cast(user, user, **kwargs)
+        if not archdruid.mastery_unlocked(user, "Growth"):
+            return f"{user.name} has not mastered Growth attunement.\n"
+        user.mana.current -= self.cost
+        tree = user.magic_effects["Tree of Life"]
+        tree.active = True
+        tree.duration = max(tree.duration, 3)
+        return f"{user.name} transforms into a giant oak tree.\n"
+
+
+class VilePotion(_ReagentSpell):
+    required_items = ("Hemlock Root",)
+
+    def __init__(self):
+        super().__init__("Vile Potion", "Imbibe rot and spew putrid vomitus at a foe.", school="Nature")
+        self.cost = 0
+        self.subtyp = "Poison"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target, **kwargs)
+        failed = self._consume_reagents(user)
+        if failed:
+            return failed
+        if target is None:
+            return "The potion spills harmlessly.\n"
+        health_cost = max(1, int(user.health.max * 0.10))
+        user.health.current = max(1, user.health.current - health_cost)
+        msg = f"{user.name} chokes down rot and loses {health_cost} HP.\n"
+        damage_msg, damage = _simple_spell_damage(user, target, dmg_mod=1.0, typ="Poison")
+        msg += damage_msg
+        if damage > 0 and not target.has_status_protection("Poison") and random.random() < 0.65:
+            target.status_effects["Poison"].active = True
+            target.status_effects["Poison"].duration = max(target.status_effects["Poison"].duration, 4)
+            target.status_effects["Poison"].extra = max(target.status_effects["Poison"].extra, max(1, damage // 3))
+            msg += f"{target.name} is poisoned.\n"
+        return msg
+
+
+class Foretell(Spell):
+    def __init__(self):
+        super().__init__("Foretell", "Read the enemy's next likely action.", school="Time")
+        self.cost = 16
+        self.subtyp = "Time"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().cast(user, target, **kwargs)
+        engine = kwargs.get("battle_engine")
+        if engine is None:
+            return "There is no combat thread to foretell.\n"
+        user.mana.current -= self.cost
+        action = "Attack"
+        stack = getattr(getattr(engine, "enemy", None), "action_stack", []) or []
+        if stack:
+            entry = stack[0]
+            if isinstance(entry, dict):
+                action = str(entry.get("ability") or entry.get("action") or action)
+            else:
+                action = str(entry)
+        return f"{user.name} foresees {engine.enemy.name}'s next action: {action}.\n"
+
+
+class Rewind(Spell):
+    def __init__(self):
+        super().__init__("Rewind", "Return combat to the previous player choice point.", school="Time")
+        self.cost = 40
+        self.subtyp = "Time"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().cast(user, target, **kwargs)
+        engine = kwargs.get("battle_engine")
+        if engine is None:
+            return "There is no combat thread to rewind.\n"
+        user.mana.current -= self.cost
+        return ability_mechanics.restore_rewind_snapshot(engine)
+
+
+class TwistFate(Spell):
+    def __init__(self):
+        super().__init__("Twist Fate", "Guarantee the success of your next action.", school="Time")
+        self.cost = 18
+        self.subtyp = "Time"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, user, **kwargs)
+        user.mana.current -= self.cost
+        user._twist_fate_success = True
+        return f"Fate bends toward {user.name}'s next action.\n"
+
+
+class Wormhole(Spell):
+    def __init__(self):
+        super().__init__("Wormhole", "Send a spell two turns into the future.", school="Time")
+        self.cost = 10
+        self.subtyp = "Time"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target, **kwargs)
+        engine = kwargs.get("battle_engine")
+        spell_name = kwargs.get("spell_name") or kwargs.get("choice")
+        user.mana.current -= self.cost
+        if engine is None:
+            return f"{user.name} opens a wormhole, but it collapses without a battle thread.\n"
+        spellbook = user.spellbook.get("Spells", {})
+        if not spell_name:
+            candidates = [
+                name for name, spell in spellbook.items()
+                if name != self.name and getattr(spell, "subtyp", "") != "Support"
+            ]
+            spell_name = candidates[0] if candidates else None
+        if not spell_name or spell_name not in spellbook or spell_name == self.name:
+            return "No spell is shaped into the wormhole.\n"
+        spell = spellbook[spell_name]
+        if user.mana.current < getattr(spell, "cost", 0):
+            return f"{user.name} does not have enough mana to send {spell_name} through time.\n"
+        user.mana.current -= getattr(spell, "cost", 0)
+        engine.delayed_spells.append({"turns": 2, "caster": user, "spell": spell})
+        return f"{user.name} sends {spell_name} two turns into the future.\n"
+
+
+class Volitation(MovementSpell):
+    def __init__(self):
+        super().__init__("Volitation", "Float above hazardous ground for a short time.", 16)
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        return self.cast_out(user)
+
+    def cast_out(self, game_or_user) -> str:
+        from .classes import ability_mechanics
+
+        user = getattr(game_or_user, "player_char", game_or_user)
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(user, "volitation", 40)
+        return f"{user.name} rises gently above the ground.\n"
+
+
+class EnterWall(MovementSpell):
+    def __init__(self):
+        super().__init__("Enter Wall", "Pass through ordinary walls for a few steps.", 75)
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        return "Enter Wall has no combat use.\n"
+
+    def cast_out(self, game_or_user) -> str:
+        from .classes import ability_mechanics
+
+        user = getattr(game_or_user, "player_char", game_or_user)
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(user, "enter_wall", 8)
+        return f"{user.name} slips partly into the stone.\n"
+
+
+class Invisibility(IllusionSpell):
+    def __init__(self):
+        super().__init__("Invisibility", "Fade from sight for surprise and defense.", 18)
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        return self.cast_out(user)
+
+    def cast_out(self, game_or_user) -> str:
+        from .classes import ability_mechanics
+
+        user = getattr(game_or_user, "player_char", game_or_user)
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(user, "invisibility", 30)
+        return f"{user.name} fades from sight.\n"
+
+
+class _ResistElement(Spell):
+    element = "Fire"
+
+    def __init__(self, name: str, element: str):
+        super().__init__(name, f"Raise {element} resistance for several turns.", school="Abjuration")
+        self.cost = 12
+        self.subtyp = "Support"
+        self.element = element
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, user, **kwargs)
+        user.mana.current -= self.cost
+        effect = user.magic_effects[f"Resist {self.element}"]
+        effect.active = True
+        effect.duration = max(effect.duration, 5)
+        effect.extra = max(float(effect.extra or 0), 0.5)
+        return f"{user.name} gains resistance to {self.element.lower()}.\n"
+
+
+class ResistFire(_ResistElement):
+    def __init__(self): super().__init__("Resist Fire", "Fire")
+
+
+class ResistIce(_ResistElement):
+    def __init__(self): super().__init__("Resist Ice", "Ice")
+
+
+class ResistElectric(_ResistElement):
+    def __init__(self): super().__init__("Resist Electric", "Electric")
+
+
+class ResistWater(_ResistElement):
+    def __init__(self): super().__init__("Resist Water", "Water")
+
+
+class ResistEarth(_ResistElement):
+    def __init__(self): super().__init__("Resist Earth", "Earth")
+
+
+class ResistWind(_ResistElement):
+    def __init__(self): super().__init__("Resist Wind", "Wind")
+
+
+class Corruption2(Spell):
+    replaces = "Corruption"
+
+    def __init__(self):
+        super().__init__(
+            "Corruption 2",
+            "A stronger corruption that damages over time, fed by fiend contracts.",
+            school="Shadow",
+        )
+        self.cost = 22
+        self.subtyp = "Shadow"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics, demonologist
+
+        super().cast(user, target, **kwargs)
+        user.mana.current -= self.cost
+        if target is None:
+            return "Corruption finds no soul to cling to.\n"
+        contracts = ability_mechanics.abyssal_contract_count(
+            user,
+            len(demonologist.ensure_state(user).get("unlocked_contracts", [])),
+        )
+        msg, damage = _simple_spell_damage(user, target, dmg_mod=0.9 + (0.12 * contracts), typ="Shadow")
+        if damage > 0 and "DOT" not in getattr(target, "status_immunity", []):
+            dot = target.magic_effects["DOT"]
+            dot.active = True
+            dot.duration = max(dot.duration, 3 + min(2, contracts // 2))
+            dot.extra = max(int(dot.extra or 0), max(1, damage // 3 + contracts))
+            dot.source = "Corruption"
+            msg += f"{target.name} is deeply corrupted.\n"
+        return msg
+
+
+class Nightmare(Spell):
+    def __init__(self):
+        super().__init__("Nightmare", "Twist fear into shadow damage against the enemy.", school="Shadow")
+        self.cost = 24
+        self.subtyp = "Shadow"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target, **kwargs)
+        user.mana.current -= self.cost
+        msg, damage = _simple_spell_damage(user, target, dmg_mod=1.2, typ="Shadow")
+        if target and damage > 0 and not target.has_status_protection("Sleep"):
+            target.status_effects["Sleep"].active = True
+            target.status_effects["Sleep"].duration = max(target.status_effects["Sleep"].duration, 2)
+            msg += f"{target.name} is trapped in a nightmare.\n"
+        return msg
+
+
+class BadBreath(Skill):
+    def __init__(self):
+        super().__init__("Bad Breath", "Exhale a foul cloud of debilitating statuses.")
+        self.subtyp = "Enemy"
+        self.cost = 32
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().use(user, target, **kwargs)
+        if target is None:
+            return "The foul breath hits nothing.\n"
+        msg = ""
+        for status in ("Poison", "Blind", "Silence"):
+            if target.has_status_protection(status):
+                msg += f"{target.name} is immune to {status.lower()}.\n"
+                continue
+            effect = target.status_effects[status]
+            effect.active = True
+            effect.duration = max(effect.duration, 3)
+            if status == "Poison":
+                effect.extra = max(effect.extra, max(1, user.stats.con // 3))
+            msg += f"{target.name} suffers {status.lower()}.\n"
+        return msg
+
+
 # Spells
 class MagicMissile(Attack):
     """Data-driven (magic_missile.yaml)"""
@@ -2099,9 +2928,9 @@ class Icicle:
 
 
 class IceBlizzard:
-    """Data-driven (ice_blizzard.yaml)"""
+    """Data-driven (blizzard.yaml)"""
     def __new__(cls):
-        return _load_yaml_ability("ice_blizzard.yaml", cls_name="IceBlizzard")
+        return _load_yaml_ability("blizzard.yaml", cls_name="IceBlizzard")
 
 
 class ElectricSpell(Attack):
@@ -2151,6 +2980,32 @@ class Electrocution:
     """Data-driven (electrocution.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("electrocution.yaml", cls_name="Electrocution")
+
+
+class Bolt:
+    """Data-driven (bolt.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("bolt.yaml", cls_name="Bolt")
+
+
+class BallLightning(Spell):
+    def __init__(self):
+        super().__init__("Ball Lightning", "Conjure a ball of electricity that repeatedly zaps the target.", school="Nature")
+        self.cost = 34
+        self.subtyp = "Electric"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target, **kwargs)
+        user.mana.current -= self.cost
+        if target is None:
+            return "The ball lightning crackles without a target.\n"
+        msg = ""
+        for _ in range(3):
+            zap_msg, _damage = _simple_spell_damage(user, target, dmg_mod=0.65, typ="Electric")
+            msg += zap_msg
+            if not target.is_alive():
+                break
+        return msg
 
 
 class WaterJet:
@@ -2266,6 +3121,12 @@ class SoulDrain:
     """Soul spell — data-driven (soul_drain.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("soul_drain.yaml", cls_name="SoulDrain")
+
+
+class PoisonDart:
+    """Nature spell — data-driven (poison_dart.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("poison_dart.yaml", cls_name="PoisonDart")
 
 
 class Petrify:
@@ -2419,6 +3280,90 @@ class WindSpeed:
         return _load_yaml_ability("wind_speed.yaml", cls_name="WindSpeed")
 
 
+class Haste:
+    """Data-driven (haste.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("haste.yaml", cls_name="Haste")
+
+
+class StoneSkin(Spell):
+    def __init__(self):
+        super().__init__("Stone Skin", "Transform your skin into solid rock, reducing melee damage and resisting fire.", school="Nature")
+        self.cost = 21
+        self.subtyp = "Support"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, user, **kwargs)
+        user.mana.current -= self.cost
+        effect = user.magic_effects["Stone Skin"]
+        effect.active = True
+        effect.duration = max(effect.duration, 5)
+        return f"{user.name}'s skin hardens into living stone.\n"
+
+
+class CalmingBreeze(Spell):
+    def __init__(self):
+        super().__init__("Calming Breeze", "Conjure a gentle breeze that grants peaceful focus.", school="Nature")
+        self.cost = 18
+        self.subtyp = "Support"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, user, **kwargs)
+        if user.status_effects["Berserk"].active:
+            return f"{user.name} is too berserk to call a calming breeze.\n"
+        user.mana.current -= self.cost
+        peaceful = user.status_effects["Peaceful"]
+        peaceful.active = True
+        peaceful.duration = max(peaceful.duration, 5)
+        return f"A calming breeze steadies {user.name}.\n"
+
+
+class Windswept(Spell):
+    def __init__(self):
+        super().__init__("Windswept", "Launch the target on a mighty gust of wind.", school="Nature")
+        self.cost = 15
+        self.subtyp = "Wind"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, target or user, **kwargs)
+        user.mana.current -= self.cost
+        engine = kwargs.get("battle_engine")
+        target = target or user
+        if target is user:
+            user.flying = True
+            return f"The wind lifts {user.name} away from danger.\n"
+        chance = min(0.70, 0.25 + (user.stats.wisdom * 0.01))
+        if random.random() < chance:
+            target.health.current = 0
+            if engine is not None:
+                target.windswept_ejected = True
+            return f"{target.name} is swept out of the battle by a mighty gust.\n"
+        msg, damage = _simple_spell_damage(user, target, dmg_mod=1.1, typ="Wind")
+        return msg + (f"{target.name} crashes back down from the gust.\n" if damage > 0 else "")
+
+
+class Regrowth:
+    """Data-driven (regrowth.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("regrowth.yaml", cls_name="Regrowth")
+
+
+class NatureShield(Spell):
+    def __init__(self):
+        super().__init__("Nature Shield", "Conjure life-orbs that intercept attack spells and heal you.", school="Nature")
+        self.cost = 28
+        self.subtyp = "Support"
+
+    def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        super().cast(user, user, **kwargs)
+        user.mana.current -= self.cost
+        shield = user.magic_effects["Nature Shield"]
+        shield.active = True
+        shield.duration = max(shield.duration, 6)
+        shield.extra = max(int(shield.extra or 0), 3)
+        return f"Three living orbs circle {user.name}.\n"
+
+
 # Movement spells
 class Sanctuary:
     """Data-driven (sanctuary.yaml) - return to town, full heal."""
@@ -2520,6 +3465,19 @@ class Hellfire:
         return _load_yaml_ability("hellfire.yaml", cls_name="Hellfire")
 
 
+def ability_classes_for(entry):
+    """Normalize one or more ability classes stored for a single level."""
+    if entry is None:
+        return []
+    if isinstance(entry, (list, tuple)):
+        return list(entry)
+    return [entry]
+
+
+def ability_classes_for_level(source: dict, class_name: str, level: int | str):
+    return ability_classes_for(source.get(class_name, {}).get(str(level)))
+
+
 # Parameters
 skill_dict = {
     "Warrior": {
@@ -2537,8 +3495,11 @@ skill_dict = {
         "21": TruePiercingStrike,
         },
     "Berserker": {
+        "3": FinalAssault,
         "5": MortalStrike2,
-        "20": TripleStrike,
+        "10": MonkeyGrip,
+        "20": MonkeyGrip2,
+        "30": TripleStrike,
         },
     "Paladin": {
         "6": ShieldBlock,
@@ -2546,22 +3507,28 @@ skill_dict = {
         "18": DoubleStrike,
         },
     "Crusader": {
+        "1": Posturing,
         "5": MortalStrike,
         "22": TripleStrike,
         "30": TruePiercingStrike,
         },
     "Lancer": {
-        "1": Jump,
+        "1": [Jump, PolearmProficiency],
+        "12": Zephyrstrike,
         },
     "Dragoon": {
+        "1": PolearmExcellence,
         "5": TruePiercingStrike,
         "10": ShieldBlock,
         },
     "Sentinel": {
         "1": ShieldBlock,
         "3": Goad,
+        "9": Retaliate,
         },
-    "Stalwart Defender": {},
+    "Stalwart Defender": {
+        "18": LastStand,
+        },
     "Mage": {
         "25": ManaShield,
         },
@@ -2606,10 +3573,12 @@ skill_dict = {
         "30": TruePiercingStrike,
     },
     "Summoner": {
-        "1": Summon
+        "1": Summon,
+        "12": HealSummon,
     },
     "Grand Summoner": {
-        "1": Summon2
+        "1": Summon2,
+        "8": RaiseSummon,
     },
     "Footpad": {
         "2": Quickstep,
@@ -2631,6 +3600,7 @@ skill_dict = {
         "20": PoisonStrike,
     },
     "Rogue": {
+        "3": Zephyrstrike,
         "5": SneakAttack,
         "10": SlotMachine,
         "12": TripleStrike,
@@ -2647,6 +3617,7 @@ skill_dict = {
     },
     "Seeker": {
         "1": Cartography,
+        "5": ThirdEye,
         "16": TripleStrike,
         "25": TruePiercingStrike,
         },
@@ -2661,15 +3632,18 @@ skill_dict = {
         },
     "Spell Stealer": {
         "1": StealSpell,
+        "12": StealAsWell,
         "18": ImbueWeapon,
         },
     "Arcane Trickster": {
-        "1": StealSpell,
+        "1": StealSpell2,
+        "4": ThirdEye,
         },
     "Healer": {},
     "Cleric": {
         "6": ShieldSlam,
         "12": ShieldBlock,
+        "24": PiousBounty,
         "27": TrueStrike,
         },
     "Templar": {
@@ -2681,6 +3655,7 @@ skill_dict = {
         "30": TruePiercingStrike,
     },
     "Priest": {
+        "4": DefensiveRegen,
         "10": ManaShield,
         },
     "Archbishop": {
@@ -2693,29 +3668,33 @@ skill_dict = {
         "5": LegSweep,
         "7": TrueStrike,
         "10": PurityBody,
+        "12": Uppercut,
+        "16": Headbutt,
+        "20": DrunkenBrawler,
         "25": Parry,
     },
     "Master Monk": {
         "1": Evasion,
+        "5": Hyakuretsukyaku,
         "10": TripleStrike,
+        "12": SpinningBackElbow,
         "15": PurityBody2,
+        "20": Suplex,
+        "25": Hadouken,
         },
     "Bard": {
         "1": SongValor,
         "2": SongShelter,
         "3": SongRenewal,
         },
-    "Troubadour": {
-        "1": SongValor,
-        "2": SongShelter,
-        "3": SongRenewal,
-        },
+    "Troubadour": {},
     "Pathfinder": {},
     "Druid": {
-        "2": Transform,
+        "1": Transform,
         "15": Transform2,
         "17": MortalStrike,
         },
+    "Archdruid": {},
     "Lycan": {
         "1": Transform3,
         "11": Charge,
@@ -2744,8 +3723,14 @@ skill_dict = {
         "9": TripleStrike,
         "29": TruePiercingStrike,
     },
-    "Ranger": {},
-    "Beast Master": {},
+    "Ranger": {
+        "1": Tame,
+        "10": FavoredEnemy,
+    },
+    "Beast Master": {
+        "5": Cover,
+        "7": Zephyrstrike,
+    },
 }
 
 spell_dict = {
@@ -2787,6 +3772,7 @@ spell_dict = {
     },
     "Wizard": {
         "7": Boost,
+        "16": Volitation,
         "20": Teleport,
     },
     "Warlock": {
@@ -2799,9 +3785,12 @@ spell_dict = {
     },
     "Shadowcaster": {
         "8": ShadowBolt3,
+        "12": Invisibility,
+        "16": Nightmare,
         "18": Desoul,
         },
     "Demonologist": {
+        "8": Corruption2,
         },
     "Spellblade": {
         "20": Reflect,
@@ -2817,15 +3806,26 @@ spell_dict = {
         "8": Silence,
         "12": Enfeeble,
         "15": Reflect,
+        "18": ResistFire,
+        "19": ResistIce,
+        "20": ResistElectric,
+        "21": ResistWater,
+        "22": ResistEarth,
+        "23": ResistWind,
         },
     "Seeker": {
         "1": Teleport,
         "4": ResistAll,
         "10": Sanctuary,
+        "12": Volitation,
+        "14": EnterWall,
         "16": WeakenMind,
         },
-    "Assassin": {},
+    "Assassin": {
+        "10": Invisibility,
+        },
     "Ninja": {
+        "12": Haste,
         "20": Desoul,
         },
     "Spell Stealer": {
@@ -2887,20 +3887,36 @@ spell_dict = {
         "19": Scorch,
         },
     "Druid": {
-        "5": Regen,
+        "1": PoisonDart,
+        "5": StoneSkin,
+        "9": Regrowth,
+        "17": CalmingBreeze,
+        },
+    "Archdruid": {
+        "1": PlantSeeds,
+        "4": Bolt,
+        "6": VilePotion,
+        "8": Windswept,
+        "12": NatureShield,
+        "16": BallLightning,
         },
     "Lycan": {
         "8": Dispel,
         },
     "Diviner": {
         "3": Enfeeble,
+        "8": Haste,
         "14": Dispel,
         "23": Berserk,
         },
     "Astromancer": {
         "1": Vulcanize,
+        "6": Foretell,
         "10": WeakenMind,
         "15": Boost,
+        "18": TwistFate,
+        "22": Wormhole,
+        "28": Rewind,
         },
     "Shaman": {
         "2": Hex,

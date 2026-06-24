@@ -15,8 +15,9 @@ roadmap pass:
 - Pygame UI lives under `src/ui_pygame/`.
 - Ability data is substantially migrated to YAML under
   `src/core/data/abilities/`.
-- P4 content and systems expansion is active; completed P4e class-kit scope and
-  deferred deep-kit gates are tracked in
+- Current P4-P6 content slices are completed; P7 additional improvements are
+  the next active roadmap lane.
+- Completed P4e class-kit scope and deferred deep-kit gates are tracked in
   [docs/P4E_CLASS_KIT_SPECS.md](docs/P4E_CLASS_KIT_SPECS.md).
 - P4f combat architecture and balance decisions are specified in
   [docs/P4F_COMBAT_BALANCE_SPECS.md](docs/P4F_COMBAT_BALANCE_SPECS.md)

@@ -1,0 +1,18 @@
+name: Haste
+type: Support
+subtype: Support
+description: >-
+  Bend the pace of battle around yourself, greatly increasing speed.
+cost: 24
+target_self: true
+effects:
+  - type: dynamic_stat_buff
+    buff_stat: Speed
+    source: caster_stats
+    source_stat: intel
+    lo_divisor: 3
+    hi_divisor: 2
+    duration_stat: intel
+    duration_divisor: 10
+    duration_min: 4
+    apply_to_caster: true
