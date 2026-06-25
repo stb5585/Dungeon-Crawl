@@ -1,5 +1,5 @@
 """
-Combat module for Dungeon Crawl.
+Combat module for The Forsaken Tenet.
 
 This module contains the core combat mechanics, including:
 - Action queue system for turn-based combat

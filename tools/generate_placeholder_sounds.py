@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate simple placeholder sound effects for Dungeon Crawl.
+Generate simple placeholder sound effects for The Forsaken Tenet.
 
 Creates basic beep/tone sounds for development until proper sound assets are added.
 """
@@ -183,7 +183,7 @@ def generate_all_sounds(output_dir: Path):
 def main():
     """Generate placeholder sound effects."""
     parser = argparse.ArgumentParser(
-        description="Generate placeholder sound effects for Dungeon Crawl"
+        description="Generate placeholder sound effects for The Forsaken Tenet"
     )
     parser.add_argument(
         "--output",

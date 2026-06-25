@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Entry point for Dungeon Crawl - Curses (Terminal) Version
+Entry point for The Forsaken Tenet - Curses (Terminal) Version
 Run the game with: python game_curses.py
 """
 

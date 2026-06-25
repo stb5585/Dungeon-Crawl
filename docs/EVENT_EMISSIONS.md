@@ -151,7 +151,7 @@ damage_events = bus.get_history(EventType.DAMAGE_DEALT)
 
 ## Current Follow-Up Areas
 
-- P5 audio routing now has weapon identity and attack-source metadata for
+- Current audio routing has weapon identity and attack-source metadata for
   source-specific weapon sounds such as `laser_beam.wav`.
 - Item-use events expose item type/subtype metadata for scroll and recovery-item
   audio routing.

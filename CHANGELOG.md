@@ -1,6 +1,196 @@
 # Dungeon Crawl - Changelog
 
-## [Unreleased] - 2026-05-06
+## [Unreleased] - 2026-06-24
+
+### Roadmap Completion Consolidation
+
+This entry consolidates completed roadmap work from `docs/DEVELOPMENT_ROADMAP.md`
+and completed roadmap-sidecar notes, including the retired
+`docs/P3_EFFECTS_AUDIT.md`. The active roadmap now tracks only current,
+deferred, or decision-gated work.
+
+#### P0 - Current Playtest Regressions And Trust
+- Fixed the first-key combat input regression by pumping pygame events before
+  guarded physical-key reads.
+- Re-ran focused playtest coverage for main-menu/dungeon music transitions,
+  Character Menu Attack/Defense display, Enfeeble zero-value reporting,
+  Half Giant early balance, Old Key prompts, audio diagnostics, and
+  location/combat music routing.
+- Recorded the P0 verification pass in roadmap and playtest docs.
+
+#### P1 - Pygame UX Polish
+- Completed the modern Character Menu acceptance pass: tabbed character and
+  equipment views, portrait/identity presentation, wider stat panels,
+  resistance/weakness grouping, paper-doll equipment layout, Helmet support,
+  dual-wield Attack display, selected-item artwork, item detail popups, and
+  town/dungeon default routing.
+- Replaced shop sub-type selection with tabbed buy-list browsing for town shops
+  and secret-shop grouped categories.
+- Added combat visual polish: procedural hit/spell/skill overlays, floating
+  damage/healing text, enemy recoil, low-HP danger vignette, compact bottom
+  command panels, paged wrapped combat logs, compact enemy telegraph warnings,
+  boss-detail suppression, and improved Defend presentation.
+- Replaced the basic pygame naming prompt with a visual naming screen showing
+  portrait, sex, race, and class.
+- Reworked enemy presentation around approved transparent combat sprites,
+  compact tokens, per-enemy scale data, target-panel rendering, and boss
+  navigation figures.
+- Completed large selected-item artwork coverage for regular, key, and special
+  inventory presentation contexts.
+- Completed the dungeon rendering art pass: manifest-driven texture loading,
+  painterly projected dungeon textures, decorative tile hooks, deterministic
+  torch/sconce overlays, richer Tiled JSON layer handling, chunked/infinite map
+  support, funhouse boundary-wall rendering, and authoring-tile stability.
+
+#### P2 - Renderer And Exploration Presentation
+- Preserved and expanded structural-depth renderer coverage for center walls,
+  side corridors, floor/ceiling/wall slot routing, side doors, Ore Vault door
+  states, defeated-boss visuals, springs, chests, and side-special placement.
+- Added floor-bound presentation for Rotator and active FunhouseTeleporter
+  tiles.
+- Added visited-only FakeWall/Fake Path translucent wall presentation without
+  revealing hidden fake walls.
+- Smoothed the pygame load progress popup with time-based interpolation while
+  preserving the existing load flow and test hooks.
+
+#### P3 - Core Refactoring And Test Confidence
+- Completed the effects audit previously tracked in `docs/P3_EFFECTS_AUDIT.md`.
+- Updated stale primitive effect contracts, including `DamageEffect`,
+  `HealEffect`, result bucket writes, and type-only imports.
+- Added result-shape and lifecycle coverage for data-driven spells, weapon
+  skills, legacy `Spell`/`Skill` instances, passive placeholder power-ups, and
+  all built-in YAML ability files.
+- Aligned Stun, Silence, Poison, burn DOT, Bleed, Regen, Mana Shield,
+  Crusader shield, reflected spell, Fire/Ice legacy-vs-YAML, healing, Smite,
+  Sleep/Prone, enemy priority, enemy item, random enemy override, forced enemy
+  debug, quest completion, class progression, loot helper, enemy catalog, and
+  character defense contracts with current runtime behavior.
+- Added targeted typed signatures/docstrings around player quests, class
+  promotion rules, legacy ability entry points, item use overrides,
+  data-driven spell wrappers, enemy helpers, loot helpers, and core character
+  state aliases.
+- Audited explicit `pytest.mark.skip` / `xfail` usage in the focused test tree
+  and found no remaining P3 blockers.
+- Deferred final passive Power Up gameplay effects, item TODOs, content
+  expansion placeholders, and future helper extraction to later evidence-backed
+  specs.
+
+#### P4 - Content And Systems Expansion
+- Completed P4a immediate content and UX polish: town/tavern/Sergeant/Warp
+  Point hints, equipment hand details, inventory sort persistence, combat-log
+  color improvements, Smoke Screen tuning and visuals, status icon artwork,
+  load popup lifecycle fixes, Vision suppression for bosses/Waitress, enemy
+  HP/MP labels when details are visible, and limited ability-specific visuals.
+- Completed P4b quest and realm scope: Rookie Mistake polish, Realm of Cambion
+  portal/rotator/anti-magic/Merzhin flow, Cambion flavor and reactions, town
+  presentation hooks, Bring Him Home follow-up, Dragoon dragon route, class
+  ring activation systems, legacy class-kit hooks, Vesperion/Voluntas plot
+  direction, Liminal Gap hub and Guardian trial shells, clue aggregation,
+  Seventh Seat/Voluntas/Acolyte/Reflection route, true-final re-entry,
+  Guardian counters, true-final victory resolution, ending, and tavern
+  epilogue.
+- Completed P4c Bestiary scope: per-save seen/defeated/detailed records,
+  Character Menu Bestiary UI, detail visibility rules, stable practical enemy
+  details, completion counts, coarse encounter locations, and broad drop
+  labels.
+- Completed P4d lightweight equipment foundation: shared slot/eligibility
+  helpers, buy-to-equip flows for pygame and curses shops, multi-copy/dual-wield
+  handling, current item foundation validation, and stat-themed display-name
+  confirmation.
+- Completed P4e class-mechanics foundation: Grandmaster disciplines, Demonologist
+  contracts, Archdruid attunement, legacy Class Ring awakening flows, Paladin
+  vows and Crusader affirmation, Dragoon dragon quest route, Astromancer rune
+  foundation, Shaman/Soulcatcher Totem foundation, and related save/UI/test
+  coverage.
+- Completed P4f combat architecture and balance design-gate slice. No gameplay rules
+  changed in that slice; future combat and tuning changes are gated by
+  `docs/COMBAT_BALANCE_DESIGN_GATES.md`.
+
+#### P5 - Audio Content Completion
+- Completed the non-asset audio-routing and event-payload readiness slice:
+  weapon/action metadata, `laser_beam.wav`, `bird_attack_sound.wav`, scroll cast
+  routing, and potion/elixir recovery cues.
+- Deferred final SFX and music replacement to the later asset-content pass.
+
+#### P6 - Expand Enemies, Items, And Abilities
+- Added `Giant` and `Owlbear` to the level 3/4 encounter catalog.
+- Added `Helm of Rostam`, reshuffled the medium helmet progression, retained
+  `Visored Sallet` for legacy compatibility, and added reagent items `Acorn`,
+  `Vine Seed`, `Fungus Spore`, and `Hemlock Root`.
+- Added approved combat/item artwork and sprite/icon/render mappings for the
+  new enemies, helmet, and reagents.
+- Added passive entries and first-pass hooks for `Zephyrstrike`, `Retaliate`,
+  `Defensive Regen`, `Posturing`, `Third Eye`, and `Pious Bounty`.
+- Added Druid/Archdruid nature spells and straightforward data-driven spell
+  entries for poison, lightning, stone, wind, growth, nature shield, and haste
+  effects.
+- Completed the current ability mechanics slice: Berserker and Dragoon martial
+  abilities, Stalwart Defender and Monk/Master Monk strikes, Ranger `Tame` and
+  `Favored Enemy`, Spell Stealer/Arcane Trickster theft follow-ups,
+  Archdruid reagent/Growth abilities, Astromancer time spells,
+  Seeker/Wizard movement and illusion spells, summon support, elemental
+  resistance spells, advanced one-use sheet music, dark spells, enemy-only
+  `Bad Breath`, and current second-promotion power-up hooks.
+
+#### Resolved Roadmap Archive Cleanup
+- Consolidated recent completed UI improvements that were previously parked in
+  the roadmap archive: combat HUD class-focus panel, Totem combat presentation,
+  additional PNG status icons, equipment resistance previews, Bestiary detail
+  reveal and completion summaries, compact charge telegraphs, danger vignette,
+  enlarged/re-anchored minimap, Alchemist/Jeweler tabbed buy flows, enemy combat
+  sprite warmup, Old Key reward tuning, staged SFX routing, dungeon music
+  aliasing, location/context music routing, and long shop-list paging.
+- Consolidated recent completed bug fixes that were previously parked in the
+  roadmap archive: torch/sconce overlay restoration, resistance preview context,
+  Magic Pendant buff reporting, Bestiary lazy detail loading and Mimic artwork,
+  Mirror Image duplicate interception, Mana Shield nonpositive-damage handling,
+  Slot Machine logging, Regen Dispel, combat post-turn log flushing, combat-log
+  wrapping cache, side-opening decorative prop grounding, Hex log coloring,
+  action-menu refresh after Silence expiry, charged-skill resolution through
+  Silence, Health Potion combat heal caps, Jester AI/storage/event ordering,
+  Slot Machine DOT metadata/icons, generic DOT icons, Lick status filtering,
+  town-return background cleanup, stale music cleanup, first-key guarded input,
+  Jump forced-action cleanup, Berserk/Jump ordering, duration-1 incapacitation,
+  equipment submenu input guards, unstoppable Jump behavior, side-door textures,
+  two-handed shield unequip, initiative-hidden turn indicator, side-view chest
+  orientation, charge log wrapping, enemy sprite fallback paths, Character Menu
+  stat display, and zero-value Enfeeble filtering.
+
+#### Consolidated Commit Messages
+- `b086723` - Fix guarded input first-key handling
+- `6194924` - Document completed P0 verification
+- `51bba63` - Complete pygame character and item presentation pass
+- `d46ceba` - Implement helmet equipment and standard character screen
+- `e486c9a` - Complete combat polish pass
+- `a08425e` - Finalize P1 dungeon rendering art
+- `6d16c17` - Advance P2 renderer presentation polish
+- `66fa9f1` - Close P2 renderer presentation pass
+- `1bf7414` - Start P3 effects primitive cleanup
+- `3f3af3a` - Add P3 ability result contracts
+- `477d65d` - Expand P3 ability catalog coverage
+- `6483f1e` - Cover status tick ordering
+- `fc31792` - Share mana shield defense handling
+- `18967e3` - Share instant heal application helper
+- `348d681` - Close P3 roadmap work
+- `a77fce6` - Organize P4 roadmap tracks
+- `61180bc` - Complete P4a and polish Rookie Mistake
+- `3d1895b` - Audit Realm of Cambion flow
+- `08898aa` - Add P4b town presentation hooks
+- `96edc4f` - Add Bring Him Home follow-up scene
+- `22ff50e` - Add Bestiary MVP
+- `424d33c` - Document Forsaken Tenet story direction
+- `5778ea0` - Implement class ring activation systems
+- `cb943c4` - Implement Paladin vows and Crusader ring affirmation
+- `e20d843` - Implement Dragoon dragon quest route
+- `3b36188` - Implement legacy class ring kits
+- `8e8d1cf` - Close P4b quest and finale route
+- `bcd17fd` - Close P4c bestiary scope
+- `1f0172d` - Add P4d equipment foundation
+- `f886726` - Implement P4e class mechanic foundations
+- `7184a61` - Clean up roadmap and class kit docs
+- `bd6f4d5` - Add P4f combat balance spec
+- `3eaedf5` - Complete P5 non-asset audio routing
+- `1487b5e` - Complete P6 content and ability mechanics
 
 ### Changed
 
@@ -30,29 +220,29 @@
   - 16 simultaneous sound channels
   - Sound effect caching for performance
   - Graceful handling of missing audio files
-  
+
 - **Event-driven sound effects**
   - Combat sounds: hit, heavy_hit, critical_hit, victory, defeat, flee
   - Spell sounds: cast, fire, ice, lightning, heal, buff, debuff
   - Status effects: poison, stun, burn
   - Character events: heal, level_up, player_death, enemy_death
   - UI sounds: menu_select, menu_confirm, menu_cancel
-  
+
 - **Background music support**
   - Looping music with fade in/out transitions
   - Separate music directory structure
   - Designed for location-based and combat music
-  
+
 - **Volume controls**
   - Independent master, SFX, and music volume
   - Enable/disable sound system
   - Volume ranges from 0.0 to 1.0
-  
+
 - **Development tools**
   - `tools/generate_placeholder_sounds.py` - Creates simple beep sounds for testing
   - Generates 30+ sound effects as sine wave tones
   - Requires numpy and scipy for tone generation
-  
+
 - **Documentation**
   - `docs/SOUND_SYSTEM.md` - Comprehensive sound system guide
   - `assets/sounds/README.md` - Sound effects catalog
@@ -77,15 +267,15 @@
   - Moved: companions.py, enemies.py, items.py, map_tiles.py, player.py
   - Moved: races.py, save_system.py, town.py, tutorial.py
   - Kept: combat/ and events/ subdirectories
-  
+
 - **src/ui_curses/** - Terminal UI implementation
   - Moved: game.py, menus.py, town.py from root
   - Clean separation from game logic
-  
+
 - **src/ui_pygame/** - GUI implementation (Pygame)
   - Organized: gui/ directory with all pygame components
   - Created: presentation/pygame_presenter.py for event-driven UI
-  
+
 - **_old_code_archive/** - Archived original files
   - Git-ignored for safety during reorganization
   - Original file structure preserved

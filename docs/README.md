@@ -7,18 +7,19 @@ only as historical context.
 ## Active Planning
 
 - [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - current status,
-  completed summaries, active P7 backlog, and deferred decisions.
-- [P4E_CLASS_KIT_SPECS.md](P4E_CLASS_KIT_SPECS.md) - completed P4e class-kit
-  foundation scope and deferred one-page deep-kit spec gates.
-- [P4F_COMBAT_BALANCE_SPECS.md](P4F_COMBAT_BALANCE_SPECS.md) - P4f combat
-  architecture and balance spec gates, current behavior decisions, and report
+  active P7 backlog, deferred decisions, and spec gates. Completed roadmap
+  history now lives in [../CHANGELOG.md](../CHANGELOG.md).
+- [CLASS_KIT_DESIGN_GATES.md](CLASS_KIT_DESIGN_GATES.md) - shipped class-kit
+  baselines, scope boundaries, and deferred one-page deep-kit gates.
+- [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
+  architecture, balance decision gates, current behavior decisions, and report
   plan.
 - [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - manual validation checklist
   for class mechanics, rendering, UI, saves, audio, and content flows.
-- [MAIN_STORYLINE_PLOT_SPEC.md](MAIN_STORYLINE_PLOT_SPEC.md) - Vesperion,
-  Voluntas, Liminal Gap, Reflection, and true-final story direction.
-- [CLASS_RING_ACTIVATION_SPEC.md](CLASS_RING_ACTIVATION_SPEC.md) - class-ring
-  activation flows and legacy second-promotion mechanics.
+- [STORY_AND_ENDGAME_DESIGN.md](STORY_AND_ENDGAME_DESIGN.md) - Vesperion,
+  Voluntas, Liminal Gap, Reflection, and true-final story design.
+- [CLASS_RING_SYSTEM.md](CLASS_RING_SYSTEM.md) - class-ring activation flows,
+  persistent state expectations, and legacy second-promotion mechanics.
 
 ## Current Implementation References
 
@@ -32,8 +33,6 @@ only as historical context.
   event-emission reference.
 - [PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md) - promotion
   spell/skill transition rules.
-- [P3_EFFECTS_AUDIT.md](P3_EFFECTS_AUDIT.md) - final P3 effects migration
-  audit and cleanup status.
 
 ## Historical Or Superseded Notes
 

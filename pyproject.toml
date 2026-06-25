@@ -3,23 +3,21 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dungeon-crawl"
+name = "the-forsaken-tenet"
 version = "2.0.0"
-description = "A terminal-based dungeon crawler RPG with roguelike elements"
+description = "A dungeon-crawl RPG with terminal and Pygame frontends"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = "MIT"
 authors = [
     {name = "stb5585"}
 ]
-keywords = ["game", "rpg", "dungeon-crawler", "roguelike", "terminal"]
+keywords = ["game", "rpg", "dungeon-crawler", "roguelike", "pygame", "terminal"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "Topic :: Games/Entertainment :: Role-Playing",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 
@@ -43,6 +41,9 @@ Repository = "https://github.com/stb5585/Dungeon-Crawl"
 Issues = "https://github.com/stb5585/Dungeon-Crawl/issues"
 
 [project.scripts]
+forsaken-tenet-curses = "game_curses:main"
+forsaken-tenet-pygame = "game_pygame:main"
+# Backward-compatible aliases for existing local/dev workflows.
 dungeon-crawl-curses = "game_curses:main"
 dungeon-crawl-pygame = "game_pygame:main"
 
@@ -88,7 +89,7 @@ exclude_lines = [
 
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py312']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -106,7 +107,7 @@ line_length = 100
 skip_gitignore = true
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

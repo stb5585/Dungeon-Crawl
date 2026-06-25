@@ -50,7 +50,7 @@ Use map tile classes for gameplay/world placement:
 - `BrokenGearTile`
 - `FunhouseBoundaryWall`
 
-Decorative cave-path tiles are traversable in this P1 pass. They provide rendering and message hooks only; harvesting, rubble destruction, poison/fungus effects, crystal mana behavior, and salvage mechanics are future gameplay work.
+Decorative cave-path tiles are traversable in the current scope. They provide rendering and message hooks only; harvesting, rubble destruction, poison/fungus effects, crystal mana behavior, and salvage mechanics are future gameplay work.
 
 Tiled JSON maps should put gameplay tiles on a layer named `Tiles`, or mark the gameplay tile layer with a `gameplay=true` property. Decorative/object-only layers should be marked `decorative=true` when they are not intended to create gameplay tiles.
 

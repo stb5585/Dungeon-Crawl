@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains the automated regression suite for Dungeon Crawl.
+This directory contains the automated regression suite for The Forsaken Tenet.
 
 Current snapshot:
 - Last full-suite run confirmed by the user: `1398` tests passing

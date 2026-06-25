@@ -1,5 +1,5 @@
 """
-The main module to run the Dungeon Crawl game (Curses version).
+The main module to run The Forsaken Tenet game (Curses version).
 """
 
 import sys

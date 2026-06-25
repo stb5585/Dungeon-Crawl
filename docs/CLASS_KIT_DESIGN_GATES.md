@@ -1,8 +1,9 @@
-# P4e Class Kit Specs
+# Class Kit Design Gates
 
-This document records the completed P4e class-mechanics foundation and the
-deferred one-page gates for deeper class-kit work. Balance validation lives in
-`PLAYTEST_CHECKLIST.md`.
+This is the durable class-kit design gate reference. It records shipped
+class-mechanics baselines, scope boundaries, and the one-page decision gates
+required before deeper class-kit work moves into implementation. Balance
+validation lives in `PLAYTEST_CHECKLIST.md`.
 
 ## Review Baseline
 

@@ -1,8 +1,9 @@
-# Sound System Documentation
+# Sound System
 
 ## Overview
 
-The Dungeon Crawl sound system provides immersive audio feedback through sound effects and background music. It integrates seamlessly with the game's event-driven architecture.
+The Forsaken Tenet sound system provides audio feedback through sound effects
+and background music. It integrates with the game's event-driven architecture.
 
 ## Architecture
 
@@ -157,10 +158,10 @@ For development without proper sound assets:
 
 ```bash
 # Generate all placeholder sound effects
-python3 tools/generate_placeholder_sounds.py
+./.venv/bin/python tools/generate_placeholder_sounds.py
 
 # Specify custom output directory
-python3 tools/generate_placeholder_sounds.py --output path/to/sounds
+./.venv/bin/python tools/generate_placeholder_sounds.py --output path/to/sounds
 ```
 
 **Note**: Placeholder sounds are simple sine wave tones. Replace with professional sound effects for production.
@@ -222,11 +223,4 @@ Default settings (configured in `SoundManager.__init__`):
 - Use OGG format which supports better looping
 - Check `loops` parameter is set to -1
 
-## Future Enhancements
-
-- [ ] Spatial audio (positional sound based on enemy position)
-- [ ] Dynamic music transitions (combat intensity)
-- [ ] Sound effect randomization (multiple variants)
-- [ ] Audio ducking (auto-lower music during combat)
-- [ ] Sound profiles (presets for different preferences)
-- [ ] Per-entity sound customization
+Future audio enhancements are tracked in `DEVELOPMENT_ROADMAP.md`.

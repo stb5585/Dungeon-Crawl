@@ -1,5 +1,5 @@
 """
-Analytics Module for Dungeon Crawl
+Analytics module for The Forsaken Tenet.
 
 Provides tools for combat simulation, balance analysis, and metrics collection.
 """

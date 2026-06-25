@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dungeon Crawl Development Tools CLI
+The Forsaken Tenet Development Tools CLI
 
 This script provides command-line tools for development tasks:
 - Balance testing and simulation
@@ -207,7 +207,7 @@ def generate_sample_abilities(args):
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='Dungeon Crawl Development Tools',
+        description='The Forsaken Tenet Development Tools',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

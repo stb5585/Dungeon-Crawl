@@ -1,5 +1,5 @@
 """
-Event System for Dungeon Crawl
+Event system for The Forsaken Tenet.
 
 This module provides an event-driven architecture to decouple game logic from presentation.
 Events are emitted by the game engine and can be consumed by different presenters

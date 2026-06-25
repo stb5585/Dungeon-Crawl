@@ -1,4 +1,8 @@
-# Class Ring Activation Spec
+# Class Ring System
+
+This is the durable Class Ring system reference. It records shipped activation
+flows, class-specific awakening rules, persistent state expectations, and
+remaining tuning or presentation follow-up.
 
 ## Current Implementation Status
 

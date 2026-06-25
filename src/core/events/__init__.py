@@ -1,5 +1,5 @@
 """
-Events Module for Dungeon Crawl
+Events module for The Forsaken Tenet.
 
 Provides event-driven architecture for decoupling game logic from presentation.
 """

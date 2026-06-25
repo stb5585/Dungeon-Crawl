@@ -81,12 +81,12 @@ Edit the script to specify:
 Both tools expect to be run from the project root directory. If you need to run from elsewhere:
 
 ```bash
-cd /path/to/Dungeon-Crawl
+cd /path/to/the-forsaken-tenet
 ./.venv/bin/python tools/dev_tools.py [command]
 ```
 
 Or adjust Python path:
 ```python
 import sys
-sys.path.insert(0, '/path/to/Dungeon-Crawl')
+sys.path.insert(0, '/path/to/the-forsaken-tenet')
 ```

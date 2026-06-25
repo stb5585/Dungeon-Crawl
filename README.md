@@ -1,8 +1,8 @@
 # The Forsaken Tenet
 
 The Forsaken Tenet is a Python 3.12+ dungeon-crawl RPG with terminal and
-Pygame frontends. Code and some legacy docs may still refer to the project as
-Dungeon Crawl until the rename cleanup is finished.
+Pygame frontends. Some legacy module names and archived documents still refer
+to the earlier Dungeon Crawl working title.
 
 ## Current Status
 
@@ -17,10 +17,10 @@ roadmap pass:
   `src/core/data/abilities/`.
 - Current P4-P6 content slices are completed; P7 additional improvements are
   the next active roadmap lane.
-- Completed P4e class-kit scope and deferred deep-kit gates are tracked in
-  [docs/P4E_CLASS_KIT_SPECS.md](docs/P4E_CLASS_KIT_SPECS.md).
-- P4f combat architecture and balance decisions are specified in
-  [docs/P4F_COMBAT_BALANCE_SPECS.md](docs/P4F_COMBAT_BALANCE_SPECS.md)
+- Completed class-kit scope and deferred deep-kit gates are tracked in
+  [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md).
+- Combat architecture and balance decisions are specified in
+  [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
   before gameplay or balance rules change.
 - Older phase/migration docs are retained for historical context, not as the
   current backlog.
@@ -82,7 +82,7 @@ src/
   ui_curses/     Terminal UI
   ui_pygame/     Pygame UI, assets, renderer, menus, combat view
 
-docs/            Roadmap, active specs, implementation notes, archive
+docs/            Roadmap, durable design references, implementation notes, archive
 map_files/       Dungeon maps
 tools/           Development, asset, audio, and balance utilities
 tests/           Regression suite
@@ -96,10 +96,10 @@ game_pygame.py   Pygame entry point
 Start with [docs/README.md](docs/README.md). The most useful current docs are:
 
 - [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md)
-- [docs/P4E_CLASS_KIT_SPECS.md](docs/P4E_CLASS_KIT_SPECS.md)
-- [docs/P4F_COMBAT_BALANCE_SPECS.md](docs/P4F_COMBAT_BALANCE_SPECS.md)
-- [docs/CLASS_RING_ACTIVATION_SPEC.md](docs/CLASS_RING_ACTIVATION_SPEC.md)
-- [docs/MAIN_STORYLINE_PLOT_SPEC.md](docs/MAIN_STORYLINE_PLOT_SPEC.md)
+- [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md)
+- [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
+- [docs/CLASS_RING_SYSTEM.md](docs/CLASS_RING_SYSTEM.md)
+- [docs/STORY_AND_ENDGAME_DESIGN.md](docs/STORY_AND_ENDGAME_DESIGN.md)
 - [docs/PLAYTEST_CHECKLIST.md](docs/PLAYTEST_CHECKLIST.md)
 - [docs/ENEMY_VISUAL_SYSTEM.md](docs/ENEMY_VISUAL_SYSTEM.md)
 - [docs/DUNGEON_TILE_ART.md](docs/DUNGEON_TILE_ART.md)

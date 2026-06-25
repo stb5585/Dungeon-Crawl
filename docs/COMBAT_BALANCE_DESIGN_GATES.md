@@ -1,7 +1,7 @@
-# P4f Combat Balance Specs
+# Combat Balance Design Gates
 
-This document records the P4f combat architecture and balance planning slice.
-P4f is spec-first: it documents current behavior, locks current-slice defaults,
+This is the durable combat architecture and balance decision reference. It
+documents current behavior, locks current defaults, records report questions,
 and gates future combat or balance changes behind explicit one-page specs.
 
 ## Review Baseline
@@ -41,13 +41,13 @@ and gates future combat or balance changes behind explicit one-page specs.
   delta options.
 - Known tooling issue: `./.venv/bin/python tools/run_balance_suite.py --help`
   currently fails because one argparse help string contains an unescaped `%`.
-  Do not treat that failure as a P4f gameplay issue; fix it only in a tooling
-  cleanup slice.
+  Do not treat that failure as a combat gameplay issue; fix it only in a
+  tooling cleanup slice.
 
 ## Current-Slice Decisions
 
 - Keep existing random-roll mechanics. Do not convert rolls to DnD-style dice
-  notation in this P4f spec pass.
+  notation without a promoted combat-balance decision.
 - Keep current Silence behavior: `abilities_suppressed()` blocks spells,
   skills, summons, and other ability-like actions while Silence or anti-magic
   is active.
@@ -140,7 +140,7 @@ tests, and balance assumptions.
 Docs-only spec changes should run:
 
 ```bash
-rg -n "P4f|P4F_COMBAT_BALANCE_SPECS|Combat Architecture And Balance|Needs Exploration|Needs Design Decision" docs README.md
+rg -n "COMBAT_BALANCE_DESIGN_GATES|Combat Balance Design Gates|Needs Exploration|Needs Design Decision" docs README.md
 git diff --check
 ```
 

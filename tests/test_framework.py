@@ -1,5 +1,5 @@
 """
-Test Framework for Dungeon Crawl - Quick Testing Utilities
+Test framework for The Forsaken Tenet - quick testing utilities.
 
 This module provides utilities to quickly set up game states for testing
 without needing to play through the entire game.

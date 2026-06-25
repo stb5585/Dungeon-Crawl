@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Entry point for Dungeon Crawl - Pygame GUI Version
+Entry point for The Forsaken Tenet - Pygame GUI Version
 Run the game with: python game_pygame.py
 """
 

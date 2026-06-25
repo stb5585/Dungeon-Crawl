@@ -1,9 +1,13 @@
-# Main Storyline Plot Spec
+# Story And Endgame Design
 
 Status: `Initial Spec, Vesperion Boss Concept, False-Final, Liminal Hub Shell, Six Lightweight Guardian Trials, Liminal Clue Review, Trial Consequences, Endgame Story Route, Reflection Combat Shell, Reflection Path Mirroring, Reflection Retry Tracking, Vesperion Guardian Counters, True-Final Victory, Ending Sequence, And Tavern Epilogue Implemented`
 
-This spec defines the main plot direction for **The Forsaken Tenet** after the
-Six Relics arc. It replaces the old Devil-centered final reveal with Vesperion,
+This is the durable story and endgame design reference for **The Forsaken
+Tenet** after the Six Relics arc. It records shipped story canon, route gates,
+implementation interfaces, regression targets, and optional polish that should
+stay aligned with the roadmap.
+
+The current canon replaces the old Devil-centered final reveal with Vesperion,
 the fallen Guardian of `Voluntas`.
 
 ## Core Direction

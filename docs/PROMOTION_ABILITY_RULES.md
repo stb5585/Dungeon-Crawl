@@ -121,7 +121,7 @@ Both versions use the same underlying `apply_promotion_ability_rules()` function
 - `promoted_player` (Character): The character being promoted
 - `new_class_name` (str): Name of the new class being promoted to
 
-**Returns**: 
+**Returns**:
 - `str`: Message describing changes, empty string if none
 
 **Behavior**:
@@ -133,9 +133,5 @@ Both versions use the same underlying `apply_promotion_ability_rules()` function
 
 **Note**: Spells are created on-demand from the abilities module if not currently in the spellbook.
 
-## Future Enhancements
-
-- [ ] Add rules for remaining promotion transitions (Bard, Troubadour, etc.)
-- [ ] Add spell/skill *gain* rules in addition to loss
-- [ ] Allow class-specific variants (e.g., "keep half your spells" logic)
-- [ ] Track ability history for potential future mechanic (restore if reverting)
+Future promotion-transition expansions are tracked in
+`DEVELOPMENT_ROADMAP.md`.

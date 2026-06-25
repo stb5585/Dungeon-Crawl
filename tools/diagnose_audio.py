@@ -9,7 +9,7 @@ import subprocess
 sys.path.insert(0, '.')
 
 print("="*60)
-print("DUNGEON CRAWL - SOUND DIAGNOSTIC TOOL")
+print("THE FORSAKEN TENET - SOUND DIAGNOSTIC TOOL")
 print("="*60)
 
 # Check 1: System audio configuration
@@ -45,7 +45,7 @@ else:
     print("  ? No system test sound found")
 
 # Check 3: Test our generated sounds
-print("\n[3] Testing Dungeon Crawl sound files...")
+print("\n[3] Testing The Forsaken Tenet sound files...")
 sound_file = "src/ui_pygame/assets/sounds/menu_select.wav"
 if os.path.exists(sound_file):
     print(f"  Found: {sound_file}")
@@ -75,7 +75,7 @@ if os.path.exists(sound_file):
         print("  ⏱ Playback timed out")
 else:
     print(f"  ✗ Sound file not found: {sound_file}")
-    print("    Run: python3 tools/generate_placeholder_sounds.py")
+    print("    Run: ./.venv/bin/python tools/generate_placeholder_sounds.py")
 
 # Check 4: Pygame audio test
 print("\n[4] Testing Pygame mixer...")

@@ -128,7 +128,7 @@
 - [ ] Unlock Warp Point while a Footpad-branch Class Ring job is available.
   - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
 
-### Combat Architecture And Balance (P4f)
+### Combat Architecture And Balance
 - [ ] Run the base-tier canonical balance report.
   - Command: `./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337`
   - Expected: The report completes, prints class/enemy win-rate rows, and highlights no command/runtime failure unrelated to combat balance.
@@ -150,7 +150,7 @@
 - [ ] Validate enemy item usage after stealing or otherwise removing a combat consumable.
   - Expected: The enemy no longer selects the missing item and falls back to another valid action without crashing or duplicating the item.
 - [ ] Inspect start-of-turn status tick defeats.
-  - Expected: Poison, DOT, Bleed, or Doom can defeat the active actor before their action, matching the current P4f spec baseline.
+  - Expected: Poison, DOT, Bleed, or Doom can defeat the active actor before their action, matching the current combat-balance design baseline.
 - [ ] Apply Silence to a character with spells, skills, and summons available.
   - Expected: Silence suppresses spells, skills, summons, and ability-like actions according to the current `abilities_suppressed()` behavior.
 - [ ] Review the known balance-suite help issue before relying on `--help`.
