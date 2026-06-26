@@ -118,6 +118,11 @@ class SceneRenderer:
                 base_texture_key=center_ceiling_key,
                 overrides=desired_overrides,
             )
+            self._collect_stairs_up_ceiling_void_override(
+                visible_depth=visible_depth,
+                max_visible_depth=max_visible_depth,
+                overrides=desired_overrides,
+            )
             if not side_doors_hidden_by_center_wall:
                 self._collect_side_wall_slot_override(
                     depth=visible_depth.depth,
@@ -138,6 +143,32 @@ class SceneRenderer:
                 last_floor_theme_tile = visible_depth.source_tile
 
         self.textures.set_scene_surface_slot_overrides(desired_overrides)
+
+    def _collect_stairs_up_ceiling_void_override(
+        self,
+        visible_depth,
+        max_visible_depth: int,
+        overrides: dict[str, str],
+    ) -> None:
+        if (
+            visible_depth.depth == 1
+            and visible_depth.source_tile is not None
+            and "StairsUp" in type(visible_depth.source_tile).__name__
+        ):
+            self._set_center_ceiling_void_override(visible_depth.depth + 1, max_visible_depth, overrides)
+
+        if visible_depth.center is not None and "StairsUp" in type(visible_depth.center).__name__:
+            self._set_center_ceiling_void_override(visible_depth.depth + 1, max_visible_depth, overrides)
+
+    @staticmethod
+    def _set_center_ceiling_void_override(
+        depth: int,
+        max_visible_depth: int,
+        overrides: dict[str, str],
+    ) -> None:
+        if depth < 1 or depth > max_visible_depth:
+            return
+        overrides[f"ceiling:visible:d{depth}:x0"] = "ceiling_void"
 
     def _collect_center_wall_slot_override(
         self,
@@ -1204,8 +1235,11 @@ class SceneRenderer:
             rect = pygame.Rect(zones[visible_depth.depth].back_wall_rect.to_int_tuple())
             render_depth = visible_depth.depth
             center_type = type(visible_depth.center).__name__ if visible_depth.center is not None else ""
+            if visible_depth.center is not None and "StairsUp" in center_type:
+                rect = self._get_center_stairs_up_render_rect(zones, visible_depth.depth + 1)
             if visible_depth.center is not None and (
                 "LadderDown" in center_type
+                or "StairsDown" in center_type
                 or self._get_decorative_floor_sprite_key(center_type) is not None
             ):
                 floor_depth = visible_depth.depth + 1
@@ -1245,6 +1279,8 @@ class SceneRenderer:
             return
 
         current_rect = pygame.Rect(zones[1].back_wall_rect.to_int_tuple())
+        if current_tile is not None and "StairsUp" in type(current_tile).__name__:
+            current_rect = self._get_center_stairs_up_render_rect(zones, 2)
         self._render_special_tile(
             current_tile,
             current_rect,
@@ -1630,7 +1666,15 @@ class SceneRenderer:
             return
 
         if "StairsDown" in tile_type:
-            self._render_special_sprite("stairs_down", rect, darkness=darkness, side=side, lateral_view=lateral_view)
+            self._render_floor_sprite(
+                "stairs_down",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="stairs_down",
+                side=side,
+                lateral_view=lateral_view,
+            )
             return
 
         if "LadderUp" in tile_type:
@@ -1842,6 +1886,8 @@ class SceneRenderer:
                 texture_key=texture_key,
             )
         scaled = pygame.transform.smoothscale(sprite, target_rect.size)
+        if texture_key == "stairs_up":
+            scaled = self._apply_stairs_up_ascend_gradient(scaled)
         shaded = self._apply_darkness_to_surface(scaled, darkness)
         self.screen.blit(shaded, target_rect.topleft)
 
@@ -1858,7 +1904,8 @@ class SceneRenderer:
         size_ratio = self._get_floor_sprite_ratio(depth, kind)
         if lateral_view:
             size_ratio *= 0.9
-        sprite_size = max(8, int(rect.height * size_ratio))
+        sprite_basis = rect.width if kind == "stairs_down" else rect.height
+        sprite_size = max(8, int(sprite_basis * size_ratio))
         sprite = self.textures.get_special_texture(texture_key, sprite_size)
         if sprite is None:
             return
@@ -1868,6 +1915,11 @@ class SceneRenderer:
 
         if kind == "ladder_up":
             sprite_rect.y = rect.y + (rect.height - sprite_rect.height) // 2
+        elif kind == "stairs_down":
+            sprite_rect.midbottom = (
+                rect.centerx,
+                round(rect.y + (rect.height * (0.90 if lateral_view else 0.96))),
+            )
         elif kind == "ladder_down" and not lateral_view:
             sprite_rect.midbottom = (
                 rect.centerx,
@@ -2297,6 +2349,8 @@ class SceneRenderer:
 
     @staticmethod
     def _get_floor_sprite_ratio(depth: int, kind: str) -> float:
+        if kind == "stairs_down":
+            return {1: 1.15, 2: 0.95, 3: 0.72}.get(depth, 0.72)
         if kind == "ladder_up":
             return {1: 0.8, 2: 0.6, 3: 0.4}.get(depth, 0.4)
         if kind == "ladder_down":
@@ -2540,6 +2594,43 @@ class SceneRenderer:
 
         return zone.center_floor
 
+    def _get_center_stairs_up_render_rect(self, zones, depth: int) -> pygame.Rect:
+        zone = zones[depth]
+        base_rect = pygame.Rect(zone.back_wall_rect.to_int_tuple())
+
+        sprite = self.textures.get_special_texture("stairs_up")
+        if sprite is None:
+            return base_rect
+
+        source_bounds = sprite.get_bounding_rect(min_alpha=128)
+        if source_bounds.height <= 0 or sprite.get_height() <= 0:
+            return base_rect
+
+        source_top_ratio = source_bounds.top / sprite.get_height()
+        source_bottom_ratio = source_bounds.bottom / sprite.get_height()
+        source_visible_ratio = source_bottom_ratio - source_top_ratio
+        if source_visible_ratio <= 0:
+            return base_rect
+
+        floor_bounds = zone.center_floor.bounding_rect()
+        ceiling_bounds = zone.center_ceiling.bounding_rect()
+        visible_top = ceiling_bounds.top + (ceiling_bounds.h * 0.4)
+        visible_bottom = floor_bounds.bottom
+        visible_height = visible_bottom - visible_top
+        if visible_height <= 0:
+            return base_rect
+
+        target_height = visible_height / source_visible_ratio
+        target_top = visible_top - (source_top_ratio * target_height)
+        target_width = round(base_rect.width * 1.9)
+        target_x = round(base_rect.centerx - (target_width / 2))
+        return pygame.Rect(
+            target_x,
+            round(target_top),
+            max(1, target_width),
+            max(1, round(target_height)),
+        )
+
     @staticmethod
     def _get_floor_sprite_anchor(
         rect: pygame.Rect,
@@ -2553,6 +2644,26 @@ class SceneRenderer:
         if side == "left":
             return rect.right - offset, rect.bottom
         return rect.left + offset, rect.bottom
+
+    @staticmethod
+    def _apply_stairs_up_ascend_gradient(surface: pygame.Surface) -> pygame.Surface:
+        if surface.get_width() <= 0 or surface.get_height() <= 0:
+            return surface
+
+        shaded = surface.copy()
+        gradient = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+        height = max(1, surface.get_height() - 1)
+        for y in range(surface.get_height()):
+            t = y / height
+            factor = round(52 + (203 * t))
+            pygame.draw.line(
+                gradient,
+                (factor, factor, factor, 255),
+                (0, y),
+                (surface.get_width(), y),
+            )
+        shaded.blit(gradient, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        return shaded
 
     @staticmethod
     def _get_lateral_floor_sprite_quad(sprite_rect: pygame.Rect, side: str) -> Quad:

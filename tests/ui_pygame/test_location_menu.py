@@ -159,6 +159,12 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(["Rest", "Leave"], flush_events=True, require_key_release=True) == 0
 
+    screen.options_list = ["Rest", "Leave"]
+    click_pos = screen.option_rects()[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["Rest", "Leave"]) == 1
+
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
     ])

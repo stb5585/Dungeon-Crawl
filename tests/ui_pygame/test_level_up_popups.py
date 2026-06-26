@@ -209,6 +209,15 @@ def test_stat_selection_popup_draws_and_selects(monkeypatch):
     assert popup.show(flush_events=True, require_key_release=True) == "Strength"
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
+    click_pos = popup.option_rects()[2].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert popup.show() == "Wisdom"
+
+    popup = stat_selection_popup.StatSelectionPopup(presenter, options)
     event_batches = iter([
         [SimpleNamespace(type=pygame.QUIT)],
     ])

@@ -31,10 +31,10 @@ from .gui.main_menu import MainMenuScreen
 from .gui.load_game import LoadGameScreen
 from .gui.race_selection import RaceSelectionScreen
 from .gui.class_selection import ClassSelectionScreen
-from .gui.sex_selection import SexSelectionScreen
 from .gui.character_naming import CharacterNamingScreen
 from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
 from .gui.town_menu import TownMenuScreen
+from .gui.town_navigation import TownNavigationScreen
 from .gui.shop_selection import ShopSelectionScreen
 
 # Use enhanced combat by default
@@ -317,7 +317,7 @@ class PygameGame:
             self.barracks_manager = BarracksManager(self.presenter, self.player_char)
         self.dungeon_manager = DungeonManager(self.presenter, self.player_char, self)
 
-    def _build_player_character(self, race_name, class_name, name="Hero", sex="Male"):
+    def _build_player_character(self, race_name, class_name, name="Hero", sex="Male", portrait_variant=0):
         """Build a player character from selected race/class and name."""
         from src.core.player import Player
 
@@ -362,6 +362,7 @@ class PygameGame:
         )
         player_char.name = name or "Hero"
         player_char.sex = sex or "Male"
+        player_char.portrait_variant = int(portrait_variant or 0)
         player_char.race = race
         player_char.cls = char_class
         player_char.equipment = char_class.equipment
@@ -433,24 +434,6 @@ class PygameGame:
                 
     def new_game(self):
         """Create a new character."""
-        # Loop for sex selection with confirmation
-        while True:
-            sex_screen = SexSelectionScreen(self.presenter)
-            sex = sex_screen.navigate(
-                flush_events=True,
-                require_key_release=True,
-            )
-            if sex is None:
-                return None  # ESC pressed, return to main menu
-
-            confirm_sex = ConfirmationPopup(
-                self.presenter,
-                f"You have selected {sex} for your character. Continue?",
-                show_buttons=True,
-            )
-            if confirm_sex.show(**self._popup_show_kwargs()):
-                break  # Yes selected, continue to race selection
-
         # Loop for race selection with confirmation
         while True:
             # Choose race using RaceSelectionScreen
@@ -499,8 +482,8 @@ class PygameGame:
                 break  # Yes selected, continue to name input
             # No selected, loop back to class selection
         
-        # Get character name after sex, race, and class selection.
-        name_screen = CharacterNamingScreen(self.presenter, sex, race_name, class_name)
+        # Get character name, sex, and portrait variant after race/class selection.
+        name_screen = CharacterNamingScreen(self.presenter, race_name, class_name)
         name = name_screen.navigate(
             default="Hero",
             flush_events=True,
@@ -510,13 +493,19 @@ class PygameGame:
             return None
         
         # Create player character using the same logic as the original game
-        player_char = self._build_player_character(race_name, class_name, name=name, sex=sex)
+        player_char = self._build_player_character(
+            race_name,
+            class_name,
+            name=name,
+            sex=getattr(name_screen, "sex", "Male"),
+            portrait_variant=getattr(name_screen, "selected_portrait_variant", 0),
+        )
         
         self.presenter.show_message(
             f"Character Created!\n\n"
             f"Name: {name}\n"
             f"Race: {race_name}\n"
-            f"Sex: {sex}\n"
+            f"Sex: {player_char.sex}\n"
             f"Class: {class_name}\n\n"
             f"HP: {player_char.health.max}\n"
             f"MP: {player_char.mana.max}"
@@ -713,14 +702,7 @@ class PygameGame:
                 self.visit_ancient_grove()
 
             elif choice_label == "Enter Dungeon":
-                # Move player to dungeon entrance
-                if self.player_char.location_z == 0:
-                    # Town is at (5, 10, 0), stairs up from dungeon are at (5, 10, 1)
-                    self.player_char.location_x = 5
-                    self.player_char.location_y = 10
-                    self.player_char.location_z = 1  # First dungeon level (map_level_1.txt)
-                    self.player_char.facing = "east"  # Face into dungeon (east has CavePath0)
-                return "dungeon"
+                return self._enter_dungeon_from_town()
 
             elif choice_label == "Warp Point":
                 result = self.use_warp_point(
@@ -753,6 +735,40 @@ class PygameGame:
                         town_screen.draw_menu_panel(options),
                     )
                 )
+
+    def _enter_dungeon_from_town(self) -> str:
+        """Place the player at the dungeon entrance and enter exploration."""
+        if self.player_char.location_z == 0:
+            self.player_char.location_x = 5
+            self.player_char.location_y = 10
+            self.player_char.location_z = 1
+            self.player_char.facing = "east"
+        return "dungeon"
+
+    def explore_town_prototype(self):
+        """Run the optional first-person-style town navigation prototype."""
+        self._play_location_music("town")
+        nav_screen = TownNavigationScreen(self.presenter)
+        while True:
+            action = nav_screen.navigate(flush_events=True, require_key_release=True)
+            if not action:
+                return None
+            if action == "Barracks":
+                self.visit_barracks()
+            elif action == "Shops":
+                self.visit_shop()
+            elif action == "The Thirsty Dog Tavern":
+                self.visit_inn()
+            elif action == "Church of Elysia":
+                self.visit_church()
+            elif action == "Old Warehouse":
+                self.visit_old_warehouse(background_draw_func=nav_screen.draw)
+            elif action == "Warp Point":
+                result = self.use_warp_point(background_draw_func=nav_screen.draw)
+                if result == "dungeon":
+                    return "dungeon"
+            elif action == "Enter Dungeon":
+                return self._enter_dungeon_from_town()
 
     @staticmethod
     def format_gameplay_statistics(player_char) -> str:
@@ -1052,9 +1068,14 @@ def main():
         help='Launch directly into Character Menu using a default Human Warrior character'
     )
     parser.add_argument(
+        '--town-navigation',
+        action='store_true',
+        help='Launch directly into the optional Explore Town prototype using a default Human Warrior character'
+    )
+    parser.add_argument(
         '--preview-name',
         default='Menu Preview',
-        help='Character name used with --character-menu (default: Menu Preview)'
+        help='Character name used with --character-menu or --town-navigation (default: Menu Preview)'
     )
     args = parser.parse_args()
     
@@ -1064,6 +1085,12 @@ def main():
             game.player_char = game.create_default_character(name=args.preview_name)
             game.initialize_managers()
             game.show_character_info()
+        elif args.town_navigation:
+            game.player_char = game.create_default_character(name=args.preview_name)
+            game.initialize_managers()
+            result = game.explore_town_prototype()
+            if result == "dungeon":
+                game.enter_dungeon()
         else:
             game.main_menu()
     except KeyboardInterrupt:

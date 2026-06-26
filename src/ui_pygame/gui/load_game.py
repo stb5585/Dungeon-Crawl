@@ -7,6 +7,7 @@ import pygame
 from src.core.save_system import SaveManager
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
 class LoadGameScreen:
@@ -150,18 +151,12 @@ class LoadGameScreen:
         self.screen.blit(hint, hint_rect)
         
         # Draw file list
-        max_visible = 10
-        for i, data in enumerate(self.save_data[:max_visible]):
-            y = self.file_list_rect.top + 50 + i * line_height
+        for i, data in enumerate(self.save_data[:self.max_visible_saves()]):
+            highlight_rect = self.save_row_rects()[i]
+            y = highlight_rect.top + 2
             
             # Highlight selected
             if i == self.current_selection:
-                highlight_rect = pygame.Rect(
-                    self.file_list_rect.left + 5,
-                    y - 2,
-                    self.file_list_rect.width - 10,
-                    line_height - 4
-                )
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
                 color = self.GOLD
@@ -175,6 +170,26 @@ class LoadGameScreen:
                 color
             )
             self.screen.blit(file_text, (x, y))
+
+    def max_visible_saves(self) -> int:
+        """Return the number of save rows rendered in the current panel."""
+        return 10
+
+    def save_row_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for visible save rows."""
+        line_height = 40
+        rects = []
+        for i, _data in enumerate(self.save_data[:self.max_visible_saves()]):
+            y = self.file_list_rect.top + 50 + i * line_height
+            rects.append(
+                pygame.Rect(
+                    self.file_list_rect.left + 5,
+                    y - 2,
+                    self.file_list_rect.width - 10,
+                    line_height - 4,
+                )
+            )
+        return rects
     
     def draw_all(self):
         """Draw all UI elements."""
@@ -394,5 +409,22 @@ class LoadGameScreen:
                         )
                     elif event.key == pygame.K_ESCAPE:
                         return None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(self.save_row_rects(), mouse_position(event))
+                    if hovered is None:
+                        continue
+                    self.current_selection = hovered
+                    if not is_left_click(event):
+                        continue
+                    if not input_armed:
+                        continue
+                    selected_save = self.save_data[self.current_selection]
+                    if selected_save.get('loadable', True):
+                        return selected_save['file']
+                    self.show_unloadable_save_notice(selected_save['file'])
+                    input_armed = prepare_guarded_input(
+                        flush_events=True,
+                        require_key_release=True,
+                    )
             
             self.presenter.clock.tick(30)

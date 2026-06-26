@@ -319,6 +319,51 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert screen.selected_equipment_slot(player) == "OffHand"
 
 
+def test_modern_character_companion_display_prefers_familiar_then_living_summon():
+    screen = ModernCharacterScreen(_make_presenter())
+    player = _make_player()
+
+    assert screen.active_companion_for_display(player) is None
+
+    familiar = SimpleNamespace(name="Aster", race="Fairy", level=SimpleNamespace(level=4), is_alive=lambda: True)
+    player.familiar = familiar
+    player.summons = {"Fuath": SimpleNamespace(name="Fuath", is_alive=lambda: True)}
+    assert screen.active_companion_for_display(player) == ("Familiar", familiar)
+    assert ("Level", "4") in screen.companion_summary_rows("Familiar", familiar)
+
+    player.familiar = None
+    spent = SimpleNamespace(name="Spent", is_alive=lambda: False)
+    living = SimpleNamespace(name="Fuath", race="Spirit", level=SimpleNamespace(pro_level=2), is_alive=lambda: True)
+    player.summons = {"Spent": spent, "Fuath": living}
+    assert screen.active_companion_for_display(player) == ("Summon", living)
+    assert ("Type", "Spirit") in screen.companion_summary_rows("Summon", living)
+
+    player.summons = {"Spent": spent}
+    assert screen.active_companion_for_display(player) is None
+
+
+def test_modern_character_combat_panel_renders_companion_art(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    companion = SimpleNamespace(name="Spark", race="Mephit", level=SimpleNamespace(level=3), is_alive=lambda: True)
+    player.familiar = companion
+    calls = []
+    screen.companion_art_manager = SimpleNamespace(
+        get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
+    )
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.draw_combat_panel(player)
+
+    assert calls and calls[0][0] is companion
+    rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
+    assert {"Familiar", "Companion", "Spark", "Type", "Mephit", "Level", "3"}.issubset(rendered_text)
+
+
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
@@ -505,6 +550,50 @@ def test_modern_equipment_tab_enter_opens_selected_slot_change(monkeypatch):
     screen.open_selected_equipment_change(player)
 
     assert opened == ["Ring"]
+
+
+def test_modern_character_menu_mouse_selects_equipment_slot(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    screen.select_tab("equipment")
+    opened = []
+
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(screen, "open_selected_equipment_change", lambda _player: opened.append(screen.selected_equipment_slot(_player)))
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    click_pos = screen.equipment_slot_rects()["Ring"].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.equipment_selector_active is False
+    assert screen.selected_equipment_slot(player) == "Ring"
+    assert opened == ["Ring"]
+
+
+def test_modern_character_menu_mouse_tabs_and_actions(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    equipment_tab_pos = screen.tab_button_rects()[1].center
+    exit_pos = screen.action_rects()[-1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=equipment_tab_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=exit_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.active_tab.key == "equipment"
 
 
 def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch):

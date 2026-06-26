@@ -2258,9 +2258,9 @@ class DungeonManager:
 
         # Show controls
         if getattr(self.game, "debug_mode", False):
-            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, ESC=Menu, L=Debug Level Up")
+            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu, L=Debug Level Up")
         else:
-            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, ESC=Menu")
+            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu")
 
         clock = pygame.time.Clock()
         self.running = True
@@ -2288,6 +2288,11 @@ class DungeonManager:
                         self.scroll_message_log(-1)
                     elif event.y < 0:
                         self.scroll_message_log(1)
+
+                elif event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", None) == 1:
+                    minimap_rect = getattr(self.hud, "last_minimap_rect", None)
+                    if minimap_rect is not None and minimap_rect.collidepoint(getattr(event, "pos", (-1, -1))):
+                        self._show_enlarged_minimap()
 
                 elif event.type == pygame.KEYDOWN:
                     self._handle_keypress(event.key)
@@ -2352,6 +2357,9 @@ class DungeonManager:
         elif key == pygame.K_PAGEDOWN:
             self.scroll_message_log(1)
 
+        elif key == pygame.K_m:
+            self._show_enlarged_minimap()
+
         # Character menu
         elif key == pygame.K_c:
             # Open character screen (same as town)
@@ -2370,6 +2378,29 @@ class DungeonManager:
         # Escape menu
         elif key == pygame.K_ESCAPE:
             self._show_menu()
+
+    def _show_enlarged_minimap(self):
+        """Show the enlarged minimap modal over the current dungeon view."""
+        clock = pygame.time.Clock()
+        panel_rect = self.hud.enlarged_map_rect()
+        while True:
+            self._render()
+            panel_rect = self.hud.render_enlarged_minimap_modal(self.player_char)
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    self.player_char.quit = True
+                    return
+                if event.type == pygame.KEYDOWN and event.key in (pygame.K_m, pygame.K_ESCAPE):
+                    self.ui_dirty = True
+                    return
+                if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", None) == 1:
+                    if not panel_rect.collidepoint(getattr(event, "pos", (-1, -1))):
+                        self.ui_dirty = True
+                        return
+            clock.tick(30)
 
     def _show_menu(self):
         """Show in-dungeon menu."""

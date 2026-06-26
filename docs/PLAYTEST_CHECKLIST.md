@@ -230,6 +230,10 @@
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
   - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.
+- [x] Inspect the dungeon HUD location label across ordinary levels, Realm of Cambion, and Liminal Gap.
+  - Expected: The HUD shows `Dungeon Level N`, `Realm of Cambion`, or `Liminal Gap` without crowding resource bars, compass, minimap, or combat focus panels.
+- [ ] Open the enlarged minimap modal with `M` and by clicking the minimap.
+  - Expected: The modal reuses existing discovered/visible tile rules, frames the fully revealed current level instead of only the small HUD viewport, and closes with `M`, `Esc`, or outside click.
 - [ ] Move near decorative rubble, roots, fungus, crystal clusters, bone piles, and broken gear in a test map or authored fixture.
   - Expected: Decorative props render as floor-bound hooks and remain traversable unless future gameplay explicitly changes them.
 - [ ] Inspect root and fungus floor variants in a dungeon test map.
@@ -376,8 +380,11 @@
 - [x] Enter combat or a character/shop selector after a previous key-driven transition.
   - Expected: The first fresh action key is accepted once no key is physically held, even if the loop never receives a KEYUP event.
   - Expected: Combat action-grid navigation accepts the first fresh movement/confirm key after turn start once pygame key state has been pumped.
-- [x] Move through main, town, load-game, shop-selection, race, sex, class, and location menus after a prior key press.
+- [x] Move through main, town, load-game, shop-selection, race, class, naming, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
+- [ ] Navigate selector-style pygame screens with the mouse.
+  - Expected: Hovering updates the highlighted row where rows are selectable.
+  - Expected: Left-clicking main menu, town menu, shop selection, location, race, class, Character Menu action, tab, and equipment-slot targets selects the same option the keyboard would select.
 - [x] Open the in-dungeon popup menu after a key-driven transition.
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
 - [x] Open inventory, equipment, or quest popups after a key-driven transition.
@@ -393,6 +400,10 @@
 - [x] Save and load after creating characters with different sex choices.
   - Expected: The load-game save summary shows Sex alongside Level, Race, and Class.
   - Expected: Inventory, equipment management, and character progression remain unchanged.
+- [ ] Create several new characters and browse portrait variants on the naming screen.
+  - Expected: The standalone sex-selection page no longer appears in the creation flow.
+  - Expected: Male/Female buttons below the portrait switch between the selected race's portrait sets.
+  - Expected: The initial portrait varies across attempts, left/right arrows or portrait buttons cycle through available atlas variants, and the chosen sex/portrait persists into the Character Menu and player token.
 - [x] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.

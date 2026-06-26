@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
 import pygame
@@ -46,9 +47,10 @@ class PortraitManager:
             self.portrait_root / "base_portrait_atlas.json",
         ))
         self.atlas_image_path = Path(atlas_image) if atlas_image else None
+        self.atlas_image_paths: list[Path] = [self.atlas_image_path] if self.atlas_image_path else []
         self.frames: dict[str, PortraitFrame] = {}
-        self._atlas_surface: pygame.Surface | None = None
-        self._base_cache: dict[tuple[str, str], pygame.Surface] = {}
+        self._atlas_surfaces: dict[int, pygame.Surface] = {}
+        self._base_cache: dict[tuple[str, str, int], pygame.Surface] = {}
         self._portrait_cache: dict[tuple[Any, ...], pygame.Surface] = {}
         self.missing_overlays: list[Path] = []
         self.load_atlas()
@@ -68,6 +70,30 @@ class PortraitManager:
                 return path
         return paths[0]
 
+    @staticmethod
+    def _path_sort_key(path: Path) -> tuple[str, int, str]:
+        match = re.search(r"_(\d+)$", path.stem)
+        suffix = int(match.group(1)) if match else 0
+        base = path.stem[: match.start()] if match else path.stem
+        return base, suffix, path.name
+
+    @classmethod
+    def _discover_atlas_images(cls, primary_path: Path) -> list[Path]:
+        """Return atlas images that reuse the primary atlas geometry."""
+        candidates: list[Path] = []
+        if primary_path.exists():
+            candidates.append(primary_path)
+
+        numbered = sorted(
+            primary_path.parent.glob(f"{primary_path.stem}_*.png"),
+            key=cls._path_sort_key,
+        )
+        for path in numbered:
+            if path not in candidates:
+                candidates.append(path)
+
+        return candidates or [primary_path]
+
     def load_atlas(self) -> None:
         if not self.atlas_json_path.exists():
             logger.warning("Portrait atlas JSON missing: %s", self.atlas_json_path)
@@ -80,7 +106,11 @@ class PortraitManager:
             return
 
         image_name = str(data.get("image", "base_portrait_atlas.png"))
-        self.atlas_image_path = self.atlas_image_path or self.atlas_json_path.parent / image_name
+        if self.atlas_image_path is not None:
+            self.atlas_image_paths = [self.atlas_image_path]
+        else:
+            self.atlas_image_paths = self._discover_atlas_images(self.atlas_json_path.parent / image_name)
+            self.atlas_image_path = self.atlas_image_paths[0]
         for entry_key, entry in (data.get("entries") or {}).items():
             try:
                 race = self.normalize_key(entry.get("race", entry_key.rsplit("_", 1)[0]))
@@ -104,6 +134,7 @@ class PortraitManager:
         first_promotion: Any = None,
         second_promotion: Any = None,
         effects: Iterable[Any] | None = None,
+        variant: Any = None,
     ) -> tuple[Any, ...]:
         return (
             self.normalize_key(race, "human"),
@@ -112,7 +143,20 @@ class PortraitManager:
             self.normalize_key(first_promotion, "") if first_promotion else "",
             self.normalize_key(second_promotion, "") if second_promotion else "",
             tuple(self.normalize_key(effect, "") for effect in effects or ()),
+            self.variant_index(variant),
         )
+
+    def variant_count(self) -> int:
+        return max(1, len(self.atlas_image_paths))
+
+    def variant_index(self, variant: Any = None) -> int:
+        if variant is None:
+            return 0
+        try:
+            index = int(variant)
+        except (TypeError, ValueError):
+            index = 0
+        return index % self.variant_count()
 
     def get_portrait(
         self,
@@ -122,13 +166,14 @@ class PortraitManager:
         first_promotion: Any = None,
         second_promotion: Any = None,
         effects: Iterable[Any] | None = None,
+        variant: Any = None,
     ) -> pygame.Surface:
-        key = self.cache_key(race, gender, class_name, first_promotion, second_promotion, effects)
+        key = self.cache_key(race, gender, class_name, first_promotion, second_promotion, effects, variant=variant)
         cached = self._portrait_cache.get(key)
         if cached is not None:
             return cached
 
-        portrait = self.base_portrait(key[0], key[1]).copy()
+        portrait = self.base_portrait(key[0], key[1], variant=key[6]).copy()
         for overlay_path in self.overlay_paths(key[2], key[3], key[4], key[5]):
             overlay = self.load_overlay(overlay_path)
             if overlay is None:
@@ -138,15 +183,16 @@ class PortraitManager:
         self._portrait_cache[key] = portrait
         return portrait
 
-    def base_portrait(self, race: Any, gender: Any) -> pygame.Surface:
+    def base_portrait(self, race: Any, gender: Any, variant: Any = None) -> pygame.Surface:
         race_key = self.normalize_key(race, "human")
         gender_key = self.normalize_key(gender, "male")
-        cache_key = (race_key, gender_key)
+        variant_key = self.variant_index(variant)
+        cache_key = (race_key, gender_key, variant_key)
         cached = self._base_cache.get(cache_key)
         if cached is not None:
             return cached
 
-        surface = self.atlas_portrait(race_key, gender_key)
+        surface = self.atlas_portrait(race_key, gender_key, variant=variant_key)
         if surface is None:
             surface = self.fallback_portrait(race_key, gender_key)
         if surface is None:
@@ -156,25 +202,50 @@ class PortraitManager:
         self._base_cache[cache_key] = surface
         return surface
 
-    def atlas_portrait(self, race: str, gender: str) -> pygame.Surface | None:
+    def atlas_portrait(self, race: str, gender: str, variant: Any = None) -> pygame.Surface | None:
         frame = self.frames.get(self.entry_key(race, gender))
-        atlas = self.atlas_surface()
+        atlas = self.atlas_surface(variant)
         if frame is None or atlas is None:
             return None
+        rect = self._frame_rect_for_atlas(frame.rect, atlas)
         try:
-            return atlas.subsurface(frame.rect).copy()
+            return atlas.subsurface(rect).copy()
         except ValueError as exc:
             logger.warning("Portrait atlas frame out of bounds for %s: %s", frame.key, exc)
             return None
 
-    def atlas_surface(self) -> pygame.Surface | None:
-        if self._atlas_surface is not None:
-            return self._atlas_surface
-        if self.atlas_image_path is None or not self.atlas_image_path.exists():
-            logger.warning("Portrait atlas image missing: %s", self.atlas_image_path)
+    def _frame_rect_for_atlas(self, rect: pygame.Rect, atlas: pygame.Surface) -> pygame.Rect:
+        """Return a frame rect adjusted when atlas images are scaled variants."""
+        atlas_width, atlas_height = atlas.get_size()
+        max_right = max((frame.rect.right for frame in self.frames.values()), default=atlas_width)
+        max_bottom = max((frame.rect.bottom for frame in self.frames.values()), default=atlas_height)
+        scale_x = atlas_width / max_right if max_right > atlas_width else 1.0
+        scale_y = atlas_height / max_bottom if max_bottom > atlas_height else 1.0
+        adjusted = pygame.Rect(
+            int(round(rect.x * scale_x)),
+            int(round(rect.y * scale_y)),
+            max(1, int(round(rect.width * scale_x))),
+            max(1, int(round(rect.height * scale_y))),
+        )
+        adjusted.width = min(adjusted.width, max(1, atlas_width - adjusted.x))
+        adjusted.height = min(adjusted.height, max(1, atlas_height - adjusted.y))
+        return adjusted
+
+    def atlas_surface(self, variant: Any = None) -> pygame.Surface | None:
+        variant_key = self.variant_index(variant)
+        if variant_key in self._atlas_surfaces:
+            return self._atlas_surfaces[variant_key]
+        try:
+            atlas_path = self.atlas_image_paths[variant_key]
+        except IndexError:
             return None
-        self._atlas_surface = self.load_image(self.atlas_image_path)
-        return self._atlas_surface
+        if not atlas_path.exists():
+            logger.warning("Portrait atlas image missing: %s", atlas_path)
+            return None
+        surface = self.load_image(atlas_path)
+        if surface is not None:
+            self._atlas_surfaces[variant_key] = surface
+        return surface
 
     def fallback_portrait(self, race: str, gender: str) -> pygame.Surface | None:
         filename = f"{self.entry_key(race, gender)}.png"

@@ -6,6 +6,7 @@ Displays character stats, minimap, inventory quick-access, and other UI elements
 import pygame
 
 from src.core import map_tiles
+from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
 from .status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -50,6 +51,7 @@ class DungeonHUD:
         self.mp_color = (50, 100, 200)
         self.exp_color = (100, 200, 100)
         self.status_colors = STATUS_ICON_COLORS
+        self.last_minimap_rect: pygame.Rect | None = None
         
     def render_hud(self, player_char, combat_mode=False, enemy=None):
         """Render the complete HUD.
@@ -74,6 +76,10 @@ class DungeonHUD:
         # Character name and level
         y_offset = self._render_character_info(player_char, y_offset)
         y_offset += 20
+
+        if not combat_mode:
+            y_offset = self._render_location_label(player_char, y_offset)
+            y_offset += 12
         
         # Health and Mana bars
         y_offset = self._render_resource_bars(player_char, y_offset)
@@ -99,6 +105,33 @@ class DungeonHUD:
         minimap_size = self._minimap_size(combat_mode=False)
         minimap_y = self._minimap_title_y(minimap_size)
         self._render_minimap(player_char, minimap_y, minimap_size=minimap_size)
+
+    @staticmethod
+    def location_label(player_char) -> str:
+        """Return the player-facing label for the current world location."""
+        try:
+            location_z = int(getattr(player_char, "location_z", 0) or 0)
+        except (TypeError, ValueError):
+            location_z = 0
+        if location_z == 0:
+            return "Town"
+        if location_z == REALM_OF_CAMBION_LEVEL:
+            return "Realm of Cambion"
+        if location_z == LIMINAL_GAP_LEVEL:
+            return "Liminal Gap"
+        return f"Dungeon Level {location_z}"
+
+    def _render_location_label(self, player_char, y_offset):
+        """Render a compact location label in exploration HUD mode."""
+        x_margin = self.hud_x + 20
+        label = self.location_label(player_char)
+        label_surface = self.small_font.render(label, True, (220, 205, 145))
+        label_rect = pygame.Rect(x_margin, y_offset, self.hud_width - 40, label_surface.get_height() + 10)
+        pygame.draw.rect(self.screen, (35, 31, 25), label_rect)
+        pygame.draw.rect(self.screen, (150, 130, 80), label_rect, 1)
+        text_x = label_rect.left + max(8, (label_rect.width - label_surface.get_width()) // 2)
+        self.screen.blit(label_surface, (text_x, label_rect.top + 5))
+        return label_rect.bottom
 
     def _effect_label(self, effect_name):
         labels = {
@@ -563,34 +596,69 @@ class DungeonHUD:
 
         return panel_rect.bottom + 5
 
-    def _render_minimap(self, player_char, y_offset, minimap_size=None):
+    def _render_minimap(
+        self,
+        player_char,
+        y_offset,
+        minimap_size=None,
+        *,
+        x_margin: int | None = None,
+        title: str = "Map",
+        full_level: bool = False,
+    ):
         """Render minimap showing nearby explored areas."""
-        x_margin = self.hud_x + 20
+        x_margin = self.hud_x + 20 if x_margin is None else x_margin
         minimap_size = minimap_size or min(200, self.hud_width - 40)
         visible_adjacent = self._get_visible_adjacent_positions(player_char)
         
         # Title
-        map_title = self.stat_font.render("Map", True, (150, 150, 255))
-        self.screen.blit(map_title, (x_margin, y_offset))
-        y_offset += 28
+        if title:
+            map_title = self.stat_font.render(title, True, (150, 150, 255))
+            self.screen.blit(map_title, (x_margin, y_offset))
+            y_offset += 28
         
         # Minimap background
         minimap_rect = pygame.Rect(x_margin, y_offset, minimap_size, minimap_size)
+        self.last_minimap_rect = minimap_rect
         pygame.draw.rect(self.screen, (15, 15, 20), minimap_rect)
         pygame.draw.rect(self.screen, self.border_color, minimap_rect, 2)
         
-        # Render nearby tiles
-        tile_size = minimap_size // 11  # Show 11x11 grid
         player_x, player_y = player_char.location_x, player_char.location_y
-        
-        for dy in range(-5, 6):
-            for dx in range(-5, 6):
-                tile_x = player_x + dx
-                tile_y = player_y + dy
+
+        if full_level:
+            positions = self._revealed_level_minimap_positions(player_char, visible_adjacent)
+            if not positions:
+                positions = [(player_x, player_y)]
+            min_x = min(x for x, _y in positions)
+            max_x = max(x for x, _y in positions)
+            min_y = min(y for _x, y in positions)
+            max_y = max(y for _x, y in positions)
+            grid_width = max(1, max_x - min_x + 1)
+            grid_height = max(1, max_y - min_y + 1)
+            tile_size = max(3, min(minimap_size // grid_width, minimap_size // grid_height))
+            map_width = grid_width * tile_size
+            map_height = grid_height * tile_size
+            origin_x = x_margin + (minimap_size - map_width) // 2
+            origin_y = y_offset + (minimap_size - map_height) // 2
+            x_values = range(min_x, max_x + 1)
+            y_values = range(min_y, max_y + 1)
+        else:
+            tile_size = minimap_size // 11  # Show 11x11 grid
+            origin_x = x_margin
+            origin_y = y_offset
+            x_values = range(player_x - 5, player_x + 6)
+            y_values = range(player_y - 5, player_y + 6)
+
+        for tile_y in y_values:
+            for tile_x in x_values:
                 tile = player_char.world_dict.get((tile_x, tile_y, player_char.location_z))
-                
-                screen_x = x_margin + (dx + 5) * tile_size
-                screen_y = y_offset + (dy + 5) * tile_size
+
+                if full_level:
+                    screen_x = origin_x + (tile_x - min_x) * tile_size
+                    screen_y = origin_y + (tile_y - min_y) * tile_size
+                else:
+                    screen_x = origin_x + (tile_x - (player_x - 5)) * tile_size
+                    screen_y = origin_y + (tile_y - (player_y - 5)) * tile_size
                 tile_rect = pygame.Rect(screen_x, screen_y, tile_size - 1, tile_size - 1)
                 
                 if tile:
@@ -623,7 +691,7 @@ class DungeonHUD:
                         )
                     )
                     
-                    if dx == 0 and dy == 0:
+                    if tile_x == player_x and tile_y == player_y:
                         # Player position - draw base tile first, then player marker with arrow
                         if getattr(tile, 'visited', False):
                             if is_funhouse_wall or not getattr(tile, 'enter', True):
@@ -798,6 +866,86 @@ class DungeonHUD:
                     
         y_offset += minimap_size + 5
         return y_offset
+
+    def _revealed_level_minimap_positions(self, player_char, visible_adjacent: set[tuple[int, int]]) -> set[tuple[int, int]]:
+        """Return current-level positions visible enough for the enlarged map."""
+        positions: set[tuple[int, int]] = {(player_char.location_x, player_char.location_y)}
+        current_z = player_char.location_z
+        for (tile_x, tile_y, tile_z), tile in getattr(player_char, "world_dict", {}).items():
+            if tile_z != current_z or tile is None:
+                continue
+            if self._minimap_tile_is_revealed(player_char, tile_x, tile_y, tile, visible_adjacent):
+                positions.add((tile_x, tile_y))
+        return positions
+
+    @staticmethod
+    def _minimap_tile_is_revealed(player_char, tile_x: int, tile_y: int, tile, visible_adjacent: set[tuple[int, int]]) -> bool:
+        tile_type = type(tile).__name__
+        if getattr(tile, 'visited', False) or (tile_x, tile_y) in visible_adjacent:
+            return True
+        if (
+            getattr(tile, 'near', False)
+            and getattr(tile, 'enter', True)
+            and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+        ):
+            return True
+        if not getattr(tile, 'near', False):
+            return False
+        special_markers = (
+            'Chest',
+            'Stairs',
+            'Ladder',
+            'Door',
+            'WarpPoint',
+            'UndergroundSpring',
+            'SecretShop',
+            'Relic',
+        )
+        if any(marker in tile_type for marker in special_markers):
+            return True
+        return 'GoldenChaliceRoom' in tile_type and map_tiles.chalice_altar_visible(player_char)
+
+    def enlarged_map_rect(self) -> pygame.Rect:
+        """Return the modal panel rectangle for the enlarged minimap."""
+        panel_width = min(int(self.width * 0.78), 720)
+        panel_height = min(int(self.height * 0.82), 680)
+        return pygame.Rect(
+            (self.width - panel_width) // 2,
+            (self.height - panel_height) // 2,
+            panel_width,
+            panel_height,
+        )
+
+    def render_enlarged_minimap_modal(self, player_char) -> pygame.Rect:
+        """Render the enlarged minimap modal and return its panel rect."""
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 175))
+        self.screen.blit(overlay, (0, 0))
+
+        panel_rect = self.enlarged_map_rect()
+        pygame.draw.rect(self.screen, (18, 18, 24), panel_rect)
+        pygame.draw.rect(self.screen, self.border_color, panel_rect, 3)
+
+        title = f"{self.location_label(player_char)} Map"
+        title_surface = self.stat_font.render(title, True, (220, 205, 145))
+        self.screen.blit(title_surface, (panel_rect.left + 24, panel_rect.top + 18))
+
+        close_surface = self.small_font.render("M/Esc: Close", True, self.text_color)
+        close_rect = close_surface.get_rect(right=panel_rect.right - 24, top=panel_rect.top + 24)
+        self.screen.blit(close_surface, close_rect)
+
+        map_size = min(panel_rect.width - 64, panel_rect.height - 96)
+        map_x = panel_rect.centerx - map_size // 2
+        map_y = panel_rect.top + 56
+        self._render_minimap(
+            player_char,
+            map_y,
+            minimap_size=map_size,
+            x_margin=map_x,
+            title="",
+            full_level=True,
+        )
+        return panel_rect
 
     @staticmethod
     def _tile_is_open(tile) -> bool:

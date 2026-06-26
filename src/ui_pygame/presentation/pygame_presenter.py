@@ -12,6 +12,7 @@ import sys
 import pygame
 
 from src.core.events import get_event_bus, EventType
+from src.ui_pygame.gui.mouse_helpers import hit_index, is_left_click, mouse_position
 from .interface import GamePresenter
 
 # Import asset managers
@@ -501,12 +502,49 @@ class PygamePresenter(GamePresenter):
                     loaded_image = None
 
             while True:
+                outer_rect = pygame.Rect(
+                    int(self.width * 0.06),
+                    int(self.height * 0.08),
+                    int(self.width * 0.88),
+                    int(self.height * 0.84),
+                )
+                left_rect = pygame.Rect(
+                    outer_rect.x + 10,
+                    outer_rect.y + 10,
+                    int(outer_rect.width * 0.42) - 15,
+                    outer_rect.height - 20,
+                )
+                right_rect = pygame.Rect(
+                    left_rect.right + 10,
+                    outer_rect.y + 10,
+                    outer_rect.right - (left_rect.right + 20),
+                    outer_rect.height - 20,
+                )
+                y = right_rect.top + 16
+                for _line in wrap_text(title, right_rect.width - 30):
+                    y += 28
+                y += 10
+                visible_count = max_visible or 6
+                end = min(len(options), scroll_offset + visible_count)
+                option_rects = [
+                    pygame.Rect(right_rect.left + 12, y + ((idx - scroll_offset) * 46) - 4, right_rect.width - 24, 40)
+                    for idx in range(scroll_offset, end)
+                ]
+
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         import sys
                         sys.exit()
-                    if event.type == pygame.KEYDOWN:
+                    if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                        hovered = hit_index(option_rects, mouse_position(event))
+                        if hovered is not None:
+                            selected = scroll_offset + hovered
+                            if is_left_click(event):
+                                if self.sound_manager:
+                                    self.sound_manager.play_sfx("menu_confirm")
+                                return selected
+                    elif event.type == pygame.KEYDOWN:
                         if event.key in (pygame.K_UP, pygame.K_w):
                             if self.sound_manager:
                                 self.sound_manager.play_sfx("menu_select")
@@ -539,25 +577,6 @@ class PygamePresenter(GamePresenter):
                 overlay.fill((0, 0, 0, 150))
                 self.screen.blit(overlay, (0, 0))
 
-                outer_rect = pygame.Rect(
-                    int(self.width * 0.06),
-                    int(self.height * 0.08),
-                    int(self.width * 0.88),
-                    int(self.height * 0.84),
-                )
-                left_rect = pygame.Rect(
-                    outer_rect.x + 10,
-                    outer_rect.y + 10,
-                    int(outer_rect.width * 0.42) - 15,
-                    outer_rect.height - 20,
-                )
-                right_rect = pygame.Rect(
-                    left_rect.right + 10,
-                    outer_rect.y + 10,
-                    outer_rect.right - (left_rect.right + 20),
-                    outer_rect.height - 20,
-                )
-
                 pygame.draw.rect(self.screen, (18, 18, 24), outer_rect)
                 pygame.draw.rect(self.screen, WHITE, outer_rect, 2)
                 pygame.draw.rect(self.screen, (10, 10, 15), left_rect)
@@ -581,8 +600,6 @@ class PygamePresenter(GamePresenter):
                     y += 28
                 y += 10
 
-                visible_count = max_visible or 6
-                end = min(len(options), scroll_offset + visible_count)
                 option_y = y
                 for idx in range(scroll_offset, end):
                     option = options[idx]
@@ -615,13 +632,48 @@ class PygamePresenter(GamePresenter):
         scroll_offset = 0
         
         while True:
+            title_lines = title.split('\n')
+            title_y = 80 + (len(title_lines) * 40)
+            menu_start_y = max(250, title_y + 30)
+            option_rects: list[pygame.Rect] = []
+            option_indices: list[int] = []
+            if use_grid:
+                cols = 2
+                col_width = self.width // 3
+                start_x = self.width // 2 - col_width
+                start_y = menu_start_y
+                row_height = 70
+                for i, _option in enumerate(options):
+                    row = i // cols
+                    col = i % cols
+                    x = start_x + col * col_width
+                    y = start_y + row * row_height
+                    option_rects.append(pygame.Rect(x - 10, y - 5, col_width - 20, 50))
+                    option_indices.append(i)
+            else:
+                visible_start = scroll_offset if (max_visible and max_visible > 0) else 0
+                visible_end = visible_start + max_visible if (max_visible and max_visible > 0) else len(options)
+                y = menu_start_y
+                for i in range(visible_start, min(visible_end, len(options))):
+                    option_rects.append(pygame.Rect(self.width // 4, y - 5, self.width // 2, 50))
+                    option_indices.append(i)
+                    y += 60
+
             # Handle events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
                     sys.exit()
-                if event.type == pygame.KEYDOWN:
+                if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(option_rects, mouse_position(event))
+                    if hovered is not None:
+                        selected = option_indices[hovered]
+                        if is_left_click(event):
+                            if self.sound_manager:
+                                self.sound_manager.play_sfx("menu_confirm")
+                            return selected
+                elif event.type == pygame.KEYDOWN:
                     if use_grid:
                         # Grid navigation: up/down/left/right
                         cols = 2
@@ -695,7 +747,6 @@ class PygamePresenter(GamePresenter):
             self.screen.fill(BLACK)
             
             # Title - handle multiline titles
-            title_lines = title.split('\n')
             title_y = 80
             for line in title_lines:
                 if line:  # Only render non-empty lines

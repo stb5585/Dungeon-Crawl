@@ -196,6 +196,50 @@ def test_promotion_screen_navigation(monkeypatch):
     assert screen.navigate() is None
 
 
+def test_promotion_screen_mouse_selects_option(monkeypatch):
+    presenter = _make_presenter()
+    player = _make_player()
+    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    screen = promotion_screen.PromotionScreen(
+        presenter,
+        player,
+        options=["Knight"],
+        option_map={"Knight": KnightClass},
+        current_class="Warrior",
+        pro_level=1,
+    )
+    monkeypatch.setattr(screen, "draw_all", lambda: None)
+
+    class FakePopup:
+        messages = []
+
+        def __init__(self, _presenter, message):
+            self.messages.append(message)
+
+        def show(self, **_kwargs):
+            return True
+
+    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.ConfirmationPopup", FakePopup)
+
+    click_pos = screen.option_rects()[0].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate() == "Knight"
+    assert FakePopup.messages == ["Promote to Knight?"]
+
+    screen.current_selection = 0
+    back_pos = screen.option_rects()[1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=back_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate() is None
+
+
 def test_promotion_screen_quit_event_raises(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()

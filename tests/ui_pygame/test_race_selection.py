@@ -171,6 +171,12 @@ def test_race_selection_navigation_and_quit(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(races, flush_events=True, require_key_release=True) == "Elf"
 
+    screen.set_races(races)
+    click_pos = screen.option_rects()[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(races) == "Human"
+
     monkeypatch.setattr(screen, "set_races", lambda *_args: setattr(screen, "races", []))
     assert screen.navigate(races) is None
 

@@ -5,6 +5,7 @@ Shop Selection screen for choosing which shop to visit.
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
 
 
@@ -17,6 +18,17 @@ class ShopSelectionScreen(TownScreenBase):
         super().__init__(presenter)
         # Menu state
         self.current_selection = 0
+
+    def option_rects(self, options) -> list[pygame.Rect]:
+        """Return clickable rectangles for the visible shop options."""
+        panel_width = 400
+        panel_x = self.width - panel_width
+        options_start_y = 150
+        line_height = 50
+        return [
+            pygame.Rect(panel_x + 20, options_start_y + i * line_height - 5, panel_width - 40, line_height - 10)
+            for i, _option in enumerate(options)
+        ]
         
     def draw_menu_panel(self, options):
         """Draw the semi-transparent menu panel with options."""
@@ -42,17 +54,13 @@ class ShopSelectionScreen(TownScreenBase):
         options_start_y = 150
         line_height = 50
         
+        option_rects = self.option_rects(options)
         for i, option in enumerate(options):
             y = options_start_y + i * line_height
             
             # Highlight selected option
             if i == self.current_selection:
-                highlight_rect = pygame.Rect(
-                    panel_x + 20,
-                    y - 5,
-                    panel_width - 40,
-                    line_height - 10
-                )
+                highlight_rect = option_rects[i]
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 2)
                 color = self.colors.GOLD
@@ -111,6 +119,13 @@ class ShopSelectionScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = hit_index(self.option_rects(options), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_selection = hovered
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_selection = hovered
+                        return self.current_selection
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue

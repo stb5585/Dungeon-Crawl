@@ -141,6 +141,11 @@ def test_shop_selection_navigate_selects_wraps_and_cancels(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.shop_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(["Blacksmith", "Jeweler", "Leave"], flush_events=True, require_key_release=True) == 0
 
+    click_pos = screen.option_rects(["Blacksmith", "Jeweler", "Leave"])[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.shop_selection.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["Blacksmith", "Jeweler", "Leave"]) == 1
+
 
 def test_shop_selection_quit_event_raises(monkeypatch):
     presenter = _make_presenter()

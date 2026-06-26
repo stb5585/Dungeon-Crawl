@@ -173,6 +173,7 @@ def test_init_build_character_and_default_character(monkeypatch):
     assert player.name == "Ada"
     assert player.race.name == "Human"
     assert player.cls.name == "Warrior"
+    assert player.portrait_variant == 0
     assert player.spellbook["Spells"]["Spark"].name == "Spark"
     assert player.storage["Health Potion"] == ["potion"] * 5
     assert player.loaded_tiles is True
@@ -314,14 +315,6 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     class FakeClass:
         name = "Warrior"
 
-    class FakeSexScreen:
-        def __init__(self, _presenter):
-            pass
-
-        def navigate(self, **kwargs):
-            route_kwargs.append(("sex", kwargs))
-            return "Female"
-
     class FakeRaceScreen:
         def __init__(self, _presenter):
             pass
@@ -339,8 +332,10 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
             return "Warrior"
 
     class FakeNamingScreen:
-        def __init__(self, _presenter, sex, race_name, class_name):
-            route_kwargs.append(("naming_init", {"sex": sex, "race": race_name, "class": class_name}))
+        def __init__(self, _presenter, race_name, class_name):
+            route_kwargs.append(("naming_init", {"race": race_name, "class": class_name}))
+            self.sex = "Female"
+            self.selected_portrait_variant = 4
 
         def navigate(self, **kwargs):
             route_kwargs.append(("naming", kwargs))
@@ -355,17 +350,17 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
 
     game.races_dict = {"Human": FakeRace}
     game.classes_dict = {"Warrior": {"class": FakeClass}}
-    game._build_player_character = lambda race_name, class_name, name, sex: SimpleNamespace(
+    game._build_player_character = lambda race_name, class_name, name, sex, portrait_variant=0: SimpleNamespace(
         race_name=race_name,
         class_name=class_name,
         name=name,
         sex=sex,
+        portrait_variant=portrait_variant,
         health=SimpleNamespace(max=20),
         mana=SimpleNamespace(max=10),
     )
     game.initialize_managers = lambda: None
     monkeypatch.setattr(pygame_game, "RaceSelectionScreen", FakeRaceScreen)
-    monkeypatch.setattr(pygame_game, "SexSelectionScreen", FakeSexScreen)
     monkeypatch.setattr(pygame_game, "ClassSelectionScreen", FakeClassScreen)
     monkeypatch.setattr(pygame_game, "CharacterNamingScreen", FakeNamingScreen)
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
@@ -374,11 +369,11 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
 
     assert player.name == "Ada"
     assert player.sex == "Female"
+    assert player.portrait_variant == 4
     assert route_kwargs == [
-        ("sex", {"flush_events": True, "require_key_release": True}),
         ("race", {"flush_events": True, "require_key_release": True}),
         ("class", {"flush_events": True, "require_key_release": True}),
-        ("naming_init", {"sex": "Female", "race": "Human", "class": "Warrior"}),
+        ("naming_init", {"race": "Human", "class": "Warrior"}),
         ("naming", {"default": "Hero", "flush_events": True, "require_key_release": True}),
     ]
 
@@ -757,6 +752,7 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert game.town_menu() == "quit"
     assert stats_calls
     assert any("Statistics" in options for options in options_seen)
+    assert all("Explore Town" not in options for options in options_seen)
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True
 
@@ -939,3 +935,81 @@ def test_town_menu_silently_drops_off_rookie_body_without_extra_popup(monkeypatc
     assert "Dead Soldier" not in game.player_char.special_inventory
     assert game.player_char.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
     assert "You have completed the quest Rookie Mistake." not in popup_messages
+
+
+def test_explore_town_prototype_routes_existing_location_actions(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    calls = []
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(location_x=5, location_y=10, location_z=0, facing="north")
+    game._play_location_music = lambda location, **_kwargs: calls.append(("music", location))
+    game.visit_barracks = lambda: calls.append("barracks")
+    game.visit_shop = lambda: calls.append("shops")
+    game.visit_inn = lambda: calls.append("inn")
+    game.visit_church = lambda: calls.append("church")
+    game.visit_old_warehouse = lambda **_kwargs: calls.append("warehouse")
+    game.use_warp_point = lambda **_kwargs: calls.append("warp") or None
+
+    class FakeTownNavigation:
+        def __init__(self, _presenter):
+            self.actions = iter(["Barracks", "Shops", "The Thirsty Dog Tavern", "Church of Elysia", "Old Warehouse", "Warp Point", "Enter Dungeon"])
+
+        def draw(self):
+            return None
+
+        def navigate(self, **_kwargs):
+            return next(self.actions)
+
+    monkeypatch.setattr(pygame_game, "TownNavigationScreen", FakeTownNavigation)
+
+    assert game.explore_town_prototype() == "dungeon"
+    assert calls == [
+        ("music", "town"),
+        "barracks",
+        "shops",
+        "inn",
+        "church",
+        "warehouse",
+        "warp",
+    ]
+    assert (game.player_char.location_x, game.player_char.location_y, game.player_char.location_z, game.player_char.facing) == (5, 10, 1, "east")
+
+
+def test_main_can_launch_direct_town_navigation(monkeypatch):
+    calls = []
+
+    class FakeGame:
+        def __init__(self, debug_mode=False):
+            calls.append(("init", debug_mode))
+            self.player_char = None
+
+        def create_default_character(self, name="Hero"):
+            calls.append(("default", name))
+            return SimpleNamespace(name=name)
+
+        def initialize_managers(self):
+            calls.append("managers")
+
+        def explore_town_prototype(self):
+            calls.append("town")
+            return "dungeon"
+
+        def enter_dungeon(self):
+            calls.append("dungeon")
+
+        def cleanup(self):
+            calls.append("cleanup")
+
+    monkeypatch.setattr(pygame_game, "PygameGame", FakeGame)
+    monkeypatch.setattr(pygame_game.sys, "argv", ["game_pygame.py", "--town-navigation", "--preview-name", "Town Tester"])
+
+    pygame_game.main()
+
+    assert calls == [
+        ("init", False),
+        ("default", "Town Tester"),
+        "managers",
+        "town",
+        "dungeon",
+        "cleanup",
+    ]

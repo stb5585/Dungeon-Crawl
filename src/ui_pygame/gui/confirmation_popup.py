@@ -5,6 +5,7 @@ Confirmation popup for character creation decisions.
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
 def _get_safe_background_surface(presenter, screen):
@@ -69,6 +70,14 @@ class ConfirmationPopup:
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+
+    def button_rects(self) -> list[pygame.Rect]:
+        """Return clickable Yes/No button rectangles."""
+        y = self.popup_y + self.popup_height - 70
+        return [
+            pygame.Rect(self.popup_x + (self.popup_width // 4) + i * (self.popup_width // 2) - 50, y - 5, 100, 35)
+            for i, _option in enumerate(self.options)
+        ]
     
     def _get_visible_lines(self):
         if not self.slow_print or not self._full_text:
@@ -113,7 +122,7 @@ class ConfirmationPopup:
                 x = self.popup_x + (self.popup_width // 4) + i * (self.popup_width // 2)
 
                 if i == self.current_selection:
-                    option_rect = pygame.Rect(x - 50, y - 5, 100, 35)
+                    option_rect = self.button_rects()[i]
                     pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, option_rect)
                     pygame.draw.rect(self.screen, self.GOLD, option_rect, 2)
                     color = self.GOLD
@@ -227,6 +236,21 @@ class ConfirmationPopup:
                     else:
                         # Message only - any key to dismiss
                         return finish(True)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if not input_armed:
+                        continue
+                    if self.slow_print and not self._reveal_complete():
+                        continue
+                    if min_display_ms and (pygame.time.get_ticks() - start_ms) < min_display_ms:
+                        continue
+                    if self.show_buttons:
+                        hovered = hit_index(self.button_rects(), mouse_position(event))
+                        if hovered is not None:
+                            self.current_selection = hovered
+                            if is_left_click(event):
+                                return finish(self.current_selection == 0)
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        return finish(True)
             
             self.presenter.clock.tick(30)
 
@@ -276,6 +300,14 @@ class ChoicePopup:
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
 
+    def option_rects(self) -> list[pygame.Rect]:
+        """Return clickable option rectangles."""
+        y = self.popup_y + 80 + (28 * len(self._header_lines))
+        return [
+            pygame.Rect(self.popup_x + 60, y + (i * 30) - 4, self.popup_width - 120, 28)
+            for i, _option in enumerate(self.options)
+        ]
+
     def _wrap_text(self, text: str, max_width: int) -> list[str]:
         if not text:
             return []
@@ -323,7 +355,7 @@ class ChoicePopup:
         y += 10
         for i, option in enumerate(self.options):
             if i == self.current_selection:
-                option_rect = pygame.Rect(self.popup_x + 60, y - 4, self.popup_width - 120, 28)
+                option_rect = self.option_rects()[i]
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, option_rect)
                 pygame.draw.rect(self.screen, self.GOLD, option_rect, 2)
                 color = self.GOLD
@@ -367,6 +399,12 @@ class ChoicePopup:
                         return self.current_selection
                     elif event.key == pygame.K_ESCAPE:
                         return None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(self.option_rects(), mouse_position(event))
+                    if hovered is not None:
+                        self.current_selection = hovered
+                        if is_left_click(event):
+                            return self.current_selection
 
             clock.tick(30)
 
@@ -405,6 +443,18 @@ class RewardSelectionPopup:
         self.list_rect = pygame.Rect(self.popup_rect.left + 24, self.popup_rect.top + 72, self.popup_rect.width * 2 // 5, self.popup_rect.height - 120)
         self.details_rect = pygame.Rect(self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40, self.popup_rect.top + 72, self.popup_rect.width * 3 // 5 - 64, self.popup_rect.height - 160)
         self.line_height = 24
+
+    def row_rects(self) -> list[pygame.Rect]:
+        """Return clickable reward-list row rectangles."""
+        return [
+            pygame.Rect(
+                self.list_rect.left + 8,
+                self.list_rect.top + 8 + (idx * self.line_height) - 2,
+                self.list_rect.width - 16,
+                self.line_height,
+            )
+            for idx, _item in enumerate(self.items)
+        ]
 
     def _get_background_surface(self):
         return _get_safe_background_surface(self.presenter, self.screen)
@@ -459,7 +509,7 @@ class RewardSelectionPopup:
                 while name and self.normal_font.size(name + "...")[0] > text_max_width:
                     name = name[:-1]
                 name = f"{name}..."
-            row_rect = pygame.Rect(self.list_rect.left + 8, y - 2, self.list_rect.width - 16, self.line_height)
+            row_rect = self.row_rects()[idx]
             if idx == self.selected_index:
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, row_rect)
                 color = self.GOLD
@@ -529,6 +579,23 @@ class RewardSelectionPopup:
                             return self.selected_index
                     elif event.key == pygame.K_ESCAPE:
                         return None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if not input_armed:
+                        continue
+                    hovered = hit_index(self.row_rects(), mouse_position(event))
+                    if hovered is not None:
+                        self.selected_index = hovered
+                        if is_left_click(event):
+                            current_item = self.items[self.selected_index]
+                            name = getattr(current_item, "name", str(current_item))
+                            confirm_popup = ConfirmationPopup(self.presenter, f"Take {name}?", show_buttons=True)
+                            choice = confirm_popup.show(
+                                background_draw_func=lambda: self.draw_popup(background, do_flip=False),
+                                flush_events=True,
+                                require_key_release=True,
+                            )
+                            if choice:
+                                return self.selected_index
 
             clock.tick(30)
 
@@ -590,6 +657,22 @@ class QuantityPopup:
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+
+    def digit_rects(self) -> list[pygame.Rect]:
+        """Return clickable tens/ones rectangles in index order [tens, ones]."""
+        qty_y = self.popup_y + 80
+        return [
+            pygame.Rect(self.popup_x + 250 - 30, qty_y - 10, 60, 50),
+            pygame.Rect(self.popup_x + 320 - 30, qty_y - 10, 60, 50),
+        ]
+
+    def button_rects(self) -> dict[str, pygame.Rect]:
+        """Return clickable Confirm/Cancel button rectangles."""
+        button_y = self.popup_y + 212
+        return {
+            "confirm": pygame.Rect(self.popup_rect.centerx - 150, button_y, 130, 36),
+            "cancel": pygame.Rect(self.popup_rect.centerx + 20, button_y, 130, 36),
+        }
     
     @property
     def quantity(self):
@@ -675,10 +758,17 @@ class QuantityPopup:
                 self.screen.blit(cost_text, cost_rect)
         
         # Instructions
-        instr_y = self.popup_y + 220
+        instr_y = self.popup_y + 254
         instr1 = self.small_font.render("UP/DOWN: Adjust | LEFT/RIGHT: Switch | ENTER: Confirm | ESC: Cancel", True, self.GRAY)
         instr_rect = instr1.get_rect(centerx=self.popup_rect.centerx, top=instr_y)
         self.screen.blit(instr1, instr_rect)
+
+        for label, rect in self.button_rects().items():
+            pygame.draw.rect(self.screen, self.HIGHLIGHT_BG if label == "confirm" else self.POPUP_BG, rect)
+            pygame.draw.rect(self.screen, self.GOLD if label == "confirm" else self.BORDER_COLOR, rect, 2)
+            text = self.small_font.render(label.title(), True, self.GOLD if label == "confirm" else self.WHITE)
+            text_rect = text.get_rect(center=rect.center)
+            self.screen.blit(text, text_rect)
     
     def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
         """
@@ -756,6 +846,32 @@ class QuantityPopup:
                         # Confirm selection
                         if self.quantity > 0:
                             return finish(self.quantity)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
+                    if not input_armed:
+                        continue
+                    if event.type == pygame.MOUSEWHEEL:
+                        delta = 1 if getattr(event, "y", 0) > 0 else -1
+                        if self.selected_place == 0:
+                            self.ones = max(0, min(9, self.ones + delta))
+                        else:
+                            self.tens = max(0, min(9, self.tens + delta))
+                        if self.quantity > self.max_quantity:
+                            if self.selected_place == 0:
+                                self.ones = max(0, self.ones - 1)
+                            else:
+                                self.tens = max(0, self.tens - 1)
+                        continue
+                    digit_hit = hit_index(self.digit_rects(), mouse_position(event))
+                    if digit_hit is not None:
+                        self.selected_place = 1 if digit_hit == 0 else 0
+                        continue
+                    if is_left_click(event):
+                        buttons = self.button_rects()
+                        pos = mouse_position(event)
+                        if buttons["confirm"].collidepoint(pos or (-1, -1)) and self.quantity > 0:
+                            return finish(self.quantity)
+                        if buttons["cancel"].collidepoint(pos or (-1, -1)):
+                            return finish(None)
             
             self.presenter.clock.tick(30)
 
@@ -793,6 +909,24 @@ class CodeEntryPopup:
         self.popup_y = (self.height - self.popup_height) // 2
         self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
 
+    def digit_rects(self) -> list[pygame.Rect]:
+        """Return clickable code digit rectangles."""
+        digit_y = self.popup_y + 130
+        spacing = 72
+        start_x = self.popup_rect.centerx - (spacing * 3) // 2
+        return [
+            pygame.Rect(start_x + idx * spacing - 24, digit_y - 8, 48, 64)
+            for idx in range(len(self.digits))
+        ]
+
+    def button_rects(self) -> dict[str, pygame.Rect]:
+        """Return clickable Confirm/Cancel button rectangles."""
+        button_y = self.popup_y + 204
+        return {
+            "confirm": pygame.Rect(self.popup_rect.centerx - 150, button_y, 130, 34),
+            "cancel": pygame.Rect(self.popup_rect.centerx + 20, button_y, 130, 34),
+        }
+
     def draw_popup(self, background_draw_func):
         if background_draw_func:
             background_draw_func()
@@ -818,7 +952,7 @@ class CodeEntryPopup:
         start_x = self.popup_rect.centerx - (spacing * 3) // 2
         for idx, digit in enumerate(self.digits):
             x = start_x + idx * spacing
-            rect = pygame.Rect(x - 24, digit_y - 8, 48, 64)
+            rect = self.digit_rects()[idx]
             if idx == self.selected_digit:
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.GOLD, rect, 2)
@@ -838,6 +972,13 @@ class CodeEntryPopup:
         )
         instructions_rect = instructions.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 220)
         self.screen.blit(instructions, instructions_rect)
+
+        for label, rect in self.button_rects().items():
+            pygame.draw.rect(self.screen, self.HIGHLIGHT_BG if label == "confirm" else self.POPUP_BG, rect)
+            pygame.draw.rect(self.screen, self.GOLD if label == "confirm" else self.BORDER_COLOR, rect, 2)
+            text = self.small_font.render(label.title(), True, self.GOLD if label == "confirm" else self.WHITE)
+            text_rect = text.get_rect(center=rect.center)
+            self.screen.blit(text, text_rect)
 
         pygame.display.flip()
 
@@ -868,22 +1009,39 @@ class CodeEntryPopup:
                     pygame.quit()
                     import sys
                     sys.exit()
-                if event.type != pygame.KEYDOWN:
-                    continue
-                if not input_armed:
-                    continue
-                if event.key == pygame.K_ESCAPE:
-                    return finish(None)
-                if event.key == pygame.K_LEFT:
-                    self.selected_digit = max(0, self.selected_digit - 1)
-                elif event.key == pygame.K_RIGHT:
-                    self.selected_digit = min(3, self.selected_digit + 1)
-                elif event.key == pygame.K_UP:
-                    self.digits[self.selected_digit] = min(9, self.digits[self.selected_digit] + 1)
-                elif event.key == pygame.K_DOWN:
-                    self.digits[self.selected_digit] = max(0, self.digits[self.selected_digit] - 1)
-                elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    return finish("".join(str(digit) for digit in self.digits))
+                if event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
+                    if event.key == pygame.K_ESCAPE:
+                        return finish(None)
+                    if event.key == pygame.K_LEFT:
+                        self.selected_digit = max(0, self.selected_digit - 1)
+                    elif event.key == pygame.K_RIGHT:
+                        self.selected_digit = min(3, self.selected_digit + 1)
+                    elif event.key == pygame.K_UP:
+                        self.digits[self.selected_digit] = min(9, self.digits[self.selected_digit] + 1)
+                    elif event.key == pygame.K_DOWN:
+                        self.digits[self.selected_digit] = max(0, self.digits[self.selected_digit] - 1)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return finish("".join(str(digit) for digit in self.digits))
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
+                    if not input_armed:
+                        continue
+                    if event.type == pygame.MOUSEWHEEL:
+                        delta = 1 if getattr(event, "y", 0) > 0 else -1
+                        self.digits[self.selected_digit] = max(0, min(9, self.digits[self.selected_digit] + delta))
+                        continue
+                    digit_hit = hit_index(self.digit_rects(), mouse_position(event))
+                    if digit_hit is not None:
+                        self.selected_digit = digit_hit
+                        continue
+                    if is_left_click(event):
+                        buttons = self.button_rects()
+                        pos = mouse_position(event)
+                        if buttons["confirm"].collidepoint(pos or (-1, -1)):
+                            return finish("".join(str(digit) for digit in self.digits))
+                        if buttons["cancel"].collidepoint(pos or (-1, -1)):
+                            return finish(None)
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):

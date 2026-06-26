@@ -141,6 +141,10 @@ def _event(event_type, key=None, unicode=""):
     return evt
 
 
+def _mouse_event(event_type, pos, button=1):
+    return SimpleNamespace(type=event_type, pos=pos, button=button)
+
+
 def _install_presenter_fakes(monkeypatch):
     event_bus = DummyEventBus()
     sound_manager = DummySoundManager()
@@ -413,6 +417,30 @@ def test_render_menu_list_grid_and_split_layout_paths(monkeypatch):
     assert "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel" in presenter.small_font.render_calls
     assert "menu_select" in bundle.sound_manager.sfx
     assert "menu_confirm" in bundle.sound_manager.sfx
+
+
+def test_render_menu_mouse_selects_list_grid_and_split_options(monkeypatch):
+    bundle = _install_presenter_fakes(monkeypatch)
+    presenter = bundle.presenter
+
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEMOTION, (320, 335), 0)],
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, (320, 335))],
+    ])
+    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    assert presenter.render_menu("Title", ["One", "Two", "Three"], selected_index=0, max_visible=2) == 1
+
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, (425, 270))],
+    ])
+    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    assert presenter.render_menu("Grid", ["A", "B", "C"], use_grid=True) == 1
+
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, (465, 154))],
+    ])
+    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    assert presenter.render_menu("Split", ["Left", "Right"], split_layout=True) == 1
 
 
 def test_show_message_progress_popup_and_dialogue_paths(monkeypatch):

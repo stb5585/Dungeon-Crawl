@@ -5,7 +5,8 @@ Displays a popup menu for selecting which stat to increase.
 
 import pygame
 
-from .input_guards import prepare_guarded_input, release_guard_allows_input
+from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
 class StatSelectionPopup:
@@ -89,6 +90,7 @@ class StatSelectionPopup:
             input_armed = release_guard_allows_input(require_key_release, input_armed)
 
             for event in pygame.event.get():
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
                 if event.type == pygame.QUIT:
                     selecting = False
                 elif event.type == pygame.KEYDOWN:
@@ -99,6 +101,14 @@ class StatSelectionPopup:
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         self.current_selection = (self.current_selection + 1) % len(self.stat_options)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                        self.result = self.stat_options[self.current_selection][0]
+                        selecting = False
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(self.option_rects(), mouse_position(event))
+                    if hovered is None:
+                        continue
+                    self.current_selection = hovered
+                    if is_left_click(event) and input_armed:
                         self.result = self.stat_options[self.current_selection][0]
                         selecting = False
             
@@ -138,12 +148,7 @@ class StatSelectionPopup:
         for i, (stat_name, stat_value) in enumerate(self.stat_options):
             # Draw highlight box for selected option
             if i == self.current_selection:
-                highlight_rect = pygame.Rect(
-                    self.popup_x + 20,
-                    y - 5,
-                    self.popup_width - 40,
-                    40
-                )
+                highlight_rect = self.option_rects()[i]
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 2)
                 text_color = self.GOLD
@@ -167,3 +172,15 @@ class StatSelectionPopup:
         )
         instruction_rect = instruction_text.get_rect(center=(self.popup_rect.centerx, self.popup_rect.bottom - 20))
         self.screen.blit(instruction_text, instruction_rect)
+
+    def option_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for stat option rows."""
+        return [
+            pygame.Rect(
+                self.popup_x + 20,
+                self.popup_rect.top + 70 + i * 50 - 5,
+                self.popup_width - 40,
+                40,
+            )
+            for i, _option in enumerate(self.stat_options)
+        ]

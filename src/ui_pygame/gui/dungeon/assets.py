@@ -30,6 +30,7 @@ DEFAULT_TEXTURE_PATHS = {
     "ceiling": "ceilings/stone.png",
     "ceiling_funhouse": "ceilings/funhouse.png",
     "ceiling_pit": "ceilings/stone_pit.png",
+    "ceiling_void": "__generated__/ceiling_void.png",
 }
 
 TEXTURE_PATHS = dict(DEFAULT_TEXTURE_PATHS)
@@ -79,6 +80,7 @@ FALLBACK_COLORS = {
     "ceiling": (70, 68, 76),
     "ceiling_funhouse": (44, 36, 58),
     "ceiling_pit": (52, 52, 58),
+    "ceiling_void": (4, 5, 7),
 }
 
 SPECIAL_FALLBACK_COLORS = {
@@ -271,6 +273,12 @@ class TextureLibrary:
             return
 
         for texture_key, rel_path in self.texture_paths.items():
+            if texture_key == "ceiling_void":
+                void = pygame.Surface((128, 128), pygame.SRCALPHA)
+                void.fill((*FALLBACK_COLORS["ceiling_void"], 255))
+                self._textures[texture_key] = self._prepare_texture(texture_key, void)
+                continue
+
             full_path = self.tileset_base / rel_path
             if os.path.exists(full_path):
                 self._textures[texture_key] = self._prepare_texture(

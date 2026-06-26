@@ -22,6 +22,7 @@ from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Pla
 from .combat_view import CombatView
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .level_up import LevelUpScreen
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 if TYPE_CHECKING:
     from src.core.map_tiles import MapTile
@@ -365,6 +366,89 @@ class GUICombatManager:
     @staticmethod
     def _arm_guarded_input(event, input_armed: bool) -> bool:
         return update_input_armed_from_event(event, True, input_armed)
+
+    def _combat_action_rects(self, actions) -> list[pygame.Rect]:
+        """Return clickable rectangles for the main combat action grid."""
+        combat_width = int(getattr(self.combat_view, "combat_width", self.screen.get_width()))
+        combat_height = int(getattr(self.combat_view, "combat_height", self.screen.get_height()))
+        menu_height = 150
+        menu_rect = pygame.Rect(0, combat_height - menu_height, combat_width, menu_height)
+        layout_func = getattr(self.combat_view, "_action_grid_layout", None)
+        if callable(layout_func):
+            actions_per_row, _row_count, start_y_offset, row_height, cell_width = layout_func(
+                menu_rect.width,
+                menu_rect.height,
+                len(actions),
+            )
+        else:
+            actions_per_row = 3
+            row_count = max(1, (max(1, len(actions)) + actions_per_row - 1) // actions_per_row)
+            start_y_offset = 46
+            available_height = max(24, menu_height - start_y_offset - 14)
+            row_height = max(22, min(34, available_height // row_count))
+            cell_width = max(92, (menu_rect.width - 54) // actions_per_row)
+
+        rects = []
+        for index, _action in enumerate(actions):
+            row = index // actions_per_row
+            col = index % actions_per_row
+            x = menu_rect.left + 28 + col * cell_width
+            y = menu_rect.top + start_y_offset + row * row_height
+            rects.append(pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3)))
+        return rects
+
+    def _selection_menu_option_rects(self, options, scroll_offset: int = 0) -> list[tuple[int, pygame.Rect]]:
+        """Return visible option indices and click rectangles for an in-combat picker."""
+        panel_width = max(420, int(self.screen.get_width() * 0.65))
+        panel_height = 176
+        panel_x = 0
+        panel_y = self.screen.get_height() - panel_height
+        max_visible = 3
+        max_scroll = max(0, len(options) - max_visible)
+        scroll_offset = max(0, min(scroll_offset, max_scroll))
+        option_y = panel_y + 50
+        option_rect_width = panel_width - 58
+        rects = []
+        for index in range(scroll_offset, min(len(options), scroll_offset + max_visible)):
+            rects.append(
+                (
+                    index,
+                    pygame.Rect(panel_x + 18, option_y - 4, option_rect_width, 30),
+                )
+            )
+            option_y += 34
+        return rects
+
+    def _selection_menu_hit_index(self, options, scroll_offset: int, event) -> int | None:
+        rect_pairs = self._selection_menu_option_rects(options, scroll_offset)
+        visible_index = hit_index([rect for _index, rect in rect_pairs], mouse_position(event))
+        if visible_index is None:
+            return None
+        return rect_pairs[visible_index][0]
+
+    def _selection_menu_mouse_update(
+        self,
+        event,
+        options,
+        selected: int,
+        scroll_offset: int,
+        input_armed: bool,
+    ) -> tuple[int, int, bool]:
+        """Return updated selection, scroll, and whether the mouse confirmed."""
+        hovered = self._selection_menu_hit_index(options, scroll_offset, event)
+        if hovered is None:
+            return selected, scroll_offset, False
+        selected = hovered
+        scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+        return selected, scroll_offset, is_left_click(event) and input_armed
+
+    @staticmethod
+    def _scroll_offset_for_selection(selected: int, scroll_offset: int, max_visible: int = 3) -> int:
+        if selected < scroll_offset:
+            return selected
+        if selected >= scroll_offset + max_visible:
+            return selected - max_visible + 1
+        return scroll_offset
 
     @staticmethod
     def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
@@ -1014,6 +1098,22 @@ class GUICombatManager:
                                 return "flee"
                             elif action_result is not None:
                                 action_taken = True
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(self._combat_action_rects(actions), mouse_position(event))
+                    if hovered is None:
+                        continue
+                    selected_action = hovered
+                    if not is_left_click(event) or not input_armed:
+                        continue
+                    action_result = self._execute_action(
+                        actions[selected_action],
+                        player_char,
+                        enemy,
+                    )
+                    if action_result == "flee":
+                        return "flee"
+                    elif action_result is not None:
+                        action_taken = True
             
             pygame.display.flip()
 
@@ -1271,10 +1371,19 @@ class GUICombatManager:
                         selected = (selected + 1) % len(aspects)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                         return aspects[selected]
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, _scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        0,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return aspects[selected]
     
     def _select_item(self, player_char, enemy):
         """Show item selection menu and return selected item."""
-        # Get usable items (Health, Mana, Elixir, Status potions)
         usable_types = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
         items = []
         for item_name, item_list in player_char.inventory.items():
@@ -1285,23 +1394,21 @@ class GUICombatManager:
             self.combat_view.add_combat_message("No usable items!")
             self._pause_with_events(500)
             return None
-        
-        # Create selection menu
+
         selected = 0
         scroll_offset = 0
         input_armed = self._clear_pending_input()
         while True:
-            # Render combat with item menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
+            item_options = [f"{name} ({count})" for name, _, count in items]
             self._render_selection_menu(
                 "Select Item",
-                [f"{name} ({count})" for name, _, count in items],
+                item_options,
                 selected,
-                scroll_offset
+                scroll_offset,
             )
             pygame.display.flip()
             
-            # Handle input
             input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1322,18 +1429,21 @@ class GUICombatManager:
                     elif event.key == pygame.K_PAGEDOWN:
                         selected = min(len(items) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                        return items[selected][1]  # Return the item object
-                    
-                    # Update scroll to keep selection visible
-                    max_visible = 3
-                    if selected < scroll_offset:
-                        scroll_offset = selected
-                    elif selected >= scroll_offset + max_visible:
-                        scroll_offset = selected - max_visible + 1
+                        return items[selected][1]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        item_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return items[selected][1]
     
     def _select_spell(self, player_char, enemy):
         """Show spell selection menu and return selected spell name."""
-        # Filter out passive spells
         spells = [
             name for name, spell in player_char.spellbook['Spells'].items()
             if not getattr(spell, 'passive', False)
@@ -1349,7 +1459,6 @@ class GUICombatManager:
         scroll_offset = 0
         input_armed = self._clear_pending_input()
         while True:
-            # Render combat with spell menu overlay
             self._render_combat_frame(player_char, enemy, [], -1)
             spell_options = []
             for spell_name in spells:
@@ -1360,7 +1469,6 @@ class GUICombatManager:
             self._render_selection_menu("Select Spell", spell_options, selected, scroll_offset)
             pygame.display.flip()
             
-            # Handle input
             input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1381,14 +1489,18 @@ class GUICombatManager:
                     elif event.key == pygame.K_PAGEDOWN:
                         selected = min(len(spells) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                        return spells[selected]  # Return spell name
-                    
-                    # Update scroll to keep selection visible
-                    max_visible = 3
-                    if selected < scroll_offset:
-                        scroll_offset = selected
-                    elif selected >= scroll_offset + max_visible:
-                        scroll_offset = selected - max_visible + 1
+                        return spells[selected]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        spell_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return spells[selected]
     
     def _select_skill(self, player_char, enemy):
         """Show skill selection menu and return selected skill name."""
@@ -1445,6 +1557,16 @@ class GUICombatManager:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        skill_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return skills[selected]
 
     def _select_runic_boost_spell(self, player_char, enemy):
         """Show Runic Boost spell selection and return selected spell name."""
@@ -1495,6 +1617,16 @@ class GUICombatManager:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        spell_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return spells[selected]
 
     def _select_steal_as_well_spell(self, player_char, enemy):
         """Show Steal As Well spell/scroll selection and return the selected name."""
@@ -1548,6 +1680,16 @@ class GUICombatManager:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return options[selected]
 
     def _select_contract_intent(self, player_char, enemy):
         """Choose and confirm a Demonologist contract intent."""
@@ -1560,6 +1702,31 @@ class GUICombatManager:
         selected = 0
         scroll_offset = 0
         input_armed = self._clear_pending_input()
+
+        def confirm_intent(intent):
+            quote = demonologist.quote_contract(player_char, enemy, intent)
+            if not quote.get("ok"):
+                self.combat_view.add_combat_message(quote.get("reason", "The patron refuses."))
+                self._pause_with_events(700)
+                return None
+            costs = quote["costs"]
+            lines = [
+                f"{quote['patron']} demands {costs['gold']} gold.",
+                f"Misbehavior risk: {int(quote['misbehavior_chance'] * 100)}%",
+            ]
+            if costs.get("item"):
+                lines.append("Additional demand: one potion.")
+            permanent = costs.get("permanent")
+            if permanent:
+                lines.append(f"Additional demand: permanent {permanent['amount']} {permanent['stat']}.")
+            if not demonologist.can_pay_quote(player_char, quote):
+                self.combat_view.add_combat_message("You cannot pay that price.")
+                self._pause_with_events(700)
+                return None
+            if self.presenter.render_menu("\n".join(lines), ["Accept", "Refuse"]) == 0:
+                return intent
+            return None
+
         while True:
             self._render_combat_frame(player_char, enemy, [], -1)
             self._render_selection_menu("Ask Fiend", intents, selected, scroll_offset)
@@ -1581,35 +1748,23 @@ class GUICombatManager:
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
                         selected = (selected + 1) % len(intents)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                        intent = intents[selected]
-                        quote = demonologist.quote_contract(player_char, enemy, intent)
-                        if not quote.get("ok"):
-                            self.combat_view.add_combat_message(quote.get("reason", "The patron refuses."))
-                            self._pause_with_events(700)
-                            return None
-                        costs = quote["costs"]
-                        lines = [
-                            f"{quote['patron']} demands {costs['gold']} gold.",
-                            f"Misbehavior risk: {int(quote['misbehavior_chance'] * 100)}%",
-                        ]
-                        if costs.get("item"):
-                            lines.append("Additional demand: one potion.")
-                        permanent = costs.get("permanent")
-                        if permanent:
-                            lines.append(f"Additional demand: permanent {permanent['amount']} {permanent['stat']}.")
-                        if not demonologist.can_pay_quote(player_char, quote):
-                            self.combat_view.add_combat_message("You cannot pay that price.")
-                            self._pause_with_events(700)
-                            return None
-                        if self.presenter.render_menu("\n".join(lines), ["Accept", "Refuse"]) == 0:
-                            return intent
-                        return None
+                        return confirm_intent(intents[selected])
 
                     max_visible = 3
                     if selected < scroll_offset:
                         scroll_offset = selected
                     elif selected >= scroll_offset + max_visible:
                         scroll_offset = selected - max_visible + 1
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        intents,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return confirm_intent(intents[selected])
 
     def _skill_available_for_selection(self, player_char, skill) -> bool:
         """Return whether a learned skill should be shown in the combat skill list."""

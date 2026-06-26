@@ -83,6 +83,10 @@ def _event(event_type, key=None):
     return evt
 
 
+def _mouse_event(event_type, pos, button=1, y=0):
+    return SimpleNamespace(type=event_type, pos=pos, button=button, y=y)
+
+
 def _patch_visuals(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.draw.rect", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.display.flip", lambda: None)
@@ -271,6 +275,48 @@ def test_choice_popup_draw_and_show_cover_wrap_navigation_and_escape(monkeypatch
     assert popup.show() is None
 
 
+def test_popup_mouse_paths_select_confirm_and_adjust(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: [])
+
+    confirm = confirmation_popup.ConfirmationPopup(presenter, "Proceed?")
+    no_pos = confirm.button_rects()[1].center
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEMOTION, no_pos, button=0)],
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, no_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert confirm.show() is False
+
+    choice = confirmation_popup.ChoicePopup(presenter, "Pick", ["Alpha", "Beta"])
+    beta_pos = choice.option_rects()[1].center
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, beta_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert choice.show() == 1
+
+    quantity = confirmation_popup.QuantityPopup(presenter, "Potion", max_quantity=9, default_quantity=1)
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEWHEEL, (0, 0), button=0, y=1)],
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, quantity.button_rects()["confirm"].center)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert quantity.show() == 2
+
+    code = confirmation_popup.CodeEntryPopup(presenter, "Vault", "Enter code")
+    digit_pos = code.digit_rects()[1].center
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, digit_pos)],
+        [_mouse_event(pygame.MOUSEWHEEL, digit_pos, button=0, y=1)],
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, code.button_rects()["confirm"].center)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert code.show() == "0100"
+
+
 def test_reward_selection_popup_draw_and_show_confirm_branch(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()
@@ -304,6 +350,35 @@ def test_reward_selection_popup_draw_and_show_confirm_branch(monkeypatch):
 
     empty_popup = confirmation_popup.RewardSelectionPopup(presenter, "Rewards", [], lambda _item: "")
     assert empty_popup.show() is None
+
+
+def test_reward_selection_popup_mouse_selects_and_confirms(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    popup = confirmation_popup.RewardSelectionPopup(
+        presenter,
+        "Rewards",
+        [SimpleNamespace(name="Gold"), SimpleNamespace(name="Potion")],
+        detail_provider=lambda item: item.name,
+    )
+
+    class FakeConfirm:
+        def __init__(self, _presenter, message, show_buttons=True):
+            self.message = message
+            self.show_buttons = show_buttons
+
+        def show(self, **_kwargs):
+            return True
+
+    monkeypatch.setattr(confirmation_popup, "ConfirmationPopup", FakeConfirm)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: [])
+    click_pos = popup.row_rects()[1].center
+    event_batches = iter([
+        [_mouse_event(pygame.MOUSEBUTTONDOWN, click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+
+    assert popup.show() == 1
 
 
 def test_reward_selection_popup_can_flush_and_wait_for_key_release(monkeypatch):

@@ -35,6 +35,7 @@ Usage:
 
 from __future__ import annotations
 
+import inspect
 import random
 import re
 from dataclasses import dataclass, field
@@ -549,7 +550,7 @@ class BattleEngine:
                 continue
             target = self.enemy if self.enemy.is_alive() else self.defender
             messages.append(f"{getattr(spell, 'name', 'A delayed spell')} emerges from the wormhole.\n")
-            messages.append(str(spell.cast(caster, target=target, battle_engine=self)))
+            messages.append(str(self._cast_spell_with_context(spell, caster, target)))
         self.delayed_spells = remaining
         return messages
 
@@ -801,7 +802,7 @@ class BattleEngine:
 
         defender_was_alive = self.defender.is_alive()
         message = f"{self.attacker.name} casts {choice}.\n"
-        message += str(spell.cast(self.attacker, target=self.defender, battle_engine=self))
+        message += str(self._cast_spell_with_context(spell, self.attacker, self.defender))
         if self.attacker == self.player:
             if (
                 choice in {"Turn Undead", "TurnUndead", "Turn Undead 2", "TurnUndead2"}
@@ -824,6 +825,22 @@ class BattleEngine:
         if gained and sign:
             return f"{self.player.name} claims an {sign} rune.\n"
         return ""
+
+    def _cast_spell_with_context(self, spell: object, caster: object, target: object) -> object:
+        """Cast a spell, passing this engine only when the spell accepts it."""
+        cast = getattr(spell, "cast")
+        try:
+            signature = inspect.signature(cast)
+        except (TypeError, ValueError):
+            return cast(caster, target=target)
+        accepts_engine = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            or parameter.name == "battle_engine"
+            for parameter in signature.parameters.values()
+        )
+        if accepts_engine:
+            return cast(caster, target=target, battle_engine=self)
+        return cast(caster, target=target)
 
     def _execute_runic_boost(self, choice: str | None) -> str:
         """Spend a rune to empower and cast a matching natural spell."""
@@ -886,7 +903,7 @@ class BattleEngine:
             spell = self.attacker.spellbook["Spells"][choice]
             if self.attacker.mana.current < getattr(spell, "cost", 0):
                 return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
-            message += str(spell.cast(self.attacker, target=self.defender, battle_engine=self))
+            message += str(self._cast_spell_with_context(spell, self.attacker, self.defender))
         elif choice in self.attacker.inventory and self.attacker.inventory[choice]:
             scroll = self.attacker.inventory[choice][0]
             if not isinstance(scroll, items.InscribedSpellScroll):

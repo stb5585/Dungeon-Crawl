@@ -65,6 +65,10 @@ class LadderUp:
     enter = True
 
 
+class StairsUp:
+    enter = True
+
+
 class LadderDown:
     enter = True
 
@@ -390,6 +394,92 @@ def test_texture_library_resolves_repo_assets_when_cwd_changes(tmp_path, monkeyp
     assert textures.get_texture("wall").get_width() > 0
     assert textures.get_special_texture("stairs_down") is not None
     assert textures.get_enemy_texture("Minotaur", size=32) is not None
+
+    pygame.quit()
+
+
+def test_stair_special_tile_sprites_are_opaque_and_directionally_distinct():
+    pygame.init()
+    textures = TextureLibrary()
+
+    stairs_up = textures.get_special_texture("stairs_up")
+    stairs_down = textures.get_special_texture("stairs_down")
+
+    def alpha_stats(surface):
+        width, height = surface.get_size()
+        alphas = [
+            surface.get_at((x, y)).a
+            for y in range(height)
+            for x in range(width)
+        ]
+        coverage = sum(alpha > 128 for alpha in alphas) / len(alphas)
+        top = min(
+            y
+            for y in range(height)
+            for x in range(width)
+            if surface.get_at((x, y)).a > 128
+        )
+        return coverage, top
+
+    def opaque_row_width(surface, row):
+        opaque_columns = [
+            x
+            for x in range(surface.get_width())
+            if surface.get_at((x, row)).a > 128
+        ]
+        if not opaque_columns:
+            return 0
+        return max(opaque_columns) - min(opaque_columns) + 1
+
+    def opaque_luminance(surface):
+        colors = [
+            surface.get_at((x, y))
+            for y in range(surface.get_height())
+            for x in range(surface.get_width())
+            if surface.get_at((x, y)).a > 128
+        ]
+        return sum((0.2126 * color.r) + (0.7152 * color.g) + (0.0722 * color.b) for color in colors) / len(colors)
+
+    def opaque_rgb_mean(surface):
+        colors = [
+            surface.get_at((x, y))
+            for y in range(surface.get_height())
+            for x in range(surface.get_width())
+            if surface.get_at((x, y)).a > 128
+        ]
+        return tuple(
+            sum(getattr(color, channel) for color in colors) / len(colors)
+            for channel in ("r", "g", "b")
+        )
+
+    up_coverage, up_top = alpha_stats(stairs_up)
+    down_coverage, down_top = alpha_stats(stairs_down)
+    up_bounds = stairs_up.get_bounding_rect(min_alpha=128)
+    up_mean_r, _up_mean_g, up_mean_b = opaque_rgb_mean(stairs_up)
+    down_mean_r, _down_mean_g, down_mean_b = opaque_rgb_mean(stairs_down)
+    up_top_pixel = stairs_up.get_at((stairs_up.get_width() // 2, 0))
+    down_bounds = stairs_down.get_bounding_rect(min_alpha=128)
+    down_far_width = opaque_row_width(
+        stairs_down,
+        down_bounds.y + int(down_bounds.height * 0.18),
+    )
+    down_near_width = opaque_row_width(
+        stairs_down,
+        down_bounds.bottom - int(down_bounds.height * 0.12),
+    )
+
+    assert up_coverage > 0.35
+    assert 110 <= up_bounds.y <= 135
+    assert up_bounds.height >= 360
+    assert opaque_luminance(stairs_up) <= 76
+    assert up_mean_b <= up_mean_r + 14
+    assert abs(up_mean_r - down_mean_r) <= 22
+    assert abs(up_mean_b - down_mean_b) <= 22
+    assert up_top_pixel.a == 0
+    assert down_coverage > 0.20
+    assert down_top > up_top + 60
+    assert down_bounds.height <= 200
+    assert down_near_width > down_far_width * 1.55
 
     pygame.quit()
 
@@ -2126,6 +2216,33 @@ def test_scene_renderer_scales_ladder_down_as_pit_floor_sprite():
     assert SceneRenderer._get_floor_sprite_ratio(1, "dead_soldier_item") < SceneRenderer._get_floor_sprite_ratio(1, "dead_body")
 
 
+def test_scene_renderer_sizes_stairs_down_from_floor_width(monkeypatch):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    requested_sizes = []
+    sprite = pygame.Surface((80, 40), pygame.SRCALPHA)
+    sprite.fill((200, 140, 40, 255))
+
+    def fake_get_special_texture(_texture_key, size=None):
+        requested_sizes.append(size)
+        return sprite
+
+    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", fake_get_special_texture)
+    scene_renderer._render_floor_sprite(
+        "stairs_down",
+        pygame.Rect(100, 120, 220, 80),
+        darkness=0,
+        depth=1,
+        kind="stairs_down",
+    )
+
+    assert requested_sizes == [252]
+
+    pygame.quit()
+
+
 def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -2166,6 +2283,164 @@ def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
     assert lateral_view is False
     assert abs(rect.y - round(expected_bounds.y)) <= 1
     assert abs(rect.bottom - round(expected_bounds.y + expected_bounds.h)) <= 1
+
+    pygame.quit()
+
+
+def test_scene_renderer_stretches_current_stairs_up_to_back_wall_top():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    textures = TextureLibrary()
+    scene_renderer = SceneRenderer(presenter, textures)
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): StairsUp(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    rendered = []
+
+    def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
+        if isinstance(tile, StairsUp):
+            rendered.append((rect.copy(), depth, side, lateral_view))
+
+    scene_renderer._render_special_tile = recording_render_special_tile
+    scene_renderer.render(player, world)
+
+    view_w, view_h = scene_renderer._get_viewport_size()
+    zones = {
+        depth: build_zone_geometry(
+            build_depth_rect(view_w, view_h, depth),
+            build_next_depth_rect(build_depth_rect(view_w, view_h, depth)),
+            depth=depth,
+        )
+        for depth in (1, 2, 3)
+    }
+    ceiling_bounds = zones[2].center_ceiling.bounding_rect()
+    expected_visible_top = ceiling_bounds.top + (ceiling_bounds.h * 0.4)
+    expected_visible_bottom = zones[2].center_floor.bounding_rect().bottom
+    back_wall_rect = zones[2].back_wall_rect
+
+    sprite = textures.get_special_texture("stairs_up")
+    source_bounds = sprite.get_bounding_rect(min_alpha=128)
+
+    assert rendered
+    rect, depth, side, lateral_view = rendered[0]
+    visible_top = rect.y + (source_bounds.top / sprite.get_height() * rect.height)
+    visible_bottom = rect.y + (source_bounds.bottom / sprite.get_height() * rect.height)
+    assert depth == 0
+    assert side is None
+    assert lateral_view is False
+    assert rect.width >= round(back_wall_rect.w * 1.85)
+    assert abs(rect.centerx - (back_wall_rect.x + back_wall_rect.w / 2)) <= 1
+    assert rect.height > back_wall_rect.h
+    assert abs(visible_top - expected_visible_top) <= 1
+    assert abs(visible_bottom - expected_visible_bottom) <= 1
+
+    pygame.quit()
+
+
+def test_scene_renderer_applies_stairs_up_ascend_gradient():
+    pygame.init()
+    sprite = pygame.Surface((8, 8), pygame.SRCALPHA)
+    sprite.fill((200, 200, 200, 255))
+
+    shaded = SceneRenderer._apply_stairs_up_ascend_gradient(sprite)
+
+    top = shaded.get_at((4, 0))
+    bottom = shaded.get_at((4, 7))
+
+    assert top.r < bottom.r
+    assert top.g < bottom.g
+    assert top.b < bottom.b
+    assert top.a == 255
+    assert top.r < 50
+    assert bottom.r >= 198
+    assert bottom.a == 255
+
+    pygame.quit()
+
+
+def test_scene_renderer_uses_ceiling_void_for_current_stairs_up_opening():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): StairsUp(),
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    scene_renderer.render(player, world)
+
+    assert scene_renderer.textures.get_surface_slot_overrides() == {
+        "ceiling:visible:d2:x0": "ceiling_void",
+    }
+    assert scene_renderer.textures.get_texture("ceiling_void").get_at((0, 0)) == pygame.Color(4, 5, 7, 255)
+
+    pygame.quit()
+
+
+def test_scene_renderer_uses_ceiling_void_for_center_stairs_up_opening():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): StairsUp(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    scene_renderer.render(player, world)
+
+    assert scene_renderer.textures.get_surface_slot_overrides() == {
+        "ceiling:visible:d2:x0": "ceiling_void",
+    }
+
+    pygame.quit()
+
+
+def test_scene_renderer_stairs_up_ceiling_void_replaces_center_ceiling_slot():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    view_w, view_h = scene_renderer._get_viewport_size()
+    zones = {
+        depth: build_zone_geometry(
+            build_depth_rect(view_w, view_h, depth),
+            build_next_depth_rect(build_depth_rect(view_w, view_h, depth)),
+            depth=depth,
+        )
+        for depth in (1, 2, 3)
+    }
+    scene_renderer.textures.set_scene_surface_slot_overrides({
+        "ceiling:visible:d2:x0": "ceiling_void",
+    })
+
+    slot_state = scene_renderer.textures.describe_panel_surface_slot_state("d2:center_ceiling", "ceiling")
+    center_slots = [slot for slot in slot_state if slot["slot_id"] == "ceiling:visible:d2:x0"]
+    assert center_slots
+    assert center_slots[0]["texture_key"] == "ceiling_void"
+    assert zones[2].center_ceiling.bounding_rect().top < zones[2].center_ceiling.bounding_rect().bottom
 
     pygame.quit()
 
@@ -2911,6 +3186,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
         SecretShop(),
         WarpPoint(),
         Rotator(),
+        StairsDown(),
         BossRoom(enemy=DummyEnemy("Minotaur")),
         BossRoom(enemy=DummyEnemy("Jester")),
     )
@@ -2934,6 +3210,8 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("secret_shop", None) in special_calls
     assert ("teleporter", 172) in special_calls
     assert ("rotator", 89) in special_calls
+    assert ("stairs_down", 184) in special_calls
+    assert ("stairs_down", None) not in special_calls
     assert ("Minotaur", 160) in enemy_calls
     assert ("Jester", 104) in enemy_calls
 

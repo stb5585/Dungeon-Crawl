@@ -99,6 +99,11 @@ def test_sex_selection_navigation_and_cancel(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate() is None
 
+    click_pos = screen.option_rects()[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate() == "Female"
+
 
 def test_sex_selection_quit_exits(monkeypatch):
     presenter = _make_presenter()

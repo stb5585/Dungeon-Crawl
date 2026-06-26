@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownColors
 
 
@@ -25,6 +26,14 @@ class SexSelectionScreen:
         self.small_font = presenter.small_font
         self.current_selection = 0
         self.calculate_window_rects()
+
+    def option_rects(self, options: tuple[str, ...] = SEX_OPTIONS) -> list[pygame.Rect]:
+        """Return clickable rectangles for visible sex rows."""
+        line_height = 40
+        return [
+            pygame.Rect(self.list_rect.left + 5, self.list_rect.top + 20 + i * line_height - 2, self.list_rect.width - 10, line_height - 4)
+            for i, _option in enumerate(options)
+        ]
 
     def calculate_window_rects(self):
         header_height = self.height // 12
@@ -66,15 +75,11 @@ class SexSelectionScreen:
 
         x = self.list_rect.left + 20
         line_height = 40
+        option_rects = self.option_rects(options)
         for index, option in enumerate(options):
             y = self.list_rect.top + 20 + index * line_height
             if index == self.current_selection:
-                highlight_rect = pygame.Rect(
-                    self.list_rect.left + 5,
-                    y - 2,
-                    self.list_rect.width - 10,
-                    line_height - 4,
-                )
+                highlight_rect = option_rects[index]
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
                 color = self.colors.GOLD
@@ -117,6 +122,15 @@ class SexSelectionScreen:
                     sys.exit()
 
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = hit_index(self.option_rects(options), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_selection = hovered
+                    continue
+                if hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_selection = hovered
+                        return options[self.current_selection]
+                    continue
                 if event.type != pygame.KEYDOWN or not input_armed:
                     continue
                 if event.key == pygame.K_UP:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import random
 import sys
 
 import pygame
@@ -15,19 +16,20 @@ from .town_base import TownColors
 
 PORTRAIT_DIR = PORTRAIT_ROOT
 MAX_NAME_LENGTH = 20
+SEX_OPTIONS = ("Male", "Female")
 
 
 class CharacterNamingScreen:
     """Name-entry screen that previews the selected character identity."""
 
-    def __init__(self, presenter, sex: str, race_name: str, class_name: str):
+    def __init__(self, presenter, race_name: str, class_name: str, sex: str = "Male"):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
         self.height = presenter.height
-        self.sex = sex
         self.race_name = race_name
         self.class_name = class_name
+        self.sex = self.normalized_sex(sex)
         self.colors = TownColors
         self.title_font = presenter.title_font
         self.large_font = presenter.large_font
@@ -35,8 +37,18 @@ class CharacterNamingScreen:
         self.small_font = presenter.small_font
         self.text = ""
         self.portrait_manager = PortraitManager()
+        self.portrait_variant_count = self.portrait_manager.variant_count()
+        self.selected_portrait_variant = random.randrange(self.portrait_variant_count)
         self.portrait = self.load_portrait()
+        self.previous_portrait_rect: pygame.Rect | None = None
+        self.next_portrait_rect: pygame.Rect | None = None
+        self.sex_button_rects: dict[str, pygame.Rect] = {}
         self.calculate_rects()
+
+    @staticmethod
+    def normalized_sex(sex: str) -> str:
+        normalized = str(sex or "Male").strip().lower()
+        return "Female" if normalized == "female" else "Male"
 
     @staticmethod
     def portrait_filename(race_name: str, sex: str) -> str:
@@ -51,7 +63,24 @@ class CharacterNamingScreen:
         return PORTRAIT_DIR / self.portrait_filename(self.race_name, self.sex)
 
     def load_portrait(self) -> pygame.Surface:
-        return self.portrait_manager.get_portrait(self.race_name, self.sex)
+        return self.portrait_manager.get_portrait(
+            self.race_name,
+            self.sex,
+            variant=self.selected_portrait_variant,
+        )
+
+    def cycle_portrait(self, delta: int) -> None:
+        if self.portrait_variant_count <= 1:
+            return
+        self.selected_portrait_variant = (self.selected_portrait_variant + delta) % self.portrait_variant_count
+        self.portrait = self.load_portrait()
+
+    def select_sex(self, sex: str) -> None:
+        selected = self.normalized_sex(sex)
+        if selected == self.sex:
+            return
+        self.sex = selected
+        self.portrait = self.load_portrait()
 
     def calculate_rects(self) -> None:
         header_height = self.height // 12
@@ -105,12 +134,14 @@ class CharacterNamingScreen:
             placeholder_rect = placeholder.get_rect(center=portrait_rect.center)
             self.screen.blit(placeholder, placeholder_rect)
 
+        controls_bottom = self.draw_portrait_controls(portrait_rect)
+        sex_bottom = self.draw_sex_buttons(controls_bottom)
+
         details = (
-            ("Sex", self.sex),
             ("Race", self.race_name),
             ("Class", self.class_name),
         )
-        y = portrait_rect.bottom + 28
+        y = sex_bottom + 22
         label_x = self.preview_rect.left + 48
         value_x = self.preview_rect.right - 48
         for label, value in details:
@@ -120,6 +151,62 @@ class CharacterNamingScreen:
             value_rect = value_text.get_rect(right=value_x, top=y)
             self.screen.blit(value_text, value_rect)
             y += self.normal_font.get_height() + 16
+
+    def draw_portrait_controls(self, portrait_rect: pygame.Rect) -> int:
+        self.previous_portrait_rect = None
+        self.next_portrait_rect = None
+        count_bottom = portrait_rect.bottom
+        if self.portrait_variant_count <= 1:
+            return count_bottom
+
+        button_size = 42
+        center_y = portrait_rect.centery
+        self.previous_portrait_rect = pygame.Rect(
+            max(self.preview_rect.left + 12, portrait_rect.left - button_size - 12),
+            center_y - button_size // 2,
+            button_size,
+            button_size,
+        )
+        self.next_portrait_rect = pygame.Rect(
+            min(self.preview_rect.right - button_size - 12, portrait_rect.right + 12),
+            center_y - button_size // 2,
+            button_size,
+            button_size,
+        )
+        for label, rect in (("<", self.previous_portrait_rect), (">", self.next_portrait_rect)):
+            pygame.draw.rect(self.screen, self.colors.DARK_GRAY, rect)
+            pygame.draw.rect(self.screen, self.colors.GOLD, rect, 2)
+            surface = self.large_font.render(label, True, self.colors.GOLD)
+            self.screen.blit(surface, surface.get_rect(center=rect.center))
+
+        count_text = self.small_font.render(
+            f"Portrait {self.selected_portrait_variant + 1}/{self.portrait_variant_count}",
+            True,
+            self.colors.GRAY,
+        )
+        count_rect = count_text.get_rect(centerx=portrait_rect.centerx, top=portrait_rect.bottom + 8)
+        self.screen.blit(count_text, count_rect)
+        return count_rect.bottom
+
+    def draw_sex_buttons(self, top_y: int) -> int:
+        button_width = min(140, max(96, (self.preview_rect.width - 128) // 2))
+        button_height = 38
+        gap = 18
+        total_width = button_width * 2 + gap
+        start_x = self.preview_rect.centerx - total_width // 2
+        y = top_y + 14
+        self.sex_button_rects = {}
+        for index, option in enumerate(SEX_OPTIONS):
+            rect = pygame.Rect(start_x + index * (button_width + gap), y, button_width, button_height)
+            self.sex_button_rects[option] = rect
+            selected = option == self.sex
+            fill = self.colors.HIGHLIGHT_BG if selected else self.colors.DARK_GRAY
+            border = self.colors.GOLD if selected else self.colors.BORDER_COLOR
+            pygame.draw.rect(self.screen, fill, rect)
+            pygame.draw.rect(self.screen, border, rect, 2)
+            label = self.normal_font.render(option, True, self.colors.GOLD if selected else self.colors.WHITE)
+            self.screen.blit(label, label.get_rect(center=rect.center))
+        return y + button_height
 
     def draw_name_entry(self) -> None:
         pygame.draw.rect(self.screen, self.colors.BLACK, self.name_rect)
@@ -184,7 +271,32 @@ class CharacterNamingScreen:
                     sys.exit()
 
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", None) == 1 and input_armed:
+                    pos = getattr(event, "pos", None)
+                    if pos is not None:
+                        if self.previous_portrait_rect and self.previous_portrait_rect.collidepoint(pos):
+                            self.cycle_portrait(-1)
+                            continue
+                        if self.next_portrait_rect and self.next_portrait_rect.collidepoint(pos):
+                            self.cycle_portrait(1)
+                            continue
+                        for sex, rect in self.sex_button_rects.items():
+                            if rect.collidepoint(pos):
+                                self.select_sex(sex)
+                                continue
                 if event.type != pygame.KEYDOWN or not input_armed:
+                    continue
+                if event.key == pygame.K_LEFT:
+                    self.cycle_portrait(-1)
+                    continue
+                if event.key == pygame.K_RIGHT:
+                    self.cycle_portrait(1)
+                    continue
+                if event.key == pygame.K_m:
+                    self.select_sex("Male")
+                    continue
+                if event.key == pygame.K_f:
+                    self.select_sex("Female")
                     continue
                 if event.key == pygame.K_RETURN:
                     return self.text.strip() or default

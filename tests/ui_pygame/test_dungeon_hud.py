@@ -353,6 +353,16 @@ def test_character_info_resource_bars_stats_and_quick_info(monkeypatch):
     hud._render_quick_info(player, y3)
     assert "Depth: Town" in bundle.small_font.render_calls
 
+    player.location_z = 2
+    assert hud.location_label(player) == "Dungeon Level 2"
+    player.location_z = dungeon_hud.REALM_OF_CAMBION_LEVEL
+    assert hud.location_label(player) == "Realm of Cambion"
+    player.location_z = dungeon_hud.LIMINAL_GAP_LEVEL
+    assert hud.location_label(player) == "Liminal Gap"
+    y5 = hud._render_location_label(player, y4)
+    assert y5 > y4
+    assert "Liminal Gap" in bundle.small_font.render_calls
+
 
 def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     bundle = _make_hud(monkeypatch)
@@ -424,6 +434,7 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
         (4, 8, 2): RelicRoom(),
         (6, 8, 2): GoldenChaliceRoom(),
         (3, 7, 2): WallTile(),
+        (28, 30, 2): ChestTile(),
     }
 
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.map_tiles.chalice_altar_visible", lambda _player: True)
@@ -435,6 +446,8 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     visible = hud._get_visible_adjacent_positions(player)
     assert (5, 6) in visible
     assert (6, 7) not in visible
+    full_level_positions = hud._revealed_level_minimap_positions(player, visible)
+    assert (28, 30) in full_level_positions
 
     y = hud._render_minimap(player, 120)
     assert y > 120
@@ -455,6 +468,28 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.time.get_ticks", lambda: 250)
     y3 = hud._render_combat_indicator(SimpleNamespace(name="Goblin"), y2)
     assert y3 > y2
+
+    modal_rect = hud.render_enlarged_minimap_modal(player)
+    assert modal_rect.width > hud.hud_width
+    assert hud.last_minimap_rect is not None
+    assert "Dungeon Level 2 Map" in bundle.stat_font.render_calls
+
+
+def test_enlarged_minimap_modal_requests_full_level_map(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    full_level_flags = []
+
+    monkeypatch.setattr(
+        hud,
+        "_render_minimap",
+        lambda _player_char, _y, **kwargs: full_level_flags.append(kwargs.get("full_level")) or _y,
+    )
+
+    hud.render_enlarged_minimap_modal(player)
+
+    assert full_level_flags == [True]
 
 
 def test_combat_hud_replaces_minimap_with_class_focus_panel(monkeypatch):
@@ -524,6 +559,7 @@ def test_render_hud_full_flow(monkeypatch):
     monkeypatch.setattr(hud, "_render_combat_indicator", lambda enemy, y: calls.append(("combat", enemy.name if enemy else None, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_character_info", lambda player_char, y: calls.append(("info", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y: calls.append(("bars", player_char.name, y)) or (y + 10))
+    monkeypatch.setattr(hud, "_render_location_label", lambda player_char, y: calls.append(("location", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_status_icons", lambda player_char, y: calls.append(("status", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(
         hud,
@@ -542,4 +578,4 @@ def test_render_hud_full_flow(monkeypatch):
 
     calls.clear()
     hud.render_hud(player, combat_mode=False, enemy=None)
-    assert [entry[0] for entry in calls] == ["info", "bars", "compass", "map"]
+    assert [entry[0] for entry in calls] == ["info", "location", "bars", "compass", "map"]

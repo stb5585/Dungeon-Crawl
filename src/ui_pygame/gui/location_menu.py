@@ -6,6 +6,7 @@ Provides a consistent menu interface with background support, using ShopScreen-s
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
 
 
@@ -23,6 +24,21 @@ class LocationMenuScreen(TownScreenBase):
         self.current_option = 0
         self.scroll_offset = 0
         self.options_list = []
+
+    def option_rects(self, options: list[str] | None = None) -> list[pygame.Rect]:
+        """Return clickable rectangles for the visible location options."""
+        options = options if options is not None else self.options_list
+        if not options:
+            return []
+        top_height = self.height // 12
+        options_width = self.width // 3
+        options_height = self.height // 4
+        options_rect = pygame.Rect(0, top_height, options_width, options_height)
+        option_height = options_rect.height // (len(options) + 1)
+        return [
+            pygame.Rect(options_rect.left + 12, options_rect.top + (idx + 1) * option_height - 6, options_rect.width - 24, self.normal_font.get_height() + 12)
+            for idx, _option in enumerate(options)
+        ]
     
     def draw_all(self):
         """Draw the location menu interface."""
@@ -61,6 +77,7 @@ class LocationMenuScreen(TownScreenBase):
         num_options = len(self.options_list)
         option_height = options_rect.height // (num_options + 1)
         
+        option_rects = self.option_rects()
         for idx, option in enumerate(self.options_list):
             # Highlight selected option
             color = self.colors.GOLD if idx == self.current_option else self.colors.WHITE
@@ -74,12 +91,7 @@ class LocationMenuScreen(TownScreenBase):
             if idx == self.current_option:
                 highlight_pad_x = 12
                 highlight_pad_y = 6
-                highlight_rect = pygame.Rect(
-                    options_rect.left + highlight_pad_x,
-                    text_y - highlight_pad_y,
-                    options_rect.width - (highlight_pad_x * 2),
-                    text.get_height() + (highlight_pad_y * 2)
-                )
+                highlight_rect = option_rects[idx]
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
             
@@ -218,6 +230,13 @@ class LocationMenuScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = hit_index(self.option_rects(), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_option = hovered
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_option = hovered
+                        return self.current_option
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue

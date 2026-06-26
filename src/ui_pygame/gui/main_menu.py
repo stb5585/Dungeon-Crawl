@@ -7,6 +7,7 @@ from pathlib import Path
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
 class MainMenuScreen:
@@ -38,6 +39,29 @@ class MainMenuScreen:
         
         self.current_option = 0
         self.options = []
+
+    def option_rects(self, options: list[str] | None = None) -> list[pygame.Rect]:
+        """Return clickable rectangles for the current menu options."""
+        options = options if options is not None else self.options
+        menu_width = min(360, self.width - 80)
+        line_height = 40
+        menu_height = max(1, len(options)) * line_height + 28
+        menu_x = self.width // 2 - menu_width // 2
+        menu_y = self.height - menu_height - 54
+        rects = []
+        for i, option in enumerate(options):
+            text_width, text_height = self.normal_font.size(option)
+            option_width = min(menu_width - 24, max(128, text_width + 42))
+            option_height = max(30, text_height + 12)
+            rects.append(
+                pygame.Rect(
+                    self.width // 2 - option_width // 2,
+                    menu_y + 14 + i * line_height + text_height // 2 - option_height // 2,
+                    option_width,
+                    option_height,
+                )
+            )
+        return rects
 
     def _load_background(self):
         """Load the main menu title background if it is available."""
@@ -89,33 +113,19 @@ class MainMenuScreen:
         panel = pygame.Surface((menu_width, menu_height), pygame.SRCALPHA)
         panel.fill((0, 0, 0, 150))
         self.screen.blit(panel, (menu_x, menu_y))
-        pygame.draw.rect(self.screen, (190, 160, 82), (menu_x, menu_y, menu_width, menu_height), 1)
         
+        option_rects = self.option_rects()
         for i, option in enumerate(self.options):
             y = menu_y + 14 + i * line_height
+            text = self.normal_font.render(option, True, self.BLACK if i == self.current_option else self.WHITE)
             
             # Highlight selected option
             if i == self.current_option:
-                # Draw highlight box around selected option
-                text = self.normal_font.render(option, True, self.BLACK)
-                text_width = text.get_width()
-                text_height = text.get_height()
-                
-                # White box background
-                box_rect = pygame.Rect(
-                    self.width // 2 - text_width // 2 - 10,
-                    y - 5,
-                    text_width + 20,
-                    text_height + 10
-                )
-                pygame.draw.rect(self.screen, self.WHITE, box_rect)
-                
-                # Black text on white background
+                pygame.draw.rect(self.screen, self.WHITE, option_rects[i])
+                pygame.draw.rect(self.screen, self.GOLD, option_rects[i], 1)
                 text_rect = text.get_rect(centerx=self.width // 2, top=y)
                 self.screen.blit(text, text_rect)
             else:
-                # Normal option - white text
-                text = self.normal_font.render(option, True, self.WHITE)
                 text_rect = text.get_rect(centerx=self.width // 2, top=y)
                 self.screen.blit(text, text_rect)
     
@@ -158,6 +168,13 @@ class MainMenuScreen:
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = hit_index(self.option_rects(), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_option = hovered
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_option = hovered
+                        return self.current_option
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue

@@ -126,6 +126,13 @@ def test_main_menu_draw_and_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.get", lambda: next(event_batches, []))
     monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.clear", lambda: clear_calls.append(True))
     assert screen.navigate(["New Game", "Load Game", "Quit"], flush_events=True, require_key_release=True) == 0
+
+    screen.current_option = 0
+    screen.options = ["New Game", "Load Game", "Quit"]
+    click_pos = screen.option_rects(screen.options)[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.main_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["New Game", "Load Game", "Quit"]) == 1
     assert clear_calls == [True]
 
     screen.current_option = 0

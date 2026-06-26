@@ -155,6 +155,11 @@ def test_town_menu_navigation_and_debug_level(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(["Shops", "Inn", "Quit"], flush_events=True, require_key_release=True) == 0
 
+    click_pos = screen.option_rects(["Shops", "Inn", "Quit"])[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["Shops", "Inn", "Quit"]) == 1
+
 
 def test_town_menu_quit_event_raises(monkeypatch):
     presenter = _make_presenter()

@@ -322,12 +322,12 @@ additional visual presentation, and playtest follow-up.
 
 ### Mage Branch
 
-- `Wizard`: `Four Formulae` awakens `School Streak`. Failed spell riders for
-  the same school add +15% rider chance; four stacks guarantee the next
-  eligible rider.
-  - `Wizard Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
-    `Electric`, `Earth`, and `Wind`, starting at 50 each. Casting a school
-    raises that school by 5 and lowers its opposite by 5. Opposites are
+- `Sorcerer`/`Wizard`: `Four Formulae` awakens `School Streak`. Failed spell
+  riders for the same school add +15% rider chance; four stacks guarantee the
+  next eligible rider.
+  - `Elemental Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
+    `Electric`, `Earth`, and `Wind`, starting at 0 each. Casting a school
+    raises that school by 2 and lowers its opposite by 1. Opposites are
     `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`. Matching affinity
     above 50 gives a modest elemental magic damage bonus. Character and ring
     status surfaces expose the six values as text.

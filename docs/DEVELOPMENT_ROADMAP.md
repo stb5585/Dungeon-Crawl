@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: June 24, 2026*
+*Updated: June 26, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -43,34 +43,34 @@ appropriate design-gate document before coding.
 
 ## Active Priority - P7 Additional Improvements
 
-Status: `Active`
+Status: `Completed`
 
-1. Add mouse/cursor support.
-   - Make menu options clickable where pygame already presents clear selectable
-     rows or buttons.
-   - Preserve keyboard/controller-style navigation while adding pointer input.
-   - Add focused UI tests where selectors already have test seams.
-2. Improve selected-slot visibility in the Equipment tab.
-   - Increase or restyle the selected equipment-slot border so it is obvious at
-     a glance.
-   - Keep the paper-doll layout stable and avoid resizing slots on selection.
-3. Add additional artistic renderings after target/style selection.
-   - Portrait variants for broader customization, including skin tones and
-     facial-feature variety.
-   - Replacement dungeon sprites for stairs up/down and the secret shop.
-   - Companion/familiar/beast/summon presentation, reusing enemy art only when
-     scale and identity remain readable.
-4. Add dungeon-view location support.
-   - Surface the current level/location in the dungeon view without crowding the
-     existing HUD, minimap, or combat-focus panels.
-5. Add an enlarged minimap view.
-   - Define whether this is a modal, overlay, or tabbed panel before
-     implementation.
-   - Preserve existing minimap anchoring and combat-HUD behavior.
-6. Explore first-person town navigation.
-   - Replace or supplement menu-based town flow with dungeon-style navigation
-     only after a small navigation/content plan defines locations, exits,
-     shortcuts, and how existing town popups are reached.
+The P7 implementation for selector mouse support, reusable presenter/popup mouse
+support, Equipment selected-slot visibility, dungeon location labels, enlarged
+minimap modal, portrait-atlas variant browsing, generated dungeon special tiles,
+generated familiar artwork, and Character Menu companion art has shipped and is
+tracked in `CHANGELOG.md`. There is no remaining P7 Active Priority
+implementation work.
+
+Completed follow-up posture:
+
+1. Watch for future selectable pygame overlays added during playtest and apply
+   the same hover-to-select, left-click-to-confirm contract where appropriate.
+2. Defer first-person town navigation until a later dedicated town-navigation
+   pass.
+   - The direct `--town-navigation` prototype path is optional; the town menu
+     remains canonical and no longer exposes `Explore Town`.
+   - The prototype now uses directional movement between town venues; do not
+     replace the town menu until playtest feedback confirms the node graph,
+     shortcuts, popup access, and pacing are worth promoting.
+   - Future work needs town-specific first-person tiles/art, spatial layout
+     decisions, travel distance/pacing rules, and interaction integration
+     polish before promotion.
+   - Decision: defer until core gameplay is complete, then re-evaluate need and
+     scope.
+3. Broader companion-management UI, summon action previews, and combat-side
+   companion art remain deferred until playtest confirms the Character Menu
+   presentation needs expansion.
 
 ## Presentation And Asset Gates
 
@@ -112,6 +112,8 @@ Status: `Spec Gate`
   a future narrative/content pass.
 - Sergeant/Barracks quest-lead hints, reactive tavern gameplay tips, and broader
   Barracks adventurer flavor are deferred until a town-content pass is selected.
+- Improve minimap by including better tile indicators and make the player location
+  stand out more by adding a blinking effect
 
 ## Equipment, Items, And Economy Gates
 
@@ -129,7 +131,6 @@ Status: `Spec Gate`
   not currently add active-use actions or durability costs.
 - Armor speed and mobility penalties remain deferred; current weight and
   encumbrance behavior is unchanged.
-- Equipment naming themes such as `Rapier of the Wolf` remain undecided.
 - Rarity semantics need a future economy/item-design pass so shop appearance,
   drop chance, and generated item quality can be reasoned about separately.
 - Random healing/mana refresher spots are deferred until dungeon interaction
@@ -209,6 +210,8 @@ Status: `Spec Gate`
   Rewind snapshot scope, resistance durations, one-use song strength,
   dark-spell pressure, and Bad Breath AI priority should wait for playtest or
   simulator reports.
+- Change `School Affinity` mechanic to be for Sorcerer/Wizard tree to gain
+  upgraded spells; redesign Wizard Class Ring mechanic to upgrade this system
 
 ## Story And Endgame Gates
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from src.core.combat.battle_engine import BattleEngine
+from src.core.data.data_driven_abilities import DataDrivenSpell
 from src.core.enemies import Goblin
 from tests.test_framework import TestGameState
 
@@ -233,3 +234,20 @@ def test_unstoppable_jump_resolves_before_berserk_forced_attack():
     assert forced is not None
     assert forced.action == "Use Skill"
     assert forced.choice == "Jump"
+
+
+def test_execute_spell_accepts_data_driven_spell_with_engine_context():
+    engine, player = _make_engine_with_player_attacking()
+    spell = DataDrivenSpell(
+        name="Test Flame",
+        description="A regression spell.",
+        cost=0,
+        dmg_mod=1,
+        crit=999,
+        subtyp="Fire",
+    )
+    player.spellbook["Spells"] = {"Test Flame": spell}
+
+    result = engine.execute_action("Cast Spell", "Test Flame")
+
+    assert "TestHero casts Test Flame" in result.message

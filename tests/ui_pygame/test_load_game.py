@@ -202,6 +202,15 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "a.save"
 
+    screen.current_selection = 0
+    click_pos = screen.save_row_rects()[1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate(["a.save", "b.save"]) == "b.save"
+
 
 def test_load_game_navigation_deletes_selected_save(monkeypatch):
     presenter = _make_presenter()

@@ -8,11 +8,13 @@ from typing import Any
 
 import pygame
 
+from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .popup_menus import BestiaryPopupMenu, EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
 from .town_base import TownScreenBase
 
@@ -70,6 +72,7 @@ class ModernCharacterScreen(TownScreenBase):
         self.active_tab_index = 0
         self.portrait_manager = PortraitManager()
         self.item_render_manager = get_item_render_manager()
+        self.companion_art_manager = get_companion_art_manager()
         self.selected_equipment_slot_index = 0
         self.equipment_selector_active = False
         self.current_selection = 0
@@ -146,6 +149,7 @@ class ModernCharacterScreen(TownScreenBase):
         first_promotion = getattr(player_char, "first_promotion", None)
         second_promotion = getattr(player_char, "second_promotion", None)
         effects = getattr(player_char, "active_visual_effects", ())
+        variant = getattr(player_char, "portrait_variant", 0)
         return self.portrait_manager.get_portrait(
             race=race,
             gender=gender,
@@ -153,6 +157,7 @@ class ModernCharacterScreen(TownScreenBase):
             first_promotion=first_promotion,
             second_promotion=second_promotion,
             effects=effects,
+            variant=variant,
         )
 
     def _draw_fitted_surface(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
@@ -217,6 +222,41 @@ class ModernCharacterScreen(TownScreenBase):
     def _has_totem_aspects(self, player_char) -> bool:
         totem_skill = self._get_totem_skill(player_char)
         return bool(totem_skill and hasattr(totem_skill, "get_unlocked_aspects"))
+
+    @staticmethod
+    def _is_living_companion(entity: Any) -> bool:
+        is_alive = getattr(entity, "is_alive", None)
+        return bool(is_alive()) if callable(is_alive) else True
+
+    def active_companion_for_display(self, player_char) -> tuple[str, Any] | None:
+        """Return the companion that should be visually highlighted."""
+        familiar = getattr(player_char, "familiar", None)
+        if familiar is not None and self._is_living_companion(familiar):
+            return "Familiar", familiar
+
+        summons = getattr(player_char, "summons", {}) or {}
+        for summon in summons.values():
+            if self._is_living_companion(summon):
+                return "Summon", summon
+        return None
+
+    def companion_summary_rows(self, kind: str, companion: Any) -> list[tuple[str, str]]:
+        """Return compact Character Menu rows for the selected companion."""
+        name = str(getattr(companion, "name", "") or kind)
+        identity = (
+            getattr(companion, "race", None)
+            or getattr(companion, "spec", None)
+            or getattr(companion, "cls", None)
+            or kind
+        )
+        rows = [("Companion", name), ("Type", str(identity))]
+        level = getattr(companion, "level", None)
+        for attr in ("level", "pro_level"):
+            value = getattr(level, attr, None)
+            if value is not None:
+                rows.append(("Level", str(value)))
+                break
+        return rows
 
     def _get_key_items_list(self, player_char):
         special_inv = getattr(player_char, "special_inventory", {})
@@ -730,15 +770,22 @@ class ModernCharacterScreen(TownScreenBase):
 
     def draw_tabs(self):
         self._draw_panel(self.tab_rect)
-        x = self.tab_rect.left + 12
-        tab_width = max(120, min(190, (self.tab_rect.width - 24) // max(1, len(self.tabs))))
         for index, tab in enumerate(self.tabs):
-            rect = pygame.Rect(x + (index * tab_width), self.tab_rect.top + 8, tab_width - 8, self.tab_rect.height - 16)
+            rect = self.tab_button_rects()[index]
             active = index == self.active_tab_index
             if active:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, rect, 2)
             self._draw_text(tab.label, self.normal_font, self.colors.GOLD if active else self.colors.WHITE, rect.left + 12, rect.centery - self.normal_font.get_height() // 2, rect.width - 24)
+
+    def tab_button_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for character tabs."""
+        x = self.tab_rect.left + 12
+        tab_width = max(120, min(190, (self.tab_rect.width - 24) // max(1, len(self.tabs))))
+        return [
+            pygame.Rect(x + (index * tab_width), self.tab_rect.top + 8, tab_width - 8, self.tab_rect.height - 16)
+            for index, _tab in enumerate(self.tabs)
+        ]
 
     def draw_character_panel(self, player_char):
         y = self._draw_panel(self.character_panel_rect, "Character")
@@ -814,12 +861,17 @@ class ModernCharacterScreen(TownScreenBase):
         y = self._draw_panel(self.combat_panel_rect, "Combat Stats")
         combat_rows = self.build_combat_stats(player_char)
         groups = self.group_resistances(player_char)
+        companion_entry = self.active_companion_for_display(player_char)
+        companion_height = 112 if companion_entry else 0
         resistance_font = self.small_font
         resistance_row_gap = 3
         resistance_row_height = resistance_font.get_height() + resistance_row_gap
         resistance_height = self.large_font.get_height() + 6 + (RESISTANCE_SLOT_COUNT * resistance_row_height)
         resistance_top = self.combat_panel_rect.bottom - resistance_height - 16
-        available_stat_height = resistance_top - y - 12
+        companion_top = resistance_top
+        if companion_entry:
+            companion_top = max(y + 84, resistance_top - companion_height - 12)
+        available_stat_height = companion_top - y - 12
         if available_stat_height >= len(combat_rows) * (self.large_font.get_height() + 4):
             stat_font = self.large_font
             stat_gap = 4
@@ -836,8 +888,17 @@ class ModernCharacterScreen(TownScreenBase):
             font=stat_font,
             row_gap=stat_gap,
             right_align_values=True,
-            bottom_limit=resistance_top - 12,
+            bottom_limit=companion_top - 12,
         )
+        if companion_entry:
+            companion_rect = pygame.Rect(
+                self.combat_panel_rect.left + 16,
+                companion_top,
+                self.combat_panel_rect.width - 32,
+                min(companion_height, max(76, resistance_top - companion_top - 12)),
+            )
+            self._draw_companion_art_block(companion_entry[0], companion_entry[1], companion_rect)
+
         y = max(y + 12, resistance_top)
         self._draw_divider(self.combat_panel_rect, y - 10)
         column_gap = 12
@@ -849,6 +910,32 @@ class ModernCharacterScreen(TownScreenBase):
         group_y = y + self.large_font.get_height() + 6
         self._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=resistance_font, row_gap=resistance_row_gap)
         self._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=resistance_font, row_gap=resistance_row_gap)
+
+    def _draw_companion_art_block(self, kind: str, companion: Any, rect: pygame.Rect) -> None:
+        pygame.draw.rect(self.screen, (14, 14, 19), rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
+        art_size = max(54, min(84, rect.height - 20, rect.width // 4))
+        art_rect = pygame.Rect(rect.left + 10, rect.top + (rect.height - art_size) // 2, art_size, art_size)
+        self._draw_item_art_backdrop(art_rect)
+        sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
+        self.screen.blit(sprite, art_rect)
+
+        text_x = art_rect.right + 12
+        text_width = rect.right - text_x - 10
+        y = rect.top + 10
+        self._draw_text(kind, self.small_font, self.colors.GOLD, text_x, y, text_width)
+        y += self.small_font.get_height() + 4
+        for label, value in self.companion_summary_rows(kind, companion)[:3]:
+            self._draw_text(label, self.small_font, self.colors.GRAY, text_x, y, max(70, text_width // 3))
+            self._draw_text(
+                value,
+                self.small_font,
+                self.colors.WHITE,
+                text_x + max(76, text_width // 3),
+                y,
+                max(40, text_width - max(76, text_width // 3)),
+            )
+            y += self.small_font.get_height() + 3
 
     def _draw_key_values(
         self,
@@ -900,8 +987,16 @@ class ModernCharacterScreen(TownScreenBase):
         pygame.draw.rect(self.screen, bg_color, rect)
         pygame.draw.rect(self.screen, border_color, rect, 2)
         if selected:
-            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect, 3)
-            pygame.draw.rect(self.screen, self.colors.GOLD, rect.inflate(6, 6), 2)
+            overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
+            overlay.fill((*self.colors.HIGHLIGHT_BG[:3], 95))
+            self.screen.blit(overlay, rect)
+            inner = rect.inflate(-6, -6)
+            pygame.draw.rect(self.screen, self.colors.GOLD, inner, 4)
+            pygame.draw.rect(self.screen, (255, 244, 170), inner.inflate(-8, -8), 1)
+            corner_len = min(28, max(14, rect.width // 7))
+            for x1, x2 in ((inner.left, inner.left + corner_len), (inner.right - corner_len, inner.right)):
+                pygame.draw.line(self.screen, (255, 244, 170), (x1, inner.top), (x2, inner.top), 3)
+                pygame.draw.line(self.screen, (255, 244, 170), (x1, inner.bottom), (x2, inner.bottom), 3)
         x = rect.left + 10
         y = rect.top + 8
         width = rect.width - 20
@@ -940,8 +1035,9 @@ class ModernCharacterScreen(TownScreenBase):
         self.screen.blit(backdrop, rect)
         pygame.draw.rect(self.screen, (124, 99, 62), rect, 1)
 
-    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect, selected_slot: str) -> None:
-        slot_by_name = {slot.slot: slot for slot in slots}
+    def equipment_slot_rects(self, rect: pygame.Rect | None = None) -> dict[str, pygame.Rect]:
+        """Return fixed paper-doll slot rectangles for hit testing and drawing."""
+        rect = rect or self.equipment_layout_rect()
         box_width = min(260, max(180, (rect.width - 56) // 3))
         box_height = min(150, max(140, (rect.height - 28) // 3))
         center_x = rect.centerx
@@ -950,7 +1046,7 @@ class ModernCharacterScreen(TownScreenBase):
         middle_y = top_y + box_height + row_gap
         bottom_y = middle_y + box_height + row_gap
 
-        positions = {
+        return {
             "Helmet": pygame.Rect(center_x - box_width // 2, top_y, box_width, box_height),
             "Weapon": pygame.Rect(rect.left, middle_y, box_width, box_height),
             "Armor": pygame.Rect(center_x - box_width // 2, middle_y, box_width, box_height),
@@ -958,6 +1054,15 @@ class ModernCharacterScreen(TownScreenBase):
             "Ring": pygame.Rect(center_x - box_width - 8, bottom_y, box_width, box_height),
             "Pendant": pygame.Rect(center_x + 8, bottom_y, box_width, box_height),
         }
+
+    def equipment_layout_rect(self) -> pygame.Rect:
+        """Return the paper-doll layout rect without drawing the surrounding panel."""
+        y = self.details_rect.top + 14 + self.large_font.get_height() + 10
+        return pygame.Rect(self.details_rect.left + 28, y, self.details_rect.width - 56, self.details_rect.bottom - y - 20)
+
+    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect, selected_slot: str) -> None:
+        slot_by_name = {slot.slot: slot for slot in slots}
+        positions = self.equipment_slot_rects(rect)
         for slot_name in EQUIPMENT_SLOT_ORDER:
             slot = slot_by_name.get(slot_name)
             if slot is not None:
@@ -979,17 +1084,25 @@ class ModernCharacterScreen(TownScreenBase):
             self.details_rect.top + 18,
             self.details_rect.width - 32,
         )
-        layout_rect = pygame.Rect(self.details_rect.left + 28, y, self.details_rect.width - 56, self.details_rect.bottom - y - 20)
+        layout_rect = self.equipment_layout_rect()
         slots = self.build_equipment_slots(player_char)
         selected_slot = self.selected_equipment_slot(player_char) if self.equipment_selector_active else ""
         self._draw_equipment_paper_doll(slots, layout_rect, selected_slot)
 
-    def draw_menu(self):
-        y = self._draw_panel(self.actions_rect, "Actions")
+    def action_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for the bottom action menu."""
+        y = self.actions_rect.top + 14 + self.large_font.get_height() + 10
         x = self.actions_rect.left + 16
         option_width = max(130, (self.actions_rect.width - 32) // max(1, len(self.menu_options)))
+        return [
+            pygame.Rect(x + (index * option_width), y, option_width - 8, self.actions_rect.bottom - y - 12)
+            for index, _option in enumerate(self.menu_options)
+        ]
+
+    def draw_menu(self):
+        y = self._draw_panel(self.actions_rect, "Actions")
         for index, option in enumerate(self.menu_options):
-            rect = pygame.Rect(x + (index * option_width), y, option_width - 8, self.actions_rect.bottom - y - 12)
+            rect = self.action_rects()[index]
             if index == self.current_selection:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, rect, 1)
@@ -1080,6 +1193,37 @@ class ModernCharacterScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, True, input_armed)
+
+                if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    pos = mouse_position(event)
+                    tab_index = hit_index(self.tab_button_rects(), pos)
+                    action_index = hit_index(self.action_rects(), pos)
+                    if action_index is not None and event.type == pygame.MOUSEMOTION:
+                        self.current_selection = action_index
+                    elif tab_index is not None and is_left_click(event):
+                        if input_armed:
+                            self.active_tab_index = tab_index
+                            if self.active_tab.key != "equipment":
+                                self.equipment_selector_active = False
+                        continue
+                    elif action_index is not None and is_left_click(event):
+                        if input_armed:
+                            self.current_selection = action_index
+                            result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
+                            if result:
+                                return result
+                        continue
+                    elif self.active_tab.key == "equipment":
+                        slot_rects = self.equipment_slot_rects()
+                        slot_names = list(EQUIPMENT_SLOT_ORDER)
+                        slot_index = hit_index([slot_rects[name] for name in slot_names], pos)
+                        if slot_index is not None:
+                            self.equipment_selector_active = True
+                            self.set_selected_equipment_slot(player_char, slot_names[slot_index])
+                            if is_left_click(event) and input_armed:
+                                self.open_selected_equipment_change(player_char)
+                            continue
+
                 if event.type == pygame.KEYDOWN and not input_armed:
                     continue
                 if event.type != pygame.KEYDOWN:

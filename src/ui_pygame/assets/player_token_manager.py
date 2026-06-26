@@ -41,6 +41,7 @@ class PlayerTokenManager:
             first_promotion=key[3],
             second_promotion=key[4],
             effects=key[5],
+            variant=key[6],
         )
         crop = self._face_crop_rect(portrait.get_size())
         try:
@@ -73,6 +74,7 @@ class PlayerTokenManager:
         first_promotion = getattr(player, "first_promotion", getattr(player, "promotion", ""))
         second_promotion = getattr(player, "second_promotion", "")
         effects = self._portrait_effects(player)
+        variant = getattr(player, "portrait_variant", 0)
         return self.portrait_manager.cache_key(
             race=race,
             gender=gender,
@@ -80,6 +82,7 @@ class PlayerTokenManager:
             first_promotion=first_promotion,
             second_promotion=second_promotion,
             effects=effects,
+            variant=variant,
         )
 
     @staticmethod

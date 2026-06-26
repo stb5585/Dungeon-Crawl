@@ -81,33 +81,110 @@ def test_character_naming_draws_identity_and_default_preview(monkeypatch):
         def normalize_key(value, default="unknown"):
             return real_portrait_manager.normalize_key(value, default)
 
-        def get_portrait(self, race, gender):
-            manager_calls.append((race, gender))
+        def variant_count(self):
+            return 2
+
+        def get_portrait(self, race, gender, variant=0):
+            manager_calls.append((race, gender, variant))
             return pygame.Surface((225, 400), pygame.SRCALPHA)
 
     monkeypatch.setattr(character_naming, "PortraitManager", FakePortraitManager)
+    monkeypatch.setattr(character_naming.random, "randrange", lambda count: count - 1)
     monkeypatch.setattr(
         "src.ui_pygame.gui.character_naming.pygame.draw.rect",
         lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
     )
 
-    screen = character_naming.CharacterNamingScreen(presenter, "Female", "Half Elf", "Spellblade")
+    screen = character_naming.CharacterNamingScreen(presenter, "Half Elf", "Spellblade", sex="Female")
     screen.draw()
 
-    assert manager_calls == [("Half Elf", "Female")]
+    assert manager_calls == [("Half Elf", "Female", 1)]
+    assert screen.selected_portrait_variant == 1
     assert screen.portrait_path.name == "half_elf_female.png"
     assert "Name your character" in presenter.normal_font.render_calls
-    assert {"Sex", "Race", "Class", "Female", "Half Elf", "Spellblade"}.issubset(
+    assert {"Male", "Female", "Race", "Class", "Half Elf", "Spellblade"}.issubset(
         set(presenter.normal_font.render_calls)
     )
     assert "Choose a Name" in presenter.title_font.render_calls
     assert "Created as Hero" in presenter.normal_font.render_calls
+    assert "Portrait 2/2" in presenter.small_font.render_calls
     assert draw_calls
+
+
+def test_character_naming_cycles_portrait_variants(monkeypatch):
+    presenter = _make_presenter()
+    manager_calls = []
+    real_portrait_manager = character_naming.PortraitManager
+
+    class FakePortraitManager:
+        @staticmethod
+        def normalize_key(value, default="unknown"):
+            return real_portrait_manager.normalize_key(value, default)
+
+        def variant_count(self):
+            return 3
+
+        def get_portrait(self, race, gender, variant=0):
+            manager_calls.append((race, gender, variant))
+            return pygame.Surface((225, 400), pygame.SRCALPHA)
+
+    monkeypatch.setattr(character_naming, "PortraitManager", FakePortraitManager)
+    monkeypatch.setattr(character_naming.random, "randrange", lambda _count: 1)
+
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
+    screen.cycle_portrait(1)
+    screen.cycle_portrait(1)
+    screen.cycle_portrait(-1)
+
+    assert screen.selected_portrait_variant == 2
+    assert manager_calls == [
+        ("Human", "Male", 1),
+        ("Human", "Male", 2),
+        ("Human", "Male", 0),
+        ("Human", "Male", 2),
+    ]
+
+
+def test_character_naming_sex_buttons_switch_portrait(monkeypatch):
+    presenter = _make_presenter()
+    manager_calls = []
+    real_portrait_manager = character_naming.PortraitManager
+
+    class FakePortraitManager:
+        @staticmethod
+        def normalize_key(value, default="unknown"):
+            return real_portrait_manager.normalize_key(value, default)
+
+        def variant_count(self):
+            return 2
+
+        def get_portrait(self, race, gender, variant=0):
+            manager_calls.append((race, gender, variant))
+            return pygame.Surface((225, 400), pygame.SRCALPHA)
+
+    monkeypatch.setattr(character_naming, "PortraitManager", FakePortraitManager)
+    monkeypatch.setattr(character_naming.random, "randrange", lambda _count: 1)
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
+    screen.draw()
+    female_pos = screen.sex_button_rects["Female"].center
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=female_pos)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate() == "Hero"
+    assert screen.sex == "Female"
+    assert manager_calls == [("Human", "Male", 1), ("Human", "Female", 1)]
 
 
 def test_character_naming_portrait_preview_preserves_aspect_ratio():
     presenter = _make_presenter()
-    screen = character_naming.CharacterNamingScreen(presenter, "Male", "Human", "Warrior")
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
     screen.portrait = DummySurface((225, 400))
 
     portrait_rect = screen.portrait_preview_rect()
@@ -118,7 +195,7 @@ def test_character_naming_portrait_preview_preserves_aspect_ratio():
 
 def test_character_naming_navigation_confirm_and_cancel(monkeypatch):
     presenter = _make_presenter()
-    screen = character_naming.CharacterNamingScreen(presenter, "Male", "Human", "Warrior")
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
     monkeypatch.setattr(screen, "draw", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
@@ -145,7 +222,7 @@ def test_character_naming_navigation_confirm_and_cancel(monkeypatch):
 
 def test_character_naming_quit_exits(monkeypatch):
     presenter = _make_presenter()
-    screen = character_naming.CharacterNamingScreen(presenter, "Male", "Human", "Warrior")
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
     quit_calls = []
     monkeypatch.setattr(screen, "draw", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)

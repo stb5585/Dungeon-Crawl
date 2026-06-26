@@ -1,6 +1,70 @@
-# Dungeon Crawl - Changelog
+# The Forsaken Tenet - Changelog
 
-## [Unreleased] - 2026-06-24
+## [Unreleased] - 2026-06-26
+
+### P7 Additional Improvements
+
+- Added mouse hover/click support for selector-style pygame screens: main menu,
+  town menu, shop selection, generic location menus, race/class selection,
+  Character Menu tabs/actions, and equipment paper-doll slots.
+- Improved Equipment tab selected-slot visibility with a fixed-size high-contrast
+  highlight that does not resize or shift the paper-doll layout.
+- Added live dungeon HUD location labels for Town, ordinary dungeon levels,
+  Realm of Cambion, and Liminal Gap.
+- Added an enlarged dungeon minimap modal opened with `M` or by clicking the
+  existing minimap; it reuses current minimap discovery/reveal rules and closes
+  with `M`, `Esc`, or outside click.
+- Added an optional first-person-style `Explore Town` prototype that navigates a
+  small Silvana node graph and routes interactions back through the existing
+  Barracks, Shops, Tavern, Church, Old Warehouse, Warp Point, and dungeon-entry
+  flows.
+- Revised the `Explore Town` prototype from a menu-like selector into a
+  directional town walk: arrow keys/WASD move between venues and Enter/Space
+  interacts with the current venue.
+- Updated the enlarged dungeon minimap modal to frame all currently revealed
+  tiles on the active level instead of enlarging only the local HUD viewport.
+- Added numbered portrait-atlas variant support for character creation. The
+  creation screen starts on a random portrait variant, lets players browse with
+  arrows/clickable portrait buttons, and persists the chosen variant for later
+  Character Menu and player-token rendering.
+- Folded sex selection into the character naming screen so character creation
+  skips the old standalone sex page; Male/Female buttons below the portrait now
+  switch the race-specific portrait set before confirmation.
+- Extended mouse support to load-game save rows, promotion choices, the
+  level-up stat picker, the main combat action grid, and core in-combat
+  item/spell/skill/totem picker panels.
+- Replaced the dungeon special-tile artwork for stairs up, stairs down, and the
+  secret shop with new painterly RGBA sprites matched to the current dungeon
+  wall/floor/ceiling treatment.
+- Added generated companion/familiar artwork for Homunculus, Fairy, Mephit, and
+  Jinkin, plus a companion art manager that uses those assets first and falls
+  back to existing enemy sprites for tamed beasts and summons.
+- Removed the deferred `Explore Town` prototype entry from the normal town menu
+  while keeping the direct prototype launcher available for later work.
+- Reworked the stairs-down dungeon tile as a floor-bound stairwell overlay
+  instead of a wall-filling shaft, with renderer placement that sits it on the
+  projected floor tile and sizes it from floor-slot width rather than shallow
+  floor-slot height, plus a flatter, tapered perspective so it reads as
+  descending into the floor without rising up the back wall.
+- Shortened and darkened the stairs-up dungeon tile so the arch sits lower and
+  the stone color better matches the surrounding dungeon walls.
+- Reworked the stairs-up tile experiment to remove the custom dark upper
+  opening, lower the top of the visible staircase below the ceiling plane, and
+  color-match the stone more closely to the stairs-down tile while preserving
+  normal wall/ceiling rendering.
+- Adjusted center stairs-up rendering so the visible staircase spans from the
+  floor edge into the ceiling opening at its projected depth, with a wider
+  centered target, upward darkening gradient, and a generated `ceiling_void`
+  slot that removes the center ceiling tile while leaving void visible above
+  the stair top.
+- Expanded pygame mouse support across reusable presenter menus and shared popup
+  flows, including list/grid/split menus, confirmations, choice lists, reward
+  selection, quantity selection, and code entry.
+- Added mouse hover/click support for remaining named combat pickers: Runic
+  Boost, Steal As Well, and Demonologist Ask Fiend contract intent selection.
+- Wired companion/familiar artwork into the Character Menu combat-stats panel,
+  preferring the active familiar and falling back to the first living summon
+  without changing companion mechanics or save data.
 
 ### Roadmap Completion Consolidation
 

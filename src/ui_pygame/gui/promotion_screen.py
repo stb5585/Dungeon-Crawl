@@ -8,6 +8,7 @@ import textwrap
 import pygame
 
 from .confirmation_popup import ConfirmationPopup
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
 
 
@@ -84,12 +85,7 @@ class PromotionScreen(TownScreenBase):
         self.screen.blit(subtext, sub_rect)
 
     def _draw_options_panel(self):
-        options_rect = pygame.Rect(
-            self.container_rect.right - self.options_width - 20,
-            self.container_rect.top + 20,
-            self.options_width,
-            self.container_rect.height - 40,
-        )
+        options_rect = self.options_panel_rect()
         self.draw_semi_transparent_panel(options_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, options_rect, 2)
 
@@ -97,17 +93,9 @@ class PromotionScreen(TownScreenBase):
         header_rect = header.get_rect(centerx=options_rect.centerx, top=options_rect.top + 20)
         self.screen.blit(header, header_rect)
 
-        line_height = self.normal_font.get_height() + 12
-        start_y = options_rect.centery - (line_height * len(self.options) // 2)
-
+        option_rects = self.option_rects()
         for idx, option in enumerate(self.options):
-            y = start_y + idx * line_height
-            highlight_rect = pygame.Rect(
-                options_rect.left + 12,
-                y - 6,
-                options_rect.width - 24,
-                line_height,
-            )
+            highlight_rect = option_rects[idx]
             if idx == self.current_selection:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 2)
@@ -116,8 +104,32 @@ class PromotionScreen(TownScreenBase):
                 color = self.colors.WHITE
 
             text = self.normal_font.render(option, True, color)
-            text_rect = text.get_rect(centerx=options_rect.centerx, centery=y + (line_height // 2) - 6)
+            text_rect = text.get_rect(center=highlight_rect.center)
             self.screen.blit(text, text_rect)
+
+    def options_panel_rect(self) -> pygame.Rect:
+        """Return the promotion option panel geometry."""
+        return pygame.Rect(
+            self.container_rect.right - self.options_width - 20,
+            self.container_rect.top + 20,
+            self.options_width,
+            self.container_rect.height - 40,
+        )
+
+    def option_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for promotion options."""
+        options_rect = self.options_panel_rect()
+        line_height = self.normal_font.get_height() + 12
+        start_y = options_rect.centery - (line_height * len(self.options) // 2)
+        return [
+            pygame.Rect(
+                options_rect.left + 12,
+                start_y + idx * line_height - 6,
+                options_rect.width - 24,
+                line_height,
+            )
+            for idx, _option in enumerate(self.options)
+        ]
 
     def _draw_detail_panel(self, cls_ctor):
         cls_instance = cls_ctor()
@@ -248,4 +260,20 @@ class PromotionScreen(TownScreenBase):
                             return selected_name
                     elif event.key == pygame.K_ESCAPE:
                         return None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    hovered = hit_index(self.option_rects(), mouse_position(event))
+                    if hovered is None:
+                        continue
+                    self.current_selection = hovered
+                    if not is_left_click(event):
+                        continue
+                    selected_name = self.options[self.current_selection]
+                    if selected_name == "Go Back":
+                        return None
+                    popup = ConfirmationPopup(
+                        self.presenter,
+                        f"Promote to {selected_name}?"
+                    )
+                    if popup.show(**self.popup_show_kwargs()):
+                        return selected_name
             self.presenter.clock.tick(30)

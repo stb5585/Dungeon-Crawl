@@ -125,6 +125,7 @@ class DataDrivenSpell(Spell):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> CombatResult:
         result = self._reset_result(actor=caster, target=target)
         result.extra['cost'] = self.cost
@@ -870,6 +871,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         if self._instant_heal and self.turns > 0:
             return self._cast_hybrid(caster, target, cover, special, fam)
@@ -976,6 +978,7 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         if self._target_self and not fam:
             target = caster
@@ -1134,6 +1137,7 @@ class DataDrivenStatusSpell(_get_status_spell_class()):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         # Mana deduction
         if not (
@@ -1266,6 +1270,7 @@ class DataDrivenWeaponSpell(Spell):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         if not (special or fam):
             caster.mana.current -= self.cost
@@ -1328,6 +1333,7 @@ class DataDrivenCustomSpell(Spell):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         if not (special or fam):
             caster.mana.current -= self.cost
@@ -1537,6 +1543,7 @@ class DataDrivenMagicMissileSpell(Spell):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
+        **_kwargs: Any,
     ) -> str:
         cast_message = ""
 

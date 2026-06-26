@@ -5,6 +5,7 @@ Character creation screen for class selection - matches curses terminal layout.
 import pygame
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 # Mapping of base classes to their available first-tier promotions
 # This defines the class progression paths
@@ -53,6 +54,15 @@ class ClassSelectionScreen:
         
         # Calculate window positions
         self.calculate_window_rects()
+
+    def option_rects(self, options: list[str] | None = None) -> list[pygame.Rect]:
+        """Return clickable rectangles for visible class rows."""
+        options = options if options is not None else self.available_classes
+        line_height = 40
+        return [
+            pygame.Rect(self.list_rect.left + 5, self.list_rect.top + 20 + i * line_height - 2, self.list_rect.width - 10, line_height - 4)
+            for i, _option in enumerate(options[:10])
+        ]
     
     def calculate_window_rects(self):
         """Calculate the rectangles for each UI section."""
@@ -230,17 +240,13 @@ class ClassSelectionScreen:
         line_height = 40
         
         max_visible = 10
+        option_rects = self.option_rects()
         for i, class_name in enumerate(self.available_classes[:max_visible]):
             y = self.list_rect.top + 20 + i * line_height
             
             # Highlight selected
             if i == self.current_selection:
-                highlight_rect = pygame.Rect(
-                    self.list_rect.left + 5,
-                    y - 2,
-                    self.list_rect.width - 10,
-                    line_height - 4
-                )
+                highlight_rect = option_rects[i]
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
                 color = self.GOLD
@@ -406,6 +412,13 @@ class ClassSelectionScreen:
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = hit_index(self.option_rects(), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_selection = hovered
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_selection = hovered
+                        return self.available_classes[self.current_selection]
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue

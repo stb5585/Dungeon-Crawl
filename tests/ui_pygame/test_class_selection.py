@@ -182,6 +182,12 @@ def test_class_selection_navigation_and_quit(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.class_selection.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate("Elf", race, classes, flush_events=True, require_key_release=True) == "Warrior"
 
+    screen.set_classes("Elf", race, classes)
+    click_pos = screen.option_rects()[1].center
+    event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.class_selection.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate("Elf", race, classes) == "Mage"
+
     monkeypatch.setattr(screen, "set_classes", lambda *_args: setattr(screen, "available_classes", []))
     assert screen.navigate("Elf", race, classes) is None
 

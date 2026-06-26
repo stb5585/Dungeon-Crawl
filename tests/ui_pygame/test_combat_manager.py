@@ -935,6 +935,16 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert menu_calls[-2][1] == ("Potion (2)", "Scroll (1)")
     assert menu_calls[-1][2] == 1
 
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    click_pos = manager._selection_menu_option_rects(["Potion (2)", "Scroll (1)"], 0)[1][1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    selected_item = manager._select_item(player, enemy)
+    assert selected_item.name == "Scroll of Ice"
+
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_ESCAPE)],
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
@@ -1030,6 +1040,61 @@ def test_select_totem_aspect_ignores_stale_confirm_until_key_release(monkeypatch
     assert manager._select_totem_aspect(player, enemy, totem) == "Bear"
     assert clear_calls == [True]
     assert menu_calls[0][1] == ("Wolf (Active)", "Bear")
+
+
+def test_runic_steal_and_contract_pickers_support_mouse_confirm(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._render_selection_menu = lambda *_args, **_kwargs: None
+    manager._pause_with_events = lambda _ms: None
+    manager._clear_pending_input = lambda: True
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    player.spellbook["Spells"] = {
+        "Fire": SimpleNamespace(cost=3, subtyp="Damage"),
+        "Ice": SimpleNamespace(cost=2, subtyp="Damage"),
+    }
+    monkeypatch.setattr(combat_manager.astromancer, "boostable_spells", lambda _player: ["Fire", "Ice"])
+    monkeypatch.setattr(combat_manager.astromancer, "sign_for_spell", lambda _spell: "Solar")
+    runic_options = ["Solar: Fire (MP: 3)", "Solar: Ice (MP: 2)"]
+    click_pos = manager._selection_menu_option_rects(runic_options, 0)[1][1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_runic_boost_spell(player, enemy) == "Ice"
+
+    steal_options = ["Fire", "Ice"]
+    click_pos = manager._selection_menu_option_rects(steal_options, 0)[1][1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_steal_as_well_spell(player, enemy) == "Ice"
+
+    intents = ["Wound", "Guard"]
+    click_pos = manager._selection_menu_option_rects(intents, 0)[1][1].center
+    monkeypatch.setattr(combat_manager.demonologist, "available_intents", lambda _player: intents)
+    monkeypatch.setattr(
+        combat_manager.demonologist,
+        "quote_contract",
+        lambda _player, _enemy, intent: {
+            "ok": True,
+            "patron": "A fiend",
+            "costs": {"gold": 3},
+            "misbehavior_chance": 0.2,
+        },
+    )
+    monkeypatch.setattr(combat_manager.demonologist, "can_pay_quote", lambda _player, _quote: True)
+    manager.presenter.render_menu = lambda prompt, options: 0
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_contract_intent(player, enemy) == "Guard"
 
 
 def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch):
@@ -1217,6 +1282,17 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Items"]
+
+    manager.available_actions = ["Attack", "Defend", "Items"]
+    actions.clear()
+    click_pos = manager._combat_action_rects(manager.available_actions)[1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["Defend"]
 
 
 def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch):
