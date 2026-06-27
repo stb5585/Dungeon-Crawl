@@ -87,15 +87,88 @@ def test_wizard_affinity_hex_opposites_and_save_load():
     wizard.record_cast(player, "Water")
     wizard.record_cast(player, "Earth")
 
-    assert player.wizard_affinity["Water"] == 55
-    assert player.wizard_affinity["Electric"] == 45
-    assert player.wizard_affinity["Earth"] == 55
-    assert player.wizard_affinity["Wind"] == 45
-    assert wizard.affinity_damage_bonus(player, "Water") > 0
+    assert player.wizard_affinity["Water"] == 1.8
+    assert player.wizard_affinity["Electric"] == 0
+    assert player.wizard_affinity["Earth"] == 2
+    assert player.wizard_affinity["Wind"] == 0
+    player.wizard_affinity["Water"] = 10
+    assert wizard.affinity_damage_bonus(player, "Water") == 0.01
 
     restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
-    assert restored.wizard_affinity["Water"] == 55
-    assert restored.wizard_affinity["Electric"] == 45
+    assert restored.wizard_affinity["Water"] == 10
+    assert restored.wizard_affinity["Electric"] == 0
+
+
+def test_sorcerer_affinity_caps_and_upgrades_first_spell_tier():
+    player = TestGameState.create_player(class_name="Sorcerer", spells=["Firebolt"])
+    player.wizard_affinity["Fire"] = 49
+
+    message = wizard.process_cast(player, abilities.Firebolt())
+
+    assert player.wizard_affinity["Fire"] == 50
+    assert "Firebolt" not in player.spellbook["Spells"]
+    assert "Fireball" in player.spellbook["Spells"]
+    assert "upgrades to Fireball" in message
+
+
+def test_wizard_affinity_unlocks_third_tier_and_ring_accelerates(monkeypatch):
+    player = TestGameState.create_player(class_name="Wizard", spells=["Fireball"])
+    player.equipment["Ring"] = items.ClassRing()
+    ok, _message = player.awaken_class_ring()
+    assert ok is True
+    player.wizard_affinity["Fire"] = 78
+    monkeypatch.setattr(wizard.random, "random", lambda: 1.0)
+
+    message = wizard.process_cast(player, abilities.Fireball())
+
+    assert player.wizard_affinity["Fire"] == 81
+    assert "Fireball" not in player.spellbook["Spells"]
+    assert "Firestorm" in player.spellbook["Spells"]
+    assert "upgrades to Firestorm" in message
+
+
+def test_legacy_affinity_values_migrate_from_centered_model():
+    player = TestGameState.create_player(class_name="Wizard")
+    player.wizard_affinity = {"Fire": 55, "Ice": 45, "Water": 50, "Electric": 50, "Earth": 60, "Wind": 40}
+    player.wizard_affinity_version = 1
+
+    migrated = wizard.ensure_affinity(player)
+
+    assert migrated["Fire"] == 5
+    assert migrated["Ice"] == 0
+    assert migrated["Earth"] == 10
+    assert player.wizard_affinity_version == 2
+
+
+def test_wizard_mastery_ring_proc_adds_stacking_school_buff(monkeypatch):
+    player = TestGameState.create_player(class_name="Wizard", spells=["Shock"])
+    enemy = SimpleNamespace(name="Target", health=Resource(100, 100))
+    player.equipment["Ring"] = items.ClassRing()
+    ok, _message = player.awaken_class_ring()
+    assert ok is True
+    player.wizard_affinity["Electric"] = 100
+    monkeypatch.setattr(wizard.random, "random", lambda: 0.0)
+
+    message = wizard.process_cast(player, abilities.Shock(), enemy)
+
+    assert "electric affinity arcs" in message
+    assert player.wizard_school_buffs["Electric"] == 1
+    assert enemy.health.current < 100
+
+
+def test_frozen_armor_requires_sorcerer_ice_mastery():
+    player = TestGameState.create_player(class_name="Sorcerer")
+    player.spellbook["Skills"]["Frozen Armor"] = abilities.FrozenArmor()
+
+    damage, message = wizard.frozen_armor_reduction(player, 100)
+    assert damage == 100
+    assert message == ""
+
+    player.wizard_affinity["Ice"] = 50
+    damage, message = wizard.frozen_armor_reduction(player, 100)
+
+    assert damage == 90
+    assert "Frozen Armor absorbs 10 damage" in message
 
 
 def test_bard_songs_require_instrument_and_tick_renewal():

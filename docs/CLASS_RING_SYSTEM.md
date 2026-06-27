@@ -17,6 +17,12 @@ Class Ring activation now has two implementation tiers:
   state, status text, and Class Ring hooks are implemented for the legacy
   classes listed below. Radar-style Wizard visualization can be added later;
   the six affinity values are exposed as readable text first.
+- Weapon Master starts Weapon Discipline and active Weapon Arts; Berserker
+  carries that progress forward; Grandmaster of Arms deepens it with Class Ring
+  binding and Perfect Bound Art.
+- Sorcerer/Wizard School Affinity is implemented as a 0-based six-school wheel:
+  Sorcerer caps at 50 with tier-2 upgrades, Wizard caps at 100 with tier-3
+  upgrades and awakened-ring mastery buffs.
 
 The standard Class Ring acquisition remains the Hooded Figure reward after the
 Red Dragon quest. The ring's second-promotion power is dormant until awakened by
@@ -60,6 +66,24 @@ least one hit. Discipline uses 10 increasing ranks.
 
 Each rank grants `+0.5%` accuracy and `+1%` technique proc chance for that
 weapon type. At rank 10 this is `+5%` accuracy and `10%` technique chance.
+Weapon Master now starts this same Weapon Discipline progression before second
+promotion, using the existing save state so progress carries through Berserker
+or into Grandmaster of Arms.
+
+### Weapon Arts
+
+Weapon Discipline also unlocks active MP-cost weapon arts. Each art requires
+the matching weapon type, unlocks at rank 1, improves at rank 5, and masters at
+rank 10:
+
+- `Fist`: `Iron Palm`.
+- `Dagger`: `Hemorrhage`.
+- `Sword`: `Riposte Line`.
+- `Club`: `Low Sweep`.
+- `Longsword`: `Guard Cleaver`.
+- `Battle Axe`: `Reaver's Mark`.
+- `Polearm`: `Brace`.
+- `Hammer`: `Anvil Strike`.
 
 ### Class Ring Binding
 
@@ -71,6 +95,10 @@ it doubles the chosen weapon discipline bonus:
 
 Rebinding is available immediately after activation through a harder Secret
 Master gauntlet. Rebinding replaces the active weapon binding.
+
+The awakened, equipped Grandmaster Class Ring also perfects the active art for
+the bound weapon type, adding one conservative mastered-effect bonus on top of
+the rank 10 art behavior.
 
 ### Weapon Techniques
 
@@ -182,6 +210,14 @@ Once awakened, the ring empowers all unlocked and future fiend contracts. The
 empowered state improves contract strength and fulfillment odds, but bargain
 drawbacks remain active.
 
+Planned V1 class-kit work will keep this two-stage progression and add
+corruption as a persistent risk/reward meter, patron favor/resentment as an
+intent-access modifier, and stronger familiar echo effects. In that design, the
+awakened ring remains the source of the echo identity: `Homunculus` stabilizes
+protection/restoration bargains, `Fairy` improves sustain and corruption
+cooling, `Mephit` pushes harmful contracts toward higher power and corruption,
+and `Jinkin` adds a once-per-combat lucky twist chance.
+
 ## Archdruid
 
 Archdruid awakening follows the Fourfold Balance path. The Class Ring remains
@@ -239,6 +275,13 @@ When awakened and equipped, the Archdruid Class Ring grants a Harmony Bonus:
 The Class Ring description shows dormant, Grove-ready, ritual-progress, and
 awakened states.
 
+Planned V1 class-kit work adds Archdruid-only combat `Aspect Harmony` without
+changing Fourfold Balance persistence. In that design, Venom, Stone, Growth,
+and Storm actions represent short-lived combat aspects that can be spent through
+`Fourfold Surge`; awakened/equipped `Harmony Bonus` keeps its current
+total-attunement scaling while raising the combat Harmony cap and preserving one
+represented aspect once per combat after a clean Surge.
+
 ## Existing Second-Promotion Classes
 
 All pre-existing second-promotion Class Ring effects now follow Quest
@@ -262,6 +305,12 @@ additional visual presentation, and playtest follow-up.
     roll a 10% chance to gain 1 scar, capped at 20. Each scar permanently
     increases max HP by about 1% at the time it is earned and grants +0.5%
     weapon damage while below 25% HP.
+  - Planned V1 class-kit work adds combat-only `Bloodied Momentum` to the
+    Berserker branch. In that design, low-HP weapon hits and incoming damage
+    build Momentum, heavy Weapon Arts consume it for controlled bloodied
+    payoffs, Battle Scars improve cap/stability, and awakened/equipped
+    `Bloodied Crits` keeps its current thresholds while improving Momentum
+    reliability without adding loss of control.
   - Status: playable in the Barracks when a dormant Berserker Class Ring is
     equipped or stored.
   - The duel has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -277,6 +326,12 @@ additional visual presentation, and playtest follow-up.
     `class_ring_awakening["data"]["Crusader"]["vow"]`. While the affirmed ring
     is equipped, aura benefits are multiplied by 1.5 and mark penalties or
     durations are multiplied by 0.5.
+  - Planned V1 class-kit work adds combat-only `Oath Conviction` to the
+    Paladin/Crusader vow loop. In that design, vow-aligned actions build
+    Conviction, the next matching vow action spends it for a conservative
+    path-specific rider, and awakened/equipped `Vow Affirmation` preserves
+    `1` Conviction once per combat after a clean empowered payoff. Conviction
+    never cleanses, shortens, or disables mark drawbacks.
   - Bosses and Class Ring trial enemies are immune to mercy-victory effects.
   - `Redemption` grants `Redeem`, which attempts a boss-immune mercy victory.
     Success grants normal XP and gold, no item loot, and no kill, bounty, or
@@ -301,8 +356,16 @@ additional visual presentation, and playtest follow-up.
     critical damage. Being disarmed or preparing the stance with no weapon
     applies `Mark of Mercy`; if HP is below 10%, the next damaging enemy melee
     hit is lethal. Vow Affirmation lowers this threshold to 5%.
-- `Dragoon`: `Guard The Fall` awakens the existing `+1 Jump Mod` and adds
-  `Meteor Guard`, a two-turn shield equal to 25% of Jump landing damage.
+- `Dragoon`: `Guard The Fall` currently awakens the legacy `+1 Jump Mod` hook
+  and `Meteor Guard`, a two-turn shield equal to 25% of Jump landing damage.
+  - Planned V1 class-kit work replaces the displayed awakened identity with
+    `Aerial Supremacy`. In that design, legacy `+1 Jump Mod` save/test
+    compatibility remains accepted internally, but the ring no longer grants
+    extra active Jump modification capacity.
+  - `Aerial Supremacy` enhances the automatic Aerial Tempo follow-through after
+    a clean Jump landing and rolls the defensive landing shield into the same
+    offensive/defensive identity instead of presenting `Meteor Guard` as a
+    separate ring payoff.
   - Status: playable in the Barracks when a dormant Dragoon Class Ring is
     equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -315,6 +378,11 @@ additional visual presentation, and playtest follow-up.
   - `Resolve` / `Guard Meter`: max 100. Defending, blocking, and mitigated
     physical damage build Resolve. While the awakened ring is equipped, a major
     incoming hit automatically spends 100 Resolve to reduce that hit by 40%.
+  - Planned V1 class-kit work makes Resolve a baseline Sentinel/Stalwart
+    resource. Sentinel starts the shield stance and counterguard loop, while
+    Stalwart adds active Resolve spends such as `Bulwark` and `Shield Riposte`.
+    In that design, awakened/equipped `Shield Mastery` remains the strongest
+    automation layer for major-hit mitigation.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -325,16 +393,25 @@ additional visual presentation, and playtest follow-up.
 - `Sorcerer`/`Wizard`: `Four Formulae` awakens `School Streak`. Failed spell
   riders for the same school add +15% rider chance; four stacks guarantee the
   next eligible rider.
-  - `Elemental Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
-    `Electric`, `Earth`, and `Wind`, starting at 0 each. Casting a school
-    raises that school by 2 and lowers its opposite by 1. Opposites are
-    `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`. Matching affinity
-    above 50 gives a modest elemental magic damage bonus. Character and ring
-    status surfaces expose the six values as text.
+  - `School Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
+    `Electric`, `Earth`, and `Wind`, starting at 0 each. Sorcerer affinity caps
+    at 50; Wizard affinity caps at 100. Casting a school raises that school by
+    2, lowers its opposite by 1, and drifts other schools down by 0.2.
+    Opposites are `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`.
+    Matching affinity grants +1% matching spell damage per full 10 affinity.
+  - Sorcerer unlocks tier-2 elemental spell upgrades at 30 affinity and mastery
+    rider support at 50. Wizard unlocks tier-3 upgrades at 80 affinity and
+    final mastery at 100.
+  - Awakened, equipped Wizard Class Ring raises matching affinity gain to +3 and
+    enables final-mastery 3-stack school buffs on matching casts.
   - Status: playable in the Church when a dormant Wizard Class Ring is equipped
     or stored.
 - `Shadowcaster`: `Debt Cap Trial` awakens `Umbral Debt`. Shadow damage stores
   healing reserve, while overcapping creates backlash.
+  - Planned V1 class-kit work makes Umbral Debt a baseline Shadowcaster reserve
+    and adds `Eclipse` as a debt-spending shadow form. The awakened, equipped
+    Class Ring raises the debt cap, preserves low-HP auto-healing, and reduces
+    Eclipse backlash conversion.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
 - `Knight Enchanter`: `Arcane Duel` awakens the existing `Mana Tap+` ring hook.
@@ -350,19 +427,34 @@ additional visual presentation, and playtest follow-up.
 ### Footpad Branch
 
 - `Rogue`: `Loaded Game` awakens `Loaded Dice`, giving failed luck checks a 15%
-  chance to become successes.
+  chance to become successes. The ready-to-code Thief/Rogue class-kit spec adds
+  combat-only `Fortune` and `Misfortune`; when awakened and equipped,
+  `Loaded Dice` preserves 1 point of a spent meter once per combat after a
+  clean Fortune or Misfortune payoff.
   - Status: playable at the Old Warehouse when a dormant Rogue Class Ring is
     equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
-  cache per sufficiently mapped dungeon level.
+  cache per sufficiently mapped dungeon level. The ready-to-code
+  Inquisitor/Seeker class-kit spec adds persistent enemy-type `Case Journal`
+  progress, combat-only `Revelation`, and Seeker `Wayfinding`; when awakened
+  and equipped, `Hidden Cache` keeps its cache identity while adding small
+  insight smoothing after clean `Inspect` or telegraph reads.
   - Status: playable at the Old Warehouse when a dormant Seeker Class Ring is
     equipped or stored.
-- `Ninja`: `No-Trace Contract` awakens `First Strike Plus`, doubling the first
-  standard attack when the Ninja has initiative.
+- `Ninja`: `No-Trace Contract` awakens `No-Trace Opener`, preserving the
+  legacy internal `First Strike Plus` hook while doubling the first standard
+  attack when the Ninja has initiative. The ready-to-code Assassin/Ninja
+  class-kit spec adds combat-only `Death Mark`; when awakened and equipped,
+  `No-Trace Opener` can apply 1 opener mark with initiative and preserve 1
+  spent mark once per combat after a clean marked payoff.
   - Status: playable at the Old Warehouse when a dormant Ninja Class Ring is
     equipped or stored.
-- `Arcane Trickster`: `Impossible Theft` awakens `Spell Steal Buff`, granting
-  +20% Magic damage and +10% dodge for 3 turns after a successful spell steal.
+- `Arcane Trickster`: `Impossible Theft` awakens `Arcane Larceny`, preserving
+  the legacy internal `Spell Steal Buff` hook while granting +20% Magic damage
+  and +10% dodge for 3 turns after a successful spell steal. The ready-to-code
+  class-kit spec adds combat-only `Stolen Charge`; when awakened and equipped,
+  `Arcane Larceny` preserves 1 Charge once per combat after a clean charged
+  payoff.
   - `Steal Spell`: available to `Spell Stealer` and `Arcane Trickster`. It
     requires a concrete `Blank Scroll` from the Alchemist/scroll loot table.
     On success, the blank is consumed and replaced with a usable stolen-spell
@@ -375,14 +467,39 @@ additional visual presentation, and playtest follow-up.
 
 - `Templar`: `Relic Defense` awakens `Ordered Blessings`, rotating Regen,
   Defense, and Holy damage blessings through relevant actions.
+  - Planned V1 class-kit work adds combat-only `Devotion` to the
+    Cleric/Templar branch. Cleric starts the holy defender rhythm through
+    healing, Holy pressure, shield utility, and `Pious Bounty`; Templar raises
+    the cap and spends Devotion through ward actions such as `Sanctuary Ward`
+    and `Relic Aegis`.
+  - In that design, `Holy Retribution` becomes a Devotion window while keeping
+    its existing holy-fire attack flavor, and awakened/equipped
+    `Ordered Blessings` preserves the current Regen/Defense/Holy Damage
+    rotation while improving matching Devotion payoffs and preserving
+    `1` Devotion once per combat.
   - Status: playable in the Church when a dormant Templar Class Ring is equipped
     or stored.
 - `Master Monk`: `Purity Rite` awakens `Martial Master`, granting +50% damage
   and armor while unarmed and unarmored.
+  - Planned V1 class-kit work adds combat-only `Ki`, redesigns `Dim Mak` as a
+    full-Ki Master Monk finisher, and adds Master Monk-only `Ruyi Jingu Bang`
+    as an `Unobtainium` ultimate staff. In that design, awakened/equipped
+    `Martial Master` preserves the unarmed/no-armor bonus while improving Ki
+    discipline and `Dim Mak` reliability.
   - Status: playable in the Church when a dormant Master Monk Class Ring is
     equipped or stored.
 - `Archbishop`: `Miracle Vigil` awakens `Divine Intervention`, a once-per-combat
   35% chance to heal 25% max HP on first falling below 50% HP.
+  - Planned V1 class-kit work adds combat-only `Prayer` to the
+    Priest/Archbishop branch. Priest builds Prayer through meaningful healing,
+    cleansing, divine support, Holy pressure, and anti-magic setup, while
+    Archbishop raises the cap and spends Prayer through `Supplication` and
+    `Great Benediction`.
+  - In that design, `Great Gospel` becomes a major Prayer reset/setup window
+    while preserving its cleanse and divine power-up identity, and
+    awakened/equipped `Divine Intervention` keeps its current emergency heal
+    behavior while preserving `1` Prayer once per combat after a clean
+    Supplication or Benediction payoff.
   - Status: playable in the Church when a dormant Archbishop Class Ring is
     equipped or stored.
 - `Troubadour`: `Lost Ballad` awakens `Encore`, causing expired songs to trigger
@@ -392,6 +509,10 @@ additional visual presentation, and playtest follow-up.
     weapon and magic damage, `Shelter` reduces incoming damage, and `Renewal`
     pulses HP/MP recovery. `Troubadour` improves song strength by 50%; awakened
     `Encore` adds one final 50%-strength pulse or beat when a song expires.
+  - Planned V1 class-kit work adds Troubadour `Repertoire` mastery for advanced
+    songs and combat-only `Crescendo` codas. In that design, awakened/equipped
+    `Encore` keeps its current final weaker effect and preserves 1 Crescendo
+    after a natural coda.
   - Status: playable in the Church when a dormant Troubadour Class Ring is
     equipped or stored.
 - `Lycan`: `Control Rite` awakens `Controlled Frenzy`, reducing lock-in
@@ -407,7 +528,9 @@ additional visual presentation, and playtest follow-up.
   active-sign Runic Boost fate floors while the Class Ring is equipped.
   Astromancer natural spell casts advance the active constellation, and the
   baseline Diviner/Astromancer rune system remains per-save spell empowerment
-  rather than gear modification.
+  rather than gear modification. The Foresight Threads spec keeps
+  `Constellation Cycle` as the ring identity and adds active-sign `Threaded
+  Cast` reliability/output support while the awakened ring is equipped.
   - Status: playable in the Church when a dormant Astromancer Class Ring is
     equipped or stored.
 - `Soulcatcher`: `Ancestral Totem Rite` awakens `Aspect Evolution`, improving
@@ -422,9 +545,18 @@ additional visual presentation, and playtest follow-up.
   - `Soul Drain`: Soulcatcher learns this level-4 spell as nonlethal
     current-HP damage; Soul Totem can pulse it when Soul Aspect is active and
     the spell is known.
+  - Planned V1 class-kit work adds combat-only `Totem Resonance` stacks from
+    matching casts and successful Totem pulses, plus `Totem Surge` to spend
+    those stacks for a forced reduced-potency pulse. The awakened, equipped
+    Soulcatcher Class Ring raises the Resonance cap and improves Surge for all
+    aspects while keeping `Aspect Evolution` compatible with Soul harvests.
   - Status: playable in the Church when a dormant Soulcatcher Class Ring is
     equipped or stored.
 - `Beast Master`: `Pack Trial` awakens `Shared Recovery`, echoing a smaller heal
   to the bonded partner when the hero or companion is healed.
+  - Planned V1 class-kit work keeps one persistent tamed companion, adds
+    companion bond growth, gives Beast Master direct companion commands, and
+    lets the awakened, equipped Class Ring scale `Shared Recovery` modestly with
+    bond.
   - Status: playable in the Church when a dormant Beast Master Class Ring is
     equipped or stored.

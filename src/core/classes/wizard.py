@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from .base import Job
@@ -16,10 +17,29 @@ OPPOSITES = {
     "Earth": "Wind",
     "Wind": "Earth",
 }
-DEFAULT_AFFINITY = 50
-AFFINITY_STEP = 5
+DEFAULT_AFFINITY = 0.0
+SORCERER_CAP = 50.0
+WIZARD_CAP = 100.0
+AFFINITY_STEP = 2.0
+RING_AFFINITY_STEP = 3.0
+OPPOSITE_DRIFT = 1.0
+OTHER_DRIFT = 0.2
 AFFINITY_MIN = 0
-AFFINITY_MAX = 100
+AFFINITY_MAX = 100.0
+SORCERER_UNLOCK_THRESHOLD = 30.0
+SORCERER_MASTERY_THRESHOLD = 50.0
+WIZARD_UNLOCK_THRESHOLD = 80.0
+WIZARD_MASTERY_THRESHOLD = 100.0
+FROZEN_ARMOR_REDUCTION = 0.10
+
+SPELL_UPGRADES: dict[str, tuple[str, str, str]] = {
+    "Fire": ("Firebolt", "Fireball", "Firestorm"),
+    "Ice": ("Ice Lance", "Icicle", "Blizzard"),
+    "Electric": ("Shock", "Lightning", "Electrocution"),
+    "Water": ("Water Jet", "Aqualung", "Tsunami"),
+    "Earth": ("Tremor", "Mudslide", "Earthquake"),
+    "Wind": ("Gust", "Hurricane", "Tornado"),
+}
 
 
 class Wizard(Job):
@@ -60,25 +80,38 @@ class Wizard(Job):
         )
 
 
-def default_affinity() -> dict[str, int]:
+def default_affinity() -> dict[str, float]:
     return {school: DEFAULT_AFFINITY for school in AFFINITY_SCHOOLS}
 
 
-def normalize_affinity(state: Any) -> dict[str, int]:
+def cap_for(character: Any | None) -> float:
+    class_name = getattr(getattr(character, "cls", None), "name", None)
+    return WIZARD_CAP if class_name == "Wizard" else SORCERER_CAP
+
+
+def normalize_affinity(state: Any, *, cap: float = WIZARD_CAP, migrate_legacy: bool = False) -> dict[str, float]:
     affinity = default_affinity()
     if isinstance(state, dict):
         for school in AFFINITY_SCHOOLS:
             try:
-                value = int(state.get(school, DEFAULT_AFFINITY) or DEFAULT_AFFINITY)
+                value = float(state.get(school, DEFAULT_AFFINITY) or DEFAULT_AFFINITY)
             except (TypeError, ValueError):
                 value = DEFAULT_AFFINITY
-            affinity[school] = max(AFFINITY_MIN, min(AFFINITY_MAX, value))
+            if migrate_legacy:
+                value = max(0.0, value - 50.0)
+            affinity[school] = max(float(AFFINITY_MIN), min(float(cap), value))
     return affinity
 
 
-def ensure_affinity(character: Any) -> dict[str, int]:
-    affinity = normalize_affinity(getattr(character, "wizard_affinity", None))
+def ensure_affinity(character: Any) -> dict[str, float]:
+    version = int(getattr(character, "wizard_affinity_version", 1) or 1)
+    affinity = normalize_affinity(
+        getattr(character, "wizard_affinity", None),
+        cap=cap_for(character),
+        migrate_legacy=version < 2,
+    )
     setattr(character, "wizard_affinity", affinity)
+    setattr(character, "wizard_affinity_version", 2)
     return affinity
 
 
@@ -93,18 +126,176 @@ def school_from_ability(ability: Any) -> str | None:
     return None
 
 
-def record_cast(character: Any, school: str | None) -> dict[str, int]:
+def record_cast(character: Any, school: str | None) -> dict[str, float]:
     if school not in AFFINITY_SCHOOLS:
         return ensure_affinity(character)
     affinity = ensure_affinity(character)
-    affinity[school] = min(AFFINITY_MAX, affinity[school] + AFFINITY_STEP)
+    cap = cap_for(character)
+    step = RING_AFFINITY_STEP if _wizard_ring_accelerates(character) else AFFINITY_STEP
+    affinity[school] = min(cap, affinity[school] + step)
     opposite = OPPOSITES[school]
-    affinity[opposite] = max(AFFINITY_MIN, affinity[opposite] - AFFINITY_STEP)
+    affinity[opposite] = max(float(AFFINITY_MIN), affinity[opposite] - OPPOSITE_DRIFT)
+    for other in AFFINITY_SCHOOLS:
+        if other not in {school, opposite}:
+            affinity[other] = max(float(AFFINITY_MIN), affinity[other] - OTHER_DRIFT)
     return affinity
 
 
 def affinity_damage_bonus(character: Any, damage_type: str | None) -> float:
+    if getattr(getattr(character, "cls", None), "name", None) not in {"Sorcerer", "Wizard"}:
+        return 0.0
     if damage_type not in AFFINITY_SCHOOLS:
         return 0.0
     affinity = ensure_affinity(character)
-    return max(0.0, (affinity[damage_type] - DEFAULT_AFFINITY) * 0.002)
+    return max(0.0, int(affinity[damage_type] // 10) * 0.01)
+
+
+def frozen_armor_reduction(character: Any, damage: int) -> tuple[int, str]:
+    """Apply the Sorcerer-line Frozen Armor passive when Ice is mastered."""
+    if damage <= 0:
+        return damage, ""
+    if getattr(getattr(character, "cls", None), "name", None) not in {"Sorcerer", "Wizard"}:
+        return damage, ""
+    if "Frozen Armor" not in getattr(character, "spellbook", {}).get("Skills", {}):
+        return damage, ""
+    if ensure_affinity(character).get("Ice", 0) < SORCERER_MASTERY_THRESHOLD:
+        return damage, ""
+    reduced = max(1, int(damage * FROZEN_ARMOR_REDUCTION))
+    return max(0, damage - reduced), f"{character.name}'s Frozen Armor absorbs {reduced} damage.\n"
+
+
+def process_cast(character: Any, spell: Any, target: Any | None = None) -> str:
+    if getattr(getattr(character, "cls", None), "name", None) not in {"Sorcerer", "Wizard"}:
+        return ""
+    school = school_from_ability(spell)
+    if school not in AFFINITY_SCHOOLS:
+        return ""
+    record_cast(character, school)
+    message = _upgrade_spellbook(character, school)
+    message += _apply_mastery_proc(character, school, target)
+    return message
+
+
+def _wizard_ring_accelerates(character: Any) -> bool:
+    if getattr(getattr(character, "cls", None), "name", None) != "Wizard":
+        return False
+    try:
+        from . import class_rings
+
+        return class_rings.is_awakened(character, "Wizard") and class_rings.has_equipped_class_ring(character)
+    except Exception:
+        return False
+
+
+def _spell_class_by_name(spell_name: str):
+    from .. import abilities
+
+    class_names = {
+        "Ice Lance": "IceLance",
+        "Ball Lightning": "BallLightning",
+        "Water Jet": "WaterJet",
+        "Molten Rock": "MoltenRock",
+        "Firebolt": "Firebolt",
+        "Fireball": "Fireball",
+        "Firestorm": "Firestorm",
+        "Icicle": "Icicle",
+        "Blizzard": "IceBlizzard",
+        "Shock": "Shock",
+        "Lightning": "Lightning",
+        "Electrocution": "Electrocution",
+        "Aqualung": "Aqualung",
+        "Tsunami": "Tsunami",
+        "Tremor": "Tremor",
+        "Mudslide": "Mudslide",
+        "Earthquake": "Earthquake",
+        "Gust": "Gust",
+        "Hurricane": "Hurricane",
+        "Tornado": "Tornado",
+    }
+    return getattr(abilities, class_names.get(spell_name, spell_name.replace(" ", "")), None)
+
+
+def _upgrade_spellbook(character: Any, school: str) -> str:
+    spells = getattr(character, "spellbook", {}).get("Spells", {})
+    if not isinstance(spells, dict):
+        return ""
+    affinity = ensure_affinity(character)[school]
+    chain = SPELL_UPGRADES.get(school)
+    if not chain:
+        return ""
+    class_name = getattr(getattr(character, "cls", None), "name", None)
+    target_index = None
+    if affinity >= WIZARD_UNLOCK_THRESHOLD and class_name == "Wizard":
+        target_index = 2
+    elif affinity >= SORCERER_UNLOCK_THRESHOLD and class_name in {"Sorcerer", "Wizard"}:
+        target_index = 1
+    if target_index is None:
+        return ""
+    for lower_name in chain[:target_index]:
+        if lower_name in spells:
+            new_name = chain[target_index]
+            spell_cls = _spell_class_by_name(new_name)
+            if spell_cls is None or new_name in spells:
+                return ""
+            del spells[lower_name]
+            spells[new_name] = spell_cls()
+            return f"{lower_name} resonates with {school} affinity and upgrades to {new_name}.\n"
+    return ""
+
+
+def _buff_state(character: Any) -> dict[str, int]:
+    state = getattr(character, "wizard_school_buffs", None)
+    if not isinstance(state, dict):
+        state = {}
+        setattr(character, "wizard_school_buffs", state)
+    return state
+
+
+def _apply_mastery_proc(character: Any, school: str, target: Any | None) -> str:
+    affinity = ensure_affinity(character)[school]
+    class_name = getattr(getattr(character, "cls", None), "name", None)
+    if class_name not in {"Sorcerer", "Wizard"}:
+        return ""
+    if affinity < SORCERER_MASTERY_THRESHOLD:
+        return ""
+    mastery = affinity >= WIZARD_MASTERY_THRESHOLD and _wizard_ring_accelerates(character)
+    chance = 0.12 + (0.08 if mastery else 0.0)
+    if random.random() >= chance:
+        return ""
+    stacks = _buff_state(character)
+    stacks[school] = min(3, int(stacks.get(school, 0) or 0) + 1)
+    stack = stacks[school]
+    if school == "Fire":
+        character.stat_effects["Magic"].active = True
+        character.stat_effects["Magic"].duration = max(character.stat_effects["Magic"].duration, 2)
+        character.stat_effects["Magic"].extra = max(character.stat_effects["Magic"].extra, stack)
+        return f"{character.name}'s fire affinity burns brighter ({stack}).\n"
+    if school == "Ice":
+        character.stat_effects["Defense"].active = True
+        character.stat_effects["Defense"].duration = max(character.stat_effects["Defense"].duration, 2)
+        character.stat_effects["Defense"].extra = max(character.stat_effects["Defense"].extra, stack)
+        return f"{character.name}'s ice affinity hardens their guard ({stack}).\n"
+    if school == "Water":
+        heal = min(character.health.max - character.health.current, stack)
+        mana = min(character.mana.max - character.mana.current, stack)
+        character.health.current += max(0, heal)
+        character.mana.current += max(0, mana)
+        return f"{character.name}'s water affinity restores {max(0, heal)} HP and {max(0, mana)} MP.\n"
+    if school == "Electric" and target is not None:
+        damage = max(1, stack * (2 if mastery else 1))
+        target.health.current -= damage
+        return f"{character.name}'s electric affinity arcs for {damage} extra damage.\n"
+    if school == "Earth":
+        character.stat_effects["Defense"].active = True
+        character.stat_effects["Defense"].duration = max(character.stat_effects["Defense"].duration, 2)
+        character.stat_effects["Defense"].extra = max(character.stat_effects["Defense"].extra, stack)
+        character.stat_effects["Magic Defense"].active = True
+        character.stat_effects["Magic Defense"].duration = max(character.stat_effects["Magic Defense"].duration, 2)
+        character.stat_effects["Magic Defense"].extra = max(character.stat_effects["Magic Defense"].extra, stack)
+        return f"{character.name}'s earth affinity settles into a ward ({stack}).\n"
+    if school == "Wind":
+        character.stat_effects["Speed"].active = True
+        character.stat_effects["Speed"].duration = max(character.stat_effects["Speed"].duration, 2)
+        character.stat_effects["Speed"].extra = max(character.stat_effects["Speed"].extra, stack)
+        return f"{character.name}'s wind affinity quickens them ({stack}).\n"
+    return ""

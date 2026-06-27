@@ -830,14 +830,15 @@ class TestPlayerUtilityBehaviors:
         assert "doubling your current stash" in dragon_msg
         assert player.gold == 200
 
-    def test_class_upgrades_lycan_unlocks_transform_on_red_dragon(self):
+    def test_class_upgrades_lycan_unlocks_dragon_essence_on_red_dragon(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.cls.name = "Lycan"
 
         msg = player.class_upgrades(game=None, enemy=SimpleNamespace(name="Red Dragon"))
 
-        assert "can now transform into one" in msg
-        assert "Transform" in player.spellbook["Skills"]
+        assert "Red Dragon's essence" in msg
+        assert player.lycan_state["dragon_essence"] is True
+        assert "Transform" not in player.spellbook["Skills"]
 
     def test_end_combat_victory_and_defeat_paths(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")

@@ -31,6 +31,18 @@ def _grandmaster():
     return player
 
 
+def _weapon_master():
+    player = TestGameState.create_player(
+        class_name="Weapon Master",
+        race_name="Human",
+        level=30,
+        pro_level=2,
+        stats={"strength": 25, "intel": 10, "wisdom": 10, "con": 20, "charisma": 10, "dex": 24},
+    )
+    player.equipment["Ring"] = items.ClassRing()
+    return player
+
+
 def test_grandmaster_discipline_state_defaults_and_ranks():
     player = _grandmaster()
 
@@ -43,6 +55,51 @@ def test_grandmaster_discipline_state_defaults_and_ranks():
     assert after == 10
     assert grandmaster.accuracy_bonus(player, "Sword") == 0.05
     assert grandmaster.proc_chance(player, "Sword") == 0.10
+
+
+def test_weapon_master_starts_discipline_and_unlocks_rank_one_art():
+    player = _weapon_master()
+    player.equipment["Weapon"] = items.BrassKnuckles()
+
+    before, after = player.record_grandmaster_weapon_hit("Fist")
+
+    assert (before, after) == (0, 0)
+    player.grandmaster_discipline["disciplines"]["Fist"]["xp"] = grandmaster.XP_THRESHOLDS[0]
+    player.ensure_grandmaster_discipline()
+
+    assert grandmaster.discipline_rank(player, "Fist") == 1
+    assert "Iron Palm" in player.spellbook["Skills"]
+    assert player.spellbook["Skills"]["Iron Palm"].cost == grandmaster.ART_COSTS["Fist"]
+
+
+def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):
+    player = _weapon_master()
+    player.equipment["Weapon"] = items.BrassKnuckles()
+    enemy = Goblin()
+    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[4])
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
+
+    message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
+
+    assert "Iron Palm" in message
+    assert player.mana.current == player.mana.max - grandmaster.ART_COSTS["Fist"]
+    assert enemy.stat_effects["Attack"].active is True
+    assert enemy.stat_effects["Attack"].extra < 0
+
+
+def test_perfect_bound_art_adds_grandmaster_ring_bonus(monkeypatch):
+    player = _grandmaster()
+    player.equipment["Weapon"] = items.BrassKnuckles()
+    enemy = Goblin()
+    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[-1])
+    grandmaster.bind_weapon(player, "Fist")
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
+
+    message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
+
+    assert "Iron Palm" in message
+    assert player.stat_effects["Defense"].active is True
+    assert player.stat_effects["Defense"].extra >= 6
 
 
 def test_bound_class_ring_doubles_chosen_weapon_bonus():

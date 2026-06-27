@@ -742,6 +742,7 @@ class PlayerDataSerializer:
             'temporary_exploration_effects': getattr(player, 'temporary_exploration_effects', None),
             'lycan_state': getattr(player, 'lycan_state', None),
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
+            'wizard_affinity_version': getattr(player, 'wizard_affinity_version', 1),
             'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
             'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
             'gameplay_stats': normalize_gameplay_stats(
@@ -955,6 +956,10 @@ class PlayerDataSerializer:
         if hasattr(player, "ensure_lycan_state"):
             player.ensure_lycan_state()
         player.wizard_affinity = data.get('wizard_affinity', getattr(player, 'wizard_affinity', None))
+        player.wizard_affinity_version = data.get(
+            'wizard_affinity_version',
+            getattr(player, 'wizard_affinity_version', 1),
+        )
         if hasattr(player, "ensure_wizard_affinity"):
             player.ensure_wizard_affinity()
         player.main_story = data.get('main_story', getattr(player, 'main_story', None))

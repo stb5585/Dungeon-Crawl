@@ -15,7 +15,7 @@ STEPS_PER_PHASE = 120
 class Lycan(Job):
     """
     Promotion: Pathfinder -> Druid -> Lycan
-    Additional Pros: Can learn to transform into Red Dragon; increased constitution gain
+    Additional Pros: Can unlock Dragon Essence; increased constitution gain
     Additional Cons: Lower intel gain
     Special Mechanic: Can shapeshift into alternative forms
     """
@@ -51,7 +51,7 @@ class Lycan(Job):
 
 
 def default_state() -> dict[str, Any]:
-    return {"moon_phase": "New", "moon_steps": 0, "frenzy_turns": 0}
+    return {"moon_phase": "New", "moon_steps": 0, "frenzy_turns": 0, "dragon_essence": False}
 
 
 def normalize_state(state: Any) -> dict[str, Any]:
@@ -64,6 +64,7 @@ def normalize_state(state: Any) -> dict[str, Any]:
                 normalized[key] = max(0, int(state.get(key, 0) or 0))
             except (TypeError, ValueError):
                 normalized[key] = 0
+        normalized["dragon_essence"] = bool(state.get("dragon_essence", False))
     return normalized
 
 

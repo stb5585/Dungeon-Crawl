@@ -632,6 +632,99 @@ class PolearmMastery(_PassiveSkill):
         )
 
 
+class _WeaponArt(Class):
+    def __init__(self, name: str, description: str):
+        super().__init__(name=name, description=description)
+        self.cost = {
+            "Iron Palm": 6,
+            "Hemorrhage": 7,
+            "Riposte Line": 7,
+            "Low Sweep": 7,
+            "Guard Cleaver": 9,
+            "Reaver's Mark": 9,
+            "Brace": 8,
+            "Anvil Strike": 10,
+        }.get(name, 0)
+        self.weapon = True
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from .classes import grandmaster
+
+        super().use(user, target, **kwargs)
+        if target is None:
+            return f"{self.name} needs a target.\n"
+        return grandmaster.perform_weapon_art(user, target, self.name)
+
+
+class IronPalm(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Iron Palm",
+            "A fist discipline art that disrupts the target's attack and hardens your stance as mastery grows.",
+        )
+
+
+class Hemorrhage(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Hemorrhage",
+            "A dagger discipline art that opens and worsens bleeding wounds.",
+        )
+
+
+class RiposteLine(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Riposte Line",
+            "A sword discipline art that strikes and prepares a brief counter line.",
+        )
+
+
+class LowSweep(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Low Sweep",
+            "A club discipline art that disrupts footing with speed pressure and prone chances.",
+        )
+
+
+class GuardCleaver(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Guard Cleaver",
+            "A longsword discipline art that cuts through and weakens guard.",
+        )
+
+
+class ReaversMark(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Reaver's Mark",
+            "A battle axe discipline art that marks a foe to take increased weapon pressure.",
+        )
+
+
+class Brace(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Brace",
+            "A polearm discipline art that prepares a defensive counter stance.",
+        )
+
+
+class AnvilStrike(_WeaponArt):
+    def __init__(self):
+        super().__init__(
+            "Anvil Strike",
+            "A hammer discipline art that crushes defense and can suppress guard at mastery.",
+        )
+
+
 class FavoredEnemy(_PassiveSkill):
     def __init__(self):
         super().__init__("Favored Enemy", "You fight your most hunted enemy type with practiced precision.")
@@ -1605,6 +1698,18 @@ class BloodRage(PowerUp):
         self.passive = True
 
 
+class FrozenArmor(PowerUp):
+    """Sorcerer passive: Ice mastery hardens into a small defensive ward."""
+
+    def __init__(self):
+        super().__init__(
+            name="Frozen Armor",
+            description="Ice mastery sheaths the Sorcerer in a thin frost ward, "
+            "slightly reducing incoming damage while Ice affinity is mastered.",
+        )
+        self.passive = True
+
+
 class ArsenalMastery(PowerUp):
     """Skill — data-driven (arsenal_mastery.yaml)"""
     def __new__(cls):
@@ -2514,7 +2619,7 @@ class TreeOfLife(Spell):
 
 
 class VilePotion(_ReagentSpell):
-    required_items = ("Hemlock Root",)
+    required_items = ("Hemlock Root", "Fungus Spore")
 
     def __init__(self):
         super().__init__("Vile Potion", "Imbibe rot and spew putrid vomitus at a foe.", school="Nature")
@@ -3533,6 +3638,7 @@ skill_dict = {
         "25": ManaShield,
         },
     "Sorcerer": {
+        "1": FrozenArmor,
         "10": Doublecast,
         "18": MirrorImage,
         },
@@ -3602,6 +3708,7 @@ skill_dict = {
     "Rogue": {
         "3": Zephyrstrike,
         "5": SneakAttack,
+        "8": KeenEye,
         "10": SlotMachine,
         "12": TripleStrike,
         "15": MasterLockpick,

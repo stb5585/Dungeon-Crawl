@@ -811,7 +811,7 @@ class BattleEngine:
                 and "Pious Bounty" in self.player.spellbook.get("Skills", {})
             ):
                 self.defender._pious_bounty_gold = True
-            wizard.record_cast(self.player, wizard.school_from_ability(spell))
+            message += wizard.process_cast(self.player, spell, self.defender)
             if not self.defender.is_alive():
                 message += self._record_player_natural_spell_kill(spell)
             if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(spell):
@@ -878,7 +878,7 @@ class BattleEngine:
             else:
                 self.player._runic_boost_floor = prior_floor
 
-        wizard.record_cast(self.player, wizard.school_from_ability(spell))
+        message += wizard.process_cast(self.player, spell, self.defender)
         if not self.defender.is_alive():
             message += self._record_player_natural_spell_kill(spell)
         if astromancer.is_astromancer(self.player):

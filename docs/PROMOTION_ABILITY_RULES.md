@@ -71,6 +71,82 @@ All rules are defined in `src/core/classes/rules.py` using the
 - **Reason**: Inquisitors investigate openly, not through stealth
 - **Message**: "You lose all stealth skills."
 
+## Promotion Decision Matrix
+
+This matrix is the complete documentation baseline for current first- and
+second-promotion ability transitions. `Keep` means no pruning rule is planned.
+`Identity Trade` means an implemented rule removes abilities that no longer
+match the promotion. The matrix itself is documentation rather than a runtime
+pruning change unless an implemented rule is called out.
+
+### Warrior Branch
+
+| Promotion Path | Classification | Intended Ability Transition |
+| --- | --- | --- |
+| Warrior -> Weapon Master | Identity Trade | Remove shield-centered skills that conflict with dual-wield discipline. Current rule removes `Shield Slam`. |
+| Weapon Master -> Berserker | Keep | Retain Weapon Master weapon discipline and weapon arts; Berserker adds Bloodied Momentum and heavy-weapon mutation. |
+| Weapon Master -> Grandmaster of Arms | Keep | Retain and deepen Weapon Discipline; Grandmaster Class Ring expands the chosen bound art. |
+| Warrior -> Paladin | Keep | Retain Warrior basics while adding permanent vow, holy identity, and Oath Conviction. |
+| Paladin -> Crusader | Keep | Retain Paladin vow identity and deepen Oath Conviction through Vow Affirmation. |
+| Warrior -> Lancer | Keep | Retain core martial skills while adding Jump, polearm identity, and Aerial Tempo. |
+| Lancer -> Dragoon | Keep | Retain Jump/polearm progression and deepen Aerial Tempo through Aerial Supremacy follow-through. |
+| Warrior -> Sentinel | Keep | Retain core martial skills while adding shield/guard identity. |
+| Sentinel -> Stalwart Defender | Keep | Retain shield/guard identity and deepen Resolve, guard stances, and counterguard spends. |
+
+### Mage Branch
+
+| Promotion Path | Classification | Intended Ability Transition |
+| --- | --- | --- |
+| Mage -> Sorcerer | Keep | Retain elemental Mage spells; Sorcerer starts the 0-50 School Affinity wheel and tier-2 upgrade path. |
+| Sorcerer -> Wizard | Keep | Retain Sorcerer affinity progress and expand the cap to 100 for tier-3/final mastery. |
+| Mage -> Warlock | Identity Trade | Trade elemental attack magic for shadow magic while preserving `Enfeeble`. Current rule keeps only `Enfeeble`. |
+| Warlock -> Shadowcaster | Keep | Retain Warlock shadow spellbook and familiar identity. |
+| Warlock -> Demonologist | Keep | Retain Warlock/familiar identity; Demonologist contracts, corruption, patron mood, and ring echo deepen that identity. |
+| Mage -> Spellblade | Keep | Retain arcane training while adding weapon-channeling identity. |
+| Spellblade -> Knight Enchanter | Keep | Retain Spellblade hybrid kit and deepen enchantment/mana-tap identity. |
+| Mage -> Summoner | Keep | Retain Mage spell context and add summon identity; the V1 bond spec does not require spell pruning. |
+| Summoner -> Grand Summoner | Keep | Retain summon kit and add sacrifice/conduit scaling. |
+
+### Footpad Branch
+
+| Promotion Path | Classification | Intended Ability Transition |
+| --- | --- | --- |
+| Footpad -> Thief | Keep | Retain stealth/toolkit skills and add loot economy identity, including Scavenger's Eye and Fortune/Misfortune. |
+| Thief -> Rogue | Keep | Retain thief utility, Fortune/Misfortune, and loot identity while adding Finders Keepers, Cheat Death, and Loaded Dice payoff. |
+| Footpad -> Inquisitor | Identity Trade | Remove stealth skills that conflict with open investigation, then add Case Journal and Revelation counterplay. Current rule removes the stealth suite. |
+| Inquisitor -> Seeker | Keep | Retain reveal/inspection identity, Case Journal progress, and Revelation while adding Wayfinding and cartography/cache identity. |
+| Footpad -> Assassin | Keep | Retain stealth skills and add poison/lethal pressure, including Death Mark setup. |
+| Assassin -> Ninja | Keep | Retain assassin kit and Death Mark setup while adding Ninja Blade execution pressure and No-Trace Opener payoff. |
+| Footpad -> Spell Stealer | Keep | Retain dexterous theft identity while adding spell theft and the Stolen Charge loop. |
+| Spell Stealer -> Arcane Trickster | Keep | Retain spell theft, Stolen Charge, and permanent stolen-spell learning while adding Arcane Larceny payoff. |
+
+### Healer Branch
+
+| Promotion Path | Classification | Intended Ability Transition |
+| --- | --- | --- |
+| Healer -> Cleric | Keep | Retain healing foundation and add shield/holy utility. |
+| Cleric -> Templar | Keep | Retain cleric defense/holy identity and add ordered blessings. |
+| Healer -> Monk | Identity Trade | Trade spellcasting for martial chi. Current rule clears learned spells. |
+| Monk -> Master Monk | Keep | Retain chi/martial kit and deepen Ki mastery, `Dim Mak`, and late-game martial weapon identity. |
+| Healer -> Priest | Keep | Retain and deepen spellcasting support through the Prayer support loop. |
+| Priest -> Archbishop | Keep | Retain priest spell identity and add Prayer-powered Benediction plus intervention smoothing. |
+| Healer -> Bard | Identity Trade | Trade full divine spellcasting for light support and music. Bard keeps only known `Heal`, `Regen`, and `Cleanse`; divine offense and higher divine progression should be removed. |
+| Bard -> Troubadour | Keep | Retain song identity and add Encore/music mastery. |
+
+### Pathfinder Branch
+
+| Promotion Path | Classification | Intended Ability Transition |
+| --- | --- | --- |
+| Pathfinder -> Druid | Keep | Retain nature magic and add transformation/nature rites. |
+| Druid -> Lycan | Keep | Retain form/nature identity and add moon/frenzy behavior. |
+| Druid -> Archdruid | Keep | Retain nature magic, deepen Fourfold Balance, and add combat Aspect Harmony. |
+| Pathfinder -> Diviner | Keep | Retain exploration/nature context while adding learned-spell/rune identity; Diviner does not gain Foresight Threads in V1. |
+| Diviner -> Astromancer | Keep | Retain runes and expand constellation/time identity through combat-only Foresight Threads and `Threaded Cast`. |
+| Pathfinder -> Shaman | Keep | Retain nature spell context and add Totem communion. |
+| Shaman -> Soulcatcher | Keep | Retain Totem identity and add Soul Aspect/Soul Drain. |
+| Pathfinder -> Ranger | Identity Trade | Trade spellcasting for physical beastcraft. Current rule clears learned spells. |
+| Ranger -> Beast Master | Keep | Retain taming/favored-enemy identity and add shared recovery. |
+
 ## Adding New Promotion Rules
 
 To add a promotion rule for a class that's missing one:

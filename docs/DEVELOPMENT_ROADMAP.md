@@ -32,6 +32,9 @@ appropriate design-gate document before coding.
   gameplay statistics, save/load hardening, Bestiary, class-ring systems,
   Pygame dungeon/town/combat flows, selected-item artwork, enemy combat sprites,
   dungeon tile art, and non-asset audio routing are implemented.
+- Recent class-mechanic follow-up shipped Weapon Master/Berserker/Grandmaster
+  Weapon Discipline and weapon arts, the Sorcerer/Wizard 0-based School
+  Affinity progression, and the promotion ability transition decision matrix.
 - Current planning references:
   - `docs/CLASS_KIT_DESIGN_GATES.md` for deferred class-kit gates.
   - `docs/COMBAT_BALANCE_DESIGN_GATES.md` for combat/balance gates.
@@ -149,10 +152,19 @@ Status: `Spec Gate`
 Status: `Spec Gate`
 
 - Major class-kit follow-ups remain gated by `docs/CLASS_KIT_DESIGN_GATES.md`.
-  Current deferred sections include Demonologist corruption/bargain
-  presentation, Shadowcaster overlap, Spellblade/Knight Enchanter,
-  Summoner/Grand Summoner, Druid/Lycan, Ranger/Beast Master, and deeper
-  Shaman/Soulcatcher expansion.
+  Ready-to-code specs now cover Demonologist corruption/bargain presentation,
+  Shadowcaster Umbral Debt/Eclipse, Spellblade/Knight Enchanter,
+  Summoner/Grand Summoner, Druid/Lycan, Druid/Archdruid Aspect Harmony, and
+  Ranger/Beast Master companion bond.
+  Weapon Master/Berserker Bloodied Momentum, Paladin/Crusader Oath Conviction,
+  Lancer/Dragoon Aerial Tempo, Sentinel/Stalwart Defender Resolve/Counterguard,
+  Cleric/Templar Devotion Ward, Priest/Archbishop Prayer Benediction,
+  Monk/Master Monk Ki/Dim Mak, Bard/Troubadour Repertoire/Crescendo, and
+  Shaman/Soulcatcher Totem Resonance are also covered by ready-to-code specs.
+  Thief/Rogue Fortune/Misfortune, Inquisitor/Seeker Case Journal/Wayfinding,
+  Assassin/Ninja Death Mark/No-Trace Opener, and Spell Stealer/Arcane
+  Trickster Stolen Charge/Arcane Larceny are covered by ready-to-code
+  Footpad-track specs.
 - Class Ring activation follow-up is limited to tuning, additional visual
   presentation, and playtest response unless a new spec changes the shipped
   activation flows. Radar-style Wizard affinity visualization is deferred; the
@@ -164,34 +176,71 @@ Status: `Spec Gate`
 - Deep race-passive expansion remains deferred until the current always-on race
   identity pass has enough playtest feedback. The "7 sins / 7 virtues" ideas
   are design flavor unless promoted by spec.
-- Monk/Master Monk follow-ups need a martial spec before adding combo chains,
-  chained input timing, combo UI, longer progression, or legs/additional melee
-  attacks with separate attack/crit/accuracy rules.
-- Bard/Troubadour follow-ups need a music spec before adding permanent song
-  learning, Maestro-style progression, repeated-use song progression,
-  sheet-music economy expansion, or quest-locked composition.
-- Beast Master follow-ups need a companion spec before adding monster taming,
-  command menus, companion progression, companion visuals, or balance rules for
-  stronger species.
-- `Transform (1-4)`, `Eclipse`, and `Frozen Armor` remain deferred to their
-  class/passive spec gates.
+- Monk/Master Monk follow-ups now have a Ki/Dim Mak martial spec before
+  implementation. Combo chains, chained input timing, combo UI, longer
+  progression, and legs/additional melee attacks with separate
+  attack/crit/accuracy rules remain deferred.
+- Bard/Troubadour follow-ups now have a Repertoire/Crescendo music spec before
+  implementation. Broader Maestro-style progression, larger sheet-music
+  economy expansion, and quest-locked composition remain deferred.
+- Beast Master follow-ups now have a companion bond spec before implementation;
+  broader monster taming, stables, companion visuals, and balance rules for
+  stronger species remain deferred.
+- Druid/Archdruid follow-ups now have an Aspect Harmony spec before
+  implementation. New Grove questlines, catalyst economy expansion, and
+  persistent post-attunement mastery remain deferred.
+- Sentinel/Stalwart Defender follow-ups now have a Resolve/Counterguard shield
+  spec before implementation. Broader party-tank threat rules and multi-target
+  control remain deferred.
+- Lancer/Dragoon follow-ups now have an Aerial Tempo spec before
+  implementation. Broader Jump-system redesign, persistent Jump mastery, and
+  extra Jump modification capacity remain deferred.
+- Paladin/Crusader follow-ups now have an Oath Conviction spec before
+  implementation. Multi-vow respecs, morality systems, and broader oath quest
+  arcs remain deferred.
+- Weapon Master/Berserker follow-ups now have a Bloodied Momentum spec before
+  implementation. Forced berserk/loss-of-control and broader scar milestone
+  trees remain deferred.
+- Cleric/Templar follow-ups now have a Devotion Ward spec before
+  implementation. Full divine economy redesign, relic quest expansion, and
+  loot-centered Pious Bounty progression remain deferred.
+- Priest/Archbishop follow-ups now have a Prayer Benediction spec before
+  implementation. Full party-healer systems, morality gates, and resurrection
+  economy redesign remain deferred.
+- Thief/Rogue follow-ups now have a Fortune/Misfortune and Loaded Dice spec
+  before implementation. Full loot-table redesign, persistent heist caches, and
+  jackpot-forcing mechanics remain deferred.
+- Inquisitor/Seeker follow-ups now have a Case Journal/Revelation/Wayfinding
+  spec before implementation. Full quest pathing, guaranteed boss/trial escape,
+  and loot-focused journal rewards remain deferred.
+- Assassin/Ninja follow-ups now have a Death Mark and No-Trace Opener spec
+  before implementation. Full stealth-system rewrites, persistent target marks,
+  and unrestricted instant-death scaling remain deferred.
+- Spell Stealer/Arcane Trickster follow-ups now have a Stolen Charge and
+  Arcane Larceny spec before implementation. Broader stolen-spell mastery,
+  free-scroll generation, and scroll-economy redesign remain deferred.
+- `Transform4` is retired as a live Lycan Red Dragon reward. The legacy wrapper
+  remains loadable for old saves/tests, while Lycan Red Dragon victories now
+  set Dragon Essence state for the future `Winged Pounce` implementation.
+  `Frozen Armor` is implemented as a Sorcerer-line Ice mastery passive.
+  `Eclipse` is now covered by the Shadowcaster Umbral Debt spec.
 - Polearm Mastery exists as a future quest/item-unlock hook; do not wire it
   without a trigger, reward, UI, and balance decision.
-- Perception-oriented Diviner skills are deferred unless a class-kit or
-  combat-utility spec distinguishes them clearly from Seeker/Inquisitor sight.
 - An always-hit flag for selected spells remains deferred until a combat spec
   defines resistance behavior, boss-immunity boundaries, UI text, and tests.
 - Promotion ability transition expansion remains deferred for remaining
   promotion paths, spell/skill gain rules, class-specific retention variants,
   and any ability-history restoration mechanics.
-- Future Diviner/Astromancer rune work must preserve the current per-save,
-  spell-empowerment scope unless a new spec explicitly allows rune gear
-  modification, rune inventory items, account history, meta-progression,
-  permanent spell alteration, or additional spell-school aliases. Richer
-  constellation presentation is deferred to a dedicated UI/readability pass.
-- Future Shaman/Soulcatcher Totem changes must preserve the current communion,
-  spellbook/Totem/Class Ring storage, nonlethal Soul Drain, and reduced Totem
-  pulse-potency contracts unless a tuning spec changes all affected pulse rules.
+- Future Diviner/Astromancer implementation should follow the Foresight Threads
+  spec while preserving the current per-save rune, spell-empowerment scope.
+  The spec adds Astromancer-only combat Threads and `Threaded Cast` without
+  rune gear modification, rune inventory items, account history,
+  meta-progression, permanent spell alteration, or additional spell-school
+  aliases. Richer constellation presentation is deferred to a dedicated
+  UI/readability pass.
+- Future Shaman/Soulcatcher Totem implementation should follow the Totem
+  Resonance spec while preserving the current communion, spellbook/Totem/Class
+  Ring storage, nonlethal Soul Drain, and reduced Totem pulse-potency contracts.
 - Additional P6 ability work needs a one-page spec covering trigger/class
   eligibility, storage/save migration, combat and out-of-combat behavior,
   UI/menu/status text, event/audio/logging needs, balance assumptions,
@@ -208,10 +257,8 @@ Status: `Spec Gate`
   and speed-based combat stacks.
 - Numeric tuning on Final Assault, Last Stand, Tame odds, Favored Enemy scaling,
   Rewind snapshot scope, resistance durations, one-use song strength,
-  dark-spell pressure, and Bad Breath AI priority should wait for playtest or
-  simulator reports.
-- Change `School Affinity` mechanic to be for Sorcerer/Wizard tree to gain
-  upgraded spells; redesign Wizard Class Ring mechanic to upgrade this system
+  dark-spell pressure, Weapon Arts, School Affinity, and Bad Breath AI priority
+  should wait for playtest or simulator reports.
 
 ## Story And Endgame Gates
 

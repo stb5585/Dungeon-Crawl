@@ -337,7 +337,10 @@ def _description_extra(character: Any, current: str) -> str:
     if current == "Wizard":
         affinity = getattr(character, "wizard_affinity", {}) or {}
         if affinity:
-            values = ", ".join(f"{school} {affinity.get(school, 50)}" for school in ("Fire", "Ice", "Water", "Electric", "Earth", "Wind"))
+            values = ", ".join(
+                f"{school} {float(affinity.get(school, 0) or 0):.1f}/100"
+                for school in ("Fire", "Ice", "Water", "Electric", "Earth", "Wind")
+            )
             return f" Affinity: {values}."
     if current == "Shadowcaster" and is_awakened(character, current):
         return f" Umbral Debt: {int(data.get('debt', 0) or 0)}."

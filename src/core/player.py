@@ -391,6 +391,7 @@ class Player(Character):
         self.temporary_exploration_effects = ability_mechanics.default_exploration_effects()
         self.lycan_state = lycan.default_state()
         self.wizard_affinity = wizard.default_affinity()
+        self.wizard_affinity_version = 2
         self.main_story = main_story.default_state()
         self.warp_point = False
         self.quit = False
@@ -445,6 +446,7 @@ class Player(Character):
         )
         if not isinstance(getattr(self, "_grandmaster_battle_hit_types", None), set):
             self._grandmaster_battle_hit_types = set()
+        grandmaster.sync_weapon_art_skills(self)
         return self.grandmaster_discipline
 
     def ensure_demonologist_contracts(self):
@@ -551,6 +553,7 @@ class Player(Character):
                     self, weapon_type, grandmaster.VICTORY_XP
                 )
         self._grandmaster_battle_hit_types.clear()
+        grandmaster.sync_weapon_art_skills(self)
         return results
 
     def record_archdruid_status_applied(self, target, status_name: str) -> None:
@@ -1104,10 +1107,11 @@ class Player(Character):
             song = bard.ensure_song_state(self)
             active = song.get("active") or "None"
             lines.append(f"{'Song:':13} {active} ({int(song.get('turns', 0) or 0)} turns)")
-        if cls_name == "Wizard":
+        if cls_name in {"Sorcerer", "Wizard"}:
             affinity = wizard.ensure_affinity(self)
-            values = " ".join(f"{school[:3]}:{affinity[school]}" for school in wizard.AFFINITY_SCHOOLS)
-            lines.append(f"{'Affinity:':13} {values}")
+            cap = int(wizard.cap_for(self))
+            values = " ".join(f"{school[:3]}:{affinity[school]:.1f}" for school in wizard.AFFINITY_SCHOOLS)
+            lines.append(f"{'Affinity:':13} {values} /{cap}")
         if cls_name == "Lycan":
             state = lycan.ensure_state(self)
             lines.append(f"{'Moon:':13} {state['moon_phase']} ({state['moon_steps']}/{lycan.STEPS_PER_PHASE})")
@@ -2291,9 +2295,13 @@ class Player(Character):
                     state['procs_this_floor'] += 1
                     state['procs_by_enemy'][enemy.name] = enemy_proc_count + 1
         if self.cls.name == "Lycan" and enemy.name == 'Red Dragon':
-            upgrade_str += f"{self.name} has harnessed the power of the Red Dragon and can now transform into one!\n"
-            self.spellbook['Skills']['Transform'] = abilities.Transform4()
-            self.spellbook['Skills']['Transform'].use(self)
+            lycan_state = self.ensure_lycan_state()
+            if not lycan_state.get("dragon_essence", False):
+                lycan_state["dragon_essence"] = True
+                upgrade_str += (
+                    f"{self.name} has harnessed the Red Dragon's essence. "
+                    "It will enhance the werewolf form once Dragon Essence techniques are implemented.\n"
+                )
         return upgrade_str
 
     def familiar_turn(self, enemy):
@@ -2613,6 +2621,8 @@ class Player(Character):
             total_mod *= paladin.conquest_damage_multiplier(self, enemy)
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
+            if int(getattr(self, "_guard_suppressed", 0) or 0) > 0:
+                return 0
             block_mod = 0
             if self.equipment['OffHand'] and self.equipment['OffHand'].subtyp == 'Shield':
                 block_mod = round(self.equipment['OffHand'].mod * 100)

@@ -74,6 +74,32 @@
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
 
+### Weapon Discipline And School Affinity
+- [ ] Fight as a Weapon Master with each supported weapon type equipped.
+  - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
+  - Expected: Rank 1 unlocks the matching art: `Iron Palm`, `Hemorrhage`, `Riposte Line`, `Low Sweep`, `Guard Cleaver`, `Reaver's Mark`, `Brace`, or `Anvil Strike`.
+- [ ] Try each Weapon Art with a matching and nonmatching weapon equipped.
+  - Expected: Matching weapons allow the art when MP is sufficient.
+  - Expected: Nonmatching weapons fail clearly without spending MP or applying effects.
+- [ ] Raise one Weapon Discipline to rank 5 and rank 10, then use its art.
+  - Expected: Rank 5 and rank 10 add the documented improved/mastered behavior without changing the save key shape.
+- [ ] Promote a Weapon Master with discipline progress into Berserker.
+  - Expected: Weapon Discipline ranks and unlocked arts carry forward and remain usable.
+- [ ] Awaken and equip a Grandmaster of Arms Class Ring, bind it to a weapon, then use the matching rank-10 art.
+  - Expected: Bound discipline bonuses double while equipped.
+  - Expected: Perfect Bound Art adds the conservative bound-weapon mastered bonus only for the bound weapon type.
+- [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Sorcerer.
+  - Expected: The matching school rises from 0, the opposite school drops, and other schools drift down without going below 0.
+  - Expected: Sorcerer affinity caps at 50, unlocks tier-2 spell upgrades at 30, and improves matching rider support at 50.
+- [ ] Master Ice affinity as Sorcerer or Wizard with `Frozen Armor` learned, then take incoming damage.
+  - Expected: Before Ice mastery, `Frozen Armor` has no damage-reduction effect.
+  - Expected: At Ice mastery, incoming damage is modestly reduced and combat text reports the frost ward absorption.
+- [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Wizard before and after awakening the Wizard Class Ring.
+  - Expected: Wizard affinity caps at 100, unlocks tier-3 spell upgrades at 80, and applies matching damage bonuses per full 10 affinity.
+  - Expected: With the awakened ring equipped, matching casts gain +3 affinity instead of +2 and final mastery enables 3-stack school buffs.
+- [ ] Load a legacy Sorcerer/Wizard save with old 50-centered affinity values.
+  - Expected: Values migrate to the new 0-based model, clamp to the active class cap, and remain readable in character/ring status text.
+
 ### Diviner And Astromancer Runes
 - [ ] Win combat as a Diviner with Fire, Water, Wind, and Earth natural spells across enemies with neutral resistance, resistance, and weakness to the killing spell's element.
   - Expected: Matching sign runes can drop from natural-spell kills, cap at 3 per sign, and weakness/resistance visibly changes the drop cadence over repeated attempts.
@@ -95,6 +121,17 @@
   - Expected: The active sign and four-row rune grid remain readable, and sign cycling is understandable without opening a separate help view.
 - [ ] Use the awakened Astromancer Class Ring across active-sign and off-sign rune spends.
   - Expected: Active-sign boosts feel meaningfully stronger without making off-sign rune spending irrelevant.
+- [ ] Build `Foresight Threads` as Astromancer through time/divination actions, `Runic Boost`, and `Astral Judgment`.
+  - Expected: Astromancer caps at 3 Threads, Diviner does not build Threads in V1, and Threads clear on combat end, flee, save/load, death, or class change.
+  - Expected: `Rewind` restores snapshot-safe Thread state and cannot be looped to farm unlimited Threads.
+- [ ] Use `Threaded Cast` with a spell and with `Runic Boost`.
+  - Expected: The skill requires MP and at least 1 Thread, marks the next eligible spell or `Runic Boost`, spends all Threads before resolution, and improves reliability/rider output only on a valid result.
+  - Expected: Misses or fully negated results consume Threads but do not apply a payoff.
+- [ ] Use `Twist Fate` and `Threaded Cast` in the same combat.
+  - Expected: The effects stack safely without creating guaranteed infinite success loops or bypassing boss, immunity, or Class Ring trial boundaries.
+- [ ] Awaken Astromancer `Constellation Cycle`, then use active-sign and off-sign `Threaded Cast`.
+  - Expected: Active-sign `Threaded Cast` gains the documented ring reliability/output support only while the awakened ring is equipped.
+  - Expected: The ring does not raise the Thread cap or allow manual constellation control.
 
 ### Shaman And Soulcatcher Nature Totems
 - [ ] Visit Underground Spring, Boulder, Fire Path, and the floor-3 strange-draft passage as Shaman or Soulcatcher.
@@ -187,9 +224,81 @@
   - Expected: Trickster's Gambit, Primal Ascendance, Abyssal Covenant, Arsenal Mastery, Shield Mastery, Eternal Conduit, Melody of Inspiration, and Pack Bond produce visible gameplay/status changes without stale placeholder messages.
 
 ### Legacy Class-Kit Mechanics
+- [ ] Build `Devotion` as Cleric through healing, Holy pressure, shield actions, and `Turn Undead`.
+  - Expected: Cleric caps at 3 stacks, gains at most once per player action, and clears Devotion on combat end, flee, save/load, death, or class change.
+  - Expected: `Pious Bounty` remains a modest reward accent, still does not appear on Priest, and can grant Devotion on qualifying `Turn Undead` kills.
+- [ ] Spend Devotion with `Sanctuary Ward` as Cleric or Templar.
+  - Expected: The skill requires MP and at least 1 Devotion, spends all stacks, and applies a stronger barrier/mitigation pulse at higher stacks.
+  - Expected: The cleanse/Regen rider remains conservative and logs clearly when it triggers.
+- [ ] Spend Devotion with `Relic Aegis` as Templar.
+  - Expected: The skill requires MP, at least 2 Devotion, and a shield/offhand defensive setup.
+  - Expected: It spends all stacks for stronger mitigation plus a brief holy counter or guard pulse.
+- [ ] Use `Holy Retribution` and awakened `Ordered Blessings` with Devotion.
+  - Expected: `Holy Retribution` keeps its holy-fire attack window while improving Devotion gain from holy/shield actions once per round.
+  - Expected: `Ordered Blessings` keeps the Regen/Defense/Holy Damage rotation and preserves 1 Devotion once per combat after a clean matching payoff.
+- [ ] Build `Prayer` as Priest through meaningful healing, cleansing, divine support, Holy pressure, and anti-magic setup.
+  - Expected: Priest caps at 4 stacks, gains at most once per player action, and clears Prayer on combat end, flee, save/load, death, or class change.
+  - Expected: Tiny regeneration ticks and passive housekeeping do not self-feed Prayer.
+- [ ] Spend Prayer with `Supplication` as Priest or Archbishop.
+  - Expected: The skill requires MP and at least 1 Prayer, spends all stacks, and applies a conservative support pulse with healing, protection, and a small cleanse chance.
+- [ ] Spend Prayer with `Great Benediction` as Archbishop.
+  - Expected: The skill requires higher MP and at least 3 Prayer, spends all stacks, and applies several turns of improved healing, protection, status resistance, and modest MP sustain.
+- [ ] Use `Doublecast`, `Great Gospel`, and awakened `Divine Intervention` with Prayer.
+  - Expected: `Doublecast` can grant Prayer at most once for the whole action.
+  - Expected: `Great Gospel` keeps its cleanse/power-up identity, immediately sets Prayer to at least half cap, and improves Prayer gain from divine support once per round.
+  - Expected: `Divine Intervention` keeps its once-per-combat 35% emergency heal and preserves 1 Prayer once per combat after a clean Supplication or Benediction payoff.
 - [ ] Win ordinary non-trial combat as a Berserker at 10% HP or lower across repeated attempts.
   - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.
   - Expected: Below 25% HP, weapon damage increases from scars and stacks with awakened `Bloodied Crits`.
+- [ ] Defeat ordinary loot-bearing enemies as Thief with `Scavenger's Eye`.
+  - Expected: Enemy loot drop rate and eligible rarity outcomes feel modestly improved without creating quest, special, unique, ultimate, or invalid class/summon-gated drops.
+- [ ] Defeat ordinary loot-bearing enemies as Rogue with `Finders Keepers`.
+  - Expected: Occasional extra unlisted eligible loot can be found from normal loot tables.
+  - Expected: Quest, special, unique, ultimate, invalid class-restricted, and invalid summon-gated items are excluded.
+- [ ] Build `Fortune` and `Misfortune` as Thief and Rogue through meaningful combat rolls.
+  - Expected: Successful meaningful attacks, defenses, theft/luck skills, crits, and major status attempts can build Fortune.
+  - Expected: Failed meaningful rolls, missed risky actions, poor `Slot Machine` outcomes, or failed theft/status attempts can build Misfortune.
+  - Expected: Tiny status ticks and passive housekeeping rolls do not change either meter.
+- [ ] Spend Fortune and Misfortune with representative risky actions.
+  - Expected: Fortune improves odds/reliability for `Steal`, `Mug`, `Sneak Attack`, `Gold Toss`, `Slot Machine`, and major status attempts.
+  - Expected: Misfortune does not improve pre-roll odds, but increases severity/scale after a successful risky action.
+  - Expected: Both meters clear on combat end, flee, save/load, death, or class change.
+- [ ] Use `Slot Machine` with Fortune and Misfortune available.
+  - Expected: Fortune can soften or reroll worst failure-style outcomes without forcing jackpots.
+  - Expected: Misfortune can scale successful outcomes without upgrading them directly into jackpots.
+- [ ] Take fatal damage as Rogue with `Cheat Death` available.
+  - Expected: Once per combat, fatal damage triggers a Misfortune-boosted Luck check.
+  - Expected: On success, the Rogue survives at 1 HP, spends all Misfortune, and gains a temporary `Jinx`/Misfortune-style debuff.
+  - Expected: On failure, fatal damage resolves normally.
+- [ ] Awaken Rogue `Loaded Dice`, then spend Fortune or Misfortune with the ring equipped.
+  - Expected: `Loaded Dice` still gives failed luck checks a 15% chance to become successes.
+  - Expected: Once per combat after a clean Fortune or Misfortune payoff, the ring preserves 1 point of the spent meter.
+- [ ] Promote Footpad into Inquisitor after learning stealth skills.
+  - Expected: The existing identity trade removes stealth skills while preserving the investigative kit.
+- [ ] Build `Case Journal` progress as Inquisitor or Seeker against several enemy types.
+  - Expected: `Inspect`, successful `Exploit Weakness`, visible telegraph reads, and victory with visible enemy details add progress to the broad enemy type.
+  - Expected: Progress clamps from 0 to 100 and reports milestone ranks: `Known Tells`, `Weakness Brief`, `Pattern Lock`, and `Closed Case`.
+- [ ] Build and spend `Revelation` in combat.
+  - Expected: Inquisitor caps at 2 stacks and Seeker caps at 3 stacks.
+  - Expected: `Inspect`, `Exploit Weakness`, visible telegraph reads, and anti-magic/setup actions can add stacks.
+  - Expected: `Exploit Weakness`, standard weapon hits, and weapon-tagged precision skills spend stacks for reliability/control pressure; misses consume stacks without applying riders.
+- [ ] Test studied-type bonuses at each Case Journal milestone.
+  - Expected: Studied targets improve first-Inspect Revelation, `Exploit Weakness` reliability, telegraph prediction, and Seeker movement-tool smoothing at the documented thresholds.
+  - Expected: Boss and Class Ring trial restrictions are not bypassed.
+- [ ] Awaken Seeker `Hidden Cache`, map a level, and use insight tools with the ring equipped.
+  - Expected: Existing one-per-depth cache behavior and `claimed_caches` compatibility remain intact.
+  - Expected: The ring adds only small insight smoothing after clean `Inspect` or telegraph reads and slightly improves `Wayfinding`.
+- [ ] Apply `Death Mark` as Assassin through valid setup actions.
+  - Expected: `Sneak Attack`, successful `Poison Strike` poison application, `Invisibility`/surprise opener, and representative blind/silence setup can mark targets.
+  - Expected: Assassin caps at 1 mark and marks clear on combat end, flee, save/load, target death, or class change.
+- [ ] Spend `Death Mark` as Assassin with eligible finishers.
+  - Expected: `Sneak Attack` or `Poison Strike` spends the mark and improves reliability/rider pressure without bypassing immunity.
+- [ ] Apply and spend `Death Mark` as Ninja.
+  - Expected: Ninja caps at 3 marks and can spend them through `Flurry Blades`, `Desoul`, or the first Ninja Blade standard strike in combat.
+  - Expected: Bosses and Class Ring trial enemies can be marked, but execution/instant-death pressure downgrades to damage/control when required.
+- [ ] Awaken Ninja `No-Trace Opener`, then start combat with initiative and the ring equipped.
+  - Expected: Legacy `First Strike Plus` double first standard attack behavior remains compatible.
+  - Expected: The opener can apply 1 Death Mark before damage and preserves 1 spent mark once per combat after a clean marked payoff.
 - [ ] Visit the Alchemist and scroll loot sources after the `Blank Scroll` addition.
   - Expected: `Blank Scroll` can be acquired as a concrete scroll item and round-trips through save/load.
 - [ ] Use `Steal Spell` as a Spell Stealer or Arcane Trickster with and without a `Blank Scroll`.
@@ -198,8 +307,17 @@
   - Expected: Class Ring trial enemies cannot have spells stolen.
 - [ ] Use a stolen-spell scroll in combat.
   - Expected: It follows normal scroll target rules, charges decrement, and the saved stolen spell identity persists after save/load.
+- [ ] Build `Stolen Charge` as Spell Stealer and Arcane Trickster.
+  - Expected: Successful `Steal Spell`, successful `Steal Spell 2`, and casting an inscribed stolen-spell scroll each grant 1 Charge, capped at 2 for Spell Stealer and 3 for Arcane Trickster.
+  - Expected: Item theft from `Steal As Well` does not independently grant Charge.
+- [ ] Spend `Stolen Charge` with representative spell, weapon, and weapon-tagged trickster actions.
+  - Expected: The next eligible damaging spell, standard weapon hit, or weapon-tagged trickster skill spends all Charge and applies a modest arcane payoff on success.
+  - Expected: Misses or fully negated actions consume Charge but do not apply the payoff.
+- [ ] End combat, flee, save/load, or change class with `Stolen Charge` active.
+  - Expected: Charge clears because it is combat-only and has no persistent save field.
 - [ ] Complete `Impossible Theft`, then successfully steal a spell as Arcane Trickster with the awakened ring equipped.
-  - Expected: `Spell Steal Buff` grants the temporary magic damage and dodge bonuses for 3 turns.
+  - Expected: `Arcane Larceny` displays as the awakened identity while legacy `Spell Steal Buff` behavior still grants temporary Magic damage and dodge bonuses for 3 turns.
+  - Expected: Once per combat after a clean charged payoff, the equipped awakened ring preserves 1 `Stolen Charge`.
 - [ ] Use `Song of Valor`, `Song of Shelter`, and `Song of Renewal` as Bard/Troubadour.
   - Expected: Songs require an equipped musical instrument in `OffHand`.
   - Expected: Only one song is active at a time, lasts 3 turns, and appears in character/ring status text.
@@ -207,16 +325,25 @@
 - [ ] Awaken Troubadour `Encore`, then let each song expire.
   - Expected: Troubadour song strength is higher than Bard baseline.
   - Expected: Encore adds one final weaker pulse or beat when a song expires.
-- [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Wizard.
-  - Expected: Casting one school raises that affinity and lowers its opposite: Fire/Ice, Water/Electric, Earth/Wind.
-  - Expected: Character/ring status text shows all six values.
-  - Expected: Higher matching affinity modestly improves matching elemental spell damage.
 - [ ] Walk dungeon steps as Lycan.
   - Expected: Moon phase advances every 120 dungeon steps through New, Waxing, Full, and Waning.
   - Expected: Moon phase and Frenzy Lock state appear in character/ring status text.
 - [ ] Fight while transformed as Lycan across moon phases.
   - Expected: Kills or low HP can trigger Frenzy Lock, with Full Moon feeling riskiest.
   - Expected: Awakened `Controlled Frenzy` improves healing received while locked.
+- [ ] Defeat the Red Dragon as Lycan after the Transform4 retirement.
+  - Expected: The Red Dragon no longer grants or auto-casts Red Dragon `Transform`.
+  - Expected: The Lycan state records Dragon Essence for the future werewolf enhancement route.
+- [ ] Build Archdruid `Aspect Harmony` from Venom, Stone, Growth, and Storm actions.
+  - Expected: Poison pressure, physical survival/mitigation, meaningful healing or `Tree of Life`, and Electric/Wind pressure each represent the matching aspect.
+  - Expected: Aspect Harmony is combat-only and clears on combat end, flee, save/load, death, or class change.
+- [ ] Spend Aspect Harmony with `Fourfold Surge`.
+  - Expected: The skill requires MP and at least two represented aspects, spends all represented aspects, and rewards distinct aspect coverage more than repeated single-aspect actions.
+  - Expected: Venom/Stone/Growth/Storm riders apply conservatively and downgrade cleanly around immunity, bosses, and Class Ring trials.
+- [ ] Use `Primal Ascendance`, `Tree of Life`, and awakened `Harmony Bonus` with Aspect Harmony.
+  - Expected: Primal Ascendance improves Harmony gain/riders without replacing its existing power-up identity.
+  - Expected: Tree of Life contributes Growth Harmony lightly.
+  - Expected: The awakened ring keeps total-attunement Harmony Bonus behavior and preserves one represented aspect once per combat after a clean `Fourfold Surge`.
 - [ ] Use Defend and take physical pressure as Stalwart Defender with awakened ring.
   - Expected: Resolve/Guard Meter builds to 100 and appears in status text.
   - Expected: A major incoming hit spends 100 Resolve to reduce damage by 40%.

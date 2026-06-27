@@ -976,6 +976,29 @@ class Character:
 
             # --- Phase 6: Apply damage and on-hit effects ---
             if damage > 0:
+                mark = getattr(defender, "_reavers_mark", None)
+                if isinstance(mark, dict) and int(mark.get("turns", 0) or 0) > 0:
+                    damage = int(damage * (1.0 + float(mark.get("bonus", 0.0) or 0.0)))
+                    weapon_dam_str += f"Reaver's Mark bites into {defender.name}.\n"
+                brace = getattr(defender, "_brace_art", None)
+                if isinstance(brace, dict) and int(brace.get("turns", 0) or 0) > 0:
+                    reduction = max(0.0, min(0.75, float(brace.get("reduction", 0.0) or 0.0)))
+                    blocked = int(damage * reduction)
+                    damage = max(0, damage - blocked)
+                    try:
+                        delattr(defender, "_brace_art")
+                    except AttributeError:
+                        pass
+                    weapon_dam_str += f"{defender.name}'s Brace absorbs {blocked} damage.\n"
+                    if damage > 0 and defender.is_alive() and self.is_alive():
+                        counter_mod = max(0.1, float(brace.get("counter", 0.45) or 0.45))
+                        counter, _counter_hit, _counter_crit = defender.weapon_damage(
+                            self,
+                            dmg_mod=counter_mod,
+                            cover=False,
+                            use_offhand=False,
+                        )
+                        weapon_dam_str += counter
                 # Half Orc racial virtue: reduced critical damage taken (weapon crits only).
                 try:
                     if (
@@ -1005,6 +1028,26 @@ class Character:
                     weapon_dam_str += self._build_damage_message(
                         defender, damage, typ, crits[i], att
                     )
+                    riposte = getattr(defender, "_riposte_line", None)
+                    if (
+                        isinstance(riposte, dict)
+                        and int(riposte.get("turns", 0) or 0) > 0
+                        and defender.is_alive()
+                        and self.is_alive()
+                    ):
+                        try:
+                            delattr(defender, "_riposte_line")
+                        except AttributeError:
+                            pass
+                        counter, _counter_hit, _counter_crit = defender.weapon_damage(
+                            self,
+                            dmg_mod=max(0.1, float(riposte.get("multiplier", 0.45) or 0.45)),
+                            crit=int(riposte.get("crit", 1) or 1),
+                            cover=False,
+                            use_offhand=False,
+                        )
+                        weapon_dam_str += f"{defender.name} answers with Riposte Line.\n"
+                        weapon_dam_str += counter
                     if hasattr(self, "record_grandmaster_weapon_hit"):
                         self.record_grandmaster_weapon_hit(weapon_type)
                     weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
@@ -1378,6 +1421,14 @@ class Character:
             damage = max(0, damage - reduced)
             msg += f"{defender.name}'s stone skin absorbs {reduced} damage.\n"
 
+        try:
+            from .classes import wizard
+
+            damage, frozen_message = wizard.frozen_armor_reduction(defender, damage)
+            msg += frozen_message
+        except Exception:
+            pass
+
         # Astral Shift (25%)
         if defender.magic_effects["Astral Shift"].active and damage > 0:
             astral_reduction = int(damage * ASTRAL_SHIFT_REDUCTION)
@@ -1578,6 +1629,7 @@ class Character:
         if typ in self.resistance:
             resist = self.check_mod('resist', enemy=attacker, typ=typ)
         
+        message = ""
         final_damage = int(damage * (1 - resist))
         try:
             from .classes import paladin
@@ -1598,11 +1650,17 @@ class Character:
             mdef = int(self.check_mod("magic def", enemy=attacker) or 0)
             if mdef > 0:
                 final_damage = int(final_damage * (1 - (mdef / (mdef + MAGIC_DEF_SCALING_FACTOR))))
+        try:
+            from .classes import wizard
+
+            final_damage, frozen_message = wizard.frozen_armor_reduction(self, final_damage)
+            message += frozen_message
+        except Exception:
+            pass
         
-        message = ""
         if resist > 0 and final_damage < damage:
             reduction = damage - final_damage
-            message = f"{self.name}'s resistance reduces damage by {reduction}.\n"
+            message += f"{self.name}'s resistance reduces damage by {reduction}.\n"
         
         return True, message, final_damage
 
@@ -1920,6 +1978,19 @@ class Character:
                     self.stat_effects[stat].duration -= 1
                     if not self.stat_effects[stat].duration:
                         default(effect=stat)
+            for attr in ("_guard_suppressed",):
+                value = int(getattr(self, attr, 0) or 0)
+                if value > 0:
+                    setattr(self, attr, max(0, value - 1))
+            for attr in ("_reavers_mark", "_riposte_line", "_brace_art"):
+                state = getattr(self, attr, None)
+                if isinstance(state, dict):
+                    state["turns"] = int(state.get("turns", 0) or 0) - 1
+                    if state["turns"] <= 0:
+                        try:
+                            delattr(self, attr)
+                        except AttributeError:
+                            pass
             if self.magic_effects["Regen"].active:
                 self.magic_effects["Regen"].duration -= 1
                 heal = self.magic_effects["Regen"].extra

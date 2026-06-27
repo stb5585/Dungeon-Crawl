@@ -3451,6 +3451,7 @@ class ClassRing(Accessory):
 
         descriptions = {
             "Berserker": "A ring that grants +15% Critical Hit Chance when worn by a Berserker.",
+            "Weapon Master": self._grandmaster_description(player_char),
             "Grandmaster of Arms": self._grandmaster_description(player_char),
             "Crusader": "A ring that grants +10% Holy damage when worn by a Crusader.",
             "Dragoon": "A ring that unlocks an additional Jump modification slot (max 6) when worn by a Dragoon.",
@@ -3480,6 +3481,17 @@ class ClassRing(Accessory):
         from .classes import grandmaster
 
         state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+        if getattr(getattr(player_char, "cls", None), "name", None) == "Weapon Master":
+            ranks = [
+                f"{weapon_type} {grandmaster.discipline_rank(player_char, weapon_type)}"
+                for weapon_type in grandmaster.WEAPON_TYPES
+                if grandmaster.discipline_rank(player_char, weapon_type)
+            ]
+            progress = ", ".join(ranks) if ranks else "no ranked disciplines yet"
+            return (
+                "A ring that remembers Weapon Discipline progress. "
+                f"Current ranks: {progress}."
+            )
         if not state["activated"]:
             return (
                 "A dormant ring that waits for a Grandmaster of Arms to awaken it through "
@@ -3492,7 +3504,7 @@ class ClassRing(Accessory):
         return (
             f"A ring bound to {bound_weapon} Discipline. While worn, it doubles that discipline's "
             f"mastery bonus for the Grandmaster of Arms (rank {rank}, +{accuracy}% accuracy, "
-            f"{chance}% technique chance)."
+            f"{chance}% technique chance) and perfects that weapon's active art."
         )
 
     def _demonologist_description(self, player_char):
@@ -3561,15 +3573,15 @@ class ClassRing(Accessory):
             if "Crit" not in player_char.equipment["Ring"].mod:
                 player_char.equipment["Ring"].mod = "+15% Crit"
 
-        elif cls_name == "Grandmaster of Arms":
+        elif cls_name in {"Weapon Master", "Grandmaster of Arms"}:
             from .classes import grandmaster
 
             state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
             bound_weapon = state["bound_weapon"]
-            if state["activated"] and bound_weapon:
+            if cls_name == "Grandmaster of Arms" and state["activated"] and bound_weapon:
                 player_char.equipment["Ring"].mod = f"{bound_weapon} Discipline x2"
             else:
-                player_char.equipment["Ring"].mod = "Dormant Discipline"
+                player_char.equipment["Ring"].mod = "Weapon Discipline"
         
         elif cls_name == "Crusader":
             # +10% Holy damage

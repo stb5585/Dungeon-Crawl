@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 190
+        assert len(yaml_paths) == 194
 
         loaded_names = []
         for path in yaml_paths:
@@ -1196,7 +1196,7 @@ class TestBatch2YAMLLoading:
         ("regen_2.yaml", "Regen", 18, 0.3),
         ("regen_3.yaml", "Regen", 30, 0.4),
         ("hydration.yaml", "Hydration", 16, 0.3),
-        ("regrowth.yaml", "Regrowth", 24, 0.35),
+        ("regrowth.yaml", "Regrowth", 8, 0.25),
     ]
 
     @pytest.mark.parametrize("filename,name,cost,heal", HEAL_YAMLS)
@@ -9157,10 +9157,10 @@ class TestClassAbilityMechanicsSlice:
         assert list(abilities.spell_dict["Archdruid"].values()) == [
             abilities.PlantSeeds,
             abilities.Bolt,
+            abilities.VilePotion,
             abilities.Windswept,
             abilities.NatureShield,
             abilities.BallLightning,
-            abilities.VilePotion,
         ]
 
     def test_simple_support_spells_apply_existing_effects(self):
