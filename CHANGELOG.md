@@ -29,6 +29,10 @@
 - Added tiered minimum floors to health potion healing before percent scaling,
   preserving combat caps while making low-HP pools receive useful healing.
 - Added selected equipment artwork to the pygame Equip popup details pane.
+- Suppressed unchanged resistance rows in equipment diffs and moved the
+  teleport-to-town popup before the return loading screen.
+- Cleaned up shop quantity confirmation, keyboard Cancel selection, Equip Now
+  prompt wrapping, and the final dungeon-frame flash on return to town.
 - Improved minimap readability with outlined special-tile indicators and a
   blinking player-position marker.
 

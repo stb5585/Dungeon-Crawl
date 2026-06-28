@@ -331,6 +331,21 @@ def description(character: Any) -> str:
     )
 
 
+def class_voluntas_identity(character: Any) -> dict[str, Any]:
+    """Return the current Class Ring identity summary for Voluntas story beats."""
+    current = class_name(character)
+    visible = has_visible_class_ring(character)
+    awakened = is_awakened(character, current) if current else False
+    return {
+        "class_name": current,
+        "visible": visible,
+        "awakened": awakened,
+        "activation": activation_name(current) if current else "Quest Awakening",
+        "mod": ring_mod(character) if current else "Special",
+        "description": description(character),
+    }
+
+
 def _description_extra(character: Any, current: str) -> str:
     state = ensure_state(character)
     data = state["data"].get(current, {})

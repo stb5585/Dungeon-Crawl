@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from src.core import abilities, enemies
+from src.core.data.data_loader import get_special_events
 from tests.test_framework import TestGameState
 
 
@@ -133,6 +136,7 @@ def test_vesperion_phase_pressure_uses_all_guardian_counter_pairs():
 
     phase_one = vesperion.apply_phase_pressure(player)
 
+    assert "Vesperion lowers the Evening Star" in phase_one
     assert "Twilight attrition burns ChoiceBearer for 80 HP." in phase_one
     assert "Mercy without freedom drains 40 MP." in phase_one
     assert player.health.current == 920
@@ -143,7 +147,8 @@ def test_vesperion_phase_pressure_uses_all_guardian_counter_pairs():
     vesperion.health.current = int(vesperion.health.max * 0.5)
     phase_two = vesperion.apply_phase_pressure(player)
 
-    assert "Quadrata breaks the forced order" in phase_two
+    assert "Vesperion enters the second pattern" in phase_two
+    assert "Quadrata breaks the forced order before law becomes a lock, preserving the right to consent." in phase_two
     assert player.status_effects["Silence"].active is False
     assert player.status_effects["Blind"].active is True
 
@@ -154,8 +159,9 @@ def test_vesperion_phase_pressure_uses_all_guardian_counter_pairs():
     hp_before = player.health.current
     phase_three = vesperion.apply_phase_pressure(player)
 
-    assert "Triangulus holds the self" in phase_three
-    assert "Infinitas turns the endless loop" in phase_three
+    assert "Vesperion enters the final pattern" in phase_three
+    assert "Triangulus holds the chosen self against the overwrite; Voluntas keeps the name yours." in phase_three
+    assert "Infinitas turns the endless loop into another step freely chosen, not an eternity imposed." in phase_three
     assert player.status_effects["Silence"].active is False
     assert player.health.current == hp_before
 
@@ -202,3 +208,28 @@ def test_reflection_psychopomp_records_mirrored_path_profile():
 
     assert mystic_reflection.mirrored_path["profile"] == "mystic"
     assert [entry["ability"] for entry in mystic_reflection.action_stack[:2]] == ["Holy II", "Ruin"]
+
+
+def test_guardian_trial_echo_is_liminal_no_reward_enemy():
+    echo = enemies.GuardianTrialEcho("Triangulus", profile="Memory")
+
+    assert echo.name == "Triangulus Echo"
+    assert echo.enemy_typ == "Liminal"
+    assert echo.guardian_trial_echo is True
+    assert echo.liminal_trial_guardian == "Triangulus"
+    assert echo.liminal_trial_profile == "Memory"
+    assert echo.experience == 0
+    assert echo.gold == 0
+    assert echo.action_stack[0]["priority"] == enemies.ActionPriority.HIGH
+
+
+def test_legacy_devil_compatibility_audit_keeps_old_surface_available():
+    devil = enemies.Devil()
+    events = get_special_events()
+
+    assert devil.name == "The Devil"
+    assert "Choose Fate" in devil.spellbook["Skills"]
+    assert "Devil" in events
+    assert events["Devil"]["Text"]
+    assert Path("src/core/data/abilities/choose_fate.yaml").exists()
+    assert enemies.Vesperion().name == "Vesperion"

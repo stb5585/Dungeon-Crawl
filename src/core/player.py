@@ -1901,7 +1901,7 @@ class Player(Character):
             for resistance_name in RESISTANCE_DISPLAY_ORDER:
                 before = resistance_before.get(resistance_name, 0.0)
                 after = resistance_after.get(resistance_name, 0.0)
-                if before != after or before != 0:
+                if before != after:
                     diff_dict[f"{resistance_name} Resist"] = (
                         f"{self._format_resistance_preview(before)} -> {self._format_resistance_preview(after)}"
                     )

@@ -261,6 +261,11 @@ class GUICombatManager:
         return bool(getattr(enemy, "reflection_psychopomp", False)) or getattr(enemy, "name", "") == "Reflection Psychopomp"
 
     @staticmethod
+    def _is_guardian_trial_echo_combat(enemy: Character) -> bool:
+        """Return whether this is a Liminal Guardian trial echo encounter."""
+        return bool(getattr(enemy, "guardian_trial_echo", False))
+
+    @staticmethod
     def _is_vesperion_true_final_combat(player_char: Player, enemy: Character) -> bool:
         """Return whether Vesperion should resolve as the completed true final."""
         if not isinstance(enemy, enemies.Vesperion) and getattr(enemy, "name", "") != "Vesperion":
@@ -330,6 +335,39 @@ class GUICombatManager:
         enemy.health.current = enemy.health.max
         enemy.mana.current = enemy.mana.max
         self.combat_view.add_combat_message("The Reflection breaks your stance and returns you to the Liminal hub.")
+        self.running = False
+        self.combat_view.reset_combat_log()
+        self._combat_background = None
+        return False
+
+    def _handle_guardian_trial_echo_end(self, player_char: Player, enemy: Character) -> bool:
+        """Resolve a Guardian trial echo without normal rewards or death penalties."""
+        if player_char.is_alive() and not enemy.is_alive():
+            player_char.state = "normal"
+            guardian_name = getattr(enemy, "liminal_trial_guardian", "The trial")
+            self.combat_view.add_combat_message(f"{guardian_name} yields to the choice you carried into the fight.")
+            self.running = False
+            self.combat_view.reset_combat_log()
+            self._combat_background = None
+            return True
+
+        player_char.state = "normal"
+        try:
+            player_char.effects(end=True)
+        except Exception:
+            pass
+        try:
+            enemy.effects(end=True)
+        except Exception:
+            pass
+        player_char.location_x, player_char.location_y, player_char.location_z = LIMINAL_GAP_ENTRY_POS
+        player_char.facing = LIMINAL_GAP_ENTRY_FACING
+        player_char.health.current = max(1, player_char.health.max // 2)
+        player_char.mana.current = max(0, player_char.mana.max // 2)
+        enemy.health.current = enemy.health.max
+        enemy.mana.current = enemy.mana.max
+        guardian_name = getattr(enemy, "liminal_trial_guardian", "The trial")
+        self.combat_view.add_combat_message(f"{guardian_name} returns you to the Liminal hub to choose again.")
         self.running = False
         self.combat_view.reset_combat_log()
         self._combat_background = None
@@ -2102,6 +2140,16 @@ class GUICombatManager:
                 player_char.state = "normal"
                 return False
             return self._handle_reflection_psychopomp_end(player_char, enemy)
+
+        if self._is_guardian_trial_echo_combat(enemy):
+            if fled:
+                guardian_name = getattr(enemy, "liminal_trial_guardian", "the trial")
+                self.combat_view.add_combat_message(f"You step back from {guardian_name}.")
+                self.combat_view.reset_combat_log()
+                self._combat_background = None
+                player_char.state = "normal"
+                return False
+            return self._handle_guardian_trial_echo_end(player_char, enemy)
 
         if (
             self._is_vesperion_true_final_combat(player_char, enemy)

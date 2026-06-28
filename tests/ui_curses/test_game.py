@@ -214,6 +214,10 @@ def test_new_game_builds_player_and_load_game_restores_clean_state(monkeypatch):
     fake_menus.player_input = lambda game, prompt: "ada"
     fake_menus.save_file_popup = lambda game, load=False: sleep_calls.append(("save_popup", load))
     monkeypatch.setattr(curses_game, "menus", fake_menus)
+    monkeypatch.setattr(
+        "src.ui_curses.game.get_intro_story",
+        lambda: ["Silvana was never meant to be famous.\n\nThen the stair opened.", "Step below."],
+    )
 
     race = SimpleNamespace(
         name="Elf",
@@ -276,6 +280,7 @@ def test_new_game_builds_player_and_load_game_restores_clean_state(monkeypatch):
     game.debug_mode = False
     player_char = game.new_game()
 
+    assert ("Silvana was never meant to be famous.", "", "Then the stair opened.", "", "Step below.") in sleep_calls
     assert created["location"] == (5, 10, 0)
     assert player_char.name == "Ada"
     assert player_char.race.name == "Elf"

@@ -1,6 +1,6 @@
 # Story And Endgame Design
 
-Status: `Initial Spec, Vesperion Boss Concept, False-Final, Liminal Hub Shell, Six Lightweight Guardian Trials, Liminal Clue Review, Trial Consequences, Endgame Story Route, Reflection Combat Shell, Reflection Path Mirroring, Reflection Retry Tracking, Vesperion Guardian Counters, True-Final Victory, Ending Sequence, And Tavern Epilogue Implemented`
+Status: `Initial Spec, Vesperion Boss Concept, False-Final, Liminal Hub Shell, Six Lightweight Guardian Trials, Liminal Clue Review, Trial Consequences, Endgame Story Route, Reflection Combat Shell, Reflection Path Mirroring, Reflection Retry Tracking, Vesperion Guardian Counters, True-Final Victory, Ending Sequence, Tavern Epilogue, New Game Intro, Story Polish Epic, Class Ring Voluntas Tie-In, Story Polish Bundle V2, Liminal Trials V2, And Narrative Systems Bundle V3 Implemented`
 
 This is the durable story and endgame design reference for **The Forsaken
 Tenet** after the Six Relics arc. It records shipped story canon, route gates,
@@ -18,13 +18,15 @@ deepen, or stage the route rather than replace it. Presentation mechanics for
 story cards and screen polish remain owned by
 `PRESENTATION_ASSET_DESIGN_GATES.md`.
 
-The next low-risk story slice is New Game intro copy expansion. It should add
-setting, premise, tone, and early stakes while avoiding major endgame spoilers:
-do not reveal Vesperion, Voluntas, the busboy twist, the Hooded Figure truth, or
-true-final route mechanics in the intro.
+The New Game intro copy expansion has shipped through shared content data and
+both frontends. It adds setting, premise, tone, and early stakes while avoiding
+major endgame spoilers: do not reveal Vesperion, Voluntas, the busboy twist,
+the Hooded Figure truth, or true-final route mechanics in the intro.
 
-Class identity and Class Ring ties to Voluntas remain deferred until a
-quest/content spec defines timing, text, flags, and optional/required status.
+Class identity and Class Ring ties to Voluntas have a shipped V2: after
+Voluntas is revealed, a visible Class Ring can receive an optional Liminal guide
+affirmation, an archetype scene, and Reflection echoes. Deeper class-specific
+quests, bonuses, route gates, and ring mechanics remain deferred.
 
 ## Deferred Story Gates
 
@@ -33,50 +35,80 @@ implementation unless it is pure copy polish inside an already-approved surface.
 
 ### New Game Intro Story
 
-Expand the intro through the reusable story-card presentation. The copy may
-foreshadow relics, town unease, old oaths, missing history, and the cost of
-entering the dungeon, but it must not expose late-game identities or true-final
-route mechanics.
+Shipped. Future intro edits should remain in shared content data, preserve
+pygame story-card presentation, preserve curses parity, and keep late-game
+identities and true-final route mechanics hidden.
+
+### Class Identity And Class Ring Tie-Ins
+
+V2 has shipped as optional story-state-only route polish. The Hooded Figure can
+affirm the player's visible Class Ring after Voluntas is revealed, records the
+current class, dormant/awakened ring state, and class archetype, and lets the
+Reflection echo that chosen class path. The affirmation must never gate
+true-final access or change Class Ring power, combat balance, rewards, or
+curses parity.
+
+Narrative Systems Bundle V3 adds a one-time `Revisit Class Path` follow-up from
+the Hooded Figure guide after affirmation. It remains story-state-only and uses
+the recorded class/archetype/ring snapshot. Deeper per-class Voluntas quests,
+special rewards, and new Class Ring mechanics remain deferred behind a future
+promoted spec.
 
 ### Guardian Trial Deepening
 
-Bespoke Guardian rooms, puzzles, combat variants, mini-bosses, and stronger
-trial consequences remain deferred behind per-trial specs. Preserve the current
-clue aggregation, one-time consequence behavior, and Guardian-counter route
-when deepening any trial.
+Hybrid V1 has shipped without new map rooms: Triangulus and Infinitas use
+retry-safe Liminal combat echoes, Quadrata and Polaris remain lightweight
+puzzle/interpretation trials, and Hexagonum and Luna remain choice/consequence
+trials. Liminal Trials V2 has also shipped as story-state-only Guardian gate
+vignettes: incomplete trials play deeper threshold and choice prose, completed
+older trials can recall unseen deeper prose without re-awards, and the Hooded
+Figure can review witnessed trial depths.
+
+Larger bespoke rooms, mini-bosses, stronger trial consequences, new rewards,
+and final-battle tuning remain deferred behind per-trial specs.
 
 ### Reflection/Psychopomp Polish
 
-Deeper self-copy mechanics, build-specific dialogue, retry tuning, and combat
-balance remain deferred. Every legitimate player build should remain
+Profile-aware Reflection presentation has shipped for martial, mystic, and
+hybrid paths without numeric tuning. V2 adds a one-time Voluntas answer choice,
+retry copy, and victory echo without mechanical effect. V3 adds a one-time path
+mirror that summarizes the recorded class, Guardian, and Reflection answers
+before combat, plus a victory echo. Deeper self-copy mechanics, retry tuning,
+and combat balance remain deferred. Every legitimate player build should remain
 narratively valid; Reflection victory proves chosen selfhood rather than a
 single correct build.
 
 ### Final Vesperion Polish
 
-Phase tuning, bespoke relic-counter interactions beyond `Choose Fate` and phase
-pressure, audio/visual presentation, and final battle balance require a
-promoted spec. Numeric combat changes should wait for simulator or playtest
-evidence where relevant.
+Story/log polish has shipped for phase pressure, Guardian counter messaging,
+true-final victory. V3 adds a one-time true-final Vesperion argument and
+tragedy reframing before combat, using the recorded Voluntas path as message
+log context. Phase tuning, bespoke relic-counter interactions beyond
+`Choose Fate` and phase pressure, audio/visual presentation, and final battle
+balance require a promoted spec. Numeric combat changes should wait for
+simulator or playtest evidence where relevant.
 
 ### Town Tragedy Route
 
-Broader Waitress/Joffrey/busboy rewrites must preserve the human grief of the
-tragedy and the existing true-final reframing. Vesperion may pressure,
-observe, and exploit choices around the tragedy, but the pain remains real and
-should not be erased by later scenes.
+Initial shared-content polish has shipped for Waitress, Joffrey, and busboy
+adjacent beats. Broader rewrites must preserve the human grief of the tragedy
+and the existing true-final reframing. Vesperion may pressure, observe, and
+exploit choices around the tragedy, but the pain remains real and should not be
+erased by later scenes.
 
 ### Hooded Figure Polish
 
-The current wounded Liminal guide and Witness of Voluntas reveal remain the
-baseline. Post-Reflection angelic confirmation or a personal angelic name stays
-deferred.
+The wounded Liminal guide, Witness of Voluntas reveal, post-Reflection angelic
+confirmation, and unnamed witness farewell are the baseline. A personal angelic
+name stays deferred.
 
 ### Legacy Devil Compatibility
 
 The old Devil class and related tests stay valid until a dedicated
-compatibility-retirement cleanup intentionally removes them. Balor owns the old
-demonic visual direction.
+compatibility-retirement cleanup intentionally removes them. Narrative Systems
+Bundle V3 audits this boundary only: legacy Devil class, event, ability data,
+and tests remain present, while the implemented final route remains Vesperion.
+Balor owns the old demonic visual direction.
 
 ## Story-Content Decision Block
 
@@ -366,6 +398,77 @@ Implemented in the true-final completion slice:
 Optional polish is now tracked under the Deferred Story Gates above so future
 work has one owner section for story-content decisions.
 
+Implemented in the story polish epic:
+
+- Moved Guardian trial structure into core definitions with explicit kind,
+  prompt, choice, and special-event metadata.
+- Deepened Triangulus and Infinitas into retry-safe Liminal combat trials using
+  `GuardianTrialEcho`; victory completes the clue, while defeat returns to the
+  Liminal hub without normal rewards or death flow.
+- Added martial, mystic, and hybrid Reflection presentation copy without
+  changing Reflection tuning.
+- Added one-time post-Reflection Hooded Figure angelic confirmation.
+- Polished Vesperion phase-pressure/final-victory story text without numeric
+  combat changes.
+- Polished Waitress/Joffrey/busboy-adjacent tragedy copy while preserving the
+  true-final reframing.
+
+Implemented in the Class Ring and Voluntas identity tie-in V1:
+
+- Added optional `main_story` state for a Class Ring/Voluntas affirmation:
+  `class_voluntas_affirmed`, `class_voluntas_affirmed_class`, and
+  `class_voluntas_affirmed_ring_awakened`.
+- Added a shared Class Ring identity summary helper for current class, visible
+  ring state, awakened state, activation, mod, and description.
+- Added a pygame Hooded Figure guide option, `Affirm Class Path`, that appears
+  only after Voluntas is revealed and a Class Ring is visible.
+- Added dormant and awakened Class Ring prose plus a one-time Reflection echo
+  for affirmed class identity, without changing true-final gates, combat
+  tuning, rewards, or Class Ring mechanics.
+
+Implemented in Story Polish Bundle V2:
+
+- Added archetype snapshots for Class Ring/Voluntas affirmation using martial,
+  mystic, hybrid, companion, shadow, and wanderer story categories.
+- Added a one-time Reflection Voluntas answer choice with Claim, Carry, and
+  Choose Again answers, plus retry and victory echo prose.
+- Added an optional unnamed Hooded Figure witness farewell after Reflection
+  victory and before returning from the Liminal Gap.
+- Polished Vesperion phase-pressure and Guardian-counter combat log text
+  without changing phase thresholds, damage, statuses, AI, rewards, or gates.
+
+Implemented in Liminal Trials V2:
+
+- Added normalized `main_story` state for deeper Guardian trial vignettes:
+  `guardian_trial_vignettes_seen` and `liminal_trial_v2_reviewed`.
+- Added core helpers to record, count, and summarize seen Guardian trial
+  vignettes.
+- Extended existing pygame Guardian gate interactions with V2 threshold and
+  choice-specific story beats for all six Guardians.
+- Completed trials from older saves can recall an unseen deeper trial beat
+  using the stored Guardian choice, or the first valid choice as prose fallback,
+  without re-awarding consequences or changing route gates.
+- The Hooded Figure guide can review witnessed trial depths once at least one
+  deeper vignette has been seen.
+- The slice remains story-state-only: no new rooms, enemies, rewards, permanent
+  stat effects, combat tuning, or true-final prerequisites were added.
+
+Implemented in Narrative Systems Bundle V3:
+
+- Added normalized `main_story` state for one-time class follow-up, Reflection
+  path mirror, and true-final Vesperion choice argument scenes.
+- Added core helpers for showing/recording those one-time scenes and for
+  summarizing the recorded Voluntas path.
+- Added a pygame Hooded Figure guide option, `Revisit Class Path`, after class
+  affirmation.
+- Added one-time Reflection path mirror and victory echo presentation without
+  changing Reflection mechanics, rewards, resources, or route gates.
+- Added one-time true-final Vesperion choice argument and tragedy reframing
+  before combat without changing Vesperion tuning, `Choose Fate`, rewards, or
+  true-final prerequisites.
+- Added a legacy Devil compatibility audit test/docs boundary without removing
+  or renaming legacy Devil classes, assets, events, ability data, or tests.
+
 ## Implementation Interfaces
 
 The endgame route now uses these explicit route flags:
@@ -374,6 +477,18 @@ The endgame route now uses these explicit route flags:
 - `acolyte_liminal_seen`
 - `returned_from_liminal_gap`
 - `hooded_figure_witness_revealed`
+- `hooded_figure_angelic_confirmed`
+- `class_voluntas_affirmed`
+- `class_voluntas_affirmed_class`
+- `class_voluntas_affirmed_ring_awakened`
+- `class_voluntas_affirmed_archetype`
+- `reflection_voluntas_answer`
+- `hooded_figure_witness_farewell_seen`
+- `guardian_trial_vignettes_seen`
+- `liminal_trial_v2_reviewed`
+- `class_voluntas_followup_seen`
+- `reflection_path_mirror_seen`
+- `vesperion_choice_argument_seen`
 - `vesperion_true_final_defeated`
 - `main_story_complete`
 
@@ -394,9 +509,49 @@ Implemented special-event keys include:
 - `Reflection Prelude`
 - `Reflection Victory`
 - `Reflection Defeat`
+- `Reflection Prelude Martial`
+- `Reflection Prelude Mystic`
+- `Reflection Prelude Hybrid`
+- `Reflection Victory Martial`
+- `Reflection Victory Mystic`
+- `Reflection Victory Hybrid`
+- `Reflection Defeat Martial`
+- `Reflection Defeat Mystic`
+- `Reflection Defeat Hybrid`
 - `Hooded Figure Witness Reveal`
+- `Hooded Figure Angelic Confirmation`
+- `Class Voluntas Affirmation`
+- `Class Voluntas Dormant Ring`
+- `Class Voluntas Awakened Ring`
+- `Class Voluntas Archetype Martial`
+- `Class Voluntas Archetype Mystic`
+- `Class Voluntas Archetype Hybrid`
+- `Class Voluntas Archetype Companion`
+- `Class Voluntas Archetype Shadow`
+- `Class Voluntas Archetype Wanderer`
+- `Class Voluntas Followup`
+- `Class Voluntas Followup Martial`
+- `Class Voluntas Followup Mystic`
+- `Class Voluntas Followup Hybrid`
+- `Class Voluntas Followup Companion`
+- `Class Voluntas Followup Shadow`
+- `Class Voluntas Followup Wanderer`
+- `Class Voluntas Reflection Echo`
+- `Reflection Voluntas Choice Claim`
+- `Reflection Voluntas Choice Carry`
+- `Reflection Voluntas Choice Choose Again`
+- `Reflection Voluntas Retry`
+- `Reflection Voluntas Victory Echo`
+- `Reflection Path Mirror`
+- `Reflection Path Victory Echo`
+- `Hooded Figure Witness Farewell`
+- `{Guardian} Trial V2 Threshold`
+- `{Guardian} Trial V2 {Choice}`
+- `Liminal Trial V2 Review`
 - `Return From Liminal Gap`
 - `True Final Prelude`
+- `Vesperion Choice Argument`
+- `Vesperion Tragedy Reframing`
 - `Vesperion True Final Victory`
 - `The Forsaken Tenet Ending`
 - `The Thirsty Dog Epilogue`
@@ -422,6 +577,15 @@ Implemented special-event keys include:
 - The Hooded Figure can review awakened clues without completing missing trials.
 - Guardian trial consequences apply once and completed gates do not re-award
   their benefits.
+- Incomplete Guardian trials play V2 threshold and choice-specific vignette
+  prose before ordinary completion, and combat-heavy trials do not mark V2
+  prose seen on defeat.
+- Completed Guardian trials with unseen V2 prose can recall the deeper trial
+  without re-awarding consequences, completing new route gates, or changing the
+  stored Guardian answer.
+- The Hooded Figure can review witnessed trial depths only after at least one
+  vignette is seen, and the review does not alter Voluntas, true-final flags,
+  resources, XP, loot, or Guardian completion.
 - Six completed Guardian clues trigger the Seventh Seat path.
 - Voluntas reveal sets `voluntas_revealed` without unlocking the true final by
   itself.
@@ -431,12 +595,28 @@ Implemented special-event keys include:
 - Reflection defeat returns the player to the Liminal hub without the ordinary
   town death flow.
 - Reflection attempts and failures are tracked and round-trip through saves.
+- Class Ring/Voluntas affirmation is optional, records class identity once, and
+  never gates true-final access or changes Class Ring mechanics.
+- Class Ring/Voluntas archetype scenes play from the recorded class snapshot
+  and remain story-only.
+- `Revisit Class Path` appears only after class affirmation, records once, and
+  remains story-only.
+- The Class Ring Reflection echo plays once on the first affirmed Reflection
+  attempt and does not change HP, MP, XP, loot, or route flags.
+- Reflection Voluntas answers record once, reject invalid old-save values, and
+  never change Reflection stats, AI, rewards, or true-final gates.
+- Reflection path mirror plays once before combat and does not alter Reflection
+  stats, AI, HP, MP, XP, loot, rewards, failures, or true-final gates.
+- Hooded Figure witness farewell appears only after Reflection victory, before
+  returning from the Liminal Gap, and disappears after being seen.
 - The Reflection records a martial, mystic, or hybrid path profile from the
   player and adjusts action priorities accordingly.
 - Returning from The Liminal Gap places the player at the final threshold
   without normal death/victory rewards.
 - The final-room blocker prevents Vesperion combat before true-final unlock and
   allows true-final combat after unlock.
+- True-final Vesperion choice argument/tragedy reframing plays once before
+  combat and does not change Vesperion mechanics, rewards, or unlock rules.
 - True-final Vesperion victory completes the story without normal combat
   rewards or death/victory bookkeeping.
 - True-final completion plays the tavern epilogue after the Voluntas ending.
@@ -445,3 +625,5 @@ Implemented special-event keys include:
 - Re-entering the final room after `main_story_complete` shows the ending
   reminder and does not restart combat.
 - Legacy saves normalize any new main-story flags safely.
+- Legacy Devil compatibility surfaces remain present until a dedicated
+  compatibility-retirement cleanup intentionally removes them.

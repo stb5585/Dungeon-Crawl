@@ -137,22 +137,35 @@ class BasePopupMenu:
 
     def _wrap_text(self, text, max_width):
         """Wrap text to fit within max_width in pixels."""
-        words = str(text).split()
-        if not words:
+        text = str(text)
+        if not text:
             return [""]
         lines = []
-        current_line = []
-        for word in words:
-            current_line.append(word)
-            line = " ".join(current_line)
-            if self.normal_font.size(line)[0] > max_width:
-                current_line.pop()
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [word]
-        if current_line:
-            lines.append(" ".join(current_line))
+        for paragraph in text.splitlines() or [""]:
+            words = paragraph.split()
+            if not words:
+                lines.append("")
+                continue
+            current_line = []
+            for word in words:
+                current_line.append(word)
+                line = " ".join(current_line)
+                if self.normal_font.size(line)[0] > max_width:
+                    current_line.pop()
+                    if current_line:
+                        lines.append(" ".join(current_line))
+                    current_line = [word]
+            if current_line:
+                lines.append(" ".join(current_line))
         return lines
+
+    def _draw_wrapped_lines(self, text: str, x: int, y: int, max_width: int, color=None) -> int:
+        color = color or self.WHITE
+        for line in self._wrap_text(text, max_width):
+            if line:
+                self.screen.blit(self.normal_font.render(line, True, color), (x, y))
+            y += self.line_height
+        return y
 
     def list_vertical_padding(self) -> int:
         return 16
@@ -2381,19 +2394,7 @@ class SelectionPopup(BasePopupMenu):
     def draw_details_extra(self, player_char, item, x, y):
         # Render header message
         if self.header_message:
-            words = str(self.header_message).split()
-            max_chars = max(20, (self.details_rect.width - 32) // 9)
-            line = ""
-            for w in words:
-                nxt = f"{line} {w}".strip()
-                if len(nxt) > max_chars:
-                    self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
-                    y += self.line_height
-                    line = w
-                else:
-                    line = nxt
-            if line:
-                self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+            self._draw_wrapped_lines(str(self.header_message), x, y, self.details_rect.width - 32)
 
     def on_select(self, player_char, item):
         return ("selection", item)
@@ -2533,19 +2534,7 @@ class EquipmentSelectionPopup(BasePopupMenu):
     def draw_details_extra(self, player_char, item, x, y):
         # Render header message
         if self.header_message:
-            words = str(self.header_message).split()
-            max_chars = max(20, (self.details_rect.width - 32) // 9)
-            line = ""
-            for w in words:
-                nxt = f"{line} {w}".strip()
-                if len(nxt) > max_chars:
-                    self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
-                    y += self.line_height
-                    line = w
-                else:
-                    line = nxt
-            if line:
-                self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
+            self._draw_wrapped_lines(str(self.header_message), x, y, self.details_rect.width - 32)
 
     def on_select(self, player_char, item):
         return ("selection", item)

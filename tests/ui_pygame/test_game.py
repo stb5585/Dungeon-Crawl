@@ -520,8 +520,14 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.show_intro()
     assert len(presenter_messages) == 0
     assert story_calls[0][0] == "init"
-    assert len(story_calls[0][1]) == 5
+    intro_pages = story_calls[0][1]
+    assert len(intro_pages) == 6
     assert story_calls[0][2] == "The Story Begins"
+    intro_text = "\n".join(intro_pages)
+    for expected in ("Silvana", "relics", "guardians", "Step below"):
+        assert expected in intro_text
+    for spoiler in ("Vesperion", "Voluntas", "busboy", "Hooded Figure", "true final"):
+        assert spoiler not in intro_text
     assert story_calls[1] == ("show", {"flush_events": True, "require_key_release": True})
 
     confirm_results = iter([True, False])

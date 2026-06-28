@@ -201,6 +201,28 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     assert result[0] == "selected"
 
 
+def test_selection_popup_preserves_header_line_breaks(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    popup = popup_menus.SelectionPopup(
+        presenter,
+        _make_parent(),
+        header_message="Purchased 1x Cloak. Equip now?\n\nEquip Now:\nArmor: replaces Tunic",
+        options=["Equip Now", "Cancel"],
+    )
+    popup.items = ["Equip Now", "Cancel"]
+    popup.selected_index = 0
+
+    popup.draw_details(_make_player())
+
+    rendered = presenter.normal_font.render_calls
+    assert "Purchased 1x Cloak. Equip" in rendered
+    assert "now?" in rendered
+    assert "Equip Now:" in rendered
+    assert "Armor: replaces Tunic" in rendered
+    assert "Equip now? Equip Now:" not in rendered
+
+
 def test_bestiary_popup_uses_kill_dict_and_sight_for_details(monkeypatch):
     presenter = _make_presenter()
     parent = _make_parent()

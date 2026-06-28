@@ -231,12 +231,9 @@ class TestPlayerPreviewCoverage:
 
         assert "Fire Resist" in diff
         assert "+25% -> +75%" in diff
-        assert "Shadow Resist" in diff
-        assert "+20% -> +20%" in diff
-        assert "Holy Resist" in diff
-        assert "-20% -> -20%" in diff
-        assert "Poison Resist" in diff
-        assert "+10% -> +10%" in diff
+        assert "Shadow Resist" not in diff
+        assert "Holy Resist" not in diff
+        assert "Poison Resist" not in diff
         assert "Physical Resist" not in diff
 
         elemental_diff = player.equip_diff(items.ElementalChain(), "Pendant")
@@ -247,12 +244,9 @@ class TestPlayerPreviewCoverage:
         assert "Ice Resist" in elemental_diff
         assert "Water Resist" in elemental_diff
         assert "Wind Resist" in elemental_diff
-        assert "Shadow Resist" in elemental_diff
-        assert "+20% -> +20%" in elemental_diff
-        assert "Holy Resist" in elemental_diff
-        assert "-20% -> -20%" in elemental_diff
-        assert "Poison Resist" in elemental_diff
-        assert "+10% -> +10%" in elemental_diff
+        assert "Shadow Resist" not in elemental_diff
+        assert "Holy Resist" not in elemental_diff
+        assert "Poison Resist" not in elemental_diff
         assert "Physical Resist" not in elemental_diff
 
     def test_equip_diff_resistance_preview_uses_racial_baseline(self):
@@ -263,12 +257,20 @@ class TestPlayerPreviewCoverage:
 
         assert "Fire Resist" in diff
         assert "+0% -> +50%" in diff
-        assert "Shadow Resist" in diff
-        assert "+20% -> +20%" in diff
-        assert "Poison Resist" in diff
-        assert "+10% -> +10%" in diff
-        assert "Holy Resist" in diff
-        assert "-20% -> -20%" in diff
+        assert "Shadow Resist" not in diff
+        assert "Poison Resist" not in diff
+        assert "Holy Resist" not in diff
+
+    def test_equip_diff_omits_unchanged_racial_resistances_for_weapons(self):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Half Giant")
+        player.cls.equip_check = lambda item, equip_slot: True
+        player.cls.restrictions["Weapon"].append("Staff")
+
+        diff = player.equip_diff(items.Quarterstaff(), "Weapon")
+
+        assert "Fire Resist" not in diff
+        assert "Physical Resist" not in diff
+        assert "Poison Resist" not in diff
 
     def test_equip_offhand_with_two_handed_weapon_unequips_weapon_and_jump_lookup_via_values(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")

@@ -10,7 +10,7 @@ import curses
 from src.core import abilities, items, player, map_tiles
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import classes_dict
-from src.core.data.data_loader import get_special_events
+from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
 from src.core.town import BountyBoard
@@ -140,17 +140,16 @@ class Game:
 
     def new_game(self):
         time.sleep(0.5)
-        texts = [
-            "A great evil has taken hold in the unlikeliest of places, a small town on the edge of the kingdom.",
-            "The town of Silvana has sent out a plea for help, with many coming from far and wide to test their mettle.",
-            "You, bright-eyed and bushy-tailed, decided that fame and glory were within reach.",
-            "What you didn't know was that all who had attempted this feat have never been heard from again.",
-            "Will you be different or just another lost soul?",
-        ]
+        texts = []
+        for page in get_intro_story():
+            if texts:
+                texts.append("")
+            texts.extend(str(page).splitlines())
         if not self.debug_mode:
-            texts_pad = menus.QuestPopupMenu(self, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
-            texts_pad.draw_popup(texts)
-            self.stdscr.getch()
+            if texts:
+                texts_pad = menus.QuestPopupMenu(self, box_height=len(texts)+2, box_width=len(max(texts, key=len))+4)
+                texts_pad.draw_popup(texts)
+                self.stdscr.getch()
 
         # Select the race of the character
         menu = menus.NewGameMenu(self)

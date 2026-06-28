@@ -345,19 +345,6 @@ class ShopManager(TownScreenBase):
                 shop_screen.draw_all()
                 continue
             
-            # Confirm purchase via popup
-            confirm_popup = ConfirmationPopup(
-                self.presenter,
-                f"Buy {quantity}x {item.name} for {total_cost}g?"
-            )
-            confirmed = confirm_popup.show(
-                background_draw_func=bg_func,
-                flush_events=True,
-                require_key_release=True,
-            )
-            if not confirmed:
-                continue
-
             equip_actions = self._equip_actions_for_purchase(item, quantity)
 
             # Purchase items

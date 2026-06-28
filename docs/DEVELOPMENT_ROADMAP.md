@@ -107,8 +107,6 @@ Remaining follow-up after this V1 slice:
 - Enemy identity presentation still needs the rules/readability implementation
   for invisible reveal notes, special-form notes, and construct-friendly bleed
   flavor such as `Oil Leak` while preserving underlying mechanics.
-- A public-facing website/project page remains deferred until the title and
-  identity pass are stable enough to present externally.
 
 ## Dungeon, World, And Encounter Gates
 
@@ -158,7 +156,7 @@ specific balance change.
 
 ## Story And Endgame Gates
 
-Status: `Spec Map, New Game Intro Story Next`
+Status: `Spec Map, Story Polish Epic, Class Ring Voluntas Tie-In, Story Polish Bundle V2, Liminal Trials V2, And Narrative Systems Bundle V3 Implemented`
 
 `docs/STORY_AND_ENDGAME_DESIGN.md` is the durable reference for the implemented
 Vesperion/Voluntas route, Liminal Gap, Guardian trials, Reflection/Psychopomp,
@@ -166,11 +164,35 @@ true-final completion, tavern epilogue, and deferred story polish gates. Future
 work should deepen or polish that route rather than replace it unless a new
 story spec explicitly changes the baseline.
 
-First implementation priority after this spec map is New Game intro story copy
-expansion using the story-card presentation owned by
-`docs/PRESENTATION_ASSET_DESIGN_GATES.md`. The intro should add setting,
-premise, tone, and early stakes without revealing Vesperion, Voluntas, the
-busboy twist, the Hooded Figure truth, or true-final route mechanics.
+New Game intro story copy expansion has shipped through shared content data and
+is reflected in both pygame and curses. The Story Polish Epic has also shipped:
+Guardian trial definitions now live in core, Triangulus and Infinitas use
+retry-safe Liminal trial echoes, Reflection presentation has martial/mystic/
+hybrid copy, the Hooded Figure has a one-time post-Reflection angelic
+confirmation, and Vesperion/tragedy copy has been polished without combat
+tuning. Class Ring/Voluntas Identity Tie-In V1 has also shipped as optional
+Liminal route polish: after Voluntas is revealed, a visible Class Ring can be
+affirmed through the Hooded Figure guide, recording the player's current class
+and dormant/awakened ring state for a one-time Reflection echo without changing
+Class Ring mechanics, rewards, or true-final gates. Story Polish Bundle V2
+extends that route with class archetype affirmation scenes, a one-time
+Reflection Voluntas answer, retry/victory echo prose, an unnamed Hooded Figure
+witness farewell, and clearer Vesperion phase/counter logs without numeric
+tuning. Liminal Trials V2 deepens all six existing Guardian gate interactions
+with shared threshold and choice-specific vignettes, completed-trial recall for
+older saves, and Hooded Figure trial-depth review while preserving the current
+map, rewards, combat numbers, route gates, and true-final prerequisites.
+Narrative Systems Bundle V3 adds story-state-only class follow-up, Reflection
+path mirror, true-final Vesperion choice argument/tragedy reframing, and a
+legacy Devil compatibility audit without removing old Devil surfaces.
+
+Remaining story/endgame follow-up should be promoted through
+`docs/STORY_AND_ENDGAME_DESIGN.md` before implementation. The next likely
+story gates are bespoke Guardian rooms, stronger Guardian consequences or
+mini-bosses, deeper per-class Voluntas quests, deeper Reflection mechanics,
+final Vesperion balance/presentation tuning, or a dedicated legacy Devil
+compatibility-retirement cleanup after the audit-only boundary is intentionally
+promoted.
 
 ## Systems, Audio, And Meta Gates
 
@@ -200,9 +222,6 @@ alter quest state, bounty generation, save data, audio routing, keyboard
 behavior, or gameplay rules.
 
 ## Bugfixes
-
-- The dungeon loading screen comes before the popup "You are teleported back
-  to town.", resulting in a jumpy transition between dungeon and town view.
 
 ## Watch Items
 

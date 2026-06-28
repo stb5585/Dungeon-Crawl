@@ -4499,22 +4499,22 @@ class Vesperion(Humanoid):
 
     def _phase_pressure_intro(self, phase: int) -> str:
         if phase == 1:
-            return "Vesperion lowers the Evening Star into a merciful, suffocating hush."
+            return "Vesperion lowers the Evening Star, offering mercy shaped like a closed hand."
         if phase == 2:
-            return "Vesperion folds the battlefield into a perfect and pitiless constellation."
-        return "Vesperion reaches for the place where choices become a self."
+            return "Vesperion enters the second pattern: every star becomes a rule, and every rule tries to choose before you can."
+        return "Vesperion enters the final pattern, reaching for the private place where choice becomes self."
 
     def _apply_phase_one_pressure(self, target: Character) -> list[str]:
         messages: list[str] = []
         if self.guardian_counter_active(target, "Hexagonum"):
-            messages.append("Hexagonum answers the attrition of twilight.")
+            messages.append("Hexagonum answers twilight's attrition with living choice that refuses to be managed into stillness.")
         else:
             damage = max(1, int(target.health.max * 0.08))
             target.health.current = max(1, target.health.current - damage)
             messages.append(f"Twilight attrition burns {target.name} for {damage} HP.")
 
         if self.guardian_counter_active(target, "Luna"):
-            messages.append("Luna refuses mercy that would become a cage.")
+            messages.append("Luna refuses mercy that would make love into a cage; Voluntas leaves compassion free.")
         else:
             mana_loss = max(0, min(target.mana.current, int(target.mana.max * 0.08)))
             target.mana.current -= mana_loss
@@ -4524,13 +4524,13 @@ class Vesperion(Humanoid):
     def _apply_phase_two_pressure(self, target: Character) -> list[str]:
         messages: list[str] = []
         if self.guardian_counter_active(target, "Quadrata"):
-            messages.append("Quadrata breaks the forced order before it can close.")
+            messages.append("Quadrata breaks the forced order before law becomes a lock, preserving the right to consent.")
         else:
             self._apply_status(target, "Silence", 1)
             messages.append(f"{target.name}'s voice is arranged into silence.")
 
         if self.guardian_counter_active(target, "Polaris"):
-            messages.append("Polaris fixes true north through the false stars.")
+            messages.append("Polaris fixes true north through the false stars without commanding the step; guidance remains an invitation.")
         else:
             self._apply_status(target, "Blind", 1)
             messages.append(f"False stars blur {target.name}'s aim.")
@@ -4539,13 +4539,13 @@ class Vesperion(Humanoid):
     def _apply_phase_three_pressure(self, target: Character) -> list[str]:
         messages: list[str] = []
         if self.guardian_counter_active(target, "Triangulus"):
-            messages.append("Triangulus holds the self against the overwrite.")
+            messages.append("Triangulus holds the chosen self against the overwrite; Voluntas keeps the name yours.")
         else:
             self._apply_status(target, "Silence", 2)
             messages.append(f"{target.name}'s chosen name nearly vanishes.")
 
         if self.guardian_counter_active(target, "Infinitas"):
-            messages.append("Infinitas turns the endless loop into another chosen step.")
+            messages.append("Infinitas turns the endless loop into another step freely chosen, not an eternity imposed.")
         else:
             damage = max(1, int(target.health.max * 0.10))
             target.health.current = max(1, target.health.current - damage)
@@ -4660,6 +4660,51 @@ class ReflectionPsychopomp(Humanoid):
             "profile": profile,
             "level": level_value,
         }
+
+
+class GuardianTrialEcho(Humanoid):
+    """Retry-safe Liminal combat echo used by combat-heavy Guardian trials."""
+
+    def __init__(self, guardian_name: str, profile: str | None = None):
+        self.liminal_trial_guardian = str(guardian_name)
+        self.liminal_trial_profile = profile or "echo"
+        super().__init__(name=f"{self.liminal_trial_guardian} Echo", health=900, mana=260, strength=36, intel=36,
+                         wisdom=36, con=36, charisma=30, dex=34, attack=88, defense=92, magic=96,
+                         magic_def=94, exp=0)
+        self.enemy_typ = 'Liminal'
+        self.guardian_trial_echo = True
+        self.gold = 0
+        self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
+                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.spellbook = {"Spells": {'Holy II': abilities.Holy2(),
+                                     'Ruin': abilities.Ruin()},
+                          "Skills": {}}
+        self.resistance = {'Fire': 0.15,
+                           'Ice': 0.15,
+                           'Electric': 0.15,
+                           'Water': 0.15,
+                           'Earth': 0.15,
+                           'Wind': 0.15,
+                           'Shadow': 0.15,
+                           'Holy': 0.15,
+                           "Poison": 1.,
+                           'Physical': 0.15}
+        self.status_immunity = ["Death", "Poison", "Stone", "Berserk"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Holy II", "priority": ActionPriority.NORMAL},
+            {"ability": "Ruin", "priority": ActionPriority.NORMAL},
+        ]
+        if self.liminal_trial_guardian == "Triangulus":
+            self.action_stack[0]["priority"] = ActionPriority.HIGH
+            self.resistance["Physical"] = 0.25
+        elif self.liminal_trial_guardian == "Infinitas":
+            self.health.max = 1100
+            self.health.current = 1100
+            self.resistance["Holy"] = 0.25
+        self.level.pro_level = 38
+        self.sight = True
+        self.picture = "vesperion.txt"
 
 
 class BrainGorger(Aberration):

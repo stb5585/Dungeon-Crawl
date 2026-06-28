@@ -59,6 +59,20 @@ def get_special_events() -> dict[str, Any]:
     return load_json_data('special_events.json')
 
 
+def get_intro_story() -> list[str]:
+    """
+    Load and return the shared new-game intro story pages.
+
+    Returns:
+        Ordered story pages for UI-specific intro presentation
+    """
+    intro_data = get_special_events().get('Intro', {})
+    pages = intro_data.get('Text', [])
+    if not isinstance(pages, list):
+        return []
+    return [str(page) for page in pages]
+
+
 def get_quests() -> dict[str, Any]:
     """
     Load and return the quests dictionary with resolved item references.

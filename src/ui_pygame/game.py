@@ -13,7 +13,7 @@ import pygame
 
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import archdruid, class_rings, classes_dict
-from src.core.data.data_loader import get_special_events
+from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
@@ -600,22 +600,8 @@ class PygameGame:
     
     def show_intro(self):
         """Show the game introduction story."""
-        intro_texts = [
-            "A great evil has taken hold in the unlikeliest of places,\n"
-            "a small town on the edge of the kingdom.",
-            
-            "The town of Silvana has sent out a plea for help,\n"
-            "with many coming from far and wide to test their mettle.",
-            
-            "You, bright-eyed and bushy-tailed,\n"
-            "decided that fame and glory were within reach.",
-            
-            "What you didn't know was that all who had attempted this feat\n"
-            "have never been heard from again.",
-            
-            "Will you be different or just another lost soul?"
-        ]
-        
+        intro_texts = get_intro_story()
+
         StoryCardSequence(self.presenter, intro_texts, title="The Story Begins").show(
             flush_events=True,
             require_key_release=True,

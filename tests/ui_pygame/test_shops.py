@@ -436,7 +436,7 @@ def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):
     assert FakeShopScreen.instances[-1].set_calls == [["1-Handed", "2-Handed", "Back"]]
 
 
-def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purchase(monkeypatch):
+def test_buy_with_shop_screen_covers_cancel_insufficient_gold_and_purchase(monkeypatch):
     manager = _manager(monkeypatch, gold=120)
     item = DummyItem(name="Potion", typ="Potion", subtyp="Potion", value=10)
     itemdict = {"Potions": [item]}
@@ -446,12 +446,11 @@ def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purcha
     FakeShopScreen.item_sequences = [[
         ("Potion", item, 30, 0),
         ("Potion", item, 100, 0),
-        ("Potion", item, 20, 0),
         ("Potion", item, 10, 0),
         None,
     ]]
-    FakeQuantityPopup.responses = [0, 2, 1, 2]
-    FakePopup.responses = [False, True, None]
+    FakeQuantityPopup.responses = [0, 2, 2]
+    FakePopup.responses = [None]
 
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
@@ -464,6 +463,7 @@ def test_buy_with_shop_screen_covers_cancel_insufficient_gold_decline_and_purcha
     assert manager.player_char.inventory_calls == [("Potion", 2, False)]
     assert FakeShopScreen.instances[0].update_calls == [(itemdict, "Buy"), (itemdict, "Buy")]
     assert any("Purchased 2x Potion!" in message for message, _buttons in FakePopup.messages)
+    assert not any(message.startswith("Buy 2x Potion") for message, _buttons in FakePopup.messages)
     assert any(call.get("flush_events") for call in FakePopup.calls)
 
 

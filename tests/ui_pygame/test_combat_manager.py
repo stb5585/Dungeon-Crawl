@@ -393,6 +393,53 @@ def test_reflection_psychopomp_defeat_returns_to_liminal_hub_without_death(monke
     assert "The Reflection breaks your stance and returns you to the Liminal hub." in manager.combat_view.messages
 
 
+def test_guardian_trial_echo_victory_bypasses_normal_rewards(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = enemies.GuardianTrialEcho("Triangulus", profile="Memory")
+    enemy.health.current = 0
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+    )
+
+    result = manager._handle_combat_end(player, enemy, fled=False)
+
+    assert result is True
+    assert player.state == "normal"
+    assert player.main_story["guardian_trials_completed"]["Triangulus"] is False
+    assert "Triangulus yields to the choice you carried into the fight." in manager.combat_view.messages
+    assert manager.combat_view.reset_calls == 1
+
+
+def test_guardian_trial_echo_defeat_returns_to_liminal_hub_without_death(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.health.max = 101
+    player.health.current = 0
+    player.mana.max = 51
+    player.mana.current = 0
+    effect_calls = []
+    player.effects = lambda end=False: effect_calls.append(end)
+    enemy = enemies.GuardianTrialEcho("Infinitas", profile="Rest")
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+    )
+
+    result = manager._handle_combat_end(player, enemy, fled=False)
+
+    assert result is False
+    assert (player.location_x, player.location_y, player.location_z) == combat_manager.LIMINAL_GAP_ENTRY_POS
+    assert player.facing == combat_manager.LIMINAL_GAP_ENTRY_FACING
+    assert player.health.current == 50
+    assert player.mana.current == 25
+    assert player.state == "normal"
+    assert player.main_story["guardian_trials_completed"]["Infinitas"] is False
+    assert effect_calls == [True]
+    assert "Infinitas returns you to the Liminal hub to choose again." in manager.combat_view.messages
+
+
 def test_vesperion_true_final_victory_completes_story_without_engine_end(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
@@ -1471,8 +1518,11 @@ def test_enemy_turn_applies_vesperion_phase_pressure_before_action(monkeypatch):
 
     assert manager._enemy_turn(player, enemy) is None
 
-    assert "Hexagonum answers the attrition of twilight." in manager.combat_view.messages
-    assert "Luna refuses mercy that would become a cage." in manager.combat_view.messages
+    assert (
+        "Hexagonum answers twilight's attrition with living choice that refuses to be managed into stillness."
+        in manager.combat_view.messages
+    )
+    assert "Luna refuses mercy that would make love into a cage; Voluntas leaves compassion free." in manager.combat_view.messages
     assert manager.combat_view.messages[-1] == "Vesperion does nothing."
     assert enemy._vesperion_pressure_phases_used == {1}
 

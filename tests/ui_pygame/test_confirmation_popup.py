@@ -446,6 +446,18 @@ def test_quantity_popup_draw_and_show_cover_adjustment_confirmation_and_cancel(m
     )
     assert cancel_popup.show() is None
 
+    arrow_cancel_popup = confirmation_popup.QuantityPopup(presenter, "Potion", max_quantity=9, default_quantity=1)
+    arrow_cancel_events = iter([
+        [_event(pygame.KEYDOWN, pygame.K_RIGHT)],
+        [_event(pygame.KEYDOWN, pygame.K_RIGHT)],
+        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.confirmation_popup.pygame.event.get",
+        lambda: next(arrow_cancel_events, []),
+    )
+    assert arrow_cancel_popup.show() is None
+
 
 def test_quantity_popup_can_flush_and_wait_for_key_release(monkeypatch):
     _patch_visuals(monkeypatch)

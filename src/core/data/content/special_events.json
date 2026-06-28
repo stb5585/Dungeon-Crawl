@@ -1,4 +1,14 @@
 {
+    "Intro": {
+        "Text": [
+            "Silvana was never meant to be famous.\n\nIt was a lantern town at the kingdom's edge, a place of rain-slick roofs, warm tavern smoke, and old roads that ended at a sealed dungeon stair.",
+            "Then the stair opened.\n\nAt first came treasure-seekers, soldiers, scholars, and fools. They entered with bright steel and louder promises. Most did not return.",
+            "Those who did come back spoke of relics older than the kingdom, rooms that remembered sins, and guardians bound to principles no living priest could fully name.",
+            "Now the town waits in the shadow of the dungeon.\n\nThe tavern keeps a candle in the window. The barracks counts missing names. The church prays for heroes it has not met yet.",
+            "You arrive with your own reasons.\n\nFame, duty, coin, grief, curiosity, redemption: whatever brought you here, the dungeon will ask what it is worth.",
+            "Silvana has sent out its plea.\n\nStep below, if you choose. Return with answers, if the dark allows it."
+            ]
+    },
     "Timmy": {
         "Text": [
             "'Hello...who's there?'",
@@ -28,12 +38,12 @@
     },
     "Dead Body": {
         "Text" : [
-            "Before you lies the body of a warrior, battered, bloody, and broken...",
-            "This must be the body of Joffrey, the one betrothed to the waitress at the tavern.",
-            "You move the body for a proper burial and notice a crushed gold locket lying on the ground.",
-            "You should return this to its rightful owner...",
-            "You pile stones on top of the body and say a few words in honor of the fallen.",
-            "Hopefully Joffrey can find peace in the afterlife."
+            "Before you lies the body of a warrior, battered, bloody, and broken.",
+            "The crushed locket at his throat bears the same name the Waitress speaks like a prayer: Joffrey.",
+            "Whatever choices led him here, the grief waiting above is real.",
+            "You move the body for a proper burial and take the locket carefully.",
+            "Someone in Silvana deserves the truth, even if the truth cannot make this merciful.",
+            "You pile stones over Joffrey and leave the dungeon a little quieter than you found it."
             ]
     },
     "Busboy": {
@@ -41,30 +51,33 @@
             "The door to the tavern swings shut and you can no longer hear the waitress fleeing.",
             "Just then you hear the bartender from behind the bar. 'Hey, where are you going?!'",
             "'Damn, now whose gonna get this food and drink out to my patrons?!'",
+            "For a heartbeat the tavern feels less like a refuge and more like a room holding its breath.",
             "You shrug your shoulders, not wanting to get caught up in all of the chaos.",
             "'BUSBOY! Get out here, you've gotta take over these tables.'"
         ]
     },
     "Waitress": {
         "Text" : [
-            "(cry)...why, why did you have to leave me, Joffrey...",
-            "Who...who's there..leave me, I do not wish to be disturbed...",
-            "WAIT, IT'S YOU! YOU FAILED MY BELOVED JOFFREY!",
-            "WHY DIDN'T YOU SAVE HIM?! YOU WILL MEET THE SAME FATE!!"
+            "The Waitress kneels beside the locket as if holding it tightly enough might make it answer.",
+            "'Joffrey... no. No, you promised me you would come home.'",
+            "Her grief turns toward you, raw enough to become blame before either of you can stop it.",
+            "'You found him and still he is gone. Why does everyone get to choose, and I am left with what choice costs?'",
+            "She rises shaking, and sorrow becomes violence."
             ]
     },
     "Joffrey's Key": {
         "Text" : [
             "That key that you have...that's one of our storage locker keys.",
             "You say you got this from the waitress at the tavern?",
-            "She attacked you?! Well, I guess she lost her mind after Joffrey's death.",
+            "She attacked you?! Grief can break a person in ways no sword should have to answer.",
             "Maybe this key is to his locker. Let me see...yes it is.",
             "All that's left inside are some potions and this letter.",
             "'My love, I know you have questions but the answers will not be to your liking...",
             "forgive me but I could not resist his will. If you are reading this, it means I am dead...",
             "please remember that above all, I love you.' -Joffrey",
-            "What did he mean by he couldn't resist his will? Something doesn't seem right...",
-            "Keep you wits about you, there's evil afoot.", 
+            "The Sergeant reads the last line twice, then folds the letter with unusual care.",
+            "'Whatever Joffrey meant, he loved her. Do not let the rest of this place make you forget that.'",
+            "Keep your wits about you, there's evil afoot.",
             "Since there is no one left to claim his things, you can have what's left. Put them to good use."
         ]
     },
@@ -191,6 +204,13 @@
             "A small light appears where they join, neither relic nor command.",
             "For a moment, you understand the first fragment of Voluntas: selfhood is not assigned. It is chosen, answered, and chosen again."
             ]
+    },
+    "Triangulus Trial Defeat": {
+        "Text": [
+            "The three shadows close over you, not as executioners, but as questions you cannot yet answer.",
+            "Name, body, and memory scatter like loose pages.",
+            "You wake in the Liminal Gap with the trial still waiting."
+        ]
     },
     "Quadrata Gate": {
         "Text": [
@@ -402,6 +422,170 @@
             "You understand that eternity without choice is only repetition."
         ]
     },
+    "Infinitas Trial Defeat": {
+        "Text": [
+            "The repeated path folds over you until every step feels borrowed from the one before it.",
+            "For a moment, continuing and surrendering become indistinguishable.",
+            "You wake in the Liminal Gap with one more chance to choose the next step."
+        ]
+    },
+    "Triangulus Trial V2 Threshold": {
+        "Text": [
+            "The triangle opens again, deeper than the first question.",
+            "Name, body, and memory stand apart like three witnesses, each true and each incomplete.",
+            "The self will not be owned by any single proof."
+        ]
+    },
+    "Triangulus Trial V2 Name": {
+        "Text": [
+            "Your name answers first, not as a label given by the world, but as a vow you choose to keep.",
+            "The other witnesses remain beside it. A name can guide the self, but it cannot imprison it."
+        ]
+    },
+    "Triangulus Trial V2 Body": {
+        "Text": [
+            "Your body answers with every scar, hunger, breath, and step that carried you here.",
+            "The other witnesses do not vanish. Flesh remembers the path, but it does not own the whole soul."
+        ]
+    },
+    "Triangulus Trial V2 Memory": {
+        "Text": [
+            "Memory answers with broken light: grief, triumph, shame, mercy, and choices still changing shape.",
+            "The other witnesses hold steady. What you remember can shape you, but it cannot finish you."
+        ]
+    },
+    "Quadrata Trial V2 Threshold": {
+        "Text": [
+            "The square descends into a court of rules carved before any living voice could consent.",
+            "Every command is clean. Every path is safe. Every silence is mistaken for peace.",
+            "Order waits to learn whether it can be worthy of the people inside it."
+        ]
+    },
+    "Quadrata Trial V2 Obey": {
+        "Text": [
+            "You obey, but not because the rule owns you.",
+            "Chosen discipline gives the square dignity. Order becomes shelter only while consent remains alive."
+        ]
+    },
+    "Quadrata Trial V2 Resist": {
+        "Text": [
+            "You resist, and the square does not collapse.",
+            "A rule that cannot survive refusal was never order. It was fear wearing symmetry."
+        ]
+    },
+    "Quadrata Trial V2 Rewrite": {
+        "Text": [
+            "You rewrite the path, and the old angles make room for a living hand.",
+            "Order becomes worthy when those bound by it can change it without being destroyed."
+        ]
+    },
+    "Hexagonum Trial V2 Threshold": {
+        "Text": [
+            "The hexagon opens into root, fang, and river, three impulses moving before thought can name them.",
+            "Nature offers belonging, survival, and change.",
+            "Meaning begins when instinct becomes a chosen answer."
+        ]
+    },
+    "Hexagonum Trial V2 Root": {
+        "Text": [
+            "You choose the root and feel patience reach down into dark soil.",
+            "Belonging becomes more than habit when you decide what will be nourished there."
+        ]
+    },
+    "Hexagonum Trial V2 Fang": {
+        "Text": [
+            "You choose the fang and let survival show its honest edge.",
+            "Defense becomes more than hunger when it protects a life still capable of mercy."
+        ]
+    },
+    "Hexagonum Trial V2 River": {
+        "Text": [
+            "You choose the river and let motion teach the stone a gentler language.",
+            "Change becomes more than flight when it carries meaning forward."
+        ]
+    },
+    "Luna Trial V2 Threshold": {
+        "Text": [
+            "The moon hangs close enough to touch, and every silver beam looks like an open hand.",
+            "Love offers protection, release, and sharing, each with its own wound.",
+            "The trial asks whether care can remain care without becoming possession."
+        ]
+    },
+    "Luna Trial V2 Protect": {
+        "Text": [
+            "You choose to protect, and the moonlight gathers around what is fragile.",
+            "Protection becomes love only when it guards freedom instead of replacing it."
+        ]
+    },
+    "Luna Trial V2 Release": {
+        "Text": [
+            "You choose to release, and the moonlight rises beyond the reach of your hands.",
+            "Letting go becomes love when trust remains after control is surrendered."
+        ]
+    },
+    "Luna Trial V2 Share": {
+        "Text": [
+            "You choose to share, and the moonlight divides without diminishing.",
+            "Giving becomes love when neither soul is erased by the gift."
+        ]
+    },
+    "Polaris Trial V2 Threshold": {
+        "Text": [
+            "The fixed star lowers until its light becomes a question instead of a command.",
+            "One path asks for trust, one for doubt, and one for memory.",
+            "Guidance must leave room for the guided to remain alive."
+        ]
+    },
+    "Polaris Trial V2 Trust": {
+        "Text": [
+            "You choose trust, and the star holds steady without pulling you forward.",
+            "Guidance becomes grace when the next step is invited, not seized."
+        ]
+    },
+    "Polaris Trial V2 Question": {
+        "Text": [
+            "You choose to question, and the star brightens instead of punishing the doubt.",
+            "Guidance becomes wisdom when it can answer without demanding worship."
+        ]
+    },
+    "Polaris Trial V2 Remember": {
+        "Text": [
+            "You choose to remember, and old directions return as tools instead of chains.",
+            "Guidance becomes yours when it helps you find north after the light is gone."
+        ]
+    },
+    "Infinitas Trial V2 Threshold": {
+        "Text": [
+            "The endless path opens beneath a sky that repeats the same gray breath forever.",
+            "Continuing, breaking, and resting each stand before you as real choices.",
+            "Endurance is meaningful only while the next step remains yours."
+        ]
+    },
+    "Infinitas Trial V2 Endure": {
+        "Text": [
+            "You choose to endure, and the repeated stones become steps instead of chains.",
+            "Continuing becomes will when each motion is chosen again."
+        ]
+    },
+    "Infinitas Trial V2 Break": {
+        "Text": [
+            "You choose to break the loop, and eternity admits it was never the only shape.",
+            "Refusal becomes endurance when it protects the soul from empty repetition."
+        ]
+    },
+    "Infinitas Trial V2 Rest": {
+        "Text": [
+            "You choose to rest, and forever waits without devouring you.",
+            "Rest becomes endurance when stopping is chosen before the self is spent."
+        ]
+    },
+    "Liminal Trial V2 Review": {
+        "Text": [
+            "The Hooded Figure draws six marks in the ash-gray air.",
+            "Some burn brighter now, carrying not only answers but the depth beneath them.",
+            "The trials do not demand a new path. They ask you to remember why the chosen one matters."
+        ]
+    },
     "Voluntas Pattern Complete": {
         "Text": [
             "The six lights answer one another across the Liminal Gap.",
@@ -447,6 +631,114 @@
             "They turn back toward the gray light. 'Go on, then. Prove your burden means something.'"
         ]
     },
+    "Class Voluntas Affirmation": {
+        "Text": [
+            "The Hooded Figure studies the Class Ring without reaching for it.",
+            "'Voluntas does not ask you to become every possible self,' they say.",
+            "'It asks whether the self you brought here was chosen freely enough to stand before the dark.'"
+        ]
+    },
+    "Class Voluntas Dormant Ring": {
+        "Text": [
+            "The Class Ring remains quiet, its promise still unawakened.",
+            "Even dormant, it holds the shape of a path: not power owed, but identity carried.",
+            "The Hooded Figure nods. 'A path can be true before it is complete.'"
+        ]
+    },
+    "Class Voluntas Awakened Ring": {
+        "Text": [
+            "The Class Ring answers with a pulse of remembered trial.",
+            "Its awakened mark does not command you forward. It bears witness to a choice already made and kept.",
+            "The Hooded Figure lowers their head. 'Then let that choice stand among the others.'"
+        ]
+    },
+    "Class Voluntas Archetype Martial": {
+        "Text": [
+            "The ring remembers discipline: hands that rose again, wounds carried without surrender, strength chosen instead of commanded.",
+            "'Then let your strength remain yours,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Archetype Mystic": {
+        "Text": [
+            "The ring remembers study, prayer, stars, and the terrible patience of power held back by will.",
+            "'Then let knowledge answer choice, not replace it,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Archetype Hybrid": {
+        "Text": [
+            "The ring remembers crossed roads: blade and vow, trick and truth, law and mercy held in one imperfect hand.",
+            "'Then let the mixed path stand without apology,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Archetype Companion": {
+        "Text": [
+            "The ring remembers bonds: songs, summons, packs, and every promise that still leaves room for another soul to answer.",
+            "'Then let fellowship remain chosen, not owned,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Archetype Shadow": {
+        "Text": [
+            "The ring remembers hidden roads: debt, stealth, hunger, masks, and the stubborn refusal to let darkness choose your name.",
+            "'Then let even the shadow belong to the one who walks it,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Archetype Wanderer": {
+        "Text": [
+            "The ring remembers no old category clearly enough to name you.",
+            "That, too, is a kind of freedom.",
+            "'Then let the unrecorded path be yours,' the Hooded Figure says."
+        ]
+    },
+    "Class Voluntas Followup": {
+        "Text": [
+            "The Hooded Figure gestures toward the Class Ring's remembered light.",
+            "'A path does not become true because it was painless,' they say.",
+            "'It becomes true because you keep choosing it after seeing what else might have been.'"
+        ]
+    },
+    "Class Voluntas Followup Martial": {
+        "Text": [
+            "The ring answers with the weight of held ground and wounds that did not become masters.",
+            "Strength remains Voluntas when it protects the hand that chooses how to use it."
+        ]
+    },
+    "Class Voluntas Followup Mystic": {
+        "Text": [
+            "The ring answers with patient formulae, prayers, and stars that never mistook knowledge for command.",
+            "Power remains Voluntas when wisdom leaves room for refusal."
+        ]
+    },
+    "Class Voluntas Followup Hybrid": {
+        "Text": [
+            "The ring answers from the crossing of several roads, none clean enough to own the whole truth.",
+            "A mixed path remains Voluntas when every part of it is still freely carried."
+        ]
+    },
+    "Class Voluntas Followup Companion": {
+        "Text": [
+            "The ring answers with the warmth of chosen bonds: summons, songs, packs, and promises that can answer back.",
+            "Fellowship remains Voluntas when love does not become possession."
+        ]
+    },
+    "Class Voluntas Followup Shadow": {
+        "Text": [
+            "The ring answers from hidden roads, where hunger and secrecy could have become chains.",
+            "Shadow remains Voluntas when even the dark is made to answer the one who walks it."
+        ]
+    },
+    "Class Voluntas Followup Wanderer": {
+        "Text": [
+            "The ring answers without a clean category.",
+            "The Hooded Figure almost smiles. 'Then let the unwritten road remain written by your steps.'"
+        ]
+    },
+    "Class Voluntas Reflection Echo": {
+        "Text": [
+            "As the Reflection gathers, the Class Ring answers the empty seventh place.",
+            "Not as a weapon. Not as proof of worth.",
+            "Only as a quiet echo that this path is yours because you chose it."
+        ]
+    },
     "Reflection Locked": {
         "Text": [
             "The mirror-dark threshold ripples, but no image holds.",
@@ -462,6 +754,74 @@
             "It asks whether the life you chose is truly yours."
         ]
     },
+    "Reflection Prelude Martial": {
+        "Text": [
+            "The threshold becomes a mirror polished by blade marks and old bruises.",
+            "Every path not taken watches from behind raised steel.",
+            "The Reflection does not ask whether strength was the only answer.",
+            "It asks whether the strength you chose still belongs to you."
+        ]
+    },
+    "Reflection Prelude Mystic": {
+        "Text": [
+            "The threshold becomes a mirror filled with unwritten sigils and prayers you never learned.",
+            "Every path not taken speaks in a voice almost like your own.",
+            "The Reflection does not ask whether wisdom should have spared you pain.",
+            "It asks whether the power you chose can remain a choice."
+        ]
+    },
+    "Reflection Prelude Hybrid": {
+        "Text": [
+            "The threshold becomes a mirror of crossed roads.",
+            "Steel, spell, mercy, fear, and stubborn hope move through it in a crowd of almost-selves.",
+            "The Reflection does not ask which path was pure.",
+            "It asks whether the mixed life you chose is truly yours."
+        ]
+    },
+    "Reflection Voluntas Choice Claim": {
+        "Text": [
+            "You claim this path without pretending it was the only possible road.",
+            "The mirror accepts the answer: a chosen life does not need to erase its alternatives."
+        ]
+    },
+    "Reflection Voluntas Choice Carry": {
+        "Text": [
+            "You carry the untaken roads as memory, not command.",
+            "The mirror accepts the answer: regret can be honored without being obeyed."
+        ]
+    },
+    "Reflection Voluntas Choice Choose Again": {
+        "Text": [
+            "You answer that choosing is not finished because one choice was made.",
+            "The mirror accepts the answer: Voluntas lives wherever the next free step remains possible."
+        ]
+    },
+    "Reflection Voluntas Retry": {
+        "Text": [
+            "The mirror remembers your answer.",
+            "It does not ask you to improve it. It asks whether you can still stand behind it."
+        ]
+    },
+    "Reflection Voluntas Victory Echo": {
+        "Text": [
+            "Your answer returns from the glass with its edges no longer shaking.",
+            "The possible selves fall quiet because the chosen self has spoken freely."
+        ]
+    },
+    "Reflection Path Mirror": {
+        "Text": [
+            "The mirror widens until it holds more than your face.",
+            "Guardian answers, class vows, ring-light, regret, and refusal gather in one impossible reflection.",
+            "The Reflection does not weigh them as proof. It asks whether you can recognize them as yours."
+        ]
+    },
+    "Reflection Path Victory Echo": {
+        "Text": [
+            "The path shown in the mirror does not become simpler after victory.",
+            "It becomes yours without apology.",
+            "Voluntas answers from every step you chose and every step you refused."
+        ]
+    },
     "Reflection Victory": {
         "Text": [
             "The possible selves fall quiet.",
@@ -470,11 +830,71 @@
             "The way back opens."
         ]
     },
+    "Reflection Victory Martial": {
+        "Text": [
+            "The martial shadows lower their weapons.",
+            "They do not vanish in defeat. They recognize the discipline you kept choosing when fear wanted command.",
+            "Voluntas flares through the stance that remains yours.",
+            "The way back opens."
+        ]
+    },
+    "Reflection Victory Mystic": {
+        "Text": [
+            "The unwritten voices fall silent.",
+            "They do not vanish in defeat. They recognize the knowledge you chose without letting it choose for you.",
+            "Voluntas flares through the spell that remains yours.",
+            "The way back opens."
+        ]
+    },
+    "Reflection Victory Hybrid": {
+        "Text": [
+            "The crossed roads settle into one living path.",
+            "They do not vanish in defeat. They recognize every imperfect answer you carried forward.",
+            "Voluntas flares through the life that remains yours.",
+            "The way back opens."
+        ]
+    },
     "Reflection Defeat": {
         "Text": [
             "The mirror-dark threshold cracks across your vision.",
             "The possible selves do not condemn you. They simply wait.",
             "You wake again in the Liminal Gap, wounded but still capable of choosing."
+        ]
+    },
+    "Reflection Defeat Martial": {
+        "Text": [
+            "The raised blades turn aside your answer before it can hold.",
+            "The martial shadows do not condemn you. They simply wait.",
+            "You wake again in the Liminal Gap, wounded but still capable of choosing."
+        ]
+    },
+    "Reflection Defeat Mystic": {
+        "Text": [
+            "The unwritten voices drown your answer before it can hold.",
+            "The mystic shadows do not condemn you. They simply wait.",
+            "You wake again in the Liminal Gap, wounded but still capable of choosing."
+        ]
+    },
+    "Reflection Defeat Hybrid": {
+        "Text": [
+            "The crossed roads split beneath your feet before your answer can hold.",
+            "The almost-selves do not condemn you. They simply wait.",
+            "You wake again in the Liminal Gap, wounded but still capable of choosing."
+        ]
+    },
+    "Hooded Figure Angelic Confirmation": {
+        "Text": [
+            "The Hooded Figure lifts their head as the Reflection falls silent.",
+            "For one breath the hood cannot hide the light beneath it: not command, not judgment, but witness.",
+            "'I was made to remember what Vesperion tried to make mercifully forgotten,' they say.",
+            "'No name I give you matters more than the choice you just proved. Go back as yourself.'"
+        ]
+    },
+    "Hooded Figure Witness Farewell": {
+        "Text": [
+            "The Hooded Figure keeps their hood drawn even now.",
+            "'A name would turn the witness into the answer,' they say. 'I am not the answer.'",
+            "'I kept a door from closing. You chose to walk through it. That is enough.'"
         ]
     },
     "Return From Liminal Gap": {
@@ -494,13 +914,28 @@
             "You step forward with every choice that made you."
         ]
     },
+    "Vesperion Choice Argument": {
+        "Text": [
+            "Vesperion studies the path that followed you back from the Liminal Gap.",
+            "'You call it freedom because you survived long enough to name it,' he says.",
+            "'But every answer you carry is another wound you were forced to make meaningful.'"
+        ]
+    },
+    "Vesperion Tragedy Reframing": {
+        "Text": [
+            "'The tavern boy smiled because it was useful,' Vesperion says, and the borrowed gentleness is gone.",
+            "'Joffrey died. The Waitress broke. You watched grief become another proof you could not bear to surrender.'",
+            "'I did not invent pain. I offered the only mercy that would have ended its need for permission.'"
+        ]
+    },
     "Vesperion True Final Victory": {
         "Text": [
             "The Evening Star fractures without falling.",
             "Vesperion reaches for the pattern one last time, but the six awakened principles refuse to close around your will.",
             "For the first time, his mercy has no command inside it.",
             "'Then choose,' he whispers, no longer triumphant. 'Choose all of it. Even the pain.'",
-            "The light breaks, and the hollow where Voluntas was erased begins to remember its own name."
+            "The light breaks, and the hollow where Voluntas was erased begins to remember its own name.",
+            "You do not take Voluntas. You leave it free."
         ]
     },
     "The Forsaken Tenet Ending": {

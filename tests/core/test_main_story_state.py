@@ -35,12 +35,25 @@ def test_main_story_round_trips_through_player_serializer():
     player.main_story["reflection_defeated"] = True
     player.main_story["returned_from_liminal_gap"] = True
     player.main_story["hooded_figure_witness_revealed"] = True
+    player.main_story["hooded_figure_angelic_confirmed"] = True
     player.main_story["liminal_gap_guide_revealed"] = True
     player.main_story["liminal_gap_clues_reviewed"] = True
     player.main_story["reflection_attempts"] = 2
     player.main_story["reflection_failures"] = 1
     player.main_story["vesperion_true_final_defeated"] = True
     player.main_story["main_story_complete"] = True
+    player.main_story["class_voluntas_affirmed"] = True
+    player.main_story["class_voluntas_affirmed_class"] = "Wizard"
+    player.main_story["class_voluntas_affirmed_ring_awakened"] = True
+    player.main_story["class_voluntas_affirmed_archetype"] = "mystic"
+    player.main_story["reflection_voluntas_answer"] = "Carry"
+    player.main_story["hooded_figure_witness_farewell_seen"] = True
+    player.main_story["class_voluntas_followup_seen"] = True
+    player.main_story["reflection_path_mirror_seen"] = True
+    player.main_story["vesperion_choice_argument_seen"] = True
+    player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
+    player.main_story["guardian_trial_vignettes_seen"]["Luna"] = True
+    player.main_story["liminal_trial_v2_reviewed"] = True
     player.main_story["guardian_trials_completed"]["Triangulus"] = True
     player.main_story["guardian_trials_started"]["Triangulus"] = True
     player.main_story["guardian_trial_choices"]["Triangulus"] = "Memory"
@@ -62,12 +75,26 @@ def test_main_story_round_trips_through_player_serializer():
     assert loaded.main_story["reflection_defeated"] is True
     assert loaded.main_story["returned_from_liminal_gap"] is True
     assert loaded.main_story["hooded_figure_witness_revealed"] is True
+    assert loaded.main_story["hooded_figure_angelic_confirmed"] is True
     assert loaded.main_story["liminal_gap_guide_revealed"] is True
     assert loaded.main_story["liminal_gap_clues_reviewed"] is True
     assert loaded.main_story["reflection_attempts"] == 2
     assert loaded.main_story["reflection_failures"] == 1
     assert loaded.main_story["vesperion_true_final_defeated"] is True
     assert loaded.main_story["main_story_complete"] is True
+    assert loaded.main_story["class_voluntas_affirmed"] is True
+    assert loaded.main_story["class_voluntas_affirmed_class"] == "Wizard"
+    assert loaded.main_story["class_voluntas_affirmed_ring_awakened"] is True
+    assert loaded.main_story["class_voluntas_affirmed_archetype"] == "mystic"
+    assert loaded.main_story["reflection_voluntas_answer"] == "Carry"
+    assert loaded.main_story["hooded_figure_witness_farewell_seen"] is True
+    assert loaded.main_story["class_voluntas_followup_seen"] is True
+    assert loaded.main_story["reflection_path_mirror_seen"] is True
+    assert loaded.main_story["vesperion_choice_argument_seen"] is True
+    assert loaded.main_story["guardian_trial_vignettes_seen"]["Triangulus"] is True
+    assert loaded.main_story["guardian_trial_vignettes_seen"]["Luna"] is True
+    assert loaded.main_story["guardian_trial_vignettes_seen"]["Quadrata"] is False
+    assert loaded.main_story["liminal_trial_v2_reviewed"] is True
     assert loaded.main_story["guardian_trials_completed"]["Triangulus"] is True
     assert loaded.main_story["guardian_trials_completed"]["Quadrata"] is True
     assert loaded.main_story["guardian_trials_started"]["Triangulus"] is True
@@ -79,6 +106,219 @@ def test_main_story_round_trips_through_player_serializer():
     assert loaded.main_story["voluntas_clues_found"]["Quadrata"] is True
     assert loaded.main_story["true_final_unlocked"] is False
     assert loaded.liminal_gap_return == (7, 8, 6, "south")
+
+
+def test_guardian_trial_definitions_validate_choices_and_completion():
+    state = main_story.default_state()
+
+    assert set(main_story.GUARDIAN_TRIAL_DEFINITIONS) == set(main_story.GUARDIAN_TRIALS)
+    assert main_story.guardian_trial_definition("Triangulus")["kind"] == "combat"
+    assert main_story.guardian_trial_definition("Infinitas")["kind"] == "combat"
+    assert main_story.guardian_trial_question("Polaris") == "How do you follow guidance?"
+    assert main_story.guardian_trial_event("Triangulus", "Memory") == "Triangulus Trial Memory"
+    assert main_story.guardian_trial_event("Infinitas", event="defeat_event") == "Infinitas Trial Defeat"
+    assert main_story.record_guardian_trial_completion(state, "Triangulus", "Memory") is True
+    assert state["guardian_trials_started"]["Triangulus"] is True
+    assert state["guardian_trials_completed"]["Triangulus"] is True
+    assert state["guardian_trial_choices"]["Triangulus"] == "Memory"
+    assert state["voluntas_clues_found"]["Triangulus"] is True
+    assert main_story.record_guardian_trial_completion(state, "Triangulus", "Wrong") is False
+
+
+def test_guardian_trial_vignettes_default_normalize_and_summarize():
+    state = main_story.default_state()
+
+    assert state["guardian_trial_vignettes_seen"] == {
+        guardian: False
+        for guardian in main_story.GUARDIAN_TRIALS
+    }
+    assert state["liminal_trial_v2_reviewed"] is False
+    assert main_story.guardian_trial_vignette_seen(state, "Triangulus") is False
+    assert main_story.guardian_trial_vignette_seen(state, "Voluntas") is False
+    assert main_story.record_guardian_trial_vignette(state, "Voluntas") is False
+
+    assert main_story.record_guardian_trial_vignette(state, "Triangulus") is True
+    assert main_story.record_guardian_trial_vignette(state, "Triangulus") is False
+    assert main_story.guardian_trial_vignette_seen(state, "Triangulus") is True
+    assert main_story.completed_guardian_vignette_count(state) == 1
+
+    state["guardian_trial_choices"]["Triangulus"] = "Memory"
+    assert main_story.guardian_vignette_summary(state) == [
+        "Triangulus (Memory): identity chosen through name, body, and memory.",
+    ]
+
+    normalized = main_story.normalize_state(
+        {
+            "guardian_trial_vignettes_seen": {
+                "Triangulus": True,
+                "Luna": 1,
+                "NotAGuardian": True,
+            },
+            "guardian_trial_choices": {
+                "Triangulus": "Name",
+                "Luna": "Release",
+                "Polaris": "NotAChoice",
+            },
+            "liminal_trial_v2_reviewed": True,
+        }
+    )
+
+    assert normalized["guardian_trial_vignettes_seen"]["Triangulus"] is True
+    assert normalized["guardian_trial_vignettes_seen"]["Luna"] is True
+    assert normalized["guardian_trial_vignettes_seen"]["Quadrata"] is False
+    assert normalized["guardian_trial_choices"]["Polaris"] is None
+    assert normalized["liminal_trial_v2_reviewed"] is True
+    assert main_story.completed_guardian_vignette_count(normalized) == 2
+    assert main_story.guardian_vignette_summary(normalized) == [
+        "Triangulus (Name): identity chosen through name, body, and memory.",
+        "Luna (Release): love protects, releases, or shares without possession.",
+    ]
+
+
+def test_hooded_figure_angelic_confirmation_gate():
+    state = main_story.default_state()
+
+    assert main_story.should_confirm_hooded_figure_angelic(state) is False
+    state["reflection_defeated"] = True
+    state["hooded_figure_witness_revealed"] = True
+    assert main_story.should_confirm_hooded_figure_angelic(state) is True
+    state["hooded_figure_angelic_confirmed"] = True
+    assert main_story.should_confirm_hooded_figure_angelic(state) is False
+
+
+def test_class_voluntas_affirmation_defaults_normalize_and_record_once():
+    state = main_story.default_state()
+
+    assert state["class_voluntas_affirmed"] is False
+    assert state["class_voluntas_affirmed_class"] is None
+    assert state["class_voluntas_affirmed_ring_awakened"] is False
+    assert state["class_voluntas_affirmed_archetype"] is None
+    assert main_story.record_class_voluntas_affirmation(state, "", True) is False
+
+    assert main_story.record_class_voluntas_affirmation(state, "Wizard", True) is True
+    assert state["class_voluntas_affirmed"] is True
+    assert state["class_voluntas_affirmed_class"] == "Wizard"
+    assert state["class_voluntas_affirmed_ring_awakened"] is True
+    assert state["class_voluntas_affirmed_archetype"] == "mystic"
+    assert main_story.record_class_voluntas_affirmation(state, "Berserker", False) is False
+    assert state["class_voluntas_affirmed_class"] == "Wizard"
+
+    normalized = main_story.normalize_state(
+        {
+            "class_voluntas_affirmed": True,
+            "class_voluntas_affirmed_class": "  Knight Enchanter  ",
+            "class_voluntas_affirmed_ring_awakened": True,
+            "class_voluntas_affirmed_archetype": "hybrid",
+            "reflection_voluntas_answer": "ChooseAgain",
+            "hooded_figure_witness_farewell_seen": True,
+        }
+    )
+
+    assert normalized["class_voluntas_affirmed"] is True
+    assert normalized["class_voluntas_affirmed_class"] == "Knight Enchanter"
+    assert normalized["class_voluntas_affirmed_ring_awakened"] is True
+    assert normalized["class_voluntas_affirmed_archetype"] == "hybrid"
+    assert normalized["reflection_voluntas_answer"] == "ChooseAgain"
+    assert normalized["hooded_figure_witness_farewell_seen"] is True
+
+    invalid = main_story.normalize_state(
+        {
+            "class_voluntas_affirmed_archetype": "not-real",
+            "reflection_voluntas_answer": "RewriteSelf",
+        }
+    )
+
+    assert invalid["class_voluntas_affirmed_archetype"] is None
+    assert invalid["reflection_voluntas_answer"] is None
+
+    old_affirmed = main_story.normalize_state(
+        {
+            "class_voluntas_affirmed": True,
+            "class_voluntas_affirmed_class": "Soulcatcher",
+        }
+    )
+
+    assert old_affirmed["class_voluntas_affirmed_archetype"] == "shadow"
+
+
+def test_class_voluntas_archetypes_reflection_answer_and_witness_farewell_gate():
+    assert main_story.class_voluntas_archetype("Berserker") == "martial"
+    assert main_story.class_voluntas_archetype("Wizard") == "mystic"
+    assert main_story.class_voluntas_archetype("Knight Enchanter") == "hybrid"
+    assert main_story.class_voluntas_archetype("Beast Master") == "companion"
+    assert main_story.class_voluntas_archetype("Soulcatcher") == "shadow"
+    assert main_story.class_voluntas_archetype("Chronomancer") == "wanderer"
+
+    state = main_story.default_state()
+
+    assert main_story.record_reflection_voluntas_answer(state, "RewriteSelf") is False
+    assert main_story.record_reflection_voluntas_answer(state, "Claim") is True
+    assert state["reflection_voluntas_answer"] == "Claim"
+    assert main_story.record_reflection_voluntas_answer(state, "Carry") is False
+    assert state["reflection_voluntas_answer"] == "Claim"
+
+    farewell_state = main_story.default_state()
+    assert main_story.should_show_hooded_witness_farewell(farewell_state) is False
+    farewell_state["reflection_defeated"] = True
+    assert main_story.should_show_hooded_witness_farewell(farewell_state) is True
+    farewell_state["hooded_figure_witness_farewell_seen"] = True
+    assert main_story.should_show_hooded_witness_farewell(farewell_state) is False
+    farewell_state["hooded_figure_witness_farewell_seen"] = False
+    farewell_state["returned_from_liminal_gap"] = True
+    assert main_story.should_show_hooded_witness_farewell(farewell_state) is False
+
+
+def test_narrative_system_v3_flags_helpers_and_path_summary():
+    state = main_story.default_state()
+
+    assert state["class_voluntas_followup_seen"] is False
+    assert state["reflection_path_mirror_seen"] is False
+    assert state["vesperion_choice_argument_seen"] is False
+    assert main_story.should_show_class_voluntas_followup(state) is False
+    assert main_story.record_class_voluntas_followup(state) is False
+
+    main_story.record_class_voluntas_affirmation(state, "Wizard", True)
+    assert main_story.should_show_class_voluntas_followup(state) is True
+    assert main_story.record_class_voluntas_followup(state) is True
+    assert main_story.record_class_voluntas_followup(state) is False
+
+    assert main_story.should_show_reflection_path_mirror(state) is False
+    state["voluntas_revealed"] = True
+    state["acolyte_liminal_seen"] = True
+    assert main_story.should_show_reflection_path_mirror(state) is True
+    assert main_story.record_reflection_path_mirror(state) is True
+    assert main_story.record_reflection_path_mirror(state) is False
+    state["reflection_defeated"] = True
+    assert main_story.should_show_reflection_path_mirror(state) is False
+
+    assert main_story.should_show_vesperion_choice_argument(state) is False
+    state["true_final_unlocked"] = True
+    assert main_story.should_show_vesperion_choice_argument(state) is True
+    assert main_story.record_vesperion_choice_argument(state) is True
+    assert main_story.record_vesperion_choice_argument(state) is False
+    state["main_story_complete"] = True
+    assert main_story.should_show_vesperion_choice_argument(state) is False
+
+    state["reflection_voluntas_answer"] = "Carry"
+    state["guardian_trials_completed"]["Triangulus"] = True
+    state["voluntas_clues_found"]["Triangulus"] = True
+    state["guardian_trial_choices"]["Triangulus"] = "Memory"
+    state["guardian_trial_vignettes_seen"]["Triangulus"] = True
+
+    assert main_story.voluntas_path_summary(state) == [
+        "Class path: Wizard (mystic, awakened ring).",
+        "Reflection answer: carried the untaken paths without surrendering the chosen one.",
+        "Triangulus (Memory): selfhood is chosen, not assigned.",
+        "Guardian trial depths witnessed: 1/6.",
+    ]
+
+    blank_summary = main_story.voluntas_path_summary(main_story.default_state())
+    assert blank_summary == [
+        "Class path: no Class Ring affirmation recorded.",
+        "Reflection answer: not yet recorded.",
+        "Guardian clues: none awakened.",
+        "Guardian trial depths witnessed: 0/6.",
+    ]
 
 
 def test_main_story_helpers_gate_voluntas_and_true_final():

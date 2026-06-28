@@ -30,6 +30,51 @@ def test_legacy_class_ring_defaults_to_dormant_description_and_mod():
     assert "Activation: No Healing Duel" in ring.get_description(player)
 
 
+def test_class_voluntas_identity_summarizes_ring_visibility_and_state():
+    no_ring = TestGameState.create_player(class_name="Berserker", race_name="Human")
+    no_ring.equipment["Ring"] = items.NoRing()
+
+    hidden = class_rings.class_voluntas_identity(no_ring)
+
+    assert hidden["class_name"] == "Berserker"
+    assert hidden["visible"] is False
+    assert hidden["awakened"] is False
+    assert hidden["activation"] == "No Healing Duel"
+    assert hidden["mod"] == "Dormant Bloodied Crits"
+
+    dormant, _ring = _player_with_class_ring("Wizard")
+    dormant_identity = class_rings.class_voluntas_identity(dormant)
+
+    assert dormant_identity["visible"] is True
+    assert dormant_identity["awakened"] is False
+    assert dormant_identity["activation"] == "Four Formulae"
+    assert dormant_identity["mod"] == "Dormant School Streak"
+    assert "dormant Class Ring for a Wizard" in dormant_identity["description"]
+
+    awakened, _ring = _player_with_class_ring("Wizard")
+    awakened.awaken_class_ring()
+    awakened_identity = class_rings.class_voluntas_identity(awakened)
+
+    assert awakened_identity["visible"] is True
+    assert awakened_identity["awakened"] is True
+    assert awakened_identity["mod"] == "School Streak"
+    assert "awakened Class Ring for a Wizard" in awakened_identity["description"]
+
+    unknown = SimpleNamespace(
+        cls=SimpleNamespace(name="Chronomancer"),
+        equipment={"Ring": items.ClassRing()},
+        storage={},
+    )
+    unknown_identity = class_rings.class_voluntas_identity(unknown)
+
+    assert unknown_identity["class_name"] == "Chronomancer"
+    assert unknown_identity["visible"] is True
+    assert unknown_identity["awakened"] is False
+    assert unknown_identity["activation"] == "Quest Awakening"
+    assert unknown_identity["mod"] == "Special"
+    assert unknown_identity["description"] == "A ring that changes depending on the wearer's specialty."
+
+
 def test_berserker_bloodied_crits_and_weapon_damage_require_awakening():
     player, ring = _player_with_class_ring("Berserker", health=(100, 20))
     ring.class_mod(player)

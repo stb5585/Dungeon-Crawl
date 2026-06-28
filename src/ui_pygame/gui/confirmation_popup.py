@@ -650,6 +650,7 @@ class QuantityPopup:
         self.tens = (default_quantity // 10) % 10
         self.ones = default_quantity % 10
         self.selected_place = 0  # 0 = ones, 1 = tens
+        self.focus_control = "ones"
         
         # Calculate popup position (centered)
         self.popup_width = 500
@@ -678,6 +679,23 @@ class QuantityPopup:
     def quantity(self):
         """Get current quantity."""
         return self.tens * 10 + self.ones
+
+    def _focus_order(self) -> list[str]:
+        return ["tens", "ones", "confirm", "cancel"]
+
+    def _set_focus(self, control: str) -> None:
+        if control not in self._focus_order():
+            return
+        self.focus_control = control
+        if control == "tens":
+            self.selected_place = 1
+        elif control == "ones":
+            self.selected_place = 0
+
+    def _move_focus(self, delta: int) -> None:
+        order = self._focus_order()
+        index = order.index(self.focus_control) if self.focus_control in order else 1
+        self._set_focus(order[(index + delta) % len(order)])
     
     def draw_popup(self, background_draw_func=None):
         """Draw the quantity popup over the current screen."""
@@ -719,7 +737,7 @@ class QuantityPopup:
         # Tens place
         tens_x = self.popup_x + 250
         tens_highlight = pygame.Rect(tens_x - 30, qty_y - 10, 60, 50)
-        if self.selected_place == 1:
+        if self.focus_control == "tens":
             pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, tens_highlight)
             pygame.draw.rect(self.screen, self.GOLD, tens_highlight, 2)
             tens_color = self.GOLD
@@ -732,7 +750,7 @@ class QuantityPopup:
         # Ones place
         ones_x = self.popup_x + 320
         ones_highlight = pygame.Rect(ones_x - 30, qty_y - 10, 60, 50)
-        if self.selected_place == 0:
+        if self.focus_control == "ones":
             pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, ones_highlight)
             pygame.draw.rect(self.screen, self.GOLD, ones_highlight, 2)
             ones_color = self.GOLD
@@ -764,9 +782,14 @@ class QuantityPopup:
         self.screen.blit(instr1, instr_rect)
 
         for label, rect in self.button_rects().items():
-            pygame.draw.rect(self.screen, self.HIGHLIGHT_BG if label == "confirm" else self.POPUP_BG, rect)
-            pygame.draw.rect(self.screen, self.GOLD if label == "confirm" else self.BORDER_COLOR, rect, 2)
-            text = self.small_font.render(label.title(), True, self.GOLD if label == "confirm" else self.WHITE)
+            focused = self.focus_control == label
+            disabled_confirm = label == "confirm" and self.quantity <= 0
+            fill_color = self.HIGHLIGHT_BG if focused else self.POPUP_BG
+            border_color = self.GOLD if focused else self.BORDER_COLOR
+            text_color = self.GRAY if disabled_confirm else (self.GOLD if focused else self.WHITE)
+            pygame.draw.rect(self.screen, fill_color, rect)
+            pygame.draw.rect(self.screen, border_color, rect, 2)
+            text = self.small_font.render(label.title(), True, text_color)
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
     
@@ -815,6 +838,8 @@ class QuantityPopup:
                         return finish(None)
                     elif event.key == pygame.K_UP:
                         # Increase current digit (clamp to 0-9)
+                        if self.focus_control not in {"ones", "tens"}:
+                            continue
                         if self.selected_place == 0:  # Ones
                             self.ones = min(9, self.ones + 1)
                         else:  # Tens
@@ -829,21 +854,22 @@ class QuantityPopup:
                     
                     elif event.key == pygame.K_DOWN:
                         # Decrease current digit (clamp to 0-9)
+                        if self.focus_control not in {"ones", "tens"}:
+                            continue
                         if self.selected_place == 0:  # Ones
                             self.ones = max(0, self.ones - 1)
                         else:  # Tens
                             self.tens = max(0, self.tens - 1)
                     
                     elif event.key == pygame.K_LEFT:
-                        # Switch to tens place
-                        self.selected_place = 1
+                        self._move_focus(-1)
                     
                     elif event.key == pygame.K_RIGHT:
-                        # Switch to ones place
-                        self.selected_place = 0
+                        self._move_focus(1)
                     
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                        # Confirm selection
+                        if self.focus_control == "cancel":
+                            return finish(None)
                         if self.quantity > 0:
                             return finish(self.quantity)
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
@@ -863,11 +889,15 @@ class QuantityPopup:
                         continue
                     digit_hit = hit_index(self.digit_rects(), mouse_position(event))
                     if digit_hit is not None:
-                        self.selected_place = 1 if digit_hit == 0 else 0
+                        self._set_focus("tens" if digit_hit == 0 else "ones")
                         continue
+                    buttons = self.button_rects()
+                    pos = mouse_position(event)
+                    for label, rect in buttons.items():
+                        if rect.collidepoint(pos or (-1, -1)):
+                            self._set_focus(label)
+                            break
                     if is_left_click(event):
-                        buttons = self.button_rects()
-                        pos = mouse_position(event)
                         if buttons["confirm"].collidepoint(pos or (-1, -1)) and self.quantity > 0:
                             return finish(self.quantity)
                         if buttons["cancel"].collidepoint(pos or (-1, -1)):
