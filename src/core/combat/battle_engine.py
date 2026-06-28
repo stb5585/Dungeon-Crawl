@@ -46,7 +46,7 @@ from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from .. import items
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, ability_mechanics, paladin, wizard
+from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, ability_mechanics, paladin, promotion_kits, wizard
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -193,6 +193,7 @@ class BattleEngine:
         self.player._last_stand_used = False
         self.player._foretell_snapshot = None
         self.player._rewind_snapshot = None
+        promotion_kits.start_combat(self.player)
         self.attacker, self.defender = determine_initiative(self.player, self.enemy)
 
         self._event_bus.emit(create_combat_event(
@@ -586,6 +587,9 @@ class BattleEngine:
                 pulse_msg = nature_totems.resolve_totem_pulse(self.player, self.enemy)
                 if pulse_msg:
                     result.messages.append(pulse_msg)
+                resonance_msg = promotion_kits.pop_messages(self.player)
+                if resonance_msg:
+                    result.messages.append(resonance_msg)
 
             # Manage summon state
             if self.summon_active:
@@ -655,6 +659,7 @@ class BattleEngine:
             outcome.result = "flee"
             outcome.winner = None
             outcome.message = f"{self.player.name} fled from combat.\n"
+            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
             if hasattr(self.player, "_grandmaster_battle_hit_types"):
                 self.player._grandmaster_battle_hit_types.clear()
             self.tile.enemy = None
@@ -674,6 +679,7 @@ class BattleEngine:
             outcome.result = "defeat"
             outcome.winner = self.enemy.name
             outcome.message = f"{self.player.name} was slain by {self.enemy.name}.\n"
+            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
             if self._is_class_ring_trial_enemy():
                 outcome.message = f"{self.player.name} yields the trial bout.\n"
                 self._process_class_ring_trial_defeat()
@@ -1128,6 +1134,14 @@ class BattleEngine:
             if scar_text:
                 msg += scar_text
             class_rings.record_soul_harvest(self.player, getattr(self.enemy, "enemy_typ", None))
+            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy)
+            try:
+                from ..classes import demonologist
+
+                if self.player.cls.name == "Demonologist":
+                    msg += demonologist.cool_corruption(self.player, 2, "combat victory")
+            except Exception:
+                pass
             frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(self.player, reason="kill")
             if frenzy_triggered:
                 msg += frenzy_text

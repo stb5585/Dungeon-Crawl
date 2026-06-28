@@ -79,27 +79,27 @@ def test_dragoon_jump_mod_stays_dormant_until_guard_the_fall():
 
     ring.class_mod(player)
     dormant_max = jump.get_max_active_modifications(player)
-    assert player.equipment["Ring"].mod == "Dormant +1 Jump Mod"
+    assert player.equipment["Ring"].mod == "Dormant Aerial Supremacy"
 
     ok, _ = player.awaken_class_ring()
     ring.class_mod(player)
 
     assert ok is True
-    assert player.equipment["Ring"].mod == "+1 Jump Mod"
-    assert jump.get_max_active_modifications(player) == dormant_max + 1
+    assert player.equipment["Ring"].mod == "Aerial Supremacy"
+    assert jump.get_max_active_modifications(player) == dormant_max
 
 
-def test_knight_enchanter_mana_tap_plus_uses_existing_active_mod_string():
+def test_knight_enchanter_arcane_tempo_replaces_mana_tap_plus_display():
     player, ring = _player_with_class_ring("Knight Enchanter")
 
     ring.class_mod(player)
-    assert player.equipment["Ring"].mod == "Dormant Mana Tap+"
+    assert player.equipment["Ring"].mod == "Dormant Arcane Tempo"
 
     ok, _ = player.awaken_class_ring()
     ring.class_mod(player)
 
     assert ok is True
-    assert player.equipment["Ring"].mod == "Mana Tap+"
+    assert player.equipment["Ring"].mod == "Arcane Tempo"
 
 
 def test_grand_summoner_conduit_ritual_sacrifices_hp_and_empowers_summons():

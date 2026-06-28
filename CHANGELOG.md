@@ -2,6 +2,27 @@
 
 ## [Unreleased] - 2026-06-26
 
+### Promotion Class Kits
+
+- Implemented the V1 promotion class-kit track pass, including shared
+  promotion-kit state/hooks, combat-only meters, persistent track state,
+  representative active/passive abilities, class-ring identity updates, and
+  save/load normalization for the second-promotion class loops.
+- Added regression coverage for promotion-kit state, representative actives,
+  Demonologist corruption/patron mood, Shadowcaster Eclipse, summon and
+  companion bond state, Footpad-track meters, Lycan control, and ring display
+  compatibility.
+- Added the Master Monk-only `Ruyi Jingu Bang` ultimate staff, class-specific
+  ultimate-staff selection, and curses/pygame blacksmith coverage for the
+  `Unobtainium` crafting flow.
+- Completed additional promotion-kit smoothing hooks for `Loaded Dice`,
+  `Ordered Blessings`, `Divine Intervention`, `Encore`, and bond-scaling
+  `Shared Recovery`, including representative Rogue Fortune/Misfortune payoff,
+  `Cheat Death`, and Bard/Troubadour Crescendo coda coverage.
+- Updated class-kit, class-ring, roadmap, and docs-index references to mark the
+  V1 implementation as shipped while keeping deeper ability-specific riders,
+  richer UI/log surfacing, and balance/playtest tuning as follow-up work.
+
 ### P7 Additional Improvements
 
 - Added mouse hover/click support for selector-style pygame screens: main menu,

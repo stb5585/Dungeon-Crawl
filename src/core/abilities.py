@@ -868,6 +868,10 @@ class StealSpell(Class):
         if target is None:
             return "There is no spell to steal.\n"
         _success, message = spell_stealer.steal_spell(user, target)
+        if _success:
+            from .classes import promotion_kits
+
+            message += promotion_kits.gain_stolen_charge(user, "Steal Spell")
         return message
 
 
@@ -901,7 +905,12 @@ class StealSpell2(Class):
         spell_cls = random.choice(spell_classes)
         spell = spell_cls()
         user.spellbook["Spells"][spell.name] = spell
-        return f"{user.name} permanently learns {spell.name}.\n"
+        from .classes import promotion_kits
+
+        return (
+            f"{user.name} permanently learns {spell.name}.\n"
+            + promotion_kits.gain_stolen_charge(user, "Steal Spell 2")
+        )
 
 
 class StealAsWell(Class):
@@ -1027,6 +1036,309 @@ class ComposeGoldTrigger(_ComposeSong):
 
 class ComposeChorusTime(_ComposeSong):
     def __init__(self): super().__init__("Compose Chorus Time", "ChorusTimeSheet")
+
+
+class _PromotionPassive(_PassiveSkill):
+    pass
+
+
+class ScavengersEye(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Scavenger's Eye", "Modestly improves ordinary loot odds and rarity without creating restricted drops.")
+
+
+class FindersKeepers(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Finders Keepers", "Occasionally finds extra eligible loot after ordinary defeated enemies.")
+
+
+class CheatDeath(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Cheat Death", "Once per combat, Misfortune can help turn fatal damage into survival at 1 HP.")
+
+
+class DeathMark(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Death Mark", "Stealth, poison, and opener setups mark foes for finisher pressure.")
+
+
+class Wayfinding(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Wayfinding", "Studied routes and cases smooth Seeker movement magic.")
+
+
+class MartialMastery(_PromotionPassive):
+    def __init__(self):
+        super().__init__("Martial Mastery", "Improves Ki discipline and readies the Dim Mak finisher.")
+
+
+class _PromotionActive(Class):
+    helper_name = ""
+    skill_cost = 0
+
+    def __init__(self, name: str, description: str, cost: int = 0):
+        super().__init__(name=name, description=description)
+        self.cost = cost
+
+
+class ThreadedCast(_PromotionActive):
+    def __init__(self):
+        super().__init__("Threaded Cast", "Spend Foresight Threads to mark the next eligible spell payoff.", 8)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.threaded_cast(user)
+
+
+class Eclipse(_PromotionActive):
+    def __init__(self):
+        super().__init__("Eclipse", "Spend Umbral Debt to enter a short shadow form.", 0)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.eclipse(user)
+
+
+class HoldTheLine(_PromotionActive):
+    def __init__(self):
+        super().__init__("Hold the Line", "Enter a shield stance that improves block and mitigation.", 0)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.hold_the_line(user)
+
+
+class Bulwark(_PromotionActive):
+    def __init__(self):
+        super().__init__("Bulwark", "Spend Resolve for a short mitigation barrier.", 0)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.bulwark(user)
+
+
+class ShieldRiposte(_PromotionActive):
+    def __init__(self):
+        super().__init__("Shield Riposte", "Spend Resolve for a controlled shield counter.", 0)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.shield_riposte(user, target)
+
+
+class SanctuaryWard(_PromotionActive):
+    def __init__(self):
+        super().__init__("Sanctuary Ward", "Spend Devotion for a brief protective ward.", 8)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.sanctuary_ward(user)
+
+
+class RelicAegis(_PromotionActive):
+    def __init__(self):
+        super().__init__("Relic Aegis", "Spend Templar Devotion for stronger shielded protection.", 12)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.relic_aegis(user)
+
+
+class Supplication(_PromotionActive):
+    def __init__(self):
+        super().__init__("Supplication", "Spend Prayer on a targeted divine support pulse.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.supplication(user, target)
+
+
+class GreatBenediction(_PromotionActive):
+    def __init__(self):
+        super().__init__("Great Benediction", "Spend Prayer for several turns of proactive divine support.", 18)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.great_benediction(user)
+
+
+class DimMak(_PromotionActive):
+    def __init__(self):
+        super().__init__("Dim Mak", "Spend full Ki for a high-impact martial finisher.", 18)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.dim_mak(user, target)
+
+
+class CenteredGuard(_PromotionActive):
+    def __init__(self):
+        super().__init__("Centered Guard", "A chi guard replacing late Monk spell exceptions.", 8)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        user.enter_defensive_stance(duration=2)
+        return f"{user.name} centers their guard.\n"
+
+
+class MirrorBreath(_PromotionActive):
+    def __init__(self):
+        super().__init__("Mirror Breath", "Brief reflection and counter-ward support.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        user.magic_effects["Reflect"].active = True
+        user.magic_effects["Reflect"].duration = 2
+        return f"{user.name}'s breath becomes a mirror ward.\n"
+
+
+class PurgingKata(_PromotionActive):
+    def __init__(self):
+        super().__init__("Purging Kata", "Cleanse hostile status through martial focus.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        removed = []
+        for name in ("Poison", "Blind", "Silence", "Berserk"):
+            effect = user.status_effects.get(name)
+            if effect is not None and effect.active:
+                effect.active = False
+                effect.duration = 0
+                removed.append(name)
+        return f"{user.name} purges {', '.join(removed) if removed else 'no hostile status'}.\n"
+
+
+class FourfoldSurge(_PromotionActive):
+    def __init__(self):
+        super().__init__("Fourfold Surge", "Spend represented Aspect Harmony for a nature payoff.", 14)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.fourfold_surge(user, target)
+
+
+class TotemSurge(_PromotionActive):
+    def __init__(self):
+        super().__init__("Totem Surge", "Spend Totem Resonance to force the active Totem pulse.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.totem_surge(user, target)
+
+
+class ConduitCommand(_PromotionActive):
+    def __init__(self):
+        super().__init__("Conduit Command", "Empower the active summon's next non-Recall action.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.conduit_command(user)
+
+
+class _InvokeSummon(_PromotionActive):
+    summon_name = ""
+
+    def __init__(self, summon_name: str):
+        self.summon_name = summon_name
+        super().__init__(f"Invoke {summon_name}", f"Borrow {summon_name}'s trusted invocation.", 12)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.invoke_summon(user, target, self.summon_name)
+
+
+class InvokePatagon(_InvokeSummon):
+    def __init__(self): super().__init__("Patagon")
+
+
+class InvokeDilong(_InvokeSummon):
+    def __init__(self): super().__init__("Dilong")
+
+
+class InvokeAgloolik(_InvokeSummon):
+    def __init__(self): super().__init__("Agloolik")
+
+
+class InvokeCacus(_InvokeSummon):
+    def __init__(self): super().__init__("Cacus")
+
+
+class InvokeFuath(_InvokeSummon):
+    def __init__(self): super().__init__("Fuath")
+
+
+class InvokeIzulu(_InvokeSummon):
+    def __init__(self): super().__init__("Izulu")
+
+
+class InvokeHala(_InvokeSummon):
+    def __init__(self): super().__init__("Hala")
+
+
+class InvokeGrigori(_InvokeSummon):
+    def __init__(self): super().__init__("Grigori")
+
+
+class InvokeBardi(_InvokeSummon):
+    def __init__(self): super().__init__("Bardi")
+
+
+class InvokeKobalos(_InvokeSummon):
+    def __init__(self): super().__init__("Kobalos")
+
+
+class InvokeZahhak(_InvokeSummon):
+    def __init__(self): super().__init__("Zahhak")
+
+
+class _BeastCommand(_PromotionActive):
+    command_name = ""
+
+    def __init__(self, name: str):
+        self.command_name = name
+        super().__init__(name, f"Order the tamed companion to {name.lower()}.", 0)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.beast_command(user, self.command_name)
+
+
+class PackStrike(_BeastCommand):
+    def __init__(self): super().__init__("Pack Strike")
+
+
+class GuardPartner(_BeastCommand):
+    def __init__(self): super().__init__("Guard Partner")
+
+
+class HarryPrey(_BeastCommand):
+    def __init__(self): super().__init__("Harry Prey")
+
+
+class MendWounds(_BeastCommand):
+    def __init__(self): super().__init__("Mend Wounds")
+
+
+class WingedPounce(_PromotionActive):
+    def __init__(self):
+        super().__init__("Winged Pounce", "Dragon Essence Werewolf pounce with brief flight.", 12)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.winged_pounce(user, target)
 
 
 class Parry(Defensive):
@@ -1883,10 +2195,28 @@ class GreatGospel(PowerUp):
         return _load_yaml_ability("great_gospel.yaml", cls_name="GreatGospel")
 
 
-class DimMak(PowerUp):
-    """Data-driven (dim_mak.yaml) - weapon + kill/stun + absorb."""
-    def __new__(cls):
-        return _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
+class DimMak(Class):
+    """Dim Mak keeps its legacy weapon skill behavior outside Master Monk."""
+
+    def __init__(self):
+        legacy = _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
+        super().__init__(
+            name=legacy.name,
+            description=legacy.description,
+        )
+        self.cost = legacy.cost
+        self.weapon = legacy.weapon
+        self._legacy = legacy
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        if (
+            promotion_kits.class_name(user) == "Master Monk"
+            and int(promotion_kits.combat_state(user).get("ki", 0) or 0) >= promotion_kits.cap_for(user, "ki")
+        ):
+            return promotion_kits.dim_mak(user, target)
+        return self._legacy.use(user, target, **kwargs)
 
 
 class MelodyInspiration(PowerUp):
@@ -1907,6 +2237,9 @@ class MelodyInspiration(PowerUp):
         result = self._reset_result(actor=user)
         result.extra["effect"] = "stat_bonus_and_status_removal"
         return result
+
+
+SongInspiration = MelodyInspiration
 
 
 class PrimalAscendance(PowerUp):
@@ -3629,9 +3962,12 @@ skill_dict = {
     "Sentinel": {
         "1": ShieldBlock,
         "3": Goad,
+        "5": HoldTheLine,
         "9": Retaliate,
         },
     "Stalwart Defender": {
+        "5": Bulwark,
+        "9": ShieldRiposte,
         "18": LastStand,
         },
     "Mage": {
@@ -3656,6 +3992,7 @@ skill_dict = {
     },
     "Shadowcaster": {
         "4": ManaTap,
+        "6": Eclipse,
         "10": HealthManaDrain,
         "20": Familiar3,
         },
@@ -3684,6 +4021,8 @@ skill_dict = {
     },
     "Grand Summoner": {
         "1": Summon2,
+        "2": ConduitCommand,
+        "3": [InvokePatagon, InvokeDilong, InvokeAgloolik, InvokeCacus, InvokeFuath, InvokeIzulu, InvokeHala, InvokeGrigori, InvokeBardi, InvokeKobalos, InvokeZahhak],
         "8": RaiseSummon,
     },
     "Footpad": {
@@ -3700,13 +4039,16 @@ skill_dict = {
         "25": Parry,
     },
     "Thief": {
+        "1": ScavengersEye,
         "5": Lockpick,
         "12": GoldToss,
         "15": Mug,
         "20": PoisonStrike,
     },
     "Rogue": {
+        "1": FindersKeepers,
         "3": Zephyrstrike,
+        "4": CheatDeath,
         "5": SneakAttack,
         "8": KeenEye,
         "10": SlotMachine,
@@ -3724,11 +4066,13 @@ skill_dict = {
     },
     "Seeker": {
         "1": Cartography,
+        "3": Wayfinding,
         "5": ThirdEye,
         "16": TripleStrike,
         "25": TruePiercingStrike,
         },
     "Assassin": {
+        "1": DeathMark,
         "8": PoisonStrike,
         "15": Lockpick,
         "18": TripleStrike,
@@ -3749,6 +4093,7 @@ skill_dict = {
     "Healer": {},
     "Cleric": {
         "6": ShieldSlam,
+        "8": SanctuaryWard,
         "12": ShieldBlock,
         "24": PiousBounty,
         "27": TrueStrike,
@@ -3757,16 +4102,19 @@ skill_dict = {
         "1": Parry,
         "4": PiercingStrike,
         "6": Goad,
+        "8": RelicAegis,
         "14": Charge,
         "22": DoubleStrike,
         "30": TruePiercingStrike,
     },
     "Priest": {
         "4": DefensiveRegen,
+        "6": Supplication,
         "10": ManaShield,
         },
     "Archbishop": {
         "5": Doublecast,
+        "8": GreatBenediction,
         "15": ManaShield2,
         },
     "Monk": {
@@ -3775,8 +4123,11 @@ skill_dict = {
         "5": LegSweep,
         "7": TrueStrike,
         "10": PurityBody,
+        "11": CenteredGuard,
         "12": Uppercut,
+        "14": MirrorBreath,
         "16": Headbutt,
+        "18": PurgingKata,
         "20": DrunkenBrawler,
         "25": Parry,
     },
@@ -3786,8 +4137,10 @@ skill_dict = {
         "10": TripleStrike,
         "12": SpinningBackElbow,
         "15": PurityBody2,
+        "18": MartialMastery,
         "20": Suplex,
         "25": Hadouken,
+        "30": DimMak,
         },
     "Bard": {
         "1": SongValor,
@@ -3801,11 +4154,14 @@ skill_dict = {
         "15": Transform2,
         "17": MortalStrike,
         },
-    "Archdruid": {},
+    "Archdruid": {
+        "10": FourfoldSurge,
+    },
     "Lycan": {
         "1": Transform3,
         "11": Charge,
         "15": BattleCry,
+        "18": WingedPounce,
         "25": MortalStrike2,
         },
     "Diviner": {
@@ -3814,10 +4170,12 @@ skill_dict = {
         },
     "Astromancer": {
         "1": LearnSpell2,
+        "12": ThreadedCast,
         "25": Triplecast,
         },
     "Shaman": {
         "1": Totem,
+        "3": TotemSurge,
         "4": ElementalStrike,
         "6": PiercingStrike,
         "10": MaelstromWeapon,
@@ -3827,6 +4185,7 @@ skill_dict = {
     "Soulcatcher": {
         "1": AbsorbEssence,
         "2": Parry,
+        "3": TotemSurge,
         "9": TripleStrike,
         "29": TruePiercingStrike,
     },
@@ -3837,6 +4196,10 @@ skill_dict = {
     "Beast Master": {
         "5": Cover,
         "7": Zephyrstrike,
+        "9": PackStrike,
+        "10": GuardPartner,
+        "11": HarryPrey,
+        "12": MendWounds,
     },
 }
 

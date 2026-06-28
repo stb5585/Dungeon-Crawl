@@ -85,6 +85,14 @@ def spell_output_multiplier(character: Any, spell_or_name: Any) -> float:
         and active_totem_aspect(character) == aspect
     ):
         multiplier *= STAFF_MATCHING_CAST_MULTIPLIER
+    if aspect and active_totem_aspect(character) == aspect:
+        try:
+            from . import promotion_kits
+
+            multiplier *= 1.0 + (promotion_kits.totem_resonance(character) * 0.03)
+            promotion_kits._message(character, promotion_kits.gain_totem_resonance(character, "matching cast"))
+        except Exception:
+            pass
     return multiplier
 
 
@@ -100,6 +108,12 @@ def totem_pulse_chance(character: Any) -> float:
     chance = BASE_PULSE_CHANCE
     if has_staff_equipped(character):
         chance += STAFF_PULSE_BONUS
+    try:
+        from . import promotion_kits
+
+        chance += promotion_kits.totem_resonance(character) * 0.05
+    except Exception:
+        pass
     return min(1.0, chance)
 
 
@@ -140,6 +154,12 @@ def resolve_totem_pulse(character: Any, target: Any, rng: Any = random) -> str:
     try:
         message = f"{character.name}'s {aspect} Totem pulses with {spell_name}.\n"
         message += str(spell.cast(character, target=target, special=True))
+        try:
+            from . import promotion_kits
+
+            message += promotion_kits.gain_totem_resonance(character, "successful pulse")
+        except Exception:
+            pass
     finally:
         _restore_temp_attr(character, "_totem_pulse_potency", sentinel, prior)
     return message

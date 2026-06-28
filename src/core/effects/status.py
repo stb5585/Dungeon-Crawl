@@ -19,7 +19,8 @@ class StatusEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         """Apply the status effect to the target character."""
-        if target.has_status_protection(self.name):
+        has_protection = getattr(target, "has_status_protection", None)
+        if callable(has_protection) and has_protection(self.name):
             result.extra["status_immune"] = self.name
             return
         if self.name in target.status_effects:

@@ -274,10 +274,16 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
 
     duration = int(spec.get("duration", SONG_DURATION))
     state = ensure_song_state(character)
+    if state.get("active") and state.get("turns", 0) > 0:
+        from . import promotion_kits
+
+        messages = promotion_kits.clear_crescendo(character, "song replacement")
+    else:
+        messages = ""
     state["active"] = song
     state["turns"] = duration
     state["encore"] = None
-    messages = f"{character.name} begins the Song of {song}.\n"
+    messages += f"{character.name} begins the Song of {song}.\n"
 
     if spec.get("berserk_all"):
         participants = [character]
@@ -343,12 +349,16 @@ def tick_song(character: Any) -> str:
     if not song or state.get("turns", 0) <= 0:
         return messages
     messages += _song_recovery_pulse(character, song, strength=song_strength(character))
+    from . import promotion_kits
+
+    messages += promotion_kits.record_song_turn(character, song)
     state["turns"] -= 1
     if state["turns"] <= 0:
         from . import class_rings
 
         encore_strength = class_rings.encore_strength(character)
         messages += f"{character.name}'s Song of {song} ends.\n"
+        messages += promotion_kits.complete_song(character, song)
         state["active"] = None
         if encore_strength:
             if SONGS.get(song, {}).get("recovery"):

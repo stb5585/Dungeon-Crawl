@@ -2,8 +2,59 @@
 
 This is the durable class-kit design gate reference. It records shipped
 class-mechanics baselines, scope boundaries, and the one-page decision gates
-required before deeper class-kit work moves into implementation. Balance
-validation lives in `PLAYTEST_CHECKLIST.md`.
+used for deeper class-kit work. Balance validation lives in
+`PLAYTEST_CHECKLIST.md`.
+
+## Promotion Kit V1 Status
+
+Status: `V1 Implemented, Tuning/Open Polish`
+
+The promotion class-track V1 pass is implemented through
+`src/core/classes/promotion_kits.py` and runtime hooks in player state,
+save/load, combat, data-driven abilities, class rings, Demonologist contracts,
+nature Totems, Beast Master companion state, and class skill grants.
+
+Implemented V1 coverage includes:
+
+- Combat-only promotion meters for Foresight Threads, blade charge/Arcane
+  Tempo, Bloodied Momentum, Oath Conviction, Aerial Tempo, Resolve,
+  Fortune/Misfortune, Revelation, Death Mark, Stolen Charge, Devotion, Prayer,
+  Ki, Crescendo, Aspect Harmony, Beast Master commands, and Totem Resonance.
+- Persistent promotion state for summon bonds, Case Journal, Bard repertoire,
+  Lycan control/Dragon Essence, Demonologist corruption/patron mood, and Beast
+  Master companion bond.
+- Named V1 active/passive abilities such as `Threaded Cast`, `Eclipse`,
+  `Hold the Line`, `Bulwark`, `Shield Riposte`, `Sanctuary Ward`,
+  `Relic Aegis`, `Supplication`, `Great Benediction`, `Dim Mak`,
+  `Fourfold Surge`, `Totem Surge`, `Conduit Command`, borrowed summon
+  invocations, Beast Master commands, `Winged Pounce`, and the Footpad-track
+  passive identities.
+- Display identity updates for `Aerial Supremacy`, `Arcane Tempo`,
+  `No-Trace Opener`, and `Arcane Larceny` while preserving legacy internal
+  compatibility hooks.
+- Master Monk-only `Ruyi Jingu Bang` ultimate-staff content through the
+  existing `Unobtainium` blacksmith flow, with class-specific staff selection
+  so Archbishop, Master Monk, and general staff users receive the correct
+  ultimate staff.
+- Awakened-ring smoothing for `Loaded Dice`, `Ordered Blessings`,
+  `Divine Intervention`, `Encore`, and bond-scaling `Shared Recovery`, plus
+  representative Rogue `Cheat Death`, Fortune/Misfortune payoff, and
+  Bard/Troubadour Crescendo coda hooks.
+- Regression coverage in `tests/core/test_promotion_class_kits.py`, plus
+  updated class-ring, data-driven ability, item-helper, and core-suite tests.
+
+Remaining follow-up is no longer initial implementation work; it is tuning,
+presentation, and later content expansion:
+
+- Expand bespoke ability-by-ability riders, UI surfacing, and combat-log copy
+  where the V1 pass currently uses compact shared hooks and representative
+  integration.
+- Broaden manual playtest and balance tuning for the new meters, especially
+  preservation effects, payoff strength, and high-action-economy loops such as
+  Totems, songs, summons, and Doublecast-adjacent divine support.
+- Deeper narrative beats tying second-promotion identity back to `Voluntas`
+  remain deferred until their quest/content spec defines timing, text, flags,
+  and optional/required status.
 
 ## Review Baseline
 
@@ -115,20 +166,17 @@ If future Totem work changes code, cover the final behavior with focused tests a
 - Water Totem Magic Defense and spell absorption.
 - Soul Drain nonlethal behavior and Soul Totem pulsing.
 
-## Remaining Deep-Kit Specs
+## Promotion Track Specs
 
-Major class-kit implementation remains deferred until the relevant one-page spec
-below is promoted from deferred planning. Each spec must define triggers,
-storage, UI text/surfaces, save migration needs, tests, and balance assumptions
-before code work begins.
-
-Narrative identity beats should tie class progression back to `Voluntas` as
-chosen selfhood. Do not implement those beats until their quest/content spec
-defines timing, text, flags, and whether the beat is optional or required.
+The specs below are the accepted V1 implementation contracts. They remain here
+as durable behavior references and as the source of follow-up tuning/polish
+items. When changing one of these class tracks, preserve the storage boundaries,
+save migration assumptions, and test intent unless a later spec explicitly
+updates them.
 
 ### Diviner/Astromancer Foresight Threads
 
-Ready-to-code spec: preserve the shipped Diviner/Astromancer rune system and
+V1 implementation spec: preserve the shipped Diviner/Astromancer rune system and
 make Astromancer the time-threading capstone. Diviner keeps the current
 learned-spell and rune foundation. Astromancer adds combat-only `Foresight
 Threads` and an explicit `Threaded Cast` command for prediction-driven spell
@@ -174,7 +222,7 @@ payoff.
 
 ### Demonologist Corruption And Bargain Presentation
 
-Ready-to-code spec: keep the existing fiend contract loop, then add corruption
+V1 implementation spec: keep the existing fiend contract loop, then add corruption
 as a real risk/reward meter, persistent patron mood, and stronger imprisoned
 familiar echo identity. Demonologist should carry Warlock forward: familiar
 identity matters, contracts layer on top, and Class Ring awakening converts the
@@ -240,7 +288,7 @@ familiar into a permanent contract-shaping echo.
 
 ### Shadowcaster Umbral Debt And Eclipse
 
-Ready-to-code spec: carry Warlock forward through shadow spells and familiar
+V1 implementation spec: carry Warlock forward through shadow spells and familiar
 identity, then make `Umbral Debt` the baseline Shadowcaster mechanic. Shadow
 damage builds a spendable reserve, `Eclipse` spends that reserve for a short
 shadow form, and the awakened Class Ring improves debt capacity, auto-healing,
@@ -298,7 +346,7 @@ and Eclipse stability.
 
 ### Spellblade/Knight Enchanter
 
-Ready-to-code spec: make Spellblade a spell-to-blade hybrid whose first
+V1 implementation spec: make Spellblade a spell-to-blade hybrid whose first
 promotion loop carries forward into Knight Enchanter's awakened `Arcane Tempo`
 identity.
 
@@ -337,7 +385,7 @@ identity.
 
 ### Summoner/Grand Summoner
 
-Ready-to-code spec: add per-summon bond progression that lets Summoners borrow
+V1 implementation spec: add per-summon bond progression that lets Summoners borrow
 limited invocations from trusted summons, while Grand Summoner keeps the
 existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
 
@@ -391,7 +439,7 @@ existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
 
 ### Weapon Master/Berserker Bloodied Momentum
 
-Ready-to-code spec: preserve Weapon Master's implemented Weapon Discipline and
+V1 implementation spec: preserve Weapon Master's implemented Weapon Discipline and
 Weapon Arts, then give Berserker a distinct controlled-risk combat loop:
 `Bloodied Momentum`. Berserker carries discipline forward, mutates heavy weapon
 arts while injured, and uses Battle Scars and awakened `Bloodied Crits` to
@@ -449,7 +497,7 @@ stabilize the dangerous low-HP playstyle.
 
 ### Paladin/Crusader Oath Conviction
 
-Ready-to-code spec: refine the Paladin/Crusader path around vow rhythm. Paladin
+V1 implementation spec: refine the Paladin/Crusader path around vow rhythm. Paladin
 keeps the permanent four-vow choice and existing aura/mark tension; Crusader
 carries that vow forward with a higher combat-only `Oath Conviction` cap and
 awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
@@ -496,7 +544,7 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
 
 ### Lancer/Dragoon Aerial Tempo And Aerial Supremacy
 
-Ready-to-code spec: center Lancer and Dragoon on combat-only `Aerial Tempo`.
+V1 implementation spec: center Lancer and Dragoon on combat-only `Aerial Tempo`.
 Clean Jump landings build short momentum, and the next eligible polearm or
 weapon action automatically converts that momentum into follow-through pressure.
 Dragoon keeps the existing Jump modification framework and Kaelenon route, but
@@ -543,7 +591,7 @@ landing protection.
 
 ### Sentinel/Stalwart Defender Resolve And Counterguard
 
-Ready-to-code spec: center Sentinel and Stalwart Defender on baseline `Resolve`,
+V1 implementation spec: center Sentinel and Stalwart Defender on baseline `Resolve`,
 shield stances, and controlled counterattacks. Sentinel becomes the active
 shield-tactics class; Stalwart Defender deepens that loop with a higher Resolve
 cap, active spends, `Last Stand` synergy, and awakened-ring automatic major-hit
@@ -592,7 +640,7 @@ mitigation.
 
 ### Thief/Rogue Fortune And Misfortune
 
-Ready-to-code spec: replace the earlier simple luck-pip idea with paired
+V1 implementation spec: replace the earlier simple luck-pip idea with paired
 combat-only `Fortune` and `Misfortune` meters. Thief gains stronger loot
 identity through `Scavenger's Eye`; Rogue carries that forward with
 `Finders Keepers`, `Cheat Death`, and a smoother risk/reward loop where success
@@ -665,7 +713,7 @@ improves odds and failure fuels bigger eventual payoffs.
 
 ### Inquisitor/Seeker Case Journal And Wayfinding
 
-Ready-to-code spec: center Inquisitor and Seeker on persistent enemy-type
+V1 implementation spec: center Inquisitor and Seeker on persistent enemy-type
 `Case Journal` progress, combat-only `Revelation`, and Seeker mobility depth.
 Inquisitor trades stealth for truth-seeking counterplay; Seeker carries that
 forward with stronger exploit reliability, better route control, and awakened
@@ -735,7 +783,7 @@ forward with stronger exploit reliability, better route control, and awakened
 
 ### Assassin/Ninja Death Mark And No-Trace Opener
 
-Ready-to-code spec: center Assassin and Ninja on combat-only `Death Mark`.
+V1 implementation spec: center Assassin and Ninja on combat-only `Death Mark`.
 Assassin gains a visible passive setup loop from stealth, poison, and opening
 pressure. Ninja carries that forward with a larger mark cap, Ninja Blade and
 finisher execution payoffs, and an awakened ring identity displayed as
@@ -791,7 +839,7 @@ finisher execution payoffs, and an awakened ring identity displayed as
 
 ### Spell Stealer/Arcane Trickster Stolen Charge And Arcane Larceny
 
-Ready-to-code spec: preserve the existing Blank Scroll spell-theft economy,
+V1 implementation spec: preserve the existing Blank Scroll spell-theft economy,
 `Steal Spell 2` permanent learning, `Steal As Well`, and Arcane Trickster ring
 compatibility, then add a combat-only `Stolen Charge` loop. Spell Stealer turns
 successful magical theft into short hybrid payoffs; Arcane Trickster deepens
@@ -842,7 +890,7 @@ that loop through the awakened `Arcane Larceny` ring identity.
 
 ### Cleric/Templar Devotion Ward
 
-Ready-to-code spec: make Cleric and Templar the holy defender branch through
+V1 implementation spec: make Cleric and Templar the holy defender branch through
 combat-only `Devotion`. Cleric starts a modest healing, holy, shield, and
 `Pious Bounty` rhythm, while Templar carries that forward with a higher cap,
 stronger ward spends, `Holy Retribution` as a Devotion window, and awakened
@@ -901,7 +949,7 @@ stronger ward spends, `Holy Retribution` as a Devotion window, and awakened
 
 ### Priest/Archbishop Prayer Benediction
 
-Ready-to-code spec: make Priest and Archbishop the pure divine support-caster
+V1 implementation spec: make Priest and Archbishop the pure divine support-caster
 branch through combat-only `Prayer`. Priest deepens Healer's restorative spell
 identity with visible support rhythm and `Supplication`, while Archbishop
 carries that forward with a higher cap, proactive `Great Benediction`, `Great
@@ -966,7 +1014,7 @@ Gospel` as a major Prayer reset/setup power-up, and awakened
 
 ### Monk/Master Monk Ki, Dim Mak, And Ultimate Staff
 
-Ready-to-code spec: center Monk and Master Monk on combat-only `Ki`. Monk keeps
+V1 implementation spec: center Monk and Master Monk on combat-only `Ki`. Monk keeps
 the existing spellcasting tradeoff and martial skill list, but gains a visible
 rhythm resource from successful martial action. Master Monk carries that forward
 with a higher Ki cap, redesigned passive power-up identity, `Dim Mak` as a
@@ -1038,7 +1086,7 @@ makes staff play viable without replacing unarmed mastery.
 
 ### Bard/Troubadour Repertoire And Crescendo
 
-Ready-to-code spec: keep the shipped song, instrument, sheet-music, and
+V1 implementation spec: keep the shipped song, instrument, sheet-music, and
 `Encore` systems, then add a promotion-shaped music loop. Bard becomes a
 light-support/music hybrid, while Troubadour turns composition and completed
 performances into permanent repertoire. Combat songs build `Crescendo`, which
@@ -1114,7 +1162,7 @@ naturally.
 
 ### Druid/Lycan
 
-Ready-to-code spec: make persistent transformation the branch's primary
+V1 implementation spec: make persistent transformation the branch's primary
 mechanic. Druid gains stable wild shape, while Lycan turns transformation into a
 coexistence arc with a single werewolf beast-self that becomes more controllable
 through behavior, not form mastery.
@@ -1179,7 +1227,7 @@ through behavior, not form mastery.
 
 ### Druid/Archdruid Aspect Harmony
 
-Ready-to-code spec: center Archdruid's class-kit expansion on combat-only
+V1 implementation spec: center Archdruid's class-kit expansion on combat-only
 `Aspect Harmony`. The existing Fourfold Balance attunement, Grove rituals,
 catalysts, mastery perks, and Class Ring `Harmony Bonus` remain the persistent
 progression layer. Aspect Harmony adds a short combat loop where Archdruid
@@ -1238,7 +1286,7 @@ balance through `Fourfold Surge`.
 
 ### Ranger/Beast Master
 
-Ready-to-code spec: center Ranger and Beast Master on one persistent tamed
+V1 implementation spec: center Ranger and Beast Master on one persistent tamed
 companion. Ranger keeps `Tame` and `Favored Enemy`, gains companion bond and
 conservative companion growth, while Beast Master carries that bond forward with
 direct companion commands and stronger awakened-ring `Shared Recovery`.
@@ -1294,7 +1342,7 @@ direct companion commands and stronger awakened-ring `Shared Recovery`.
 
 ### Shaman/Soulcatcher Totem Resonance
 
-Ready-to-code spec: deepen the shipped Totem system without changing its core
+V1 implementation spec: deepen the shipped Totem system without changing its core
 contracts. Matching casts and Totem pulses build short combat-only `Totem
 Resonance`; stacks improve pulse reliability and can be spent with `Totem
 Surge` to force the active Totem's highest unlocked pulse. Soulcatcher carries

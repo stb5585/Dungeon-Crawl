@@ -301,6 +301,31 @@ def test_draw_helpers_render_empty_lists_descriptions_gold_and_all(monkeypatch):
     assert flip_calls == [True]
 
 
+def test_draw_all_accepts_popup_parent_screen_call_signature(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    flip_calls = []
+    monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.display.flip", lambda: flip_calls.append(True))
+    called = []
+    screen.draw_background = lambda: called.append("background")
+    screen.draw_top = lambda: called.append("top")
+    screen.draw_options = lambda: called.append("options")
+    screen.draw_item_desc = lambda: called.append("desc")
+    screen.draw_shop_list = lambda: called.append("list")
+    screen.draw_mod = lambda: called.append("mod")
+    screen.draw_gold = lambda: called.append("gold")
+
+    replacement_player = _make_player(gold=999)
+    screen.draw_all(replacement_player, do_flip=False)
+    screen.draw_all(False)
+
+    assert screen.player_char is replacement_player
+    assert called == [
+        "background", "top", "options", "desc", "list", "mod", "gold",
+        "background", "top", "options", "desc", "list", "mod", "gold",
+    ]
+    assert flip_calls == []
+
+
 def test_draw_item_desc_includes_element_and_resistance_metadata(monkeypatch):
     screen = _make_shop(monkeypatch)
     monkeypatch.setattr("src.ui_pygame.gui.shop_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)

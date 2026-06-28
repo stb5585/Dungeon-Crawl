@@ -314,6 +314,48 @@ def test_elemental_armor_metadata_contributes_character_resistance():
     assert defender.check_mod("resist", typ="Ice") == pytest.approx(0)
 
 
+def test_ruyi_jingu_bang_is_master_monk_chi_conduit(monkeypatch):
+    """Ruyi Jingu Bang is the Master Monk ultimate staff and can build Ki."""
+    from src.core.classes import promotion_kits
+
+    attacker = create_test_character("Monk", level_num=30)
+    defender = create_test_character("Target", level_num=30)
+    attacker.cls = type("MockClass", (), {"name": "Master Monk"})()
+    attacker.equipment["Weapon"] = items.RuyiJinguBang()
+    promotion_kits.start_combat(attacker)
+
+    result = CombatResult(
+        action="Weapon",
+        actor=attacker,
+        target=defender,
+        hit=True,
+        crit=1,
+        damage=20,
+    )
+    results = CombatResultGroup()
+    results.add(result)
+    monkeypatch.setattr(random, "random", lambda: 0.0)
+
+    attacker.equipment["Weapon"].special_effect(results)
+
+    assert promotion_kits.combat_state(attacker)["ki"] == 1
+    assert "Ruyi Jingu Bang" in results[-1].message
+
+
+def test_ultimate_staff_selection_is_class_specific():
+    from src.core.classes.archbishop import Archbishop
+    from src.core.classes.master_monk import MasterMonk
+    from src.core.classes.wizard import Wizard
+
+    archbishop = type("Player", (), {"cls": Archbishop()})()
+    master_monk = type("Player", (), {"cls": MasterMonk()})()
+    wizard = type("Player", (), {"cls": Wizard()})()
+
+    assert dict(items.ultimate_weapon_options_for(archbishop))["Staff"] is items.PrincessGuard
+    assert dict(items.ultimate_weapon_options_for(master_monk))["Staff"] is items.RuyiJinguBang
+    assert dict(items.ultimate_weapon_options_for(wizard))["Staff"] is items.DragonStaff
+
+
 def main():
     """Run all tests."""
     print("=" * 70)

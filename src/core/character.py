@@ -354,12 +354,28 @@ class Character:
             if hasattr(target, "record_archdruid_damage_taken"):
                 target.record_archdruid_damage_taken(damage, damage_type)
             try:
-                from .classes import class_rings
+                from .classes import class_rings, promotion_kits
 
                 class_rings.record_damage_dealt(self, damage, damage_type)
                 class_rings.build_guard_meter(target, damage)
                 class_rings.trigger_umbral_debt(self)
                 class_rings.divine_intervention(target)
+                promotion_kits.record_damage_event(
+                    self,
+                    target,
+                    damage,
+                    damage_type,
+                    metadata={
+                        "source": source,
+                        "attack_source": attack_source,
+                        "weapon_name": weapon_name,
+                        "weapon_slot": weapon_slot,
+                        "weapon_type": weapon_type,
+                        "ability_name": ability_name,
+                        "item_name": item_name,
+                    },
+                )
+                promotion_kits.record_damage_taken(target, damage, damage_type)
             except Exception:
                 pass
         try:
@@ -1482,6 +1498,13 @@ class Character:
             is_critical=(crit > 1),
             **self._weapon_event_metadata(att),
         )
+        try:
+            from .classes import promotion_kits
+
+            msg += promotion_kits.pop_messages(self)
+            msg += promotion_kits.pop_messages(defender)
+        except Exception:
+            pass
 
         # Sleep wakeup
         if defender.status_effects["Sleep"].active and \
@@ -1774,6 +1797,12 @@ class Character:
             from .classes import grandmaster
 
             status_text = ""
+            try:
+                from .classes import promotion_kits
+
+                status_text += promotion_kits.tick_combat_state(self)
+            except Exception:
+                pass
             for expired in grandmaster.tick_technique_stacks(self):
                 status_text += f"{self.name}'s {expired} technique fades.\n"
             if self.status_effects["Doom"].active:
@@ -2130,6 +2159,13 @@ class Character:
                     res_mod = -0.25
             if typ == "Fire" and self.magic_effects.get("Stone Skin") and self.magic_effects["Stone Skin"].active:
                 res_mod += 0.5
+            try:
+                data = self.class_ring_awakening["data"]["Shadowcaster"]
+                if self.cls.name == "Shadowcaster" and typ == "Holy" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                    penalty = 0.20 if getattr(getattr(self, "familiar", None), "spec", "") == "Defense" else 0.25
+                    res_mod -= penalty
+            except Exception:
+                pass
             return res_mod
         if mod == 'luck':
             # "Luck" also acts as a general-purpose saving-throw modifier in many effects.
@@ -2140,6 +2176,14 @@ class Character:
         if mod == "speed":
             speed_mod = self.stats.dex
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
+            try:
+                from .classes import promotion_kits
+
+                data = self.class_ring_awakening["data"]["Shadowcaster"]
+                if self.cls.name == "Shadowcaster" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                    speed_mod = int(speed_mod * 1.10)
+            except Exception:
+                pass
             return speed_mod
         return 0
 

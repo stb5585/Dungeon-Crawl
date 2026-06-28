@@ -46,6 +46,16 @@ PATRON_INTENTS = {
     "Maelephant": {"Harm", "Protect", "Desperate Aid"},
     "Balor": {"Harm", "Curse", "Protect", "Desperate Aid"},
 }
+FAVOR_UNLOCKS = {
+    "Imp": ("Protect", "Desperate Aid"),
+    "Quasit": ("Restore", "Protect"),
+    "Incubus": ("Protect", "Desperate Aid"),
+    "Succubus": ("Protect", "Harm"),
+    "Archvile": ("Restore", "Desperate Aid"),
+    "Maelephant": ("Curse", "Restore"),
+    "Balor": ("Restore",),
+}
+RESENTMENT_WITHHOLD_PRIORITY = ("Desperate Aid", "Restore", "Protect", "Curse")
 
 
 class Demonologist(Job):  # TODO
@@ -93,6 +103,8 @@ def default_state() -> dict[str, Any]:
         "ring_awakened": False,
         "imprisoned_familiar": None,
         "contract_history": [],
+        "corruption": 0,
+        "patron_moods": {patron: 0 for patron in PATRONS},
     }
 
 
@@ -123,6 +135,19 @@ def normalize_state(state: Any) -> dict[str, Any]:
     history = state.get("contract_history", [])
     if isinstance(history, list):
         normalized["contract_history"] = history[-20:]
+
+    try:
+        normalized["corruption"] = max(0, min(100, int(state.get("corruption", 0) or 0)))
+    except (TypeError, ValueError):
+        normalized["corruption"] = 0
+
+    moods = state.get("patron_moods", {})
+    if isinstance(moods, dict):
+        for patron in PATRONS:
+            try:
+                normalized["patron_moods"][patron] = max(-100, min(100, int(moods.get(patron, 0) or 0)))
+            except (TypeError, ValueError):
+                normalized["patron_moods"][patron] = 0
 
     return normalized
 
@@ -238,8 +263,62 @@ def echo_spec(character: Any) -> str:
 def available_intents(character: Any, patron: str | None = None) -> list[str]:
     state = ensure_state(character)
     patron = patron or state["active_patron"]
-    allowed = PATRON_INTENTS.get(patron or "", set())
+    allowed = set(PATRON_INTENTS.get(patron or "", set()))
+    mood = int(state["patron_moods"].get(patron or "", 0) or 0)
+    unlocks = FAVOR_UNLOCKS.get(patron or "", ())
+    if mood >= 25 and unlocks:
+        allowed.add(unlocks[0])
+    if mood >= 60 and len(unlocks) > 1:
+        allowed.add(unlocks[1])
+    if mood <= -25:
+        _withhold_high_value(allowed)
+    if mood <= -60:
+        _withhold_high_value(allowed)
     return [intent for intent in INTENTS if intent in allowed]
+
+
+def _withhold_high_value(allowed: set[str]) -> None:
+    if len(allowed) <= 1:
+        return
+    for intent in RESENTMENT_WITHHOLD_PRIORITY:
+        if intent in allowed and len(allowed) > 1:
+            allowed.remove(intent)
+            return
+
+
+def corruption_tier(character: Any) -> int:
+    corruption = int(ensure_state(character).get("corruption", 0) or 0)
+    if corruption >= 75:
+        return 3
+    if corruption >= 50:
+        return 2
+    if corruption >= 25:
+        return 1
+    return 0
+
+
+def corruption_strength_bonus(character: Any) -> float:
+    tier = corruption_tier(character)
+    if power_up_active(character):
+        tier = min(3, tier + 1)
+    return (0.0, 0.05, 0.10, 0.15)[tier]
+
+
+def corruption_risk_bonus(character: Any) -> float:
+    tier = corruption_tier(character)
+    if power_up_active(character):
+        tier = max(0, tier - 1)
+    return (0.0, 0.03, 0.07, 0.12)[tier]
+
+
+def power_up_active(character: Any) -> bool:
+    effect = getattr(character, "class_effects", {}).get("Power Up")
+    return bool(
+        getattr(character, "power_up", False)
+        and effect is not None
+        and effect.active
+        and "Abyssal Covenant" in getattr(character, "spellbook", {}).get("Skills", {})
+    )
 
 
 def quote_contract(character: Any, target: Any, intent: str) -> dict[str, Any]:
@@ -283,6 +362,9 @@ def quote_contract(character: Any, target: Any, intent: str) -> dict[str, Any]:
         "echo": echo_spec(character),
         "costs": costs,
         "misbehavior_chance": misbehavior_chance(character, intent),
+        "corruption": state["corruption"],
+        "corruption_tier": corruption_tier(character),
+        "patron_mood": state["patron_moods"].get(patron, 0),
     }
 
 
@@ -335,12 +417,14 @@ def resolve_contract(character: Any, target: Any, intent: str, *, rng: Any = ran
         return "You cannot pay the demanded price.\n"
 
     msg = pay_quote(character, quote)
+    msg += add_corruption(character, quote)
     twisted = rng.random() < quote["misbehavior_chance"]
     severity = twist_severity(character)
     strength = contract_strength(character, quote, twisted=twisted)
 
     msg += apply_intent(character, target, quote["intent"], strength, twisted=twisted, severity=severity)
     _record_history(character, quote, twisted)
+    msg += adjust_patron_mood(character, quote["patron"], -4 if twisted else 3)
     return msg
 
 
@@ -352,6 +436,7 @@ def contract_strength(character: Any, quote: dict[str, Any], *, twisted: bool = 
         strength = int(strength * 1.55)
     if quote.get("intent") == "Desperate Aid":
         strength = int(strength * 1.4)
+    strength = int(strength * (1.0 + corruption_strength_bonus(character)))
     if twisted:
         strength = int(strength * 0.65)
     return max(1, strength)
@@ -412,12 +497,16 @@ def misbehavior_chance(character: Any, intent: str) -> float:
         base -= 0.08
     if echo_spec(character) == "Luck":
         base -= 0.05
+    if echo_spec(character) == "Defense" and intent in {"Protect", "Restore"}:
+        base -= corruption_risk_bonus(character) * 0.50
+    else:
+        base += corruption_risk_bonus(character)
     return max(0.05, min(0.60, base - charisma * 0.004))
 
 
 def twist_severity(character: Any) -> int:
     charisma = int(getattr(getattr(character, "stats", None), "charisma", 0) or 0)
-    return max(1, 8 - charisma // 5)
+    return max(1, 8 - charisma // 5 + corruption_tier(character))
 
 
 def _record_history(character: Any, quote: dict[str, Any], twisted: bool) -> None:
@@ -432,6 +521,41 @@ def _record_history(character: Any, quote: dict[str, Any], twisted: bool) -> Non
     )
     state["contract_history"] = state["contract_history"][-20:]
     setattr(character, "demonologist_contracts", state)
+
+
+def add_corruption(character: Any, quote: dict[str, Any]) -> str:
+    state = ensure_state(character)
+    gain = 8 if quote.get("intent") == "Desperate Aid" else 4
+    costs = quote.get("costs", {})
+    if costs.get("item"):
+        gain += 2
+    if costs.get("permanent"):
+        gain += 4
+    if power_up_active(character):
+        gain = max(1, gain - 2)
+    state["corruption"] = max(0, min(100, int(state.get("corruption", 0) or 0) + gain))
+    return f"Corruption rises by {gain} to {state['corruption']}/100.\n"
+
+
+def adjust_patron_mood(character: Any, patron: str, delta: int) -> str:
+    state = ensure_state(character)
+    if patron not in PATRONS:
+        return ""
+    before = int(state["patron_moods"].get(patron, 0) or 0)
+    after = max(-100, min(100, before + int(delta)))
+    state["patron_moods"][patron] = after
+    return f"{patron} mood shifts to {after}.\n"
+
+
+def cool_corruption(character: Any, amount: int, reason: str) -> str:
+    state = ensure_state(character)
+    if echo_spec(character) == "Support":
+        amount += 1
+    before = int(state.get("corruption", 0) or 0)
+    state["corruption"] = max(0, before - max(0, int(amount)))
+    if state["corruption"] == before:
+        return ""
+    return f"Corruption cools by {before - state['corruption']} after {reason}.\n"
 
 
 def _pct(resource: Any) -> float:

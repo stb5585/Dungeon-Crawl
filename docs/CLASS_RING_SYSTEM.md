@@ -210,9 +210,9 @@ Once awakened, the ring empowers all unlocked and future fiend contracts. The
 empowered state improves contract strength and fulfillment odds, but bargain
 drawbacks remain active.
 
-Planned V1 class-kit work will keep this two-stage progression and add
+The promotion-kit V1 pass keeps this two-stage progression and adds
 corruption as a persistent risk/reward meter, patron favor/resentment as an
-intent-access modifier, and stronger familiar echo effects. In that design, the
+intent-access modifier, and stronger familiar echo effects. The
 awakened ring remains the source of the echo identity: `Homunculus` stabilizes
 protection/restoration bargains, `Fairy` improves sustain and corruption
 cooling, `Mephit` pushes harmful contracts toward higher power and corruption,
@@ -275,8 +275,8 @@ When awakened and equipped, the Archdruid Class Ring grants a Harmony Bonus:
 The Class Ring description shows dormant, Grove-ready, ritual-progress, and
 awakened states.
 
-Planned V1 class-kit work adds Archdruid-only combat `Aspect Harmony` without
-changing Fourfold Balance persistence. In that design, Venom, Stone, Growth,
+The promotion-kit V1 pass adds Archdruid-only combat `Aspect Harmony` without
+changing Fourfold Balance persistence. Venom, Stone, Growth,
 and Storm actions represent short-lived combat aspects that can be spent through
 `Fourfold Surge`; awakened/equipped `Harmony Bonus` keeps its current
 total-attunement scaling while raising the combat Harmony cap and preserving one
@@ -305,8 +305,8 @@ additional visual presentation, and playtest follow-up.
     roll a 10% chance to gain 1 scar, capped at 20. Each scar permanently
     increases max HP by about 1% at the time it is earned and grants +0.5%
     weapon damage while below 25% HP.
-  - Planned V1 class-kit work adds combat-only `Bloodied Momentum` to the
-    Berserker branch. In that design, low-HP weapon hits and incoming damage
+  - The promotion-kit V1 pass adds combat-only `Bloodied Momentum` to the
+    Berserker branch. Low-HP weapon hits and incoming damage
     build Momentum, heavy Weapon Arts consume it for controlled bloodied
     payoffs, Battle Scars improve cap/stability, and awakened/equipped
     `Bloodied Crits` keeps its current thresholds while improving Momentum
@@ -326,8 +326,8 @@ additional visual presentation, and playtest follow-up.
     `class_ring_awakening["data"]["Crusader"]["vow"]`. While the affirmed ring
     is equipped, aura benefits are multiplied by 1.5 and mark penalties or
     durations are multiplied by 0.5.
-  - Planned V1 class-kit work adds combat-only `Oath Conviction` to the
-    Paladin/Crusader vow loop. In that design, vow-aligned actions build
+  - The promotion-kit V1 pass adds combat-only `Oath Conviction` to the
+    Paladin/Crusader vow loop. Vow-aligned actions build
     Conviction, the next matching vow action spends it for a conservative
     path-specific rider, and awakened/equipped `Vow Affirmation` preserves
     `1` Conviction once per combat after a clean empowered payoff. Conviction
@@ -356,10 +356,10 @@ additional visual presentation, and playtest follow-up.
     critical damage. Being disarmed or preparing the stance with no weapon
     applies `Mark of Mercy`; if HP is below 10%, the next damaging enemy melee
     hit is lethal. Vow Affirmation lowers this threshold to 5%.
-- `Dragoon`: `Guard The Fall` currently awakens the legacy `+1 Jump Mod` hook
-  and `Meteor Guard`, a two-turn shield equal to 25% of Jump landing damage.
-  - Planned V1 class-kit work replaces the displayed awakened identity with
-    `Aerial Supremacy`. In that design, legacy `+1 Jump Mod` save/test
+- `Dragoon`: `Guard The Fall` awakens `Aerial Supremacy`, preserving the
+  legacy `+1 Jump Mod` hook internally for compatibility.
+  - The promotion-kit V1 pass replaces the displayed awakened identity with
+    `Aerial Supremacy`. Legacy `+1 Jump Mod` save/test
     compatibility remains accepted internally, but the ring no longer grants
     extra active Jump modification capacity.
   - `Aerial Supremacy` enhances the automatic Aerial Tempo follow-through after
@@ -378,10 +378,10 @@ additional visual presentation, and playtest follow-up.
   - `Resolve` / `Guard Meter`: max 100. Defending, blocking, and mitigated
     physical damage build Resolve. While the awakened ring is equipped, a major
     incoming hit automatically spends 100 Resolve to reduce that hit by 40%.
-  - Planned V1 class-kit work makes Resolve a baseline Sentinel/Stalwart
+  - The promotion-kit V1 pass makes Resolve a baseline Sentinel/Stalwart
     resource. Sentinel starts the shield stance and counterguard loop, while
     Stalwart adds active Resolve spends such as `Bulwark` and `Shield Riposte`.
-    In that design, awakened/equipped `Shield Mastery` remains the strongest
+    Awakened/equipped `Shield Mastery` remains the strongest
     automation layer for major-hit mitigation.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
@@ -408,13 +408,14 @@ additional visual presentation, and playtest follow-up.
     or stored.
 - `Shadowcaster`: `Debt Cap Trial` awakens `Umbral Debt`. Shadow damage stores
   healing reserve, while overcapping creates backlash.
-  - Planned V1 class-kit work makes Umbral Debt a baseline Shadowcaster reserve
+  - The promotion-kit V1 pass makes Umbral Debt a baseline Shadowcaster reserve
     and adds `Eclipse` as a debt-spending shadow form. The awakened, equipped
     Class Ring raises the debt cap, preserves low-HP auto-healing, and reduces
     Eclipse backlash conversion.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
-- `Knight Enchanter`: `Arcane Duel` awakens the existing `Mana Tap+` ring hook.
+- `Knight Enchanter`: `Arcane Duel` awakens `Arcane Tempo`, preserving the
+  existing `Mana Tap+` ring hook internally for compatibility.
   - Status: playable in the Church when a dormant Knight Enchanter Class Ring is
     equipped or stored.
 - `Grand Summoner`: `Conduit Ritual` permanently sacrifices 5% max HP and
@@ -427,15 +428,16 @@ additional visual presentation, and playtest follow-up.
 ### Footpad Branch
 
 - `Rogue`: `Loaded Game` awakens `Loaded Dice`, giving failed luck checks a 15%
-  chance to become successes. The ready-to-code Thief/Rogue class-kit spec adds
-  combat-only `Fortune` and `Misfortune`; when awakened and equipped,
-  `Loaded Dice` preserves 1 point of a spent meter once per combat after a
-  clean Fortune or Misfortune payoff.
+  chance to become successes. The promotion-kit V1 pass adds
+  combat-only `Fortune` and `Misfortune`, Fortune smoothing for representative
+  risky actions, Misfortune severity payoff after clean risky successes, and
+  `Cheat Death`; when awakened and equipped, `Loaded Dice` preserves 1 point of
+  a spent meter once per combat after a clean Fortune or Misfortune payoff.
   - Status: playable at the Old Warehouse when a dormant Rogue Class Ring is
     equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
-  cache per sufficiently mapped dungeon level. The ready-to-code
-  Inquisitor/Seeker class-kit spec adds persistent enemy-type `Case Journal`
+  cache per sufficiently mapped dungeon level. The promotion-kit V1 pass adds
+  persistent enemy-type `Case Journal`
   progress, combat-only `Revelation`, and Seeker `Wayfinding`; when awakened
   and equipped, `Hidden Cache` keeps its cache identity while adding small
   insight smoothing after clean `Inspect` or telegraph reads.
@@ -443,16 +445,16 @@ additional visual presentation, and playtest follow-up.
     equipped or stored.
 - `Ninja`: `No-Trace Contract` awakens `No-Trace Opener`, preserving the
   legacy internal `First Strike Plus` hook while doubling the first standard
-  attack when the Ninja has initiative. The ready-to-code Assassin/Ninja
-  class-kit spec adds combat-only `Death Mark`; when awakened and equipped,
-  `No-Trace Opener` can apply 1 opener mark with initiative and preserve 1
-  spent mark once per combat after a clean marked payoff.
+  attack when the Ninja has initiative. The promotion-kit V1 pass adds
+  combat-only `Death Mark`; when awakened and equipped, `No-Trace Opener` can
+  apply 1 opener mark with initiative and preserve 1 spent mark once per combat
+  after a clean marked payoff.
   - Status: playable at the Old Warehouse when a dormant Ninja Class Ring is
     equipped or stored.
 - `Arcane Trickster`: `Impossible Theft` awakens `Arcane Larceny`, preserving
   the legacy internal `Spell Steal Buff` hook while granting +20% Magic damage
-  and +10% dodge for 3 turns after a successful spell steal. The ready-to-code
-  class-kit spec adds combat-only `Stolen Charge`; when awakened and equipped,
+  and +10% dodge for 3 turns after a successful spell steal. The promotion-kit
+  V1 pass adds combat-only `Stolen Charge`; when awakened and equipped,
   `Arcane Larceny` preserves 1 Charge once per combat after a clean charged
   payoff.
   - `Steal Spell`: available to `Spell Stealer` and `Arcane Trickster`. It
@@ -467,12 +469,12 @@ additional visual presentation, and playtest follow-up.
 
 - `Templar`: `Relic Defense` awakens `Ordered Blessings`, rotating Regen,
   Defense, and Holy damage blessings through relevant actions.
-  - Planned V1 class-kit work adds combat-only `Devotion` to the
+  - The promotion-kit V1 pass adds combat-only `Devotion` to the
     Cleric/Templar branch. Cleric starts the holy defender rhythm through
     healing, Holy pressure, shield utility, and `Pious Bounty`; Templar raises
     the cap and spends Devotion through ward actions such as `Sanctuary Ward`
     and `Relic Aegis`.
-  - In that design, `Holy Retribution` becomes a Devotion window while keeping
+  - `Holy Retribution` becomes a Devotion window while keeping
     its existing holy-fire attack flavor, and awakened/equipped
     `Ordered Blessings` preserves the current Regen/Defense/Holy Damage
     rotation while improving matching Devotion payoffs and preserving
@@ -481,21 +483,23 @@ additional visual presentation, and playtest follow-up.
     or stored.
 - `Master Monk`: `Purity Rite` awakens `Martial Master`, granting +50% damage
   and armor while unarmed and unarmored.
-  - Planned V1 class-kit work adds combat-only `Ki`, redesigns `Dim Mak` as a
-    full-Ki Master Monk finisher, and adds Master Monk-only `Ruyi Jingu Bang`
-    as an `Unobtainium` ultimate staff. In that design, awakened/equipped
-    `Martial Master` preserves the unarmed/no-armor bonus while improving Ki
-    discipline and `Dim Mak` reliability.
+  - The promotion-kit V1 pass adds combat-only `Ki`, redesigns `Dim Mak` as a
+    full-Ki Master Monk finisher, and adds the Master Monk-only
+    `Ruyi Jingu Bang` ultimate staff through the existing `Unobtainium`
+    blacksmith flow. `Dim Mak` recognizes `Ruyi Jingu Bang` for its
+    no-penalty staff exception.
+  - Awakened/equipped `Martial Master` preserves the unarmed/no-armor bonus
+    while improving Ki discipline and `Dim Mak` reliability.
   - Status: playable in the Church when a dormant Master Monk Class Ring is
     equipped or stored.
 - `Archbishop`: `Miracle Vigil` awakens `Divine Intervention`, a once-per-combat
   35% chance to heal 25% max HP on first falling below 50% HP.
-  - Planned V1 class-kit work adds combat-only `Prayer` to the
+  - The promotion-kit V1 pass adds combat-only `Prayer` to the
     Priest/Archbishop branch. Priest builds Prayer through meaningful healing,
     cleansing, divine support, Holy pressure, and anti-magic setup, while
     Archbishop raises the cap and spends Prayer through `Supplication` and
     `Great Benediction`.
-  - In that design, `Great Gospel` becomes a major Prayer reset/setup window
+  - `Great Gospel` becomes a major Prayer reset/setup window
     while preserving its cleanse and divine power-up identity, and
     awakened/equipped `Divine Intervention` keeps its current emergency heal
     behavior while preserving `1` Prayer once per combat after a clean
@@ -509,10 +513,10 @@ additional visual presentation, and playtest follow-up.
     weapon and magic damage, `Shelter` reduces incoming damage, and `Renewal`
     pulses HP/MP recovery. `Troubadour` improves song strength by 50%; awakened
     `Encore` adds one final 50%-strength pulse or beat when a song expires.
-  - Planned V1 class-kit work adds Troubadour `Repertoire` mastery for advanced
-    songs and combat-only `Crescendo` codas. In that design, awakened/equipped
-    `Encore` keeps its current final weaker effect and preserves 1 Crescendo
-    after a natural coda.
+  - The promotion-kit V1 pass adds Troubadour `Repertoire` mastery for advanced
+    songs, combat-turn practice, clean-finish tracking, and combat-only
+    `Crescendo` codas. Awakened/equipped `Encore` keeps its current final
+    weaker effect and preserves 1 Crescendo after a natural coda.
   - Status: playable in the Church when a dormant Troubadour Class Ring is
     equipped or stored.
 - `Lycan`: `Control Rite` awakens `Controlled Frenzy`, reducing lock-in
@@ -528,7 +532,7 @@ additional visual presentation, and playtest follow-up.
   active-sign Runic Boost fate floors while the Class Ring is equipped.
   Astromancer natural spell casts advance the active constellation, and the
   baseline Diviner/Astromancer rune system remains per-save spell empowerment
-  rather than gear modification. The Foresight Threads spec keeps
+  rather than gear modification. The promotion-kit V1 pass keeps
   `Constellation Cycle` as the ring identity and adds active-sign `Threaded
   Cast` reliability/output support while the awakened ring is equipped.
   - Status: playable in the Church when a dormant Astromancer Class Ring is
@@ -545,7 +549,7 @@ additional visual presentation, and playtest follow-up.
   - `Soul Drain`: Soulcatcher learns this level-4 spell as nonlethal
     current-HP damage; Soul Totem can pulse it when Soul Aspect is active and
     the spell is known.
-  - Planned V1 class-kit work adds combat-only `Totem Resonance` stacks from
+  - The promotion-kit V1 pass adds combat-only `Totem Resonance` stacks from
     matching casts and successful Totem pulses, plus `Totem Surge` to spend
     those stacks for a forced reduced-potency pulse. The awakened, equipped
     Soulcatcher Class Ring raises the Resonance cap and improves Surge for all
@@ -554,9 +558,9 @@ additional visual presentation, and playtest follow-up.
     equipped or stored.
 - `Beast Master`: `Pack Trial` awakens `Shared Recovery`, echoing a smaller heal
   to the bonded partner when the hero or companion is healed.
-  - Planned V1 class-kit work keeps one persistent tamed companion, adds
+  - The promotion-kit V1 pass keeps one persistent tamed companion, adds
     companion bond growth, gives Beast Master direct companion commands, and
-    lets the awakened, equipped Class Ring scale `Shared Recovery` modestly with
-    bond.
+    lets the awakened, equipped Class Ring scale `Shared Recovery` from 25%
+    toward 35% with bond.
   - Status: playable in the Church when a dormant Beast Master Class Ring is
     equipped or stored.

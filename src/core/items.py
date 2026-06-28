@@ -1291,6 +1291,49 @@ class PrincessGuard(Weapon):
         return results
 
 
+class RuyiJinguBang(Weapon):
+    """
+    Ultimate weapon; Master Monk chi-conduit staff.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Ruyi Jingu Bang",
+            description=(
+                "A legendary iron staff that changes weight with the wielder's "
+                "breath and carries chi cleanly through every strike."
+            ),
+            value=0,
+            rarity=0,
+            damage=72,
+            crit=0.28,
+            handed=2,
+            subtyp='Staff',
+            unequip=False,
+            off=False,
+        )
+        self.weight = 8
+        self.restriction = ['Master Monk']
+        self.ultimate = True
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        actor = result.actor
+        try:
+            from .classes import promotion_kits
+
+            if promotion_kits.class_name(actor) != "Master Monk":
+                return
+            state = promotion_kits.combat_state(actor)
+            cap = promotion_kits.cap_for(actor, "ki")
+            if int(state.get("ki", 0) or 0) >= cap:
+                return
+            if random.random() < 0.35:
+                result.message += promotion_kits.gain_meter(actor, "ki", 1, self.name)
+        except Exception:
+            return
+
+
 class Sledgehammer(Weapon):
 
     def __init__(self):
@@ -5554,6 +5597,22 @@ ultimate_weapons = {'Dagger': Carnwennan,
                    'Fist': GodsHand,
                    'Axe': Jarnbjorn,
                    'Polearm': Gungnir,
-                   'Staff': [PrincessGuard, DragonStaff],
+                   'Staff': [PrincessGuard, RuyiJinguBang, DragonStaff],
                    'Hammer': Skullcrusher,
                    'Ninja Blade': Ninjato}
+
+
+def ultimate_weapon_options_for(player: Any) -> list[tuple[str, type[Weapon]]]:
+    """Return craftable ultimate weapon choices for the player's class."""
+    options: list[tuple[str, type[Weapon]]] = []
+    equip_check = getattr(getattr(player, "cls", None), "equip_check", None)
+    if not callable(equip_check):
+        return options
+
+    for typ, weapon_entry in ultimate_weapons.items():
+        weapon_classes = weapon_entry if isinstance(weapon_entry, (list, tuple)) else [weapon_entry]
+        for weapon_cls in weapon_classes:
+            if equip_check(weapon_cls, "Weapon"):
+                options.append((typ, weapon_cls))
+                break
+    return options

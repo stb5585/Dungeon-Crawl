@@ -20,6 +20,7 @@ from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
 from . import abilities, enemies, items, main_story
+from .classes import promotion_kits
 from .character import Resource, Stats, Combat, Level
 
 if TYPE_CHECKING:
@@ -734,6 +735,9 @@ class PlayerDataSerializer:
             'demonologist_contracts': getattr(player, 'demonologist_contracts', None),
             'archdruid_attunement': getattr(player, 'archdruid_attunement', None),
             'class_ring_awakening': getattr(player, 'class_ring_awakening', None),
+            'promotion_kit_state': promotion_kits.normalize_state(
+                getattr(player, 'promotion_kit_state', None)
+            ),
             'astromancer_state': getattr(player, 'astromancer_state', None),
             'paladin_vow': getattr(player, 'paladin_vow', None),
             'dragoon_dragon_quest': getattr(player, 'dragoon_dragon_quest', None),
@@ -922,6 +926,13 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_class_ring_awakening"):
             player.ensure_class_ring_awakening()
+        player.promotion_kit_state = data.get(
+            'promotion_kit_state',
+            getattr(player, 'promotion_kit_state', None),
+        )
+        if hasattr(player, "ensure_promotion_kit_state"):
+            player.ensure_promotion_kit_state()
+        promotion_kits.clear_combat_state(player)
         player.astromancer_state = data.get(
             'astromancer_state',
             getattr(player, 'astromancer_state', None),

@@ -50,9 +50,9 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     },
     "Dragoon": {
         "activation": "Guard The Fall",
-        "mod": "+1 Jump Mod",
+        "mod": "Aerial Supremacy",
         "description": (
-            "keeps an extra equipped Jump modification and unlocks Meteor Guard"
+            "enhances post-Jump Aerial Tempo follow-through and grants landing protection"
         ),
     },
     "Stalwart Defender": {
@@ -81,8 +81,8 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     },
     "Knight Enchanter": {
         "activation": "Arcane Duel",
-        "mod": "Mana Tap+",
-        "description": "turns the improved Mana Tap conversion on after the duel",
+        "mod": "Arcane Tempo",
+        "description": "builds Tempo from consumed blade charges and bursts at three stacks",
     },
     "Grand Summoner": {
         "activation": "Conduit Ritual",
@@ -106,18 +106,18 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     },
     "Ninja": {
         "activation": "No-Trace Contract",
-        "mod": "First Strike Plus",
+        "mod": "No-Trace Opener",
         "description": (
-            "with initiative, the first standard attack deals double damage and "
-            "may disable reactions"
+            "with initiative, the first standard attack keeps double damage and "
+            "interacts with Death Mark"
         ),
     },
     "Arcane Trickster": {
         "activation": "Impossible Theft",
-        "mod": "Spell Steal Buff",
+        "mod": "Arcane Larceny",
         "description": (
             "after a successful spell steal, gain +20% Magic damage and +10% "
-            "dodge for 3 turns"
+            "dodge for 3 turns, and smooth Stolen Charge payoffs"
         ),
     },
     "Templar": {
@@ -192,7 +192,12 @@ def default_state() -> dict[str, Any]:
             "Dragoon": {"meteor_guard_shield": 0, "meteor_guard_turns": 0},
             "Stalwart Defender": {"guard_meter": 0},
             "Wizard": {"school_streak": {}},
-            "Shadowcaster": {"debt": 0, "backlash": 0},
+            "Shadowcaster": {
+                "debt": 0,
+                "backlash": 0,
+                "eclipse_turns": 0,
+                "familiar_echo_used": False,
+            },
             "Knight Enchanter": {"mana_tap_used": False},
             "Grand Summoner": {"hp_sacrificed": 0},
             "Rogue": {},
@@ -250,6 +255,11 @@ def _normalize_lists(state: dict[str, Any]) -> None:
     berserker = state["data"]["Berserker"]
     berserker["battle_scars"] = max(0, min(20, int(berserker.get("battle_scars", 0) or 0)))
     berserker["battle_scar_hp_bonus"] = max(0, int(berserker.get("battle_scar_hp_bonus", 0) or 0))
+    shadow = state["data"]["Shadowcaster"]
+    shadow["debt"] = max(0, int(shadow.get("debt", 0) or 0))
+    shadow["backlash"] = max(0, int(shadow.get("backlash", 0) or 0))
+    shadow["eclipse_turns"] = max(0, int(shadow.get("eclipse_turns", 0) or 0))
+    shadow["familiar_echo_used"] = bool(shadow.get("familiar_echo_used", False))
 
 
 def ensure_state(character: Any) -> dict[str, Any]:
@@ -436,16 +446,14 @@ def martial_master_active(character: Any) -> bool:
 
 
 def record_shadow_damage(character: Any, amount: int) -> None:
-    if not (amount and amount > 0 and is_awakened(character, "Shadowcaster")):
+    if not (amount and amount > 0 and class_name(character) == "Shadowcaster"):
         return
-    state = ensure_state(character)
-    data = state["data"]["Shadowcaster"]
-    cap = max(1, int(getattr(character.health, "max", 1) * 0.40))
-    debt = int(data.get("debt", 0) or 0) + int(amount * 0.25)
-    if debt > cap:
-        data["backlash"] = int(data.get("backlash", 0) or 0) + (debt - cap)
-        debt = cap
-    data["debt"] = debt
+    try:
+        from . import promotion_kits
+
+        promotion_kits.record_shadow_damage(character, amount)
+    except Exception:
+        pass
 
 
 def trigger_umbral_debt(character: Any) -> int:
@@ -656,7 +664,13 @@ def soul_aspect_bonus(character: Any) -> float:
 def shared_recovery_amount(character: Any, healing: int) -> int:
     if not (is_awakened(character, "Beast Master") and has_equipped_class_ring(character)):
         return 0
-    return max(1, int(healing * 0.25)) if healing > 0 else 0
+    try:
+        bond_state = getattr(character, "tamed_companion", {}) or {}
+        bond = max(0, min(100, int(bond_state.get("bond", 0) or 0)))
+    except Exception:
+        bond = 0
+    rate = 0.25 + (0.10 * (bond / 100))
+    return max(1, int(healing * rate)) if healing > 0 else 0
 
 
 def apply_meteor_guard(character: Any, jump_damage: int) -> int:

@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: June 26, 2026*
+*Updated: June 27, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -34,9 +34,11 @@ appropriate design-gate document before coding.
   dungeon tile art, and non-asset audio routing are implemented.
 - Recent class-mechanic follow-up shipped Weapon Master/Berserker/Grandmaster
   Weapon Discipline and weapon arts, the Sorcerer/Wizard 0-based School
-  Affinity progression, and the promotion ability transition decision matrix.
+  Affinity progression, the promotion ability transition decision matrix, and
+  the V1 promotion class-kit track implementation.
 - Current planning references:
-  - `docs/CLASS_KIT_DESIGN_GATES.md` for deferred class-kit gates.
+  - `docs/CLASS_KIT_DESIGN_GATES.md` for promotion class-kit behavior and
+    follow-up tuning gates.
   - `docs/COMBAT_BALANCE_DESIGN_GATES.md` for combat/balance gates.
   - `docs/STORY_AND_ENDGAME_DESIGN.md` for Vesperion, Voluntas, Liminal Gap,
     Reflection, and true-final story direction.
@@ -97,6 +99,10 @@ Status: `Decision Gate`
   `Oil Leak` while preserving underlying mechanics.
 - A public-facing website/project page remains deferred until the title and
   identity pass are stable enough to present externally.
+- Equipment art should appear on the Equip popup
+- Screens to improve
+  - Character Created screen is very basic, black with text
+  - New Game story screens need more polish
 
 ## Dungeon, World, And Encounter Gates
 
@@ -117,6 +123,7 @@ Status: `Spec Gate`
   Barracks adventurer flavor are deferred until a town-content pass is selected.
 - Improve minimap by including better tile indicators and make the player location
   stand out more by adding a blinking effect
+- Low health effect should persist outside of combat when navigating the dungeon
 
 ## Equipment, Items, And Economy Gates
 
@@ -151,20 +158,22 @@ Status: `Spec Gate`
 
 Status: `Spec Gate`
 
-- Major class-kit follow-ups remain gated by `docs/CLASS_KIT_DESIGN_GATES.md`.
-  Ready-to-code specs now cover Demonologist corruption/bargain presentation,
-  Shadowcaster Umbral Debt/Eclipse, Spellblade/Knight Enchanter,
-  Summoner/Grand Summoner, Druid/Lycan, Druid/Archdruid Aspect Harmony, and
-  Ranger/Beast Master companion bond.
+- Major promotion class-kit V1 follow-up is now tuning and polish, not initial
+  implementation. `docs/CLASS_KIT_DESIGN_GATES.md` remains the behavior
+  reference for Demonologist corruption/bargain presentation, Shadowcaster
+  Umbral Debt/Eclipse, Spellblade/Knight Enchanter, Summoner/Grand Summoner,
   Weapon Master/Berserker Bloodied Momentum, Paladin/Crusader Oath Conviction,
   Lancer/Dragoon Aerial Tempo, Sentinel/Stalwart Defender Resolve/Counterguard,
   Cleric/Templar Devotion Ward, Priest/Archbishop Prayer Benediction,
-  Monk/Master Monk Ki/Dim Mak, Bard/Troubadour Repertoire/Crescendo, and
-  Shaman/Soulcatcher Totem Resonance are also covered by ready-to-code specs.
-  Thief/Rogue Fortune/Misfortune, Inquisitor/Seeker Case Journal/Wayfinding,
-  Assassin/Ninja Death Mark/No-Trace Opener, and Spell Stealer/Arcane
-  Trickster Stolen Charge/Arcane Larceny are covered by ready-to-code
-  Footpad-track specs.
+  Monk/Master Monk Ki/Dim Mak, Bard/Troubadour Repertoire/Crescendo,
+  Druid/Lycan, Druid/Archdruid Aspect Harmony, Ranger/Beast Master companion
+  bond, Shaman/Soulcatcher Totem Resonance, and the Footpad-track
+  Fortune/Misfortune, Case Journal/Wayfinding, Death Mark/No-Trace Opener, and
+  Stolen Charge/Arcane Larceny loops.
+- Remaining class-kit follow-up after the V1 pass: expand bespoke per-ability
+  riders where the compact V1 hooks are intentionally representative; improve
+  UI/log surfacing for the new meters; and tune preservation/payoff values
+  after playtest.
 - Class Ring activation follow-up is limited to tuning, additional visual
   presentation, and playtest response unless a new spec changes the shipped
   activation flows. Radar-style Wizard affinity visualization is deferred; the
@@ -176,52 +185,50 @@ Status: `Spec Gate`
 - Deep race-passive expansion remains deferred until the current always-on race
   identity pass has enough playtest feedback. The "7 sins / 7 virtues" ideas
   are design flavor unless promoted by spec.
-- Monk/Master Monk follow-ups now have a Ki/Dim Mak martial spec before
-  implementation. Combo chains, chained input timing, combo UI, longer
-  progression, and legs/additional melee attacks with separate
+- Monk/Master Monk now have the Ki/Dim Mak martial V1 loop and Master Monk-only
+  `Ruyi Jingu Bang` ultimate-staff acquisition through the existing
+  `Unobtainium` blacksmith flow. Combo chains, chained input timing, combo UI,
+  longer progression, and legs/additional melee attacks with separate
   attack/crit/accuracy rules remain deferred.
-- Bard/Troubadour follow-ups now have a Repertoire/Crescendo music spec before
-  implementation. Broader Maestro-style progression, larger sheet-music
-  economy expansion, and quest-locked composition remain deferred.
-- Beast Master follow-ups now have a companion bond spec before implementation;
-  broader monster taming, stables, companion visuals, and balance rules for
-  stronger species remain deferred.
-- Druid/Archdruid follow-ups now have an Aspect Harmony spec before
-  implementation. New Grove questlines, catalyst economy expansion, and
-  persistent post-attunement mastery remain deferred.
-- Sentinel/Stalwart Defender follow-ups now have a Resolve/Counterguard shield
-  spec before implementation. Broader party-tank threat rules and multi-target
-  control remain deferred.
-- Lancer/Dragoon follow-ups now have an Aerial Tempo spec before
-  implementation. Broader Jump-system redesign, persistent Jump mastery, and
-  extra Jump modification capacity remain deferred.
-- Paladin/Crusader follow-ups now have an Oath Conviction spec before
-  implementation. Multi-vow respecs, morality systems, and broader oath quest
-  arcs remain deferred.
-- Weapon Master/Berserker follow-ups now have a Bloodied Momentum spec before
-  implementation. Forced berserk/loss-of-control and broader scar milestone
-  trees remain deferred.
-- Cleric/Templar follow-ups now have a Devotion Ward spec before
-  implementation. Full divine economy redesign, relic quest expansion, and
-  loot-centered Pious Bounty progression remain deferred.
-- Priest/Archbishop follow-ups now have a Prayer Benediction spec before
-  implementation. Full party-healer systems, morality gates, and resurrection
-  economy redesign remain deferred.
-- Thief/Rogue follow-ups now have a Fortune/Misfortune and Loaded Dice spec
-  before implementation. Full loot-table redesign, persistent heist caches, and
-  jackpot-forcing mechanics remain deferred.
-- Inquisitor/Seeker follow-ups now have a Case Journal/Revelation/Wayfinding
-  spec before implementation. Full quest pathing, guaranteed boss/trial escape,
-  and loot-focused journal rewards remain deferred.
-- Assassin/Ninja follow-ups now have a Death Mark and No-Trace Opener spec
-  before implementation. Full stealth-system rewrites, persistent target marks,
-  and unrestricted instant-death scaling remain deferred.
-- Spell Stealer/Arcane Trickster follow-ups now have a Stolen Charge and
-  Arcane Larceny spec before implementation. Broader stolen-spell mastery,
-  free-scroll generation, and scroll-economy redesign remain deferred.
+- Bard/Troubadour now have the Repertoire/Crescendo music V1 loop. Broader
+  Maestro-style progression, larger sheet-music economy expansion, and
+  quest-locked composition remain deferred.
+- Beast Master now has the companion bond/command V1 loop; broader monster
+  taming, stables, companion visuals, and balance rules for stronger species
+  remain deferred.
+- Druid/Archdruid now have the Aspect Harmony V1 loop. New Grove questlines,
+  catalyst economy expansion, and persistent post-attunement mastery remain
+  deferred.
+- Sentinel/Stalwart Defender now have the Resolve/Counterguard V1 loop. Broader
+  party-tank threat rules and multi-target control remain deferred.
+- Lancer/Dragoon now have the Aerial Tempo/Aerial Supremacy V1 loop. Broader
+  Jump-system redesign, persistent Jump mastery, and extra Jump modification
+  capacity remain deferred.
+- Paladin/Crusader now have the Oath Conviction V1 loop. Multi-vow respecs,
+  morality systems, and broader oath quest arcs remain deferred.
+- Weapon Master/Berserker now have the Bloodied Momentum V1 loop. Forced
+  berserk/loss-of-control and broader scar milestone trees remain deferred.
+- Cleric/Templar now have the Devotion Ward V1 loop. Full divine economy
+  redesign, relic quest expansion, and loot-centered Pious Bounty progression
+  remain deferred.
+- Priest/Archbishop now have the Prayer Benediction V1 loop. Full party-healer
+  systems, morality gates, and resurrection economy redesign remain deferred.
+- Thief/Rogue now have the Fortune/Misfortune and Loaded Dice V1 loop. Full
+  loot-table redesign, persistent heist caches, and jackpot-forcing mechanics
+  remain deferred.
+- Inquisitor/Seeker now have the Case Journal/Revelation/Wayfinding V1 loop.
+  Full quest pathing, guaranteed boss/trial escape, and loot-focused journal
+  rewards remain deferred.
+- Assassin/Ninja now have the Death Mark and No-Trace Opener V1 loop. Full
+  stealth-system rewrites, persistent target marks, and unrestricted
+  instant-death scaling remain deferred.
+- Spell Stealer/Arcane Trickster now have the Stolen Charge and Arcane Larceny
+  V1 loop. Broader stolen-spell mastery, free-scroll generation, and
+  scroll-economy redesign remain deferred.
 - `Transform4` is retired as a live Lycan Red Dragon reward. The legacy wrapper
   remains loadable for old saves/tests, while Lycan Red Dragon victories now
-  set Dragon Essence state for the future `Winged Pounce` implementation.
+  set Dragon Essence state for the implemented transformed-only `Winged Pounce`
+  action.
   `Frozen Armor` is implemented as a Sorcerer-line Ice mastery passive.
   `Eclipse` is now covered by the Shadowcaster Umbral Debt spec.
 - Polearm Mastery exists as a future quest/item-unlock hook; do not wire it
@@ -231,16 +238,13 @@ Status: `Spec Gate`
 - Promotion ability transition expansion remains deferred for remaining
   promotion paths, spell/skill gain rules, class-specific retention variants,
   and any ability-history restoration mechanics.
-- Future Diviner/Astromancer implementation should follow the Foresight Threads
-  spec while preserving the current per-save rune, spell-empowerment scope.
-  The spec adds Astromancer-only combat Threads and `Threaded Cast` without
-  rune gear modification, rune inventory items, account history,
-  meta-progression, permanent spell alteration, or additional spell-school
-  aliases. Richer constellation presentation is deferred to a dedicated
-  UI/readability pass.
-- Future Shaman/Soulcatcher Totem implementation should follow the Totem
-  Resonance spec while preserving the current communion, spellbook/Totem/Class
-  Ring storage, nonlethal Soul Drain, and reduced Totem pulse-potency contracts.
+- Diviner/Astromancer Foresight Threads and `Threaded Cast` are implemented
+  while preserving the current per-save rune, spell-empowerment scope. Richer
+  constellation presentation remains deferred to a dedicated UI/readability
+  pass.
+- Shaman/Soulcatcher Totem Resonance and `Totem Surge` are implemented while
+  preserving the current communion, spellbook/Totem/Class Ring storage,
+  nonlethal Soul Drain, and reduced Totem pulse-potency contracts.
 - Additional P6 ability work needs a one-page spec covering trigger/class
   eligibility, storage/save migration, combat and out-of-combat behavior,
   UI/menu/status text, event/audio/logging needs, balance assumptions,
@@ -264,6 +268,8 @@ Status: `Spec Gate`
 
 Status: `Spec Gate`
 
+- New Game intro story needs more information without giving away too much of
+  the endgame storyline
 - The Vesperion/Voluntas route is implemented as a story-first endgame. Future
   work should polish rather than replace that route unless a new story spec is
   written.
@@ -312,6 +318,18 @@ Status: `Deferred`
 - Combat/balance numeric changes should wait for simulator reports generated
   from the canonical commands in `docs/COMBAT_BALANCE_DESIGN_GATES.md` and
   checked against playtest findings.
+- Mouse click additions for full support
+  - NPC conversation progression (e.g. quest boxes)
+  - Accept Bounty selection and Active Bounties screen
+  - Most/all popup menus (e.g. Equipment Selection popup)
+
+## Bugfixes
+
+- When standing on an Stairs Up tile after taking a Stairs Down, the missing
+  ceiling tile that is supposed to be above the stairs is above the space in
+  front of the character view
+- Health potions should have a minimum amount healed, then scale up by
+  percentage
 
 ## Watch Items
 

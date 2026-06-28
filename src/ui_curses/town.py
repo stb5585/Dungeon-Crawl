@@ -33,16 +33,10 @@ def ultimate(game):
     make_options = []
     weapon_list = []
     i = 0
-    for typ, weapon in items.ultimate_weapons.items():
-        if typ == 'Staff':
-            if 'Archbishop' == game.player_char.cls.name:
-                weapon = weapon[0]
-            else:
-                weapon = weapon[1]
-        if game.player_char.cls.equip_check(weapon, "Weapon"):
-            make_options.append(typ)
-            weapon_list.append(weapon)
-            i += 1
+    for typ, weapon in items.ultimate_weapon_options_for(game.player_char):
+        make_options.append(typ)
+        weapon_list.append(weapon)
+        i += 1
     make_options.append('Not Yet')
     make_message = "What type of weapon would you like me to make?"
     menu = menus.SelectionPopupMenu(game=game,

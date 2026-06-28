@@ -330,7 +330,14 @@ def spend_nature_shield_orb(character: Any) -> bool:
 
 
 def default_tamed_companion() -> dict[str, Any]:
-    return {"active": False, "enemy_class": None, "name": None, "level": 1}
+    return {
+        "active": False,
+        "enemy_class": None,
+        "name": None,
+        "level": 1,
+        "bond": 0,
+        "pending_command": None,
+    }
 
 
 def normalize_tamed_companion(state: Any) -> dict[str, Any]:
@@ -343,6 +350,12 @@ def normalize_tamed_companion(state: Any) -> dict[str, Any]:
             normalized["level"] = max(1, int(state.get("level", 1) or 1))
         except (TypeError, ValueError):
             normalized["level"] = 1
+        try:
+            normalized["bond"] = max(0, min(100, int(state.get("bond", 0) or 0)))
+        except (TypeError, ValueError):
+            normalized["bond"] = 0
+        pending = state.get("pending_command")
+        normalized["pending_command"] = str(pending) if pending else None
     return normalized
 
 
@@ -450,6 +463,8 @@ def attempt_tame(character: Any, target: Any, *, rng: Any = random) -> str:
         "enemy_class": target.__class__.__name__,
         "name": target.name,
         "level": max(1, int(getattr(getattr(target, "level", None), "level", 1) or 1)),
+        "bond": 0,
+        "pending_command": None,
     }
     character.tamed_companion = normalize_tamed_companion(state)
     try:

@@ -25,14 +25,8 @@ class ShopManager(TownScreenBase):
             popup.show(flush_events=True, require_key_release=True)
             return
         
-        # Check for unobtainium ultimate weapon quest
         if 'Unobtainium' in self.player_char.special_inventory:
-            self.presenter.show_message(
-                "Oh my...can it possibly be?...the legendary ore...Unobtainium?\n\n"
-                "I can't believe you have found it!\n\n"
-                "It has been a lifelong dream of mine to forge a weapon from the mythical metal.\n\n"
-                "(Ultimate weapon crafting coming soon!)"
-            )
+            self._offer_ultimate_weapon_crafting()
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Griswold's Blacksmith")
@@ -72,6 +66,49 @@ class ShopManager(TownScreenBase):
                 self.sell_items()
             elif choice == "Quests":
                 qm.check_and_offer('Griswold')
+
+    def _offer_ultimate_weapon_crafting(self):
+        """Offer the Unobtainium ultimate weapon craft through the pygame UI."""
+        options = items_module.ultimate_weapon_options_for(self.player_char)
+        intro = (
+            "Oh my...can it possibly be?...the legendary ore...Unobtainium?\n\n"
+            "I can't believe you have found it!\n\n"
+            "It has been a lifelong dream of mine to forge a weapon from the mythical metal."
+        )
+        if not options:
+            self.presenter.show_message(
+                f"{intro}\n\n"
+                "But I don't know how to forge a weapon your class can use. Come back if your path changes."
+            )
+            return
+
+        selector = SelectionPopup(
+            self.presenter,
+            None,
+            title="Ultimate Weapon",
+            header_message="What type of weapon would you like me to make?",
+            options=[typ for typ, _weapon in options] + ["Not Yet"],
+        )
+        result = selector.show(self.player_char)
+        if result is None:
+            return
+        _kind, choice = result
+        if choice in {None, "Not Yet"}:
+            self.presenter.show_message(
+                f"{intro}\n\nI am sorry to hear that...please come back if you change your mind."
+            )
+            return
+
+        weapon_cls = dict(options).get(choice)
+        if weapon_cls is None:
+            return
+        weapon = weapon_cls()
+        self.player_char.modify_inventory(weapon)
+        del self.player_char.special_inventory['Unobtainium']
+        self.presenter.show_message(
+            f"{intro}\n\nGive me a moment and I will make you an ultimate weapon...\n\n"
+            f"I present to you the mighty {weapon.name}!"
+        )
     
     def visit_alchemist(self):
         """Visit the Alchemist - potions and consumables."""

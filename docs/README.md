@@ -10,7 +10,8 @@ only as historical context.
   active P7 backlog, deferred decisions, and spec gates. Completed roadmap
   history now lives in [../CHANGELOG.md](../CHANGELOG.md).
 - [CLASS_KIT_DESIGN_GATES.md](CLASS_KIT_DESIGN_GATES.md) - shipped class-kit
-  baselines, scope boundaries, and deferred one-page deep-kit gates.
+  baselines, promotion-kit V1 implementation status, scope boundaries, and
+  follow-up tuning gates.
 - [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
   architecture, balance decision gates, current behavior decisions, and report
   plan.

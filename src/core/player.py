@@ -36,6 +36,7 @@ from .classes import (
     lycan,
     ability_mechanics,
     paladin,
+    promotion_kits,
     astromancer,
     wizard,
 )
@@ -383,6 +384,7 @@ class Player(Character):
         self.demonologist_contracts = demonologist.default_state()
         self.archdruid_attunement = archdruid.default_state()
         self.class_ring_awakening = class_rings.default_state()
+        self.promotion_kit_state = promotion_kits.default_state()
         self.astromancer_state = astromancer.default_state()
         self.paladin_vow = paladin.default_state()
         self.dragoon_dragon_quest = dragoon.default_state()
@@ -467,6 +469,11 @@ class Player(Character):
         """Normalize legacy Class Ring awakening state for current and legacy saves."""
         self.class_ring_awakening = class_rings.ensure_state(self)
         return self.class_ring_awakening
+
+    def ensure_promotion_kit_state(self):
+        """Normalize promotion class-kit progression state for current and legacy saves."""
+        self.promotion_kit_state = promotion_kits.ensure_state(self)
+        return self.promotion_kit_state
 
     def ensure_astromancer_state(self):
         """Normalize Diviner/Astromancer rune state for current and legacy saves."""
@@ -1131,6 +1138,7 @@ class Player(Character):
         if cls_name == "Soulcatcher":
             harvested = class_rings.ensure_state(self)["data"]["Soulcatcher"].get("harvested_types", [])
             lines.append(f"{'Soul Types:':13} {len(harvested)}")
+        lines.extend(promotion_kits.status_summary(self))
         return "".join(f"{line}\n" for line in lines)
 
     def combat_str(self):
@@ -2797,6 +2805,13 @@ class Player(Character):
             if typ == "Fire":
                 res_mod += ability_mechanics.primal_ascendance_multiplier(self, "Stone") - 1.0
             res_mod += class_rings.constellation_bonus(self, typ)
+            try:
+                data = self.class_ring_awakening["data"]["Shadowcaster"]
+                if self.cls.name == "Shadowcaster" and typ == "Holy" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                    penalty = 0.20 if getattr(getattr(self, "familiar", None), "spec", "") == "Defense" else 0.25
+                    res_mod -= penalty
+            except Exception:
+                pass
             return res_mod
         if mod == 'luck':
             if self.cls.name == "Rogue" and self.power_up:
@@ -2809,6 +2824,12 @@ class Player(Character):
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
             speed_mod *= paladin.initiative_multiplier(self)
             speed_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
+            try:
+                data = self.class_ring_awakening["data"]["Shadowcaster"]
+                if self.cls.name == "Shadowcaster" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                    speed_mod *= 1.10
+            except Exception:
+                pass
             return int(speed_mod)
         return 0
 

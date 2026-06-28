@@ -268,14 +268,17 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
     buy_calls = []
 
     FakeShopScreen.option_sequences = [["Buy", "Weapons", "Leave"]]
+    FakeSelectionPopup.responses = ["Not Yet"]
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
     monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
     monkeypatch.setattr(manager, "buy_weapons", lambda: buy_calls.append("weapons"))
 
     manager.visit_blacksmith()
 
     assert any("Unobtainium" in message for message in shown_messages)
+    assert any("don't know how to forge a weapon your class can use" in message for message in shown_messages)
     assert buy_calls == ["weapons"]
     assert FakeShopScreen.instances[0].set_calls[:2] == [
         ["Buy", "Sell", "Quests", "Leave"],
@@ -283,6 +286,30 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
     ]
     assert FakeShopScreen.instances[0].shop_message == "Griswold's Blacksmith"
     assert any("Come back whenever you'd like." in message for message, _buttons in FakePopup.messages)
+
+
+def test_visit_blacksmith_crafts_master_monk_ultimate_staff(monkeypatch):
+    from src.core.classes.master_monk import MasterMonk
+
+    manager = _manager(monkeypatch, level=30)
+    manager.player_char.cls = MasterMonk()
+    manager.player_char.special_inventory["Unobtainium"] = [object()]
+    shown_messages = []
+    manager.presenter.show_message = lambda message: shown_messages.append(message)
+
+    FakeShopScreen.option_sequences = [["Leave"]]
+    FakeSelectionPopup.responses = ["Staff"]
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
+    monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
+
+    manager.visit_blacksmith()
+
+    assert "Unobtainium" not in manager.player_char.special_inventory
+    assert "Ruyi Jingu Bang" in manager.player_char.inventory
+    assert any("mighty Ruyi Jingu Bang" in message for message in shown_messages)
+    assert FakeSelectionPopup.created[-1][2] == ("Fist", "Staff", "Not Yet")
 
 
 def test_visit_alchemist_and_jeweler_cover_quest_and_sell_paths(monkeypatch):

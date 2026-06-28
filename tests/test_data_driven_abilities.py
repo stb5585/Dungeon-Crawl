@@ -9140,6 +9140,10 @@ class TestClassAbilityMechanicsSlice:
         assert abilities.skill_dict["Beast Master"] == {
             "5": abilities.Cover,
             "7": abilities.Zephyrstrike,
+            "9": abilities.PackStrike,
+            "10": abilities.GuardPartner,
+            "11": abilities.HarryPrey,
+            "12": abilities.MendWounds,
         }
         assert abilities.spell_dict["Shadowcaster"]["16"] is abilities.Nightmare
         assert "Nightmare" not in [spell().name for spell in abilities.spell_dict["Demonologist"].values()]
@@ -9147,7 +9151,7 @@ class TestClassAbilityMechanicsSlice:
     def test_archdruid_nature_spell_line_is_registered(self):
         from src.core import abilities
 
-        assert abilities.skill_dict["Archdruid"] == {}
+        assert abilities.skill_dict["Archdruid"] == {"10": abilities.FourfoldSurge}
         assert list(abilities.spell_dict["Druid"].values()) == [
             abilities.PoisonDart,
             abilities.StoneSkin,

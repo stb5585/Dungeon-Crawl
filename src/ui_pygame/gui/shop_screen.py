@@ -442,8 +442,13 @@ class ShopScreen(TownScreenBase):
         text_y = self.gold_rect.centery - text.get_height() // 2
         self.screen.blit(text, (text_x, text_y))
     
-    def draw_all(self, do_flip=True):
+    def draw_all(self, player_char=None, do_flip=True):
         """Draw all shop UI elements. Set do_flip=False when drawing as a background for overlays."""
+        if isinstance(player_char, bool):
+            do_flip = player_char
+            player_char = None
+        if player_char is not None:
+            self.player_char = player_char
         self.draw_background()
         self.draw_top()
         self.draw_options()
