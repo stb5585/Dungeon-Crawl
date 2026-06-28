@@ -912,6 +912,31 @@ def test_impact_effects_use_target_rects_and_expire(monkeypatch):
     assert view._active_impact_effects == []
 
 
+def test_specialized_impact_effects_draw_reflect_status_and_elemental_strike(monkeypatch):
+    view = _make_view()
+    line_calls = []
+    circle_calls = []
+    ellipse_calls = []
+    blit_count = len(view.screen.blit_calls)
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.line", lambda *_args, **_kwargs: line_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *_args, **_kwargs: circle_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.ellipse", lambda *_args, **_kwargs: ellipse_calls.append((_args, _kwargs)))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.time.get_ticks", lambda: 1000)
+
+    view._last_enemy_target_rect = pygame.Rect(100, 120, 80, 100)
+    view.trigger_impact_effect("enemy", "reflect", "Holy")
+    view.trigger_impact_effect("enemy", "status")
+    view.trigger_impact_effect("enemy", "elemental_strike", "Fire")
+    view._render_active_impact_effects()
+
+    assert ellipse_calls
+    assert circle_calls
+    assert line_calls
+    assert len(view.screen.blit_calls) > blit_count
+
+
 def test_ability_status_visuals_draw_shield_and_rising_smoke_without_duplicate_overlay(monkeypatch):
     view = _make_view()
     rect_calls = []

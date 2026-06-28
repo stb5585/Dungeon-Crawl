@@ -2484,6 +2484,14 @@ class EquipmentSelectionPopup(BasePopupMenu):
         item_str = str(item)
         actual_item = None if item_str in {"Cancel", "Unequip"} else self._find_option_item(player_char, item_str)
         display_name = self._equipment_display_name(actual_item) if actual_item is not None else item_str
+
+        if actual_item is not None:
+            art_height = min(140, max(92, self.details_rect.height // 3))
+            art_width = min(130, max(88, self.details_rect.width // 3))
+            art_rect = pygame.Rect(0, 0, art_width, art_height)
+            art_rect.midtop = (self.details_rect.centerx, y)
+            self.draw_large_item_render(actual_item, art_rect)
+            y = art_rect.bottom + 8
         
         # Display item name
         name_text = self.large_font.render(display_name, True, self.WHITE)

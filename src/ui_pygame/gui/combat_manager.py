@@ -467,7 +467,12 @@ class GUICombatManager:
         return f"{trimmed.rstrip()}{ellipsis}"
 
     @staticmethod
-    def _combat_effect_kind(action: str, choice: str | None = None) -> str:
+    def _combat_effect_kind(action: str, choice: str | None = None, message: str = "") -> str:
+        text = f"{choice or ''} {message or ''}".lower()
+        if "reflect" in text or "reflection" in text:
+            return "reflect"
+        if any(term in text for term in ("stun", "stunned", "prone", "knocked down")):
+            return "status"
         if action in {"Spells", "Cast Spell"}:
             return "spell"
         if action in {"Skills", "Use Skill"}:
@@ -504,8 +509,10 @@ class GUICombatManager:
         message: str,
         amount: int | None = None,
     ) -> None:
-        kind = self._combat_effect_kind(action, choice)
+        kind = self._combat_effect_kind(action, choice, message)
         element = self._combat_effect_element(choice, message)
+        if kind == "weapon" and element is not None:
+            kind = "elemental_strike"
         self.combat_view.trigger_impact_effect(
             target,
             kind,

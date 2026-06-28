@@ -392,6 +392,41 @@ class ShopManager(TownScreenBase):
     def _slot_label(slot: str) -> str:
         return "Main Hand" if slot == "Weapon" else slot
 
+    def _current_slot_item_name(self, slot: str) -> str:
+        current = getattr(self.player_char, "equipment", {}).get(slot)
+        if current is None or getattr(current, "subtyp", None) == "None":
+            return "empty"
+        return getattr(current, "name", "current item")
+
+    def _equip_preview_lines(self, item, slots: tuple[str, ...]) -> list[str]:
+        lines: list[str] = []
+        for slot in slots:
+            label = self._slot_label(slot)
+            lines.append(f"{label}: replaces {self._current_slot_item_name(slot)}")
+            equip_diff = getattr(self.player_char, "equip_diff", None)
+            if not callable(equip_diff):
+                continue
+            try:
+                diff = equip_diff(item, slot, buy=True)
+            except Exception:
+                diff = ""
+            for diff_line in str(diff or "").splitlines():
+                if diff_line.strip():
+                    lines.append(f"  {diff_line.strip()}")
+        return lines
+
+    def _equip_prompt_header(self, item, quantity: int, actions: dict[str, tuple[str, ...]]) -> str:
+        lines = [f"Purchased {quantity}x {item.name}. Equip now?"]
+        if quantity > 1:
+            lines.append("Cancel keeps every purchased item in inventory.")
+        else:
+            lines.append("Cancel keeps the purchased item in inventory.")
+        for action, slots in actions.items():
+            lines.append("")
+            lines.append(f"{action}:")
+            lines.extend(self._equip_preview_lines(item, slots))
+        return "\n".join(lines)
+
     def _equip_actions_for_purchase(self, item, quantity: int) -> dict[str, tuple[str, ...]]:
         slots = items_module.equipment_slots_for_item(item, self.player_char)
         actions: dict[str, tuple[str, ...]] = {}
@@ -430,7 +465,7 @@ class ShopManager(TownScreenBase):
             self.presenter,
             shop_screen,
             title=f"Equip {item.name}?",
-            header_message=f"Equip one purchased {item.name} now?",
+            header_message=self._equip_prompt_header(item, quantity, actions),
             options=options,
         )
         result = popup.show(self.player_char, flush_events=True, require_key_release=True)

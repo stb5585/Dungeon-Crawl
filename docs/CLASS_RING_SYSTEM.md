@@ -564,3 +564,16 @@ additional visual presentation, and playtest follow-up.
     toward 35% with bond.
   - Status: playable in the Church when a dormant Beast Master Class Ring is
     equipped or stored.
+
+## Follow-Up Gate
+
+Current activation flows, awakening requirements, and persistent ring state are
+the compatibility baseline. Future Class Ring work should be limited to tuning,
+visual/readability presentation, and playtest response unless a dedicated spec
+changes activation flow or awakening rules.
+
+Radar-style Wizard affinity visualization remains deferred; the six affinity
+values stay readable text first. Any new activation flow or altered awakening
+rule must define eligibility, trigger source, required ring location, UI text,
+save flags/state changes, failure behavior, and focused tests before
+implementation.

@@ -10,6 +10,81 @@ stay aligned with the roadmap.
 The current canon replaces the old Devil-centered final reveal with Vesperion,
 the fallen Guardian of `Voluntas`.
 
+## Story And Endgame Gate Ownership
+
+This document owns the Story and Endgame Gates. The Vesperion/Voluntas route is
+implemented and remains the compatibility baseline: future work should polish,
+deepen, or stage the route rather than replace it. Presentation mechanics for
+story cards and screen polish remain owned by
+`PRESENTATION_ASSET_DESIGN_GATES.md`.
+
+The next low-risk story slice is New Game intro copy expansion. It should add
+setting, premise, tone, and early stakes while avoiding major endgame spoilers:
+do not reveal Vesperion, Voluntas, the busboy twist, the Hooded Figure truth, or
+true-final route mechanics in the intro.
+
+Class identity and Class Ring ties to Voluntas remain deferred until a
+quest/content spec defines timing, text, flags, and optional/required status.
+
+## Deferred Story Gates
+
+Each gate below needs a promoted story-content decision block before
+implementation unless it is pure copy polish inside an already-approved surface.
+
+### New Game Intro Story
+
+Expand the intro through the reusable story-card presentation. The copy may
+foreshadow relics, town unease, old oaths, missing history, and the cost of
+entering the dungeon, but it must not expose late-game identities or true-final
+route mechanics.
+
+### Guardian Trial Deepening
+
+Bespoke Guardian rooms, puzzles, combat variants, mini-bosses, and stronger
+trial consequences remain deferred behind per-trial specs. Preserve the current
+clue aggregation, one-time consequence behavior, and Guardian-counter route
+when deepening any trial.
+
+### Reflection/Psychopomp Polish
+
+Deeper self-copy mechanics, build-specific dialogue, retry tuning, and combat
+balance remain deferred. Every legitimate player build should remain
+narratively valid; Reflection victory proves chosen selfhood rather than a
+single correct build.
+
+### Final Vesperion Polish
+
+Phase tuning, bespoke relic-counter interactions beyond `Choose Fate` and phase
+pressure, audio/visual presentation, and final battle balance require a
+promoted spec. Numeric combat changes should wait for simulator or playtest
+evidence where relevant.
+
+### Town Tragedy Route
+
+Broader Waitress/Joffrey/busboy rewrites must preserve the human grief of the
+tragedy and the existing true-final reframing. Vesperion may pressure,
+observe, and exploit choices around the tragedy, but the pain remains real and
+should not be erased by later scenes.
+
+### Hooded Figure Polish
+
+The current wounded Liminal guide and Witness of Voluntas reveal remain the
+baseline. Post-Reflection angelic confirmation or a personal angelic name stays
+deferred.
+
+### Legacy Devil Compatibility
+
+The old Devil class and related tests stay valid until a dedicated
+compatibility-retirement cleanup intentionally removes them. Balor owns the old
+demonic visual direction.
+
+## Story-Content Decision Block
+
+Future story work should define the content beat, trigger, prerequisites, repeat
+behavior, save flags, special-event keys, UI surface, spoiler boundaries,
+affected NPCs/tiles/enemies, fallback behavior for old saves, regression tests,
+and playtest checklist entry.
+
 ## Core Direction
 
 - `Vesperion` is the former Guardian of `Voluntas`, the forgotten seventh
@@ -288,17 +363,8 @@ Implemented in the true-final completion slice:
 - After `main_story_complete`, re-entering the final room shows the ending
   reminder instead of reopening the final boss.
 
-Optional polish still to implement:
-
-- Deeper Reflection/Psychopomp combat tuning and more bespoke self-copy behavior.
-- Deeper Guardian trial mechanics where desired, including combat,
-  exploration, sacrifice, or puzzle variants beyond the current story-choice
-  shells.
-- Broader Waitress/Joffrey/busboy town-route rewrites beyond the true-final
-  prelude reframing.
-- Final Vesperion phase polish, additional bespoke relic-counter interactions
-  beyond `Choose Fate` and phase pressure, audio/visual presentation, and
-  balance tuning.
+Optional polish is now tracked under the Deferred Story Gates above so future
+work has one owner section for story-content decisions.
 
 ## Implementation Interfaces
 

@@ -369,6 +369,35 @@ def test_dungeon_renderer_applies_soft_vignette_to_viewport():
     pygame.quit()
 
 
+def test_dungeon_renderer_applies_low_health_vignette_only_when_critical():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    renderer = DungeonRenderer(presenter)
+    player = SimpleNamespace(health=SimpleNamespace(current=25, max=100))
+    screen.fill((220, 220, 220))
+
+    renderer.overlays.render_low_health_vignette(player)
+
+    left_corner = screen.get_at((2, 2))
+    center = screen.get_at((150, 150))
+    right_hud = screen.get_at((500, 150))
+
+    assert left_corner.g < center.g
+    assert left_corner.b < center.b
+    assert right_hud.r == 220 and right_hud.g == 220 and right_hud.b == 220
+
+    screen.fill((220, 220, 220))
+    player.health.current = 26
+    renderer.overlays.render_low_health_vignette(player)
+
+    assert screen.get_at((2, 2)).r == 220
+    assert screen.get_at((2, 2)).g == 220
+    assert screen.get_at((2, 2)).b == 220
+
+    pygame.quit()
+
+
 def test_texture_library_does_not_tile_ladder_pit_panels():
     pygame.init()
     textures = TextureLibrary()
@@ -622,6 +651,10 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     special = textures.get_special_texture("stairs_down", size=24)
     enemy = textures.get_enemy_texture("Missing Enemy", size=24)
     fallbacks = textures.get_asset_fallbacks()
+    expected_texture_fallbacks = len([
+        path for path in TEXTURE_PATHS.values()
+        if not path.startswith("__generated__/")
+    ])
 
     assert wall.get_size() == (128, 128)
     assert special is not None
@@ -631,7 +664,7 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert fallbacks["special:stairs_down"].endswith("special_tiles/stairs_down.png")
     assert fallbacks["enemy:Missing Enemy"].endswith("enemy_combat_sprites/generic_enemy.png")
     assert textures.get_asset_fallback_counts() == {
-        "texture": len(TEXTURE_PATHS),
+        "texture": expected_texture_fallbacks,
         "special": 1,
         "enemy": 1,
     }
@@ -644,16 +677,16 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     assert "texture:wall" in textures.get_asset_fallbacks()
     counts = textures.get_asset_fallback_counts()
     counts["texture"] = 0
-    assert textures.get_asset_fallback_counts()["texture"] == len(TEXTURE_PATHS)
+    assert textures.get_asset_fallback_counts()["texture"] == expected_texture_fallbacks
     assert textures.get_diagnostics() == {
         "loaded": True,
         "fallback_counts": {
-            "texture": len(TEXTURE_PATHS),
+            "texture": expected_texture_fallbacks,
             "special": 1,
             "enemy": 1,
         },
         "fallback_keys": fallback_keys,
-        "fallback_total": len(TEXTURE_PATHS) + 2,
+        "fallback_total": expected_texture_fallbacks + 2,
         "projected_cache": {"size": 0, "limit": 512, "remaining": 512, "full": False},
         "surface_slot_overrides": {
             "manual_count": 0,
@@ -2386,7 +2419,7 @@ def test_scene_renderer_uses_ceiling_void_for_current_stairs_up_opening():
     scene_renderer.render(player, world)
 
     assert scene_renderer.textures.get_surface_slot_overrides() == {
-        "ceiling:visible:d2:x0": "ceiling_void",
+        "ceiling:visible:d1:x0": "ceiling_void",
     }
     assert scene_renderer.textures.get_texture("ceiling_void").get_at((0, 0)) == pygame.Color(4, 5, 7, 255)
 

@@ -438,6 +438,7 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     }
 
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.map_tiles.chalice_altar_visible", lambda _player: True)
+    monkeypatch.setattr("src.ui_pygame.gui.dungeon_hud.pygame.time.get_ticks", lambda: 0)
 
     assert hud._is_direction_visible_from_tile(SimpleNamespace(blocked="north"), "north") is False
     assert hud._is_direction_visible_from_tile(SimpleNamespace(blocked="north", open=True), "north") is True
@@ -456,6 +457,9 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert bundle.draw_circle_calls
     minimap_colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
     assert (255, 215, 0) in minimap_colors
+    assert (255, 255, 110) in minimap_colors
+    assert (255, 255, 255) in minimap_colors
+    assert (220, 180, 80) in minimap_colors
     assert (130, 130, 120) in minimap_colors
     assert (95, 170, 120) in minimap_colors
     assert (139, 69, 19) in minimap_colors

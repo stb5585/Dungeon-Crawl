@@ -65,6 +65,17 @@ class TestItemConsumables:
         assert player.health.current == 400
         assert "healed you for 300 life" in result
 
+    def test_health_potion_uses_minimum_floor_before_percent_scaling(self, monkeypatch):
+        player = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(40, 1))
+        player.state = "normal"
+        player.modify_inventory = lambda *_args, **_kwargs: None
+        monkeypatch.setattr("src.core.items.random.uniform", lambda _a, _b: 1.0)
+
+        result = items.HealthPotion().use(player)
+
+        assert player.health.current == 26
+        assert "healed you for 25 life" in result
+
     def test_mana_potion_full_mana_and_dwarf_out_of_combat_steps(self, monkeypatch):
         full_mana = TestGameState.create_player(class_name="Warrior", race_name="Human", mana=(50, 50))
         assert items.ManaPotion().use(full_mana) == "You are already at full mana.\n"

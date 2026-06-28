@@ -1,8 +1,8 @@
 # Event Emissions Reference
 
 This document is the current reference for the game's event bus and combat
-event-emission contract. Active priorities and future payload work live in
-[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
+event-emission contract. It owns event payload enrichment rules for the Systems,
+Audio, and Meta gates.
 
 ## Contract
 
@@ -161,6 +161,18 @@ damage_events = bus.get_history(EventType.DAMAGE_DEALT)
   before adding parallel reporting state.
 - Keep event-history retention bounded and avoid emitting presentation-only
   events from core gameplay unless a real consumer needs them.
+
+## Payload Enrichment Gate
+
+Add payload fields only when a concrete UI, audio, diagnostics, analytics, or
+tooling consumer needs them. Event emissions must remain non-breaking if no
+subscriber exists or if a subscriber fails, and core mechanics must not depend
+on presentation subscribers.
+
+Before adding a new field, identify the consumer, the emitting layer with stable
+access to the source data, fallback behavior when the field is absent, and the
+focused tests that prove old callers still work. Prefer existing event history
+and compact diagnostics before adding parallel reporting state.
 
 ## Validation
 

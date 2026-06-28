@@ -155,7 +155,7 @@ class SceneRenderer:
             and visible_depth.source_tile is not None
             and "StairsUp" in type(visible_depth.source_tile).__name__
         ):
-            self._set_center_ceiling_void_override(visible_depth.depth + 1, max_visible_depth, overrides)
+            self._set_center_ceiling_void_override(visible_depth.depth, max_visible_depth, overrides)
 
         if visible_depth.center is not None and "StairsUp" in type(visible_depth.center).__name__:
             self._set_center_ceiling_void_override(visible_depth.depth + 1, max_visible_depth, overrides)

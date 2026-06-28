@@ -32,6 +32,7 @@ from .gui.load_game import LoadGameScreen
 from .gui.race_selection import RaceSelectionScreen
 from .gui.class_selection import ClassSelectionScreen
 from .gui.character_naming import CharacterNamingScreen
+from .gui.presentation_asset_screens import CharacterCreatedScreen, StoryCardSequence
 from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
 from .gui.town_menu import TownMenuScreen
 from .gui.town_navigation import TownNavigationScreen
@@ -501,14 +502,9 @@ class PygameGame:
             portrait_variant=getattr(name_screen, "selected_portrait_variant", 0),
         )
         
-        self.presenter.show_message(
-            f"Character Created!\n\n"
-            f"Name: {name}\n"
-            f"Race: {race_name}\n"
-            f"Sex: {player_char.sex}\n"
-            f"Class: {class_name}\n\n"
-            f"HP: {player_char.health.max}\n"
-            f"MP: {player_char.mana.max}"
+        CharacterCreatedScreen(self.presenter, player_char).show(
+            flush_events=True,
+            require_key_release=True,
         )
         
         self.player_char = player_char
@@ -620,8 +616,10 @@ class PygameGame:
             "Will you be different or just another lost soul?"
         ]
         
-        for text in intro_texts:
-            self.presenter.show_message(text, "The Story Begins...")
+        StoryCardSequence(self.presenter, intro_texts, title="The Story Begins").show(
+            flush_events=True,
+            require_key_release=True,
+        )
 
     def town_menu(self):
         """Display town menu and handle selection."""

@@ -21,6 +21,14 @@ only as historical context.
   Voluntas, Liminal Gap, Reflection, and true-final story design.
 - [CLASS_RING_SYSTEM.md](CLASS_RING_SYSTEM.md) - class-ring activation flows,
   persistent state expectations, and legacy second-promotion mechanics.
+- [PRESENTATION_ASSET_DESIGN_GATES.md](PRESENTATION_ASSET_DESIGN_GATES.md) -
+  presentation, generated bitmap, screen-polish, and visual-cue gates.
+- [DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md)
+  - dungeon interaction, chest, encounter, relic, town-hint, and low-health
+  navigation gates.
+- [EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
+  - shop polish, ultimate helmets, durability, identification, item
+  modification, rarity, and economy gates.
 
 ## Current Implementation References
 
@@ -29,9 +37,9 @@ only as historical context.
 - [ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md) - enemy combat sprites,
   tokens, scale maps, and boss-navigation presentation.
 - [SOUND_SYSTEM.md](SOUND_SYSTEM.md) - pygame audio runtime, SFX/music layout,
-  and placeholder asset workflow.
-- [EVENT_EMISSIONS.md](EVENT_EMISSIONS.md) - current event-bus and combat
-  event-emission reference.
+  diagnostics, asset gates, and placeholder asset workflow.
+- [EVENT_EMISSIONS.md](EVENT_EMISSIONS.md) - current event-bus, combat
+  event-emission reference, and payload enrichment gates.
 - [PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md) - promotion
   spell/skill transition rules.
 

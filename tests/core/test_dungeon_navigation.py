@@ -4,8 +4,9 @@ Smoke tests for core dungeon navigation behavior.
 """
 
 from src.core.character import Combat, Level, Resource, Stats
-from src.core import map_tiles
+from src.core import enemies, map_tiles
 from src.core.player import DIRECTIONS, Player
+from types import SimpleNamespace
 
 
 def _make_player():
@@ -66,6 +67,7 @@ def test_movement():
 
 
 def test_decorative_dungeon_tiles_are_traversable_hooks():
+    game = SimpleNamespace(player_char=SimpleNamespace(spellbook={"Skills": []}))
     for tile_class in (
         map_tiles.RubbleTile,
         map_tiles.RootGrowthTile,
@@ -79,3 +81,70 @@ def test_decorative_dungeon_tiles_are_traversable_hooks():
         assert tile.enter is True
         assert tile.special is False
         assert tile.enemy is None
+        assert tile.description in tile.intro_text(game)
+
+
+class _BiasRng:
+    def __init__(self, roll):
+        self.roll = roll
+        self.choice_names = []
+
+    def random(self):
+        return self.roll
+
+    def choice(self, values):
+        self.choice_names.append([enemy.name for enemy in values])
+        return values[0]
+
+
+def test_random_encounter_bias_can_choose_active_quest_target():
+    player = SimpleNamespace(
+        quest_dict={
+            "Main": {},
+            "Side": {"Rat Trouble": {"Type": "Defeat", "What": "Giant Rat", "Completed": False}},
+            "Bounty": {},
+        },
+        stats=SimpleNamespace(charisma=10),
+        check_mod=lambda *_args, **_kwargs: 5,
+    )
+    rng = _BiasRng(0.0)
+
+    enemy = map_tiles.quest_biased_random_enemy(player, "0", rng=rng)
+
+    assert enemy.name == "Giant Rat"
+    assert rng.choice_names == [["Giant Rat"]]
+
+
+def test_random_encounter_bias_is_soft_and_floor_limited():
+    player = SimpleNamespace(
+        quest_dict={
+            "Main": {"Late Threat": {"Type": "Defeat", "What": "Lich", "Completed": False}},
+            "Side": {"Rat Trouble": {"Type": "Defeat", "What": "Giant Rat", "Completed": False}},
+            "Bounty": {"Goblin": [{"num": 2}, 0, False]},
+        },
+        stats=SimpleNamespace(charisma=10),
+        check_mod=lambda *_args, **_kwargs: 5,
+    )
+    rng = _BiasRng(0.99)
+
+    enemy = map_tiles.quest_biased_random_enemy(player, "0", rng=rng)
+
+    assert enemy.name == "Green Slime"
+    assert "Giant Rat" in rng.choice_names[0]
+    assert "Goblin" in rng.choice_names[0]
+    assert "Lich" not in rng.choice_names[0]
+
+
+def test_random_enemy_override_bypasses_encounter_bias():
+    player = SimpleNamespace(
+        quest_dict={"Main": {}, "Side": {"Rat Trouble": {"Type": "Defeat", "What": "Giant Rat"}}},
+        stats=SimpleNamespace(charisma=99),
+        check_mod=lambda *_args, **_kwargs: 99,
+    )
+    try:
+        enemies.set_random_enemy_override(enemies.Test)
+        enemy = map_tiles.quest_biased_random_enemy(player, "0", rng=_BiasRng(0.0))
+    finally:
+        enemies.clear_random_enemy_override()
+
+    assert enemy.name == "Test"

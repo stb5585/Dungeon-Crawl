@@ -145,6 +145,26 @@ Current source-specific staged routes include:
 - `ice_spell.wav`, `distorted_scream.wav`, `mortal_strike.wav`,
   `underground_spring.wav`, and `open_door.wav` through existing runtime hooks.
 
+## Audio Gates
+
+This document owns the audio side of the Systems, Audio, and Meta gates.
+Preserve the current missing-asset fallback behavior, diagnostics,
+`sounds/new_sounds/` staged lookup, music aliases, and combat/location music
+theme routing unless a promoted audio spec explicitly changes them.
+
+Final SFX and music replacement remains an asset-content pass. It should cover
+menu, town, shops, Church, inn, dungeon, normal combat, boss combat, and final
+combat themes/effects while keeping missing-file fallback behavior intact.
+
+Future audio enhancements such as spatial audio, dynamic combat-intensity
+music, randomized SFX, audio ducking, sound profiles, and per-entity sound
+customization require a settings or audio-content spec before implementation.
+
+Source-specific SFX routing should continue to use stable event payload fields
+instead of broad name guessing. Add new payload fields through
+`EVENT_EMISSIONS.md` only when a concrete audio or presentation consumer needs
+them.
+
 ## Development Without Sound Files
 
 The sound system gracefully handles missing audio files:
@@ -223,4 +243,4 @@ Default settings (configured in `SoundManager.__init__`):
 - Use OGG format which supports better looping
 - Check `loops` parameter is set to -1
 
-Future audio enhancements are tracked in `DEVELOPMENT_ROADMAP.md`.
+Future audio enhancements are tracked in the Audio Gates section above.

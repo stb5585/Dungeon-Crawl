@@ -4053,6 +4053,10 @@ class HealthPotion(Potion):
         super().__init__(name="Health Potion", description="A potion that restores up to 25% of your health.",
                          value=100, rarity=0.99, subtyp='Health')
         self.percent = 0.25
+        self.minimum_heal = 25
+
+    def _base_heal_amount(self, user: Character) -> int:
+        return max(int(getattr(self, "minimum_heal", 0) or 0), int(user.health.max * self.percent))
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         use_str = ""
@@ -4064,13 +4068,13 @@ class HealthPotion(Potion):
         is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
         if user.state != 'fight':
             # Out of combat: 80-110% of base amount for variance and improved usefulness
-            base_heal = int(user.health.max * self.percent)
+            base_heal = self._base_heal_amount(user)
             heal = int(random.uniform(0.8, 1.1) * base_heal)
         else:
             # In combat: 50-100% with luck modifier
-            rand_heal = int(user.health.max * self.percent)
+            rand_heal = self._base_heal_amount(user)
             heal_cap = max(1, rand_heal)
-            heal_floor = min(heal_cap, int(50 * self.percent))
+            heal_floor = min(heal_cap, int(getattr(self, "minimum_heal", 0) or 0))
             heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
             heal = max(min(heal, heal_cap), heal_floor)
         if is_dwarf:
@@ -4108,6 +4112,7 @@ class GreatHealthPotion(HealthPotion):
         self.value = 600
         self.rarity = 0.7
         self.percent = 0.50
+        self.minimum_heal = 60
 
 
 class SuperHealthPotion(HealthPotion):
@@ -4119,6 +4124,7 @@ class SuperHealthPotion(HealthPotion):
         self.value = 3000
         self.rarity = 0.5
         self.percent = 0.75
+        self.minimum_heal = 120
 
 
 class MasterHealthPotion(HealthPotion):
@@ -4130,6 +4136,7 @@ class MasterHealthPotion(HealthPotion):
         self.value = 10000
         self.rarity = 0.3
         self.percent = 1.0
+        self.minimum_heal = 250
 
 
 class ManaPotion(Potion):

@@ -672,6 +672,25 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     manager._interact_chest(empty, "Chest")
     assert loot_calls[-1][0:2] == ([], "Empty Chest")
 
+    manager._interact_chest(empty, "Chest")
+    assert "This chest has already been opened." in manager.messages
+
+
+def test_relic_discovery_text_mapping_and_fallback():
+    expected = {
+        "Triangulus": "mind, body, and spirit",
+        "Quadrata": "steady as a vow",
+        "Hexagonum": "living geometry",
+        "Luna": "love is a choice",
+        "Polaris": "northern light",
+        "Infinitas": "without beginning or end",
+    }
+
+    for relic_name, phrase in expected.items():
+        assert phrase in dungeon_manager.relic_discovery_text(SimpleNamespace(name=relic_name))
+
+    assert dungeon_manager.relic_discovery_text(SimpleNamespace(name="Relic X")) == "You found a relic: Relic X!"
+
 
 def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     manager, presenter, player, game = _make_manager(monkeypatch)
@@ -712,6 +731,7 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     assert special_events == ["Relic Room"]
     assert player.health.current == player.health.max
     assert player.mana.current == player.mana.max
+    assert "You found a relic: Relic 2!" in manager.messages
 
     player.warp_point = True
     warp_tile = SimpleNamespace(warped=True)

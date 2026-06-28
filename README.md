@@ -22,6 +22,8 @@ roadmap pass:
 - Combat architecture and balance decisions are specified in
   [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
   before gameplay or balance rules change.
+- Presentation, dungeon/world/encounter, and equipment/economy work now have
+  dedicated design-gate docs linked from the roadmap and docs index.
 - Older phase/migration docs are retained for historical context, not as the
   current backlog.
 
@@ -99,6 +101,9 @@ Start with [docs/README.md](docs/README.md). The most useful current docs are:
 - [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md)
 - [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
 - [docs/CLASS_RING_SYSTEM.md](docs/CLASS_RING_SYSTEM.md)
+- [docs/PRESENTATION_ASSET_DESIGN_GATES.md](docs/PRESENTATION_ASSET_DESIGN_GATES.md)
+- [docs/DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md](docs/DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md)
+- [docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md](docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
 - [docs/STORY_AND_ENDGAME_DESIGN.md](docs/STORY_AND_ENDGAME_DESIGN.md)
 - [docs/PLAYTEST_CHECKLIST.md](docs/PLAYTEST_CHECKLIST.md)
 - [docs/ENEMY_VISUAL_SYSTEM.md](docs/ENEMY_VISUAL_SYSTEM.md)

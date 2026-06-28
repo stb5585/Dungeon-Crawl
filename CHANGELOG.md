@@ -2,6 +2,36 @@
 
 ## [Unreleased] - 2026-06-26
 
+### Design Gate Spec Maps
+
+- Added durable Presentation/Asset, Dungeon/World/Encounter, and
+  Equipment/Items/Economy design-gate docs, then converted the matching roadmap
+  sections into compact status summaries.
+- Moved Class/Ability/Combat, Story/Endgame, and Systems/Audio/Meta gates into
+  their existing owner docs while keeping the roadmap as the index of next
+  implementation slices.
+- Updated documentation indexes so current gate docs are discoverable from the
+  project README and docs README.
+
+### Presentation And Asset Gates
+
+- Added `docs/PRESENTATION_ASSET_DESIGN_GATES.md` as the durable spec map for
+  presentation, generated bitmap, visual-cue, and screen-polish gates.
+- Replaced the plain pygame Character Created popup with a visual summary screen
+  and moved New Game intro text into reusable story-card pages.
+- Added reusable combat impact cues for reflected damage, hard-control hits,
+  and elemental weapon strikes.
+
+### Roadmap Polish And Bugfixes
+
+- Fixed the stairs-up ceiling-void placement so the missing ceiling tile stays
+  above the current stairs rather than the space in front of the player.
+- Added tiered minimum floors to health potion healing before percent scaling,
+  preserving combat caps while making low-HP pools receive useful healing.
+- Added selected equipment artwork to the pygame Equip popup details pane.
+- Improved minimap readability with outlined special-tile indicators and a
+  blinking player-position marker.
+
 ### Promotion Class Kits
 
 - Implemented the V1 promotion class-kit track pass, including shared

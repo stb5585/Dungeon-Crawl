@@ -426,6 +426,15 @@
   - Expected: Long lists scroll within the compact panel and keep the selected row visible.
 - [x] Use a damaging combat skill against an enemy.
   - Expected: Confirmed skill damage produces a compact ring/burst effect distinct from normal weapon slashes and spell glows.
+- [ ] Trigger confirmed reflected damage in pygame combat.
+  - Expected: Reflection and Magic Reflect damage use a shield/ripple impact cue instead of an ordinary weapon slash.
+  - Expected: The cue appears only when HP changes and does not replace combat log or status icon updates.
+- [ ] Trigger a damaging Stun or Prone application in pygame combat.
+  - Expected: Confirmed hard-control hits show a compact status accent near the affected combatant.
+  - Expected: Missed, resisted, or non-damaging control attempts do not play hit particles.
+- [ ] Land a non-spell elemental weapon strike in pygame combat.
+  - Expected: Confirmed elemental weapon damage layers the element color over the standard slash effect.
+  - Expected: Pure spell damage still uses the existing spell glow/ray effect.
 - [x] Take damage from an enemy attack or spell.
   - Expected: The player-side damage flash remains readable while the short impact effect appears near the player/status area.
   - Expected: Combat log scrolling and quit handling remain responsive during the flash.
@@ -488,6 +497,12 @@
   - Expected: If a sprite is missing or fails to load, combat falls back gracefully without crashing.
 
 ### Main Menu
+- [ ] Complete pygame New Game character creation.
+  - Expected: The Character Created presentation screen shows the chosen portrait, name, race, sex, class, HP, and MP.
+  - Expected: Enter, Space, or clicking the continue button advances to gameplay without changing the created character data.
+- [ ] Start a new level-1 pygame character and view the intro.
+  - Expected: The New Game intro appears as story cards with a title, page counter, wrapped text, and clear continue action.
+  - Expected: Enter, Space, or mouse click advances pages, and Escape can skip the remaining intro without cancelling the character.
 - [x] Load an existing save from the pygame Load Game screen.
   - Expected: The loading popup progress bar fills smoothly instead of advancing in visibly jumpy chunks.
 - [x] Quit from a pygame session after visiting dungeon or popup-heavy screens.

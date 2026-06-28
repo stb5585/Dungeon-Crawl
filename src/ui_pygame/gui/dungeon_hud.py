@@ -698,34 +698,7 @@ class DungeonHUD:
                                 pygame.draw.rect(self.screen, (80, 80, 90), tile_rect)
                             else:
                                 pygame.draw.rect(self.screen, (120, 120, 130), tile_rect)
-                        
-                        # Player marker (yellow)
-                        pygame.draw.rect(self.screen, (255, 255, 0), tile_rect)
-                        
-                        # Draw directional arrow on player position
-                        center_x = screen_x + tile_size // 2
-                        center_y = screen_y + tile_size // 2
-                        arrow_size = tile_size // 3
-                        
-                        # Determine arrow direction based on facing
-                        if player_char.facing == 'north':
-                            points = [(center_x, center_y - arrow_size), 
-                                     (center_x - arrow_size//2, center_y + arrow_size//2),
-                                     (center_x + arrow_size//2, center_y + arrow_size//2)]
-                        elif player_char.facing == 'south':
-                            points = [(center_x, center_y + arrow_size),
-                                     (center_x - arrow_size//2, center_y - arrow_size//2),
-                                     (center_x + arrow_size//2, center_y - arrow_size//2)]
-                        elif player_char.facing == 'east':
-                            points = [(center_x + arrow_size, center_y),
-                                     (center_x - arrow_size//2, center_y - arrow_size//2),
-                                     (center_x - arrow_size//2, center_y + arrow_size//2)]
-                        else:  # west
-                            points = [(center_x - arrow_size, center_y),
-                                     (center_x + arrow_size//2, center_y - arrow_size//2),
-                                     (center_x + arrow_size//2, center_y + arrow_size//2)]
-                        
-                        pygame.draw.polygon(self.screen, (0, 0, 0), points)
+                        self._render_minimap_player_marker(tile_rect, player_char.facing, tile_size)
                         
                     elif getattr(tile, 'visited', False) or is_directly_visible or is_discovered_explorable or is_discovered_special:
                         # Explored tile (visited) or directly visible adjacent tile
@@ -760,6 +733,9 @@ class DungeonHUD:
                             else:
                                 corridor_color = (95, 95, 105)
                             pygame.draw.rect(self.screen, corridor_color, tile_rect)
+
+                        if self._is_minimap_special_tile(tile_type, tile, player_char):
+                            self._render_minimap_special_outline(tile_rect, tile_size)
                         
                         # Draw icons for special features on visible/discovered tiles
                         if 'Chest' in tile_type:
@@ -866,6 +842,62 @@ class DungeonHUD:
                     
         y_offset += minimap_size + 5
         return y_offset
+
+    @staticmethod
+    def _is_minimap_special_tile(tile_type: str, tile, player_char) -> bool:
+        if any(
+            marker in tile_type
+            for marker in (
+                'Chest',
+                'Stairs',
+                'Ladder',
+                'Door',
+                'WarpPoint',
+                'UndergroundSpring',
+                'SecretShop',
+                'Relic',
+            )
+        ):
+            return True
+        return 'GoldenChaliceRoom' in tile_type and map_tiles.chalice_altar_visible(player_char)
+
+    def _render_minimap_special_outline(self, tile_rect: pygame.Rect, tile_size: int) -> None:
+        width = max(1, tile_size // 8)
+        pygame.draw.rect(self.screen, (220, 180, 80), tile_rect, width)
+
+    @staticmethod
+    def _minimap_blink_on() -> bool:
+        return (pygame.time.get_ticks() // 350) % 2 == 0
+
+    def _render_minimap_player_marker(self, tile_rect: pygame.Rect, facing: str, tile_size: int) -> None:
+        blink_on = self._minimap_blink_on()
+        fill = (255, 255, 110) if blink_on else (245, 185, 35)
+        outline = (255, 255, 255) if blink_on else (150, 110, 20)
+        pygame.draw.rect(self.screen, fill, tile_rect)
+        pygame.draw.rect(self.screen, outline, tile_rect, max(1, tile_size // 6))
+
+        center_x = tile_rect.x + tile_size // 2
+        center_y = tile_rect.y + tile_size // 2
+        arrow_size = max(3, tile_size // 3)
+
+        if facing == 'north':
+            points = [(center_x, center_y - arrow_size),
+                     (center_x - arrow_size//2, center_y + arrow_size//2),
+                     (center_x + arrow_size//2, center_y + arrow_size//2)]
+        elif facing == 'south':
+            points = [(center_x, center_y + arrow_size),
+                     (center_x - arrow_size//2, center_y - arrow_size//2),
+                     (center_x + arrow_size//2, center_y - arrow_size//2)]
+        elif facing == 'east':
+            points = [(center_x + arrow_size, center_y),
+                     (center_x - arrow_size//2, center_y - arrow_size//2),
+                     (center_x - arrow_size//2, center_y + arrow_size//2)]
+        else:  # west
+            points = [(center_x - arrow_size, center_y),
+                     (center_x + arrow_size//2, center_y - arrow_size//2),
+                     (center_x + arrow_size//2, center_y + arrow_size//2)]
+
+        pygame.draw.polygon(self.screen, (0, 0, 0), points)
 
     def _revealed_level_minimap_positions(self, player_char, visible_adjacent: set[tuple[int, int]]) -> set[tuple[int, int]]:
         """Return current-level positions visible enough for the enlarged map."""

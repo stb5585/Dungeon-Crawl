@@ -399,6 +399,12 @@ class CombatView:
                 self._draw_spell_impact(rect, effect, progress)
             elif effect.kind == "skill":
                 self._draw_skill_impact(rect, effect, progress)
+            elif effect.kind == "reflect":
+                self._draw_reflect_impact(rect, effect, progress)
+            elif effect.kind == "status":
+                self._draw_status_impact(rect, effect, progress)
+            elif effect.kind == "elemental_strike":
+                self._draw_elemental_strike_impact(rect, effect, progress)
             else:
                 self._draw_weapon_impact(rect, effect, progress)
         self._prune_impact_effects()
@@ -485,6 +491,69 @@ class CombatView:
             outer = glow_radius
             start = (center[0] + int(math.cos(angle) * inner), center[1] + int(math.sin(angle) * inner))
             end = (center[0] + int(math.cos(angle) * outer), center[1] + int(math.sin(angle) * outer))
+            pygame.draw.line(overlay, (*effect.color, max(35, alpha // 2)), start, end, 2)
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
+
+    def _draw_reflect_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        alpha = int(180 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(130, 110).size, pygame.SRCALPHA)
+        center = (overlay.get_width() // 2, overlay.get_height() // 2)
+        radius_x = int(34 + progress * 48)
+        radius_y = int(22 + progress * 32)
+        for index in range(3):
+            ring_rect = pygame.Rect(0, 0, radius_x * 2 + index * 18, radius_y * 2 + index * 12)
+            ring_rect.center = center
+            pygame.draw.ellipse(overlay, (*effect.color, max(35, alpha - index * 42)), ring_rect, 2)
+        for angle in (-0.65, 0.0, 0.65):
+            start = (
+                center[0] - int(math.cos(angle) * (radius_x + 18)),
+                center[1] - int(math.sin(angle) * (radius_y + 10)),
+            )
+            end = (
+                center[0] + int(math.cos(angle) * (radius_x + 18)),
+                center[1] + int(math.sin(angle) * (radius_y + 10)),
+            )
+            pygame.draw.line(overlay, (*effect.color, max(50, alpha // 2)), start, end, 2)
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
+
+    def _draw_status_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        alpha = int(175 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(100, 90).size, pygame.SRCALPHA)
+        center = (overlay.get_width() // 2, overlay.get_height() // 2)
+        radius = int(16 + progress * 34)
+        pygame.draw.circle(overlay, (*effect.color, max(40, alpha // 2)), center, radius, 2)
+        for index in range(6):
+            angle = math.pi * 2 * index / 6
+            marker_center = (
+                center[0] + int(math.cos(angle) * (radius + 18)),
+                center[1] + int(math.sin(angle) * (radius + 8)),
+            )
+            pygame.draw.circle(overlay, (*effect.color, max(35, alpha - index * 10)), marker_center, 4)
+        self.screen.blit(overlay, overlay.get_rect(center=rect.center))
+
+    def _draw_elemental_strike_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+        self._draw_weapon_impact(rect, effect, progress)
+        alpha = int(120 * (1.0 - progress))
+        if alpha <= 0:
+            return
+        overlay = pygame.Surface(rect.inflate(100, 100).size, pygame.SRCALPHA)
+        center = (overlay.get_width() // 2, overlay.get_height() // 2)
+        radius = int(24 + progress * 58)
+        pygame.draw.circle(overlay, (*effect.color, max(25, alpha // 2)), center, radius, 2)
+        for index in range(5):
+            angle = progress * math.pi * 2 + index * math.pi * 2 / 5
+            start = (
+                center[0] + int(math.cos(angle) * max(6, radius // 3)),
+                center[1] + int(math.sin(angle) * max(6, radius // 3)),
+            )
+            end = (
+                center[0] + int(math.cos(angle) * radius),
+                center[1] + int(math.sin(angle) * radius),
+            )
             pygame.draw.line(overlay, (*effect.color, max(35, alpha // 2)), start, end, 2)
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 

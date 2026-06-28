@@ -946,10 +946,16 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
         current_item=player.equipment["Weapon"],
         player_char=player,
     )
+    render_calls = []
+    popup.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size))
+        or pygame.surface.Surface(size, pygame.SRCALPHA)
+    )
 
     popup.build_items(player)
     popup.draw_details(player)
 
+    assert render_calls == [("Bastard Sword", (88, 92))]
     rendered = presenter.large_font.render_calls + presenter.normal_font.render_calls
     assert "Bastard Sword (2H)" in rendered
     assert popup._equipment_display_name(DummyItem("Dirk", typ="Weapon", subtyp="Dagger")) == "Dirk (1H)"
@@ -1350,6 +1356,9 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
         slot="Weapon",
         current_item=DummyItem("Starter Blade"),
         player_char=player,
+    )
+    equip_sel.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda _item, _size: RenderedText("equipment-art")
     )
     equip_sel.build_items(player)
     equip_sel.draw_details(player)

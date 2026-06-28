@@ -6,6 +6,8 @@ import pygame
 class OverlayRenderer:
     """Bottom message log and full-screen damage flash overlays."""
 
+    LOW_HEALTH_THRESHOLD = 0.25
+
     def __init__(self, presenter):
         self.presenter = presenter
         self._damage_flash_active = False
@@ -94,6 +96,42 @@ class OverlayRenderer:
         self.screen.blit(divider, (width - divider.get_width(), 0))
 
         self.screen.blit(vignette, (0, 0))
+
+    def render_low_health_vignette(self, player_char) -> None:
+        """Draw a persistent red edge cue while exploring at critical HP."""
+        health = getattr(player_char, "health", None)
+        try:
+            current = float(getattr(health, "current"))
+            maximum = max(1.0, float(getattr(health, "max")))
+        except (AttributeError, TypeError, ValueError):
+            return
+
+        if current <= 0 or current / maximum > self.LOW_HEALTH_THRESHOLD:
+            return
+
+        width, height = self._get_viewport_size()
+        if width <= 0 or height <= 0:
+            return
+
+        cue = pygame.Surface((width, height), pygame.SRCALPHA)
+        min_dim = min(width, height)
+        band_width = max(16, min_dim // 12)
+        color = (180, 18, 18)
+
+        for inset, alpha in ((0, 58), (12, 36), (26, 20)):
+            inner_width = max(1, width - (inset * 2))
+            inner_height = max(1, height - (inset * 2))
+            band = max(8, band_width - inset // 2)
+            rects = (
+                pygame.Rect(inset, inset, inner_width, band),
+                pygame.Rect(inset, height - inset - band, inner_width, band),
+                pygame.Rect(inset, inset, band, inner_height),
+                pygame.Rect(width - inset - band, inset, band, inner_height),
+            )
+            for rect in rects:
+                pygame.draw.rect(cue, (*color, alpha), rect)
+
+        self.screen.blit(cue, (0, 0))
 
     def render_message_area(self, messages, scroll_offset: int = 0, lines_per_page: int = 4) -> None:
         width, height = self._get_viewport_size()

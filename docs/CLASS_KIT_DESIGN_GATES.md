@@ -56,6 +56,67 @@ presentation, and later content expansion:
   remain deferred until their quest/content spec defines timing, text, flags,
   and optional/required status.
 
+## Class, Ability, And Combat Gate Ownership
+
+This document owns the promotion-kit side of the Class, Ability, and Combat
+gates. `CLASS_RING_SYSTEM.md` owns Class Ring activation,
+`PROMOTION_ABILITY_RULES.md` owns promotion ability retention, and
+`COMBAT_BALANCE_DESIGN_GATES.md` owns combat semantics and balance-report gates.
+
+The V1 promotion kit pass is implemented. Future work should start with
+UI/log readability for combat meters, class status, ring state, and combat
+messages, with no mechanic or numeric tuning changes in that slice.
+
+Status locks to preserve unless a later spec explicitly changes them:
+
+- `Transform4` is retired as a live Lycan Red Dragon reward. The legacy wrapper
+  remains loadable for old saves/tests, while Lycan Red Dragon victories set
+  Dragon Essence state for the transformed-only `Winged Pounce` action.
+- `Frozen Armor` is implemented as a Sorcerer-line Ice mastery passive.
+- `Eclipse` is covered by the Shadowcaster Umbral Debt spec.
+- Diviner/Astromancer Foresight Threads and `Threaded Cast` are implemented
+  while preserving the current per-save rune and spell-empowerment scope.
+- Shaman/Soulcatcher Totem Resonance and `Totem Surge` are implemented while
+  preserving communion, spellbook/Totem/Class Ring storage, nonlethal
+  Soul Drain, and reduced Totem pulse-potency contracts.
+
+Track expansions remain deferred and require a one-page decision block before
+implementation:
+
+- Monk/Master Monk: combo chains, chained input timing, combo UI, longer
+  progression, and legs/additional melee attacks with separate attack, crit,
+  and accuracy rules.
+- Bard/Troubadour: broader Maestro progression, larger sheet-music economy, and
+  quest-locked composition.
+- Beast Master: broader monster taming, stables, companion visuals, and
+  stronger-species balance rules.
+- Druid/Archdruid: Grove questlines, catalyst economy expansion, and persistent
+  post-attunement mastery.
+- Sentinel/Stalwart Defender: party-tank threat rules and multi-target control.
+- Lancer/Dragoon: broader Jump-system redesign, persistent Jump mastery, and
+  extra Jump modification capacity.
+- Paladin/Crusader: multi-vow respecs, morality systems, and broader oath
+  quest arcs.
+- Weapon Master/Berserker: forced berserk/loss-of-control and broader scar
+  milestone trees.
+- Cleric/Templar: full divine economy redesign, relic quest expansion, and
+  loot-centered Pious Bounty progression.
+- Priest/Archbishop: party-healer systems, morality gates, and resurrection
+  economy redesign.
+- Thief/Rogue: full loot-table redesign, persistent heist caches, and
+  jackpot-forcing mechanics.
+- Inquisitor/Seeker: full quest pathing, guaranteed boss/trial escape, and
+  loot-focused journal rewards.
+- Assassin/Ninja: stealth-system rewrites, persistent target marks, and
+  unrestricted instant-death scaling.
+- Spell Stealer/Arcane Trickster: stolen-spell mastery, free-scroll generation,
+  and scroll-economy redesign.
+
+Future P6 class ability work needs a one-page decision block covering trigger,
+class eligibility, storage/save migration, combat and exploration behavior,
+UI/menu/status/combat-log copy, event/audio needs, balance assumptions,
+regression tests, and manual playtest checks.
+
 ## Review Baseline
 
 ### Diviner/Astromancer Runes

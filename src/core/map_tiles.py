@@ -198,6 +198,61 @@ CAMBION_ROTATOR_FLAVOR = {
 }
 
 
+def active_random_encounter_quest_targets(player_char) -> set[str]:
+    """Return active quest enemy names that random encounters may softly favor."""
+    targets: set[str] = set()
+    quest_dict = getattr(player_char, "quest_dict", {}) or {}
+
+    for category in ("Main", "Side"):
+        quests = quest_dict.get(category, {}) or {}
+        for quest_data in quests.values():
+            if not isinstance(quest_data, dict):
+                continue
+            if quest_data.get("Type") != "Defeat":
+                continue
+            if quest_data.get("Completed") or quest_data.get("Turned In"):
+                continue
+            target = quest_data.get("What")
+            if isinstance(target, str) and target.strip():
+                targets.add(target.strip())
+
+    for enemy_name, bounty_data in (quest_dict.get("Bounty", {}) or {}).items():
+        try:
+            completed = bool(bounty_data[2])
+        except (IndexError, TypeError):
+            completed = False
+        if not completed and str(enemy_name).strip():
+            targets.add(str(enemy_name).strip())
+
+    return targets
+
+
+def random_encounter_quest_bias_chance(player_char) -> float:
+    """Return a small luck/charisma-based quest-target encounter bias chance."""
+    try:
+        luck_mod = max(0, int(player_char.check_mod("luck", luck_factor=10)))
+    except Exception:
+        luck_mod = 0
+
+    stats = getattr(player_char, "stats", None)
+    try:
+        charisma = max(0, int(getattr(stats, "charisma", 0)))
+    except (TypeError, ValueError):
+        charisma = 0
+
+    return min(0.35, 0.10 + (luck_mod * 0.01) + (charisma * 0.005))
+
+
+def quest_biased_random_enemy(player_char, level: str, rng=random):
+    """Return a random enemy with a soft active-quest target nudge."""
+    return enemies.random_enemy(
+        level,
+        preferred_names=active_random_encounter_quest_targets(player_char),
+        preferred_chance=random_encounter_quest_bias_chance(player_char),
+        rng=rng,
+    )
+
+
 def _enterable_adjacent_positions(world_dict, x: int, y: int, z: int) -> list[tuple[str, tuple[int, int, int]]]:
     positions = []
     for direction, data in DIRECTIONS.items():
@@ -739,7 +794,7 @@ class CavePath0(CavePath):
                             min_display_ms=300
                         )
     def enter_combat(self, player_char):
-        self.enemy = enemies.random_enemy('0')
+        self.enemy = quest_biased_random_enemy(player_char, '0')
         _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
@@ -777,7 +832,7 @@ class CavePath1(CavePath):
         player_char.state = 'fight'
 
     def enter_combat(self, player_char):
-        self.enemy = enemies.random_enemy(str(self.z))
+        self.enemy = quest_biased_random_enemy(player_char, str(self.z))
         _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 
@@ -785,7 +840,7 @@ class CavePath1(CavePath):
 class CavePath2(CavePath):
 
     def enter_combat(self, player_char):
-        self.enemy = enemies.random_enemy(str(self.z + 1))
+        self.enemy = quest_biased_random_enemy(player_char, str(self.z + 1))
         _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = 'fight'
 

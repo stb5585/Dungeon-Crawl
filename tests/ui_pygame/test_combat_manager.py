@@ -495,19 +495,30 @@ def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
     assert manager._combat_effect_kind("Attack") == "weapon"
     assert manager._combat_effect_kind("Spells") == "spell"
     assert manager._combat_effect_kind("Use Skill") == "skill"
+    assert manager._combat_effect_kind("Attack", None, "The spell reflects for 8 damage.") == "reflect"
+    assert manager._combat_effect_kind("Attack", None, "Goblin is stunned for 1 turn.") == "status"
     assert manager._combat_effect_element("Lightning Bolt", "Goblin takes damage") == "Electric"
     assert manager._combat_effect_element(None, "The target burns in holy fire") == "Fire"
 
     manager._show_combat_damage_effect("enemy", "Spells", "Lightning Bolt", "Goblin takes 12 electric damage.", 12)
     manager._show_combat_damage_effect("player", "Attack", None, "Hero takes 4 damage.", 4)
+    manager._show_combat_damage_effect("enemy", "Attack", None, "Goblin takes 6 fire damage.", 6)
+    manager._show_combat_damage_effect("player", "Attack", None, "The spell reflects for 5 damage.", 5)
+    manager._show_combat_damage_effect("enemy", "Attack", None, "Goblin is knocked prone for 3 damage.", 3)
 
     assert manager.combat_view.impact_calls == [
         ("enemy", "spell", "Electric", False),
         ("float", "enemy", "-12", (235, 120, 105)),
         ("player", "weapon", None, False),
         ("float", "player", "-4", (235, 120, 105)),
+        ("enemy", "elemental_strike", "Fire", False),
+        ("float", "enemy", "-6", (235, 120, 105)),
+        ("player", "reflect", None, False),
+        ("float", "player", "-5", (235, 120, 105)),
+        ("enemy", "status", None, False),
+        ("float", "enemy", "-3", (235, 120, 105)),
     ]
-    assert [call[0] for call in manager.combat_view.flash_calls] == [False, True]
+    assert [call[0] for call in manager.combat_view.flash_calls] == [False, True, False, True, False]
 
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):

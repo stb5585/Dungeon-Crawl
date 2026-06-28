@@ -209,5 +209,14 @@ Both versions use the same underlying `apply_promotion_ability_rules()` function
 
 **Note**: Spells are created on-demand from the abilities module if not currently in the spellbook.
 
-Future promotion-transition expansions are tracked in
-`DEVELOPMENT_ROADMAP.md`.
+## Expansion Gate
+
+The current transition matrix is the compatibility baseline. Future promotion
+ability changes must define spell and skill gain rules, class-specific
+retention variants, ability-history restoration behavior, UI messages for text
+and pygame flows, save compatibility, and focused tests before implementation.
+
+Do not add broad ability-history restoration, alternate retention policies, or
+new promotion spell/skill grants as roadmap cleanup. Promote them through this
+doc first so `town.py`, `ChurchManager`, save/load, and regression tests stay
+aligned.

@@ -107,6 +107,8 @@ tests, and balance assumptions.
 - Status-gated skill visibility and messaging.
 - Out-of-combat timed buffs/debuffs.
 - Monk/Master Monk bare-handed skill support and attack bonuses.
+- Polearm Mastery as a future quest/item-unlock hook. Do not wire it without a
+  trigger, reward source, UI text, and balance decision.
 
 ### Ability Reworks
 
@@ -116,6 +118,8 @@ tests, and balance assumptions.
 - Prismatic Rays.
 - Throw inventory-item ability.
 - Magic-stat success scaling.
+- Always-hit spell flags. A promoted spec must define resistance behavior,
+  boss-immunity boundaries, UI text, combat log text, and regression tests.
 
 ### Combat Semantics
 

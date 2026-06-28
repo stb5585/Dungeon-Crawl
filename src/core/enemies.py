@@ -82,7 +82,12 @@ def random_enemy_catalog() -> dict[str, list[Enemy]]:
     }
 
 
-def random_enemy(level: str) -> Enemy:
+def random_enemy(
+    level: str,
+    preferred_names: Iterable[str] | None = None,
+    preferred_chance: float = 0.0,
+    rng=random,
+) -> Enemy:
     """
     Takes the current level a player is on and returns a random enemy
     """
@@ -93,7 +98,13 @@ def random_enemy(level: str) -> Enemy:
     if level not in monsters:
       level = max(monsters, key=int)
 
-    random_monster = random.choice(monsters[level])
+    candidates = monsters[level]
+    preferred = {str(name) for name in (preferred_names or []) if str(name)}
+    preferred_candidates = [enemy for enemy in candidates if enemy.name in preferred]
+    if preferred_candidates and rng.random() < max(0.0, min(1.0, preferred_chance)):
+        candidates = preferred_candidates
+
+    random_monster = rng.choice(candidates)
 
     return random_monster
 

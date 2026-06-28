@@ -348,6 +348,14 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
         def show(self, **_kwargs):
             return True
 
+    class FakeCreatedScreen:
+        def __init__(self, _presenter, player_char):
+            route_kwargs.append(("created_init", {"name": player_char.name}))
+
+        def show(self, **kwargs):
+            route_kwargs.append(("created", kwargs))
+            return True
+
     game.races_dict = {"Human": FakeRace}
     game.classes_dict = {"Warrior": {"class": FakeClass}}
     game._build_player_character = lambda race_name, class_name, name, sex, portrait_variant=0: SimpleNamespace(
@@ -364,6 +372,7 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
     monkeypatch.setattr(pygame_game, "ClassSelectionScreen", FakeClassScreen)
     monkeypatch.setattr(pygame_game, "CharacterNamingScreen", FakeNamingScreen)
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(pygame_game, "CharacterCreatedScreen", FakeCreatedScreen)
 
     player = game.new_game()
 
@@ -375,6 +384,8 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
         ("class", {"flush_events": True, "require_key_release": True}),
         ("naming_init", {"race": "Human", "class": "Warrior"}),
         ("naming", {"default": "Hero", "flush_events": True, "require_key_release": True}),
+        ("created_init", {"name": "Ada"}),
+        ("created", {"flush_events": True, "require_key_release": True}),
     ]
 
 
@@ -494,9 +505,24 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert pygame_game.PygameGame.load_game(game) is None
     assert presenter_messages[-1][1] == "Failed to load character!"
 
+    story_calls = []
+
+    class FakeStorySequence:
+        def __init__(self, presenter_obj, pages, title=""):
+            story_calls.append(("init", tuple(pages), title))
+
+        def show(self, **kwargs):
+            story_calls.append(("show", kwargs))
+            return True
+
+    monkeypatch.setattr(pygame_game, "StoryCardSequence", FakeStorySequence)
     presenter_messages.clear()
     game.show_intro()
-    assert len(presenter_messages) == 5
+    assert len(presenter_messages) == 0
+    assert story_calls[0][0] == "init"
+    assert len(story_calls[0][1]) == 5
+    assert story_calls[0][2] == "The Story Begins"
+    assert story_calls[1] == ("show", {"flush_events": True, "require_key_release": True})
 
     confirm_results = iter([True, False])
     popup_kwargs.clear()
@@ -811,8 +837,8 @@ def test_old_warehouse_footpad_ring_jobs_awaken_mods(monkeypatch):
     for class_name, expected_mod, expected_label in (
         ("Rogue", "Loaded Dice", "Loaded Game"),
         ("Seeker", "Hidden Cache", "Cartographer's Proof"),
-        ("Ninja", "First Strike Plus", "No-Trace Contract"),
-        ("Arcane Trickster", "Spell Steal Buff", "Impossible Theft"),
+        ("Ninja", "No-Trace Opener", "No-Trace Contract"),
+        ("Arcane Trickster", "Arcane Larceny", "Impossible Theft"),
     ):
         game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
         game.presenter = SimpleNamespace()
