@@ -534,6 +534,19 @@ def test_telegraph_banner_clears_after_non_telegraph_message(monkeypatch):
     assert any("unleashes" in line for line in view.combat_log)
 
 
+def test_class_kit_log_filter_keeps_required_failure_messages():
+    view = _make_view()
+
+    view.add_combat_message("Goblin is immune to poison.")
+    assert "Goblin is immune to poison." not in view.combat_log
+
+    view.add_combat_message("Death Mark is immune to execution and downgrades to pressure.")
+    view.add_combat_message("Threaded Cast is immune to the negated rider.")
+
+    assert "Death Mark is immune to execution and downgrades to pressure." in view.combat_log
+    assert "Threaded Cast is immune to the negated rider." in view.combat_log
+
+
 def test_sight_rules():
     view = _make_view()
 

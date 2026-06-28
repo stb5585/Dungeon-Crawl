@@ -52,6 +52,8 @@ def test_story_polish_content_keys_are_present_and_spoiler_scoped():
         "Class Voluntas Followup Companion",
         "Class Voluntas Followup Shadow",
         "Class Voluntas Followup Wanderer",
+        "Class Voluntas Bridge",
+        "Class Voluntas Bridge Wanderer",
         "Reflection Voluntas Choice Claim",
         "Reflection Voluntas Choice Carry",
         "Reflection Voluntas Choice Choose Again",
@@ -65,6 +67,9 @@ def test_story_polish_content_keys_are_present_and_spoiler_scoped():
         "Vesperion True Final Victory",
     )
     for key in required_keys:
+        assert events.get(key, {}).get("Text"), key
+    for class_name in main_story.CLASS_VOLUNTAS_BRIDGE_CLASSES:
+        key = main_story.class_voluntas_bridge_event_key(class_name)
         assert events.get(key, {}).get("Text"), key
 
     for guardian, choices in main_story.GUARDIAN_TRIAL_CHOICES.items():

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
 from src.core.combat.battle_engine import BattleEngine
-from src.core.classes import class_rings, paladin
+from src.core.classes import archdruid, class_rings, demonologist, grandmaster, paladin
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
@@ -27,7 +27,57 @@ def test_legacy_class_ring_defaults_to_dormant_description_and_mod():
 
     assert player.class_ring_awakening["awakened"]["Berserker"] is False
     assert player.equipment["Ring"].mod == "Dormant Bloodied Crits"
-    assert "Activation: No Healing Duel" in ring.get_description(player)
+    description = ring.get_description(player)
+    assert "Ring location: equipped" in description
+    assert "Town-visible: yes" in description
+    assert "Activation: No Healing Duel" in description
+    assert "Active effect: inactive until awakened" in description
+
+
+def test_class_ring_presentation_state_names_presence_visibility_and_active_effects():
+    no_ring = TestGameState.create_player(class_name="Wizard", race_name="Human")
+    no_ring.equipment["Ring"] = items.NoRing()
+    no_ring.inventory = {}
+    no_ring.storage = {}
+
+    missing = class_rings.presentation_state(no_ring)
+    assert missing["location"] == "not present"
+    assert missing["town_visible"] is False
+    assert missing["effect_active"] is False
+
+    inventory_only = TestGameState.create_player(class_name="Wizard", race_name="Human")
+    inventory_only.equipment["Ring"] = items.NoRing()
+    inventory_only.inventory = {"Class Ring": [items.ClassRing()]}
+    inventory_only.storage = {}
+
+    inventory_state = class_rings.presentation_state(inventory_only)
+    assert inventory_state["location"] == "inventory only"
+    assert inventory_state["town_visible"] is False
+    assert inventory_state["equipped"] is False
+
+    stored = TestGameState.create_player(class_name="Wizard", race_name="Human")
+    stored.equipment["Ring"] = items.NoRing()
+    stored.inventory = {}
+    stored.storage = {"Class Ring": [items.ClassRing()]}
+
+    stored_state = class_rings.presentation_state(stored)
+    assert stored_state["location"] == "stored"
+    assert stored_state["town_visible"] is True
+    assert stored_state["effect_active"] is False
+    assert "Ring location: stored" in stored.storage["Class Ring"][0].get_description(stored)
+
+    equipped, ring = _player_with_class_ring("Wizard")
+    equipped_state = class_rings.presentation_state(equipped)
+    assert equipped_state["location"] == "equipped"
+    assert equipped_state["town_visible"] is True
+    assert equipped_state["effect_active"] is False
+    assert "Active effect: inactive until awakened" in ring.get_description(equipped)
+
+    equipped.awaken_class_ring()
+    awakened_state = class_rings.presentation_state(equipped)
+    assert awakened_state["state"] == "awakened"
+    assert awakened_state["effect_active"] is True
+    assert "Active effect: active while equipped" in ring.get_description(equipped)
 
 
 def test_class_voluntas_identity_summarizes_ring_visibility_and_state():
@@ -38,27 +88,38 @@ def test_class_voluntas_identity_summarizes_ring_visibility_and_state():
 
     assert hidden["class_name"] == "Berserker"
     assert hidden["visible"] is False
+    assert hidden["location"] == "not present"
+    assert hidden["town_visible"] is False
+    assert hidden["equipped"] is False
+    assert hidden["effect_active"] is False
     assert hidden["awakened"] is False
     assert hidden["activation"] == "No Healing Duel"
     assert hidden["mod"] == "Dormant Bloodied Crits"
+    assert "Ring location: not present" in hidden["description"]
 
     dormant, _ring = _player_with_class_ring("Wizard")
     dormant_identity = class_rings.class_voluntas_identity(dormant)
 
     assert dormant_identity["visible"] is True
+    assert dormant_identity["location"] == "equipped"
+    assert dormant_identity["effect_active"] is False
     assert dormant_identity["awakened"] is False
     assert dormant_identity["activation"] == "Four Formulae"
     assert dormant_identity["mod"] == "Dormant School Streak"
     assert "dormant Class Ring for a Wizard" in dormant_identity["description"]
+    assert "Active effect: inactive until awakened" in dormant_identity["description"]
 
     awakened, _ring = _player_with_class_ring("Wizard")
     awakened.awaken_class_ring()
     awakened_identity = class_rings.class_voluntas_identity(awakened)
 
     assert awakened_identity["visible"] is True
+    assert awakened_identity["location"] == "equipped"
+    assert awakened_identity["effect_active"] is True
     assert awakened_identity["awakened"] is True
     assert awakened_identity["mod"] == "School Streak"
     assert "awakened Class Ring for a Wizard" in awakened_identity["description"]
+    assert "Active effect: active while equipped" in awakened_identity["description"]
 
     unknown = SimpleNamespace(
         cls=SimpleNamespace(name="Chronomancer"),
@@ -72,7 +133,42 @@ def test_class_voluntas_identity_summarizes_ring_visibility_and_state():
     assert unknown_identity["awakened"] is False
     assert unknown_identity["activation"] == "Quest Awakening"
     assert unknown_identity["mod"] == "Special"
-    assert unknown_identity["description"] == "A ring that changes depending on the wearer's specialty."
+    assert "changes depending on" in unknown_identity["description"]
+    assert "wearer's specialty" in unknown_identity["description"]
+
+
+def test_class_voluntas_identity_uses_special_system_awakening_state():
+    grandmaster_player, _ring = _player_with_class_ring("Grandmaster of Arms")
+    grandmaster.bind_weapon(grandmaster_player, "Sword")
+
+    grandmaster_identity = class_rings.class_voluntas_identity(grandmaster_player)
+
+    assert grandmaster_identity["awakened"] is True
+    assert grandmaster_identity["effect_active"] is True
+    assert "bound to Sword Discipline" in grandmaster_identity["description"]
+
+    demonologist_player, _ring = _player_with_class_ring("Demonologist")
+    demonologist_player.familiar = SimpleNamespace(name="Aegis", race="Homunculus", spec="Defense")
+    demonologist.awaken_ring(demonologist_player)
+
+    demonologist_identity = class_rings.class_voluntas_identity(demonologist_player)
+
+    assert demonologist_identity["awakened"] is True
+    assert demonologist_identity["effect_active"] is True
+    assert "Imprisoned echo: Homunculus" in demonologist_identity["description"]
+
+    archdruid_player, _ring = _player_with_class_ring("Archdruid")
+    state = archdruid_player.ensure_archdruid_attunement()
+    state["ring_awakened"] = True
+    state["aspects"] = {affinity: True for affinity in archdruid.AFFINITIES}
+    state["attunement"] = {affinity: 75 for affinity in archdruid.AFFINITIES}
+    archdruid_player.archdruid_attunement = state
+
+    archdruid_identity = class_rings.class_voluntas_identity(archdruid_player)
+
+    assert archdruid_identity["awakened"] is True
+    assert archdruid_identity["effect_active"] is True
+    assert "Current Harmony Bonus: +24%" in archdruid_identity["description"]
 
 
 def test_berserker_bloodied_crits_and_weapon_damage_require_awakening():

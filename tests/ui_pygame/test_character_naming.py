@@ -220,6 +220,24 @@ def test_character_naming_navigation_confirm_and_cancel(monkeypatch):
     assert screen.navigate() is None
 
 
+def test_character_naming_allows_m_and_f_as_name_characters(monkeypatch):
+    presenter = _make_presenter()
+    screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
+    monkeypatch.setattr(screen, "draw", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_m, unicode="m")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_f, unicode="f")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate() == "mf"
+    assert screen.sex == "Male"
+
+
 def test_character_naming_quit_exits(monkeypatch):
     presenter = _make_presenter()
     screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")

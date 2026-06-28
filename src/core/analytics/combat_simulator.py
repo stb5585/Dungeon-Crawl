@@ -44,6 +44,95 @@ def _combat_level(ch: object) -> int:
         return 1
 
 
+_CLASS_KIT_TERMS = (
+    "aerial tempo",
+    "arcane larceny",
+    "arcane tempo",
+    "aspect harmony",
+    "backlash",
+    "battle scars",
+    "blade charge",
+    "bloodied momentum",
+    "case journal",
+    "cheat death",
+    "conduit",
+    "conviction",
+    "corruption",
+    "crescendo",
+    "death mark",
+    "devotion",
+    "divine intervention",
+    "dragon essence",
+    "eclipse",
+    "encore",
+    "foresight",
+    "fortune",
+    "harmony bonus",
+    "ki",
+    "loaded dice",
+    "misfortune",
+    "oath",
+    "ordered blessings",
+    "prayer",
+    "repertoire",
+    "revelation",
+    "resolve",
+    "shared recovery",
+    "stolen charge",
+    "threaded cast",
+    "totem resonance",
+    "umbral debt",
+    "vow affirmation",
+)
+
+_CLASS_KIT_EVENT_KEYWORDS = {
+    "meter_gain": ("gains", "stores", "rises", "represents", "bond grows"),
+    "meter_cap": ("capped", "cap"),
+    "meter_spend": ("spends", "cashes in", "releases"),
+    "preservation": ("preserves", "preservation"),
+    "cleanup": ("clears", "fades", "expires"),
+    "payoff": ("payoff", "follow-through", "burst", "coda", "surge", "force", "empowers"),
+}
+
+_ACTION_ECONOMY_KEYWORDS = {
+    "totem_output": ("totem pulses", "totem surge", "force "),
+    "song_coda": ("coda", "encore"),
+    "summon_output": ("summon", "invokes", "conduit command"),
+    "companion_output": ("companion", "pack strike", "guard partner", "harry prey", "mend wounds"),
+    "multi_output": ("doublecast", "fourfold surge", "threaded cast"),
+    "passive_echo": ("shared recovery", "echo", "intervention", "counter", "riposte"),
+}
+
+
+def _merge_counts(target: dict[str, int], source: dict[str, int]) -> None:
+    for key, value in source.items():
+        target[key] += int(value or 0)
+
+
+def _classify_class_kit_text(value: object) -> dict[str, int]:
+    text = str(value or "").lower()
+    if not text or not any(term in text for term in _CLASS_KIT_TERMS):
+        return {}
+    counts: dict[str, int] = {}
+    for bucket, needles in _CLASS_KIT_EVENT_KEYWORDS.items():
+        if any(needle in text for needle in needles):
+            counts[bucket] = counts.get(bucket, 0) + 1
+    if not counts:
+        counts["mention"] = 1
+    return counts
+
+
+def _classify_action_economy_text(value: object) -> dict[str, int]:
+    text = str(value or "").lower()
+    if not text:
+        return {}
+    counts: dict[str, int] = {}
+    for bucket, needles in _ACTION_ECONOMY_KEYWORDS.items():
+        if any(needle in text for needle in needles):
+            counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
+
+
 @dataclass
 class CombatStats:
     """Statistics from a single combat encounter."""
@@ -60,6 +149,8 @@ class CombatStats:
     total_damage_taken: int
     abilities_used: dict[str, int] = field(default_factory=dict)
     status_effects_applied: dict[str, int] = field(default_factory=dict)
+    class_kit_events: dict[str, int] = field(default_factory=dict)
+    action_economy_events: dict[str, int] = field(default_factory=dict)
     critical_hits: int = 0
     misses: int = 0
     
@@ -162,6 +253,22 @@ class BalanceReport:
                 freq[effect] += count
         return dict(freq)
 
+    def get_class_kit_events(self) -> dict[str, int]:
+        """Get aggregate class-kit event counts across all battles."""
+        events = defaultdict(int)
+        for result in self.results:
+            for event_name, count in result.class_kit_events.items():
+                events[event_name] += count
+        return dict(events)
+
+    def get_action_economy_events(self) -> dict[str, int]:
+        """Get aggregate bonus-output/action-economy counts across all battles."""
+        events = defaultdict(int)
+        for result in self.results:
+            for event_name, count in result.action_economy_events.items():
+                events[event_name] += count
+        return dict(events)
+
     def export_payload(self) -> dict:
         """Export report metrics and raw combat stats for tooling."""
         return {
@@ -173,6 +280,8 @@ class BalanceReport:
             "win_rates": dict(self.win_rates),
             "ability_usage": self.get_ability_usage(),
             "status_effect_frequency": self.get_status_effect_frequency(),
+            "class_kit_events": self.get_class_kit_events(),
+            "action_economy_events": self.get_action_economy_events(),
             "outliers": self.identify_outliers(),
             "results": [result.__dict__.copy() for result in self.results],
         }
@@ -193,6 +302,8 @@ class BalanceReport:
                 key=lambda item: item[1],
                 reverse=True,
             )[:max(0, status_limit)],
+            "class_kit_events": self.get_class_kit_events(),
+            "action_economy_events": self.get_action_economy_events(),
             "outliers": self.identify_outliers(),
         }
 
@@ -349,6 +460,17 @@ class CombatSimulator:
         crits = 0
         misses = 0
         damage_by_actor: dict[str, int] = defaultdict(int)
+        class_kit_events: dict[str, int] = defaultdict(int)
+        action_economy_events: dict[str, int] = defaultdict(int)
+
+        def record_analytics_text(value: object) -> None:
+            _merge_counts(class_kit_events, _classify_class_kit_text(value))
+            _merge_counts(action_economy_events, _classify_action_economy_text(value))
+
+        def record_action_selection(action: object, choice: object = None) -> None:
+            record_analytics_text(action)
+            if choice:
+                record_analytics_text(choice)
 
         def on_event(ev) -> None:
             nonlocal crits, misses
@@ -357,10 +479,12 @@ class CombatSimulator:
                     nm = ev.data.get("spell_name")
                     if nm:
                         abilities_used[str(nm)] += 1
+                        record_analytics_text(nm)
                 elif ev.type == EventType.SKILL_USE:
                     nm = ev.data.get("skill_name")
                     if nm:
                         abilities_used[str(nm)] += 1
+                        record_analytics_text(nm)
                 elif ev.type == EventType.ATTACK:
                     abilities_used["Attack"] += 1
                 elif ev.type == EventType.STATUS_APPLIED:
@@ -694,9 +818,14 @@ class CombatSimulator:
                                 action, choice = "Attack", None
                         else:
                             action, choice = engine.get_enemy_action()
-                engine.execute_action(action, choice)
-            engine.companion_turn()
-            engine.post_turn()
+                record_action_selection(action, choice)
+                action_result = engine.execute_action(action, choice)
+                record_analytics_text(getattr(action_result, "message", ""))
+            companion_text = engine.companion_turn()
+            record_analytics_text(companion_text)
+            post = engine.post_turn()
+            for message in getattr(post, "messages", []) or []:
+                record_analytics_text(message)
             engine.swap_turns()
 
         # Outcome (avoid engine.end_battle bookkeeping for analytics)
@@ -740,6 +869,8 @@ class CombatSimulator:
             total_damage_taken=0,
             abilities_used=dict(abilities_used),
             status_effects_applied=dict(status_applied),
+            class_kit_events=dict(class_kit_events),
+            action_economy_events=dict(action_economy_events),
             critical_hits=crits,
             misses=misses,
         )

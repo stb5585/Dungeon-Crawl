@@ -1,10 +1,19 @@
 # Playtest Checklist
 
+Record class-kit UI/log, meter cadence, preservation, action-economy, and
+progression pacing findings in
+[`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md). Checklist items
+remain the prompts; the evidence ledger is the running decision record.
+
 ## Found Issues
 
 ## Recently Changed
 
 ### Class Ring Activations
+- [ ] Inspect Class Ring wording across absent, inventory-only, stored, equipped dormant, and equipped awakened states.
+  - Expected: Item/status/story text distinguishes town-visible rings from inventory-only rings, and distinguishes dormant/awakened state from equipped active effects.
+- [ ] Inspect special Class Ring descriptions for Grandmaster of Arms, Demonologist, and Archdruid.
+  - Expected: Grandmaster names Secret Master binding and equipped-only bound bonuses; Demonologist separates basic contracts from empowered contracts and echo identity; Archdruid separates Fourfold/Grove progress from equipped Harmony Bonus.
 - [ ] Visit the Barracks as a Berserker with a dormant Class Ring equipped.
   - Expected: The Barracks menu includes `No Healing Duel`.
   - Expected: Winning the duel awakens the ring and changes its equipped mod to `Bloodied Crits`.
@@ -73,6 +82,12 @@
   - Expected: Recover restores more HP and MP than the baseline Recover Jump.
 - [ ] Visit the Church for a Mage-branch rite with the Class Ring only in inventory.
   - Expected: The class-specific rite does not appear until the ring is equipped or stored.
+
+### Voluntas Class Identity Bridge
+- [ ] After Voluntas is revealed, use the Liminal guide with a visible Class Ring to run `Affirm Class Path`, `Revisit Class Path`, `Bridge Class Identity`, and then enter the Reflection path mirror.
+  - Expected: The bridge appears only after affirmation and revisit, plays one generic Voluntas beat plus one recorded-class beat, then disappears after being seen.
+  - Expected: The bridge uses the class recorded at affirmation even if the current class, equipment, or ring state changes later.
+  - Expected: HP, MP, XP, loot, Class Ring mechanics, true-final gates, Reflection mechanics, and route rewards do not change from viewing the bridge.
 
 ### Weapon Discipline And School Affinity
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
@@ -193,6 +208,37 @@
 - [ ] Review the known balance-suite help issue before relying on `--help`.
   - Expected: The argparse `%` help-string failure is treated as a tooling cleanup item, not as a balance-rule failure.
 
+### Class-Kit Balance Thresholds
+- [ ] Run focused meter-cadence checks for at least one martial meter, one caster/support meter, and one persistent-progress-backed meter.
+  - Expected: Each meter can produce a payoff within three ordinary eligible combats, does not sit capped for most of a fight without spending pressure, and does not rebuild/spend repeatedly without a meaningful action, MP, risk, target, or opportunity-cost tradeoff.
+  - Watch: Record matchup, level, gear/loadout, ring state, battle length, status text, combat-log notes, and simulator `class_kit_events` if the meter starves, caps constantly, or loops too freely.
+- [ ] Test awakened-ring preservation for at least two tracks with miss, immunity, negated payoff, or target-loss pressure.
+  - Expected: Preservation feels like once-per-combat smoothing, not a required baseline engine or a way to erase failed-payoff costs.
+  - Watch: Record evidence if preservation feels mandatory, routinely cancels failure costs, or enables same-turn/every-turn payoff loops.
+- [ ] Exercise high-action-economy class-kit loops: Totem pulse/`Totem Surge`, song coda/`Encore`, summon or companion actions, Doublecast-adjacent divine support, and route/economy codas where available.
+  - Expected: Bonus or autonomous output supports the player's direct action without regularly exceeding it or creating low-interaction wins.
+  - Watch: Record simulator `action_economy_events`, combat-log evidence, and manual notes if the player can mostly defend, wait, or repeat one setup action while the loop wins representative encounters.
+- [ ] Review compact simulator payloads after class-kit threshold checks.
+  - Expected: `class_kit_events` and `action_economy_events` are treated as evidence for investigation, not as automatic tuning failures.
+  - Expected: Numeric changes remain blocked until a one-page balance spec promotes the issue from `Watch` or `Tuning Gate`.
+
+### Class-Kit Progression Pacing
+- [ ] Master one Troubadour advanced song through clean completions.
+  - Expected: Combat-only mastery takes about 3 clean full 3-turn performances, or exploration mastery takes about 3 clean full exploration performances. Composition XP may buffer progress, but 3 clean finishes are still required.
+  - Record: song, performance count, combat or exploration route, interruptions, ring state, and whether cadence felt `Pass`, `Watch`, or `Tuning Gate`.
+- [ ] Raise a Beast Master companion to at least `Trusted` bond while it remains active.
+  - Expected: One companion action plus active living victory gives about `+5/combat`, reaching `Trusted` near 5 ordinary active wins. Favored Enemy wins can be faster, near 4 active wins.
+  - Record: companion name/species, combat count, companion actions, Favored Enemy state, ring state, replacement/tame interruptions, and cadence band.
+- [ ] Raise one Summoner or Grand Summoner bond to at least `50` without switching summons.
+  - Expected: One active non-Recall summon action plus victory gives about `+6/combat`, reaching bond `50` near 9 focused combats. Switching summons should distribute progress and slow each individual bond.
+  - Record: summon name, combat count, summon action count, victories, recall/death interruptions, ring state, and cadence band.
+- [ ] Raise one Inquisitor or Seeker Case Journal enemy type to at least `Known Tells`.
+  - Expected: `Inspect` plus visible-detail victory gives about `+7/combat`, reaching `Known Tells` near 4 focused combats. Rich evidence loops can be faster; victory-only visible-detail progress can be slower.
+  - Record: enemy type, combat count, evidence actions, visible-detail state, ring state, spread across other enemy types, and cadence band.
+- [ ] Advance one Lycan control gate through the correct stress behavior.
+  - Expected: The current gate advances after 3 matching successful stress records. Class Ring state and Dragon Essence should not advance control rank by themselves.
+  - Record: starting rank, required behavior, eligible opportunity count, successful records, moon/ring/Dragon Essence state, failures, and cadence band.
+
 ### P6 Content And Ability Mechanics
 - [ ] Encounter `Giant` and `Owlbear` on dungeon levels 3 and 4.
   - Expected: Giant reads as a Humanoid bruiser with `Stomp` and `Charge`.
@@ -222,6 +268,18 @@
   - Expected: Battle Hymn berserks combatants, Ode to the Ramparts boosts defenses, exploration debuff songs affect enemies while active, encounter/loot songs apply their route hooks, and Chorus Time can consume enemy turns.
 - [ ] Use current second-promotion power-up hooks.
   - Expected: Trickster's Gambit, Primal Ascendance, Abyssal Covenant, Arsenal Mastery, Shield Mastery, Eternal Conduit, Melody of Inspiration, and Pack Bond produce visible gameplay/status changes without stale placeholder messages.
+
+### Class-Kit UI/Log Polish
+- [ ] Inspect shared class/status text for one martial meter track, such as Berserker, Dragoon, Stalwart Defender, Ninja, or Master Monk.
+  - Expected: Current meter value, cap, pending payoff or stance, and awakened/equipped Class Ring readiness appear without duplicate or stale labels.
+- [ ] Inspect shared class/status text for one caster or support meter track, such as Astromancer, Shadowcaster, Templar, Archbishop, Archdruid, or Soulcatcher.
+  - Expected: Current meter/resource value, cap or represented state, pending payoff, and ring readiness/preservation state are readable in the same status surface.
+- [ ] Inspect a persistent-progress class track, such as Demonologist, Grand Summoner, Seeker, Troubadour, Lycan, or Beast Master.
+  - Expected: Persistent progress rank/value and relevant temporary combat state appear together without implying new progression, rewards, or tuning.
+- [ ] Trigger representative class-kit combat messages for gain, cap, spend, miss/negated payoff, expiration/cleanup, and ring preservation.
+  - Expected: Pygame and curses combat logs keep the class-kit message visible, wrap long lines cleanly, and do not suppress important failure, immunity, downgrade, or preservation text as generic status noise.
+- [ ] Inspect one menu/exploration-adjacent class-kit surface, such as Demonologist contracts, Seeker `Hidden Cache`, Troubadour composition/repertoire, Lycan `Dismiss Form`, Beast Master tame/command, or Soulcatcher Totem aspects.
+  - Expected: The surface explains current availability and failure state clearly without changing quest gates, save state, combat rules, or numeric balance.
 
 ### Legacy Class-Kit Mechanics
 - [ ] Build `Devotion` as Cleric through healing, Holy pressure, shield actions, and `Turn Undead`.

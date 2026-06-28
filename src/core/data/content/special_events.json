@@ -732,6 +732,156 @@
             "The Hooded Figure almost smiles. 'Then let the unwritten road remain written by your steps.'"
         ]
     },
+    "Class Voluntas Bridge": {
+        "Text": [
+            "The Hooded Figure turns the Class Ring toward the empty seventh place.",
+            "'Every class is a way of answering pressure,' they say. 'Let yours answer without becoming a command.'"
+        ]
+    },
+    "Class Voluntas Bridge Grandmaster of Arms": {
+        "Text": [
+            "Weapon forms move through the ring like remembered stances, each one chosen and refined by use.",
+            "Voluntas holds where mastery remains a discipline, not a cage."
+        ]
+    },
+    "Class Voluntas Bridge Demonologist": {
+        "Text": [
+            "Contract marks glow and fade around the ring, bargains named instead of hidden.",
+            "Voluntas holds where even dangerous pacts are faced as choices with costs."
+        ]
+    },
+    "Class Voluntas Bridge Archdruid": {
+        "Text": [
+            "Venom, stone, growth, and storm turn in the ring without drowning one another.",
+            "Voluntas holds where balance is tended, not imposed."
+        ]
+    },
+    "Class Voluntas Bridge Berserker": {
+        "Text": [
+            "Old scars burn red around the ring, but none of them speak in your place.",
+            "Voluntas holds where fury remains answerable to the one who survives it."
+        ]
+    },
+    "Class Voluntas Bridge Crusader": {
+        "Text": [
+            "The vow in the ring brightens like a road walked under witness.",
+            "Voluntas holds where oath and mercy can still be chosen together."
+        ]
+    },
+    "Class Voluntas Bridge Dragoon": {
+        "Text": [
+            "The ring remembers the height before the fall and the will that chooses when to land.",
+            "Voluntas holds where courage leaps without becoming escape."
+        ]
+    },
+    "Class Voluntas Bridge Stalwart Defender": {
+        "Text": [
+            "A shield-line forms in the ring, not as a wall against life but as a promise kept.",
+            "Voluntas holds where protection remains freely given."
+        ]
+    },
+    "Class Voluntas Bridge Wizard": {
+        "Text": [
+            "Six schools turn in the ring like answers that could have become laws.",
+            "Voluntas holds where knowledge serves choice instead of replacing it."
+        ]
+    },
+    "Class Voluntas Bridge Shadowcaster": {
+        "Text": [
+            "Umbral debt gathers in the ring and stops just short of naming you.",
+            "Voluntas holds where shadow is carried openly enough to be refused."
+        ]
+    },
+    "Class Voluntas Bridge Knight Enchanter": {
+        "Text": [
+            "Steel and spell meet in the ring, neither one allowed to erase the other.",
+            "Voluntas holds where a divided art becomes a chosen rhythm."
+        ]
+    },
+    "Class Voluntas Bridge Grand Summoner": {
+        "Text": [
+            "Summoned names echo through the ring as bonds, not possessions.",
+            "Voluntas holds where command remains partnership."
+        ]
+    },
+    "Class Voluntas Bridge Rogue": {
+        "Text": [
+            "Chance flickers in the ring like a loaded die set down before it is thrown.",
+            "Voluntas holds where luck bends, but does not decide, the hand."
+        ]
+    },
+    "Class Voluntas Bridge Seeker": {
+        "Text": [
+            "Case notes, maps, and hidden caches arrange themselves around the ring.",
+            "Voluntas holds where truth opens roads instead of closing them."
+        ]
+    },
+    "Class Voluntas Bridge Ninja": {
+        "Text": [
+            "A no-trace path crosses the ring and leaves only the choice to step from shadow.",
+            "Voluntas holds where silence does not become surrender."
+        ]
+    },
+    "Class Voluntas Bridge Arcane Trickster": {
+        "Text": [
+            "Stolen sparks glimmer in the ring, transformed by wit rather than ownership.",
+            "Voluntas holds where theft becomes responsibility for what is carried."
+        ]
+    },
+    "Class Voluntas Bridge Templar": {
+        "Text": [
+            "Ordered blessings pass through the ring in a measured procession.",
+            "Voluntas holds where faith protects without demanding obedience."
+        ]
+    },
+    "Class Voluntas Bridge Master Monk": {
+        "Text": [
+            "Ki settles in the ring like breath returning after a strike.",
+            "Voluntas holds where discipline makes room for stillness."
+        ]
+    },
+    "Class Voluntas Bridge Archbishop": {
+        "Text": [
+            "Prayer gathers in the ring as a vigil that does not bargain for control.",
+            "Voluntas holds where mercy answers suffering without owning it."
+        ]
+    },
+    "Class Voluntas Bridge Troubadour": {
+        "Text": [
+            "A final refrain moves through the ring, softer than command and harder to silence.",
+            "Voluntas holds where a song can end and still leave choice behind."
+        ]
+    },
+    "Class Voluntas Bridge Lycan": {
+        "Text": [
+            "Moonlight and hunger circle the ring, answered by a name that stays human enough to choose.",
+            "Voluntas holds where instinct is met, not erased."
+        ]
+    },
+    "Class Voluntas Bridge Astromancer": {
+        "Text": [
+            "Constellations turn inside the ring, each sign bright enough to guide and dim enough to refuse.",
+            "Voluntas holds where fate is read without being obeyed."
+        ]
+    },
+    "Class Voluntas Bridge Soulcatcher": {
+        "Text": [
+            "Totem aspects gather at the ring's edge, ancestral voices waiting for consent.",
+            "Voluntas holds where the dead are honored without being used as chains."
+        ]
+    },
+    "Class Voluntas Bridge Beast Master": {
+        "Text": [
+            "A companion's heartbeat answers beside the ring, close but never owned.",
+            "Voluntas holds where loyalty can still answer back."
+        ]
+    },
+    "Class Voluntas Bridge Wanderer": {
+        "Text": [
+            "The ring cannot name the class path cleanly, but it still keeps the shape of a chosen road.",
+            "Voluntas holds where even an old or unrecorded self remains free to answer."
+        ]
+    },
     "Class Voluntas Reflection Echo": {
         "Text": [
             "As the Reflection gathers, the Class Ring answers the empty seventh place.",

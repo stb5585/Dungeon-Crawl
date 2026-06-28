@@ -25,8 +25,9 @@ the Hooded Figure truth, or true-final route mechanics in the intro.
 
 Class identity and Class Ring ties to Voluntas have a shipped V2: after
 Voluntas is revealed, a visible Class Ring can receive an optional Liminal guide
-affirmation, an archetype scene, and Reflection echoes. Deeper class-specific
-quests, bonuses, route gates, and ring mechanics remain deferred.
+affirmation, an archetype scene, a follow-up, per-class bridge prose, and
+Reflection echoes. Deeper class-specific quests, bonuses, route gates, and ring
+mechanics remain deferred.
 
 ## Deferred Story Gates
 
@@ -50,9 +51,11 @@ curses parity.
 
 Narrative Systems Bundle V3 adds a one-time `Revisit Class Path` follow-up from
 the Hooded Figure guide after affirmation. It remains story-state-only and uses
-the recorded class/archetype/ring snapshot. Deeper per-class Voluntas quests,
-special rewards, and new Class Ring mechanics remain deferred behind a future
-promoted spec.
+the recorded class/archetype/ring snapshot. The per-class Voluntas bridge adds
+one more optional Hooded Figure beat after that follow-up, using the recorded
+affirmed class snapshot rather than the current class or equipment. Deeper
+per-class Voluntas quests, special rewards, and new Class Ring mechanics remain
+deferred behind a future promoted spec.
 
 ### Guardian Trial Deepening
 
@@ -469,6 +472,18 @@ Implemented in Narrative Systems Bundle V3:
 - Added a legacy Devil compatibility audit test/docs boundary without removing
   or renaming legacy Devil classes, assets, events, ability data, or tests.
 
+Implemented in the Voluntas/Class-Identity Bridge slice:
+
+- Added normalized `main_story` state for a one-time per-class Voluntas bridge:
+  `class_voluntas_bridge_seen`.
+- Added a pygame Hooded Figure guide option, `Bridge Class Identity`, after
+  class affirmation and `Revisit Class Path`.
+- Added one short bridge event for every fully playable Class Ring awakening
+  class, plus a `Wanderer` fallback for old saves or unknown class names.
+- The slice remains story-state-only: it uses the recorded affirmed class
+  snapshot and does not change current class state, equipment, Class Ring
+  mechanics, rewards, resources, combat tuning, or true-final prerequisites.
+
 ## Implementation Interfaces
 
 The endgame route now uses these explicit route flags:
@@ -487,6 +502,7 @@ The endgame route now uses these explicit route flags:
 - `guardian_trial_vignettes_seen`
 - `liminal_trial_v2_reviewed`
 - `class_voluntas_followup_seen`
+- `class_voluntas_bridge_seen`
 - `reflection_path_mirror_seen`
 - `vesperion_choice_argument_seen`
 - `vesperion_true_final_defeated`
@@ -536,6 +552,9 @@ Implemented special-event keys include:
 - `Class Voluntas Followup Companion`
 - `Class Voluntas Followup Shadow`
 - `Class Voluntas Followup Wanderer`
+- `Class Voluntas Bridge`
+- `Class Voluntas Bridge <Class Name>`
+- `Class Voluntas Bridge Wanderer`
 - `Class Voluntas Reflection Echo`
 - `Reflection Voluntas Choice Claim`
 - `Reflection Voluntas Choice Carry`
@@ -600,6 +619,9 @@ Implemented special-event keys include:
 - Class Ring/Voluntas archetype scenes play from the recorded class snapshot
   and remain story-only.
 - `Revisit Class Path` appears only after class affirmation, records once, and
+  remains story-only.
+- `Bridge Class Identity` appears only after class affirmation and `Revisit
+  Class Path`, records once, uses the recorded affirmed class snapshot, and
   remains story-only.
 - The Class Ring Reflection echo plays once on the first affirmed Reflection
   attempt and does not change HP, MP, XP, loot, or route flags.

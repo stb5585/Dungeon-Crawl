@@ -1415,6 +1415,63 @@ def test_liminal_guide_revisits_class_path_once(monkeypatch):
     assert "Revisit Class Path" not in captured_options[-1]
 
 
+def test_liminal_guide_bridges_recorded_class_identity_once_and_story_only(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    shown = []
+    captured_options = []
+    player.main_story["liminal_gap_guide_revealed"] = True
+    player.main_story["class_voluntas_affirmed"] = True
+    player.main_story["class_voluntas_affirmed_class"] = "Demonologist"
+    player.main_story["class_voluntas_affirmed_ring_awakened"] = True
+    player.main_story["class_voluntas_affirmed_archetype"] = "shadow"
+    player.cls.name = "Wizard"
+    player.equipment = {"Weapon": SimpleNamespace(name="None")}
+    player.health.current = 7
+    player.mana.current = 3
+    player.gold = 456
+    player.experience = 123
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+
+    manager._interact_liminal_guide(guide_tile)
+
+    assert "Bridge Class Identity" not in captured_options[-1]
+
+    player.main_story["class_voluntas_followup_seen"] = True
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
+        "Bridge Class Identity"
+    )
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_special_events",
+        lambda: {
+            "Class Voluntas Bridge": {"Text": ["The bridge opens."]},
+            "Class Voluntas Bridge Demonologist": {"Text": ["The contract bridge stands."]},
+        },
+    )
+
+    manager._interact_liminal_guide(guide_tile)
+
+    assert "Bridge Class Identity" in captured_options[-1]
+    assert [call[1]["title"] for call in shown] == ["Voluntas", "Class Ring"]
+    assert shown[1][0][0] == "The contract bridge stands."
+    assert player.main_story["class_voluntas_bridge_seen"] is True
+    assert guide_tile.read is True
+    assert "Demonologist bridges its chosen path to Voluntas." in manager.messages
+    assert player.health.current == 7
+    assert player.mana.current == 3
+    assert player.gold == 456
+    assert player.experience == 123
+    assert player.inventory_calls == []
+    assert player.main_story["true_final_unlocked"] is False
+
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._interact_liminal_guide(guide_tile)
+
+    assert "Bridge Class Identity" not in captured_options[-1]
+
+
 def test_liminal_guide_witness_farewell_visibility_and_once(monkeypatch):
     manager, presenter, player, _game = _make_manager(monkeypatch)
     shown = []

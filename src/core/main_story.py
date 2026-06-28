@@ -42,12 +42,38 @@ GUARDIAN_VIGNETTE_SUMMARIES = {
 }
 
 CLASS_VOLUNTAS_ARCHETYPES = {
-    "martial": ("Berserker", "Dragoon", "Stalwart Defender", "Master Monk"),
-    "mystic": ("Wizard", "Archbishop", "Astromancer"),
+    "martial": ("Grandmaster of Arms", "Berserker", "Dragoon", "Stalwart Defender", "Master Monk"),
+    "mystic": ("Wizard", "Archbishop", "Astromancer", "Archdruid"),
     "hybrid": ("Crusader", "Knight Enchanter", "Seeker", "Arcane Trickster", "Templar"),
     "companion": ("Grand Summoner", "Troubadour", "Beast Master"),
-    "shadow": ("Shadowcaster", "Rogue", "Ninja", "Lycan", "Soulcatcher"),
+    "shadow": ("Demonologist", "Shadowcaster", "Rogue", "Ninja", "Lycan", "Soulcatcher"),
 }
+
+CLASS_VOLUNTAS_BRIDGE_CLASSES = (
+    "Grandmaster of Arms",
+    "Demonologist",
+    "Archdruid",
+    "Berserker",
+    "Crusader",
+    "Dragoon",
+    "Stalwart Defender",
+    "Wizard",
+    "Shadowcaster",
+    "Knight Enchanter",
+    "Grand Summoner",
+    "Rogue",
+    "Seeker",
+    "Ninja",
+    "Arcane Trickster",
+    "Templar",
+    "Master Monk",
+    "Archbishop",
+    "Troubadour",
+    "Lycan",
+    "Astromancer",
+    "Soulcatcher",
+    "Beast Master",
+)
 
 REFLECTION_VOLUNTAS_ANSWERS = ("Claim", "Carry", "ChooseAgain")
 
@@ -153,6 +179,7 @@ DEFAULT_MAIN_STORY_STATE = {
     "reflection_voluntas_answer": None,
     "hooded_figure_witness_farewell_seen": False,
     "class_voluntas_followup_seen": False,
+    "class_voluntas_bridge_seen": False,
     "reflection_path_mirror_seen": False,
     "vesperion_choice_argument_seen": False,
     "true_final_unlocked": False,
@@ -432,6 +459,31 @@ def record_class_voluntas_followup(story_state: dict[str, object]) -> bool:
         return False
     story_state["class_voluntas_followup_seen"] = True
     return True
+
+
+def should_show_class_voluntas_bridge(story_state: dict[str, object]) -> bool:
+    """Return whether the optional per-class Voluntas bridge can be shown."""
+    return bool(
+        story_state.get("class_voluntas_affirmed")
+        and story_state.get("class_voluntas_followup_seen")
+        and not story_state.get("class_voluntas_bridge_seen")
+    )
+
+
+def record_class_voluntas_bridge(story_state: dict[str, object]) -> bool:
+    """Record the optional per-class Voluntas bridge once."""
+    if not should_show_class_voluntas_bridge(story_state):
+        return False
+    story_state["class_voluntas_bridge_seen"] = True
+    return True
+
+
+def class_voluntas_bridge_event_key(class_name: object) -> str:
+    """Return the special-event key for a class-specific Voluntas bridge."""
+    normalized_class = str(class_name).strip() if class_name else ""
+    if normalized_class in CLASS_VOLUNTAS_BRIDGE_CLASSES:
+        return f"Class Voluntas Bridge {normalized_class}"
+    return "Class Voluntas Bridge Wanderer"
 
 
 def should_show_reflection_path_mirror(story_state: dict[str, object]) -> bool:

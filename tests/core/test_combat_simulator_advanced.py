@@ -28,6 +28,8 @@ def _make_stats(
     hp_max=100,
     abilities=None,
     statuses=None,
+    class_kit_events=None,
+    action_economy_events=None,
 ):
     from src.core.analytics.combat_simulator import CombatStats
 
@@ -45,6 +47,8 @@ def _make_stats(
         total_damage_taken=10,
         abilities_used=abilities or {},
         status_effects_applied=statuses or {},
+        class_kit_events=class_kit_events or {},
+        action_economy_events=action_economy_events or {},
     )
 
 
@@ -237,6 +241,26 @@ def test_simulate_battle_records_all_event_accounting_branches(monkeypatch):
     assert stats.critical_hits == 1
     assert stats.misses == 1
     assert stats.total_damage_dealt == 11
+
+
+def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch):
+    from src.core.analytics import combat_simulator as sim_mod
+
+    player = _make_player(class_name="Grand Summoner")
+    enemy = _make_player(name="Goblin")
+    tile = _make_tile()
+    player.spellbook["Skills"]["Conduit Command"] = _make_skill("Conduit Command")
+    tile.actions.append("Use Skill")
+
+    engine_cls = _make_fake_engine(player_turn=True)
+    monkeypatch.setattr("src.core.combat.battle_engine.BattleEngine", engine_cls)
+
+    sim = sim_mod.CombatSimulator()
+    stats = sim.simulate_battle(player, enemy, max_turns=1, seed=33)
+
+    assert engine_cls.last_instance.actions == [("Use Skill", "Conduit Command")]
+    assert stats.class_kit_events.get("mention", 0) >= 1
+    assert stats.action_economy_events.get("summon_output", 0) >= 1
 
 
 @pytest.mark.parametrize(

@@ -292,10 +292,12 @@ class CharacterNamingScreen:
                 if event.key == pygame.K_RIGHT:
                     self.cycle_portrait(1)
                     continue
-                if event.key == pygame.K_m:
+                text_input = getattr(event, "unicode", "")
+                printable_text = bool(text_input and text_input.isprintable())
+                if event.key == pygame.K_m and not printable_text:
                     self.select_sex("Male")
                     continue
-                if event.key == pygame.K_f:
+                if event.key == pygame.K_f and not printable_text:
                     self.select_sex("Female")
                     continue
                 if event.key == pygame.K_RETURN:
@@ -305,7 +307,6 @@ class CharacterNamingScreen:
                 if event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                     continue
-                text_input = getattr(event, "unicode", "")
                 if text_input and text_input.isprintable() and len(self.text) < MAX_NAME_LENGTH:
                     self.text += text_input
 

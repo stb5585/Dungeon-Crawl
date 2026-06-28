@@ -130,6 +130,45 @@ def test_all_four_aspects_awaken_ring_only_when_ring_is_visible():
     assert player.archdruid_attunement["ring_awakened"] is True
 
 
+def test_archdruid_class_ring_description_names_grove_progress_and_equipped_harmony():
+    player = _archdruid()
+    player.equipment["Ring"] = items.ClassRing()
+
+    pre_grove_description = player.equipment["Ring"].get_description(player)
+    assert "dormant Class Ring for an Archdruid" in pre_grove_description
+    assert "Ring location: equipped" in pre_grove_description
+    assert "Activation: Fourfold Balance and Ancient Grove rituals" in pre_grove_description
+    assert "Attunement:" in pre_grove_description
+
+    _unlock_grove(player)
+    grove_description = player.equipment["Ring"].get_description(player)
+    assert "Activation: complete all four Grove aspects" in grove_description
+    assert "Aspects:" in grove_description
+    assert "Active effect: inactive until awakened" in grove_description
+
+    state = player.ensure_archdruid_attunement()
+    state["ring_awakened"] = True
+    state["aspects"] = {affinity: True for affinity in archdruid.AFFINITIES}
+    state["attunement"] = {affinity: 75 for affinity in archdruid.AFFINITIES}
+    player.archdruid_attunement = state
+    player.equipment["Ring"] = items.NoRing()
+    player.storage = {"Class Ring": [items.ClassRing()]}
+
+    stored_description = player.storage["Class Ring"][0].get_description(player)
+    assert "awakened Class Ring for an Archdruid" in stored_description
+    assert "Ring location: stored" in stored_description
+    assert "Current Harmony Bonus: +0%" in stored_description
+    assert "Potential while equipped: +24%" in stored_description
+    assert "Active effect: equip the ring to use it" in stored_description
+
+    player.equipment["Ring"] = items.ClassRing()
+    player.storage = {}
+    equipped_description = player.equipment["Ring"].get_description(player)
+    assert "Ring location: equipped" in equipped_description
+    assert "Current Harmony Bonus: +24%" in equipped_description
+    assert "Active effect: active while equipped" in equipped_description
+
+
 def test_harmony_bonus_and_class_ring_description_and_mod():
     player = _archdruid()
     player.equipment["Ring"] = items.ClassRing()
@@ -144,6 +183,7 @@ def test_harmony_bonus_and_class_ring_description_and_mod():
     player.equipment["Ring"].class_mod(player)
     assert player.equipment["Ring"].mod == "Harmony +24%"
     assert "Current Harmony Bonus: +24%" in player.equipment["Ring"].get_description(player)
+    assert "Potential while equipped: +24%" in player.equipment["Ring"].get_description(player)
 
 
 def test_archdruid_state_save_round_trip():

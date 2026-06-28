@@ -28,6 +28,25 @@ The standard Class Ring acquisition remains the Hooded Figure reward after the
 Red Dragon quest. The ring's second-promotion power is dormant until awakened by
 the current class's path.
 
+## Readability Baseline
+
+Class Ring presentation must distinguish possession and activation without
+changing mechanics:
+
+- `Inventory only`: the ring is owned but not town-visible for activation.
+- `Stored`: the ring is town-visible from Barracks storage, but equipped-only
+  effects are inactive.
+- `Equipped`: the ring is town-visible and can apply equipped-only awakened
+  effects.
+- `Dormant`: the activation path has not been completed.
+- `Awakened`: the activation path is complete; descriptions still state whether
+  the effect is active while equipped or waiting to be equipped.
+
+Special systems keep bespoke wording: Grandmaster binding names the Secret
+Master trial and bound weapon, Demonologist text separates basic contracts from
+empowered contracts and imprisoned echo identity, and Archdruid text separates
+Fourfold/Grove progress from equipped Harmony Bonus.
+
 ## Grandmaster Of Arms
 
 The Class Ring is earned from the Hooded Figure after the Red Dragon quest, but

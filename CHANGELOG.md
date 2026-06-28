@@ -24,6 +24,8 @@
 
 ### Roadmap Polish And Bugfixes
 
+- Fixed pygame character naming so printable `m` and `f` key presses enter the
+  name field instead of being swallowed by sex-selection shortcuts.
 - Fixed the stairs-up ceiling-void placement so the missing ceiling tile stays
   above the current stairs rather than the space in front of the player.
 - Added tiered minimum floors to health potion healing before percent scaling,

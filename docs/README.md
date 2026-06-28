@@ -12,6 +12,9 @@ only as historical context.
 - [CLASS_KIT_DESIGN_GATES.md](CLASS_KIT_DESIGN_GATES.md) - shipped class-kit
   baselines, promotion-kit V1 implementation status, scope boundaries, and
   follow-up tuning gates.
+- [CLASS_KIT_EVIDENCE_NOTES.md](CLASS_KIT_EVIDENCE_NOTES.md) - class-kit
+  UI/log, meter cadence, preservation, action-economy, and progression pacing
+  evidence ledger.
 - [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
   architecture, balance decision gates, current behavior decisions, and report
   plan.

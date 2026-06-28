@@ -56,6 +56,119 @@ presentation, and later content expansion:
   remain deferred until their quest/content spec defines timing, text, flags,
   and optional/required status.
 
+## UI/Log Polish Acceptance Matrix
+
+Status: `Presentation-Only V1`
+
+This matrix defines the first UI/log readability polish pass for shipped
+promotion kits. It is an acceptance reference for shared status text, combat
+logs, and lightweight menu/exploration surfacing only. This pass must not
+change meter gain/spend rules, class-ring activation, save schema, quest state,
+combat math, or numeric balance.
+
+| Track/class | Status surface requirements | Combat-log requirements | Menu/exploration/town requirements | Ring-readiness/readability requirement | Regression/manual acceptance target |
+| --- | --- | --- | --- | --- | --- |
+| Astromancer | Constellation, rune grid, Foresight Threads, pending `Threaded Cast`. | Thread gain/cap/spend, pending cast, negated payoff, Rewind snapshot, active-sign enhancement. | `Runic Boost` and `Threaded Cast` remain selectable only when valid. | Show awakened/equipped `Constellation Cycle` readiness without implying manual sign control. | Build Threads, prepare `Threaded Cast`, and verify status/log state in combat. |
+| Demonologist | Corruption, active patron/mood, familiar echo, contract history summary where available. | Corruption gain/cooling, mood changes, twist/lucky-twist, withheld/unlocked intent notes. | Contract quote and Church Crypt review show costs, risk, patron, echo, and unlocked/withheld intent state. | Show contract echo/ring awakening state as contract shaping, not a generic stat boost. | Quote and resolve one contract, then inspect status and crypt review. |
+| Shadowcaster | Umbral Debt with cap, backlash, Eclipse turns. | Debt gain, cap/backlash, Eclipse activation/expiration, auto-heal spend, backlash conversion. | None beyond normal skill availability. | Show awakened/equipped `Umbral Debt` cap/stability readiness. | Store debt, enter Eclipse, overcap into backlash, and verify lines stay visible. |
+| Knight Enchanter | Blade Charge, Arcane Tempo, pending burst. | Charge store/overwrite/spend, miss consumption, Tempo gain, three-stack burst. | `Arcane Duel` text uses `Arcane Tempo` display identity. | Preserve legacy `Mana Tap+` compatibility while displaying `Arcane Tempo`. | Cast spell, attack with charge, and inspect Tempo status/logs. |
+| Grand Summoner | Known summon bond values or best bond, Conduit readiness. | Bond gain, borrowed invocation, `Conduit Command`, True Name rider, expiration. | Summon menus keep current recall/summon behavior and show valid borrowed invocation availability. | Show awakened/equipped `Conduit Ritual` as summon scaling plus conduit rider readiness. | Gain bond, invoke a summon, prime conduit, and inspect status/logs. |
+| Berserker | Battle Scars, Bloodied Momentum/cap, bloodied threshold state where relevant. | Momentum gain/cap/spend, miss preservation, heavy-art mutation, `Final Assault` use. | None beyond existing weapon-art menus. | Show awakened/equipped `Bloodied Crits` and preservation readiness when relevant. | Build Momentum below 50% HP and spend it on a heavy art. |
+| Crusader | Vow, aura/mark, Oath Conviction/cap. | Conviction gain/spend, clean-outcome bonus, vow rider, mark/aura changes, preservation. | Vow Trial text remains explicit when no vow exists. | Show awakened/equipped `Vow Affirmation` preservation readiness. | Use sworn-vow action before and after ring awakening. |
+| Dragoon | Aerial Tempo/cap, pending follow-through, landing shield if active. | Clean Jump gain, interruption cleanup, spend, follow-through, landing shield. | Jump modification UI keeps existing capacity and no longer promises extra active mod capacity. | Show awakened/equipped `Aerial Supremacy` readiness. | Land a clean Jump, follow through, and inspect shield/readiness text. |
+| Sentinel/Stalwart Defender | Resolve/cap, guard stance, auto-guard readiness. | Resolve gain/cap/spend, block, barrier, riposte, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness. | Build Resolve, use `Bulwark`, and trigger/inspect major-hit mitigation. |
+| Rogue | Fortune, Misfortune, `Jinx`, risky-action readiness. | Meter gain/spend/cap, Fortune smoothing, Misfortune payoff, `Cheat Death`, preservation. | Loot finds exclude invalid item categories and log as extra ordinary finds. | Show awakened/equipped `Loaded Dice` and once-per-combat preservation readiness. | Spend both meters and verify `Loaded Dice` status/logs. |
+| Seeker | Case Journal progress/rank, Revelation/cap, sight/detail state where available. | Case progress, milestone, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gain Case progress, build Revelation, and inspect status/logs. |
+| Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
+| Arcane Trickster | Stolen Charge/cap, `Arcane Larceny` buff/preservation readiness. | Charge gain/spend/cap, stolen-scroll contribution, miss/negated consumption, preservation. | Spell-steal menus fail clearly without `Blank Scroll` or against trial enemies. | Show awakened/equipped `Arcane Larceny` readiness. | Steal/cast stolen magic, spend Charge, and inspect status/logs. |
+| Templar | Devotion/cap, active ward, `Holy Retribution`, next blessing. | Devotion gain/cap/spend, ward strength, `Pious Bounty`, blessing rotation, preservation. | Shield/offhand requirements for `Relic Aegis` fail clearly. | Show awakened/equipped `Ordered Blessings` preservation readiness. | Spend Devotion before and after ring awakening. |
+| Archbishop | Prayer/cap, support/Benediction effects, `Great Gospel`, Intervention readiness. | Prayer gain/cap/spend, `Doublecast` boundary, Benediction, Gospel reset, Intervention, preservation. | Resurrection/support menus keep MP and target failures clear. | Show awakened/equipped `Divine Intervention` readiness and preservation state. | Use `Supplication`/`Great Benediction` and inspect logs/status. |
+| Master Monk | Ki/cap, `Dim Mak` readiness, weapon penalty/exception state where relevant. | Ki gain/spend/cap, `Dim Mak` weapon penalty, staff drop/disarm, ultimate-staff exception. | Blacksmith ultimate selection shows `Ruyi Jingu Bang` when eligible. | Show awakened/equipped `Martial Master` readiness. | Build full Ki, use `Dim Mak`, and inspect weapon/ring messages. |
+| Troubadour | Active song, turns/steps, Crescendo, repertoire count/progress. | Practice XP, clean finish, mastery, Crescendo gain/spend, coda, route coda, preservation. | Composition/performance menus distinguish sheet use from mastered repertoire. | Show awakened/equipped `Encore` preservation readiness. | Let a song expire naturally and inspect coda/preservation lines. |
+| Lycan | Form state, moon phase, Frenzy Lock, control rank, Dragon Essence. | Stress, pushback, dismissal block, rank progress, `Winged Pounce`, essence unlock. | `Dismiss Form` and transformation menus explain locked/unavailable states. | Show awakened/equipped `Controlled Frenzy` as stability support, not rank progress. | Trigger stress, inspect control/ring text, and unlock Dragon Essence. |
+| Archdruid | Represented Aspect Harmony, `Primal Ascendance`, Tree/Growth contribution. | Aspect gain/cap, `Fourfold Surge` spend, rider downgrade, preservation. | Grove/attunement surfaces remain persistent progression, not combat meter UI. | Show awakened/equipped `Harmony Bonus` readiness/preservation. | Represent two aspects, surge, and verify status/logs. |
+| Beast Master | Companion name/species, bond/rank, Favored Enemy, pending command. | Bond gain/milestone, command use/expiration, hunt synergy, Shared Recovery echo. | Tame/replacement messaging makes one-companion scope clear. | Show awakened/equipped `Shared Recovery` bond-scaling readiness. | Tame/command companion, gain bond, and inspect healing echo logs. |
+| Soulcatcher | Active Totem aspect, Resonance/cap, Soul harvest count. | Resonance gain/cap/spend, forced pulse, Soul nonlethal contribution, ring cap/output. | Totem aspect menu shows active aspect and communion availability. | Show awakened/equipped `Aspect Evolution` resonance cap/readiness. | Build Resonance, use `Totem Surge`, and inspect status/logs. |
+
+## Class-Kit Balance Thresholds
+
+Status: `Watch-First Thresholds`
+
+These thresholds define when class-kit meter behavior, preservation effects, or
+action-economy loops need closer evidence. They do not authorize numeric
+tuning by themselves. Any balance change still needs simulator output, manual
+playtest notes, and a promoted one-page tuning spec.
+
+Threshold bands:
+
+- `Pass`: the mechanic is visible, useful, and not dominant. It creates a
+  recognizable class rhythm while preserving normal action tradeoffs.
+- `Watch`: record the build, class/race/enemy matchup, level, gear/loadout,
+  meter state, ring state, battle length, and relevant simulator payload. Rerun
+  focused manual and simulator checks before deciding whether tuning is needed.
+- `Tuning Gate`: promote a one-page balance spec before changing numbers,
+  trigger rules, preservation behavior, or action-economy output.
+
+Meter thresholds:
+
+- `Watch` if a class-specific meter usually cannot produce one payoff within
+  three ordinary eligible combats.
+- `Watch` if a meter sits capped for most of a fight without meaningful
+  spending pressure.
+- `Watch` if a payoff can be rebuilt and spent repeatedly with no meaningful
+  action, MP, target, risk, or opportunity-cost tradeoff.
+- `Tuning Gate` if the same meter payoff dominates encounter outcomes across
+  both simulator signal and manual playtest.
+
+Preservation thresholds:
+
+- `Watch` if once-per-combat ring preservation feels mandatory for baseline
+  class function rather than smoothing.
+- `Watch` if preserved resources routinely erase miss, immunity, negated
+  payoff, or target-loss costs.
+- `Tuning Gate` if preservation creates a repeatable same-turn or every-turn
+  payoff loop.
+
+Action-economy thresholds:
+
+- `Watch` if autonomous or bonus outputs regularly exceed the player's direct
+  action impact.
+- `Watch` if Totems, songs, summons, companions, Doublecast-adjacent support,
+  or route/economy codas produce low-interaction wins.
+- `Tuning Gate` if a loop wins representative encounters while the player
+  mostly defends, waits, or repeats one setup action.
+
+Analytics hooks should remain lightweight. `CombatStats` may aggregate
+classified `class_kit_events` and `action_economy_events` from existing action
+names, BattleEngine result text, post-turn messages, and ability names. Missing
+classifications are analytics gaps, not gameplay failures, and should be fixed
+as reporting polish before any tuning decision.
+
+## Progression Pacing Tables
+
+Status: `Watch-First Pacing Reference`
+
+These tables describe the current expected cadence for shipped persistent
+class-kit progression on Bard/Troubadour, Beast Master, Lycan,
+Summoner/Grand Summoner, and Inquisitor/Seeker. They are manual playtest and
+review references only. They do not authorize balance changes, meter
+gain/spend changes, rank-gate changes, simulator analytics changes, save-schema
+changes, class-ring changes, or action-economy changes by themselves. Numeric
+tuning still requires manual notes, existing balance-threshold evidence, and a
+promoted one-page tuning spec.
+
+| Track/class | Current progression rule | Expected ordinary cadence | Fast or narrow cadence | Watch trigger |
+| --- | --- | --- | --- | --- |
+| Bard/Troubadour | Crescendo gains `+1` per maintained combat song turn, caps at `3`, and spends only on natural expiration. Troubadour repertoire mastery requires `18` practice XP and `3` clean finishes. | Combat-only mastery should take `3` clean full 3-turn performances: each gives `+3` turn XP plus `+3` completion XP. | Exploration mastery can also take `3` clean full performances: each can give up to `+4` step XP plus `+3` completion XP. Composition `+1` XP buffers progress but never removes the `3` clean-finish requirement. | Watch if clean completions do not visibly move mastery, if interruption costs are unclear, or if codas/Encore make song loops win with low player input. |
+| Beast Master | Companion bond caps at `100`; milestones are `25` `Trusted`, `50` `Battle-Trained`, `75` `Packmate`, and `100` `True Bond`. | With one companion action and an active living victory, bond gains about `+5/combat`; milestones land near `5/10/15/20` combats. | Favored Enemy active victories gain about `+7/combat`; milestones land near `4/8/11/15` combats. | Watch if `Trusted` is not reachable around 5-6 ordinary active wins, if replacement/tame state hides the pacing cost, or if command output regularly dominates direct player turns. |
+| Summoner/Grand Summoner | Each summon has its own bond cap of `100`; milestones are `25`, `50`, `75`, and `100`. | With one active non-Recall summon action and victory, bond gains about `+6/combat`; milestones land near `5/9/13/17` combats. | With two summon actions and victory, bond gains about `+7/combat`; milestones land near `4/8/11/15` combats. Victory-only active wins gain `+5/combat`, or about `5/10/15/20` combats. | Watch if one focused summon cannot reach bond `50` in a reasonable focused run, or if switching summons does not clearly distribute progress and slow each individual bond by design. |
+| Inquisitor/Seeker | Case Journal progress is per broad enemy type, caps at `100`, and milestones are `25` `Known Tells`, `50` `Weakness Brief`, `75` `Pattern Lock`, and `100` `Closed Case`. | `Inspect` plus visible-detail victory gains about `+7/combat`; milestones land near `4/8/11/15` combats against one enemy type. | Rich evidence loops with `Inspect`, `Exploit Weakness`, a visible telegraph, and victory gain about `+10/combat`; milestones land near `3/5/8/10` combats. Victory-only visible-detail progress gains `+4/combat`, or about `7/13/19/25` combats. | Watch if one enemy type cannot reach `Known Tells` after focused evidence gathering, or if spreading fights across many enemy types does not feel intentionally slower and readable. |
+| Lycan | Control ranks are behavior-only. Each gate requires `3` matching successful stress records: `survive`, `dismiss`, `resist`, then `full_moon`. | Minimum full path is `12` phase-correct records: `Feral -> Muzzled`, `Muzzled -> Restive`, `Restive -> Tethered`, then `Tethered -> Tame`. | Real pacing depends on eligible stress opportunities, moon timing, and whether the player survives or resolves the correct behavior at the current gate. | Watch if a gate does not reasonably progress after 6-8 eligible opportunities, if the needed behavior is unclear, or if Class Ring/Dragon Essence appears to advance control rank. |
+
+Pacing reads should record combat count or eligible opportunity count, relevant
+actions, ring state, interruptions or failures, enemy type where applicable,
+and whether the cadence felt like `Pass`, `Watch`, or `Tuning Gate`.
+
 ## Class, Ability, And Combat Gate Ownership
 
 This document owns the promotion-kit side of the Class, Ability, and Combat

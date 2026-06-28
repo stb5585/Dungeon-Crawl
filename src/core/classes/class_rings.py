@@ -289,6 +289,29 @@ def has_stored_class_ring(character: Any) -> bool:
     return any(getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", []))
 
 
+def has_inventory_class_ring(character: Any) -> bool:
+    inventory = getattr(character, "inventory", {})
+    if not isinstance(inventory, dict):
+        return False
+    return any(getattr(item, "name", None) == "Class Ring" for item in inventory.get("Class Ring", []))
+
+
+def class_ring_item(character: Any) -> Any | None:
+    equipment = getattr(character, "equipment", {})
+    if isinstance(equipment, dict):
+        ring = equipment.get("Ring")
+        if getattr(ring, "name", None) == "Class Ring":
+            return ring
+    for source_name in ("storage", "inventory"):
+        source = getattr(character, source_name, {})
+        if not isinstance(source, dict):
+            continue
+        for item in source.get("Class Ring", []):
+            if getattr(item, "name", None) == "Class Ring":
+                return item
+    return None
+
+
 def has_visible_class_ring(character: Any) -> bool:
     return has_equipped_class_ring(character) or has_stored_class_ring(character)
 
@@ -317,6 +340,88 @@ def ring_mod(character: Any) -> str:
     return CLASS_RING_SPECS[current]["mod"]
 
 
+def presentation_state(
+    character: Any,
+    *,
+    awakened: bool | None = None,
+    effect_requires_equipped: bool = True,
+) -> dict[str, Any]:
+    """Return compact Class Ring presentation facts without changing mechanics."""
+    equipped = has_equipped_class_ring(character)
+    stored = has_stored_class_ring(character)
+    inventory = has_inventory_class_ring(character)
+    if equipped:
+        location = "equipped"
+    elif stored:
+        location = "stored"
+    elif inventory:
+        location = "inventory only"
+    else:
+        location = "not present"
+    if awakened is None:
+        current = class_name(character)
+        awakened = is_awakened(character, current) if current else False
+    effect_active = bool(awakened and (equipped or not effect_requires_equipped))
+    return {
+        "location": location,
+        "equipped": equipped,
+        "stored": stored,
+        "inventory": inventory,
+        "visible": equipped or stored,
+        "town_visible": equipped or stored,
+        "awakened": bool(awakened),
+        "state": "awakened" if awakened else "dormant",
+        "effect_active": effect_active,
+    }
+
+
+def presentation_summary(
+    character: Any,
+    *,
+    awakened: bool | None = None,
+    effect_requires_equipped: bool = True,
+) -> str:
+    state = presentation_state(
+        character,
+        awakened=awakened,
+        effect_requires_equipped=effect_requires_equipped,
+    )
+    town = "yes" if state["town_visible"] else "no"
+    return (
+        f"Ring location: {state['location']}. "
+        f"Town-visible: {town}. "
+        f"State: {state['state']}."
+    )
+
+
+def active_effect_summary(character: Any, *, awakened: bool | None = None) -> str:
+    state = presentation_state(character, awakened=awakened)
+    if state["effect_active"]:
+        return "Active effect: active while equipped."
+    if state["awakened"]:
+        return "Active effect: equip the ring to use it."
+    return "Active effect: inactive until awakened."
+
+
+def _special_system_awakened(character: Any, current: str) -> bool | None:
+    if current == "Grandmaster of Arms":
+        from . import grandmaster
+
+        state = grandmaster.normalize_state(getattr(character, "grandmaster_discipline", None))
+        return bool(state["activated"])
+    if current == "Demonologist":
+        from . import demonologist
+
+        state = demonologist.normalize_state(getattr(character, "demonologist_contracts", None))
+        return bool(state["ring_awakened"])
+    if current == "Archdruid":
+        from . import archdruid
+
+        state = archdruid.normalize_state(getattr(character, "archdruid_attunement", None))
+        return bool(state["ring_awakened"])
+    return None
+
+
 def description(character: Any) -> str:
     current = class_name(character)
     spec = CLASS_RING_SPECS.get(current)
@@ -325,8 +430,11 @@ def description(character: Any) -> str:
     state_word = "awakened" if is_awakened(character, current) else "dormant"
     extra = _description_extra(character, current)
     return (
-        f"A {state_word} Class Ring for a {current}. Activation: {spec['activation']}. "
+        f"A {state_word} Class Ring for a {current}. "
+        f"{presentation_summary(character)} "
+        f"Activation: {spec['activation']}. "
         f"Awakened effect: {spec['description']}."
+        f" {active_effect_summary(character)}"
         f"{extra}"
     )
 
@@ -334,15 +442,27 @@ def description(character: Any) -> str:
 def class_voluntas_identity(character: Any) -> dict[str, Any]:
     """Return the current Class Ring identity summary for Voluntas story beats."""
     current = class_name(character)
-    visible = has_visible_class_ring(character)
-    awakened = is_awakened(character, current) if current else False
+    special_awakened = _special_system_awakened(character, current) if current else None
+    presentation = presentation_state(character, awakened=special_awakened)
+    visible = presentation["visible"]
+    awakened = presentation["awakened"]
+    ring = class_ring_item(character)
+    ring_description = (
+        ring.get_description(character)
+        if ring is not None and hasattr(ring, "get_description")
+        else description(character)
+    )
     return {
         "class_name": current,
         "visible": visible,
+        "town_visible": presentation["town_visible"],
+        "equipped": presentation["equipped"],
+        "location": presentation["location"],
+        "effect_active": presentation["effect_active"],
         "awakened": awakened,
         "activation": activation_name(current) if current else "Quest Awakening",
         "mod": ring_mod(character) if current else "Special",
-        "description": description(character),
+        "description": ring_description,
     }
 
 

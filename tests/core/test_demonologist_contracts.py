@@ -39,6 +39,15 @@ def test_promotion_state_unlocks_crypt_and_contracts_from_kill_history():
 
 def test_ring_awakening_imprisons_familiar_and_empowers_future_contracts():
     player = _demonologist()
+    player.refresh_demonologist_contracts()
+    demonologist.bind_patron(player, "Imp")
+    dormant_description = player.equipment["Ring"].get_description(player)
+    assert "dormant Class Ring for a Demonologist" in dormant_description
+    assert "Ring location: equipped" in dormant_description
+    assert "Basic contracts are available" in dormant_description
+    assert "empowered contracts are inactive" in dormant_description
+    assert "Active patron: Imp" in dormant_description
+
     familiar = companions.Homunculus()
     familiar.name = "Aegis"
     player.familiar = familiar
@@ -50,6 +59,12 @@ def test_ring_awakening_imprisons_familiar_and_empowers_future_contracts():
     assert player.familiar is None
     assert demonologist.empowered(player) is True
     assert player.demonologist_contracts["imprisoned_familiar"]["spec"] == "Defense"
+    awakened_description = player.equipment["Ring"].get_description(player)
+    assert "awakened Class Ring for a Demonologist" in awakened_description
+    assert "Ring location: equipped" in awakened_description
+    assert "Imprisoned echo:" in awakened_description
+    assert "ring has empowered fiend contracts" in awakened_description
+    assert "Active patron: Imp" in awakened_description
 
     player.kill_dict["Fiend"]["Balor"] = 1
     assert "Balor" in player.refresh_demonologist_contracts()

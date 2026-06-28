@@ -54,6 +54,36 @@ appropriate design-gate document before coding.
     and economy gates.
   - `docs/PLAYTEST_CHECKLIST.md` for manual validation coverage.
 
+## Deferred Expansion Triage Map
+
+This map indexes larger deferred expansions across owner docs. It does not make
+any row implementation-ready by itself. Owner design-gate docs still define the
+actual trigger, scope, save behavior, UI/log text, tests, and acceptance
+criteria before code work begins.
+
+Triage bands:
+
+- `Promote Soon`: small, well-bounded slice with the owner doc already clear.
+- `Needs Evidence`: requires playtest, simulator, UX, or asset review signal
+  before promotion.
+- `Needs Spec`: valid concept, but missing trigger, scope, UI, save, reward, or
+  test contract.
+- `Hold`: too broad or dependency-heavy for near-term implementation.
+- `Do Not Promote As Cleanup`: tempting cleanup-shaped work that must stay
+  behind a formal gate.
+
+| Area | Deferred expansion | Triage band | Promotion trigger | Owner doc | First safe slice |
+| --- | --- | --- | --- | --- | --- |
+| Class-kit track expansions | Combo chains, Maestro progression, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
+| Class-ring tuning/presentation | Wizard radar visualization, ring status polish, and ring effect tuning. | `Needs Evidence` | Manual UI/readability notes or class-kit balance threshold findings. | `CLASS_RING_SYSTEM.md` | Presentation-only ring readability before numeric tuning. |
+| Promotion ability transition expansions | Ability-history restoration, alternate retention policies, and new promotion spell/skill grants. | `Do Not Promote As Cleanup` | Explicit transition-rule spec with save/load and UI message behavior. | `PROMOTION_ABILITY_RULES.md` | One promotion path with save/load and text/pygame message coverage. |
+| Combat semantics and architecture | Multi-enemy combat, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Hold` | Full combat spec with simulator plan and balance assumptions. | `COMBAT_BALANCE_DESIGN_GATES.md` | Tooling/report cleanup or one isolated semantic rule, not architecture conversion. |
+| Equipment/economy save-heavy systems | Durability, identification, item modification, equipment actives, armor mobility, Tome effects, ultimate helmets, rarity semantics. | `Needs Spec` | Serializer, UI, economy, old-save, and balance contracts are defined. | `EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` | Shop polish or one inert P6-adjacent item, not durability plus modification. |
+| Dungeon/world interaction expansion | Harvestable roots/fungus, rubble clearing, crystal interaction, bone/gear salvage, deeper Realm of Cambion rooms, rewards, and encounter variants. | `Needs Spec` | Content beat, tile state, reward, and save behavior are defined. | `DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` | One decorative tile interaction with old-save inert fallback. |
+| Presentation and asset expansions | Jump/Charge animation, Warp Point art, town/NPC/venue art, status-effect artwork, enemy identity presentation, website. | `Needs Evidence` | Target list and review-sheet workflow are approved, or UX evidence identifies a readability need. | `PRESENTATION_ASSET_DESIGN_GATES.md` | One generated bitmap batch or one readability layer with fallback behavior. |
+| Story/endgame expansion | Bespoke Guardian rooms, mini-bosses, stronger consequences, deeper per-class Voluntas quests, deeper Reflection mechanics, Vesperion tuning/presentation, legacy Devil retirement. | `Needs Spec` | Story-content decision block defines beat, trigger, flags, UI surface, fallback, and tests. | `STORY_AND_ENDGAME_DESIGN.md` | One story-only vignette or one Guardian room spec, not route replacement. |
+| Audio/event/meta systems | Final audio replacement, dynamic music, spatial audio, profiles, event payload enrichment, account-wide Bestiary, achievements, run summaries, persistent statistics. | `Needs Spec` | Concrete consumer, privacy/profile-storage decision, or asset-content need exists. | `SOUND_SYSTEM.md`, `EVENT_EMISSIONS.md`, Systems/Audio/Meta roadmap section | Source-specific event payload or audio route for an existing consumer. |
+
 ## Active Priority - P7 Additional Improvements
 
 Status: `Completed`
@@ -222,6 +252,9 @@ alter quest state, bounty generation, save data, audio routing, keyboard
 behavior, or gameplay rules.
 
 ## Bugfixes
+
+No active bugfixes are currently tracked here. Move newly found regressions into
+this section until fixed, then record the completed fix in `CHANGELOG.md`.
 
 ## Watch Items
 

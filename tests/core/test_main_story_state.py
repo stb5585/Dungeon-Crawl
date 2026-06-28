@@ -49,6 +49,7 @@ def test_main_story_round_trips_through_player_serializer():
     player.main_story["reflection_voluntas_answer"] = "Carry"
     player.main_story["hooded_figure_witness_farewell_seen"] = True
     player.main_story["class_voluntas_followup_seen"] = True
+    player.main_story["class_voluntas_bridge_seen"] = True
     player.main_story["reflection_path_mirror_seen"] = True
     player.main_story["vesperion_choice_argument_seen"] = True
     player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
@@ -89,6 +90,7 @@ def test_main_story_round_trips_through_player_serializer():
     assert loaded.main_story["reflection_voluntas_answer"] == "Carry"
     assert loaded.main_story["hooded_figure_witness_farewell_seen"] is True
     assert loaded.main_story["class_voluntas_followup_seen"] is True
+    assert loaded.main_story["class_voluntas_bridge_seen"] is True
     assert loaded.main_story["reflection_path_mirror_seen"] is True
     assert loaded.main_story["vesperion_choice_argument_seen"] is True
     assert loaded.main_story["guardian_trial_vignettes_seen"]["Triangulus"] is True
@@ -243,10 +245,13 @@ def test_class_voluntas_affirmation_defaults_normalize_and_record_once():
 
 def test_class_voluntas_archetypes_reflection_answer_and_witness_farewell_gate():
     assert main_story.class_voluntas_archetype("Berserker") == "martial"
+    assert main_story.class_voluntas_archetype("Grandmaster of Arms") == "martial"
     assert main_story.class_voluntas_archetype("Wizard") == "mystic"
+    assert main_story.class_voluntas_archetype("Archdruid") == "mystic"
     assert main_story.class_voluntas_archetype("Knight Enchanter") == "hybrid"
     assert main_story.class_voluntas_archetype("Beast Master") == "companion"
     assert main_story.class_voluntas_archetype("Soulcatcher") == "shadow"
+    assert main_story.class_voluntas_archetype("Demonologist") == "shadow"
     assert main_story.class_voluntas_archetype("Chronomancer") == "wanderer"
 
     state = main_story.default_state()
@@ -272,15 +277,28 @@ def test_narrative_system_v3_flags_helpers_and_path_summary():
     state = main_story.default_state()
 
     assert state["class_voluntas_followup_seen"] is False
+    assert state["class_voluntas_bridge_seen"] is False
     assert state["reflection_path_mirror_seen"] is False
     assert state["vesperion_choice_argument_seen"] is False
     assert main_story.should_show_class_voluntas_followup(state) is False
     assert main_story.record_class_voluntas_followup(state) is False
+    assert main_story.should_show_class_voluntas_bridge(state) is False
+    assert main_story.record_class_voluntas_bridge(state) is False
 
     main_story.record_class_voluntas_affirmation(state, "Wizard", True)
     assert main_story.should_show_class_voluntas_followup(state) is True
+    assert main_story.should_show_class_voluntas_bridge(state) is False
     assert main_story.record_class_voluntas_followup(state) is True
     assert main_story.record_class_voluntas_followup(state) is False
+    assert main_story.should_show_class_voluntas_bridge(state) is True
+    assert main_story.class_voluntas_bridge_event_key("Wizard") == "Class Voluntas Bridge Wizard"
+    assert (
+        main_story.class_voluntas_bridge_event_key("  Grandmaster of Arms  ")
+        == "Class Voluntas Bridge Grandmaster of Arms"
+    )
+    assert main_story.class_voluntas_bridge_event_key("Chronomancer") == "Class Voluntas Bridge Wanderer"
+    assert main_story.record_class_voluntas_bridge(state) is True
+    assert main_story.record_class_voluntas_bridge(state) is False
 
     assert main_story.should_show_reflection_path_mirror(state) is False
     state["voluntas_revealed"] = True

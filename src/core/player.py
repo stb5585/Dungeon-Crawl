@@ -1129,7 +1129,7 @@ class Player(Character):
             lines.append(f"{'Resolve:':13} {int(guard)}/100")
         if cls_name == "Shadowcaster":
             debt = class_rings.ensure_state(self)["data"]["Shadowcaster"].get("debt", 0)
-            lines.append(f"{'Umbral Debt:':13} {int(debt)}")
+            lines.append(f"{'Umbral Debt:':13} {int(debt)}/{promotion_kits.shadowcaster_debt_cap(self)}")
         if cls_name in {"Diviner", "Astromancer"}:
             self.ensure_astromancer_state()
             lines.append(f"{'Runes:':13} {astromancer.rune_status_summary(self)}")

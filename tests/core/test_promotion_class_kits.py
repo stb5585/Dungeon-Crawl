@@ -83,6 +83,103 @@ def test_representative_active_spends_and_status_text():
     assert "Ki:" in monk._class_kit_status_str()
 
 
+def test_ui_log_polish_status_matrix_surfaces():
+    astro = _player("Astromancer", mana=(100, 100))
+    _awaken_ring(astro, "Astromancer")
+    promotion_kits.gain_meter(astro, "foresight_threads", 1, "test")
+    abilities.ThreadedCast().use(astro)
+    astro_status = astro._class_kit_status_str()
+    assert "Threads:" in astro_status
+    assert "Threaded:" in astro_status
+    assert "Ring Ready:" in astro_status
+
+    soulcatcher = _player("Soulcatcher")
+    _awaken_ring(soulcatcher, "Soulcatcher")
+    soulcatcher.magic_effects["Totem"].active = True
+    soulcatcher.magic_effects["Totem"].extra = {"aspect": "Fire", "resonance": 2}
+    soul_status = soulcatcher._class_kit_status_str()
+    assert "Totem:" in soul_status
+    assert "Fire 2/4" in soul_status
+
+    seeker = _player("Seeker")
+    target = enemies.Goblin()
+    promotion_kits.gain_case_progress(seeker, target.enemy_typ, 75, "test")
+    promotion_kits.add_revelation(seeker, target, 2, "test")
+    seeker_status = seeker._class_kit_status_str()
+    assert "Case:" in seeker_status
+    assert "Pattern Lock" in seeker_status
+    assert "Revelation:" in seeker_status
+
+    beast = _player("Beast Master")
+    beast.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
+    beast.familiar = SimpleNamespace(name="Wolf", is_alive=lambda: True)
+    abilities.PackStrike().use(beast)
+    beast_status = beast._class_kit_status_str()
+    assert "Companion:" in beast_status
+    assert "Battle-Trained" in beast_status
+    assert "Command:" in beast_status
+
+    lycan = _player("Lycan")
+    promotion_kits.unlock_dragon_essence(lycan)
+    lycan_status = lycan._class_kit_status_str()
+    assert "Control:" in lycan_status
+    assert "Dragon Essence:" in lycan_status
+
+
+def test_ui_log_polish_persistent_and_preservation_status_lines():
+    demo = _player("Demonologist")
+    demo.demonologist_contracts = demonologist.default_state()
+    demo.demonologist_contracts["unlocked_contracts"] = ["Imp"]
+    demo.demonologist_contracts["active_patron"] = "Imp"
+    demo.demonologist_contracts["corruption"] = 30
+    demo.demonologist_contracts["patron_moods"]["Imp"] = 25
+    demo.demonologist_contracts["imprisoned_familiar"] = {
+        "name": "Ash",
+        "race": "Mephit",
+        "spec": "Arcane",
+    }
+    demo_status = demo._class_kit_status_str()
+    assert "Corruption:" in demo_status
+    assert "Patron:" in demo_status
+    assert "Echo:" in demo_status
+
+    templar = _player("Templar", mana=(100, 100))
+    _awaken_ring(templar, "Templar")
+    promotion_kits.gain_meter(templar, "devotion", 2, "test")
+    ready_status = templar._class_kit_status_str()
+    assert "Ring Ready:" in ready_status
+    assert "Ring Preserve:" in ready_status
+    assert "Ready" in ready_status
+
+    message = abilities.SanctuaryWard().use(templar)
+    used_status = templar._class_kit_status_str()
+    assert "Ordered Blessings preserves 1 spent devotion" in message
+    assert "Ring Preserve:" in used_status
+    assert "Used" in used_status
+
+
+def test_ui_log_polish_representative_messages():
+    monk = _player("Master Monk")
+    cap = promotion_kits.cap_for(monk, "ki")
+    assert "gains" in promotion_kits.gain_meter(monk, "ki", cap, "test")
+    assert "capped" in promotion_kits.gain_meter(monk, "ki", 1, "test")
+
+    troubadour = _player("Troubadour")
+    promotion_kits.gain_meter(troubadour, "crescendo", 1, "song")
+    assert "Crescendo clears from interruption" in promotion_kits.clear_crescendo(
+        troubadour,
+        "interruption",
+    )
+
+    shaman = _player("Shaman")
+    shaman.magic_effects["Totem"].active = True
+    shaman.magic_effects["Totem"].extra = {"aspect": "Fire", "resonance": 3}
+    assert "Totem Resonance is capped" in promotion_kits.gain_totem_resonance(
+        shaman,
+        "pulse",
+    )
+
+
 def test_resolve_aerial_aspect_totem_and_beast_commands():
     defender = _player("Stalwart Defender")
     defender.equipment["OffHand"] = items.Glagwa()

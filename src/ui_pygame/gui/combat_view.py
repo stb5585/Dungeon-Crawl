@@ -573,13 +573,46 @@ class CombatView:
             "disarmed",
             "silenced",
         )
+        class_kit_terms = (
+            "aerial",
+            "arcane larceny",
+            "aspect harmony",
+            "case journal",
+            "crescendo",
+            "death mark",
+            "devotion",
+            "divine intervention",
+            "encore",
+            "foresight",
+            "fortune",
+            "harmony bonus",
+            "ki",
+            "loaded dice",
+            "misfortune",
+            "no-trace",
+            "oath conviction",
+            "ordered blessings",
+            "prayer",
+            "revelation",
+            "resolve",
+            "stolen charge",
+            "threaded cast",
+            "totem resonance",
+            "umbral",
+            "vow affirmation",
+        )
         for line in message.split("\n"):
             line_lower = line.lower()
+            keep_class_kit_line = any(term in line_lower for term in class_kit_terms)
             if "is affected by" in line_lower:
                 continue
-            if any(term in line_lower for term in suppress_terms):
+            if not keep_class_kit_line and any(term in line_lower for term in suppress_terms):
                 continue
-            if "already" in line_lower and any(term in line_lower for term in suppress_already):
+            if (
+                not keep_class_kit_line
+                and "already" in line_lower
+                and any(term in line_lower for term in suppress_already)
+            ):
                 continue
             if line.strip():
                 kept_lines.append(line.strip())

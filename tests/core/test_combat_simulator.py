@@ -21,6 +21,8 @@ def _make_stat(
     hp_max=100,
     abilities=None,
     statuses=None,
+    class_kit_events=None,
+    action_economy_events=None,
 ):
     from src.core.analytics.combat_simulator import CombatStats
 
@@ -38,6 +40,8 @@ def _make_stat(
         total_damage_taken=10,
         abilities_used=abilities or {},
         status_effects_applied=statuses or {},
+        class_kit_events=class_kit_events or {},
+        action_economy_events=action_economy_events or {},
     )
 
 
@@ -73,6 +77,8 @@ def test_balance_report_empty_results_return_zero_metrics():
     assert report.stomp_rate == 0.0
     assert report.get_ability_usage() == {}
     assert report.get_status_effect_frequency() == {}
+    assert report.get_class_kit_events() == {}
+    assert report.get_action_economy_events() == {}
     assert report.identify_outliers() == {"overpowered": [], "underpowered": []}
 
 
@@ -88,6 +94,8 @@ def test_balance_report_aggregates_metrics_and_usage():
             hp_max=100,
             abilities={"Attack": 2, "Slash": 1},
             statuses={"Bleed": 1},
+            class_kit_events={"meter_gain": 2, "meter_spend": 1},
+            action_economy_events={"totem_output": 1},
         ),
         _make_stat(
             winner_class="Mage",
@@ -97,6 +105,8 @@ def test_balance_report_aggregates_metrics_and_usage():
             hp_max=100,
             abilities={"Fireball": 3, "Attack": 1},
             statuses={"Burn": 2},
+            class_kit_events={"preservation": 1},
+            action_economy_events={"song_coda": 1},
         ),
         _make_stat(
             winner_class="Warrior",
@@ -119,6 +129,8 @@ def test_balance_report_aggregates_metrics_and_usage():
     assert report.get_ability_usage() == {"Attack": 4, "Slash": 1, "Fireball": 3}
     assert report.get_most_used_abilities(2) == [("Attack", 4), ("Fireball", 3)]
     assert report.get_status_effect_frequency() == {"Bleed": 3, "Burn": 2}
+    assert report.get_class_kit_events() == {"meter_gain": 2, "meter_spend": 1, "preservation": 1}
+    assert report.get_action_economy_events() == {"totem_output": 1, "song_coda": 1}
 
 
 def test_balance_report_exports_payload_json_and_file(tmp_path):
@@ -135,6 +147,8 @@ def test_balance_report_exports_payload_json_and_file(tmp_path):
                 turns=4,
                 abilities={"Attack": 2},
                 statuses={"Blind": 1},
+                class_kit_events={"payoff": 1},
+                action_economy_events={"companion_output": 1},
             )
         ],
     )
@@ -143,7 +157,10 @@ def test_balance_report_exports_payload_json_and_file(tmp_path):
     assert payload["total_battles"] == 1
     assert payload["ability_usage"] == {"Attack": 2}
     assert payload["status_effect_frequency"] == {"Blind": 1}
+    assert payload["class_kit_events"] == {"payoff": 1}
+    assert payload["action_economy_events"] == {"companion_output": 1}
     assert payload["results"][0]["winner_class"] == "Warrior"
+    assert payload["results"][0]["class_kit_events"] == {"payoff": 1}
 
     json_payload = json.loads(report.export_json())
     assert json_payload["win_rates"] == {"Warrior": 100.0}
@@ -165,6 +182,8 @@ def test_balance_report_summary_payload_is_compact_and_limited():
                 turns=4,
                 abilities={"Attack": 2, "Slash": 1},
                 statuses={"Bleed": 3},
+                class_kit_events={"meter_gain": 1},
+                action_economy_events={"totem_output": 2},
             ),
             _make_stat(
                 winner_class="Mage",
@@ -172,6 +191,8 @@ def test_balance_report_summary_payload_is_compact_and_limited():
                 turns=6,
                 abilities={"Fireball": 4, "Attack": 1},
                 statuses={"Burn": 2, "Bleed": 1},
+                class_kit_events={"meter_gain": 2, "preservation": 1},
+                action_economy_events={"summon_output": 1},
             ),
         ],
     )
@@ -185,6 +206,8 @@ def test_balance_report_summary_payload_is_compact_and_limited():
     assert payload["win_rates"] == {"Warrior": 50.0, "Mage": 50.0}
     assert payload["most_used_abilities"] == [("Fireball", 4), ("Attack", 3)]
     assert payload["most_common_status_effects"] == [("Bleed", 4)]
+    assert payload["class_kit_events"] == {"meter_gain": 3, "preservation": 1}
+    assert payload["action_economy_events"] == {"totem_output": 2, "summon_output": 1}
     empty_payload = report.summary_payload(ability_limit=-1, status_limit=-1)
     assert empty_payload["most_used_abilities"] == []
     assert empty_payload["most_common_status_effects"] == []

@@ -1608,6 +1608,8 @@ class DungeonManager:
             options.append("Affirm Class Path")
         if main_story.should_show_class_voluntas_followup(story_state):
             options.append("Revisit Class Path")
+        if main_story.should_show_class_voluntas_bridge(story_state):
+            options.append("Bridge Class Identity")
         if main_story.should_show_hooded_witness_farewell(story_state):
             options.append("Ask About the Witness")
         options.append("Leave")
@@ -1632,6 +1634,9 @@ class DungeonManager:
             return
         if selected == "Revisit Class Path":
             self._revisit_class_voluntas_path(story_state, guide_tile)
+            return
+        if selected == "Bridge Class Identity":
+            self._bridge_class_voluntas_identity(story_state, guide_tile)
             return
         if selected == "Ask About the Witness":
             self._show_hooded_witness_farewell(story_state, guide_tile)
@@ -1707,6 +1712,19 @@ class DungeonManager:
             self.add_message(f"{class_name} is remembered through a {ring_state} Class Ring.")
         else:
             self.add_message("The Class Ring follow-up has already been remembered.")
+
+    def _bridge_class_voluntas_identity(self, story_state, guide_tile):
+        """Play and record the optional per-class Voluntas bridge."""
+        class_name = story_state.get("class_voluntas_affirmed_class") or "The chosen class"
+        event_key = main_story.class_voluntas_bridge_event_key(class_name)
+        self._show_special_event_dialogue("Class Voluntas Bridge", title="Voluntas")
+        self._show_special_event_dialogue(event_key, title="Class Ring")
+        recorded = main_story.record_class_voluntas_bridge(story_state)
+        guide_tile.read = True
+        if recorded:
+            self.add_message(f"{class_name} bridges its chosen path to Voluntas.")
+        else:
+            self.add_message("The Class Ring bridge has already been remembered.")
 
     def _show_hooded_witness_farewell(self, story_state, guide_tile):
         """Play the optional unnamed Hooded Figure witness farewell."""

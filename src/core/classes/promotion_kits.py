@@ -1267,14 +1267,83 @@ def winged_pounce(character: Any, target: Any | None) -> str:
     return f"{character.name} launches a Winged Pounce.\n{msg}"
 
 
+PRESERVATION_METERS = {
+    "Crusader": ("oath_conviction",),
+    "Rogue": ("fortune", "misfortune"),
+    "Ninja": ("death_marks",),
+    "Arcane Trickster": ("stolen_charge",),
+    "Templar": ("devotion",),
+    "Archbishop": ("prayer",),
+    "Troubadour": ("crescendo",),
+}
+
+
+def _ring_readiness_line(character: Any, cls: str) -> str | None:
+    try:
+        from . import class_rings
+
+        if not class_rings.is_legacy_class(cls):
+            return None
+        if class_rings.is_awakened(character, cls):
+            if class_rings.has_equipped_class_ring(character):
+                return f"{'Ring Ready:':13} {class_rings.ring_mod(character)}"
+            return f"{'Ring Ready:':13} Awakened, unequipped"
+        if class_rings.has_visible_class_ring(character):
+            return f"{'Ring Ready:':13} Dormant"
+    except Exception:
+        return None
+    return None
+
+
+def _preservation_line(character: Any, cls: str) -> str | None:
+    keys = PRESERVATION_METERS.get(cls)
+    if not keys or not _ring_awakened_equipped(character, cls):
+        return None
+    preserved = combat_state(character).setdefault("ring_preserved", set())
+    used = all(f"{cls}:{key}" in preserved for key in keys)
+    return f"{'Ring Preserve:':13} {'Used' if used else 'Ready'}"
+
+
+def _totem_status_line(character: Any) -> str | None:
+    effect = getattr(character, "magic_effects", {}).get("Totem")
+    if not effect or not effect.active or not isinstance(effect.extra, dict):
+        return None
+    aspect = effect.extra.get("aspect") or "Unknown"
+    resonance = totem_resonance(character)
+    return f"{'Totem:':13} {aspect} {resonance}/{cap_for(character, 'totem_resonance')}"
+
+
 def status_summary(character: Any) -> list[str]:
     cls = class_name(character)
     state = combat_state(character)
     lines: list[str] = []
+    if cls == "Demonologist":
+        try:
+            from . import demonologist
+
+            contracts = demonologist.ensure_state(character)
+            patron = contracts.get("active_patron") or "None"
+            mood = contracts.get("patron_moods", {}).get(patron, 0) if patron != "None" else 0
+            echo = contracts.get("imprisoned_familiar") or {}
+            lines.append(f"{'Corruption:':13} {int(contracts.get('corruption', 0) or 0)}/100")
+            lines.append(f"{'Patron:':13} {patron} ({int(mood)})")
+            if echo.get("name") or echo.get("spec"):
+                lines.append(f"{'Echo:':13} {echo.get('name') or echo.get('spec')}")
+            if contracts.get("ring_awakened"):
+                ready = "Equipped" if demonologist.has_equipped_class_ring(character) else "Awakened"
+                lines.append(f"{'Ring Ready:':13} {ready}")
+        except Exception:
+            pass
     if cls == "Astromancer":
         lines.append(f"{'Threads:':13} {int(state.get('foresight_threads', 0) or 0)}/3")
         if state.get("threaded_cast_pending"):
             lines.append(f"{'Threaded:':13} Pending")
+    if cls == "Shadowcaster":
+        data = _class_ring_data(character, "Shadowcaster")
+        lines.append(f"{'Backlash:':13} {int(data.get('backlash', 0) or 0)}")
+        eclipse = int(data.get("eclipse_turns", 0) or 0)
+        if eclipse:
+            lines.append(f"{'Eclipse:':13} {eclipse} turn(s)")
     if cls in {"Spellblade", "Knight Enchanter"}:
         lines.append(f"{'Blade Charge:':13} {state.get('blade_charge') or 'None'}")
         if cls == "Knight Enchanter":
@@ -1285,9 +1354,11 @@ def status_summary(character: Any) -> list[str]:
         lines.append(f"{'Conviction:':13} {int(state.get('oath_conviction', 0) or 0)}/{cap_for(character, 'oath_conviction')}")
     if cls in {"Lancer", "Dragoon"}:
         lines.append(f"{'Aerial Tempo:':13} {int(state.get('aerial_tempo', 0) or 0)}/{cap_for(character, 'aerial_tempo')}")
-    if cls in {"Sentinel", "Stalwart Defender"}:
-        cap = 100 if cls == "Stalwart Defender" else 50
+    if cls == "Sentinel":
+        cap = 50
         lines.append(f"{'Resolve:':13} {int(_class_ring_data(character, 'Stalwart Defender').get('guard_meter', 0) or 0)}/{cap}")
+    if cls in {"Sentinel", "Stalwart Defender"} and int(state.get("hold_the_line", 0) or 0) > 0:
+        lines.append(f"{'Guard Stance:':13} Hold ({int(state.get('hold_the_line', 0) or 0)})")
     if cls in {"Thief", "Rogue"}:
         lines.append(f"{'Fortune:':13} {int(state.get('fortune', 0) or 0)}/{cap_for(character, 'fortune')}")
         lines.append(f"{'Misfortune:':13} {int(state.get('misfortune', 0) or 0)}/{cap_for(character, 'misfortune')}")
@@ -1296,6 +1367,13 @@ def status_summary(character: Any) -> list[str]:
     if cls in {"Inquisitor", "Seeker"}:
         best = max(ensure_state(character)["case_journal"].values(), default=0)
         lines.append(f"{'Case:':13} {best}/100 {case_rank(best)}")
+        revelation = state.get("revelation", {})
+        current = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
+        lines.append(f"{'Revelation:':13} {current}/{cap_for(character, 'revelation')}")
+    if cls in {"Assassin", "Ninja"}:
+        marks = state.get("death_marks", {})
+        current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
+        lines.append(f"{'Death Mark:':13} {current}/{cap_for(character, 'death_marks')}")
     if cls in {"Spell Stealer", "Arcane Trickster"}:
         lines.append(f"{'Stolen Charge:':13} {int(state.get('stolen_charge', 0) or 0)}/{cap_for(character, 'stolen_charge')}")
     if cls in {"Cleric", "Templar"}:
@@ -1306,6 +1384,10 @@ def status_summary(character: Any) -> list[str]:
         lines.append(f"{'Ki:':13} {int(state.get('ki', 0) or 0)}/{cap_for(character, 'ki')}")
     if cls in {"Bard", "Troubadour"}:
         lines.append(f"{'Crescendo:':13} {int(state.get('crescendo', 0) or 0)}/3")
+        if cls == "Troubadour":
+            repertoire = ensure_state(character)["bard_repertoire"]
+            mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
+            lines.append(f"{'Repertoire:':13} {mastered}/{len(repertoire)} mastered")
     if cls == "Lycan":
         control = lycan_control_state(character)
         lines.append(f"{'Control:':13} {control['rank']}")
@@ -1322,4 +1404,20 @@ def status_summary(character: Any) -> list[str]:
         command = state.get("pending_companion_command")
         if command:
             lines.append(f"{'Command:':13} {command}")
+    if cls in {"Summoner", "Grand Summoner"}:
+        bonds = ensure_state(character)["summon_bonds"]
+        name, bond = max(bonds.items(), key=lambda item: item[1])
+        lines.append(f"{'Summon Bond:':13} {name} {int(bond)}/100")
+        if state.get("conduit_command"):
+            lines.append(f"{'Conduit:':13} Primed")
+    if cls in {"Shaman", "Soulcatcher"}:
+        totem_line = _totem_status_line(character)
+        if totem_line:
+            lines.append(totem_line)
+    ring_line = _ring_readiness_line(character, cls)
+    if ring_line:
+        lines.append(ring_line)
+    preserve_line = _preservation_line(character, cls)
+    if preserve_line:
+        lines.append(preserve_line)
     return lines

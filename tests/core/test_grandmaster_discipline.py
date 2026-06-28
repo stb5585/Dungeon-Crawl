@@ -197,6 +197,36 @@ def test_sergeant_recognizes_equipped_or_stored_ring_only():
     assert grandmaster.ring_visible_for_sergeant(player) is True
 
 
+def test_grandmaster_class_ring_description_names_activation_binding_and_equipped_effect():
+    player = _grandmaster()
+
+    dormant_description = player.equipment["Ring"].get_description(player)
+    assert "dormant Class Ring for a Grandmaster of Arms" in dormant_description
+    assert "Ring location: equipped" in dormant_description
+    assert "Activation: Secret Master trial" in dormant_description
+    assert "Active effect: inactive until awakened" in dormant_description
+
+    grandmaster.add_discipline_xp(player, "Hammer", grandmaster.XP_THRESHOLDS[-1])
+    grandmaster.bind_weapon(player, "Hammer")
+    player.equipment["Ring"] = items.NoRing()
+    player.storage = {"Class Ring": [items.ClassRing()]}
+
+    stored_description = player.storage["Class Ring"][0].get_description(player)
+    assert "awakened Class Ring for a Grandmaster of Arms" in stored_description
+    assert "Ring location: stored" in stored_description
+    assert "Bound weapon: Hammer" in stored_description
+    assert "Active effect: equip the ring to use it" in stored_description
+
+    player.equipment["Ring"] = items.ClassRing()
+    player.storage = {}
+    equipped_description = player.equipment["Ring"].get_description(player)
+    assert "Ring location: equipped" in equipped_description
+    assert "Bound weapon: Hammer" in equipped_description
+    assert "+10% accuracy" in equipped_description
+    assert "20% technique chance" in equipped_description
+    assert "Active effect: active while equipped" in equipped_description
+
+
 def test_grandmaster_discipline_save_round_trip():
     player = _grandmaster()
     grandmaster.add_discipline_xp(player, "Hammer", grandmaster.XP_THRESHOLDS[-1])

@@ -3522,6 +3522,7 @@ class ClassRing(Accessory):
 
     def _grandmaster_description(self, player_char):
         from .classes import grandmaster
+        from .classes import class_rings
 
         state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
         if getattr(getattr(player_char, "cls", None), "name", None) == "Weapon Master":
@@ -3532,43 +3533,52 @@ class ClassRing(Accessory):
             ]
             progress = ", ".join(ranks) if ranks else "no ranked disciplines yet"
             return (
-                "A ring that remembers Weapon Discipline progress. "
+                f"A dormant Class Ring for a Weapon Master. {class_rings.presentation_summary(player_char, awakened=False)} "
+                "Awakened effect: Grandmaster binding is not available until Grandmaster of Arms. "
                 f"Current ranks: {progress}."
             )
         if not state["activated"]:
             return (
-                "A dormant ring that waits for a Grandmaster of Arms to awaken it through "
-                "a Secret Master trial."
+                f"A dormant Class Ring for a Grandmaster of Arms. {class_rings.presentation_summary(player_char, awakened=False)} "
+                "Activation: Secret Master trial. Awakened effect: bind one weapon discipline. "
+                f"{class_rings.active_effect_summary(player_char, awakened=False)}"
             )
         bound_weapon = state["bound_weapon"] or "chosen weapon"
         rank = grandmaster.discipline_rank(player_char, bound_weapon)
         chance = int(grandmaster.proc_chance(player_char, bound_weapon) * 100)
         accuracy = int(grandmaster.accuracy_bonus(player_char, bound_weapon) * 100)
         return (
-            f"A ring bound to {bound_weapon} Discipline. While worn, it doubles that discipline's "
-            f"mastery bonus for the Grandmaster of Arms (rank {rank}, +{accuracy}% accuracy, "
-            f"{chance}% technique chance) and perfects that weapon's active art."
+            f"An awakened Class Ring for a Grandmaster of Arms. {class_rings.presentation_summary(player_char, awakened=True)} "
+            f"bound to {bound_weapon} Discipline. Bound weapon: {bound_weapon}. "
+            "Awakened effect: doubles that discipline's mastery bonus "
+            f"while equipped (rank {rank}, +{accuracy}% accuracy, {chance}% technique chance) "
+            f"and perfects that weapon's active art. {class_rings.active_effect_summary(player_char, awakened=True)}"
         )
 
     def _demonologist_description(self, player_char):
         from .classes import demonologist
+        from .classes import class_rings
 
         state = demonologist.normalize_state(getattr(player_char, "demonologist_contracts", None))
         active = state["active_patron"] or "no active patron"
         if not state["ring_awakened"]:
             return (
-                "A dormant ring that can imprison a Demonologist's familiar in the hidden crypt. "
-                f"Contracts are available, but the ring has not empowered them yet ({active})."
+                f"A dormant Class Ring for a Demonologist. {class_rings.presentation_summary(player_char, awakened=False)} "
+                "Activation: hidden crypt familiar imprisonment. Basic contracts are available, "
+                f"but empowered contracts are inactive. Active patron: {active}. "
+                f"{class_rings.active_effect_summary(player_char, awakened=False)}"
             )
         familiar = state.get("imprisoned_familiar") or {}
         echo = familiar.get("race") or familiar.get("spec") or "familiar"
         return (
-            f"A ring awakened by the imprisoned {echo}. All fiend contracts are empowered, "
-            f"and the active patron is {active}."
+            f"An awakened Class Ring for a Demonologist. {class_rings.presentation_summary(player_char, awakened=True)} "
+            f"Imprisoned echo: {echo}. Awakened effect: the ring has empowered fiend contracts. "
+            f"Active patron: {active}."
         )
 
     def _archdruid_description(self, player_char):
         from .classes import archdruid
+        from .classes import class_rings
 
         state = archdruid.normalize_state(getattr(player_char, "archdruid_attunement", None))
         attunement = ", ".join(
@@ -3577,19 +3587,28 @@ class ClassRing(Accessory):
         )
         if not state["grove_unlocked"]:
             return (
-                "A dormant ring waiting for fourfold balance. "
+                f"A dormant Class Ring for an Archdruid. {class_rings.presentation_summary(player_char, awakened=False)} "
+                "Activation: Fourfold Balance and Ancient Grove rituals. "
                 f"Attunement: {attunement}."
             )
         if not state["ring_awakened"]:
             aspects = archdruid.aspect_summary(player_char)
             return (
-                "A dormant ring listening to the Ancient Grove. "
-                f"Aspects: {aspects}."
+                f"A dormant Class Ring for an Archdruid. {class_rings.presentation_summary(player_char, awakened=False)} "
+                "Activation: complete all four Grove aspects. "
+                f"Aspects: {aspects}. {class_rings.active_effect_summary(player_char, awakened=False)}"
             )
         bonus = int(archdruid.harmony_bonus(player_char) * 100)
+        total_attunement = sum(int(state["attunement"][affinity]) for affinity in archdruid.AFFINITIES)
+        potential = (total_attunement // 25) * 0.01
+        if all(int(state["attunement"][affinity]) >= 75 for affinity in archdruid.AFFINITIES):
+            potential *= 2
+        potential_bonus = int(min(0.40, potential) * 100)
         return (
-            "A ring awakened through Venom, Stone, Growth, and Storm. "
-            f"Current Harmony Bonus: +{bonus}%."
+            f"An awakened Class Ring for an Archdruid. {class_rings.presentation_summary(player_char, awakened=True)} "
+            "Awakened through Venom, Stone, Growth, and Storm. "
+            f"Current Harmony Bonus: +{bonus}%. Potential while equipped: +{potential_bonus}%. "
+            f"{class_rings.active_effect_summary(player_char, awakened=True)}"
         )
 
     def class_mod(self, player_char):

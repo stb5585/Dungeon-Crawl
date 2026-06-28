@@ -94,6 +94,21 @@ Report questions to answer before changing balance values:
 Numeric tuning remains out of scope until the reports above are generated,
 saved, and reviewed against actual playtest findings.
 
+## Class-Kit Threshold Use
+
+`docs/CLASS_KIT_DESIGN_GATES.md` owns the class-kit balance thresholds for
+promotion meters, ring preservation, and action-economy loops. Those thresholds
+are watch-first evidence gates. A `Watch` or `Tuning Gate` finding should record
+manual observations, simulator payloads, class/race/enemy matchup, level,
+gear/loadout, ring state, and relevant `class_kit_events` or
+`action_economy_events` counts before any tuning is proposed.
+
+Threshold findings do not authorize immediate numeric changes. Numeric tuning
+still requires a promoted one-page balance spec that states the observed
+problem, affected class tracks, target behavior, exact constants or trigger
+rules to change, regression coverage, simulator commands, and manual playtest
+checks.
+
 ## Deferred One-Page Spec Gates
 
 Each item below needs a one-page spec before implementation. Each spec must
